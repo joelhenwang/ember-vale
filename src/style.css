@@ -1,0 +1,256 @@
+/* ------------------------------------------------------------------ *
+ * Ember Vale — parchment design system
+ * ------------------------------------------------------------------ */
+
+:root {
+  /* Paper */
+  --bg: #f6eeda;
+  --bg-deep: #efe3c8;
+  --surface: #f9f2e1;
+  --surface-2: #fbf6e9;
+  --panel: #f9f2e0;
+  --panel-2: #f6efdd;
+
+  /* Rules & frames */
+  --line: #d9c8a3;
+  --line-strong: #c6b48e;
+  --line-soft: #e6d9bb;
+  --hairline: #ddd0b1;
+
+  /* Ink */
+  --ink: #2e2718;
+  --ink-2: #453b27;
+  --ink-3: #6c5f45;
+  --muted: #8d7c5f;
+  --faint: #a99a7d;
+
+  /* Accents */
+  --gold: #9a7b3f;
+  --gold-soft: #b49a63;
+  --teal: #14545a;
+  --teal-hi: #256e67;
+  --teal-ink: #1f6a5e;
+  --cream-on-teal: #f4ecd7;
+
+  /* Type */
+  --font-display: 'Cormorant Garamond', 'EB Garamond', Georgia, serif;
+  --font-body: 'EB Garamond', Georgia, 'Times New Roman', serif;
+
+  /* Elevation */
+  --card-shadow: 0 1px 2px rgba(96, 74, 40, 0.09), 0 8px 22px -18px rgba(96, 74, 40, 0.35);
+  --radius-card: 12px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--ink-2);
+  background-color: var(--bg);
+  background-image:
+    /* faint horizontal paper fibers */
+    repeating-linear-gradient(0deg, rgba(190, 165, 120, 0.045) 0 1px, transparent 1px 3px),
+    /* soft lighting: warm top-left, deeper edges */
+    radial-gradient(120% 90% at 50% -10%, rgba(255, 250, 235, 0.9), rgba(255, 250, 235, 0) 55%),
+    linear-gradient(180deg, var(--bg) 0%, #f4ebd4 70%, var(--bg-deep) 100%);
+  min-height: 100vh;
+}
+
+/* Paper grain: one inline SVG noise layer for the whole page */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.82 0 0 0 0 0.76 0 0 0 0 0.62 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+#app {
+  position: relative;
+  z-index: 1;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+:focus-visible {
+  outline: 2px solid var(--teal-ink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ------------------------------------------------------------------ *
+ * Shared bits
+ * ------------------------------------------------------------------ */
+
+.ev-card {
+  position: relative;
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow:
+    var(--card-shadow),
+    inset 0 1px 0 rgba(255, 252, 240, 0.7);
+}
+
+/* subtle inner frame line that the reference cards have */
+.ev-card::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: calc(var(--radius-card) - 3px);
+  border: 1px solid rgba(200, 176, 130, 0.18);
+  pointer-events: none;
+}
+
+.ev-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.ev-quote {
+  font-style: italic;
+  color: var(--muted);
+}
+
+/* Ornamental divider: hairline — sparkle — hairline */
+.ev-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--gold-soft);
+}
+.ev-divider::before,
+.ev-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #d3bd92 30%, #d3bd92 70%, transparent);
+}
+
+/* Text link with trailing chevron */
+.ev-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15.5px;
+  font-weight: 500;
+  color: var(--teal-ink);
+  border-radius: 6px;
+  transition: color 0.15s ease;
+}
+.ev-link:hover {
+  color: var(--teal);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+}
+.ev-link .ev-chevron {
+  transition: transform 0.15s ease;
+}
+.ev-link:hover .ev-chevron {
+  transform: translateX(2px);
+}
+
+.ev-dot {
+  color: var(--faint);
+  padding: 0 2px;
+}
+
+/* ------------------------------------------------------------------ *
+ * Form controls (studio pages)
+ * ------------------------------------------------------------------ */
+
+.ev-field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #4c4130;
+}
+
+.ev-input {
+  width: 100%;
+  padding: 10px 13px;
+  border-radius: 9px;
+  border: 1px solid #b9cfd1;
+  background: #f7faf8;
+  font-family: var(--font-body);
+  font-size: 15.5px;
+  line-height: 1.35;
+  color: var(--ink);
+  box-shadow: inset 0 1px 2px rgba(110, 140, 140, 0.06);
+  transition:
+    border-color 0.14s ease,
+    box-shadow 0.14s ease;
+}
+.ev-input::placeholder {
+  color: #98a8a4;
+  opacity: 0.9;
+}
+.ev-input:focus-visible {
+  outline: none;
+  border-color: #5f9488;
+  box-shadow:
+    inset 0 1px 2px rgba(110, 140, 140, 0.06),
+    0 0 0 3px rgba(46, 122, 108, 0.14);
+}
+textarea.ev-input {
+  min-height: 62px;
+  resize: vertical;
+}
+
+/* info line: ⓘ + small text */
+.ev-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.ev-info svg {
+  flex: none;
+  margin-top: 1px;
+  color: #6d8a83;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
