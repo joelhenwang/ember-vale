@@ -49,21 +49,31 @@ onMounted(async () => {
       characters: presets.characters.value.length,
       packs: packSummaries.length
     }
+    // Continue features an eligible unarchived story: archived tales stay
+    // available through the shelf's explicit archived filter, never as hero.
+    // sortStoriesNewest already puts never-opened (null last_played_at)
+    // stories after played ones, matching the "Last played" label.
     const ordered = sortStoriesNewest(stories.items ?? [])
-    if (!ordered.length) {
+    const eligible = ordered.filter((s) => !s.archived)
+    if (!eligible.length) {
       menuState.current = null
       menuState.recent = []
       return
     }
-    const details = await Promise.all(ordered.map((s) => getStory(s.world_id)))
-    const first = details.find((d) => d.world_id === ordered[0].world_id)
+    const details = await Promise.all(eligible.map((s) => getStory(s.world_id)))
+    const first = details.find((d) => d.world_id === eligible[0].world_id)
     if (first) {
-      menuState.current = toMenuCurrent(first, worldOf(ordered[0].world_name))
+      menuState.current = toMenuCurrent(first, worldOf(eligible[0].world_name))
+    } else {
+      menuState.current = null
     }
-    menuState.recent = ordered.slice(1, 4).map((s) => {
-      const detail = details.find((d) => d.world_id === s.world_id)
-      return detail ? toMenuRecent(detail, worldOf(s.world_name)) : null
-    }).filter((r): r is NonNullable<typeof r> => r !== null)
+    menuState.recent = eligible
+      .slice(1, 4)
+      .map((s) => {
+        const detail = details.find((d) => d.world_id === s.world_id)
+        return detail ? toMenuRecent(detail, worldOf(s.world_name)) : null
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null)
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'could not load stories'
   } finally {

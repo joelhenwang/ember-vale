@@ -52,14 +52,14 @@ export interface ResolutionView {
 }
 
 export interface SceneDetail {
-  attempts?: AttemptView[] | null;
+  attempts?: AttemptView[];
   beat_budget: number;
   event_id?: string | null;
   id: string;
-  intents?: IntentView[] | null;
-  participants?: ParticipantView[] | null;
+  intents?: IntentView[];
+  participants?: ParticipantView[];
   phase_run_id: string;
-  reactions?: ReactionView[] | null;
+  reactions?: ReactionView[];
   resolution?: ResolutionView | null;
   status: string;
   world_id: string;
@@ -68,7 +68,7 @@ export interface SceneDetail {
 export interface SceneSummary {
   event_id?: string | null;
   id: string;
-  participant_ids?: string[] | null;
+  participant_ids?: string[];
   status: string;
 }
 
@@ -83,10 +83,10 @@ export interface BeatView {
 export interface ModelRunView {
   actor_id?: string | null;
   call_id: string;
-  completion_tokens?: number | null;
+  completion_tokens?: number;
   manifest_id?: string | null;
   profile: string;
-  prompt_tokens?: number | null;
+  prompt_tokens?: number;
   rendered_hash?: string | null;
   role: string;
   status: string;
@@ -94,7 +94,7 @@ export interface ModelRunView {
 
 export interface Stage1AdvanceRequest {
   absolute_index: number;
-  player_intents?: Record<string, Record<string, unknown>> | null;
+  player_intents?: Record<string, Record<string, unknown>>;
   world_id: string;
 }
 
@@ -107,20 +107,20 @@ export interface Stage1SceneOutcome {
 
 export interface Stage1AdvanceResponse {
   absolute_index: number;
-  duplicate?: boolean | null;
-  quiet?: boolean | null;
+  duplicate?: boolean;
+  quiet?: boolean;
   run_id: string;
-  scenes?: Stage1SceneOutcome[] | null;
+  scenes?: Stage1SceneOutcome[];
   snapshot_id: string;
   world_id: string;
 }
 
 export interface PartyBeginRequest {
-  character_class?: string | null;
+  character_class?: string;
   character_id?: string | null;
-  level?: number | null;
+  level?: number;
   name: string;
-  race?: string | null;
+  race?: string;
   stats?: Record<string, number> | null;
   world_id: string;
 }
@@ -128,7 +128,7 @@ export interface PartyBeginRequest {
 export interface PartyMemberView {
   character_class: string;
   character_id?: string | null;
-  conditions?: string[] | null;
+  conditions?: string[];
   hp_current?: number | null;
   hp_max?: number | null;
   id: string;
@@ -139,7 +139,7 @@ export interface PartyMemberView {
 }
 
 export interface PartyRosterResponse {
-  members?: PartyMemberView[] | null;
+  members?: PartyMemberView[];
   world_id: string;
 }
 
@@ -169,14 +169,14 @@ export interface ActivityView {
 }
 
 export interface ActivityListResponse {
-  members?: ActivityView[] | null;
+  members?: ActivityView[];
   world_id: string;
 }
 
 export interface RelationshipEvidenceRequest {
   delta: number;
   dimension: string;
-  note?: string | null;
+  note?: string;
   source_id: string;
   target_id: string;
   world_id: string;
@@ -197,7 +197,7 @@ export interface RelationshipView {
 
 export interface RelationshipListResponse {
   character_id: string;
-  members?: RelationshipView[] | null;
+  members?: RelationshipView[];
   world_id: string;
 }
 
@@ -210,17 +210,17 @@ export interface ClaimRequest {
 }
 
 export interface ClaimView {
-  audience_location_id: string;
+  audience_location_id: string | null;
   id: string;
   proposition: string;
-  refutes_claim_id: string;
+  refutes_claim_id: string | null;
   speaker_id: string;
   version: number;
   world_id: string;
 }
 
 export interface ClaimListResponse {
-  members?: ClaimView[] | null;
+  members?: ClaimView[];
   viewer_id: string;
   world_id: string;
 }
@@ -237,14 +237,14 @@ export interface BeliefView {
 
 export interface BeliefListResponse {
   holder_id: string;
-  members?: BeliefView[] | null;
+  members?: BeliefView[];
   world_id: string;
 }
 
 export interface ItemGiveRequest {
   item_key: string;
   owner_id?: string | null;
-  quantity?: number | null;
+  quantity?: number;
   world_id: string;
 }
 
@@ -255,15 +255,15 @@ export interface ItemTransferRequest {
 export interface ItemView {
   id: string;
   item_key: string;
-  owner_id: string;
+  owner_id: string | null;
   quantity: number;
   version: number;
   world_id: string;
 }
 
 export interface ItemListResponse {
-  members?: ItemView[] | null;
-  owner_id: string;
+  members?: ItemView[];
+  owner_id: string | null;
   world_id: string;
 }
 
@@ -276,7 +276,7 @@ export interface SkillView {
 
 export interface SkillListResponse {
   character_id: string;
-  members?: SkillView[] | null;
+  members?: SkillView[];
   world_id: string;
 }
 
@@ -287,7 +287,7 @@ export interface RoleSelectRequest {
 }
 
 export interface RoleGrantView {
-  character_id: string;
+  character_id: string | null;
   granted_absolute: number;
   id: string;
   role: string;
@@ -297,9 +297,9 @@ export interface RoleGrantView {
 
 export interface DirectorProposalRequest {
   kind: string;
-  participant_ids?: string[] | null;
-  purpose?: string | null;
-  requested_powers?: string[] | null;
+  participant_ids?: string[];
+  purpose?: string;
+  requested_powers?: string[];
   title: string;
   world_id: string;
 }
@@ -317,7 +317,7 @@ export interface DeityOverrideRequest {
   conditions?: string[] | null;
   life_status?: string | null;
   mana?: number | null;
-  retcon?: boolean | null;
+  retcon?: boolean;
   stamina?: number | null;
   world_id: string;
 }
@@ -338,7 +338,7 @@ export interface TimelineEntry {
 }
 
 export interface TimelineResponse {
-  entries?: TimelineEntry[] | null;
+  entries?: TimelineEntry[];
   has_more: boolean;
   next_after: number;
   total: number;
@@ -354,14 +354,14 @@ export interface MapPlace {
   discovered: boolean;
   id: string;
   name: string;
-  occupant_ids?: string[] | null;
-  occupants?: string[] | null;
+  occupant_ids?: string[];
+  occupants?: string[];
   region: string;
-  routes?: MapRoute[] | null;
+  routes?: MapRoute[];
 }
 
 export interface MapResponse {
-  places?: MapPlace[] | null;
+  places?: MapPlace[];
   world_id: string;
 }
 
@@ -373,10 +373,10 @@ export interface DiaryEntry {
 
 export interface DiaryResponse {
   character_id: string;
-  digests?: DiaryEntry[] | null;
-  memories?: DiaryEntry[] | null;
-  observations?: DiaryEntry[] | null;
-  summaries?: DiaryEntry[] | null;
+  digests?: DiaryEntry[];
+  memories?: DiaryEntry[];
+  observations?: DiaryEntry[];
+  summaries?: DiaryEntry[];
 }
 
 export interface HookView {
@@ -392,14 +392,14 @@ export interface ArcView {
 }
 
 export interface HookListResponse {
-  arcs?: ArcView[] | null;
-  hooks?: HookView[] | null;
+  arcs?: ArcView[];
+  hooks?: HookView[];
   world_id: string;
 }
 
 export interface OperationsStatus {
-  open_run_id: string;
-  open_run_state: string;
+  open_run_id: string | null;
+  open_run_state: string | null;
   pending_outbox: number;
   total_events: number;
   world_id: string;
@@ -409,7 +409,7 @@ export interface MacroEffectView {
   detail: string;
   event_id?: string | null;
   kind: string;
-  target_ids?: string[] | null;
+  target_ids?: string[];
 }
 
 export interface MacroInterruptionView {
@@ -419,9 +419,9 @@ export interface MacroInterruptionView {
 }
 
 export interface MacroRunView {
-  effects?: MacroEffectView[] | null;
+  effects?: MacroEffectView[];
   end_absolute: number;
-  interruptions?: MacroInterruptionView[] | null;
+  interruptions?: MacroInterruptionView[];
   resolution: string;
   run_id: string;
   start_absolute: number;
@@ -429,7 +429,7 @@ export interface MacroRunView {
 }
 
 export interface MacroRunsResponse {
-  runs?: MacroRunView[] | null;
+  runs?: MacroRunView[];
   world_id: string;
 }
 
@@ -451,8 +451,8 @@ export interface LineageRecordView {
 }
 
 export interface LineageResponse {
-  links?: LineageLinkView[] | null;
-  records?: LineageRecordView[] | null;
+  links?: LineageLinkView[];
+  records?: LineageRecordView[];
   world_id: string;
 }
 
@@ -468,7 +468,7 @@ export interface FocusAssignmentView {
 }
 
 export interface FocusResponse {
-  assignments?: FocusAssignmentView[] | null;
+  assignments?: FocusAssignmentView[];
   world_id: string;
 }
 
@@ -476,28 +476,28 @@ export interface EraView {
   end_absolute: number;
   era_id: string;
   owner_id: string;
-  source_ids?: string[] | null;
+  source_ids?: string[];
   start_absolute: number;
   text: string;
   version: number;
 }
 
 export interface ErasResponse {
-  eras?: EraView[] | null;
+  eras?: EraView[];
   world_id: string;
 }
 
 export interface EndingView {
   detail: string;
   evaluated_absolute: number;
-  evidence_event_ids?: string[] | null;
+  evidence_event_ids?: string[];
   kind: string;
   satisfied: boolean;
   window_start_absolute: number;
 }
 
 export interface EndingsResponse {
-  endings?: EndingView[] | null;
+  endings?: EndingView[];
   world_id: string;
 }
 
@@ -510,7 +510,7 @@ export interface MacroAdvanceRequest {
 export interface MacroAdvanceResponse {
   duplicate: boolean;
   end_absolute: number;
-  event_ids?: string[] | null;
+  event_ids?: string[];
   run_id: string;
   start_absolute: number;
   state: string;
@@ -543,11 +543,11 @@ export interface ScheduleCancelResponse {
 }
 
 export interface CharacterCreateRequest {
-  appearance?: string | null;
-  background?: string | null;
+  appearance?: string;
+  background?: string;
   location_id: string;
   name: string;
-  personality?: string | null;
+  personality?: string;
   world_id: string;
 }
 
@@ -562,8 +562,8 @@ export interface ChronicleEntry {
   event_id: string;
   event_type: string;
   location_id?: string | null;
-  participant_ids?: string[] | null;
-  revision?: number | null;
+  participant_ids?: string[];
+  revision?: number;
   scene_id?: string | null;
   sequence: number;
   text?: string | null;
@@ -571,7 +571,7 @@ export interface ChronicleEntry {
 }
 
 export interface ChronicleResponse {
-  entries?: ChronicleEntry[] | null;
+  entries?: ChronicleEntry[];
   has_more: boolean;
   next_after: number;
   watermark: number;
@@ -588,7 +588,7 @@ export interface SimulationStatus {
 }
 
 export interface PresentationCapabilities {
-  capabilities?: string[] | null;
+  capabilities?: string[];
   character_id?: string | null;
   role: string;
 }
@@ -600,7 +600,7 @@ export interface MapAnchorView {
 }
 
 export interface MapManifestView {
-  anchors?: MapAnchorView[] | null;
+  anchors?: MapAnchorView[];
   asset_id?: string | null;
   id: string;
   schematic: boolean;
@@ -617,9 +617,9 @@ export interface CastEntry {
 
 export interface PresentationResponse {
   absolute_index: number;
-  activities?: ActivityView[] | null;
+  activities?: ActivityView[];
   capabilities: PresentationCapabilities;
-  cast?: CastEntry[] | null;
+  cast?: CastEntry[];
   day: number;
   latest_run_id?: string | null;
   manifest: MapManifestView;
@@ -628,7 +628,7 @@ export interface PresentationResponse {
   recent_event_id?: string | null;
   revision: number;
   run_state?: string | null;
-  threads?: string[] | null;
+  threads?: string[];
   world_id: string;
 }
 
@@ -652,23 +652,23 @@ export interface EnsureStarterRequest {
 }
 
 export interface InterventionScope {
-  character_ids?: string[] | null;
-  kind?: string | null;
-  location_ids?: string[] | null;
+  character_ids?: string[];
+  kind?: string;
+  location_ids?: string[];
 }
 
 export interface InterventionRequest {
   client_request_id: string;
-  effective_at?: string | null;
+  effective_at?: string;
   mode: string;
-  scope?: InterventionScope | null;
+  scope?: InterventionScope;
   text: string;
   world_id: string;
 }
 
 export interface InterventionStepView {
-  explanation?: string | null;
-  failure_reason?: string | null;
+  explanation?: string;
+  failure_reason?: string;
   id: string;
   kind: string;
   result_activity_id?: string | null;
@@ -680,12 +680,12 @@ export interface InterventionStepView {
 }
 
 export interface InterventionView {
-  failure_reason?: string | null;
+  failure_reason?: string;
   id: string;
   mode: string;
   role: string;
   status: string;
-  steps?: InterventionStepView[] | null;
+  steps?: InterventionStepView[];
   text: string;
   version: number;
   world_id: string;
@@ -699,19 +699,19 @@ export interface SuggestionView {
   destination_location_id?: string | null;
   family: string;
   id: string;
-  needs_topic?: boolean | null;
-  subtitle?: string | null;
+  needs_topic?: boolean;
+  subtitle?: string;
   target_character_id?: string | null;
   title: string;
 }
 
 export interface ConditionView {
-  detail?: string | null;
+  detail?: string;
   ends_absolute: number;
   id: string;
   kind: string;
   public_label: string;
-  scope_location_ids?: string[] | null;
+  scope_location_ids?: string[];
   severity: number;
   started_absolute: number;
   status: string;
@@ -720,13 +720,13 @@ export interface ConditionView {
 }
 
 export interface ConditionsResponse {
-  conditions?: ConditionView[] | null;
+  conditions?: ConditionView[];
   world_id: string;
 }
 
 export interface StorySummary {
   absolute_index: number;
-  archived?: boolean | null;
+  archived?: boolean;
   day: number;
   last_played_at?: string | null;
   mode: string;
@@ -754,14 +754,14 @@ export interface StoryDetail {
 }
 
 export interface StoryListResponse {
-  items?: StorySummary[] | null;
+  items?: StorySummary[];
   next_cursor?: string | null;
 }
 
 export interface StorySetupView {
   content_hash: string;
   created_at: string;
-  payload?: Record<string, unknown> | null;
+  payload?: Record<string, unknown>;
   provenance: string;
   schema_version: number;
   story_id: string;
@@ -787,8 +787,8 @@ export interface StoryDraftPayload {
 }
 
 export interface StoryDraftCreateRequest {
-  current_step?: string | null;
-  payload?: StoryDraftPayload | null;
+  current_step?: string;
+  payload?: StoryDraftPayload;
 }
 
 export interface StoryDraftPatchRequest {
@@ -808,8 +808,8 @@ export interface StoryDraftView {
 }
 
 export interface DraftValidationView {
-  issues?: string[] | null;
-  resolved?: Record<string, unknown> | null;
+  issues?: string[];
+  resolved?: Record<string, unknown>;
   valid: boolean;
 }
 
@@ -819,9 +819,9 @@ export interface StoryCreateRequest {
 }
 
 export interface StoryCreateResponse {
-  art_registered?: number | null;
+  art_registered?: number;
   character_id?: string | null;
-  replayed?: boolean | null;
+  replayed?: boolean;
   role: string;
   story_id: string;
   world_id: string;
@@ -846,7 +846,7 @@ export interface PresetDetail {
   kind: string;
   name: string;
   readonly: boolean;
-  revision?: Record<string, unknown> | null;
+  revision?: Record<string, unknown>;
   version: number;
 }
 
@@ -866,10 +866,10 @@ export interface PresetRevisionRequest {
 }
 
 export interface PreferencesView {
-  accessibility?: Record<string, unknown> | null;
-  gameplay?: Record<string, unknown> | null;
+  accessibility?: Record<string, unknown>;
+  gameplay?: Record<string, unknown>;
   operator: string;
-  profile?: Record<string, unknown> | null;
+  profile?: Record<string, unknown>;
   version: number;
 }
 
@@ -882,19 +882,19 @@ export interface PreferencesPatchRequest {
 
 export interface ProviderConnectionView {
   adapter: string;
-  allow_local_endpoint?: boolean | null;
+  allow_local_endpoint?: boolean;
   config_version: number;
   created_at: string;
   credential_env?: string | null;
   endpoint: string;
-  has_credential?: boolean | null;
+  has_credential?: boolean;
   id: string;
   name: string;
 }
 
 export interface ProviderConnectionCreate {
   adapter: string;
-  allow_local_endpoint?: boolean | null;
+  allow_local_endpoint?: boolean;
   credential_env?: string | null;
   endpoint: string;
   name: string;
@@ -909,7 +909,7 @@ export interface ProviderConnectionPatch {
 }
 
 export interface ProviderProfileView {
-  capabilities?: string[] | null;
+  capabilities?: string[];
   connection_id: string;
   created_at: string;
   id: string;
@@ -922,7 +922,7 @@ export interface ProviderProfileView {
 }
 
 export interface ProviderProfileCreate {
-  max_tokens?: number | null;
+  max_tokens?: number;
   model_id: string;
   temperature?: unknown | null;
   top_k?: number | null;
@@ -932,22 +932,22 @@ export interface ProviderProfileCreate {
 export interface ProviderCapabilitiesView {
   adapter: string;
   connection_id: string;
-  models?: string[] | null;
-  probe?: Record<string, unknown> | null;
-  supported_parameters?: string[] | null;
+  models?: string[];
+  probe?: Record<string, unknown>;
+  supported_parameters?: string[];
 }
 
 export interface ProviderTestRequest {
-  live?: boolean | null;
+  live?: boolean;
 }
 
 export interface ProviderTestView {
-  detail?: string | null;
-  reachable?: boolean | null;
+  detail?: string;
+  reachable?: boolean;
   state: string;
-  tested_at?: string | null;
-  tested_config_revision?: number | null;
-  text_ready?: string | null;
+  tested_at?: string;
+  tested_config_revision?: number;
+  text_ready?: string;
 }
 
 export interface CacheScopeView {

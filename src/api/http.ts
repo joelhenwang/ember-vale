@@ -8,8 +8,10 @@
  *   their character. The backend grant governs; headers select the subject.
  * - Errors use the backend stable envelope `{error: {code, message}}`.
  *   Nothing here reports success before the server acknowledges it:
- *   non-2xx always throws ApiError, aborts throw as cancelled, and callers
- *   distinguish retryable / version-conflict / cancelled explicitly.
+ *   non-2xx always throws ApiError, and callers distinguish retryable /
+ *   version-conflict / cancelled explicitly. Only an actual outer-signal
+ *   abort is reported as cancelled; timeouts and transport failures keep
+ *   their own retryable codes so outages are never silently ignored.
  */
 
 import { API_BASE } from './client'
@@ -86,8 +88,16 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     fetchImpl = fetch
   } = options
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(new Error('REQUEST_TIMEOUT')), timeoutMs)
-  const onOuterAbort = (): void => controller.abort(signal?.reason ?? new Error('REQUEST_ABORTED'))
+  let timedOut = false
+  const timer = setTimeout(() => {
+    timedOut = true
+    controller.abort(new Error('REQUEST_TIMEOUT'))
+  }, timeoutMs)
+  let outerAborted = false
+  const onOuterAbort = (): void => {
+    outerAborted = true
+    controller.abort(signal?.reason ?? new Error('REQUEST_ABORTED'))
+  }
   if (signal) {
     if (signal.aborted) onOuterAbort()
     else signal.addEventListener('abort', onOuterAbort, { once: true })
@@ -107,10 +117,29 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
         signal: controller.signal
       })
     } catch (err) {
+      // Modern fetch rejects with the abort reason itself, so our own
+      // timeout/cancel reasons surface here directly. Anything else is a
+      // transport failure (DNS, refused, offline) — retryable, not a cancel.
+      // A cancelled client request says nothing about the server mutation.
       if (err instanceof Error && err.message === 'REQUEST_TIMEOUT') {
         throw new ApiError('REQUEST_TIMEOUT', 'request timed out', 0, true)
       }
-      throw new ApiError('REQUEST_ABORTED', 'request cancelled', 0, false)
+      if (timedOut) {
+        throw new ApiError('REQUEST_TIMEOUT', 'request timed out', 0, true)
+      }
+      if (
+        (err instanceof Error && err.message === 'REQUEST_ABORTED') ||
+        outerAborted ||
+        signal?.aborted
+      ) {
+        throw new ApiError('REQUEST_ABORTED', 'request cancelled', 0, false)
+      }
+      throw new ApiError(
+        'REQUEST_TRANSPORT',
+        err instanceof Error ? `network failure: ${err.message}` : 'network failure',
+        0,
+        true
+      )
     }
     if (!res.ok) {
       let envelope: EnvelopeError | null = null
@@ -127,7 +156,16 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
       )
     }
     if (res.status === 204) return undefined as T
-    return (await res.json()) as T
+    try {
+      return (await res.json()) as T
+    } catch (err) {
+      throw new ApiError(
+        'REQUEST_TRANSPORT',
+        err instanceof Error ? `unreadable response: ${err.message}` : 'unreadable response',
+        res.status,
+        true
+      )
+    }
   } finally {
     clearTimeout(timer)
     signal?.removeEventListener('abort', onOuterAbort)

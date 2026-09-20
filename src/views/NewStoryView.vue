@@ -15,8 +15,9 @@ import IconPlay from '../components/icons/IconPlay.vue'
 import MountainRidge from '../components/decor/MountainRidge.vue'
 import PageIntro from '../components/ui/PageIntro.vue'
 import { useBackend } from '../composables/useBackend'
-import { usePresets, type PresetCharacter } from '../composables/usePresets'
+import { usePresets, type PresetCharacter, type PresetWorld } from '../composables/usePresets'
 import { useStoryDraft } from '../composables/useStoryDraft'
+import { getPreset } from '../api/worldsim'
 import {
   controlledAfterCastChange,
   localDraftIssues,
@@ -31,10 +32,21 @@ const presets = usePresets()
 const backend = useBackend()
 const draftCtl = useStoryDraft()
 
-const TITLES = ['World', 'Characters', 'Play Mode', 'Story', 'AI', 'Review']
-const step = ref(2)
+const STEP_SLUGS = ['world', 'characters', 'play-mode', 'story', 'ai', 'review']
+// current_step is the visible step: persisted on every navigation, restored
+// on reload so return visits land where the draft left off.
+function slugOf(n: number): string {
+  return STEP_SLUGS[n - 1] ?? 'world'
+}
+function stepOf(slug: unknown): number {
+  const at = typeof slug === 'string' ? STEP_SLUGS.indexOf(slug) : -1
+  return at >= 0 ? at + 1 : 1
+}
+const step = ref(1)
 const booted = ref(false)
 const bootError = ref<string | null>(null)
+const bootNotice = ref<string | null>(null)
+let bootCycle = 0
 
 const filters = reactive<CastFilter>({ search: '', category: 'all', sort: 'name' })
 const categoryOptions = [
@@ -56,7 +68,13 @@ const sortProxy = computed({
 const sel = reactive({
   worldId: '',
   worldRev: 1,
-  cast: [] as { key: string; presetId: string; presetRevision: number; name: string; location: string }[],
+  cast: [] as {
+    key: string
+    presetId: string
+    presetRevision: number
+    name: string
+    location: string
+  }[],
   role: 'watcher' as 'watcher' | 'player',
   controlledKey: undefined as string | undefined,
   title: '',
@@ -64,6 +82,18 @@ const sel = reactive({
 })
 
 const WORLD_BY_ID = computed(() => new Map(presets.worlds.value.map((w) => [w.id, w])))
+
+// An older draft can pin an older world revision while the shelf only loads
+// latest: fetch the exact pinned revision so places shown are the places
+// submitted — never the newer map under an older rev.
+const pinnedWorld = ref<PresetWorld | null>(null)
+const selectedWorld = computed(() => WORLD_BY_ID.value.get(sel.worldId))
+const worldPlaces = computed(() => {
+  if (pinnedWorld.value && pinnedWorld.value.revision === sel.worldRev) {
+    return pinnedWorld.value.places
+  }
+  return selectedWorld.value?.places ?? []
+})
 
 function toCharacterDef(p: PresetCharacter): CharacterDef {
   return {
@@ -84,7 +114,6 @@ function toCharacterDef(p: PresetCharacter): CharacterDef {
 const characterDefs = computed(() => presets.characters.value.map(toCharacterDef))
 const visibleCharacters = computed(() => filterCast(characterDefs.value, filters))
 const selectedIds = computed(() => new Set(sel.cast.map((c) => c.presetId)))
-const selectedWorld = computed(() => WORLD_BY_ID.value.get(sel.worldId))
 const modeNotice = ref<string | null>(null)
 
 const selections = computed<NewStorySelections>(() => ({
@@ -96,7 +125,10 @@ const selections = computed<NewStorySelections>(() => ({
     name: c.name,
     locationKey: c.location || undefined
   })),
-  mode: sel.role === 'player' ? { role: 'player', controlledKey: sel.controlledKey } : { role: 'watcher' },
+  mode:
+    sel.role === 'player'
+      ? { role: 'player', controlledKey: sel.controlledKey }
+      : { role: 'watcher' },
   title: sel.title,
   tone: sel.tone || undefined
 }))
@@ -111,18 +143,44 @@ const canContinue = computed(() => {
 })
 
 function castKeyFor(presetId: string, index: number): string {
-  const base = presetId === presets.characters.value.find((c) => c.id === presetId)?.id
-    ? (presets.characters.value.find((c) => c.id === presetId)?.name ?? `cast-${index}`)
-    : `cast-${index}`
-  return base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `cast-${index}`
+  const base =
+    presetId === presets.characters.value.find((c) => c.id === presetId)?.id
+      ? (presets.characters.value.find((c) => c.id === presetId)?.name ?? `cast-${index}`)
+      : `cast-${index}`
+  return (
+    base
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || `cast-${index}`
+  )
 }
 
 function defaultLocation(presetId: string): string {
   const preset = presets.characters.value.find((c) => c.id === presetId)
-  if (preset?.startKey && selectedWorld.value?.places.some((p) => p.key === preset.startKey)) {
+  if (preset?.startKey && worldPlaces.value.some((p) => p.key === preset.startKey)) {
     return preset.startKey
   }
-  return selectedWorld.value?.places[0]?.key ?? ''
+  return worldPlaces.value[0]?.key ?? ''
+}
+
+async function refreshPinnedWorld(): Promise<void> {
+  pinnedWorld.value = null
+  const latest = selectedWorld.value
+  if (!latest || sel.worldRev === latest.revision) return
+  try {
+    const detail = await getPreset(sel.worldId, sel.worldRev)
+    const rev = (detail.revision ?? {}) as Record<string, unknown>
+    const places = (rev['locations'] as { key: string; name: string }[] | undefined) ?? []
+    pinnedWorld.value = {
+      id: detail.id,
+      revision: sel.worldRev,
+      name: detail.name,
+      description: (rev['description'] as string | undefined) ?? '',
+      places: places.map((p) => ({ key: p.key, name: p.name }))
+    }
+  } catch {
+    pinnedWorld.value = null
+  }
 }
 
 function toggleCast(def: CharacterDef): void {
@@ -179,8 +237,9 @@ function hydrate(payload: Record<string, unknown>): void {
   if (typeof story['tone'] === 'string') sel.tone = story['tone']
 }
 
-function prefillQuickStart(): void {
-  const emberVale = presets.worlds.value.find((w) => w.name === 'Ember Vale') ?? presets.worlds.value[0]
+async function prefillQuickStart(): Promise<void> {
+  const emberVale =
+    presets.worlds.value.find((w) => w.name === 'Ember Vale') ?? presets.worlds.value[0]
   if (emberVale) {
     sel.worldId = emberVale.id
     sel.worldRev = emberVale.revision
@@ -198,15 +257,25 @@ function prefillQuickStart(): void {
   sel.role = 'watcher'
   sel.controlledKey = undefined
   sel.title = 'A Morning in Ember Vale'
+  // Quick Start lands on Review with everything filled in — and persists,
+  // so a reload keeps the prefilled choices instead of losing them.
+  step.value = 6
+  await persist()
+  bootNotice.value =
+    'Quick Start filled in Ember Vale with Wren and Ash — review and begin, or step back to change anything.'
 }
 
 async function boot(): Promise<void> {
+  bootCycle += 1
+  const seen = bootCycle
   await presets.load()
+  if (seen !== bootCycle) return
   if (presets.error.value) {
     bootError.value = presets.error.value
     return
   }
-  const emberVale = presets.worlds.value.find((w) => w.name === 'Ember Vale') ?? presets.worlds.value[0]
+  const emberVale =
+    presets.worlds.value.find((w) => w.name === 'Ember Vale') ?? presets.worlds.value[0]
   const queryDraft = typeof route.query.draft === 'string' ? route.query.draft : null
   try {
     if (queryDraft) {
@@ -221,16 +290,35 @@ async function boot(): Promise<void> {
       await startFresh()
     }
   } catch {
+    if (seen !== bootCycle) return
     bootError.value = draftCtl.notice.value ?? 'could not start a draft'
     return
   }
-  if (draftCtl.draft.value) hydrate(draftCtl.draft.value.payload as Record<string, unknown>)
-  if (!queryDraft && route.query.quickstart !== undefined) prefillQuickStart()
+  if (seen !== bootCycle) return
+  const opened = draftCtl.draft.value
+  if (!opened) {
+    bootError.value = 'could not start a draft'
+    return
+  }
+  // A completed draft already has a story: lead to it instead of offering
+  // a second creation from the same draft.
+  if (opened.created_world_id) {
+    await router.replace({
+      name: 'story-play',
+      params: { storyId: opened.created_world_id }
+    })
+    return
+  }
+  hydrate(opened.payload as Record<string, unknown>)
+  step.value = stepOf(opened.current_step)
+  await refreshPinnedWorld()
+  if (!queryDraft && route.query.quickstart !== undefined) await prefillQuickStart()
   if (!sel.worldId && emberVale) {
     sel.worldId = emberVale.id
     sel.worldRev = emberVale.revision
     await persist()
   }
+  if (seen !== bootCycle) return
   booted.value = true
   void backend.refresh()
 }
@@ -240,7 +328,8 @@ function recalledId(): string | null {
 }
 
 async function startFresh(): Promise<void> {
-  const emberVale = presets.worlds.value.find((w) => w.name === 'Ember Vale') ?? presets.worlds.value[0]
+  const emberVale =
+    presets.worlds.value.find((w) => w.name === 'Ember Vale') ?? presets.worlds.value[0]
   sel.worldId = emberVale?.id ?? ''
   sel.worldRev = emberVale?.revision ?? 1
   await draftCtl.openNew(
@@ -256,35 +345,43 @@ async function startFresh(): Promise<void> {
   await router.replace({ query: { ...route.query, draft: draftCtl.draft.value?.id } })
 }
 
+function navBusy(): boolean {
+  return draftCtl.busy.value || draftCtl.creating.value
+}
+
 async function persist(): Promise<boolean> {
   if (!draftCtl.draft.value) return false
-  return draftCtl.save(selections.value, TITLES[step.value - 1].toLowerCase().replace(' ', '-'))
+  return draftCtl.save(selections.value, slugOf(step.value))
 }
 
 async function go(n: number): Promise<void> {
-  await persist()
+  if (navBusy()) return
   step.value = n
+  await persist()
 }
 
 async function next(): Promise<void> {
-  if (!canContinue.value) return
+  if (!canContinue.value || navBusy()) return
   if (step.value === 6) {
     await create()
     return
   }
-  await persist()
   step.value += 1
+  await persist()
 }
 
-function back(): void {
-  void persist()
+async function back(): Promise<void> {
+  if (navBusy()) return
   step.value = Math.max(1, step.value - 1)
+  await persist()
 }
 
 async function create(): Promise<void> {
-  if (!draftCtl.draft.value) return
-  await persist()
-  const worldId = await draftCtl.submit()
+  if (!draftCtl.draft.value || draftCtl.creating.value) return
+  // One guarded workflow: failed saves stop before any create request, a
+  // stale draft never auto-creates, and navigation happens only after the
+  // server acknowledges the story.
+  const worldId = await draftCtl.createWorkflow(selections.value, slugOf(step.value))
   if (worldId) {
     await router.push({ name: 'story-play', params: { storyId: worldId } })
   }
@@ -327,7 +424,14 @@ onMounted(() => {
     </div>
     <template v-else-if="booted">
       <StoryStepper :current="step" @go="go" />
-      <p v-if="draftCtl.notice.value" class="nsv__notice" role="status">{{ draftCtl.notice.value }}</p>
+      <p v-if="bootNotice" class="nsv__notice" role="status">{{ bootNotice }}</p>
+      <p v-if="draftCtl.notice.value" class="nsv__notice" role="status">
+        {{ draftCtl.notice.value }}
+      </p>
+      <p v-if="pinnedWorld" class="nsv__notice" role="status">
+        This draft pins {{ pinnedWorld.name }} rev {{ pinnedWorld.revision }} — showing that
+        revision's places, not the newer library map.
+      </p>
 
       <section v-if="step === 1" class="nsv__panel" aria-label="Choose a world">
         <h2 class="nsv__h">Where does the story begin?</h2>
@@ -338,11 +442,16 @@ onMounted(() => {
               class="nsv__world"
               :class="{ 'nsv__world--on': sel.worldId === world.id }"
               :aria-pressed="sel.worldId === world.id"
-              @click="sel.worldId = world.id; sel.worldRev = world.revision">
+              @click="
+                sel.worldId = world.id
+                sel.worldRev = world.revision
+              ">
               <span class="nsv__world-name">{{ world.name }}</span>
               <span class="nsv__world-rev">Preset rev {{ world.revision }}</span>
               <span class="nsv__world-desc">{{ world.description }}</span>
-              <span class="nsv__world-places">{{ world.places.map((p) => p.name).join(' · ') }}</span>
+              <span class="nsv__world-places">{{
+                world.places.map((p) => p.name).join(' · ')
+              }}</span>
             </button>
           </li>
         </ul>
@@ -382,7 +491,7 @@ onMounted(() => {
                 <label class="sel__place">
                   Starts at
                   <select v-model="member.location">
-                    <option v-for="place in selectedWorld?.places ?? []" :key="place.key" :value="place.key">
+                    <option v-for="place in worldPlaces" :key="place.key" :value="place.key">
                       {{ place.name }}
                     </option>
                   </select>
@@ -390,7 +499,11 @@ onMounted(() => {
                 <button
                   type="button"
                   class="sel__remove"
-                  @click="toggleCast(characterDefs.find((d) => d.id === member.presetId) ?? characterDefs[0])">
+                  @click="
+                    toggleCast(
+                      characterDefs.find((d) => d.id === member.presetId) ?? characterDefs[0]
+                    )
+                  ">
                   Remove
                 </button>
               </li>
@@ -409,7 +522,9 @@ onMounted(() => {
             :aria-pressed="sel.role === 'watcher'"
             @click="sel.role = 'watcher'">
             <span class="nsv__world-name">Observer</span>
-            <span class="nsv__world-desc">Watch the vale unfold and guide the story between beats.</span>
+            <span class="nsv__world-desc"
+              >Watch the vale unfold and guide the story between beats.</span
+            >
           </button>
           <button
             type="button"
@@ -418,7 +533,9 @@ onMounted(() => {
             :aria-pressed="sel.role === 'player'"
             @click="sel.role = 'player'">
             <span class="nsv__world-name">Player</span>
-            <span class="nsv__world-desc">Step into one character's shoes and decide their actions.</span>
+            <span class="nsv__world-desc"
+              >Step into one character's shoes and decide their actions.</span
+            >
           </button>
         </div>
         <label v-if="sel.role === 'player'" class="nsv__field">
@@ -436,7 +553,11 @@ onMounted(() => {
         <h2 class="nsv__h">What is this story called?</h2>
         <label class="nsv__field">
           Title
-          <input v-model="sel.title" type="text" maxlength="128" placeholder="A Morning in Ember Vale" />
+          <input
+            v-model="sel.title"
+            type="text"
+            maxlength="128"
+            placeholder="A Morning in Ember Vale" />
         </label>
         <label class="nsv__field">
           Tone
@@ -446,27 +567,45 @@ onMounted(() => {
 
       <section v-if="step === 5" class="nsv__panel" aria-label="Story art and model">
         <h2 class="nsv__h">Art and telling</h2>
-        <p class="nsv__body">Stories open with curated starter art. Image generation arrives in a later milestone.</p>
+        <p class="nsv__body">
+          Stories open with curated starter art. Image generation arrives in a later milestone.
+        </p>
         <p v-if="backend.status.value.modelProfile" class="nsv__notice" role="status">
           Development model active ({{ backend.status.value.modelProfile }}) — beats are
           deterministic stand-ins, not live provider prose.
         </p>
-        <p v-else class="nsv__notice" role="status">Model profile unknown — beats will say what they used.</p>
+        <p v-else class="nsv__notice" role="status">
+          Model profile unknown — beats will say what they used.
+        </p>
       </section>
 
       <section v-if="step === 6" class="nsv__panel" aria-label="Review and create">
         <h2 class="nsv__h">Ready to begin?</h2>
         <dl class="nsv__review">
-          <div><dt>World</dt><dd>{{ selectedWorld?.name ?? sel.worldId }} (rev {{ sel.worldRev }})</dd></div>
+          <div>
+            <dt>World</dt>
+            <dd>{{ selectedWorld?.name ?? sel.worldId }} (rev {{ sel.worldRev }})</dd>
+          </div>
           <div>
             <dt>Cast</dt>
-            <dd>{{ sel.cast.map((c) => `${c.name} (rev ${c.presetRevision})`).join(', ') || 'None' }}</dd>
+            <dd>
+              {{ sel.cast.map((c) => `${c.name} (rev ${c.presetRevision})`).join(', ') || 'None' }}
+            </dd>
           </div>
           <div>
             <dt>Mode</dt>
-            <dd>{{ sel.role === 'player' ? `Player as ${sel.cast.find((c) => c.key === sel.controlledKey)?.name ?? '—'}` : 'Observer' }}</dd>
+            <dd>
+              {{
+                sel.role === 'player'
+                  ? `Player as ${sel.cast.find((c) => c.key === sel.controlledKey)?.name ?? '—'}`
+                  : 'Observer'
+              }}
+            </dd>
           </div>
-          <div><dt>Title</dt><dd>{{ sel.title || 'Untitled' }}</dd></div>
+          <div>
+            <dt>Title</dt>
+            <dd>{{ sel.title || 'Untitled' }}</dd>
+          </div>
         </dl>
         <ul v-if="localIssues.length" class="nsv__issues" role="alert">
           <li v-for="issue in localIssues" :key="issue">{{ issue }}</li>
@@ -480,7 +619,14 @@ onMounted(() => {
       </section>
 
       <footer class="nsv__footer">
-        <MenuButton v-if="step > 1" variant="outline" :icon="IconArrowLeft" @click="back()">Back</MenuButton>
+        <MenuButton
+          v-if="step > 1"
+          variant="outline"
+          :icon="IconArrowLeft"
+          :disabled="draftCtl.busy.value || draftCtl.creating.value"
+          @click="back()"
+          >Back</MenuButton
+        >
         <MenuButton
           variant="outline"
           :icon="IconSave"
@@ -488,20 +634,20 @@ onMounted(() => {
           @click="persist()">
           {{ draftCtl.busy.value ? 'Saving…' : 'Save draft' }}
         </MenuButton>
-        <span class="nsv__draftstate">{{ draftCtl.draft.value ? `Draft rev ${draftCtl.draft.value.version}` : 'No draft yet' }}</span>
+        <span class="nsv__draftstate">{{
+          draftCtl.draft.value ? `Draft rev ${draftCtl.draft.value.version}` : 'No draft yet'
+        }}</span>
         <MenuButton
           v-if="step < 6"
-          
           :icon="IconArrowRight"
-          :disabled="!canContinue"
+          :disabled="!canContinue || draftCtl.busy.value || draftCtl.creating.value"
           @click="next()">
           Continue
         </MenuButton>
         <MenuButton
           v-else
-          
           :icon="IconPlay"
-          :disabled="draftCtl.creating.value || localIssues.length > 0"
+          :disabled="draftCtl.creating.value || draftCtl.busy.value || localIssues.length > 0"
           @click="create()">
           {{ draftCtl.creating.value ? 'Creating…' : 'Begin the story' }}
         </MenuButton>

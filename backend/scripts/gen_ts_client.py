@@ -239,38 +239,72 @@ ROUTES = (
 )
 
 
-def _ts_type(schema: dict[str, object], required: bool) -> str:
+def _is_nullable(schema: dict[str, object]) -> bool:
+    """True only when the schema explicitly permits null.
+
+    Omission (a non-required property, rendered `?`) never implies null:
+    Pydantic rejects explicit null for fields declared with a plain type
+    plus a default (e.g. `player_intents: dict[...] = Field(...)`).
+    """
+    kind = schema.get("type")
+    if kind == "null" or (isinstance(kind, list) and "null" in kind):
+        return True
+    for key in ("anyOf", "oneOf"):
+        options = schema.get(key)
+        if isinstance(options, list):
+            for option in options:
+                if not isinstance(option, dict):
+                    continue
+                option_kind = option.get("type")
+                if option_kind == "null" or (
+                    isinstance(option_kind, list) and "null" in option_kind
+                ):
+                    return True
+    return False
+
+
+def _base_type(schema: dict[str, object]) -> str:
+    kind = schema.get("type")
+    if isinstance(kind, list):
+        non_null = [k for k in kind if k != "null"]
+        kind = non_null[0] if len(non_null) == 1 else None
     if "$ref" in schema:
-        base = str(schema["$ref"]).split("/")[-1]
-    elif isinstance(schema.get("anyOf"), list):
-        options = [
-            o
-            for o in schema["anyOf"]
-            if isinstance(o, dict) and (o.get("$ref") or o.get("type") not in (None, "null"))
-        ]
-        if len(options) == 1 and isinstance(options[0], dict):
-            base = _ts_type(options[0], True)
-        else:
-            base = "unknown"
-    elif schema.get("type") == "array":
+        return str(schema["$ref"]).split("/")[-1]
+    for key in ("anyOf", "oneOf"):
+        options = schema.get(key)
+        if isinstance(options, list):
+            kept = [
+                o
+                for o in options
+                if isinstance(o, dict)
+                and (o.get("$ref") or o.get("type") not in (None, "null"))
+            ]
+            if len(kept) == 1 and isinstance(kept[0], dict):
+                return _base_type(kept[0])
+            return "unknown"
+    if kind == "array":
         items = schema.get("items", {})
         assert isinstance(items, dict)
-        base = f"{_ts_type(items, True)}[]"
-    elif schema.get("type") == "string":
-        base = "string"
-    elif schema.get("type") == "integer":
-        base = "number"
-    elif schema.get("type") == "boolean":
-        base = "boolean"
-    elif schema.get("type") == "object":
+        return f"{_base_type(items)}[]"
+    if kind == "string":
+        return "string"
+    if kind == "integer":
+        return "number"
+    if kind == "boolean":
+        return "boolean"
+    if kind == "object":
         extra = schema.get("additionalProperties", {})
         if isinstance(extra, dict) and extra:
-            base = f"Record<string, {_ts_type(extra, True)}>"
-        else:
-            base = "Record<string, unknown>"
-    else:
-        base = "unknown"
-    return base if required else f"{base} | null"
+            return f"Record<string, {_base_type(extra)}>"
+        return "Record<string, unknown>"
+    return "unknown"
+
+
+def _ts_type(schema: dict[str, object]) -> str:
+    base = _base_type(schema)
+    if _is_nullable(schema):
+        base = f"{base} | null"
+    return base
 
 
 def _interface(name: str, schema: dict[str, object]) -> str:
@@ -280,7 +314,7 @@ def _interface(name: str, schema: dict[str, object]) -> str:
     lines = [f"export interface {name} {{"]
     for prop, subschema in properties.items():
         assert isinstance(subschema, dict)
-        ts = _ts_type(subschema, prop in required)
+        ts = _ts_type(subschema)
         mark = "" if prop in required else "?"
         lines.append(f"  {prop}{mark}: {ts};")
     lines.append("}")

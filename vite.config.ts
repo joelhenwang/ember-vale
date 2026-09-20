@@ -9,13 +9,18 @@ export default defineConfig(({ mode }) => {
   // authenticate at the backend directly; see docs/evidence/stage-a-b.md.
   const env = loadEnv(mode, process.cwd(), '')
   const apiKey = env.EMBER_VALE_API_KEY || env.WORLDSIM_SECURITY__API_KEY || ''
+  // Loopback by default: the proxy injects an operator credential, so a
+  // wildcard bind would grant anyone who can reach the dev server
+  // authenticated /api access. LAN development needs an explicit
+  // EMBER_VALE_DEV_HOST plus its own access control (a hostname allowlist
+  // alone is not authentication).
+  const devHost = env.EMBER_VALE_DEV_HOST || process.env.EMBER_VALE_DEV_HOST || '127.0.0.1'
   return {
     plugins: [vue()],
     server: {
-      host: '0.0.0.0',
+      host: devHost,
       port: 5173,
       strictPort: true,
-      allowedHosts: true,
       proxy: {
         '/api': {
           target: 'http://localhost:8101',
@@ -25,10 +30,9 @@ export default defineConfig(({ mode }) => {
       }
     },
     preview: {
-      host: '0.0.0.0',
+      host: devHost,
       port: 4173,
-      strictPort: true,
-      allowedHosts: true
+      strictPort: true
     }
   }
 })

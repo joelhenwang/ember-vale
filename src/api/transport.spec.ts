@@ -61,4 +61,50 @@ describe('api transport', () => {
     expect(err.cancelled).toBe(true)
     expect(isVersionConflict(err)).toBe(false)
   })
+
+  it('reports a network outage as retryable transport failure, not cancellation', async () => {
+    const fetchImpl = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'))
+    const err = (await apiFetch('/stories', {
+      fetchImpl: fetchImpl as unknown as typeof fetch
+    }).catch((e: unknown) => e)) as ApiError
+    expect(err).toBeInstanceOf(ApiError)
+    expect(err.code).toBe('REQUEST_TRANSPORT')
+    expect(err.cancelled).toBe(false)
+    expect(err.retryable).toBe(true)
+  })
+
+  it('reports an unreadable response body as transport failure', async () => {
+    const res = new Response('ok', { status: 200 })
+    vi.spyOn(res, 'json').mockRejectedValue(new TypeError('body stream closed'))
+    const fetchImpl = vi.fn().mockResolvedValue(res)
+    const err = (await apiFetch('/stories', {
+      fetchImpl: fetchImpl as unknown as typeof fetch
+    }).catch((e: unknown) => e)) as ApiError
+    expect(err.code).toBe('REQUEST_TRANSPORT')
+    expect(err.cancelled).toBe(false)
+    expect(err.retryable).toBe(true)
+  })
+
+  it('reports the internal timeout as timeout, not cancellation', async () => {
+    const fetchImpl = vi.fn().mockRejectedValue(new Error('REQUEST_TIMEOUT'))
+    const err = (await apiFetch('/stories', {
+      fetchImpl: fetchImpl as unknown as typeof fetch
+    }).catch((e: unknown) => e)) as ApiError
+    expect(err.code).toBe('REQUEST_TIMEOUT')
+    expect(err.cancelled).toBe(false)
+    expect(err.retryable).toBe(true)
+  })
+
+  it('reports a real outer abort as cancellation even with a native AbortError', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    const fetchImpl = vi.fn().mockRejectedValue(new DOMException('aborted', 'AbortError'))
+    const err = (await apiFetch('/stories', {
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      signal: controller.signal
+    }).catch((e: unknown) => e)) as ApiError
+    expect(err.code).toBe('REQUEST_ABORTED')
+    expect(err.cancelled).toBe(true)
+    expect(err.retryable).toBe(false)
+  })
 })

@@ -7,23 +7,25 @@ import PageIntro from '../components/ui/PageIntro.vue'
 import MenuButton from '../components/MenuButton.vue'
 import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
 import IconArrowRight from '../components/icons/IconArrowRight.vue'
+import { useBackend } from '../composables/useBackend'
 import { useStory } from '../composables/useStory'
-import type { Role } from '../api/http'
 import { phaseLabel } from '../game/format'
 
 const route = useRoute()
 const router = useRouter()
 const storyId = computed(() => String(route.params.storyId ?? ''))
+const backend = useBackend()
 
-// The creation grant governs every caller; the view header follows the
-// story's own role, and player acts stay scoped to the controlled runtime
-// character once the room resolves it from the live map.
-const role = ref<Role>('watcher')
+// Identity is authoritative, never inferred from display names: the room
+// sends the persisted grant's role and controlled runtime id (matched
+// directly against map occupant ids). The mode badge below is read-only —
+// headers alone never switch the actual grant.
+const headerRole = computed(() => story.effectiveRole.value)
 const headerChar = computed<string | undefined>(() => {
-  if (role.value !== 'player') return undefined
+  if (story.effectiveRole.value !== 'player') return undefined
   return controlledId.value ?? undefined
 })
-const story = useStory(storyId.value, role, headerChar)
+const story = useStory(storyId, headerRole, headerChar)
 const showSetup = ref(false)
 const travelChar = ref('')
 const travelTo = ref('')
@@ -31,29 +33,28 @@ const travelTo = ref('')
 const detail = computed(() => story.detail.value)
 const cast = computed(() => {
   const rows: { id: string; name: string; places: string[] }[] = []
-  story.occupantsByPlace.value.forEach(
-    (row: { name: string; places: string[] }, id: string) => rows.push({ id, ...row })
+  story.occupantsByPlace.value.forEach((row: { name: string; places: string[] }, id: string) =>
+    rows.push({ id, ...row })
   )
   return rows.sort((a, b) => a.name.localeCompare(b.name))
 })
-const setupCast = computed(() => {
-  const payload = story.setup.value?.payload as unknown as
-    | { cast?: { instance_key?: string; name?: string }[]; mode?: { controlled_cast_key?: string } }
-    | undefined
-  return { members: payload?.cast ?? [], controlledKey: payload?.mode?.controlled_cast_key }
-})
-const controlledId = computed(() => {
-  const key = setupCast.value.controlledKey
-  if (!key) return null
-  const member = setupCast.value.members.find((m) => m.instance_key === key)
-  if (!member?.name) return null
-  const occupant = cast.value.find(
-    (c) => c.name.toLowerCase() === (member.name as string).toLowerCase()
-  )
-  return occupant?.id ?? null
+const controlledId = computed(() => story.controlledRuntimeId.value)
+const controlledName = computed(
+  () => cast.value.find((c) => c.id === controlledId.value)?.name ?? null
+)
+const controlledMissing = computed(
+  () =>
+    story.effectiveRole.value === 'player' &&
+    story.grantLoaded.value &&
+    controlledId.value !== null &&
+    controlledName.value === null
+)
+const playerReady = computed(() => {
+  if (story.effectiveRole.value !== 'player') return true
+  return story.grantLoaded.value && controlledId.value !== null
 })
 const travelChoices = computed(() => {
-  if (role.value === 'player' && controlledId.value) {
+  if (story.effectiveRole.value === 'player' && controlledId.value) {
     return cast.value.filter((c) => c.id === controlledId.value)
   }
   return cast.value
@@ -70,12 +71,6 @@ const destinations = computed(() => {
 })
 const nextIndex = computed(() => (detail.value?.absolute_index ?? 0) + 1)
 
-function switchRole(next: Role): void {
-  role.value = next
-  if (next === 'player' && controlledId.value) travelChar.value = controlledId.value
-  void story.refreshTimeline()
-}
-
 async function advance(): Promise<void> {
   await story.advance()
 }
@@ -85,9 +80,15 @@ async function travel(): Promise<void> {
   await story.travel(travelChar.value, travelTo.value)
 }
 
+// The controlled actor wins over alphabetical order: as soon as the grant
+// resolves, travel targets the controlled runtime id.
 watch(
-  cast,
-  (rows) => {
+  [cast, controlledId],
+  ([rows, controlled]) => {
+    if (controlled) {
+      travelChar.value = controlled
+      return
+    }
     if (!travelChar.value && rows.length) travelChar.value = rows[0].id
   },
   { immediate: true }
@@ -96,16 +97,9 @@ watch(destinations, (rows) => {
   travelTo.value = rows[0]?.id ?? ''
 })
 
-watch(
-  () => story.detail.value?.mode,
-  (storyMode) => {
-    if (storyMode === 'player' || storyMode === 'watcher') role.value = storyMode
-  },
-  { immediate: true }
-)
-
 onMounted(() => {
   void story.load()
+  void backend.refresh()
 })
 onUnmounted(() => story.cancel())
 </script>
@@ -123,23 +117,36 @@ onUnmounted(() => story.cancel())
         " />
     </section>
     <p v-if="story.loadError.value" class="play__state" role="alert">
-      {{ story.loadError.value }} — <button type="button" class="play__link" @click="story.load()">retry</button>
+      {{ story.loadError.value }} —
+      <button type="button" class="play__link" @click="story.load()">retry</button>
     </p>
     <template v-else-if="detail">
       <p class="play__meta">
-        <span class="play__badge">{{ detail.mode === 'player' ? 'Player' : 'Observer' }}</span>
-        <span v-if="controlledId">Playing as {{ cast.find((c) => c.id === controlledId)?.name }}</span>
+        <span class="play__badge">{{
+          story.effectiveRole.value === 'player' ? 'Player' : 'Observer'
+        }}</span>
+        <span v-if="controlledName">Playing as {{ controlledName }}</span>
+        <span v-else-if="story.effectiveRole.value === 'player' && !story.grantLoaded.value">
+          Resolving player…
+        </span>
         <span>Beat {{ detail.absolute_index }}</span>
-        <button type="button" class="play__link" @click="showSetup = true">Initial configuration</button>
-        <label class="play__as">
-          View as
-          <select :value="role" @change="switchRole(($event.target as HTMLSelectElement).value as Role)">
-            <option value="watcher">Observer</option>
-            <option value="player">Player</option>
-          </select>
-        </label>
+        <button type="button" class="play__link" @click="showSetup = true">
+          Initial configuration
+        </button>
+        <span class="play__as">Mode set by the story grant</span>
       </p>
-      <p v-if="story.notice.value" class="play__notice" :class="`play__notice--${story.notice.value.kind}`" role="status">
+      <p v-if="controlledMissing" class="play__notice play__notice--error" role="alert">
+        The controlled character is not on the map — travel is unavailable until they appear.
+      </p>
+      <p v-if="backend.status.value.modelProfile" class="play__notice" role="status">
+        Development model active ({{ backend.status.value.modelProfile }}) — beats are deterministic
+        stand-ins, not live provider prose.
+      </p>
+      <p
+        v-if="story.notice.value"
+        class="play__notice"
+        :class="`play__notice--${story.notice.value.kind}`"
+        role="status">
         {{ story.notice.value.text }}
       </p>
       <div class="play__grid">
@@ -156,7 +163,9 @@ onUnmounted(() => story.cancel())
           <div class="play__travel">
             <label>
               Who
-              <select v-model="travelChar" :disabled="role === 'player' && !!controlledId">
+              <select
+                v-model="travelChar"
+                :disabled="story.effectiveRole.value === 'player' && !!controlledId">
                 <option v-for="member in travelChoices" :key="member.id" :value="member.id">
                   {{ member.name }} — {{ member.places.join(', ') }}
                 </option>
@@ -171,17 +180,15 @@ onUnmounted(() => story.cancel())
               </select>
             </label>
             <MenuButton
-              
-              :disabled="!travelChar || !travelTo || story.traveling.value"
+              :disabled="!travelChar || !travelTo || story.traveling.value || !playerReady"
               @click="travel()">
               {{ story.traveling.value ? 'Starting…' : 'Start journey' }}
             </MenuButton>
           </div>
           <h3>Advance the story</h3>
           <MenuButton
-            
             :icon="IconArrowRight"
-            :disabled="story.advancing.value"
+            :disabled="story.advancing.value || !story.grantLoaded.value"
             @click="advance()">
             {{ story.advancing.value ? 'Committing beat…' : `Commit beat ${nextIndex}` }}
           </MenuButton>
@@ -197,10 +204,16 @@ onUnmounted(() => story.cancel())
               <p v-if="entry.snippet">{{ entry.snippet }}</p>
             </li>
           </ol>
+          <p v-if="story.hasMore.value" class="play__empty" role="status">
+            Showing {{ story.entries.value.length }} of {{ story.total.value }} events — reload to
+            fetch the rest.
+          </p>
         </section>
       </div>
       <footer class="play__foot">
-        <MenuButton variant="outline" :icon="IconArrowLeft" @click="router.push('/stories')">All stories</MenuButton>
+        <MenuButton variant="outline" :icon="IconArrowLeft" @click="router.push('/stories')"
+          >All stories</MenuButton
+        >
       </footer>
     </template>
     <p v-else class="play__state" role="status">Loading…</p>

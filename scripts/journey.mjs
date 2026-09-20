@@ -8,10 +8,19 @@
  *
  * Usage:
  *   EMBER_VALE_API_KEY=<operator key> node scripts/journey.mjs \
- *     [--api http://localhost:8101/api/v1] [--title "My journey"]
+ *     [--api http://localhost:8101/api/v1] [--title "My journey"] [--artifact .journey-artifact.json]
+ *   EMBER_VALE_API_KEY=<operator key> node scripts/journey.mjs --resume [--artifact .journey-artifact.json]
+ *
+ * Create mode drives presets -> draft -> create -> travel -> beat and writes
+ * a resume artifact (story id, clock, actor location, event cursor).
+ * Resume mode (after restarting the API *without* resetting the database)
+ * asserts the same story resumes, continues it, then creates a second story
+ * and proves B's beat adds nothing to A.
  *
  * Exit 0 prints a JSON summary; any failed expectation throws.
  */
+
+import fs from 'node:fs';
 
 const args = process.argv.slice(2);
 const opt = (name, fallback) => {
@@ -21,6 +30,7 @@ const opt = (name, fallback) => {
 
 const API = opt('--api', 'http://localhost:8101/api/v1');
 const TITLE = opt('--title', 'Scripted journey');
+const ARTIFACT = opt('--artifact', '.journey-artifact.json');
 const KEY = process.env.EMBER_VALE_API_KEY || process.env.WORLDSIM_SECURITY__API_KEY || '';
 if (!KEY) throw new Error('set EMBER_VALE_API_KEY (the compose operator key)');
 
@@ -56,6 +66,103 @@ async function call(method, path, body, extraHeaders) {
 const expect = (cond, message) => {
   if (!cond) throw new Error(`EXPECT: ${message}`);
 };
+
+async function makeStory(title, emberVale, wren, ash) {
+  const draft = await call('POST', '/story-drafts', {
+    payload: {
+      world: { preset_id: emberVale.id, preset_revision: emberVale.current_revision },
+      cast: [
+        {
+          instance_key: 'wren',
+          preset_id: wren.id,
+          preset_revision: wren.current_revision,
+          name: 'Wren',
+          location_key: 'hearth',
+        },
+        {
+          instance_key: 'ash',
+          preset_id: ash.id,
+          preset_revision: ash.current_revision,
+          name: 'Ash',
+          location_key: 'market',
+        },
+      ],
+      mode: { role: 'watcher' },
+      story: { title },
+      ai: { art_source: 'curated' },
+    },
+    current_step: 'review',
+  });
+  const created = await call(
+    'POST',
+    '/stories',
+    { draft_id: draft.id, expected_draft_version: 1 },
+    { 'Idempotency-Key': `journey-${RUN}-${title.length}` }
+  );
+  return created.world_id;
+}
+
+if (args.includes('--resume')) {
+  const artifact = JSON.parse(fs.readFileSync(ARTIFACT, 'utf8'));
+  const wid = artifact.world_id;
+  const detail = await call('GET', `/stories/${wid}`);
+  expect(
+    detail.absolute_index === artifact.absolute_index,
+    `resumed clock ${detail.absolute_index} matches artifact ${artifact.absolute_index}`
+  );
+  const rmap = await call('GET', `/stage2/map?world_id=${wid}`);
+  const place = rmap.places.find((p) => p.name === artifact.actor_location_place);
+  expect(place && place.occupants.includes(artifact.actor), `${artifact.actor} still in ${artifact.actor_location_place}`);
+  const rtl = await call('GET', `/stage2/timeline?world_id=${wid}&after=0&limit=50`);
+  expect(
+    rtl.entries.length === artifact.events,
+    `resumed event cursor ${rtl.entries.length} matches artifact ${artifact.events}`
+  );
+  const continued = await call('POST', '/stage1/advance', {
+    world_id: wid,
+    absolute_index: detail.absolute_index + 1,
+  });
+  expect(continued.duplicate !== true, 'resume continue commits a new beat');
+  const grown = await call('GET', `/stage2/timeline?world_id=${wid}&after=0&limit=50`);
+  expect(grown.entries.length > rtl.entries.length, 'continued beat adds events to A');
+
+  const rpresets = await call('GET', '/library/presets?kind=world');
+  const remberVale = rpresets.find((p) => p.name === 'Ember Vale');
+  const rchars = await call('GET', '/library/presets?kind=character');
+  const bw = await makeStory(
+    `${TITLE} B ${RUN}`,
+    remberVale,
+    rchars.find((p) => p.name === 'Wren'),
+    rchars.find((p) => p.name === 'Ash')
+  );
+  const bdetail = await call('GET', `/stories/${bw}`);
+  await call('POST', '/stage1/advance', {
+    world_id: bw,
+    absolute_index: bdetail.absolute_index + 1,
+  });
+  const afterB = await call('GET', `/stage2/timeline?world_id=${wid}&after=0&limit=50`);
+  expect(
+    afterB.entries.length === grown.entries.length,
+    `B's beat adds nothing to A (${afterB.entries.length} vs ${grown.entries.length})`
+  );
+  fs.writeFileSync(
+    ARTIFACT,
+    JSON.stringify(
+      {
+        world_id: wid,
+        title: artifact.title,
+        absolute_index: continued.absolute_index,
+        actor: artifact.actor,
+        actor_location_place: artifact.actor_location_place,
+        events: grown.entries.length,
+      },
+      null,
+      2
+    )
+  );
+  console.log(JSON.stringify({ ok: true, mode: 'resume', world_id: wid, second_story: bw }, null, 2));
+  process.exit(0);
+}
 
 // 1. Presets: corrected starter revision with both directed legs.
 const presets = await call('GET', '/library/presets?kind=world');
@@ -135,6 +242,18 @@ const activity = await call('POST', '/stage2/activities', {
 });
 expect(activity.status === 'active', 'travel activity starts active');
 const detail0 = await call('GET', `/stories/${wid}`);
+// The frontend omits player_intents when there are none because the backend
+// rejects explicit null for this optional-but-not-nullable field.
+const nullProbe = await fetch(API + '/stage1/advance', {
+  method: 'POST',
+  headers: headers(),
+  body: JSON.stringify({
+    world_id: wid,
+    absolute_index: detail0.absolute_index + 1,
+    player_intents: null,
+  }),
+});
+expect(nullProbe.status === 422, `explicit null player_intents rejected (got ${nullProbe.status})`);
 const advanced = await call('POST', '/stage1/advance', {
   world_id: wid,
   absolute_index: detail0.absolute_index + 1,
@@ -163,6 +282,22 @@ expect(timeline2.entries.length === eventsBefore, 'retry adds no events');
 const setup = await call('GET', `/stories/${wid}/setup`);
 expect(setup.provenance === 'created', 'setup provenance is created');
 
+fs.writeFileSync(
+  ARTIFACT,
+  JSON.stringify(
+    {
+      world_id: wid,
+      title: `${TITLE} ${RUN}`,
+      absolute_index: advanced.absolute_index,
+      actor: 'Wren',
+      actor_location_place: 'Market',
+      events: eventsBefore,
+    },
+    null,
+    2
+  )
+);
+
 console.log(
   JSON.stringify(
     {
@@ -174,6 +309,7 @@ console.log(
       advance_cursor: advanced.absolute_index,
       events: eventsBefore,
       setup_hash: setup.content_hash.slice(0, 12),
+      artifact: ARTIFACT,
     },
     null,
     2
