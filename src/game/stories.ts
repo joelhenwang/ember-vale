@@ -28,6 +28,8 @@ export interface StoryRecord {
   blurb: string
   /** Character ids, resolved to portraits through the catalog. */
   cast: string[]
+  /** Backend metadata version — required for archive/restore calls. */
+  version?: number
   /** Relative epoch — display strings are pre-composed (mockup parity). */
   lastPlayedAt: number
   lastPlayedLabel: string

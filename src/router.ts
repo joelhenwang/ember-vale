@@ -19,8 +19,8 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/new-story',
     name: 'new-story',
-    // step 1 (World) is considered done: Quick Start picked Ember Vale,
-    // so the wizard opens on step 2 — Characters.
+    // The wizard opens on step 1 (World); Quick Start pre-fills every step
+    // through a persisted server draft instead of skipping ahead.
     component: () => import('./views/NewStoryView.vue'),
     meta: { title: 'New Story — Ember Vale' }
   },
@@ -59,6 +59,12 @@ const routes: RouteRecordRaw[] = [
     name: 'stories',
     component: () => import('./views/StoriesView.vue'),
     meta: { title: 'Stories — Ember Vale' }
+  },
+  {
+    path: '/stories/:storyId/play',
+    name: 'story-play',
+    component: () => import('./views/PlayView.vue'),
+    meta: { title: 'Story — Ember Vale' }
   },
   {
     path: '/settings',

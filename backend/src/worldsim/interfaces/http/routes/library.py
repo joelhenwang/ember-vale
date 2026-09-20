@@ -7,8 +7,6 @@ boundary; editing always appends a revision, never rewrites one.
 
 from __future__ import annotations
 
-import hashlib
-import json
 from typing import Any
 from uuid import UUID
 
@@ -18,7 +16,13 @@ from pydantic import TypeAdapter
 from worldsim.domain.assets import AssetRecord
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.ids import new_preset_id
-from worldsim.domain.presets import Preset, PresetKind, PresetPayload, PresetRevision
+from worldsim.domain.presets import (
+    Preset,
+    PresetKind,
+    PresetPayload,
+    PresetRevision,
+    canonical_payload_hash,
+)
 from worldsim.domain.time import utcnow
 from worldsim.infrastructure.storage.local import LocalStorage
 from worldsim.interfaces.http import schemas as api
@@ -39,8 +43,8 @@ def _parse_payload(kind: str, payload: dict[str, Any]) -> PresetPayload:
 
 
 def _hash(payload: PresetPayload) -> str:
-    canonical = json.dumps(payload.model_dump(mode="json"), sort_keys=True)
-    return hashlib.sha256(canonical.encode()).hexdigest()
+    """Delegate to the canonical domain hash; kept as the call-site name."""
+    return canonical_payload_hash(payload)
 
 
 def _summary_view(preset: Preset) -> api.PresetSummary:

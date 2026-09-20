@@ -172,5 +172,23 @@ uv run --project backend --group dev pytest backend/tests/test_db_migrations.py 
 
 Frontend dev proxy: `vite.config.ts` forwards `/api` to `localhost:8101`, so
 `npm run dev` serves the UI at `localhost:5173` with a same-origin API path.
-`src/api/client.ts` is the handwritten readiness spine until the generated
-contract replaces it in E2.
+The proxy injects the loopback operator key server-side from root `.env`
+(`WORLDSIM_SECURITY__API_KEY`); the browser never holds credentials.
+
+Contracts (regenerate after any backend DTO/route change; output must be
+byte-identical when nothing changed):
+
+```bash
+uv run --project backend --group dev python -m worldsim.interfaces.http.export --out content/schemas/openapi.json
+uv run --project backend --group dev python backend/scripts/gen_ts_client.py --out content/clients/worldsim.ts
+```
+
+`src/api/client.ts` stays the handwritten readiness spine; all typed
+operations in `src/api/worldsim.ts` consume `content/clients/worldsim.ts`.
+`src/api/http.ts` centralizes error/retry/cancel semantics.
+
+Deterministic end-to-end journey against the deployed stack:
+
+```bash
+EMBER_VALE_API_KEY=<operator key> node scripts/journey.mjs --title "My run"
+```

@@ -1,0 +1,371 @@
+<script setup lang="ts">
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import SetupDialog from '../components/story/SetupDialog.vue'
+import MountainRidge from '../components/decor/MountainRidge.vue'
+import PageIntro from '../components/ui/PageIntro.vue'
+import MenuButton from '../components/MenuButton.vue'
+import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
+import IconArrowRight from '../components/icons/IconArrowRight.vue'
+import { useStory } from '../composables/useStory'
+import type { Role } from '../api/http'
+import { phaseLabel } from '../game/format'
+
+const route = useRoute()
+const router = useRouter()
+const storyId = computed(() => String(route.params.storyId ?? ''))
+
+// The creation grant governs every caller; the view header follows the
+// story's own role, and player acts stay scoped to the controlled runtime
+// character once the room resolves it from the live map.
+const role = ref<Role>('watcher')
+const headerChar = computed<string | undefined>(() => {
+  if (role.value !== 'player') return undefined
+  return controlledId.value ?? undefined
+})
+const story = useStory(storyId.value, role, headerChar)
+const showSetup = ref(false)
+const travelChar = ref('')
+const travelTo = ref('')
+
+const detail = computed(() => story.detail.value)
+const cast = computed(() => {
+  const rows: { id: string; name: string; places: string[] }[] = []
+  story.occupantsByPlace.value.forEach(
+    (row: { name: string; places: string[] }, id: string) => rows.push({ id, ...row })
+  )
+  return rows.sort((a, b) => a.name.localeCompare(b.name))
+})
+const setupCast = computed(() => {
+  const payload = story.setup.value?.payload as unknown as
+    | { cast?: { instance_key?: string; name?: string }[]; mode?: { controlled_cast_key?: string } }
+    | undefined
+  return { members: payload?.cast ?? [], controlledKey: payload?.mode?.controlled_cast_key }
+})
+const controlledId = computed(() => {
+  const key = setupCast.value.controlledKey
+  if (!key) return null
+  const member = setupCast.value.members.find((m) => m.instance_key === key)
+  if (!member?.name) return null
+  const occupant = cast.value.find(
+    (c) => c.name.toLowerCase() === (member.name as string).toLowerCase()
+  )
+  return occupant?.id ?? null
+})
+const travelChoices = computed(() => {
+  if (role.value === 'player' && controlledId.value) {
+    return cast.value.filter((c) => c.id === controlledId.value)
+  }
+  return cast.value
+})
+const destinations = computed(() => {
+  const places = story.map.value?.places ?? []
+  const here = places.find((p) => (p.occupant_ids ?? []).includes(travelChar.value))
+  return (here?.routes ?? []).map((r: { to_location_id: string }) => ({
+    id: r.to_location_id,
+    name:
+      places.find((p: { id: string; name: string }) => p.id === r.to_location_id)?.name ??
+      r.to_location_id
+  }))
+})
+const nextIndex = computed(() => (detail.value?.absolute_index ?? 0) + 1)
+
+function switchRole(next: Role): void {
+  role.value = next
+  if (next === 'player' && controlledId.value) travelChar.value = controlledId.value
+  void story.refreshTimeline()
+}
+
+async function advance(): Promise<void> {
+  await story.advance()
+}
+
+async function travel(): Promise<void> {
+  if (!travelChar.value || !travelTo.value) return
+  await story.travel(travelChar.value, travelTo.value)
+}
+
+watch(
+  cast,
+  (rows) => {
+    if (!travelChar.value && rows.length) travelChar.value = rows[0].id
+  },
+  { immediate: true }
+)
+watch(destinations, (rows) => {
+  travelTo.value = rows[0]?.id ?? ''
+})
+
+watch(
+  () => story.detail.value?.mode,
+  (storyMode) => {
+    if (storyMode === 'player' || storyMode === 'watcher') role.value = storyMode
+  },
+  { immediate: true }
+)
+
+onMounted(() => {
+  void story.load()
+})
+onUnmounted(() => story.cancel())
+</script>
+
+<template>
+  <main class="play">
+    <section class="play__band ev-card">
+      <MountainRidge class="play__ridge" />
+      <PageIntro
+        :title="detail?.title ?? 'Opening the story…'"
+        :sub="
+          detail
+            ? `Day ${detail.day} · ${phaseLabel(detail.phase)}`
+            : 'Loading the world behind this tale.'
+        " />
+    </section>
+    <p v-if="story.loadError.value" class="play__state" role="alert">
+      {{ story.loadError.value }} — <button type="button" class="play__link" @click="story.load()">retry</button>
+    </p>
+    <template v-else-if="detail">
+      <p class="play__meta">
+        <span class="play__badge">{{ detail.mode === 'player' ? 'Player' : 'Observer' }}</span>
+        <span v-if="controlledId">Playing as {{ cast.find((c) => c.id === controlledId)?.name }}</span>
+        <span>Beat {{ detail.absolute_index }}</span>
+        <button type="button" class="play__link" @click="showSetup = true">Initial configuration</button>
+        <label class="play__as">
+          View as
+          <select :value="role" @change="switchRole(($event.target as HTMLSelectElement).value as Role)">
+            <option value="watcher">Observer</option>
+            <option value="player">Player</option>
+          </select>
+        </label>
+      </p>
+      <p v-if="story.notice.value" class="play__notice" :class="`play__notice--${story.notice.value.kind}`" role="status">
+        {{ story.notice.value.text }}
+      </p>
+      <div class="play__grid">
+        <section class="play__card" aria-label="Cast and places">
+          <h2>Cast &amp; places</h2>
+          <ul class="play__cast">
+            <li v-for="member in cast" :key="member.id">
+              <strong>{{ member.name }}</strong>
+              <span>{{ member.places.join(', ') }}</span>
+              <em v-if="member.id === controlledId">you</em>
+            </li>
+          </ul>
+          <h3>Begin a journey</h3>
+          <div class="play__travel">
+            <label>
+              Who
+              <select v-model="travelChar" :disabled="role === 'player' && !!controlledId">
+                <option v-for="member in travelChoices" :key="member.id" :value="member.id">
+                  {{ member.name }} — {{ member.places.join(', ') }}
+                </option>
+              </select>
+            </label>
+            <label>
+              To
+              <select v-model="travelTo">
+                <option v-for="dest in destinations" :key="dest.id" :value="dest.id">
+                  {{ dest.name }}
+                </option>
+              </select>
+            </label>
+            <MenuButton
+              
+              :disabled="!travelChar || !travelTo || story.traveling.value"
+              @click="travel()">
+              {{ story.traveling.value ? 'Starting…' : 'Start journey' }}
+            </MenuButton>
+          </div>
+          <h3>Advance the story</h3>
+          <MenuButton
+            
+            :icon="IconArrowRight"
+            :disabled="story.advancing.value"
+            @click="advance()">
+            {{ story.advancing.value ? 'Committing beat…' : `Commit beat ${nextIndex}` }}
+          </MenuButton>
+        </section>
+        <section class="play__card" aria-label="Story so far">
+          <h2>Story so far</h2>
+          <p v-if="!story.entries.value.length" class="play__empty">
+            Nothing has happened yet — commit the first beat.
+          </p>
+          <ol v-else class="play__feed">
+            <li v-for="entry in [...story.entries.value].reverse()" :key="entry.event_id">
+              <span class="play__kind">{{ entry.event_type.replace(/_/g, ' ') }}</span>
+              <p v-if="entry.snippet">{{ entry.snippet }}</p>
+            </li>
+          </ol>
+        </section>
+      </div>
+      <footer class="play__foot">
+        <MenuButton variant="outline" :icon="IconArrowLeft" @click="router.push('/stories')">All stories</MenuButton>
+      </footer>
+    </template>
+    <p v-else class="play__state" role="status">Loading…</p>
+    <SetupDialog :setup="story.setup.value" :open="showSetup" @close="showSetup = false" />
+  </main>
+</template>
+
+<style scoped>
+.play {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 14px 16px 40px;
+}
+.play__state {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fbf6e9;
+}
+.play__link {
+  font: inherit;
+  color: #1f4d3f;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+.play__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  color: #4a4436;
+}
+.play__badge {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 10px;
+  background: #fbf6e9;
+  font-weight: 600;
+}
+.play__as {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.play__as select {
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf6;
+}
+.play__notice {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #fbf6e9;
+}
+.play__notice--error {
+  border-color: #b3543f;
+  background: #fbeee8;
+  color: #7c3226;
+}
+.play__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 14px;
+  margin-top: 12px;
+}
+.play__card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fbf6e9;
+  padding: 16px 18px;
+}
+.play__card h2 {
+  margin: 0 0 8px;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 22px;
+}
+.play__card h3 {
+  margin: 16px 0 8px;
+  font-size: 15px;
+}
+.play__cast {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.play__cast li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.play__cast span {
+  color: #6b5d43;
+  font-size: 14px;
+}
+.play__cast em {
+  font-size: 12px;
+  color: #1f4d3f;
+}
+.play__travel {
+  display: grid;
+  gap: 8px;
+}
+.play__travel label {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+}
+.play__travel select {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf6;
+}
+.play__feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.play__feed li {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.play__kind {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b5d43;
+}
+.play__empty {
+  color: #6b5d43;
+}
+.play__foot {
+  margin-top: 14px;
+}
+.play__band {
+  position: relative;
+  overflow: hidden;
+  padding: 20px 26px;
+  margin-bottom: 14px;
+}
+.play__ridge {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 46%;
+  height: 100%;
+  color: #c9b58c;
+  opacity: 0.5;
+  pointer-events: none;
+}
+@media (max-width: 900px) {
+  .play__grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

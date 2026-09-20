@@ -52,12 +52,12 @@ def client(migrated_db: None) -> Iterator[ApiClient]:
         yield ApiClient(raw)
 
 
-def _draft(client: ApiClient, world_preset: str = WORLD_PRESET_ID) -> str:
+def _draft(client: ApiClient, world_preset: str = WORLD_PRESET_ID, world_rev: int = 2) -> str:
     created = client.post(
         "/api/v1/story-drafts",
         json={
             "payload": {
-                "world": {"preset_id": world_preset, "preset_revision": 1},
+                "world": {"preset_id": world_preset, "preset_revision": world_rev},
                 "cast": [
                     {
                         "instance_key": "cast-wren",
@@ -196,24 +196,54 @@ def _add_broken_world() -> str:
     return str(preset_id)
 
 
+def _row_counts() -> dict[str, int]:
+    from fixtures.postgres import sync_dsn
+    from psycopg import connect
+
+    conn = connect(sync_dsn(Settings()), autocommit=True)
+    try:
+        return {
+            table: int(conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0])
+            for table in ("world", "location", "travel_route", "story_draft")
+        }
+    finally:
+        conn.close()
+
+
+def test_consumed_draft_cannot_create_again(client: ApiClient) -> None:
+    draft_id = _draft(client)
+    first = _create(client, draft_id, "consume-once")
+    assert first.status_code == 200, first.text
+    assert first.json()["replayed"] is False
+    draft = client.get(f"/api/v1/story-drafts/{draft_id}", headers={}).json()
+    assert draft["created_world_id"] == first.json()["world_id"]
+    second = _create(client, draft_id, "consume-twice")
+    assert second.status_code == 403, second.text
+    assert second.json()["error"]["code"] == "FORBIDDEN"
+    assert len(client.get("/api/v1/stories", headers={}).json()["items"]) == 1
+
+
 def test_unknown_travel_endpoint_rolls_creation_back(client: ApiClient) -> None:
     before = len(client.get("/api/v1/stories", headers={}).json()["items"])
-    draft_id = _draft(client, world_preset=_add_broken_world())
+    draft_id = _draft(client, world_preset=_add_broken_world(), world_rev=1)
+    rows_before = _row_counts()
     bad = _create(client, draft_id, "broken-travel")
-    assert bad.status_code != 200, bad.text
+    assert bad.status_code == 422, bad.text
+    assert bad.json()["error"]["code"] == "VALIDATION_FAILED"
     assert len(client.get("/api/v1/stories", headers={}).json()["items"]) == before
+    assert _row_counts() == rows_before
     draft = client.get(f"/api/v1/story-drafts/{draft_id}", headers={}).json()
     assert draft["created_world_id"] is None
 
 
-def test_builtin_world_carries_both_legs(client: ApiClient) -> None:
-    """The migrated seed revision itself names Hearth <-> Market."""
+def test_builtin_world_rev2_carries_both_legs(client: ApiClient) -> None:
+    """The corrected starter revision itself names Hearth <-> Market."""
 
     async def _inner():
         engine = create_engine(Settings())
         try:
             async with create_unit_of_work(engine) as uow:
-                revision = await uow.presets.get_revision(UUID(WORLD_PRESET_ID), 1)
+                revision = await uow.presets.get_revision(UUID(WORLD_PRESET_ID), 2)
                 payload = revision.payload
                 assert isinstance(payload, WorldPresetPayload)
                 assert sorted(tuple(pair) for pair in payload.travel) == [

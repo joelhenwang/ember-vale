@@ -193,6 +193,7 @@ class SqlAlchemyStoryRepository:
             raise missing("draft", draft.id)
         if row.version != expected_version:
             raise version_conflict("draft", draft.id, expected_version, row.version)
+        row.created_world_id = draft.created_world_id
         row.payload = draft.payload.model_dump(mode="json")
         row.current_step = draft.current_step.value
         row.version = expected_version + 1

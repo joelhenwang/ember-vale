@@ -1,30 +1,31 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { catalog } from '../game/catalog'
 import IconBook from './icons/IconBook.vue'
 import IconGlobe from './icons/IconGlobe.vue'
 import IconUsers from './icons/IconUsers.vue'
 import IconStack from './icons/IconStack.vue'
 import IconArrowRight from './icons/IconArrowRight.vue'
 
-/** Counts are derived from the catalog so the badge numbers can never
- *  disagree with what the Library page actually lists. */
+const props = defineProps<{ worlds: number; characters: number; packs: number }>()
+
+/** Counts come from persisted presets so the badges never disagree with
+ *  what the Library can actually open for a real story. */
 const library = computed(() => [
   {
     icon: IconGlobe,
-    count: catalog.worlds.length,
+    count: props.worlds,
     name: 'Worlds',
     note: 'Places to explore'
   },
   {
     icon: IconUsers,
-    count: catalog.characters.length,
+    count: props.characters,
     name: 'Characters',
     note: "People you've met"
   },
   {
     icon: IconStack,
-    count: catalog.stylePacks.length,
+    count: props.packs,
     name: 'Style Pack',
     note: 'Ways to tell your story'
   }

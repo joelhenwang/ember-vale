@@ -35,7 +35,7 @@ const router = useRouter()
         class="begin__cta2"
         variant="outline"
         size="md"
-        @click="router.push({ name: 'new-story' })">
+        @click="router.push({ name: 'new-story', query: { quickstart: '1' } })">
         <template #icon><IconBook :size="20" /></template>
         Quick Start: {{ menuState.quickStartWorld }}
       </MenuButton>

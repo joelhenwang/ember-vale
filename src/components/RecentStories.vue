@@ -10,10 +10,8 @@ import IconFeather from './icons/IconFeather.vue'
 import IconArrowInCircle from './icons/IconArrowInCircle.vue'
 import IconArrowRight from './icons/IconArrowRight.vue'
 
-function resume(_story: StorySummary): void {
-  // production: route to the story room and ask the engine to hydrate state.
-  // For now the story view is still being written.
-  router.push('/stories')
+function resume(story: StorySummary): void {
+  router.push({ name: 'story-play', params: { storyId: story.id } })
 }
 </script>
 
@@ -30,7 +28,10 @@ function resume(_story: StorySummary): void {
       </router-link>
     </div>
 
-    <div class="recent__grid">
+    <p v-if="!menuState.recent.length" class="recent__empty">
+      Your recent stories will appear here once you begin a tale.
+    </p>
+    <div v-else class="recent__grid">
       <article
         v-for="story in menuState.recent"
         :key="story.id"

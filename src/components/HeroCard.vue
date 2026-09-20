@@ -1,22 +1,27 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { menuState } from '../game/state'
 import { useGameImage } from '../game/images'
 import MenuButton from './MenuButton.vue'
 import IconSparkle from './icons/IconSparkle.vue'
 import IconInfo from './icons/IconInfo.vue'
 
-const story = menuState.current!
-const cover = useGameImage(story.imageSlot)
+defineEmits<{ details: [] }>()
+
+const router = useRouter()
+const story = computed(() => menuState.current)
+const cover = useGameImage('hero.currentStory')
 </script>
 
 <template>
   <section class="hero ev-card" aria-label="Current story">
     <div class="hero__frame">
-      <img class="hero__img" :src="cover" :alt="`${story.title} — scene illustration`" />
+      <img class="hero__img" :src="cover" :alt="`${story?.title ?? 'Ember Vale'} — scene illustration`" />
 
       <!-- parchment overlay, clipped with the signature diagonal notch -->
       <div class="hero__panel">
-        <div class="hero__panel-in">
+        <div v-if="story" class="hero__panel-in">
           <div class="hero__lead">
             <span class="ev-eyebrow">
               <IconSparkle :size="13" />
@@ -24,7 +29,11 @@ const cover = useGameImage(story.imageSlot)
             </span>
             <h1 class="hero__title">
               {{ story.title }}
-              <button class="hero__info" type="button" aria-label="Story details">
+              <button
+                class="hero__info"
+                type="button"
+                aria-label="Story details"
+                @click="$emit('details')">
                 <IconInfo :size="23" />
               </button>
             </h1>
@@ -39,11 +48,36 @@ const cover = useGameImage(story.imageSlot)
           </div>
 
           <div class="hero__action">
-            <MenuButton class="hero__continue" size="md" arrow="circle">
+            <MenuButton
+              class="hero__continue"
+              size="md"
+              arrow="circle"
+              @click="router.push({ name: 'story-play', params: { storyId: story.id } })">
               Continue Story
             </MenuButton>
             <div class="ev-divider hero__rule" aria-hidden="true"></div>
-            <p class="ev-quote hero__epigraph">“{{ story.epigraph }}”</p>
+            <p v-if="story.epigraph" class="ev-quote hero__epigraph">“{{ story.epigraph }}”</p>
+          </div>
+        </div>
+        <div v-else class="hero__panel-in">
+          <div class="hero__lead">
+            <span class="ev-eyebrow">
+              <IconSparkle :size="13" />
+              Ember Vale
+            </span>
+            <h1 class="hero__title">No stories yet</h1>
+            <p class="hero__logline">
+              Your shelf is empty. Begin a tale and the vale will remember it here.
+            </p>
+          </div>
+          <div class="hero__action">
+            <MenuButton
+              class="hero__continue"
+              size="md"
+              arrow="circle"
+              @click="router.push({ name: 'new-story' })">
+              Begin a tale
+            </MenuButton>
           </div>
         </div>
       </div>

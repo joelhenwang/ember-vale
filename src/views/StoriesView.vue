@@ -2,18 +2,29 @@
   StoriesView — the "Your stories" shelf (search, status chips, sort,
   grid/list density, one StoryCard per saved tale).
 
-  Data lives in src/game/stories.ts (storyShelf + storiesUi); the search/
-  chip/sort pipeline is the pure filterStories in game/filters.ts. Opening a
-  story (Continue / configuration / saves) targets unwired routes, which the
-  catch-all StubView handles with the "still being written" page — same
-  convention every other future screen uses in this mockup.
+  Records come from the backend story list (storyShelf is repopulated on
+  every visit); the search/chip/sort pipeline stays the pure filterStories
+  in game/filters.ts. Continue opens the story room; the information action
+  shows the immutable setup snapshot; archive/restore round-trips the API
+  with the record's metadata version.
 -->
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import type { Component } from 'vue'
 import { useRouter } from 'vue-router'
+import type { StorySetupView } from '../../content/clients/worldsim'
 import { filterStories } from '../game/filters'
 import { setStoryArchived, storiesUi, storyShelf, type StoryRecord } from '../game/stories'
+import { sortStoriesNewest, toStoryRecord, type ResolvedWorld } from '../game/records'
+import {
+  archiveStory,
+  getSetup,
+  getStory,
+  listStories,
+  unarchiveStory
+} from '../api/worldsim'
+import { usePresets } from '../composables/usePresets'
+import SetupDialog from '../components/story/SetupDialog.vue'
 import PageIntro from '../components/ui/PageIntro.vue'
 import SearchField from '../components/ui/SearchField.vue'
 import ChipGroup from '../components/ui/ChipGroup.vue'
@@ -49,10 +60,69 @@ const viewOptions: { value: 'grid' | 'list'; label: string; icon: Component }[] 
   { value: 'list', label: 'List view', icon: IconList }
 ]
 
-/** Story rooms aren't wired yet — the catch-all stub answers for now. */
-function openStory(story: StoryRecord, section?: string): void {
-  router.push(section ? `/stories/${story.id}/${section}` : `/stories/${story.id}`)
+const presets = usePresets()
+const loading = ref(true)
+const loadError = ref<string | null>(null)
+const actionError = ref<string | null>(null)
+const setup = ref<StorySetupView | null>(null)
+const showSetup = ref(false)
+
+function worldOf(name: string): ResolvedWorld {
+  const found = presets.worlds.value.find((w) => w.name === name)
+  if (found) return { name: found.name, description: found.description }
+  return { name: name || 'Unknown world', description: '' }
 }
+
+function openStory(story: StoryRecord): void {
+  router.push({ name: 'story-play', params: { storyId: story.id } })
+}
+
+async function openSetup(story: StoryRecord): Promise<void> {
+  actionError.value = null
+  try {
+    setup.value = await getSetup(story.id)
+  } catch (err) {
+    setup.value = null
+    actionError.value = err instanceof Error ? err.message : 'could not load configuration'
+  } finally {
+    showSetup.value = true
+  }
+}
+
+async function toggleArchive(story: StoryRecord, archived: boolean): Promise<void> {
+  actionError.value = null
+  try {
+    const detail = await getStory(story.id)
+    if (archived) await archiveStory(story.id, detail.metadata_version)
+    else await unarchiveStory(story.id, detail.metadata_version)
+    setStoryArchived(story.id, archived)
+  } catch (err) {
+    actionError.value = err instanceof Error ? err.message : 'could not update the story'
+  }
+}
+
+onMounted(async () => {
+  try {
+    const [stories] = await Promise.all([listStories('all'), presets.load()])
+    if (presets.error.value) throw new Error(presets.error.value)
+    const ordered = sortStoriesNewest(stories.items ?? [])
+    const details = await Promise.all(ordered.map((s) => getStory(s.world_id)))
+    const records = ordered.map((s) => {
+      const detail = details.find((d) => d.world_id === s.world_id)
+      if (!detail) return null
+      return toStoryRecord(detail, worldOf(s.world_name))
+    })
+    storyShelf.splice(
+      0,
+      storyShelf.length,
+      ...records.filter((r): r is StoryRecord => r !== null)
+    )
+  } catch (err) {
+    loadError.value = err instanceof Error ? err.message : 'could not load stories'
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
 <template>
@@ -80,19 +150,29 @@ function openStory(story: StoryRecord, section?: string): void {
         <ViewToggle v-model="storiesUi.view" label="View mode" :options="viewOptions" />
       </div>
 
-      <div class="stories__grid" :class="{ 'stories__grid--list': storiesUi.view === 'list' }">
-        <StoryCard
-          v-for="s in list"
-          :key="s.id"
-          :story="s"
-          :layout="storiesUi.view"
-          @continue="openStory(s)"
-          @configure="openStory(s, 'configuration')"
-          @saves="openStory(s, 'saves')"
-          @archive="setStoryArchived(s.id, $event)" />
-      </div>
+      <p v-if="loading" class="stories__none" role="status">Opening the shelf…</p>
+      <p v-else-if="loadError" class="stories__none" role="alert">
+        The library is unreachable ({{ loadError }}) — showing nothing rather than old tales.
+      </p>
+      <template v-else>
+        <p v-if="actionError" class="stories__none" role="alert">{{ actionError }}</p>
+        <div class="stories__grid" :class="{ 'stories__grid--list': storiesUi.view === 'list' }">
+          <StoryCard
+            v-for="s in list"
+            :key="s.id"
+            :story="s"
+            :layout="storiesUi.view"
+            @continue="openStory(s)"
+            @configure="openSetup(s)"
+            @saves="openStory(s)"
+            @archive="toggleArchive(s, $event)" />
+        </div>
 
-      <p v-if="!list.length" class="stories__none">No stories in this drawer — try another word.</p>
+        <p v-if="!list.length" class="stories__none">
+          {{ storyShelf.length ? 'No stories in this drawer — try another word.' : 'No stories yet — begin a tale to fill this shelf.' }}
+        </p>
+      </template>
+      <SetupDialog :setup="setup" :open="showSetup" @close="showSetup = false" />
     </section>
 
     <div class="stories__foot">

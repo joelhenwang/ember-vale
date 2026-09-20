@@ -48,7 +48,7 @@ from worldsim.domain.stories import (
     StoryInitialSetup,
 )
 from worldsim.domain.time import utcnow
-from worldsim.domain.world import Location, World
+from worldsim.domain.world import Location, Route, World
 
 OPERATOR = "local"
 
@@ -89,10 +89,36 @@ async def create_story(
                 )
             return await _replay(uow, existing)
         if draft.created_world_id is not None:
+            # The winner may have committed between our receipt read and this
+            # draft read: the same key replays, a different key is refused.
+            raced = await uow.stories.find_receipt(operator, idempotency_key.strip())
+            if raced is not None:
+                if raced.request_hash != request_hash:
+                    raise DomainError(
+                        ErrorCode.IDEMPOTENCY_CONFLICT,
+                        "idempotency key was used for a different request",
+                    )
+                return await _replay(uow, raced)
             raise DomainError(ErrorCode.FORBIDDEN, "this draft already created a story")
         world_preset = await _world_preset(uow, payload)
         cast_presets = await _cast_presets(uow, payload)
-        result = await _instantiate(uow, draft, expected_draft_version, world_preset, cast_presets)
+        try:
+            result = await _instantiate(
+                uow, draft, expected_draft_version, world_preset, cast_presets
+            )
+        except DomainError as exc:
+            if exc.code is not ErrorCode.VERSION_CONFLICT:
+                raise
+            # Our receipt read raced a concurrent commit: the same key replays
+            # the winner; without a receipt this is a genuine conflict.
+            await uow.rollback()
+            async with uow_factory() as fresh:
+                raced_after = await fresh.stories.find_receipt(operator, idempotency_key.strip())
+            if raced_after is None:
+                raise
+            return await _replay_after_race(
+                uow_factory, operator, idempotency_key.strip(), request_hash
+            )
         try:
             await uow.stories.put_receipt(
                 StoryCreationReceipt(
@@ -226,6 +252,20 @@ async def _instantiate(
     await uow.worlds.put_config(world_id, "story_title", {"text": title})
     if payload.story.tone:
         await uow.worlds.put_config(world_id, "tone", {"text": payload.story.tone})
+    travel_pairs = _validated_travel_pairs(world_preset, location_ids)
+    embedded_routes: dict[str, list[Route]] = {
+        key: [
+            Route(
+                id=new_route_id(),
+                destination_location_id=location_ids[dst],
+                duration_phases=1,
+                stamina_cost=0,
+            )
+            for (src, dst) in travel_pairs
+            if src == key
+        ]
+        for key in location_ids
+    }
     for place in world_preset.locations:
         await uow.locations.add(
             Location(
@@ -234,11 +274,21 @@ async def _instantiate(
                 name=place.name,
                 region=world_preset.name,
                 capacity=12,
-                routes=[],
+                routes=embedded_routes[place.key],
                 discovered=True,
             )
         )
-    await _materialize_travel(uow, world_id, world_preset, location_ids)
+    for src, dst in travel_pairs:
+        await uow.routes.add(
+            TravelRoute(
+                id=new_route_id(),
+                world_id=world_id,
+                from_location_id=location_ids[src],
+                to_location_id=location_ids[dst],
+                duration_phases=1,
+                stamina_cost=0,
+            )
+        )
     runtime_characters: dict[str, UUID] = {}
     for member in payload.cast:
         character_id = new_character_id()
@@ -347,18 +397,12 @@ async def _instantiate(
     )
 
 
-async def _materialize_travel(
-    uow: UnitOfWork,
-    world_id: UUID,
+def _validated_travel_pairs(
     world_preset: WorldPresetPayload,
     location_ids: dict[str, UUID],
-) -> None:
-    """Validate preset travel pairs and persist one directed route per pair.
-
-    Runs inside the creation transaction: an unknown endpoint, a loop, a
-    malformed pair or a duplicate leg fails creation with no partial world.
-    Starter legs cost nothing and resolve in one phase.
-    """
+) -> list[tuple[str, str]]:
+    """Validate preset travel pairs; fail before any write when invalid."""
+    pairs: list[tuple[str, str]] = []
     seen: set[tuple[str, str]] = set()
     for pair in world_preset.travel:
         if len(pair) != 2:
@@ -377,16 +421,8 @@ async def _materialize_travel(
                 ErrorCode.VALIDATION_FAILED, f"duplicate travel leg: {src!r} -> {dst!r}"
             )
         seen.add((src, dst))
-        await uow.routes.add(
-            TravelRoute(
-                id=new_route_id(),
-                world_id=world_id,
-                from_location_id=location_ids[src],
-                to_location_id=location_ids[dst],
-                duration_phases=1,
-                stamina_cost=0,
-            )
-        )
+        pairs.append((src, dst))
+    return pairs
 
 
 def _preset_start(preset: CharacterPresetPayload, fallback: str) -> str:

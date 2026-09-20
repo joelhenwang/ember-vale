@@ -8,6 +8,8 @@ editing.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Literal
@@ -99,6 +101,18 @@ class Preset(BaseModel):
     current_revision: int = Field(default=1, ge=1)
     version: int = Field(default=0, ge=0)
     created_at: datetime = Field(default_factory=utcnow)
+
+
+def canonical_payload_hash(payload: PresetPayload) -> str:
+    """Content hash for a preset revision payload.
+
+    Single canonical algorithm: SHA-256 over the JSON-serialized payload
+    with sorted keys. Application writers (library routes, builtin
+    initializer) and tests must use this; migrations freeze computed
+    literals instead of importing application code.
+    """
+    canonical = json.dumps(payload.model_dump(mode="json"), sort_keys=True)
+    return hashlib.sha256(canonical.encode()).hexdigest()
 
 
 class PresetRevision(BaseModel):

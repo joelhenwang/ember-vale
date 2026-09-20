@@ -1,120 +1,515 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { catalog, toggleCharacter, wizard } from '../game/catalog'
-import { filterCast, type CastCategory } from '../game/filters'
-import MountainRidge from '../components/decor/MountainRidge.vue'
-import StoryStepper from '../components/newstory/StoryStepper.vue'
-import CastCard from '../components/newstory/CastCard.vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import CreateCharacterTile from '../components/newstory/CreateCharacterTile.vue'
-import SelectedCastPanel from '../components/newstory/SelectedCastPanel.vue'
-import WorldMiniPanel from '../components/newstory/WorldMiniPanel.vue'
 import SearchField from '../components/ui/SearchField.vue'
 import ChipGroup from '../components/ui/ChipGroup.vue'
 import SortSelect from '../components/ui/SortSelect.vue'
+import CastCard from '../components/newstory/CastCard.vue'
+import StoryStepper from '../components/newstory/StoryStepper.vue'
 import MenuButton from '../components/MenuButton.vue'
-import IconSparkle from '../components/icons/IconSparkle.vue'
 import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
 import IconSave from '../components/icons/IconSave.vue'
+import IconArrowRight from '../components/icons/IconArrowRight.vue'
+import IconPlay from '../components/icons/IconPlay.vue'
+import MountainRidge from '../components/decor/MountainRidge.vue'
+import PageIntro from '../components/ui/PageIntro.vue'
+import { useBackend } from '../composables/useBackend'
+import { usePresets, type PresetCharacter } from '../composables/usePresets'
+import { useStoryDraft } from '../composables/useStoryDraft'
+import {
+  controlledAfterCastChange,
+  localDraftIssues,
+  type NewStorySelections
+} from '../game/drafting'
+import { filterCast, type CastFilter } from '../game/filters'
+import type { CharacterDef } from '../game/model'
 
+const route = useRoute()
 const router = useRouter()
+const presets = usePresets()
+const backend = useBackend()
+const draftCtl = useStoryDraft()
 
-/** Typed so ChipGroup's generic v-model keeps the wizard category narrow. */
-const categoryOptions: { value: CastCategory; label: string }[] = [
+const TITLES = ['World', 'Characters', 'Play Mode', 'Story', 'AI', 'Review']
+const step = ref(2)
+const booted = ref(false)
+const bootError = ref<string | null>(null)
+
+const filters = reactive<CastFilter>({ search: '', category: 'all', sort: 'name' })
+const categoryOptions = [
   { value: 'all', label: 'All' },
   { value: 'companions', label: 'Companions' },
-  { value: 'travelers', label: 'Travelers' },
-  { value: 'scholars', label: 'Scholars' },
   { value: 'locals', label: 'Locals' }
-]
-
+] as const
 const sortOptions = [
   { value: 'name', label: 'Name' },
-  { value: 'recent', label: 'Recently updated' }
+  { value: 'recent', label: 'Recent' }
 ]
+const sortProxy = computed({
+  get: (): string => filters.sort,
+  set: (value: string) => {
+    filters.sort = value === 'recent' ? 'recent' : 'name'
+  }
+})
 
-/** Filtering + sorting are pure and tested in game/filters.ts. */
-const cast = computed(() => filterCast(catalog.characters, wizard))
+const sel = reactive({
+  worldId: '',
+  worldRev: 1,
+  cast: [] as { key: string; presetId: string; presetRevision: number; name: string; location: string }[],
+  role: 'watcher' as 'watcher' | 'player',
+  controlledKey: undefined as string | undefined,
+  title: '',
+  tone: 'hopeful mystery'
+})
 
-const saved = ref(false)
-let savedTimer: ReturnType<typeof setTimeout> | undefined
-function saveDraft(): void {
-  saved.value = true
-  clearTimeout(savedTimer)
-  savedTimer = setTimeout(() => (saved.value = false), 1400)
+const WORLD_BY_ID = computed(() => new Map(presets.worlds.value.map((w) => [w.id, w])))
+
+function toCharacterDef(p: PresetCharacter): CharacterDef {
+  return {
+    id: p.id,
+    name: p.name,
+    role: p.role,
+    blurb: p.blurb || p.tags.join(' · ') || 'A resident of the vale.',
+    bio: p.blurb,
+    tags: [{ label: 'Preset' }, { label: `rev ${p.revision}` }],
+    imageSlot: p.imageSlot,
+    categories: [p.playerReady ? 'companions' : 'locals'],
+    playerReady: p.playerReady,
+    usedInStories: 0,
+    updatedAt: 0
+  }
 }
+
+const characterDefs = computed(() => presets.characters.value.map(toCharacterDef))
+const visibleCharacters = computed(() => filterCast(characterDefs.value, filters))
+const selectedIds = computed(() => new Set(sel.cast.map((c) => c.presetId)))
+const selectedWorld = computed(() => WORLD_BY_ID.value.get(sel.worldId))
+const modeNotice = ref<string | null>(null)
+
+const selections = computed<NewStorySelections>(() => ({
+  world: { presetId: sel.worldId, presetRevision: sel.worldRev },
+  cast: sel.cast.map((c) => ({
+    key: c.key,
+    presetId: c.presetId,
+    presetRevision: c.presetRevision,
+    name: c.name,
+    locationKey: c.location || undefined
+  })),
+  mode: sel.role === 'player' ? { role: 'player', controlledKey: sel.controlledKey } : { role: 'watcher' },
+  title: sel.title,
+  tone: sel.tone || undefined
+}))
+
+const localIssues = computed(() => localDraftIssues(selections.value))
+const canContinue = computed(() => {
+  if (step.value === 1) return !!sel.worldId
+  if (step.value === 2) return sel.cast.length > 0
+  if (step.value === 3) return sel.role === 'watcher' || !!sel.controlledKey
+  if (step.value === 4) return sel.title.trim().length > 0
+  return true
+})
+
+function castKeyFor(presetId: string, index: number): string {
+  const base = presetId === presets.characters.value.find((c) => c.id === presetId)?.id
+    ? (presets.characters.value.find((c) => c.id === presetId)?.name ?? `cast-${index}`)
+    : `cast-${index}`
+  return base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `cast-${index}`
+}
+
+function defaultLocation(presetId: string): string {
+  const preset = presets.characters.value.find((c) => c.id === presetId)
+  if (preset?.startKey && selectedWorld.value?.places.some((p) => p.key === preset.startKey)) {
+    return preset.startKey
+  }
+  return selectedWorld.value?.places[0]?.key ?? ''
+}
+
+function toggleCast(def: CharacterDef): void {
+  const at = sel.cast.findIndex((c) => c.presetId === def.id)
+  if (at >= 0) {
+    sel.cast.splice(at, 1)
+    const kept = controlledAfterCastChange(
+      sel.cast.map((c) => c.key),
+      sel.controlledKey
+    )
+    if (kept !== sel.controlledKey) {
+      sel.controlledKey = kept
+      modeNotice.value = 'The controlled character left the cast — pick another to play.'
+    }
+    return
+  }
+  const preset = presets.characters.value.find((c) => c.id === def.id)
+  if (!preset || sel.cast.length >= 6) return
+  const key = castKeyFor(preset.id, sel.cast.length + 1)
+  sel.cast.push({
+    key,
+    presetId: preset.id,
+    presetRevision: preset.revision,
+    name: preset.name,
+    location: defaultLocation(preset.id)
+  })
+  if (sel.role === 'player' && !sel.controlledKey && preset.playerReady) {
+    sel.controlledKey = key
+  }
+}
+
+function hydrate(payload: Record<string, unknown>): void {
+  const world = (payload['world'] ?? {}) as Record<string, unknown>
+  if (typeof world['preset_id'] === 'string') sel.worldId = world['preset_id']
+  if (typeof world['preset_revision'] === 'number') sel.worldRev = world['preset_revision']
+  const cast = payload['cast']
+  if (Array.isArray(cast)) {
+    sel.cast = cast
+      .filter((m): m is Record<string, unknown> => typeof m === 'object' && m !== null)
+      .map((m, i) => ({
+        key: typeof m['instance_key'] === 'string' ? m['instance_key'] : `cast-${i + 1}`,
+        presetId: typeof m['preset_id'] === 'string' ? m['preset_id'] : '',
+        presetRevision: typeof m['preset_revision'] === 'number' ? m['preset_revision'] : 1,
+        name: typeof m['name'] === 'string' ? m['name'] : `Cast ${i + 1}`,
+        location: typeof m['location_key'] === 'string' ? m['location_key'] : ''
+      }))
+  }
+  const mode = (payload['mode'] ?? {}) as Record<string, unknown>
+  sel.role = mode['role'] === 'player' ? 'player' : 'watcher'
+  sel.controlledKey =
+    typeof mode['controlled_cast_key'] === 'string' ? mode['controlled_cast_key'] : undefined
+  const story = (payload['story'] ?? {}) as Record<string, unknown>
+  if (typeof story['title'] === 'string') sel.title = story['title']
+  if (typeof story['tone'] === 'string') sel.tone = story['tone']
+}
+
+function prefillQuickStart(): void {
+  const emberVale = presets.worlds.value.find((w) => w.name === 'Ember Vale') ?? presets.worlds.value[0]
+  if (emberVale) {
+    sel.worldId = emberVale.id
+    sel.worldRev = emberVale.revision
+  }
+  const starters = ['Wren', 'Ash']
+  sel.cast = presets.characters.value
+    .filter((c) => starters.includes(c.name))
+    .map((c, i) => ({
+      key: starters[i].toLowerCase(),
+      presetId: c.id,
+      presetRevision: c.revision,
+      name: c.name,
+      location: c.startKey ?? ''
+    }))
+  sel.role = 'watcher'
+  sel.controlledKey = undefined
+  sel.title = 'A Morning in Ember Vale'
+}
+
+async function boot(): Promise<void> {
+  await presets.load()
+  if (presets.error.value) {
+    bootError.value = presets.error.value
+    return
+  }
+  const emberVale = presets.worlds.value.find((w) => w.name === 'Ember Vale') ?? presets.worlds.value[0]
+  const queryDraft = typeof route.query.draft === 'string' ? route.query.draft : null
+  try {
+    if (queryDraft) {
+      await draftCtl.openExisting(queryDraft)
+    } else if (recalledId()) {
+      try {
+        await draftCtl.openExisting(recalledId() as string)
+      } catch {
+        await startFresh()
+      }
+    } else {
+      await startFresh()
+    }
+  } catch {
+    bootError.value = draftCtl.notice.value ?? 'could not start a draft'
+    return
+  }
+  if (draftCtl.draft.value) hydrate(draftCtl.draft.value.payload as Record<string, unknown>)
+  if (!queryDraft && route.query.quickstart !== undefined) prefillQuickStart()
+  if (!sel.worldId && emberVale) {
+    sel.worldId = emberVale.id
+    sel.worldRev = emberVale.revision
+    await persist()
+  }
+  booted.value = true
+  void backend.refresh()
+}
+
+function recalledId(): string | null {
+  return draftCtl.recalledDraftId()
+}
+
+async function startFresh(): Promise<void> {
+  const emberVale = presets.worlds.value.find((w) => w.name === 'Ember Vale') ?? presets.worlds.value[0]
+  sel.worldId = emberVale?.id ?? ''
+  sel.worldRev = emberVale?.revision ?? 1
+  await draftCtl.openNew(
+    {
+      world: { presetId: sel.worldId, presetRevision: sel.worldRev },
+      cast: [],
+      mode: { role: 'watcher' },
+      title: '',
+      tone: undefined
+    },
+    'world'
+  )
+  await router.replace({ query: { ...route.query, draft: draftCtl.draft.value?.id } })
+}
+
+async function persist(): Promise<boolean> {
+  if (!draftCtl.draft.value) return false
+  return draftCtl.save(selections.value, TITLES[step.value - 1].toLowerCase().replace(' ', '-'))
+}
+
+async function go(n: number): Promise<void> {
+  await persist()
+  step.value = n
+}
+
+async function next(): Promise<void> {
+  if (!canContinue.value) return
+  if (step.value === 6) {
+    await create()
+    return
+  }
+  await persist()
+  step.value += 1
+}
+
+function back(): void {
+  void persist()
+  step.value = Math.max(1, step.value - 1)
+}
+
+async function create(): Promise<void> {
+  if (!draftCtl.draft.value) return
+  await persist()
+  const worldId = await draftCtl.submit()
+  if (worldId) {
+    await router.push({ name: 'story-play', params: { storyId: worldId } })
+  }
+}
+
+watch(
+  () => sel.role,
+  (role) => {
+    if (role === 'watcher') {
+      sel.controlledKey = undefined
+      modeNotice.value = null
+    } else if (!sel.controlledKey) {
+      const first = sel.cast[0]?.key
+      sel.controlledKey = first
+      modeNotice.value = first ? null : 'Add cast members first, then choose who to play.'
+    }
+  }
+)
+
+watch(step, (next) => {
+  if (next === 6) void draftCtl.validate()
+})
+
+onMounted(() => {
+  void boot()
+})
 </script>
 
 <template>
   <main class="nsv">
-    <!-- header band: title + progress + ridge decor -->
     <section class="nsv__band ev-card">
-      <MountainRidge class="band__ridge" />
-      <div class="band__lead">
-        <span class="ev-eyebrow">
-          <IconSparkle :size="13" />
-          Create a new story
-        </span>
-        <h1 class="band__title">Choose your cast</h1>
-        <p class="band__copy">
-          Select the characters who will shape this story. You'll choose how to play in the next
-          step.
-        </p>
-      </div>
-      <StoryStepper class="band__stepper" :current="wizard.step" @go="wizard.step = $event" />
-      <p class="ev-quote band__quote">“Every story is stronger<br />with good company.”</p>
+      <MountainRidge class="nsv__ridge" />
+      <PageIntro
+        title="Shape your next tale"
+        sub="Your draft saves to the library as you go — leaving and coming back keeps every choice." />
     </section>
+    <div v-if="bootError" class="nsv__state" role="alert">
+      <p class="nsv__state-title">The library is unreachable</p>
+      <p class="nsv__state-body">{{ bootError }} — check the backend and reload.</p>
+    </div>
+    <template v-else-if="booted">
+      <StoryStepper :current="step" @go="go" />
+      <p v-if="draftCtl.notice.value" class="nsv__notice" role="status">{{ draftCtl.notice.value }}</p>
 
-    <div class="nsv__grid">
-      <!-- cast picker -->
-      <section class="nsv__cast ev-card" aria-label="Characters">
-        <div class="cast__head">
-          <h2 class="cast__title"><IconSparkle :size="15" /> Characters</h2>
-          <span class="cast__rule" aria-hidden="true"></span>
-        </div>
+      <section v-if="step === 1" class="nsv__panel" aria-label="Choose a world">
+        <h2 class="nsv__h">Where does the story begin?</h2>
+        <ul class="nsv__worlds">
+          <li v-for="world in presets.worlds.value" :key="world.id">
+            <button
+              type="button"
+              class="nsv__world"
+              :class="{ 'nsv__world--on': sel.worldId === world.id }"
+              :aria-pressed="sel.worldId === world.id"
+              @click="sel.worldId = world.id; sel.worldRev = world.revision">
+              <span class="nsv__world-name">{{ world.name }}</span>
+              <span class="nsv__world-rev">Preset rev {{ world.revision }}</span>
+              <span class="nsv__world-desc">{{ world.description }}</span>
+              <span class="nsv__world-places">{{ world.places.map((p) => p.name).join(' · ') }}</span>
+            </button>
+          </li>
+        </ul>
+      </section>
 
-        <div class="cast__toolbar">
-          <SearchField
-            v-model="wizard.search"
-            placeholder="Search characters…"
-            class="cast__search" />
-          <ChipGroup v-model="wizard.category" :options="categoryOptions" />
-          <span class="cast__spacer"></span>
-          <SortSelect v-model="wizard.sort" label="Sort by" :options="sortOptions" />
-        </div>
-
-        <div class="cast__grid">
-          <CastCard
-            v-for="c in cast"
-            :key="c.id"
-            :character="c"
-            :selected="wizard.selected.includes(c.id)"
-            @toggle="toggleCharacter(c.id)" />
-          <CreateCharacterTile @create="router.push('/new-story/character/new')" />
-          <p v-if="!cast.length" class="cast__none">No one by that name wanders here yet.</p>
+      <section v-if="step === 2" class="nsv__panel" aria-label="Choose the cast">
+        <div class="cast__layout">
+          <div class="cast__main">
+            <div class="cast__toolbar">
+              <SearchField v-model="filters.search" />
+              <ChipGroup v-model="filters.category" :options="categoryOptions" />
+              <SortSelect v-model="sortProxy" :options="sortOptions" />
+            </div>
+            <div class="cast__grid">
+              <CastCard
+                v-for="def in visibleCharacters"
+                :key="def.id"
+                :character="def"
+                :selected="selectedIds.has(def.id)"
+                @toggle="toggleCast(def)" />
+              <CreateCharacterTile />
+            </div>
+            <p class="nsv__hint">Only saved library presets can join a real story.</p>
+          </div>
+          <aside class="sel" aria-label="Selected cast">
+            <div class="sel__head">
+              <h2 class="sel__title">Selected</h2>
+              <span class="sel__count">{{ sel.cast.length }} of 6 max</span>
+            </div>
+            <p v-if="!sel.cast.length" class="sel__empty">No one yet — pick from the library.</p>
+            <ul v-else class="sel__list">
+              <li v-for="member in sel.cast" :key="member.key" class="sel__row">
+                <div class="sel__who">
+                  <strong>{{ member.name }}</strong>
+                  <span class="sel__rev">preset rev {{ member.presetRevision }}</span>
+                </div>
+                <label class="sel__place">
+                  Starts at
+                  <select v-model="member.location">
+                    <option v-for="place in selectedWorld?.places ?? []" :key="place.key" :value="place.key">
+                      {{ place.name }}
+                    </option>
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  class="sel__remove"
+                  @click="toggleCast(characterDefs.find((d) => d.id === member.presetId) ?? characterDefs[0])">
+                  Remove
+                </button>
+              </li>
+            </ul>
+          </aside>
         </div>
       </section>
 
-      <aside class="nsv__side">
-        <SelectedCastPanel />
-        <WorldMiniPanel />
-      </aside>
-    </div>
+      <section v-if="step === 3" class="nsv__panel" aria-label="Choose how to play">
+        <h2 class="nsv__h">How do you want to play?</h2>
+        <div class="nsv__modes">
+          <button
+            type="button"
+            class="nsv__world"
+            :class="{ 'nsv__world--on': sel.role === 'watcher' }"
+            :aria-pressed="sel.role === 'watcher'"
+            @click="sel.role = 'watcher'">
+            <span class="nsv__world-name">Observer</span>
+            <span class="nsv__world-desc">Watch the vale unfold and guide the story between beats.</span>
+          </button>
+          <button
+            type="button"
+            class="nsv__world"
+            :class="{ 'nsv__world--on': sel.role === 'player' }"
+            :aria-pressed="sel.role === 'player'"
+            @click="sel.role = 'player'">
+            <span class="nsv__world-name">Player</span>
+            <span class="nsv__world-desc">Step into one character's shoes and decide their actions.</span>
+          </button>
+        </div>
+        <label v-if="sel.role === 'player'" class="nsv__field">
+          Play as
+          <select v-model="sel.controlledKey">
+            <option v-for="member in sel.cast" :key="member.key" :value="member.key">
+              {{ member.name }}
+            </option>
+          </select>
+        </label>
+        <p v-if="modeNotice" class="nsv__notice" role="status">{{ modeNotice }}</p>
+      </section>
 
-    <!-- footer: navigation -->
-    <footer class="nsv__foot ev-card">
-      <MountainRidge class="foot__ridge" />
-      <button type="button" class="ghost" @click="router.push('/')">
-        <IconArrowLeft :size="15" /> Back
-      </button>
-      <button type="button" class="ghost" :class="{ 'ghost--saved': saved }" @click="saveDraft">
-        <IconSave :size="14" /> {{ saved ? 'Draft saved' : 'Save draft' }}
-      </button>
-      <p class="ev-quote foot__quote">“First the people,<br />then the path.”</p>
-      <MenuButton class="foot__cta" size="lg" @click="router.push('/play-mode')">
-        Continue to Play Mode
-      </MenuButton>
-    </footer>
+      <section v-if="step === 4" class="nsv__panel" aria-label="Name the story">
+        <h2 class="nsv__h">What is this story called?</h2>
+        <label class="nsv__field">
+          Title
+          <input v-model="sel.title" type="text" maxlength="128" placeholder="A Morning in Ember Vale" />
+        </label>
+        <label class="nsv__field">
+          Tone
+          <input v-model="sel.tone" type="text" maxlength="128" placeholder="hopeful mystery" />
+        </label>
+      </section>
+
+      <section v-if="step === 5" class="nsv__panel" aria-label="Story art and model">
+        <h2 class="nsv__h">Art and telling</h2>
+        <p class="nsv__body">Stories open with curated starter art. Image generation arrives in a later milestone.</p>
+        <p v-if="backend.status.value.modelProfile" class="nsv__notice" role="status">
+          Development model active ({{ backend.status.value.modelProfile }}) — beats are
+          deterministic stand-ins, not live provider prose.
+        </p>
+        <p v-else class="nsv__notice" role="status">Model profile unknown — beats will say what they used.</p>
+      </section>
+
+      <section v-if="step === 6" class="nsv__panel" aria-label="Review and create">
+        <h2 class="nsv__h">Ready to begin?</h2>
+        <dl class="nsv__review">
+          <div><dt>World</dt><dd>{{ selectedWorld?.name ?? sel.worldId }} (rev {{ sel.worldRev }})</dd></div>
+          <div>
+            <dt>Cast</dt>
+            <dd>{{ sel.cast.map((c) => `${c.name} (rev ${c.presetRevision})`).join(', ') || 'None' }}</dd>
+          </div>
+          <div>
+            <dt>Mode</dt>
+            <dd>{{ sel.role === 'player' ? `Player as ${sel.cast.find((c) => c.key === sel.controlledKey)?.name ?? '—'}` : 'Observer' }}</dd>
+          </div>
+          <div><dt>Title</dt><dd>{{ sel.title || 'Untitled' }}</dd></div>
+        </dl>
+        <ul v-if="localIssues.length" class="nsv__issues" role="alert">
+          <li v-for="issue in localIssues" :key="issue">{{ issue }}</li>
+        </ul>
+        <ul v-if="draftCtl.issues.value.length" class="nsv__issues" role="alert">
+          <li v-for="issue in draftCtl.issues.value" :key="issue">{{ issue }}</li>
+        </ul>
+        <p v-if="draftCtl.createError.value" class="nsv__notice" role="alert">
+          {{ draftCtl.createError.value }}
+        </p>
+      </section>
+
+      <footer class="nsv__footer">
+        <MenuButton v-if="step > 1" variant="outline" :icon="IconArrowLeft" @click="back()">Back</MenuButton>
+        <MenuButton
+          variant="outline"
+          :icon="IconSave"
+          :disabled="draftCtl.busy.value"
+          @click="persist()">
+          {{ draftCtl.busy.value ? 'Saving…' : 'Save draft' }}
+        </MenuButton>
+        <span class="nsv__draftstate">{{ draftCtl.draft.value ? `Draft rev ${draftCtl.draft.value.version}` : 'No draft yet' }}</span>
+        <MenuButton
+          v-if="step < 6"
+          
+          :icon="IconArrowRight"
+          :disabled="!canContinue"
+          @click="next()">
+          Continue
+        </MenuButton>
+        <MenuButton
+          v-else
+          
+          :icon="IconPlay"
+          :disabled="draftCtl.creating.value || localIssues.length > 0"
+          @click="create()">
+          {{ draftCtl.creating.value ? 'Creating…' : 'Begin the story' }}
+        </MenuButton>
+      </footer>
+    </template>
+    <div v-else class="nsv__state" role="status">
+      <p class="nsv__state-title">Opening the library…</p>
+    </div>
   </main>
 </template>
 
@@ -123,99 +518,60 @@ function saveDraft(): void {
   max-width: 1440px;
   margin: 0 auto;
   padding: 14px 16px 40px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
 }
-
-/* band ---------------------------------------------------------------------- */
-.nsv__band {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(300px, 1fr) auto minmax(180px, 300px);
-  align-items: center;
-  gap: 26px;
-  padding: 16px 26px 18px;
-  overflow: hidden;
+.nsv__panel {
+  margin-top: 14px;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fbf6e9;
 }
-.band__ridge {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 430px;
-  height: 128px;
-  opacity: 0.75;
-  pointer-events: none;
-}
-.band__lead {
-  position: relative;
-  min-width: 0;
-}
-.band__title {
-  margin-top: 4px;
+.nsv__h {
+  margin: 0;
   font-family: var(--font-display);
-  font-size: 41px;
+  font-size: 26px;
   font-weight: 600;
-  line-height: 1.02;
   color: #26200f;
 }
-.band__copy {
-  margin-top: 7px;
-  font-size: 16px;
-  line-height: 1.4;
-  color: var(--ink-2);
+.nsv__state {
+  margin-top: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fbf6e9;
 }
-.band__stepper {
-  position: relative;
+.nsv__state-title {
+  margin: 0;
+  font-weight: 600;
 }
-.band__quote {
-  position: relative;
-  text-align: center;
-  font-size: 15.5px;
-  line-height: 1.45;
+.nsv__state-body {
+  margin: 6px 0 0;
+  color: #4a4436;
 }
-
-/* main grid ------------------------------------------------------------------ */
-.nsv__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 14px;
-  align-items: stretch;
+.nsv__notice {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fffdf6;
+  color: #4a4436;
 }
-.nsv__cast {
-  padding: 17px 20px 20px;
-  min-width: 0;
-}
-.nsv__side {
+.nsv__footer {
   display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-width: 0;
-}
-
-.cast__head {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.cast__title {
-  display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-family: var(--font-display);
-  font-size: 24px;
-  font-weight: 600;
-  color: #26200f;
+  margin-top: 14px;
+  padding: 12px 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fbf6e9;
 }
-.cast__title svg {
-  color: var(--gold);
+.cast__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 14px;
+  align-items: start;
 }
-.cast__rule {
-  flex: 1;
-  height: 1px;
-  background: #e6d9bb;
-}
-
 .cast__toolbar {
   display: flex;
   align-items: center;
@@ -223,106 +579,199 @@ function saveDraft(): void {
   gap: 10px;
   margin-top: 14px;
 }
-.cast__search {
-  flex: 1 1 240px;
-  max-width: 340px;
-}
-.cast__spacer {
-  flex: 1;
-}
-
 .cast__grid {
   margin-top: 16px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(206px, 1fr));
   gap: 16px;
 }
-.cast__none {
-  grid-column: 1 / -1;
-  text-align: center;
-  color: var(--muted);
-  font-style: italic;
-  padding: 24px 0;
+.sel {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fcf7ea, #f8f1df);
+  padding: 14px 16px;
 }
-
-/* footer ---------------------------------------------------------------------- */
-.nsv__foot {
-  position: relative;
+.sel__head {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 18px;
-  overflow: hidden;
+  align-items: baseline;
+  justify-content: space-between;
 }
-.foot__ridge {
+.sel__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+}
+.sel__count {
+  font-size: 13px;
+  color: #6b5d43;
+}
+.sel__empty {
+  color: #6b5d43;
+  font-size: 14px;
+}
+.sel__list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.nsv__worlds {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+@media (max-width: 1100px) {
+  .cast__layout {
+    grid-template-columns: 1fr;
+  }
+}
+.nsv__world {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fcf7ea, #f8f1df);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.nsv__world--on {
+  border-color: #1f4d3f;
+  box-shadow: 0 0 0 2px rgba(31, 77, 63, 0.25);
+}
+.nsv__world-name {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 20px;
+  font-weight: 600;
+}
+.nsv__world-rev {
+  font-size: 12px;
+  color: #6b5d43;
+}
+.nsv__world-desc {
+  font-size: 14px;
+  color: #4a4436;
+}
+.nsv__world-places {
+  font-size: 13px;
+  color: #6b5d43;
+}
+.nsv__band {
+  position: relative;
+  overflow: hidden;
+  padding: 20px 26px;
+  margin-bottom: 14px;
+}
+.nsv__ridge {
   position: absolute;
   right: 0;
   bottom: 0;
-  width: 380px;
-  height: 96px;
-  opacity: 0.6;
+  width: 46%;
+  height: 100%;
+  color: #c9b58c;
+  opacity: 0.5;
   pointer-events: none;
 }
-.ghost {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  height: 46px;
-  padding: 0 20px;
+.nsv__modes {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+.nsv__field {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  font-weight: 600;
+}
+.nsv__field input,
+.nsv__field select,
+.sel__place select {
+  font: inherit;
+  font-weight: 400;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf6;
+  color: inherit;
+  max-width: 420px;
+}
+.nsv__body {
+  color: #4a4436;
+}
+.nsv__hint {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #6b5d43;
+}
+.nsv__review {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+}
+.nsv__review > div {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 8px;
+}
+.nsv__review dt {
+  font-weight: 600;
+  color: #6b5d43;
+}
+.nsv__review dd {
+  margin: 0;
+}
+.nsv__issues {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border: 1px solid #b3543f;
   border-radius: 10px;
-  border: 1px solid #cdbb93;
-  background: linear-gradient(180deg, #fdf8ea, #f9f1de);
-  box-shadow:
-    inset 0 1px 0 #fffdf5,
-    0 1px 1px rgba(120, 96, 56, 0.08);
-  font-size: 17px;
-  font-weight: 500;
-  color: var(--ink);
-  transition:
-    background 0.14s ease,
-    border-color 0.14s ease,
-    color 0.14s ease;
+  background: #fbeee8;
+  color: #7c3226;
+  list-style: disc inside;
 }
-.ghost:hover {
-  background: linear-gradient(180deg, #fbf4e2, #f4ead2);
-  border-color: #b9a577;
-}
-.ghost--saved {
-  color: var(--teal-ink);
-  border-color: #8fae9f;
-}
-.foot__quote {
+.nsv__draftstate {
   margin-left: auto;
-  position: relative;
-  text-align: right;
-  font-size: 14.5px;
-  line-height: 1.4;
+  margin-right: 8px;
+  font-size: 13px;
+  color: #6b5d43;
 }
-.foot__cta {
-  position: relative;
-  width: 380px;
-  flex: none;
+.sel__row {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #fcf7ea, #f8f1df);
 }
-
-@media (max-width: 1250px) {
-  .nsv__band {
-    grid-template-columns: 1fr;
-    row-gap: 18px;
-  }
-  .band__quote {
-    display: none;
-  }
-  .band__stepper {
-    overflow-x: auto;
-  }
+.sel__who {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
-@media (max-width: 1100px) {
-  .nsv__grid {
-    grid-template-columns: 1fr;
-  }
-  .foot__quote {
-    display: none;
-  }
+.sel__rev {
+  font-size: 12px;
+  color: #6b5d43;
+}
+.sel__place {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.sel__remove {
+  justify-self: start;
+  font: inherit;
+  font-size: 13px;
+  color: #7c3226;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
 }
 </style>
