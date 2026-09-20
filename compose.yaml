@@ -37,7 +37,7 @@ services:
     environment:
       WORLDSIM_APP__HOST: "0.0.0.0"
       WORLDSIM_APP__PORT: "8000"
-      WORLDSIM_DATABASE__URL: "postgresql+asyncpg://embervale:${POSTGRES_PASSWORD:-changeme-local-only}@db:5432/${POSTGRES_DB:-embervale}"
+      WORLDSIM_DATABASE__URL: "postgresql+asyncpg://${POSTGRES_USER:-embervale}:${POSTGRES_PASSWORD:-changeme-local-only}@db:5432/${POSTGRES_DB:-embervale}"
       WORLDSIM_SECURITY__PUBLIC_BIND_ALLOW: "${WORLDSIM_SECURITY__PUBLIC_BIND_ALLOW:-false}"
       WORLDSIM_SECURITY__API_KEY: "${WORLDSIM_SECURITY__API_KEY:-}"
     ports:

@@ -22,6 +22,7 @@ from worldsim.application.library.builtins import WORLD_PRESET_ID
 from worldsim.application.orchestration.stage1 import UnitOfWorkFactory
 from worldsim.application.stories.validation import validate_draft
 from worldsim.application.unit_of_work import UnitOfWork
+from worldsim.domain.activities import TravelRoute
 from worldsim.domain.characters import Character, CharacterCard
 from worldsim.domain.enums import EventType, LifeStatus, PhaseName, PhaseRunState, UserRole
 from worldsim.domain.errors import DomainError, ErrorCode
@@ -31,6 +32,7 @@ from worldsim.domain.ids import (
     new_character_id,
     new_location_id,
     new_role_grant_id,
+    new_route_id,
     new_world_id,
 )
 from worldsim.domain.phases import PhaseRun
@@ -236,6 +238,7 @@ async def _instantiate(
                 discovered=True,
             )
         )
+    await _materialize_travel(uow, world_id, world_preset, location_ids)
     runtime_characters: dict[str, UUID] = {}
     for member in payload.cast:
         character_id = new_character_id()
@@ -342,6 +345,48 @@ async def _instantiate(
         character_id=controlled,
         replayed=False,
     )
+
+
+async def _materialize_travel(
+    uow: UnitOfWork,
+    world_id: UUID,
+    world_preset: WorldPresetPayload,
+    location_ids: dict[str, UUID],
+) -> None:
+    """Validate preset travel pairs and persist one directed route per pair.
+
+    Runs inside the creation transaction: an unknown endpoint, a loop, a
+    malformed pair or a duplicate leg fails creation with no partial world.
+    Starter legs cost nothing and resolve in one phase.
+    """
+    seen: set[tuple[str, str]] = set()
+    for pair in world_preset.travel:
+        if len(pair) != 2:
+            raise DomainError(
+                ErrorCode.VALIDATION_FAILED, f"travel pair must name two places: {pair!r}"
+            )
+        src, dst = pair[0], pair[1]
+        if src not in location_ids or dst not in location_ids:
+            raise DomainError(
+                ErrorCode.VALIDATION_FAILED, f"travel endpoint unknown: {src!r} -> {dst!r}"
+            )
+        if src == dst:
+            raise DomainError(ErrorCode.VALIDATION_FAILED, f"travel leg cannot loop: {src!r}")
+        if (src, dst) in seen:
+            raise DomainError(
+                ErrorCode.VALIDATION_FAILED, f"duplicate travel leg: {src!r} -> {dst!r}"
+            )
+        seen.add((src, dst))
+        await uow.routes.add(
+            TravelRoute(
+                id=new_route_id(),
+                world_id=world_id,
+                from_location_id=location_ids[src],
+                to_location_id=location_ids[dst],
+                duration_phases=1,
+                stamina_cost=0,
+            )
+        )
 
 
 def _preset_start(preset: CharacterPresetPayload, fallback: str) -> str:

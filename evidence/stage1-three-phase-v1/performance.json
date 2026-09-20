@@ -1,0 +1,12 @@
+{
+  "phase_seconds": {
+    "1": 0.925,
+    "2": 0.653,
+    "3": 0.514
+  },
+  "model_calls": 13,
+  "model_latency_ms": 0,
+  "prompt_tokens": 0,
+  "completion_tokens": 0,
+  "note": "Fake path latency is near zero; live-provider profiling is opt-in."
+}

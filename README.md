@@ -134,3 +134,43 @@ provider/model coupling transitions.
 | `character-wren-fullbody.webp` | the Character studio full-body render slot (`character.wren.fullbody`) |
 | `world-ember-vale.webp` / `world-silverleaf.webp` | world-card art |
 | `library-banner.webp` | Library page banner strip |
+
+## Backend (worldsim engine, E1 spine)
+
+Coherent FastAPI/Postgres engine vendored from PixelSaga (see
+`backend/README.md` for provenance). Isolated compose stack — never point it
+at an old PixelSaga database.
+
+```bash
+cp .env.example .env   # fill WORLDSIM_SECURITY__API_KEY (required: compose api binds 0.0.0.0)
+docker compose up -d   # db on localhost:5433, api on localhost:8101
+curl http://localhost:8101/api/v1/health/live    # {"status":"ok"}
+curl http://localhost:8101/api/v1/health/ready   # migrations head, seed/model checks
+docker compose logs api  # entrypoint runs `alembic upgrade head`, then serves
+```
+
+Host-run backend (same isolated DB): export `.env` first
+(`set -a; source .env; set +a`), then from the repo root:
+
+```bash
+uv sync --project backend --group dev
+uv run --project backend --group dev alembic -c backend/alembic.ini upgrade head
+uv run --project backend --group dev python -m worldsim.interfaces.cli serve
+```
+
+Backend regression subset (needs the compose db up; scratch databases are
+created/dropped on that same server):
+
+```bash
+export WORLDSIM_DATABASE__URL=postgresql+asyncpg://<user>:<pass>@localhost:5433/embervale
+uv run --project backend --group dev pytest backend/tests/test_db_migrations.py \
+  backend/tests/test_tx_commit.py backend/tests/test_seed_import.py \
+  backend/tests/test_uow_repositories.py backend/tests/test_task_leases.py \
+  backend/tests/test_stage0_foundation.py backend/tests/test_stage1_gate.py \
+  backend/tests/test_scene_commit.py
+```
+
+Frontend dev proxy: `vite.config.ts` forwards `/api` to `localhost:8101`, so
+`npm run dev` serves the UI at `localhost:5173` with a same-origin API path.
+`src/api/client.ts` is the handwritten readiness spine until the generated
+contract replaces it in E2.

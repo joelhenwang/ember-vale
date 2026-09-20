@@ -24,7 +24,8 @@ Date: 2026-09-20. Vendored engine: PixelSaga @ `653614d` (read-only source).
 - `docker compose build api` → `ember-vale-api` built.
 - `docker compose up -d api` → entrypoint ran `alembic upgrade head`, then serve.
 - `GET :8101/api/v1/health/live` → `{"status":"ok"}`.
-- `GET :8101/api/v1/health/ready` → `migration_head: 0031_settings_pipeline`,
+- `GET :8101/api/v1/health/ready` → `migration_head: 0031_settings_pipeline`
+  (since superseded by `0032_starter_travel`, see `b-backend-journey.md`),
   database ok, migrations ok, extensions ok (vector), model profile `active:fake`,
   seed `degraded` (`worlds:0` — expected pre-seed; E2 seeds starter presets).
 - Vite proxy proof: `GET :5173/api/v1/health/live` → `{"status":"ok"}`.

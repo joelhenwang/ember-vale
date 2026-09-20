@@ -1,0 +1,11 @@
+{
+  "scenario": "stage0-foundation-v1",
+  "world_id": "10000000-0000-4000-8000-000000000001",
+  "migration_head": "0018_s2_roles",
+  "seed_version": "stage0-v1",
+  "files": [
+    "scenario.json",
+    "security.json",
+    "index.json"
+  ]
+}

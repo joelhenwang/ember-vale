@@ -1,0 +1,9 @@
+{
+  "scanned": [
+    "C:\\Users\\JoelWang\\Documents\\dev\\ember-vale\\evidence\\stage0-foundation-v1\\scenario.json",
+    "C:\\Users\\JoelWang\\Documents\\dev\\ember-vale\\content\\schemas\\openapi.json",
+    "C:\\Users\\JoelWang\\Documents\\dev\\ember-vale\\content\\schemas\\domain-schema.json"
+  ],
+  "sentinels_tested": 2,
+  "clean": true
+}

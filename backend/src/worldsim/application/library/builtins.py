@@ -46,7 +46,10 @@ def builtin_definitions() -> list[tuple[UUID, PresetKind, str, PresetPayload]]:
             WorldLocationPreset(key="hearth", name="Hearth"),
             WorldLocationPreset(key="market", name="Market"),
         ],
-        travel=[],
+        # Directed legs: Hearth <-> Market. Endpoints must be location keys
+        # above; story creation validates and materializes each pair into a
+        # travel_route row (see stories.create._materialize_travel).
+        travel=[["hearth", "market"], ["market", "hearth"]],
         starting_location_key="hearth",
         default_cast=["wren", "ash"],
         style_pack_id="anime-saga-v1",

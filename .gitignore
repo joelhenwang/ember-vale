@@ -4,6 +4,8 @@ dist
 .DS_Store
 .env
 backend/.venv
+backend/src/*.egg-info
+*.egg-info
 __pycache__
 .pytest_cache
 .ruff_cache

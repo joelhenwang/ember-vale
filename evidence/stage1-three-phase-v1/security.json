@@ -1,0 +1,55 @@
+{
+  "prompt_provenance": [
+    {
+      "role": "character_decision",
+      "actor_hint": "wren",
+      "has_secret": true
+    },
+    {
+      "role": "character_decision",
+      "actor_hint": "ash",
+      "has_secret": false
+    },
+    {
+      "role": "character_decision",
+      "actor_hint": "wren",
+      "has_secret": true
+    },
+    {
+      "role": "reaction",
+      "actor_hint": "wren",
+      "has_secret": false
+    },
+    {
+      "role": "reaction",
+      "actor_hint": "wren",
+      "has_secret": true
+    },
+    {
+      "role": "resolver",
+      "actor_hint": "?",
+      "has_secret": false
+    },
+    {
+      "role": "narrator",
+      "actor_hint": "wren",
+      "has_secret": false
+    },
+    {
+      "role": "narrator",
+      "actor_hint": "wren",
+      "has_secret": false
+    },
+    {
+      "role": "character_decision",
+      "actor_hint": "wren",
+      "has_secret": false
+    },
+    {
+      "role": "character_decision",
+      "actor_hint": "wren",
+      "has_secret": true
+    }
+  ],
+  "secret_scoped_to_wren": true
+}
