@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  planBootRecovery,
   resetDraftMemoryForTests,
-  resolveRecovery,
   useStoryDraft,
   type RecoveryDraft
 } from './useStoryDraft'
@@ -16,6 +16,8 @@ interface Seen {
 
 let seen: Seen[] = []
 let versions = new Map<string, number>()
+/** Last payload the stub server accepted per draft, via PATCH. */
+let serverPayloads = new Map<string, unknown>()
 let nextDraft = 0
 let storyPosts: Array<{ body: unknown; key: string | null }> = []
 let storyFailures: Error[] = []
@@ -41,7 +43,7 @@ const SEL: NewStorySelections = {
 function draftOf(id: string): Record<string, unknown> {
   return {
     id,
-    payload: {},
+    payload: serverPayloads.get(id) ?? {},
     current_step: 'review',
     version: versions.get(id) ?? 1,
     created_world_id: null,
@@ -53,6 +55,7 @@ function draftOf(id: string): Record<string, unknown> {
 function installFetch(): void {
   seen = []
   versions = new Map()
+  serverPayloads = new Map()
   nextDraft = 0
   storyPosts = []
   storyFailures = []
@@ -89,6 +92,7 @@ function installFetch(): void {
         const id = url.pathname.split('/').at(-1) as string
         const next = (versions.get(id) ?? 1) + 1
         versions.set(id, next)
+        serverPayloads.set(id, (body as { payload?: unknown })?.payload ?? {})
         return json(draftOf(id))
       }
       if (method === 'GET' && url.pathname.startsWith('/api/v1/story-drafts/')) {
@@ -399,65 +403,150 @@ describe('useStoryDraft guarded workflow', () => {
     expect(storiesPosts().at(-1)?.headers['Idempotency-Key']).toBe(originalKey)
   })
 
-  it('a delayed older save never deletes a newer recovery snapshot', async () => {
+  it('delayed success reopens the wizard on Newest, then reloads it from the server', async () => {
     installFetch()
+    // Fake persistent storage: the reload keeps storage, loses module memory.
+    const store = new Map<string, string>()
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k)
+    })
     patchHold = true
     const ctl = useStoryDraft()
     await ctl.openNew(SEL, 'world')
     const older = { ...SEL, title: 'Older title' }
     const newer = { ...SEL, title: 'Newest title' }
+    // Submit Older, edit Newest, leave while the older PATCH is pending.
     const pendingOlder = ctl.save(older, 'world')
     await vi.waitFor(() => expect(heldPatches.length).toBeGreaterThan(0))
-    // Edit + leave while the older PATCH is pending: the route guard
-    // snapshots the newest input into this draft's recovery slot.
     ctl.storeRecovery('d-1', newer, 'world')
     patchHold = false
     heldPatches.forEach((release) => release())
     expect(await pendingOlder).toBe(true)
-    // The server saved the older input, but the newer local copy survives.
+    // The older save succeeded but must not delete the newer recovery.
     expect(ctl.readRecovery('d-1')?.selections.title).toBe('Newest title')
-    // Reopening arbitrates by version, not timestamps: the server committed
-    // Older at v2 AFTER the Newest snapshot was taken, yet the wizard must
-    // show Newest — surfaced as a conflict, never silently dropped.
+
+    // Reopen after a full reload: module memory cleared, storage retained,
+    // fresh controller. The server committed Older at v2 AFTER the Newest
+    // snapshot, yet the wizard's own restoration plan must show Newest —
+    // kept alongside the moved server version as an explicit choice.
+    resetDraftMemoryForTests()
     const fresh = useStoryDraft()
     await fresh.openExisting('d-1')
     const stored = fresh.readRecovery('d-1')
     expect(stored?.selections.title).toBe('Newest title')
-    expect(resolveRecovery(buildDraftPayload(older), 2, stored as RecoveryDraft)).toBe('conflict')
-    // The wizard applies Newest; saving it clears the entry.
-    expect(await fresh.save(newer, 'world')).toBe(true)
+    const server = fresh.draft.value
+    expect(server?.version).toBe(2)
+    const plan = planBootRecovery(
+      {
+        payload: server?.payload,
+        version: server?.version ?? 0,
+        step: server?.current_step ?? 'world'
+      },
+      stored
+    )
+    expect(plan.kind).toBe('restore')
+    if (plan.kind !== 'restore') return
+    expect(plan.conflict).toBe(true)
+    expect(plan.selections.title).toBe('Newest title')
+    expect(plan.serverPayload).toEqual(buildDraftPayload(older))
+    // The wizard applies Newest and saves it: the server holds Newest and
+    // the recovery entry clears.
+    expect(await fresh.save(plan.selections, plan.step)).toBe(true)
+    expect(serverPayloads.get('d-1')).toEqual(buildDraftPayload(newer))
     expect(fresh.readRecovery('d-1')).toBeNull()
+
+    // Reopen once more: no recovery remains, the draft loads from the server.
+    resetDraftMemoryForTests()
+    const again = useStoryDraft()
+    await again.openExisting('d-1')
+    expect(again.readRecovery('d-1')).toBeNull()
+    const reloaded = again.draft.value
+    expect(reloaded?.payload).toEqual(buildDraftPayload(newer))
+    expect(
+      planBootRecovery(
+        {
+          payload: reloaded?.payload,
+          version: reloaded?.version ?? 0,
+          step: reloaded?.current_step ?? 'world'
+        },
+        null
+      ).kind
+    ).toBe('none')
   })
 
-  it('a delayed older failure never overwrites a newer recovery snapshot', async () => {
+  it('delayed failure reopens the wizard on Newest, then reloads it from the server', async () => {
     installFetch()
+    const store = new Map<string, string>()
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k)
+    })
     patchHold = true
     failPatches = 1
     const ctl = useStoryDraft()
     await ctl.openNew(SEL, 'world')
     const older = { ...SEL, title: 'Older title' }
     const newer = { ...SEL, title: 'Newest title' }
+    // Submit Older, edit Newest, leave — then the older PATCH fails. The
+    // failure handler must keep the newer leave snapshot, not store Older.
     const pendingOlder = ctl.save(older, 'world')
     await vi.waitFor(() => expect(heldPatches.length).toBeGreaterThan(0))
-    // Edit + leave while the older PATCH is pending, then it fails: the
-    // failure handler must keep the newer leave snapshot, not store Older.
     ctl.storeRecovery('d-1', newer, 'world')
     patchHold = false
     heldPatches.forEach((release) => release())
     expect(await pendingOlder).toBe(false)
     expect(ctl.readRecovery('d-1')?.selections.title).toBe('Newest title')
-    // A fresh controller reopens onto an unchanged server (still v1): the
-    // outstanding Newest edits restore, then save cleanly and clear.
+
+    // Reopen after a full reload onto the unchanged server (still v1): the
+    // wizard's own restoration plan shows the outstanding Newest edits.
+    resetDraftMemoryForTests()
     const fresh = useStoryDraft()
     await fresh.openExisting('d-1')
     const stored = fresh.readRecovery('d-1')
     expect(stored?.selections.title).toBe('Newest title')
-    expect(resolveRecovery({}, 1, stored as RecoveryDraft)).toBe('restore')
-    expect(await fresh.save(newer, 'world')).toBe(true)
+    const server = fresh.draft.value
+    expect(server?.version).toBe(1)
+    const plan = planBootRecovery(
+      {
+        payload: server?.payload,
+        version: server?.version ?? 0,
+        step: server?.current_step ?? 'world'
+      },
+      stored
+    )
+    expect(plan.kind).toBe('restore')
+    if (plan.kind !== 'restore') return
+    expect(plan.conflict).toBe(false)
+    expect(plan.selections.title).toBe('Newest title')
+    // The wizard applies Newest and saves it: the server holds Newest and
+    // the recovery entry clears.
+    expect(await fresh.save(plan.selections, plan.step)).toBe(true)
+    expect(serverPayloads.get('d-1')).toEqual(buildDraftPayload(newer))
     expect(fresh.readRecovery('d-1')).toBeNull()
+
+    // Reopen once more: no recovery remains, the draft loads from the server.
+    resetDraftMemoryForTests()
+    const again = useStoryDraft()
+    await again.openExisting('d-1')
+    expect(again.readRecovery('d-1')).toBeNull()
+    const reloaded = again.draft.value
+    expect(reloaded?.payload).toEqual(buildDraftPayload(newer))
+    expect(
+      planBootRecovery(
+        {
+          payload: reloaded?.payload,
+          version: reloaded?.version ?? 0,
+          step: reloaded?.current_step ?? 'world'
+        },
+        null
+      ).kind
+    ).toBe('none')
   })
 
-  it('resolveRecovery marks server-held edits covered', () => {
+  it('planBootRecovery marks server-held edits covered', () => {
     const selections: NewStorySelections = { ...SEL, title: 'Newest title' }
     const stored: RecoveryDraft = {
       draftId: 'd-1',
@@ -467,7 +556,12 @@ describe('useStoryDraft guarded workflow', () => {
       snapshot: '',
       baseVersion: 1
     }
-    expect(resolveRecovery(buildDraftPayload(selections), 2, stored)).toBe('covered')
+    expect(
+      planBootRecovery(
+        { payload: buildDraftPayload(selections), version: 2, step: 'world' },
+        stored
+      ).kind
+    ).toBe('covered')
   })
 
   it('disposing during creation reconciles without applying', async () => {

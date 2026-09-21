@@ -112,6 +112,50 @@ export function resolveRecovery(
   return 'restore'
 }
 
+export interface BootServerDraft {
+  payload: unknown
+  version: number
+  step: string
+}
+
+/**
+ * The wizard's reopening plan for one draft — the exact logic
+ * NewStoryView boots with. Either there is nothing to do, the server
+ * already holds the kept edits (clear the entry), or the outstanding
+ * local edits apply; on conflict the independent server state is
+ * preserved in the plan so the wizard can offer both versions.
+ */
+export type BootRecoveryPlan =
+  | { kind: 'none' }
+  | { kind: 'covered' }
+  | {
+      kind: 'restore'
+      selections: NewStorySelections
+      step: string
+      /** Server moved past the snapshot's base with different content. */
+      conflict: boolean
+      /** The independent server state, kept for the recovery choice. */
+      serverPayload: unknown
+      serverStep: string
+    }
+
+export function planBootRecovery(
+  server: BootServerDraft,
+  recovery: RecoveryDraft | null
+): BootRecoveryPlan {
+  if (!recovery) return { kind: 'none' }
+  const decision = resolveRecovery(server.payload, server.version, recovery)
+  if (decision === 'covered') return { kind: 'covered' }
+  return {
+    kind: 'restore',
+    selections: recovery.selections,
+    step: recovery.step,
+    conflict: decision === 'conflict',
+    serverPayload: server.payload,
+    serverStep: server.step
+  }
+}
+
 export type SaveState = 'clean' | 'saving' | 'unsaved' | 'failed'
 
 function snapshotOf(selections: NewStorySelections, step: string): string {

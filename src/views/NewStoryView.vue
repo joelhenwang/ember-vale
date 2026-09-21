@@ -16,7 +16,7 @@ import MountainRidge from '../components/decor/MountainRidge.vue'
 import PageIntro from '../components/ui/PageIntro.vue'
 import { useBackend } from '../composables/useBackend'
 import { usePresets, type PresetCharacter } from '../composables/usePresets'
-import { resolveRecovery, useStoryDraft } from '../composables/useStoryDraft'
+import { planBootRecovery, useStoryDraft } from '../composables/useStoryDraft'
 import { usePinnedPresets } from '../composables/usePinnedPresets'
 import {
   controlledAfterCastChange,
@@ -47,7 +47,28 @@ const step = ref(1)
 const booted = ref(false)
 const bootError = ref<string | null>(null)
 const bootNotice = ref<string | null>(null)
+/** Independent server state preserved while a recovery conflict awaits choice. */
+const serverAlternative = ref<{ payload: Record<string, unknown>; step: number } | null>(null)
 let bootCycle = 0
+
+function keepLocalRecovery(): void {
+  // The kept choices stay applied; their entry still clears only via a
+  // covering save. The server alternative is dropped with the choice.
+  serverAlternative.value = null
+  bootNotice.value =
+    'Restored choices kept locally on this device — review them and save before leaving.'
+}
+
+function useServerVersion(): void {
+  const alt = serverAlternative.value
+  const opened = draftCtl.draft.value
+  if (!alt || !opened) return
+  hydrate(alt.payload)
+  step.value = alt.step
+  draftCtl.clearRecovery(opened.id)
+  serverAlternative.value = null
+  bootNotice.value = null
+}
 
 const filters = reactive<CastFilter>({ search: '', category: 'all', sort: 'name' })
 const categoryOptions = [
@@ -355,6 +376,7 @@ async function boot(draftOverride?: string): Promise<void> {
   booted.value = false
   bootError.value = null
   bootNotice.value = null
+  serverAlternative.value = null
   worldNotice.value = null
   pinned.clearWorld()
   await presets.load()
@@ -404,20 +426,28 @@ async function boot(draftOverride?: string): Promise<void> {
   // A stored recovery holds edits the server may not have. Timestamps
   // cannot decide that — the server can commit an older save after the
   // snapshot was taken — so arbitration is by version and content: restore
-  // outstanding local edits, surface a conflict when the server moved
+  // outstanding local edits, offer both versions when the server moved
   // underneath them, and clear when the server already holds them.
   const recovery = draftCtl.readRecovery(opened.id)
-  if (recovery) {
-    const decision = resolveRecovery(opened.payload, opened.version, recovery)
-    if (decision === 'covered') {
-      draftCtl.clearRecovery(opened.id)
-    } else {
-      applyRecoverySelections(recovery.selections)
-      step.value = stepOf(recovery.step)
+  const plan = planBootRecovery(
+    { payload: opened.payload, version: opened.version, step: opened.current_step },
+    recovery
+  )
+  if (plan.kind === 'covered') {
+    draftCtl.clearRecovery(opened.id)
+  } else if (plan.kind === 'restore') {
+    applyRecoverySelections(plan.selections)
+    step.value = stepOf(plan.step)
+    if (plan.conflict) {
+      serverAlternative.value = {
+        payload: opened.payload as Record<string, unknown>,
+        step: stepOf(opened.current_step)
+      }
       bootNotice.value =
-        decision === 'conflict'
-          ? 'The server changed since these locally kept choices were made — review them carefully before saving.'
-          : 'Restored choices kept locally on this device — review them and save before leaving.'
+        'The server changed since these locally kept choices were made — your kept choices are shown. Keep them or switch to the server version, then save.'
+    } else {
+      bootNotice.value =
+        'Restored choices kept locally on this device — review them and save before leaving.'
     }
   }
   await ensurePinned()
@@ -603,6 +633,22 @@ onMounted(() => {
     <template v-else-if="booted">
       <StoryStepper :current="step" @go="go" />
       <p v-if="bootNotice" class="nsv__notice" role="status">{{ bootNotice }}</p>
+      <div v-if="serverAlternative" class="nsv__modes" role="group" aria-label="Recovery choice">
+        <button
+          type="button"
+          class="nsv__world nsv__world--on"
+          :aria-pressed="true"
+          @click="keepLocalRecovery">
+          <span class="nsv__world-name">Keep my kept choices</span>
+          <span class="nsv__world-desc">Shown now — still local until you save.</span>
+        </button>
+        <button type="button" class="nsv__world" :aria-pressed="false" @click="useServerVersion">
+          <span class="nsv__world-name">Use server version</span>
+          <span class="nsv__world-desc"
+            >Discard the kept choices and show what the server holds.</span
+          >
+        </button>
+      </div>
       <p v-if="worldNotice" class="nsv__notice" role="status">{{ worldNotice }}</p>
       <p v-if="!draftCtl.storageOk.value" class="nsv__notice" role="alert">
         Browser storage is unavailable — your choices are kept in this tab only. Save successfully
