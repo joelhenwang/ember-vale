@@ -8,7 +8,7 @@
  */
 
 import { computed, ref } from 'vue'
-import type { ImageSlot } from '../game/model'
+import type { CharacterDef, ImageSlot, WorldDef } from '../game/model'
 import { getPreset, listPresets } from '../api/worldsim'
 
 export interface PresetCharacter {
@@ -39,6 +39,49 @@ const PORTRAIT_BY_NAME: Record<string, ImageSlot> = {
 function roleFromTags(tags: string[]): string {
   const skip = new Set(['Human', 'Player-ready', 'NPC'])
   return tags.find((t) => !skip.has(t)) ?? 'Wanderer'
+}
+
+const WORLD_IMAGE_BY_NAME: Record<string, ImageSlot> = {
+  'Ember Vale': 'world.emberVale'
+}
+
+/**
+ * Present a server character preset as a Library card record. Pure
+ * presentation mapping: usage counts are unknown until stories report
+ * them, and the revision doubles as the recency key. Anything without
+ * curated art gets the neutral fallback, never another face.
+ */
+export function toLibraryCharacter(p: PresetCharacter): CharacterDef {
+  return {
+    id: p.id,
+    name: p.name,
+    role: p.role,
+    blurb: p.blurb,
+    bio: p.blurb,
+    tags: p.tags.map((label) =>
+      label === 'Player-ready' ? { label, tone: 'green' as const } : { label }
+    ),
+    imageSlot: p.imageSlot,
+    categories: p.playerReady ? ['companions'] : ['locals'],
+    playerReady: p.playerReady,
+    usedInStories: 0,
+    updatedAt: p.revision
+  }
+}
+
+/** Present a server world preset as a Library card record (same policy). */
+export function toLibraryWorld(p: PresetWorld): WorldDef {
+  return {
+    id: p.id,
+    name: p.name,
+    blurb: p.description,
+    tags: [],
+    imageSlot: WORLD_IMAGE_BY_NAME[p.name] ?? 'world.map',
+    places: p.places.length,
+    usedInStories: 0,
+    status: 'ready',
+    updatedAt: p.revision
+  }
 }
 
 export function usePresets() {

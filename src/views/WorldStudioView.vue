@@ -13,9 +13,10 @@
   increments `step`. Production replaces it with per-step routes + validation.
 -->
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { catalog } from '../game/catalog'
+import { usePresets } from '../composables/usePresets'
 import { resolveImage, setGeneratedImage } from '../game/images'
 import type { ImageSlot } from '../game/model'
 import {
@@ -49,8 +50,17 @@ const route = useRoute()
 const router = useRouter()
 
 const id = computed(() => String(route.params.id ?? 'new'))
+/* Server preset first (E3), then the local catalog, then the blank default. */
+const presets = usePresets()
+let presetAbort: AbortController | null = null
+onMounted(() => {
+  presetAbort = new AbortController()
+  void presets.load(presetAbort.signal)
+})
+onUnmounted(() => presetAbort?.abort())
+const serverWorld = computed(() => presets.worlds.value.find((w) => w.id === id.value))
 const world = computed(() => catalog.worlds.find((w) => w.id === id.value))
-const worldName = computed(() => world.value?.name ?? 'your new world')
+const worldName = computed(() => serverWorld.value?.name ?? world.value?.name ?? 'your new world')
 const fromLibrary = computed(() => route.meta.from === 'library')
 const originCrumb = computed(() => (fromLibrary.value ? 'Library' : 'New Story'))
 const originRoute = computed(() => (fromLibrary.value ? '/library?tab=worlds' : '/new-story'))

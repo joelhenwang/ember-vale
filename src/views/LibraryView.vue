@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import type { Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { catalog, libraryUi, resetLibraryFilters } from '../game/catalog'
 import { filterCharactersLibrary, filterPacks, filterWorlds } from '../game/filters'
+import { toLibraryCharacter, toLibraryWorld, usePresets } from '../composables/usePresets'
 import { useGameImage } from '../game/images'
 import { useRouteQueryTab } from '../game/useTab'
 import LibTabBar from '../components/library/LibTabBar.vue'
@@ -33,9 +34,25 @@ const viewOptions: { value: 'grid' | 'list'; label: string; icon: Component }[] 
   { value: 'list', label: 'List view', icon: IconList }
 ]
 
+/* Worlds and characters come from server presets (E3); style packs and
+   templates stay on the local catalog until the backend models them. */
+const presets = usePresets()
+let presetAbort: AbortController | null = null
+onMounted(() => {
+  presetAbort = new AbortController()
+  void presets.load(presetAbort.signal)
+})
+onUnmounted(() => presetAbort?.abort())
+
+function retryPresets(): void {
+  presetAbort?.abort()
+  presetAbort = new AbortController()
+  void presets.load(presetAbort.signal)
+}
+
 const tabs = computed(() => [
-  { key: 'worlds', label: 'Worlds', count: catalog.worlds.length },
-  { key: 'characters', label: 'Characters', count: catalog.characters.length },
+  { key: 'worlds', label: 'Worlds', count: presets.worlds.value.length },
+  { key: 'characters', label: 'Characters', count: presets.characters.value.length },
   { key: 'style-packs', label: 'Style Packs', count: catalog.stylePacks.length },
   { key: 'templates', label: 'Templates', count: catalog.templates.length }
 ])
@@ -102,8 +119,12 @@ const libFilter = computed(() => ({
   sort: libraryUi.sort
 }))
 
-const characters = computed(() => filterCharactersLibrary(catalog.characters, libFilter.value))
-const worlds = computed(() => filterWorlds(catalog.worlds, libFilter.value))
+const characters = computed(() =>
+  filterCharactersLibrary(presets.characters.value.map(toLibraryCharacter), libFilter.value)
+)
+const worlds = computed(() =>
+  filterWorlds(presets.worlds.value.map(toLibraryWorld), libFilter.value)
+)
 const packs = computed(() => filterPacks(catalog.stylePacks, libFilter.value))
 const templates = computed(() => filterPacks(catalog.templates, libFilter.value))
 
@@ -174,31 +195,45 @@ function openWorld(id: string): void {
 
         <!-- characters -->
         <div v-if="tab === 'characters'" class="lib__cards">
-          <CharacterLibCard
-            v-for="c in characters"
-            :key="c.id"
-            :character="c"
-            @open="openCharacter(c.id)" />
+          <p v-if="presets.loading.value" class="lib__none" role="status">Reading the archive…</p>
+          <p v-else-if="presets.error.value" class="lib__none" role="alert">
+            The archive did not answer ({{ presets.error.value }}) —
+            <button type="button" class="lib__link" @click="retryPresets()">retry</button>
+          </p>
+          <template v-else>
+            <CharacterLibCard
+              v-for="c in characters"
+              :key="c.id"
+              :character="c"
+              @open="openCharacter(c.id)" />
+            <p v-if="!characters.length" class="lib__none">
+              Nothing in the archive matches — try another word.
+            </p>
+          </template>
           <CreateLibTile
             title="Create a character"
             copy="New companions.
 New possibilities."
             @create="openCharacter('new')" />
-          <p v-if="!characters.length" class="lib__none">
-            Nothing in the archive matches — try another word.
-          </p>
         </div>
 
         <!-- worlds -->
         <div v-else-if="tab === 'worlds'" class="lib__cards lib__cards--worlds">
-          <WorldLibCard v-for="w in worlds" :key="w.id" :world="w" @open="openWorld(w.id)" />
+          <p v-if="presets.loading.value" class="lib__none" role="status">Reading the archive…</p>
+          <p v-else-if="presets.error.value" class="lib__none" role="alert">
+            The archive did not answer ({{ presets.error.value }}) —
+            <button type="button" class="lib__link" @click="retryPresets()">retry</button>
+          </p>
+          <template v-else>
+            <WorldLibCard v-for="w in worlds" :key="w.id" :world="w" @open="openWorld(w.id)" />
+            <p v-if="!worlds.length" class="lib__none">No worlds match — the map is blank.</p>
+          </template>
           <CreateLibTile
             title="Create a world"
             copy="Shape the setting of
 your next story."
             cta="Create world"
             @create="openWorld('new')" />
-          <p v-if="!worlds.length" class="lib__none">No worlds match — the map is blank.</p>
         </div>
 
         <!-- style packs -->
@@ -388,6 +423,15 @@ every future story."
   font-style: italic;
   color: var(--muted);
   padding: 18px 0 6px;
+}
+.lib__link {
+  font: inherit;
+  color: #1f4d3f;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
 }
 
 @media (max-width: 1180px) {

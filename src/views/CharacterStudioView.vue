@@ -17,9 +17,10 @@
   "Save draft"/dirty state survive navigating to the Library and back.
 -->
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { catalog } from '../game/catalog'
+import { usePresets } from '../composables/usePresets'
 import {
   ensureCharDraft,
   isCharDirty,
@@ -43,8 +44,19 @@ const route = useRoute()
 const router = useRouter()
 
 const id = computed(() => String(route.params.id ?? 'new'))
+/* Server preset first (E3), then the local catalog, then the blank default. */
+const presets = usePresets()
+let presetAbort: AbortController | null = null
+onMounted(() => {
+  presetAbort = new AbortController()
+  void presets.load(presetAbort.signal)
+})
+onUnmounted(() => presetAbort?.abort())
+const serverCharacter = computed(() => presets.characters.value.find((c) => c.id === id.value))
 const character = computed(() => catalog.characters.find((c) => c.id === id.value))
-const displayName = computed(() => character.value?.name ?? 'the new character')
+const displayName = computed(
+  () => serverCharacter.value?.name ?? character.value?.name ?? 'the new character'
+)
 
 /* The breadcrumb + return target depend on which flow opened the studio. */
 const fromLibrary = computed(() => route.meta.from === 'library')
