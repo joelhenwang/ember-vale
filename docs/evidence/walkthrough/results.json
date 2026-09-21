@@ -1,7 +1,7 @@
 {
   "ok": true,
   "base": "http://127.0.0.1:5173",
-  "at": "2026-09-21T00:08:52.806Z",
+  "at": "2026-09-21T00:31:19.123Z",
   "results": [
     {
       "scenario": "observer",
@@ -19,7 +19,7 @@
       "scenario": "observer",
       "step": "begin navigates to the room",
       "ok": true,
-      "detail": "7ad58379-e435-4139-9474-c4b8358ab32e"
+      "detail": "744ad0c5-7ffb-4fd7-9ae0-040c7ddf353a"
     },
     {
       "scenario": "observer",
@@ -92,6 +92,42 @@
       "step": "player movement commits (Wren to Market)",
       "ok": true,
       "detail": "Ash\nMarket\nWren\nMarket\nyou"
+    },
+    {
+      "scenario": "wizardplayer",
+      "step": "review shows the explicit Wren selection",
+      "ok": true,
+      "detail": "Wren\nAsh"
+    },
+    {
+      "scenario": "wizardplayer",
+      "step": "wizard-created story grants Player",
+      "ok": true,
+      "detail": "Player"
+    },
+    {
+      "scenario": "wizardplayer",
+      "step": "grant and locked actor survive reload",
+      "ok": true,
+      "detail": "Player / Player\nPlaying as Wren\nBeat 0\nInitial configuration\nMode set by the story grant"
+    },
+    {
+      "scenario": "dirtynav",
+      "step": "unsaved cast survives Home and back",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "dirtynav",
+      "step": "recovery is labeled local, not saved",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "dirtynav",
+      "step": "post-failure edit survives leave and reopen",
+      "ok": true,
+      "detail": ""
     },
     {
       "scenario": "failedsave",

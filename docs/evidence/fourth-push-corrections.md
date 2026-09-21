@@ -27,7 +27,7 @@ No backend changes this pass; styling untouched except functional additions
   stuck cursor (2 requests, returns).
 - **P2 pinned presets** (new `usePinnedPresets.ts`, wired into the wizard):
   request identity frozen before fetch, generation-guarded, results keyed
-  by preset ID *and* revision; failures are explicit errors that block
+  by preset ID _and_ revision; failures are explicit errors that block
   Begin (no silent latest substitution; location selects lock). Older
   pinned character revisions resolve for display; latest stays live for
   browsing. World changes adopt the latest revision deliberately, reset
@@ -82,7 +82,7 @@ the dev server + compose stack) — 21/21 checks in
 - narrow (390px): review + room render, screenshots kept.
 
 HTTP journey: fresh create (null-intents 422 probe included) then API
-restart and `--resume` — clock, location, entry count *and* source
+restart and `--resume` — clock, location, entry count _and_ source
 cursor/total matched; story continued; second story's beat added nothing
 to the first.
 

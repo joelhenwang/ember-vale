@@ -230,6 +230,112 @@ try {
     await ctx.close()
   }
 
+  // ---- Wizard Player creation (explicit Wren selection) -----------------
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+    const page = await ctx.newPage()
+    const S = 'wizardplayer'
+    const title = `Walkthrough wizard ${Date.now().toString(36)}`
+    await page.goto(`${BASE}/new-story`, { waitUntil: 'networkidle' })
+    await page
+      .getByRole('button', { name: /Ember Vale/ })
+      .first()
+      .waitFor({ timeout: 30000 })
+    await page
+      .getByRole('button', { name: /Ember Vale/ })
+      .first()
+      .click()
+    await page.getByRole('button', { name: 'Continue', exact: true }).click()
+    await page.getByRole('button', { name: /Wren/ }).click()
+    await page.getByRole('button', { name: /Ash/ }).click()
+    await page.getByRole('button', { name: 'Continue', exact: true }).click()
+    await page.getByRole('button', { name: 'Player' }).click()
+    await page.getByLabel('Play as').selectOption(
+      await page.getByLabel('Play as').evaluate((el) => {
+        const at = Array.from(el.options).findIndex((o) => o.text.includes('Wren'))
+        if (at < 0) throw new Error('no Wren option')
+        return { index: at }
+      })
+    )
+    const playAs = await page.getByLabel('Play as').innerText()
+    await page.getByRole('button', { name: 'Continue', exact: true }).click()
+    await page.getByLabel('Title').fill(title)
+    await page.getByRole('button', { name: 'Continue', exact: true }).click()
+    await page.getByRole('button', { name: 'Continue', exact: true }).click()
+    await page.getByText(`Player as Wren`, { exact: false }).waitFor({ timeout: 15000 })
+    record(
+      S,
+      'review shows the explicit Wren selection',
+      playAs.includes('Wren'),
+      playAs.slice(0, 80)
+    )
+    await page.getByRole('button', { name: 'Begin the story' }).click()
+    await page.waitForURL(/\/stories\/.+\/play/, { timeout: 30000 })
+    await page.locator('.play__badge').waitFor({ timeout: 30000 })
+    const badge = await page.locator('.play__badge').innerText()
+    record(S, 'wizard-created story grants Player', badge.includes('Player'), badge)
+    await page.reload({ waitUntil: 'networkidle' })
+    await page.locator('.play__badge').waitFor({ timeout: 30000 })
+    const badgeAfter = await page.locator('.play__badge').innerText()
+    const metaAfter = await page.locator('.play__meta').innerText()
+    record(
+      S,
+      'grant and locked actor survive reload',
+      badgeAfter.includes('Player') && metaAfter.includes('Playing as Wren'),
+      `${badgeAfter} / ${metaAfter.slice(0, 80)}`
+    )
+    await page.screenshot({ path: path.join(OUT, 'room-wizard-player.png') })
+    await ctx.close()
+  }
+
+  // ---- Dirty in-app navigation and recovery ------------------------------
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+    const page = await ctx.newPage()
+    const S = 'dirtynav'
+    await page.goto(`${BASE}/new-story`, { waitUntil: 'networkidle' })
+    await page
+      .getByRole('button', { name: /Ember Vale/ })
+      .first()
+      .waitFor({ timeout: 30000 })
+    await page
+      .getByRole('button', { name: /Ember Vale/ })
+      .first()
+      .click()
+    await page.getByRole('button', { name: 'Continue', exact: true }).click()
+    await page.getByRole('button', { name: /Wren/ }).click()
+    const draftId = page.url().match(/[?&]draft=([^&]+)/)[1]
+    // Leave for Home without pressing Save: the leave snapshot must keep Wren.
+    await page.getByRole('link', { name: 'Home' }).click()
+    await page.waitForURL(`${BASE}/`, { timeout: 15000 })
+    await page.goto(`${BASE}/new-story?draft=${draftId}`, { waitUntil: 'networkidle' })
+    await page.getByText('Selected', { exact: false }).waitFor({ timeout: 15000 })
+    const restored = await page.locator('main').innerText()
+    record(S, 'unsaved cast survives Home and back', /1 of 6 max/.test(restored), '')
+    record(S, 'recovery is labeled local, not saved', /locally/i.test(restored), '')
+
+    // Fail a save, edit again, leave, reopen: the newest edit survives.
+    docker('stop ember-vale-api-1')
+    try {
+      await page.getByRole('button', { name: /Ash/ }).click()
+      await page.getByRole('button', { name: 'Save draft' }).click()
+      await page
+        .getByText(/save failed/i)
+        .first()
+        .waitFor({ timeout: 30000 })
+      await page.getByRole('link', { name: 'Home' }).click()
+      await page.waitForURL(`${BASE}/`, { timeout: 15000 })
+    } finally {
+      docker('start ember-vale-api-1')
+      await waitApiReady()
+    }
+    await page.goto(`${BASE}/new-story?draft=${draftId}`, { waitUntil: 'networkidle' })
+    await page.getByText('Selected', { exact: false }).waitFor({ timeout: 15000 })
+    const afterFailure = await page.locator('main').innerText()
+    record(S, 'post-failure edit survives leave and reopen', /2 of 6 max/.test(afterFailure), '')
+    await ctx.close()
+  }
+
   // ---- Failed wizard save ----------------------------------------------
   {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })

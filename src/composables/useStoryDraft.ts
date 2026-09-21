@@ -1,19 +1,23 @@
 /**
  * Server story-draft lifecycle for the New Story wizard (C2/C3).
  *
- * The server draft is the reloadable source of truth: the view rehydrates
- * from GET, persists via PATCH with the current expected version, and never
- * loses input on errors. Durability is explicit: `saveState` tracks
- * clean/saving/unsaved/failed against the last acknowledged snapshot, a
- * failed save keeps a clearly identified local recovery draft, and creation
- * is one guarded workflow — persist the intended selections, stop on
- * failure, validate the acknowledged draft, then submit frozen
- * id/version/key values. An ambiguous create (timeout on every attempt)
- * keeps its frozen submission: the next user retry replays the same values
- * instead of starting a fresh save/version/key that could double-create.
+ * Everything here is owned by draft identity. The controller instance is
+ * shared across draft-query transitions, so pending submission receipts,
+ * create errors, acknowledged versions, and operation lifecycles are all
+ * keyed by draft ID: an unresolved receipt from draft A can never become
+ * draft B's Begin action, a late completion from A never replaces B's
+ * state, and queued saves carry the draft they were enqueued for (reading
+ * that same draft's next acknowledged version at execution, never a frozen
+ * obsolete version and never B's).
+ *
+ * Durability is explicit: `saveState` tracks clean/saving/unsaved/failed
+ * against the last acknowledged snapshot, a failed save keeps a
+ * per-draft local recovery snapshot, and creation is one guarded workflow
+ * that replays a draft's own ambiguous receipt before any fresh
+ * save/version/key.
  */
 
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { StoryDraftView } from '../../content/clients/worldsim'
 import { ApiError } from '../api/http'
 import { createDraft, createStory, getDraft, patchDraft, validateDraft } from '../api/worldsim'
@@ -22,7 +26,11 @@ import { buildDraftPayload } from '../game/drafting'
 import { newOperationKey } from '../api/http'
 
 const DRAFT_ID_KEY = 'ember-vale.draft-id'
-const RECOVERY_KEY = 'ember-vale.recovery'
+const RECEIPTS_KEY = 'ember-vale.receipts'
+
+function recoveryKey(draftId: string): string {
+  return `ember-vale.recovery.${draftId}`
+}
 
 function createKeyName(draftId: string, version: number): string {
   return `ember-vale.create-key.${draftId}.v${version}`
@@ -66,11 +74,15 @@ export interface RecoveryDraft {
   draftId: string
   selections: NewStorySelections
   step: string
-  /** ISO timestamp of the failed save, for newer-than-server comparison. */
+  /** ISO timestamp of the snapshot, for newer-than-server comparison. */
   at: string
 }
 
 export type SaveState = 'clean' | 'saving' | 'unsaved' | 'failed'
+
+function snapshotOf(selections: NewStorySelections, step: string): string {
+  return canonical({ payload: buildDraftPayload(selections), step })
+}
 
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`
@@ -83,8 +95,62 @@ function canonical(value: unknown): string {
   return JSON.stringify(value) ?? 'null'
 }
 
-function snapshotOf(selections: NewStorySelections, step: string): string {
-  return canonical({ payload: buildDraftPayload(selections), step })
+/**
+ * Unresolved creation receipts, keyed by owning draft ID. Module-level so
+ * leaving and reopening the wizard (or a reload, via RECEIPTS_KEY) keeps
+ * A's protection without ever leaking it into B's Begin action.
+ */
+const receipts = new Map<string, FrozenSubmission>()
+
+function loadPersistedReceipts(): void {
+  try {
+    const raw = localStorage.getItem(RECEIPTS_KEY)
+    if (!raw) return
+    const parsed = JSON.parse(raw) as Partial<Record<string, FrozenSubmission>>
+    for (const [id, receipt] of Object.entries(parsed ?? {})) {
+      if (
+        typeof id === 'string' &&
+        receipt &&
+        receipt.draftId === id &&
+        typeof receipt.version === 'number' &&
+        typeof receipt.key === 'string'
+      ) {
+        receipts.set(id, { draftId: id, version: receipt.version, key: receipt.key })
+      }
+    }
+  } catch {
+    /* memory map still holds this session's receipts */
+  }
+}
+
+function persistReceipts(setStorageFailed: () => void): void {
+  try {
+    localStorage.setItem(RECEIPTS_KEY, JSON.stringify(Object.fromEntries(receipts)))
+  } catch {
+    setStorageFailed()
+  }
+}
+
+loadPersistedReceipts()
+
+/** Last acknowledged version per draft, for queued saves behind navigation. */
+const ackedVersions = new Map<string, number>()
+
+/** Local recovery snapshots when localStorage is unavailable (or in tests). */
+const memoryRecovery = new Map<string, RecoveryDraft>()
+
+/** Test hook: clear module-level draft memory between isolated cases. */
+export function resetDraftMemoryForTests(): void {
+  receipts.clear()
+  ackedVersions.clear()
+  memoryRecovery.clear()
+  memoryKeys.clear()
+}
+
+interface QueuedSave {
+  draftId: string
+  selections: NewStorySelections
+  step: string
 }
 
 export function useStoryDraft() {
@@ -93,25 +159,49 @@ export function useStoryDraft() {
   const notice = ref<string | null>(null)
   const issues = ref<string[]>([])
   const creating = ref(false)
-  const createError = ref<string | null>(null)
+  /** Create errors scoped by owning draft ID. */
+  const createErrors = ref<Record<string, string>>({})
   /** Last acknowledged server state, as JSON, for unsaved-change checks. */
   const acked = ref<string | null>(null)
   const saveState = ref<SaveState>('clean')
-  /** An ambiguous create keeps its frozen submission for replay retries. */
-  const ambiguous = ref(false)
-  let pendingFrozen: FrozenSubmission | null = null
+  /** localStorage unavailable: session-only durability, keep the tab open. */
+  const storageOk = ref(true)
+  /** Bumps whenever receipts change; drives the per-draft ambiguity view. */
+  const receiptTick = ref(0)
 
-  /** Serializes overlapping saves: each call chains synchronously, so no
-   * two PATCHes for the same draft are ever in flight at once, and rapid
-   * navigation cannot enqueue work before the busy flag is observable —
-   * the chain link itself is the synchronous guard. */
+  /** Controller-level generation: load/save/validate/create completions
+   * apply only to the draft and lifecycle that started them. */
+  let opCycle = 0
+
+  /** Serializes overlapping saves: each call chains synchronously with the
+   * draft identity captured at enqueue time, so rapid navigation cannot
+   * redirect queued work into another draft. */
   let saveTail: Promise<boolean> = Promise.resolve(true)
+
+  const createError = computed(() =>
+    draft.value ? (createErrors.value[draft.value.id] ?? null) : null
+  )
+  const ambiguous = computed(() => {
+    void receiptTick.value
+    return draft.value ? receipts.has(draft.value.id) : false
+  })
+
+  function setCreateError(draftId: string, message: string | null): void {
+    const next = { ...createErrors.value }
+    if (message === null) delete next[draftId]
+    else next[draftId] = message
+    createErrors.value = next
+  }
+
+  function markStorageFailed(): void {
+    storageOk.value = false
+  }
 
   function rememberDraftId(id: string): void {
     try {
       localStorage.setItem(DRAFT_ID_KEY, id)
     } catch {
-      /* storage unavailable: the ?draft= query still carries the id */
+      markStorageFailed()
     }
   }
 
@@ -123,52 +213,64 @@ export function useStoryDraft() {
     }
   }
 
-  function storeRecovery(draftId: string, selections: NewStorySelections, step: string): void {
+  function storeRecovery(draftId: string, selections: NewStorySelections, step: string): boolean {
+    const recovery: RecoveryDraft = {
+      draftId,
+      selections,
+      step,
+      at: new Date().toISOString()
+    }
+    memoryRecovery.set(draftId, recovery)
     try {
-      const recovery: RecoveryDraft = {
-        draftId,
-        selections,
-        step,
-        at: new Date().toISOString()
-      }
-      localStorage.setItem(RECOVERY_KEY, JSON.stringify(recovery))
+      localStorage.setItem(recoveryKey(draftId), JSON.stringify(recovery))
+      return true
     } catch {
-      /* without storage the mounted input is the only copy */
+      markStorageFailed()
+      return false
     }
   }
 
-  function readRecovery(): RecoveryDraft | null {
-    try {
-      const raw = localStorage.getItem(RECOVERY_KEY)
-      if (!raw) return null
-      const parsed = JSON.parse(raw) as Partial<RecoveryDraft>
-      if (
-        typeof parsed.draftId !== 'string' ||
-        typeof parsed.step !== 'string' ||
-        typeof parsed.at !== 'string' ||
-        typeof parsed.selections !== 'object' ||
-        parsed.selections === null
-      ) {
-        return null
-      }
-      return parsed as RecoveryDraft
-    } catch {
+  function validRecovery(parsed: unknown): RecoveryDraft | null {
+    if (typeof parsed !== 'object' || parsed === null) return null
+    const r = parsed as Partial<RecoveryDraft>
+    if (typeof r.draftId !== 'string' || !r.draftId) return null
+    if (typeof r.step !== 'string' || !r.step) return null
+    if (typeof r.at !== 'string' || Number.isNaN(Date.parse(r.at))) return null
+    const s = r.selections as Partial<NewStorySelections> | undefined
+    if (typeof s !== 'object' || s === null) return null
+    if (typeof s.world?.presetId !== 'string' || typeof s.world?.presetRevision !== 'number') {
       return null
+    }
+    if (!Array.isArray(s.cast)) return null
+    if (s.mode?.role !== 'watcher' && s.mode?.role !== 'player') return null
+    if (typeof s.title !== 'string') return null
+    return r as RecoveryDraft
+  }
+
+  function readRecovery(draftId: string): RecoveryDraft | null {
+    try {
+      const raw = localStorage.getItem(recoveryKey(draftId))
+      if (!raw) return memoryRecovery.get(draftId) ?? null
+      const validated = validRecovery(JSON.parse(raw))
+      if (validated && validated.draftId === draftId) return validated
+      return memoryRecovery.get(draftId) ?? null
+    } catch {
+      return memoryRecovery.get(draftId) ?? null
     }
   }
 
   function clearRecovery(draftId: string): void {
+    // Only the owning draft's recovery is ever touched.
+    memoryRecovery.delete(draftId)
     try {
-      const raw = localStorage.getItem(RECOVERY_KEY)
-      if (!raw) return
-      const parsed = JSON.parse(raw) as Partial<RecoveryDraft>
-      if (parsed.draftId === draftId) localStorage.removeItem(RECOVERY_KEY)
+      localStorage.removeItem(recoveryKey(draftId))
     } catch {
       /* best-effort */
     }
   }
 
-  function markAcked(selections: NewStorySelections, step: string): void {
+  function markAcked(draftId: string, selections: NewStorySelections, step: string): void {
+    if (draft.value?.id !== draftId) return
     acked.value = snapshotOf(selections, step)
     saveState.value = 'clean'
   }
@@ -178,70 +280,126 @@ export function useStoryDraft() {
     return acked.value !== null && acked.value === snapshotOf(selections, step)
   }
 
+  function setReceipt(receipt: FrozenSubmission): void {
+    receipts.set(receipt.draftId, receipt)
+    persistReceipts(markStorageFailed)
+    receiptTick.value += 1
+  }
+
+  function deleteReceipt(draftId: string): void {
+    receipts.delete(draftId)
+    persistReceipts(markStorageFailed)
+    receiptTick.value += 1
+  }
+
   async function openNew(selections: NewStorySelections, step: string): Promise<void> {
+    opCycle += 1
+    const seen = opCycle
     busy.value = true
     notice.value = null
+    issues.value = []
     try {
-      draft.value = await createDraft(buildDraftPayload(selections), step)
-      rememberDraftId(draft.value.id)
-      markAcked(selections, step)
+      const created = await createDraft(buildDraftPayload(selections), step)
+      if (seen !== opCycle) return
+      draft.value = created
+      ackedVersions.set(created.id, created.version)
+      rememberDraftId(created.id)
+      markAcked(created.id, selections, step)
     } catch (err) {
+      if (seen !== opCycle) return
       notice.value = err instanceof Error ? err.message : 'could not start a draft'
       throw err
     } finally {
-      busy.value = false
+      if (seen === opCycle) busy.value = false
     }
   }
 
   async function openExisting(id: string): Promise<void> {
+    opCycle += 1
+    const seen = opCycle
     busy.value = true
     notice.value = null
+    issues.value = []
     try {
-      draft.value = await getDraft(id)
-      rememberDraftId(draft.value.id)
+      const loaded = await getDraft(id)
+      // A slow A load resolving after B took over must not replace B.
+      if (seen !== opCycle) return
+      draft.value = loaded
+      ackedVersions.set(loaded.id, loaded.version)
+      rememberDraftId(loaded.id)
+      // Other drafts' receipts, errors, and recovery are preserved as-is:
+      // only this draft's acknowledgment state is (re)established.
       acked.value = canonical({
-        payload: draft.value.payload as Record<string, unknown>,
-        step: draft.value.current_step
+        payload: loaded.payload as Record<string, unknown>,
+        step: loaded.current_step
       })
       saveState.value = 'clean'
     } catch (err) {
+      if (seen !== opCycle) return
       notice.value = err instanceof Error ? err.message : 'could not load the draft'
       throw err
     } finally {
-      busy.value = false
+      if (seen === opCycle) busy.value = false
     }
   }
 
-  async function doSave(selections: NewStorySelections, step: string): Promise<boolean> {
-    if (!draft.value) return false
-    busy.value = true
-    saveState.value = 'saving'
+  async function currentVersionOf(draftId: string): Promise<number> {
+    const known = ackedVersions.get(draftId)
+    if (known !== undefined) return known
+    const live = await getDraft(draftId)
+    ackedVersions.set(draftId, live.version)
+    return live.version
+  }
+
+  async function doSave(item: QueuedSave): Promise<boolean> {
+    const { draftId, selections, step } = item
+    if (!draftId) return false
+    const isCurrent = (): boolean => draft.value?.id === draftId
+    if (isCurrent()) {
+      busy.value = true
+      saveState.value = 'saving'
+    } else {
+      busy.value = true
+    }
     notice.value = null
     try {
-      draft.value = await patchDraft(
-        draft.value.id,
-        buildDraftPayload(selections),
-        step,
-        draft.value.version
-      )
-      markAcked(selections, step)
-      clearRecovery(draft.value.id)
+      // The next acknowledged version for THIS draft, read at execution —
+      // never a frozen obsolete version, never another draft's.
+      const version = isCurrent()
+        ? (draft.value as StoryDraftView).version
+        : await currentVersionOf(draftId)
+      const updated = await patchDraft(draftId, buildDraftPayload(selections), step, version)
+      ackedVersions.set(draftId, updated.version)
+      if (!isCurrent()) {
+        // A's queued save still persisted A behind B's navigation, but B's
+        // mounted state, acknowledgment, and notices are untouched.
+        return true
+      }
+      draft.value = updated
+      markAcked(draftId, selections, step)
+      clearRecovery(draftId)
       return true
     } catch (err) {
+      const current = draft.value
+      if (!current || current.id !== draftId) return false
       if (err instanceof ApiError && err.code === 'VERSION_CONFLICT') {
         try {
-          draft.value = await getDraft(draft.value.id)
+          const reloaded = await getDraft(current.id)
+          if (draft.value?.id !== draftId) return false
+          draft.value = reloaded
+          ackedVersions.set(draftId, reloaded.version)
           notice.value = 'The draft changed elsewhere — reloaded; your input is kept above.'
         } catch {
+          if (draft.value?.id !== draftId) return false
           notice.value = 'The draft changed elsewhere — reload the page to reconcile.'
         }
         saveState.value = 'failed'
-        if (draft.value) storeRecovery(draft.value.id, selections, step)
+        storeRecovery(draftId, selections, step)
         return false
       }
       notice.value = err instanceof Error ? err.message : 'could not save the draft'
       saveState.value = 'failed'
-      if (draft.value) storeRecovery(draft.value.id, selections, step)
+      storeRecovery(draftId, selections, step)
       return false
     } finally {
       busy.value = false
@@ -250,33 +408,42 @@ export function useStoryDraft() {
 
   /** Persist selections; on a stale version, refresh and keep input. */
   function save(selections: NewStorySelections, step: string): Promise<boolean> {
-    const run = saveTail.then(() => doSave(selections, step))
+    // Draft identity and the input snapshot are frozen at enqueue time.
+    const item: QueuedSave = { draftId: draft.value?.id ?? '', selections, step }
+    const run = saveTail.then(() => doSave(item))
     saveTail = run
     return run
   }
 
   async function validate(): Promise<boolean> {
-    if (!draft.value) return false
+    const targetId = draft.value?.id
+    if (!targetId) return false
     try {
-      const result = await validateDraft(draft.value.id)
+      const result = await validateDraft(targetId)
+      if (draft.value?.id !== targetId) return false
       issues.value = result.issues ?? []
       return result.valid
     } catch (err) {
+      if (draft.value?.id !== targetId) return false
       issues.value = [err instanceof Error ? err.message : 'validation failed']
       return false
     }
   }
 
   async function submitFrozen(frozen: FrozenSubmission): Promise<string | null> {
+    const ownerId = frozen.draftId
     try {
       const result = await createStory(frozen.draftId, frozen.version, frozen.key)
+      deleteReceipt(ownerId)
+      clearRecovery(ownerId)
       try {
-        localStorage.removeItem(DRAFT_ID_KEY)
+        if (localStorage.getItem(DRAFT_ID_KEY) === ownerId) {
+          localStorage.removeItem(DRAFT_ID_KEY)
+        }
       } catch {
         /* non-fatal */
       }
-      ambiguous.value = false
-      pendingFrozen = null
+      setCreateError(ownerId, null)
       return result.world_id
     } catch (err) {
       if (err instanceof ApiError && err.code === 'REQUEST_TIMEOUT') {
@@ -284,55 +451,44 @@ export function useStoryDraft() {
         // values and navigate to the existing story instead of failing.
         try {
           const replay = await createStory(frozen.draftId, frozen.version, frozen.key)
+          deleteReceipt(ownerId)
+          clearRecovery(ownerId)
           try {
-            localStorage.removeItem(DRAFT_ID_KEY)
+            if (localStorage.getItem(DRAFT_ID_KEY) === ownerId) {
+              localStorage.removeItem(DRAFT_ID_KEY)
+            }
           } catch {
             /* non-fatal */
           }
-          ambiguous.value = false
-          pendingFrozen = null
+          setCreateError(ownerId, null)
           return replay.world_id
         } catch (retryErr) {
-          // Still ambiguous: keep the frozen submission so the next user
-          // retry replays it instead of minting a fresh save/version/key.
-          ambiguous.value = true
-          pendingFrozen = frozen
-          createError.value =
+          // Still ambiguous: keep the owning draft's frozen submission so
+          // its next retry replays it instead of minting a fresh
+          // save/version/key.
+          setReceipt(frozen)
+          setCreateError(
+            ownerId,
             retryErr instanceof Error
               ? `${retryErr.message} — the story may have been created; retrying replays the same submission.`
               : 'creation timed out — the story may have been created; retrying replays the same submission.'
+          )
           return null
         }
       }
-      ambiguous.value = false
-      pendingFrozen = null
-      createError.value = err instanceof Error ? err.message : 'could not create the story'
+      deleteReceipt(ownerId)
+      setCreateError(ownerId, err instanceof Error ? err.message : 'could not create the story')
       return null
     }
   }
 
-  async function submit(): Promise<string | null> {
-    if (!draft.value) return null
-    creating.value = true
-    createError.value = null
-    try {
-      return await submitFrozen({
-        draftId: draft.value.id,
-        version: draft.value.version,
-        key: storedCreateKey(draft.value.id, draft.value.version)
-      })
-    } finally {
-      creating.value = false
-    }
-  }
-
   /**
-   * The single guarded create workflow: replay a pending ambiguous
-   * submission first (never a blind fresh save after a possible commit);
-   * otherwise persist the intended selections and step, stop on failure,
-   * validate the acknowledged saved draft, then submit frozen id/version/key
-   * values. Returns the world id only after the server acknowledges
-   * creation — the caller navigates on non-null.
+   * The single guarded create workflow, owned end to end by the draft that
+   * was mounted when it started. A pending ambiguous receipt replays only
+   * when it belongs to that same draft; otherwise the workflow persists the
+   * intended selections, stops on failure, validates the acknowledged
+   * draft, and submits frozen id/version/key values. Late completions after
+   * a draft switch change nothing and navigate nowhere.
    */
   async function createWorkflow(
     selections: NewStorySelections,
@@ -341,22 +497,32 @@ export function useStoryDraft() {
     // Synchronous operation guard: a second workflow while one runs is a
     // no-op, so rapid double-clicks submit exactly once.
     if (creating.value) return null
+    const target = draft.value
+    if (!target) return null
+    const targetId = target.id
+    const seenCycle = opCycle
+    const isCurrent = (): boolean => draft.value?.id === targetId && seenCycle === opCycle
     creating.value = true
-    createError.value = null
+    setCreateError(targetId, null)
     try {
-      if (pendingFrozen) {
-        return await submitFrozen(pendingFrozen)
+      const receipt = receipts.get(targetId)
+      if (receipt) {
+        const replayed = await submitFrozen(receipt)
+        return isCurrent() ? replayed : null
       }
       const saved = await save(selections, step)
+      if (!isCurrent()) return null
       if (!saved || !draft.value) return null
       const valid = await validate()
+      if (!isCurrent()) return null
       if (!valid) return null
       const frozen: FrozenSubmission = {
-        draftId: draft.value.id,
+        draftId: targetId,
         version: draft.value.version,
-        key: storedCreateKey(draft.value.id, draft.value.version)
+        key: storedCreateKey(targetId, draft.value.version)
       }
-      return await submitFrozen(frozen)
+      const created = await submitFrozen(frozen)
+      return isCurrent() ? created : null
     } finally {
       creating.value = false
     }
@@ -372,15 +538,16 @@ export function useStoryDraft() {
     acked,
     saveState,
     ambiguous,
+    storageOk,
     isAcked,
     recalledDraftId,
     readRecovery,
     clearRecovery,
+    storeRecovery,
     openNew,
     openExisting,
     save,
     validate,
-    submit,
     createWorkflow
   }
 }

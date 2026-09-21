@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { useStoryDraft } from './useStoryDraft'
+import { resetDraftMemoryForTests, useStoryDraft } from './useStoryDraft'
 import type { NewStorySelections } from '../game/drafting'
 
 interface Seen {
@@ -15,6 +15,11 @@ let nextDraft = 0
 let storyPosts: Array<{ body: unknown; key: string | null }> = []
 let storyFailures: Error[] = []
 let validOverride: boolean | null = null
+/** When true, PATCH requests are held until released. */
+let patchHold = false
+let heldPatches: Array<() => void> = []
+/** Draft ids whose GET load hangs until released. */
+let heldGets = new Map<string, Array<() => void>>()
 
 const SEL: NewStorySelections = {
   world: { presetId: 'w', presetRevision: 2 },
@@ -42,6 +47,10 @@ function installFetch(): void {
   storyPosts = []
   storyFailures = []
   validOverride = null
+  patchHold = false
+  heldPatches = []
+  heldGets = new Map()
+  resetDraftMemoryForTests()
   vi.stubGlobal(
     'fetch',
     vi.fn(async (rawUrl: string, init: RequestInit = {}) => {
@@ -57,13 +66,21 @@ function installFetch(): void {
         return json(draftOf(id))
       }
       if (method === 'PATCH' && url.pathname.startsWith('/api/v1/story-drafts/')) {
+        if (patchHold) {
+          await new Promise<void>((resolve) => heldPatches.push(resolve))
+        }
         const id = url.pathname.split('/').at(-1) as string
         const next = (versions.get(id) ?? 1) + 1
         versions.set(id, next)
         return json(draftOf(id))
       }
       if (method === 'GET' && url.pathname.startsWith('/api/v1/story-drafts/')) {
-        return json(draftOf(url.pathname.split('/').at(-1) as string))
+        const id = url.pathname.split('/').at(-1) as string
+        const gate = heldGets.get(id)
+        if (gate) {
+          await new Promise<void>((resolve) => gate.push(resolve))
+        }
+        return json(draftOf(id))
       }
       if (method === 'POST' && url.pathname.endsWith('/validate')) {
         return json({ valid: validOverride ?? true, issues: [] })
@@ -282,5 +299,107 @@ describe('useStoryDraft guarded workflow', () => {
     expect(patches).toHaveLength(2)
     expect((patches[0].body as Record<string, unknown>)['expected_version']).toBe(1)
     expect((patches[1].body as Record<string, unknown>)['expected_version']).toBe(2)
+  })
+
+  function storyTargets(): Array<Record<string, unknown>> {
+    return storiesPosts().map((s) => s.body as Record<string, unknown>)
+  }
+
+  it("ambiguous A, then B: Begin B never sends A's receipt", async () => {
+    installFetch()
+    storyFailures = [new Error('REQUEST_TIMEOUT'), new Error('REQUEST_TIMEOUT')]
+    const ctl = useStoryDraft()
+    await ctl.openNew(SEL, 'world')
+    expect(await ctl.createWorkflow(SEL, 'review')).toBeNull()
+    expect(ctl.ambiguous.value).toBe(true)
+
+    await ctl.openExisting('d-B')
+    expect(ctl.draft.value?.id).toBe('d-B')
+    expect(ctl.ambiguous.value).toBe(false)
+    expect(await ctl.createWorkflow(SEL, 'review')).toBe('w1')
+
+    // A, A, then B — B's Begin carries only B's identity.
+    expect(storyTargets().map((b) => b['draft_id'])).toEqual(['d-1', 'd-1', 'd-B'])
+    const bTarget = storyTargets()[2]
+    expect(bTarget['expected_draft_version']).toBe(2)
+    expect(ctl.createError.value).toBeNull()
+  })
+
+  it('returning to ambiguous A replays exactly the original receipt', async () => {
+    installFetch()
+    storyFailures = [new Error('REQUEST_TIMEOUT'), new Error('REQUEST_TIMEOUT')]
+    const ctl = useStoryDraft()
+    await ctl.openNew(SEL, 'world')
+    expect(await ctl.createWorkflow(SEL, 'review')).toBeNull()
+    const firstKeys = storiesPosts().map((s) => s.headers['Idempotency-Key'])
+
+    await ctl.openExisting('d-B')
+    await ctl.openExisting('d-1')
+    expect(ctl.ambiguous.value).toBe(true)
+    const patchesBefore = seen.filter((s) => s.method === 'PATCH').length
+    expect(await ctl.createWorkflow(SEL, 'review')).toBe('w1')
+    expect(ctl.ambiguous.value).toBe(false)
+    // No fresh save: replay carries A's original version and key.
+    expect(seen.filter((s) => s.method === 'PATCH')).toHaveLength(patchesBefore)
+    const replay = storyTargets().at(-1) as Record<string, unknown>
+    expect(replay['draft_id']).toBe('d-1')
+    expect(replay['expected_draft_version']).toBe(2)
+    expect(storiesPosts().at(-1)?.headers['Idempotency-Key']).toBe(firstKeys[0])
+  })
+
+  it('a reopened wizard replays the receipt without fresh identity', async () => {
+    installFetch()
+    storyFailures = [new Error('REQUEST_TIMEOUT'), new Error('REQUEST_TIMEOUT')]
+    const first = useStoryDraft()
+    await first.openNew(SEL, 'world')
+    expect(await first.createWorkflow(SEL, 'review')).toBeNull()
+    const originalKey = storiesPosts()[0].headers['Idempotency-Key']
+    const patchesBefore = seen.filter((s) => s.method === 'PATCH').length
+
+    // Leaving and reopening the wizard: a new controller instance, same
+    // module-level receipt. Begin must replay, not re-save/re-key.
+    const second = useStoryDraft()
+    await second.openExisting('d-1')
+    expect(second.ambiguous.value).toBe(true)
+    expect(await second.createWorkflow(SEL, 'review')).toBe('w1')
+    expect(seen.filter((s) => s.method === 'PATCH')).toHaveLength(patchesBefore)
+    const replay = storyTargets().at(-1) as Record<string, unknown>
+    expect(replay['draft_id']).toBe('d-1')
+    expect(storiesPosts().at(-1)?.headers['Idempotency-Key']).toBe(originalKey)
+  })
+
+  it("queued A saves behind B's navigation never touch B", async () => {
+    installFetch()
+    patchHold = true
+    const ctl = useStoryDraft()
+    await ctl.openNew(SEL, 'world')
+    const pendingA = Promise.all([ctl.save(SEL, 'world'), ctl.save(SEL, 'characters')])
+    await vi.waitFor(() => expect(heldPatches.length).toBeGreaterThan(0))
+    await ctl.openExisting('d-B')
+    patchHold = false
+    heldPatches.forEach((release) => release())
+    const [a, b] = await pendingA
+    expect(a).toBe(true)
+    expect(b).toBe(true)
+    // Both PATCHes targeted A with A's input; B was never patched and its
+    // mounted state was never replaced by A's responses.
+    const patches = seen.filter((s) => s.method === 'PATCH')
+    expect(patches).toHaveLength(2)
+    expect(patches.every((p) => p.path.endsWith('/d-1'))).toBe(true)
+    expect(ctl.draft.value?.id).toBe('d-B')
+    expect(ctl.draft.value?.version).toBe(1)
+  })
+
+  it('a slow A load resolving after B leaves B active', async () => {
+    installFetch()
+    heldGets.set('d-A', [])
+    const ctl = useStoryDraft()
+    const pendingA = ctl.openExisting('d-A')
+    await ctl.openExisting('d-B')
+    expect(ctl.draft.value?.id).toBe('d-B')
+    heldGets.get('d-A')?.forEach((release) => release())
+    await pendingA
+    expect(ctl.draft.value?.id).toBe('d-B')
+    expect(ctl.draft.value?.version).toBe(1)
   })
 })

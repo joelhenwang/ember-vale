@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import CreateCharacterTile from '../components/newstory/CreateCharacterTile.vue'
 import SearchField from '../components/ui/SearchField.vue'
 import ChipGroup from '../components/ui/ChipGroup.vue'
@@ -397,14 +397,15 @@ async function boot(draftOverride?: string): Promise<void> {
   }
   hydrate(opened.payload as Record<string, unknown>)
   step.value = stepOf(opened.current_step)
-  // A local recovery draft newer than the server state restores choices
-  // that never reached the server (failed save + reload).
-  const recovery = draftCtl.readRecovery()
-  if (recovery && recovery.draftId === opened.id && recovery.at > opened.updated_at) {
+  // A local recovery snapshot newer than the server state restores
+  // choices that never reached the server (failed save or navigation
+  // away). It is labeled local: only a successful save marks it saved.
+  const recovery = draftCtl.readRecovery(opened.id)
+  if (recovery && recovery.at > opened.updated_at) {
     applyRecoverySelections(recovery.selections)
     step.value = stepOf(recovery.step)
     bootNotice.value =
-      'Restored choices that never reached the server — review them and save before leaving.'
+      'Restored choices kept locally on this device — review them and save before leaving.'
   }
   await ensurePinned()
   if (seen !== bootCycle) return
@@ -478,28 +479,44 @@ async function back(): Promise<void> {
 }
 
 async function create(): Promise<void> {
-  if (!draftCtl.draft.value || draftCtl.creating.value) return
-  // One guarded workflow: failed saves stop before any create request, a
-  // stale draft never auto-creates, and navigation happens only after the
-  // server acknowledges the story.
+  const targetId = draftCtl.draft.value?.id
+  if (!targetId || draftCtl.creating.value) return
+  // The workflow is owned by the draft mounted here: a late completion
+  // after a draft switch navigates nowhere and touches no other draft.
   const worldId = await draftCtl.createWorkflow(selections.value, slugOf(step.value))
-  if (worldId) {
-    await router.push({ name: 'story-play', params: { storyId: worldId } })
+  if (!worldId) return
+  if (draftCtl.draft.value?.id !== targetId) {
+    draftCtl.notice.value =
+      'The previous draft finished creating — find its story on the Stories shelf.'
+    return
+  }
+  await router.push({ name: 'story-play', params: { storyId: worldId } })
+}
+
+/**
+ * In-app navigation does not fire beforeunload, so a dirty draft snapshots
+ * its latest selections into its own recovery slot before leaving. Clean
+ * navigation stays immediate; nothing here blocks the route.
+ */
+function snapshotForLeave(): void {
+  const current = draftCtl.draft.value
+  if (!current) return
+  if (dirty.value || draftCtl.saveState.value === 'failed') {
+    draftCtl.storeRecovery(current.id, selections.value, slugOf(step.value))
   }
 }
 
-// A new ?draft= after boot (link navigation, Back/Forward) reloads the
-// wizard for that draft. The wizard's own first ?draft= assignment matches
-// the loaded draft, so it never reboots itself.
-watch(
-  () => route.query.draft,
-  (next) => {
-    if (!booted.value) return
-    if (typeof next === 'string' && next && next !== draftCtl.draft.value?.id) {
-      void boot(next)
-    }
+onBeforeRouteLeave(() => {
+  snapshotForLeave()
+})
+
+onBeforeRouteUpdate((to) => {
+  snapshotForLeave()
+  const next = typeof to.query.draft === 'string' ? to.query.draft : null
+  if (next && next !== draftCtl.draft.value?.id && booted.value) {
+    void boot(next)
   }
-)
+})
 
 // The user changing worlds adopts the latest revision deliberately:
 // pinned content is dropped, starting places absent from the new map are
@@ -572,6 +589,10 @@ onMounted(() => {
       <StoryStepper :current="step" @go="go" />
       <p v-if="bootNotice" class="nsv__notice" role="status">{{ bootNotice }}</p>
       <p v-if="worldNotice" class="nsv__notice" role="status">{{ worldNotice }}</p>
+      <p v-if="!draftCtl.storageOk.value" class="nsv__notice" role="alert">
+        Browser storage is unavailable — your choices are kept in this tab only. Save successfully
+        before leaving, or they will be lost on reload.
+      </p>
       <p v-if="draftCtl.notice.value" class="nsv__notice" role="status">
         {{ draftCtl.notice.value }}
       </p>
