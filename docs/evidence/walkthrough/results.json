@@ -1,7 +1,7 @@
 {
   "ok": true,
   "base": "http://127.0.0.1:5173",
-  "at": "2026-09-21T00:51:36.186Z",
+  "at": "2026-09-21T01:10:03.601Z",
   "results": [
     {
       "scenario": "observer",
@@ -19,7 +19,7 @@
       "scenario": "observer",
       "step": "begin navigates to the room",
       "ok": true,
-      "detail": "d878cb58-1df9-4f5b-8177-de510e0cd480"
+      "detail": "94a0cc78-4708-4506-93fc-b70b9257b81e"
     },
     {
       "scenario": "observer",
@@ -127,7 +127,7 @@
       "scenario": "dirtynav",
       "step": "post-failure edit survives leave and reopen",
       "ok": true,
-      "detail": "Newest edit muaj3pq2"
+      "detail": "Newest edit muajrgcn"
     },
     {
       "scenario": "createleave",

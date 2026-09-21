@@ -74,7 +74,7 @@ export interface RecoveryDraft {
   draftId: string
   selections: NewStorySelections
   step: string
-  /** ISO timestamp of the snapshot, for newer-than-server comparison. */
+  /** ISO timestamp of the snapshot (display/debug only, never a decision). */
   at: string
   /**
    * Canonical snapshot the save that produced this entry covered. A later
@@ -82,6 +82,34 @@ export interface RecoveryDraft {
    * snapshot — a delayed older save must never delete newer edits.
    */
   snapshot: string
+  /**
+   * Acknowledged server version the snapshot's edits build on. Wall-clock
+   * timestamps cannot decide whether the server already holds newer user
+   * input, so reopening arbitrates on versions: a server version past this
+   * base with different content is a conflict to surface, never a reason to
+   * silently drop the local edits.
+   */
+  baseVersion: number | null
+}
+
+/** Reopening decision for a stored recovery against the fetched server draft. */
+export type RecoveryDecision = 'covered' | 'restore' | 'conflict'
+
+/**
+ * Decide whether a stored recovery is already on the server ('covered'),
+ * restores cleanly onto an unchanged server ('restore'), or needs an
+ * explicit conflict notice because the server moved past the snapshot's
+ * base version with different content ('conflict').
+ */
+export function resolveRecovery(
+  serverPayload: unknown,
+  serverVersion: number,
+  recovery: RecoveryDraft
+): RecoveryDecision {
+  if (canonical(serverPayload) === canonical(buildDraftPayload(recovery.selections)))
+    return 'covered'
+  if (recovery.baseVersion === null || recovery.baseVersion < serverVersion) return 'conflict'
+  return 'restore'
 }
 
 export type SaveState = 'clean' | 'saving' | 'unsaved' | 'failed'
@@ -145,12 +173,21 @@ const ackedVersions = new Map<string, number>()
 /** Local recovery snapshots when localStorage is unavailable (or in tests). */
 const memoryRecovery = new Map<string, RecoveryDraft>()
 
+/**
+ * Most recently seen edit snapshot per draft, updated on every save()
+ * enqueue and every storeRecovery() write. A delayed save's failure handler
+ * stores its (older) snapshot only when it is still the latest — a newer
+ * leave snapshot must win, just as on the success path.
+ */
+const latestSeen = new Map<string, string>()
+
 /** Test hook: clear module-level draft memory between isolated cases. */
 export function resetDraftMemoryForTests(): void {
   receipts.clear()
   ackedVersions.clear()
   memoryRecovery.clear()
   memoryKeys.clear()
+  latestSeen.clear()
 }
 
 interface QueuedSave {
@@ -223,12 +260,15 @@ export function useStoryDraft() {
   }
 
   function storeRecovery(draftId: string, selections: NewStorySelections, step: string): boolean {
+    const snapshot = snapshotOf(selections, step)
+    latestSeen.set(draftId, snapshot)
     const recovery: RecoveryDraft = {
       draftId,
       selections,
       step,
       at: new Date().toISOString(),
-      snapshot: snapshotOf(selections, step)
+      snapshot,
+      baseVersion: ackedVersions.get(draftId) ?? null
     }
     memoryRecovery.set(draftId, recovery)
     try {
@@ -255,6 +295,8 @@ export function useStoryDraft() {
     if (s.mode?.role !== 'watcher' && s.mode?.role !== 'player') return null
     if (typeof s.title !== 'string') return null
     if (typeof r.snapshot !== 'string') return null
+    if (r.baseVersion === undefined) return { ...r, baseVersion: null } as RecoveryDraft
+    if (typeof r.baseVersion !== 'number') return null
     return r as RecoveryDraft
   }
 
@@ -415,6 +457,11 @@ export function useStoryDraft() {
     } catch (err) {
       const current = draft.value
       if (!current || current.id !== draftId) return false
+      // A leave snapshot taken after this save was enqueued is newer input:
+      // only this save's own still-latest snapshot is stored, so a delayed
+      // failure never overwrites newer recovery with older content.
+      const ownSnapshot = snapshotOf(selections, step)
+      const keepRecovery = latestSeen.get(draftId) === ownSnapshot
       if (err instanceof ApiError && err.code === 'VERSION_CONFLICT') {
         try {
           const reloaded = await getDraft(current.id)
@@ -427,12 +474,12 @@ export function useStoryDraft() {
           notice.value = 'The draft changed elsewhere — reload the page to reconcile.'
         }
         saveState.value = 'failed'
-        storeRecovery(draftId, selections, step)
+        if (keepRecovery) storeRecovery(draftId, selections, step)
         return false
       }
       notice.value = err instanceof Error ? err.message : 'could not save the draft'
       saveState.value = 'failed'
-      storeRecovery(draftId, selections, step)
+      if (keepRecovery) storeRecovery(draftId, selections, step)
       return false
     } finally {
       busy.value = false
@@ -456,6 +503,7 @@ export function useStoryDraft() {
   function save(selections: NewStorySelections, step: string): Promise<boolean> {
     // Draft identity and the input snapshot are frozen at enqueue time.
     const item: QueuedSave = { draftId: draft.value?.id ?? '', selections, step }
+    if (item.draftId) latestSeen.set(item.draftId, snapshotOf(selections, step))
     const run = saveTail.then(() => doSave(item))
     saveTail = run
     return run

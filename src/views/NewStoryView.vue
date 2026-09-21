@@ -16,7 +16,7 @@ import MountainRidge from '../components/decor/MountainRidge.vue'
 import PageIntro from '../components/ui/PageIntro.vue'
 import { useBackend } from '../composables/useBackend'
 import { usePresets, type PresetCharacter } from '../composables/usePresets'
-import { useStoryDraft } from '../composables/useStoryDraft'
+import { resolveRecovery, useStoryDraft } from '../composables/useStoryDraft'
 import { usePinnedPresets } from '../composables/usePinnedPresets'
 import {
   controlledAfterCastChange,
@@ -401,15 +401,24 @@ async function boot(draftOverride?: string): Promise<void> {
   }
   hydrate(opened.payload as Record<string, unknown>)
   step.value = stepOf(opened.current_step)
-  // A local recovery snapshot newer than the server state restores
-  // choices that never reached the server (failed save or navigation
-  // away). It is labeled local: only a successful save marks it saved.
+  // A stored recovery holds edits the server may not have. Timestamps
+  // cannot decide that — the server can commit an older save after the
+  // snapshot was taken — so arbitration is by version and content: restore
+  // outstanding local edits, surface a conflict when the server moved
+  // underneath them, and clear when the server already holds them.
   const recovery = draftCtl.readRecovery(opened.id)
-  if (recovery && recovery.at > opened.updated_at) {
-    applyRecoverySelections(recovery.selections)
-    step.value = stepOf(recovery.step)
-    bootNotice.value =
-      'Restored choices kept locally on this device — review them and save before leaving.'
+  if (recovery) {
+    const decision = resolveRecovery(opened.payload, opened.version, recovery)
+    if (decision === 'covered') {
+      draftCtl.clearRecovery(opened.id)
+    } else {
+      applyRecoverySelections(recovery.selections)
+      step.value = stepOf(recovery.step)
+      bootNotice.value =
+        decision === 'conflict'
+          ? 'The server changed since these locally kept choices were made — review them carefully before saving.'
+          : 'Restored choices kept locally on this device — review them and save before leaving.'
+    }
   }
   await ensurePinned()
   if (seen !== bootCycle) return

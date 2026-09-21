@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { resetDraftMemoryForTests, useStoryDraft } from './useStoryDraft'
-import type { NewStorySelections } from '../game/drafting'
+import {
+  resetDraftMemoryForTests,
+  resolveRecovery,
+  useStoryDraft,
+  type RecoveryDraft
+} from './useStoryDraft'
+import { buildDraftPayload, type NewStorySelections } from '../game/drafting'
 
 interface Seen {
   method: string
@@ -18,6 +23,8 @@ let validOverride: boolean | null = null
 /** When true, PATCH requests are held until released. */
 let patchHold = false
 let heldPatches: Array<() => void> = []
+/** Consumed count of PATCH requests that fail with HTTP 500 after release. */
+let failPatches = 0
 /** Draft ids whose GET load hangs until released. */
 let heldGets = new Map<string, Array<() => void>>()
 /** When true, story-create POSTs are held for manual release. */
@@ -52,6 +59,7 @@ function installFetch(): void {
   validOverride = null
   patchHold = false
   heldPatches = []
+  failPatches = 0
   heldGets = new Map()
   storiesHold = false
   heldStories = []
@@ -73,6 +81,10 @@ function installFetch(): void {
       if (method === 'PATCH' && url.pathname.startsWith('/api/v1/story-drafts/')) {
         if (patchHold) {
           await new Promise<void>((resolve) => heldPatches.push(resolve))
+        }
+        if (failPatches > 0) {
+          failPatches -= 1
+          return fail(500, 'HTTP_500', 'boom')
         }
         const id = url.pathname.split('/').at(-1) as string
         const next = (versions.get(id) ?? 1) + 1
@@ -404,9 +416,58 @@ describe('useStoryDraft guarded workflow', () => {
     expect(await pendingOlder).toBe(true)
     // The server saved the older input, but the newer local copy survives.
     expect(ctl.readRecovery('d-1')?.selections.title).toBe('Newest title')
-    // A save covering the newest snapshot clears it.
-    expect(await ctl.save(newer, 'world')).toBe(true)
-    expect(ctl.readRecovery('d-1')).toBeNull()
+    // Reopening arbitrates by version, not timestamps: the server committed
+    // Older at v2 AFTER the Newest snapshot was taken, yet the wizard must
+    // show Newest — surfaced as a conflict, never silently dropped.
+    const fresh = useStoryDraft()
+    await fresh.openExisting('d-1')
+    const stored = fresh.readRecovery('d-1')
+    expect(stored?.selections.title).toBe('Newest title')
+    expect(resolveRecovery(buildDraftPayload(older), 2, stored as RecoveryDraft)).toBe('conflict')
+    // The wizard applies Newest; saving it clears the entry.
+    expect(await fresh.save(newer, 'world')).toBe(true)
+    expect(fresh.readRecovery('d-1')).toBeNull()
+  })
+
+  it('a delayed older failure never overwrites a newer recovery snapshot', async () => {
+    installFetch()
+    patchHold = true
+    failPatches = 1
+    const ctl = useStoryDraft()
+    await ctl.openNew(SEL, 'world')
+    const older = { ...SEL, title: 'Older title' }
+    const newer = { ...SEL, title: 'Newest title' }
+    const pendingOlder = ctl.save(older, 'world')
+    await vi.waitFor(() => expect(heldPatches.length).toBeGreaterThan(0))
+    // Edit + leave while the older PATCH is pending, then it fails: the
+    // failure handler must keep the newer leave snapshot, not store Older.
+    ctl.storeRecovery('d-1', newer, 'world')
+    patchHold = false
+    heldPatches.forEach((release) => release())
+    expect(await pendingOlder).toBe(false)
+    expect(ctl.readRecovery('d-1')?.selections.title).toBe('Newest title')
+    // A fresh controller reopens onto an unchanged server (still v1): the
+    // outstanding Newest edits restore, then save cleanly and clear.
+    const fresh = useStoryDraft()
+    await fresh.openExisting('d-1')
+    const stored = fresh.readRecovery('d-1')
+    expect(stored?.selections.title).toBe('Newest title')
+    expect(resolveRecovery({}, 1, stored as RecoveryDraft)).toBe('restore')
+    expect(await fresh.save(newer, 'world')).toBe(true)
+    expect(fresh.readRecovery('d-1')).toBeNull()
+  })
+
+  it('resolveRecovery marks server-held edits covered', () => {
+    const selections: NewStorySelections = { ...SEL, title: 'Newest title' }
+    const stored: RecoveryDraft = {
+      draftId: 'd-1',
+      selections,
+      step: 'world',
+      at: '2026-01-01T01:00:01Z',
+      snapshot: '',
+      baseVersion: 1
+    }
+    expect(resolveRecovery(buildDraftPayload(selections), 2, stored)).toBe('covered')
   })
 
   it('disposing during creation reconciles without applying', async () => {
