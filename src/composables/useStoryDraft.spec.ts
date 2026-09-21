@@ -131,6 +131,7 @@ describe('useStoryDraft guarded workflow', () => {
     expect(worldId).toBeNull()
     expect(storiesPosts()).toHaveLength(0)
     expect(ctl.notice.value).toBeTruthy()
+    expect(ctl.saveState.value).toBe('failed')
   })
 
   it('stale draft never auto-creates from server state', async () => {
@@ -181,6 +182,75 @@ describe('useStoryDraft guarded workflow', () => {
     ])
     expect([first, second].filter(Boolean)).toHaveLength(1)
     expect(storiesPosts()).toHaveLength(1)
+  })
+
+  it('an ambiguous create replays the frozen submission instead of a fresh save', async () => {
+    installFetch()
+    storyFailures = [new Error('REQUEST_TIMEOUT'), new Error('REQUEST_TIMEOUT')]
+    const ctl = useStoryDraft()
+    await ctl.openNew(SEL, 'world')
+    const first = await ctl.createWorkflow(SEL, 'review')
+    expect(first).toBeNull()
+    expect(ctl.ambiguous.value).toBe(true)
+    expect(ctl.createError.value).toContain('replays')
+    const patchesAfterFirst = seen.filter((s) => s.method === 'PATCH').length
+    const second = await ctl.createWorkflow(SEL, 'review')
+    expect(second).toBe('w1')
+    expect(ctl.ambiguous.value).toBe(false)
+    // No fresh save happened for the retry: same version, same key.
+    expect(seen.filter((s) => s.method === 'PATCH')).toHaveLength(patchesAfterFirst)
+    const keys = seen
+      .filter((s) => s.method === 'POST' && s.path === '/api/v1/stories')
+      .map((s) => s.headers['Idempotency-Key'])
+    expect(keys).toHaveLength(3)
+    expect(new Set(keys).size).toBe(1)
+  })
+
+  it('a definitive create failure clears the ambiguity', async () => {
+    installFetch()
+    const ctl = useStoryDraft()
+    await ctl.openNew(SEL, 'world')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (rawUrl: string, init: RequestInit = {}) => {
+        const url = new URL(rawUrl, 'http://test')
+        const method = init.method ?? 'GET'
+        seen.push({
+          method,
+          path: url.pathname,
+          body: init.body === undefined ? undefined : JSON.parse(String(init.body)),
+          headers: (init.headers ?? {}) as Record<string, string>
+        })
+        if (method === 'PATCH') {
+          const id = url.pathname.split('/').at(-1) as string
+          versions.set(id, (versions.get(id) ?? 1) + 1)
+          return json(draftOf(id))
+        }
+        if (method === 'POST' && url.pathname.endsWith('/validate')) {
+          return json({ valid: true, issues: [] })
+        }
+        if (method === 'POST' && url.pathname === '/api/v1/stories') {
+          return fail(500, 'HTTP_500', 'boom')
+        }
+        return json(draftOf('d-x'))
+      })
+    )
+    const worldId = await ctl.createWorkflow(SEL, 'review')
+    expect(worldId).toBeNull()
+    expect(ctl.ambiguous.value).toBe(false)
+  })
+
+  it('tracks acknowledged state across saves and failures', async () => {
+    installFetch()
+    const ctl = useStoryDraft()
+    await ctl.openNew(SEL, 'world')
+    expect(ctl.saveState.value).toBe('clean')
+    expect(ctl.isAcked(SEL, 'world')).toBe(true)
+    expect(ctl.isAcked({ ...SEL, title: 'Changed' }, 'world')).toBe(false)
+    const ok = await ctl.save(SEL, 'review')
+    expect(ok).toBe(true)
+    expect(ctl.saveState.value).toBe('clean')
+    expect(ctl.isAcked(SEL, 'review')).toBe(true)
   })
 
   it('timeout retry reuses the exact idempotency key', async () => {

@@ -1,0 +1,133 @@
+{
+  "ok": true,
+  "base": "http://127.0.0.1:5173",
+  "at": "2026-09-21T00:08:52.806Z",
+  "results": [
+    {
+      "scenario": "observer",
+      "step": "quickstart review renders with Begin enabled",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "observer",
+      "step": "no stale server validation on a filled review",
+      "ok": true,
+      "detail": "issues blocks: 0"
+    },
+    {
+      "scenario": "observer",
+      "step": "begin navigates to the room",
+      "ok": true,
+      "detail": "7ad58379-e435-4139-9474-c4b8358ab32e"
+    },
+    {
+      "scenario": "observer",
+      "step": "observer badge is read-only grant state",
+      "ok": true,
+      "detail": "Observer"
+    },
+    {
+      "scenario": "observer",
+      "step": "room shows the development-model status",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "observer",
+      "step": "travel starts for Wren",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "observer",
+      "step": "first beat commits",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "observer",
+      "step": "Wren reaches Market after the beat",
+      "ok": true,
+      "detail": "Ash\nMarket\nWren\nMarket"
+    },
+    {
+      "scenario": "observer",
+      "step": "feed shows committed events",
+      "ok": true,
+      "detail": "5 entries"
+    },
+    {
+      "scenario": "observer",
+      "step": "reload continues the same story",
+      "ok": true,
+      "detail": "5 entries"
+    },
+    {
+      "scenario": "observer",
+      "step": "home features the story after play",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "player",
+      "step": "player badge follows the persisted grant",
+      "ok": true,
+      "detail": "Player"
+    },
+    {
+      "scenario": "player",
+      "step": "room names Wren as the controlled actor",
+      "ok": true,
+      "detail": "Player\nPlaying as Wren\nBeat 0\nInitial configuration\nMode set by the story grant"
+    },
+    {
+      "scenario": "player",
+      "step": "travel actor locked to the controlled id (Ash first ignored)",
+      "ok": true,
+      "detail": "Wren — Hearth"
+    },
+    {
+      "scenario": "player",
+      "step": "player movement commits (Wren to Market)",
+      "ok": true,
+      "detail": "Ash\nMarket\nWren\nMarket\nyou"
+    },
+    {
+      "scenario": "failedsave",
+      "step": "failed save surfaces a failed state, input kept",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "failedsave",
+      "step": "retry action is offered",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "failedsave",
+      "step": "retry after recovery persists the draft",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "routes",
+      "step": "all routes compile and serve without 500s",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "narrow",
+      "step": "review renders narrow",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "narrow",
+      "step": "room renders narrow",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

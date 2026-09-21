@@ -7,9 +7,11 @@
  * cursor (next_after/has_more) instead of re-reading page one. Advance uses
  * the next absolute index; a timeout retries the SAME index (the server
  * replays). Travel reconciles the activity list (members) on 409/timeout
- * instead of claiming a journey is underway. Every state update is guarded
- * by the story lifecycle generation so late responses for a previous story
- * are ignored; mutations stay pending through acknowledgement and refresh.
+ * instead of claiming a journey is underway. Mutations freeze an immutable
+ * operation context (world, target, role, actor, generation) at start:
+ * attempts, retries and reconciliation never re-read the reactive route
+ * id, and a timeout never retries after the lifecycle moved on. History
+ * continues explicitly from the stored cursor via loadMore().
  */
 
 import { computed, ref, unref, type Ref } from 'vue'
@@ -39,9 +41,37 @@ export interface StoryNotice {
   text: string
 }
 
-/** Bounded full-history fetch: 25 pages of 50 source events. */
+/** Bounded history fetch: 25 pages of 50 source events per continuation. */
 const MAX_PAGES = 25
 const PAGE_LIMIT = 50
+
+interface OpHeader {
+  role: Role
+  characterId?: string
+  signal?: AbortSignal
+}
+
+/**
+ * Immutable mutation context frozen at operation start. Every attempt and
+ * reconciliation request uses these values — never the reactive route id —
+ * so a response held across navigation cannot be retried into another
+ * world. `generation` ties the operation to its lifecycle: only the
+ * originating cycle may retry or reconcile it.
+ */
+interface AdvanceOp {
+  worldId: string
+  index: number
+  header: OpHeader
+  generation: number
+}
+
+interface TravelOp {
+  worldId: string
+  actorId: string
+  toLocationId: string
+  header: OpHeader
+  generation: number
+}
 
 export function useStory(
   storyId: string | Ref<string>,
@@ -61,6 +91,7 @@ export function useStory(
   const loadError = ref<string | null>(null)
   const advancing = ref(false)
   const traveling = ref(false)
+  const loadingMore = ref(false)
   const notice = ref<StoryNotice | null>(null)
   const openedFor = ref<string | null>(null)
 
@@ -111,29 +142,48 @@ export function useStory(
     return out
   })
 
-  function mergeEntries(page: TimelineEntry[]): void {
+  function mergeEntries(page: TimelineEntry[]): number {
     const seen = new Set(entries.value.map((e) => e.event_id))
+    let added = 0
     for (const entry of page ?? []) {
       if (!seen.has(entry.event_id)) {
         seen.add(entry.event_id)
         entries.value.push(entry)
+        added += 1
       }
     }
+    return added
   }
 
-  /** Page from `after` to exhaustion, following next_after unconditionally. */
+  /**
+   * Page from `after` toward exhaustion for one fixed world. Follows
+   * next_after even across role-filtered empty pages, but stops when the
+   * cursor stops progressing with nothing new — a stuck cursor must not
+   * spin, and the user continues explicitly via loadMore().
+   */
   async function pageThrough(
+    worldId: string,
     seen: number,
-    header: { role: Role; characterId?: string; signal?: AbortSignal },
+    header: OpHeader,
     after: number
   ): Promise<void> {
     let next = after
     let more = false
+    let idleRounds = 0
     for (let pages = 0; pages < MAX_PAGES; pages += 1) {
-      const timeline = await getTimeline(id(), next, header, PAGE_LIMIT)
+      const timeline = await getTimeline(worldId, next, header, PAGE_LIMIT)
       if (seen !== cycle) return
-      mergeEntries(timeline.entries ?? [])
+      const added = mergeEntries(timeline.entries ?? [])
       total.value = timeline.total
+      if (timeline.next_after === next && added === 0) {
+        idleRounds += 1
+        if (idleRounds >= 2) {
+          more = timeline.has_more
+          break
+        }
+      } else {
+        idleRounds = 0
+      }
       next = timeline.next_after
       more = timeline.has_more
       if (!more) break
@@ -147,18 +197,26 @@ export function useStory(
     const seen = cycle
     controller?.abort()
     controller = new AbortController()
+    // A new lifecycle owns all mutation state: nothing stays pending from
+    // a cancelled operation on a reused instance.
+    advancing.value = false
+    traveling.value = false
+    loadingMore.value = false
     loading.value = true
     loadError.value = null
     entries.value = []
     cursor.value = 0
+    hasMore.value = false
     grant.value = null
     grantLoaded.value = false
+    // Frozen for this load: a route change mid-load must not retarget reads.
+    const worldId = id()
     try {
       const [story, initialSetup, activeGrant, worldMap] = await Promise.all([
-        getStory(id(), opts()),
-        getSetup(id(), opts()),
-        getRole(id(), opts()),
-        getMap(id(), opts())
+        getStory(worldId, opts()),
+        getSetup(worldId, opts()),
+        getRole(worldId, opts()),
+        getMap(worldId, opts())
       ])
       if (seen !== cycle) return
       detail.value = story
@@ -166,16 +224,16 @@ export function useStory(
       grant.value = activeGrant
       grantLoaded.value = true
       map.value = worldMap
-      await pageThrough(seen, opts(), 0)
+      await pageThrough(worldId, seen, opts(), 0)
       if (seen !== cycle) return
       // Record the room open (updates last_played_at) without advancing
       // gameplay. Best-effort: a failure leaves stale metadata, honestly so.
-      if (openedFor.value !== id()) {
+      if (openedFor.value !== worldId) {
         try {
-          const reopened = await openStory(id(), opts())
+          const reopened = await openStory(worldId, opts())
           if (seen === cycle) {
             detail.value = reopened
-            openedFor.value = id()
+            openedFor.value = worldId
           }
         } catch {
           /* last_played_at stays as-is */
@@ -194,21 +252,27 @@ export function useStory(
     cycle += 1
     controller?.abort()
     controller = null
+    advancing.value = false
+    traveling.value = false
+    loadingMore.value = false
   }
 
-  async function refreshTimeline(full = false): Promise<void> {
+  async function refreshTimeline(full = false, worldId: string = id()): Promise<void> {
     if (!detail.value) return
     const seen = cycle
     try {
-      const header = { role: unref(role), characterId: unref(characterId) }
+      const header: OpHeader = { role: unref(role), characterId: unref(characterId) }
       if (full) {
         entries.value = []
-        await pageThrough(seen, header, 0)
+        await pageThrough(worldId, seen, header, 0)
       } else {
-        await pageThrough(seen, header, cursor.value)
+        await pageThrough(worldId, seen, header, cursor.value)
       }
       if (seen !== cycle) return
-      const [story, worldMap] = await Promise.all([getStory(id(), header), getMap(id(), header)])
+      const [story, worldMap] = await Promise.all([
+        getStory(worldId, header),
+        getMap(worldId, header)
+      ])
       if (seen !== cycle) return
       detail.value = story
       map.value = worldMap
@@ -222,28 +286,59 @@ export function useStory(
     }
   }
 
+  /** Explicit history continuation from the stored cursor. */
+  async function loadMore(): Promise<void> {
+    if (!detail.value || loadingMore.value || !hasMore.value) return
+    loadingMore.value = true
+    const seen = cycle
+    try {
+      await pageThrough(id(), seen, opts(), cursor.value)
+    } catch (err) {
+      if (seen !== cycle) return
+      if (err instanceof ApiError && err.cancelled) return
+      notice.value = {
+        kind: 'error',
+        text: err instanceof Error ? err.message : 'could not load more history'
+      }
+    } finally {
+      if (seen === cycle) loadingMore.value = false
+    }
+  }
+
   async function advance(): Promise<boolean> {
     if (!detail.value || advancing.value) return false
     advancing.value = true
     notice.value = null
-    const seen = cycle
-    const index = detail.value.absolute_index + 1
-    const header = { role: unref(role), characterId: unref(characterId) }
+    // Frozen operation context: every attempt below targets this world,
+    // index, role and actor even if the route changes mid-request.
+    const op: AdvanceOp = {
+      worldId: id(),
+      index: detail.value.absolute_index + 1,
+      header: {
+        role: unref(role),
+        characterId: unref(characterId),
+        signal: controller?.signal
+      },
+      generation: cycle
+    }
+    const alive = (): boolean => op.generation === cycle
     const attempt = async (): Promise<void> => {
-      const result = await advanceStory(id(), index, undefined, header)
-      if (seen === cycle && result.duplicate) {
+      const result = await advanceStory(op.worldId, op.index, undefined, op.header)
+      if (alive() && result.duplicate) {
         notice.value = { kind: 'info', text: 'That beat already committed — showing it.' }
       }
     }
     try {
       await attempt()
     } catch (err) {
-      if (err instanceof ApiError && err.code === 'REQUEST_TIMEOUT') {
-        // Same index retry: the server replays a committed beat.
+      if (err instanceof ApiError && err.code === 'REQUEST_TIMEOUT' && alive()) {
+        // Same frozen target retry: the server replays a committed beat.
+        // No retry after navigation or disposal — the original request may
+        // have committed, and A’s operation must never be sent to B.
         try {
           await attempt()
         } catch (retryErr) {
-          if (seen === cycle) {
+          if (alive()) {
             notice.value = {
               kind: 'error',
               text: retryErr instanceof Error ? retryErr.message : 'advance timed out'
@@ -252,10 +347,10 @@ export function useStory(
           return false
         }
       } else if (err instanceof ApiError && err.code === 'VERSION_CONFLICT') {
-        if (seen === cycle)
-          notice.value = { kind: 'info', text: 'Newer state arrived — refreshed.' }
+        if (alive()) notice.value = { kind: 'info', text: 'Newer state arrived — refreshed.' }
       } else {
-        if (seen === cycle) {
+        if (alive()) {
+          if (err instanceof ApiError && err.cancelled) return false
           notice.value = {
             kind: 'error',
             text: err instanceof Error ? err.message : 'could not advance'
@@ -265,13 +360,15 @@ export function useStory(
       }
     } finally {
       // Stay pending through acknowledgement AND reconciliation refresh so
-      // no second beat starts against stale displayed state.
-      if (seen === cycle) {
-        await refreshTimeline()
-        advancing.value = false
+      // no second beat starts against stale displayed state — scoped to the
+      // operation's own world. Always release the flag: a reused instance
+      // must not stick mid-advance after cancellation.
+      if (alive()) {
+        await refreshTimeline(false, op.worldId)
       }
+      advancing.value = false
     }
-    return seen === cycle
+    return alive()
   }
 
   function matchActivity(
@@ -289,17 +386,13 @@ export function useStory(
     return { mine: false, elsewhere }
   }
 
-  async function reconcileTravel(
-    seen: number,
-    header: { role: Role; characterId?: string; signal?: AbortSignal },
-    characterId_: string,
-    toLocationId: string,
-    failure: string
-  ): Promise<void> {
+  async function reconcileTravel(op: TravelOp, failure: string): Promise<void> {
     try {
-      const active = await listActivities(id(), header)
-      if (seen !== cycle) return
-      const { mine, elsewhere } = matchActivity(active.members, characterId_, toLocationId)
+      // Reconciliation reads the operation's own world, even after the
+      // route moved on — or not at all when the lifecycle is gone.
+      const active = await listActivities(op.worldId, op.header)
+      if (op.generation !== cycle) return
+      const { mine, elsewhere } = matchActivity(active.members, op.actorId, op.toLocationId)
       notice.value = {
         kind: mine || elsewhere ? 'info' : 'error',
         text: mine
@@ -309,7 +402,7 @@ export function useStory(
             : failure
       }
     } catch {
-      if (seen === cycle) notice.value = { kind: 'error', text: failure }
+      if (op.generation === cycle) notice.value = { kind: 'error', text: failure }
     }
   }
 
@@ -317,47 +410,41 @@ export function useStory(
     if (traveling.value) return false
     traveling.value = true
     notice.value = null
-    const seen = cycle
-    const header = {
-      role: unref(role),
-      characterId: unref(characterId),
-      signal: controller?.signal
+    const op: TravelOp = {
+      worldId: id(),
+      actorId: characterId_,
+      toLocationId,
+      header: {
+        role: unref(role),
+        characterId: unref(characterId),
+        signal: controller?.signal
+      },
+      generation: cycle
     }
+    const alive = (): boolean => op.generation === cycle
     try {
-      await startTravel(id(), characterId_, toLocationId, header)
-      if (seen === cycle) {
+      await startTravel(op.worldId, op.actorId, op.toLocationId, op.header)
+      if (alive()) {
         notice.value = {
           kind: 'info',
           text: 'Journey begun — advance the story to complete it.'
         }
       }
-      return seen === cycle
+      return alive()
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         // 409 covers underway journeys AND other preconditions (no route,
         // busy character): reconcile instead of assuming underway.
-        await reconcileTravel(
-          seen,
-          header,
-          characterId_,
-          toLocationId,
-          err.message || 'could not start the journey'
-        )
+        await reconcileTravel(op, err.message || 'could not start the journey')
         return false
       }
       if (err instanceof ApiError && err.code === 'REQUEST_TIMEOUT') {
         // No idempotency key on this route: reconcile before reporting, so a
         // committed-but-unacknowledged start is not retried blindly.
-        await reconcileTravel(
-          seen,
-          header,
-          characterId_,
-          toLocationId,
-          'the journey request timed out — check the cast before retrying'
-        )
+        await reconcileTravel(op, 'the journey request timed out — check the cast before retrying')
         return false
       }
-      if (seen === cycle) {
+      if (alive()) {
         if (err instanceof ApiError && err.cancelled) return false
         notice.value = {
           kind: 'error',
@@ -366,7 +453,7 @@ export function useStory(
       }
       return false
     } finally {
-      if (seen === cycle) traveling.value = false
+      traveling.value = false
     }
   }
 
@@ -387,11 +474,13 @@ export function useStory(
     loadError,
     advancing,
     traveling,
+    loadingMore,
     notice,
     load,
     cancel,
     advance,
     travel,
-    refreshTimeline
+    refreshTimeline,
+    loadMore
   }
 }

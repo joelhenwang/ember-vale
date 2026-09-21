@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CreateCharacterTile from '../components/newstory/CreateCharacterTile.vue'
 import SearchField from '../components/ui/SearchField.vue'
@@ -15,12 +15,13 @@ import IconPlay from '../components/icons/IconPlay.vue'
 import MountainRidge from '../components/decor/MountainRidge.vue'
 import PageIntro from '../components/ui/PageIntro.vue'
 import { useBackend } from '../composables/useBackend'
-import { usePresets, type PresetCharacter, type PresetWorld } from '../composables/usePresets'
+import { usePresets, type PresetCharacter } from '../composables/usePresets'
 import { useStoryDraft } from '../composables/useStoryDraft'
-import { getPreset } from '../api/worldsim'
+import { usePinnedPresets } from '../composables/usePinnedPresets'
 import {
   controlledAfterCastChange,
   localDraftIssues,
+  rehomeInvalidLocations,
   type NewStorySelections
 } from '../game/drafting'
 import { filterCast, type CastFilter } from '../game/filters'
@@ -82,15 +83,18 @@ const sel = reactive({
 })
 
 const WORLD_BY_ID = computed(() => new Map(presets.worlds.value.map((w) => [w.id, w])))
+const pinned = usePinnedPresets()
+const worldNotice = ref<string | null>(null)
 
 // An older draft can pin an older world revision while the shelf only loads
-// latest: fetch the exact pinned revision so places shown are the places
-// submitted — never the newer map under an older rev.
-const pinnedWorld = ref<PresetWorld | null>(null)
+// latest: the exact pinned revision supplies the places shown and
+// submitted — never the newer map under an older rev. Matches on preset ID
+// and revision together.
 const selectedWorld = computed(() => WORLD_BY_ID.value.get(sel.worldId))
 const worldPlaces = computed(() => {
-  if (pinnedWorld.value && pinnedWorld.value.revision === sel.worldRev) {
-    return pinnedWorld.value.places
+  const pin = pinned.world.value
+  if (pin && pin.id === sel.worldId && pin.revision === sel.worldRev) {
+    return pin.places
   }
   return selectedWorld.value?.places ?? []
 })
@@ -142,6 +146,11 @@ const canContinue = computed(() => {
   return true
 })
 
+function chooseWorld(world: { id: string; revision: number }): void {
+  sel.worldId = world.id
+  sel.worldRev = world.revision
+}
+
 function castKeyFor(presetId: string, index: number): string {
   const base =
     presetId === presets.characters.value.find((c) => c.id === presetId)?.id
@@ -163,25 +172,45 @@ function defaultLocation(presetId: string): string {
   return worldPlaces.value[0]?.key ?? ''
 }
 
-async function refreshPinnedWorld(): Promise<void> {
-  pinnedWorld.value = null
+async function ensurePinned(): Promise<void> {
   const latest = selectedWorld.value
-  if (!latest || sel.worldRev === latest.revision) return
-  try {
-    const detail = await getPreset(sel.worldId, sel.worldRev)
-    const rev = (detail.revision ?? {}) as Record<string, unknown>
-    const places = (rev['locations'] as { key: string; name: string }[] | undefined) ?? []
-    pinnedWorld.value = {
-      id: detail.id,
-      revision: sel.worldRev,
-      name: detail.name,
-      description: (rev['description'] as string | undefined) ?? '',
-      places: places.map((p) => ({ key: p.key, name: p.name }))
+  if (!latest || sel.worldRev === latest.revision) {
+    pinned.clearWorld()
+    return
+  }
+  const wid = sel.worldId
+  const rev = sel.worldRev
+  await pinned.loadWorld(wid, rev, () => sel.worldId === wid && sel.worldRev === rev)
+}
+
+async function prefetchCharRevs(): Promise<void> {
+  for (const member of sel.cast) {
+    const latest = presets.characters.value.find((c) => c.id === member.presetId)
+    if (latest && member.presetRevision < latest.revision) {
+      await pinned.loadCharacter(member.presetId, member.presetRevision, latest.revision)
     }
-  } catch {
-    pinnedWorld.value = null
   }
 }
+
+function pinnedCharName(member: {
+  presetId: string
+  presetRevision: number
+  name: string
+}): string {
+  return pinned.characterName(member.presetId, member.presetRevision, member.name)
+}
+
+const controlledDisplay = computed(() => {
+  const member = sel.cast.find((c) => c.key === sel.controlledKey)
+  return member ? pinnedCharName(member) : '—'
+})
+
+const locationIssues = computed(() => {
+  const valid = new Set(worldPlaces.value.map((p) => p.key))
+  return sel.cast
+    .filter((m) => m.location && !valid.has(m.location))
+    .map((m) => `${pinnedCharName(m)} starts at “${m.location}”, which this map no longer has.`)
+})
 
 function toggleCast(def: CharacterDef): void {
   const at = sel.cast.findIndex((c) => c.presetId === def.id)
@@ -237,6 +266,56 @@ function hydrate(payload: Record<string, unknown>): void {
   if (typeof story['tone'] === 'string') sel.tone = story['tone']
 }
 
+const dirty = computed(
+  () =>
+    booted.value &&
+    draftCtl.draft.value !== null &&
+    !draftCtl.isAcked(selections.value, slugOf(step.value))
+)
+
+function beforeUnloadGuard(event: BeforeUnloadEvent): void {
+  event.preventDefault()
+}
+
+watch(dirty, (isDirty) => {
+  if (isDirty || draftCtl.saveState.value === 'failed') {
+    window.addEventListener('beforeunload', beforeUnloadGuard)
+  } else {
+    window.removeEventListener('beforeunload', beforeUnloadGuard)
+  }
+})
+
+watch(
+  () => draftCtl.saveState.value,
+  (state) => {
+    if (state === 'failed' || dirty.value) {
+      window.addEventListener('beforeunload', beforeUnloadGuard)
+    } else {
+      window.removeEventListener('beforeunload', beforeUnloadGuard)
+    }
+  }
+)
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', beforeUnloadGuard)
+})
+
+function applyRecoverySelections(s: NewStorySelections): void {
+  sel.worldId = s.world.presetId
+  sel.worldRev = s.world.presetRevision
+  sel.cast = s.cast.map((m) => ({
+    key: m.key,
+    presetId: m.presetId,
+    presetRevision: m.presetRevision,
+    name: m.name,
+    location: m.locationKey ?? ''
+  }))
+  sel.role = s.mode.role === 'player' ? 'player' : 'watcher'
+  sel.controlledKey = s.mode.controlledKey
+  sel.title = s.title
+  sel.tone = s.tone ?? 'hopeful mystery'
+}
+
 async function prefillQuickStart(): Promise<void> {
   const emberVale =
     presets.worlds.value.find((w) => w.name === 'Ember Vale') ?? presets.worlds.value[0]
@@ -257,17 +336,23 @@ async function prefillQuickStart(): Promise<void> {
   sel.role = 'watcher'
   sel.controlledKey = undefined
   sel.title = 'A Morning in Ember Vale'
-  // Quick Start lands on Review with everything filled in — and persists,
-  // so a reload keeps the prefilled choices instead of losing them.
+  // Quick Start lands on Review with everything filled in — and persists.
+  // The result is checked: a failed save must not claim durability.
   step.value = 6
-  await persist()
-  bootNotice.value =
-    'Quick Start filled in Ember Vale with Wren and Ash — review and begin, or step back to change anything.'
+  const saved = await persist()
+  bootNotice.value = saved
+    ? 'Quick Start filled in Ember Vale with Wren and Ash — review and begin, or step back to change anything.'
+    : 'Quick Start filled in Ember Vale with Wren and Ash, but the save failed — your choices are kept here, not yet on the server. Retry the save before leaving.'
 }
 
-async function boot(): Promise<void> {
+async function boot(draftOverride?: string): Promise<void> {
   bootCycle += 1
   const seen = bootCycle
+  booted.value = false
+  bootError.value = null
+  bootNotice.value = null
+  worldNotice.value = null
+  pinned.clearWorld()
   await presets.load()
   if (seen !== bootCycle) return
   if (presets.error.value) {
@@ -276,7 +361,8 @@ async function boot(): Promise<void> {
   }
   const emberVale =
     presets.worlds.value.find((w) => w.name === 'Ember Vale') ?? presets.worlds.value[0]
-  const queryDraft = typeof route.query.draft === 'string' ? route.query.draft : null
+  const queryDraft =
+    draftOverride ?? (typeof route.query.draft === 'string' ? route.query.draft : null)
   try {
     if (queryDraft) {
       await draftCtl.openExisting(queryDraft)
@@ -311,7 +397,18 @@ async function boot(): Promise<void> {
   }
   hydrate(opened.payload as Record<string, unknown>)
   step.value = stepOf(opened.current_step)
-  await refreshPinnedWorld()
+  // A local recovery draft newer than the server state restores choices
+  // that never reached the server (failed save + reload).
+  const recovery = draftCtl.readRecovery()
+  if (recovery && recovery.draftId === opened.id && recovery.at > opened.updated_at) {
+    applyRecoverySelections(recovery.selections)
+    step.value = stepOf(recovery.step)
+    bootNotice.value =
+      'Restored choices that never reached the server — review them and save before leaving.'
+  }
+  await ensurePinned()
+  if (seen !== bootCycle) return
+  await prefetchCharRevs()
   if (!queryDraft && route.query.quickstart !== undefined) await prefillQuickStart()
   if (!sel.worldId && emberVale) {
     sel.worldId = emberVale.id
@@ -351,7 +448,11 @@ function navBusy(): boolean {
 
 async function persist(): Promise<boolean> {
   if (!draftCtl.draft.value) return false
-  return draftCtl.save(selections.value, slugOf(step.value))
+  const ok = await draftCtl.save(selections.value, slugOf(step.value))
+  // Review displays server validation: re-check after a successful save so
+  // fixed issues clear instead of lingering from an earlier draft state.
+  if (ok && step.value === 6) await draftCtl.validate()
+  return ok
 }
 
 async function go(n: number): Promise<void> {
@@ -386,6 +487,51 @@ async function create(): Promise<void> {
     await router.push({ name: 'story-play', params: { storyId: worldId } })
   }
 }
+
+// A new ?draft= after boot (link navigation, Back/Forward) reloads the
+// wizard for that draft. The wizard's own first ?draft= assignment matches
+// the loaded draft, so it never reboots itself.
+watch(
+  () => route.query.draft,
+  (next) => {
+    if (!booted.value) return
+    if (typeof next === 'string' && next && next !== draftCtl.draft.value?.id) {
+      void boot(next)
+    }
+  }
+)
+
+// The user changing worlds adopts the latest revision deliberately:
+// pinned content is dropped, starting places absent from the new map are
+// reset (and named), and the change persists.
+watch([() => sel.worldId, () => sel.worldRev], async ([wid, rev], [prevId]) => {
+  if (!booted.value) return
+  if (wid !== prevId) {
+    const latest = WORLD_BY_ID.value.get(wid)
+    if (latest && rev !== latest.revision) {
+      sel.worldRev = latest.revision
+    }
+    pinned.clearWorld()
+    const reset = rehomeInvalidLocations(
+      sel.cast,
+      new Set(worldPlaces.value.map((p) => p.key)),
+      (presetId) => defaultLocation(presetId)
+    )
+    worldNotice.value =
+      reset > 0 ? `New world, new map — ${reset} starting place(s) were reset.` : null
+    await persist()
+  }
+  await ensurePinned()
+})
+
+// Resolve older pinned character revisions for display as the cast changes;
+// latest revisions need no fetch and stay correct for browsing.
+watch(
+  () => sel.cast.map((m) => `${m.presetId}@${m.presetRevision}`).join(','),
+  () => {
+    if (booted.value) void prefetchCharRevs()
+  }
+)
 
 watch(
   () => sel.role,
@@ -425,12 +571,17 @@ onMounted(() => {
     <template v-else-if="booted">
       <StoryStepper :current="step" @go="go" />
       <p v-if="bootNotice" class="nsv__notice" role="status">{{ bootNotice }}</p>
+      <p v-if="worldNotice" class="nsv__notice" role="status">{{ worldNotice }}</p>
       <p v-if="draftCtl.notice.value" class="nsv__notice" role="status">
         {{ draftCtl.notice.value }}
       </p>
-      <p v-if="pinnedWorld" class="nsv__notice" role="status">
-        This draft pins {{ pinnedWorld.name }} rev {{ pinnedWorld.revision }} — showing that
-        revision's places, not the newer library map.
+      <p v-if="pinned.world.value" class="nsv__notice" role="status">
+        This draft pins {{ pinned.world.value.name }} rev {{ pinned.world.value.revision }} —
+        showing that revision's places, not the newer library map.
+      </p>
+      <p v-if="pinned.worldError.value" class="nsv__issues" role="alert">
+        {{ pinned.worldError.value }} Places below are the current library map and cannot be
+        submitted with this draft — pick the current world revision or retry.
       </p>
 
       <section v-if="step === 1" class="nsv__panel" aria-label="Choose a world">
@@ -442,10 +593,7 @@ onMounted(() => {
               class="nsv__world"
               :class="{ 'nsv__world--on': sel.worldId === world.id }"
               :aria-pressed="sel.worldId === world.id"
-              @click="
-                sel.worldId = world.id
-                sel.worldRev = world.revision
-              ">
+              @click="chooseWorld(world)">
               <span class="nsv__world-name">{{ world.name }}</span>
               <span class="nsv__world-rev">Preset rev {{ world.revision }}</span>
               <span class="nsv__world-desc">{{ world.description }}</span>
@@ -485,12 +633,12 @@ onMounted(() => {
             <ul v-else class="sel__list">
               <li v-for="member in sel.cast" :key="member.key" class="sel__row">
                 <div class="sel__who">
-                  <strong>{{ member.name }}</strong>
+                  <strong>{{ pinnedCharName(member) }}</strong>
                   <span class="sel__rev">preset rev {{ member.presetRevision }}</span>
                 </div>
                 <label class="sel__place">
                   Starts at
-                  <select v-model="member.location">
+                  <select v-model="member.location" :disabled="!!pinned.worldError.value">
                     <option v-for="place in worldPlaces" :key="place.key" :value="place.key">
                       {{ place.name }}
                     </option>
@@ -542,7 +690,7 @@ onMounted(() => {
           Play as
           <select v-model="sel.controlledKey">
             <option v-for="member in sel.cast" :key="member.key" :value="member.key">
-              {{ member.name }}
+              {{ pinnedCharName(member) }}
             </option>
           </select>
         </label>
@@ -589,17 +737,16 @@ onMounted(() => {
           <div>
             <dt>Cast</dt>
             <dd>
-              {{ sel.cast.map((c) => `${c.name} (rev ${c.presetRevision})`).join(', ') || 'None' }}
+              {{
+                sel.cast.map((c) => `${pinnedCharName(c)} (rev ${c.presetRevision})`).join(', ') ||
+                'None'
+              }}
             </dd>
           </div>
           <div>
             <dt>Mode</dt>
             <dd>
-              {{
-                sel.role === 'player'
-                  ? `Player as ${sel.cast.find((c) => c.key === sel.controlledKey)?.name ?? '—'}`
-                  : 'Observer'
-              }}
+              {{ sel.role === 'player' ? `Player as ${controlledDisplay}` : 'Observer' }}
             </dd>
           </div>
           <div>
@@ -613,8 +760,15 @@ onMounted(() => {
         <ul v-if="draftCtl.issues.value.length" class="nsv__issues" role="alert">
           <li v-for="issue in draftCtl.issues.value" :key="issue">{{ issue }}</li>
         </ul>
+        <ul v-if="locationIssues.length" class="nsv__issues" role="alert">
+          <li v-for="issue in locationIssues" :key="issue">{{ issue }}</li>
+        </ul>
         <p v-if="draftCtl.createError.value" class="nsv__notice" role="alert">
           {{ draftCtl.createError.value }}
+        </p>
+        <p v-if="draftCtl.ambiguous.value" class="nsv__notice" role="status">
+          The last create may already have completed — pressing Begin again replays the same
+          submission, never a duplicate story.
         </p>
       </section>
 
@@ -632,10 +786,22 @@ onMounted(() => {
           :icon="IconSave"
           :disabled="draftCtl.busy.value"
           @click="persist()">
-          {{ draftCtl.busy.value ? 'Saving…' : 'Save draft' }}
+          {{
+            draftCtl.busy.value
+              ? 'Saving…'
+              : draftCtl.saveState.value === 'failed'
+                ? 'Retry save'
+                : 'Save draft'
+          }}
         </MenuButton>
         <span class="nsv__draftstate">{{
-          draftCtl.draft.value ? `Draft rev ${draftCtl.draft.value.version}` : 'No draft yet'
+          !draftCtl.draft.value
+            ? 'No draft yet'
+            : draftCtl.saveState.value === 'failed'
+              ? `Draft rev ${draftCtl.draft.value.version} · save failed — choices kept locally`
+              : dirty
+                ? `Draft rev ${draftCtl.draft.value.version} · unsaved changes`
+                : `Draft rev ${draftCtl.draft.value.version} · saved`
         }}</span>
         <MenuButton
           v-if="step < 6"
@@ -647,7 +813,13 @@ onMounted(() => {
         <MenuButton
           v-else
           :icon="IconPlay"
-          :disabled="draftCtl.creating.value || draftCtl.busy.value || localIssues.length > 0"
+          :disabled="
+            draftCtl.creating.value ||
+            draftCtl.busy.value ||
+            localIssues.length > 0 ||
+            locationIssues.length > 0 ||
+            !!pinned.worldError.value
+          "
           @click="create()">
           {{ draftCtl.creating.value ? 'Creating…' : 'Begin the story' }}
         </MenuButton>

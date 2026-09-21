@@ -204,10 +204,17 @@ onUnmounted(() => story.cancel())
               <p v-if="entry.snippet">{{ entry.snippet }}</p>
             </li>
           </ol>
-          <p v-if="story.hasMore.value" class="play__empty" role="status">
-            Showing {{ story.entries.value.length }} of {{ story.total.value }} events — reload to
-            fetch the rest.
+          <p class="play__empty" role="status">
+            Showing {{ story.entries.value.length }} loaded events.
+            <template v-if="story.hasMore.value"> Older history remains on the server. </template>
           </p>
+          <MenuButton
+            v-if="story.hasMore.value"
+            variant="outline"
+            :disabled="story.loadingMore.value"
+            @click="story.loadMore()">
+            {{ story.loadingMore.value ? 'Loading…' : 'Load older history' }}
+          </MenuButton>
         </section>
       </div>
       <footer class="play__foot">

@@ -3,6 +3,7 @@ import {
   buildDraftPayload,
   controlledAfterCastChange,
   localDraftIssues,
+  rehomeInvalidLocations,
   type NewStorySelections
 } from './drafting'
 
@@ -52,5 +53,20 @@ describe('draft payload', () => {
     expect(controlledAfterCastChange(['wren', 'ash'], 'wren')).toBe('wren')
     expect(controlledAfterCastChange(['ash'], 'wren')).toBeUndefined()
     expect(controlledAfterCastChange(['ash'], undefined)).toBeUndefined()
+  })
+
+  it('re-homes only locations absent from the new world', () => {
+    const members = [
+      { presetId: 'wren-id', location: 'hearth' },
+      { presetId: 'ash-id', location: 'deepwood' },
+      { presetId: 'birch-id', location: '' }
+    ]
+    const reset = rehomeInvalidLocations(
+      members,
+      new Set(['hearth', 'market']),
+      (presetId) => `${presetId}-fallback`
+    )
+    expect(reset).toBe(1)
+    expect(members.map((m) => m.location)).toEqual(['hearth', 'ash-id-fallback', ''])
   })
 })

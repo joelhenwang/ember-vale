@@ -81,6 +81,27 @@ export function localDraftIssues(selections: NewStorySelections): string[] {
   return issues
 }
 
+/**
+ * Re-home cast members whose starting place vanished from the current map
+ * (world change or older pinned revision). Mutates the given rows in place
+ * and returns how many were reset, so the caller can name the change and
+ * persist it deliberately. Empty locations are left alone.
+ */
+export function rehomeInvalidLocations(
+  members: { presetId: string; location: string }[],
+  validKeys: ReadonlySet<string>,
+  fallback: (presetId: string) => string
+): number {
+  let reset = 0
+  for (const member of members) {
+    if (member.location && !validKeys.has(member.location)) {
+      member.location = fallback(member.presetId)
+      reset += 1
+    }
+  }
+  return reset
+}
+
 /** Drop a removed cast member's controlled selection (caller must re-ask). */
 export function controlledAfterCastChange(
   castKeys: string[],

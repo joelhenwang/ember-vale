@@ -159,6 +159,23 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     try {
       return (await res.json()) as T
     } catch (err) {
+      // Body consumption rejects with the abort reason too: preserve
+      // timeout/cancellation identity so mutation recovery paths (selected
+      // by REQUEST_TIMEOUT) still trigger. Only a genuinely malformed body
+      // is a transport/protocol error.
+      if (err instanceof Error && err.message === 'REQUEST_TIMEOUT') {
+        throw new ApiError('REQUEST_TIMEOUT', 'request timed out', 0, true)
+      }
+      if (timedOut) {
+        throw new ApiError('REQUEST_TIMEOUT', 'request timed out', 0, true)
+      }
+      if (
+        (err instanceof Error && err.message === 'REQUEST_ABORTED') ||
+        outerAborted ||
+        signal?.aborted
+      ) {
+        throw new ApiError('REQUEST_ABORTED', 'request cancelled', 0, false)
+      }
       throw new ApiError(
         'REQUEST_TRANSPORT',
         err instanceof Error ? `unreadable response: ${err.message}` : 'unreadable response',

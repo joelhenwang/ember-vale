@@ -95,6 +95,32 @@ describe('api transport', () => {
     expect(err.retryable).toBe(true)
   })
 
+  it('keeps timeout identity when the body stalls after headers', async () => {
+    const res = new Response('partial', { status: 200 })
+    vi.spyOn(res, 'json').mockRejectedValue(new Error('REQUEST_TIMEOUT'))
+    const fetchImpl = vi.fn().mockResolvedValue(res)
+    const err = (await apiFetch('/stories', {
+      fetchImpl: fetchImpl as unknown as typeof fetch
+    }).catch((e: unknown) => e)) as ApiError
+    expect(err.code).toBe('REQUEST_TIMEOUT')
+    expect(err.cancelled).toBe(false)
+    expect(err.retryable).toBe(true)
+  })
+
+  it('keeps cancellation identity when an abort lands mid-body', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    const res = new Response('partial', { status: 200 })
+    vi.spyOn(res, 'json').mockRejectedValue(new DOMException('aborted', 'AbortError'))
+    const fetchImpl = vi.fn().mockResolvedValue(res)
+    const err = (await apiFetch('/stories', {
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      signal: controller.signal
+    }).catch((e: unknown) => e)) as ApiError
+    expect(err.code).toBe('REQUEST_ABORTED')
+    expect(err.cancelled).toBe(true)
+  })
+
   it('reports a real outer abort as cancellation even with a native AbortError', async () => {
     const controller = new AbortController()
     controller.abort()

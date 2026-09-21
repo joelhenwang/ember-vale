@@ -116,8 +116,14 @@ if (args.includes('--resume')) {
   const rtl = await call('GET', `/stage2/timeline?world_id=${wid}&after=0&limit=50`);
   expect(
     rtl.entries.length === artifact.events,
-    `resumed event cursor ${rtl.entries.length} matches artifact ${artifact.events}`
+    `resumed event count ${rtl.entries.length} matches artifact ${artifact.events}`
   );
+  if (artifact.cursor !== undefined) {
+    expect(
+      rtl.next_after === artifact.cursor && rtl.total === artifact.total,
+      `resumed source cursor ${rtl.next_after}/${rtl.total} matches artifact ${artifact.cursor}/${artifact.total}`
+    );
+  }
   const continued = await call('POST', '/stage1/advance', {
     world_id: wid,
     absolute_index: detail.absolute_index + 1,
@@ -155,6 +161,8 @@ if (args.includes('--resume')) {
         actor: artifact.actor,
         actor_location_place: artifact.actor_location_place,
         events: grown.entries.length,
+        cursor: grown.next_after,
+        total: grown.total,
       },
       null,
       2
@@ -292,6 +300,8 @@ fs.writeFileSync(
       actor: 'Wren',
       actor_location_place: 'Market',
       events: eventsBefore,
+      cursor: timeline.next_after,
+      total: timeline.total,
     },
     null,
     2
