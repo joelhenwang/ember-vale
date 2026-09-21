@@ -9,8 +9,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from worldsim.domain.errors import DomainError, ErrorCode
-from worldsim.domain.presets import Preset, PresetKind, PresetRevision
-from worldsim.infrastructure.models.stories import PresetRevisionRow, PresetRow
+from worldsim.domain.ids import EditorDraftId
+from worldsim.domain.presets import EditorDraft, Preset, PresetKind, PresetRevision
+from worldsim.infrastructure.models.stories import (
+    EditorDraftRow,
+    PresetRevisionRow,
+    PresetRow,
+)
 from worldsim.infrastructure.repositories._common import missing, version_conflict
 
 
@@ -127,6 +132,59 @@ class SqlAlchemyPresetRepository:
         if row is None:
             raise missing("preset revision", preset_id)
         return self._to_revision(row)
+
+    def _to_editor_draft(self, row: EditorDraftRow) -> EditorDraft:
+        return EditorDraft(
+            id=row.id,
+            preset_id=row.preset_id,
+            base_revision=row.base_revision,
+            fields=dict(row.fields),
+            version=row.version,
+            updated_at=row.updated_at,
+        )
+
+    async def get_editor_draft(self, preset_id: UUID) -> EditorDraft | None:
+        """The one durable draft for a preset, if any."""
+        row = (
+            await self._session.execute(
+                select(EditorDraftRow).where(EditorDraftRow.preset_id == preset_id)
+            )
+        ).scalar_one_or_none()
+        return self._to_editor_draft(row) if row is not None else None
+
+    async def add_editor_draft(self, draft: EditorDraft, created_at: datetime) -> None:
+        self._session.add(
+            EditorDraftRow(
+                id=draft.id,
+                preset_id=draft.preset_id,
+                base_revision=draft.base_revision,
+                fields=dict(draft.fields),
+                version=draft.version,
+                created_at=created_at,
+                updated_at=draft.updated_at,
+            )
+        )
+        await self._session.flush()
+
+    async def save_editor_draft(self, draft: EditorDraft, expected_version: int) -> EditorDraft:
+        row = await self._session.get(EditorDraftRow, draft.id)
+        if row is None:
+            raise missing("editor draft", draft.id)
+        if row.version != expected_version:
+            raise version_conflict("editor draft", draft.id, expected_version, row.version)
+        row.base_revision = draft.base_revision
+        row.fields = dict(draft.fields)
+        row.version = expected_version + 1
+        row.updated_at = draft.updated_at
+        await self._session.flush()
+        return draft.model_copy(update={"version": expected_version + 1})
+
+    async def delete_editor_draft(self, draft_id: EditorDraftId) -> None:
+        row = await self._session.get(EditorDraftRow, draft_id)
+        if row is None:
+            raise missing("editor draft", draft_id)
+        await self._session.delete(row)
+        await self._session.flush()
 
     async def latest_revision(self, preset_id: UUID) -> PresetRevision:
         query = (

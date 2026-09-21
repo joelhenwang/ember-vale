@@ -53,8 +53,8 @@ function retryPresets(): void {
 const tabs = computed(() => [
   { key: 'worlds', label: 'Worlds', count: presets.worlds.value.length },
   { key: 'characters', label: 'Characters', count: presets.characters.value.length },
-  { key: 'style-packs', label: 'Style Packs', count: catalog.stylePacks.length },
-  { key: 'templates', label: 'Templates', count: catalog.templates.length }
+  { key: 'style-packs', label: 'Style Packs · Preview', count: catalog.stylePacks.length },
+  { key: 'templates', label: 'Templates · Preview', count: catalog.templates.length }
 ])
 
 interface TabConfig {
@@ -128,10 +128,28 @@ const worlds = computed(() =>
 const packs = computed(() => filterPacks(catalog.stylePacks, libFilter.value))
 const templates = computed(() => filterPacks(catalog.templates, libFilter.value))
 
+/* Server tabs offer no Recently Updated: the preset contract carries
+   no update timestamp, and a revision number is not a recency key. */
+const serverTab = computed(() => tab.value === 'characters' || tab.value === 'worlds')
+const sortOptions = computed(() =>
+  serverTab.value
+    ? [{ value: 'name', label: 'Name' }]
+    : [
+        { value: 'recent', label: 'Recently Updated' },
+        { value: 'name', label: 'Name' }
+      ]
+)
+
 function setTab(key: string): void {
   resetLibraryFilters()
   tab.value = key
+  if ((key === 'characters' || key === 'worlds') && libraryUi.sort !== 'name') {
+    libraryUi.sort = 'name'
+  }
 }
+
+/* The default tab is server-backed, while the shared default sort is not. */
+if (serverTab.value && libraryUi.sort !== 'name') libraryUi.sort = 'name'
 
 /** Studios are shared pages — the library opens its own flavor of each. */
 function openCharacter(id: string): void {
@@ -183,13 +201,7 @@ function openWorld(id: string): void {
             class="lib__search" />
           <ChipGroup v-if="config.chips.length" v-model="libraryUi.chip" :options="config.chips" />
           <span class="lib__spacer"></span>
-          <SortSelect
-            v-model="libraryUi.sort"
-            label="Sort:"
-            :options="[
-              { value: 'recent', label: 'Recently Updated' },
-              { value: 'name', label: 'Name' }
-            ]" />
+          <SortSelect v-model="libraryUi.sort" label="Sort:" :options="sortOptions" />
           <ViewToggle v-model="libraryUi.view" label="View mode" :options="viewOptions" />
         </div>
 
@@ -238,6 +250,7 @@ your next story."
 
         <!-- style packs -->
         <div v-else-if="tab === 'style-packs'" class="lib__cards lib__cards--packs">
+          <p class="lib__none">Preview samples — persistence arrives with editor drafts.</p>
           <PackLibCard v-for="p in packs" :key="p.id" :pack="p" />
           <CreateLibTile
             title="Create a style pack"
@@ -248,6 +261,7 @@ of your tales."
 
         <!-- templates -->
         <div v-else class="lib__cards lib__cards--worlds">
+          <p class="lib__none">Preview samples — persistence arrives with editor drafts.</p>
           <PackLibCard v-for="p in templates" :key="p.id" :pack="p" />
           <CreateLibTile
             title="Create a template"

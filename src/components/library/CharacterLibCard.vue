@@ -39,8 +39,12 @@ defineEmits<{ open: [] }>()
       </div>
       <p class="libcard__used">
         <IconBook :size="14" />
-        Used in {{ character.usedInStories }}
-        {{ character.usedInStories === 1 ? 'story' : 'stories' }}
+        <template v-if="character.usedInStories !== null">
+          Used in {{ character.usedInStories }}
+          {{ character.usedInStories === 1 ? 'story' : 'stories' }}
+        </template>
+        <template v-else>Usage not tracked yet</template>
+        <template v-if="character.revision !== null"> · rev {{ character.revision }}</template>
       </p>
     </div>
   </article>

@@ -12,11 +12,11 @@ import hashlib
 import json
 from datetime import datetime
 from enum import StrEnum
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from worldsim.domain.ids import PresetId
+from worldsim.domain.ids import EditorDraftId, PresetId
 from worldsim.domain.time import utcnow
 
 
@@ -124,3 +124,23 @@ class PresetRevision(BaseModel):
     payload: PresetPayload
     content_hash: str = Field(min_length=1, max_length=128)
     created_at: datetime = Field(default_factory=utcnow)
+
+
+class EditorDraft(BaseModel):
+    """Durable partial edit of one preset revision.
+
+    `fields` holds only what the editor exposes, as plain JSON; saving is
+    deliberately lenient so incomplete work survives. Publishing merges
+    these fields over the base revision payload and validates the strict
+    preset schema, so fields the editor never shows are preserved.
+    One draft per preset: reopening the same base replays the draft.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    id: EditorDraftId
+    preset_id: PresetId
+    base_revision: int = Field(ge=1)
+    fields: dict[str, Any] = Field(default_factory=dict)
+    version: int = Field(default=1, ge=1)
+    updated_at: datetime = Field(default_factory=utcnow)

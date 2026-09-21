@@ -6,7 +6,15 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -69,6 +77,28 @@ class StoryDraftRow(Base):
     )
 
     __table_args__ = (CheckConstraint("version >= 1", name="ck_draft_version"),)
+
+
+class EditorDraftRow(Base):
+    __tablename__ = "editor_draft"
+
+    id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True)
+    preset_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("preset.id", name="fk_editor_draft_preset"),
+        index=True,
+    )
+    base_revision: Mapped[int] = mapped_column(Integer)
+    fields: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        CheckConstraint("base_revision >= 1", name="ck_editor_draft_base"),
+        CheckConstraint("version >= 1", name="ck_editor_draft_version"),
+        UniqueConstraint("preset_id", name="uq_editor_draft_preset"),
+    )
 
 
 class PresetRow(Base):

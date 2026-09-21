@@ -310,10 +310,15 @@ def new_world_condition_id() -> WorldConditionId:
 
 
 StoryDraftId = UUID
+EditorDraftId = UUID
 PresetId = UUID
 
 
 def new_story_draft_id() -> StoryDraftId:
+    return uuid4()
+
+
+def new_editor_draft_id() -> EditorDraftId:
     return uuid4()
 
 

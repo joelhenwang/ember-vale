@@ -13,10 +13,12 @@ from uuid import UUID
 from fastapi import APIRouter, Request, Response
 from pydantic import TypeAdapter
 
+from worldsim.application import editor_drafts
 from worldsim.domain.assets import AssetRecord
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.ids import new_preset_id
 from worldsim.domain.presets import (
+    EditorDraft,
     Preset,
     PresetKind,
     PresetPayload,
@@ -165,6 +167,86 @@ async def add_revision(
         )
         await uow.commit()
     return await _detail(request, preset_id, next_revision)
+
+
+def _draft_view(draft: EditorDraft, replayed: bool = False) -> api.EditorDraftView:
+    return api.EditorDraftView(
+        id=draft.id,
+        preset_id=draft.preset_id,
+        base_revision=draft.base_revision,
+        fields=dict(draft.fields),
+        version=draft.version,
+        updated_at=draft.updated_at,
+        replayed=replayed,
+    )
+
+
+@router.post("/library/presets/{preset_id}/editor-drafts", response_model=api.EditorDraftView)
+async def open_editor_draft(
+    preset_id: UUID, body: api.EditorDraftOpenRequest, request: Request
+) -> api.EditorDraftView:
+    """Open the durable draft for a base revision; same base replays it."""
+    state = request.app.state.app_state
+    draft, replayed = await editor_drafts.open_draft(
+        state.uow_factory(), preset_id, body.base_revision
+    )
+    return _draft_view(draft, replayed)
+
+
+@router.get(
+    "/library/presets/{preset_id}/editor-drafts/current", response_model=api.EditorDraftView
+)
+async def read_editor_draft(preset_id: UUID, request: Request) -> api.EditorDraftView:
+    state = request.app.state.app_state
+    async with state.uow_factory()() as uow:
+        draft = await uow.presets.get_editor_draft(preset_id)
+    if draft is None:
+        raise DomainError(ErrorCode.NOT_FOUND, f"no editor draft for preset: {preset_id}")
+    return _draft_view(draft)
+
+
+@router.patch(
+    "/library/presets/{preset_id}/editor-drafts/{draft_id}",
+    response_model=api.EditorDraftView,
+)
+async def save_editor_draft(
+    preset_id: UUID, draft_id: UUID, body: api.EditorDraftSaveRequest, request: Request
+) -> api.EditorDraftView:
+    """Persist partial editor fields; incomplete work is accepted."""
+    state = request.app.state.app_state
+    draft = await editor_drafts.save_draft(
+        state.uow_factory(), preset_id, draft_id, body.expected_version, body.fields
+    )
+    return _draft_view(draft)
+
+
+@router.delete("/library/presets/{preset_id}/editor-drafts/{draft_id}")
+async def discard_editor_draft(
+    preset_id: UUID, draft_id: UUID, request: Request
+) -> dict[str, str]:
+    """Abandon a draft. Published revisions are never touched."""
+    state = request.app.state.app_state
+    await editor_drafts.discard_draft(state.uow_factory(), preset_id, draft_id)
+    return {"draft_id": str(draft_id)}
+
+
+@router.post(
+    "/library/presets/{preset_id}/editor-drafts/{draft_id}/publish",
+    response_model=api.PresetDetail,
+)
+async def publish_editor_draft(
+    preset_id: UUID, draft_id: UUID, body: api.EditorDraftPublishRequest, request: Request
+) -> api.PresetDetail:
+    """Publish a draft as a new immutable revision (strict validation)."""
+    state = request.app.state.app_state
+    revision = await editor_drafts.publish_draft(
+        state.uow_factory(),
+        preset_id,
+        draft_id,
+        body.expected_version,
+        body.preset_expected_version,
+    )
+    return await _detail(request, preset_id, revision.revision)
 
 
 @router.post("/library/presets/{preset_id}/archive", response_model=api.PresetDetail)

@@ -1276,6 +1276,38 @@ class PresetRevisionRequest(BaseModel):
     expected_version: int = Field(ge=0)
 
 
+class EditorDraftView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    id: UUID
+    preset_id: UUID
+    base_revision: int
+    fields: dict[str, Any] = Field(default_factory=dict)
+    version: int
+    updated_at: datetime
+    replayed: bool = False
+
+
+class EditorDraftOpenRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    base_revision: int = Field(ge=1)
+
+
+class EditorDraftSaveRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    fields: dict[str, Any] = Field(default_factory=dict)
+    expected_version: int = Field(ge=1)
+
+
+class EditorDraftPublishRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    expected_version: int = Field(ge=1)
+    preset_expected_version: int = Field(ge=0)
+
+
 class PreferencesView(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 

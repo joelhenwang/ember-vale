@@ -87,7 +87,10 @@ export interface CharacterDef {
   imageSlot: ImageSlot
   categories: Array<'companions' | 'travelers' | 'scholars' | 'locals'>
   playerReady: boolean
-  usedInStories: number
+  /** Null until story shelves report real usage — never display null as a count. */
+  usedInStories: number | null
+  /** Published preset revision, if this record came from one. */
+  revision: number | null
   /** Monotonic recency key for "Recently updated" sorting. */
   updatedAt: number
 }
@@ -99,8 +102,11 @@ export interface WorldDef {
   tags: Tag[]
   imageSlot: ImageSlot
   places: number
-  usedInStories: number
+  /** Null until story shelves report real usage — never display null as a count. */
+  usedInStories: number | null
   status: 'ready' | 'draft'
+  /** Published preset revision, if this record came from one. */
+  revision: number | null
   updatedAt: number
 }
 

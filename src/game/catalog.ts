@@ -20,6 +20,7 @@ export const catalog = reactive({
       categories: ['travelers', 'companions'],
       playerReady: true,
       usedInStories: 2,
+      revision: null,
       updatedAt: 6
     },
     {
@@ -33,6 +34,7 @@ export const catalog = reactive({
       categories: ['travelers', 'companions'],
       playerReady: true,
       usedInStories: 1,
+      revision: null,
       updatedAt: 5
     },
     {
@@ -46,6 +48,7 @@ export const catalog = reactive({
       categories: ['companions', 'scholars'],
       playerReady: true,
       usedInStories: 3,
+      revision: null,
       updatedAt: 4
     },
     {
@@ -59,6 +62,7 @@ export const catalog = reactive({
       categories: ['scholars', 'companions'],
       playerReady: true,
       usedInStories: 1,
+      revision: null,
       updatedAt: 3
     },
     {
@@ -76,6 +80,7 @@ export const catalog = reactive({
       categories: ['locals'],
       playerReady: true,
       usedInStories: 1,
+      revision: null,
       updatedAt: 2
     },
     {
@@ -89,6 +94,7 @@ export const catalog = reactive({
       categories: ['locals'],
       playerReady: false,
       usedInStories: 1,
+      revision: null,
       updatedAt: 1
     }
   ] satisfies CharacterDef[],
@@ -106,6 +112,7 @@ export const catalog = reactive({
       places: 2,
       usedInStories: 2,
       status: 'ready',
+      revision: null,
       updatedAt: 7
     },
     {
@@ -120,6 +127,7 @@ export const catalog = reactive({
       places: 5,
       usedInStories: 1,
       status: 'ready',
+      revision: null,
       updatedAt: 6
     }
   ] satisfies WorldDef[],

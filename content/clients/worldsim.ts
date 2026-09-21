@@ -872,6 +872,30 @@ export interface PresetRevisionRequest {
   payload: Record<string, unknown>;
 }
 
+export interface EditorDraftView {
+  base_revision: number;
+  fields?: Record<string, unknown>;
+  id: string;
+  preset_id: string;
+  replayed?: boolean;
+  updated_at: string;
+  version: number;
+}
+
+export interface EditorDraftOpenRequest {
+  base_revision: number;
+}
+
+export interface EditorDraftSaveRequest {
+  expected_version: number;
+  fields?: Record<string, unknown>;
+}
+
+export interface EditorDraftPublishRequest {
+  expected_version: number;
+  preset_expected_version: number;
+}
+
 export interface PreferencesView {
   accessibility?: Record<string, unknown>;
   gameplay?: Record<string, unknown>;
@@ -1048,6 +1072,11 @@ export const ROUTES = {
   createPreset: "POST /api/v1/library/presets",
   readPreset: "GET /api/v1/library/presets/{preset_id}",
   addPresetRevision: "POST /api/v1/library/presets/{preset_id}/revisions",
+  openEditorDraft: "POST /api/v1/library/presets/{preset_id}/editor-drafts",
+  readEditorDraft: "GET /api/v1/library/presets/{preset_id}/editor-drafts/current",
+  saveEditorDraft: "PATCH /api/v1/library/presets/{preset_id}/editor-drafts/{draft_id}",
+  discardEditorDraft: "DELETE /api/v1/library/presets/{preset_id}/editor-drafts/{draft_id}",
+  publishEditorDraft: "POST /api/v1/library/presets/{preset_id}/editor-drafts/{draft_id}/publish",
   duplicatePreset: "POST /api/v1/library/presets/{preset_id}/duplicate",
   archivePreset: "POST /api/v1/library/presets/{preset_id}/archive",
   unarchivePreset: "POST /api/v1/library/presets/{preset_id}/unarchive",

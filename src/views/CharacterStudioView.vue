@@ -52,11 +52,21 @@ onMounted(() => {
   void presets.load(presetAbort.signal)
 })
 onUnmounted(() => presetAbort?.abort())
+/* New/existing comes from the route, never from catalog membership:
+   a server preset absent from the mock catalog is still existing. */
+const isNew = computed(() => id.value === 'new')
 const serverCharacter = computed(() => presets.characters.value.find((c) => c.id === id.value))
 const character = computed(() => catalog.characters.find((c) => c.id === id.value))
-const displayName = computed(
-  () => serverCharacter.value?.name ?? character.value?.name ?? 'the new character'
-)
+const record = computed(() => serverCharacter.value ?? character.value ?? null)
+const recordLoading = computed(() => !isNew.value && !presets.ready.value && record.value === null)
+const recordMissing = computed(() => !isNew.value && presets.ready.value && record.value === null)
+const displayName = computed(() => record.value?.name ?? 'the new character')
+
+function retryPresets(): void {
+  presetAbort?.abort()
+  presetAbort = new AbortController()
+  void presets.load(presetAbort.signal)
+}
 
 /* The breadcrumb + return target depend on which flow opened the studio. */
 const fromLibrary = computed(() => route.meta.from === 'library')
@@ -110,16 +120,24 @@ function suggest(): void {
           <span class="crumbs__sep">/</span>
           <router-link :to="originRoute">Characters</router-link>
           <span class="crumbs__sep">/</span>
-          <span class="crumbs__here">{{ character ? displayName : 'New character' }}</span>
+          <span class="crumbs__here">{{ isNew ? 'New character' : displayName }}</span>
         </nav>
 
         <div class="studio__head">
           <h1 class="studio__title">
-            {{ character ? `Give ${displayName} a voice` : 'Give them a voice' }}
+            {{ isNew ? 'Give them a voice' : `Give ${displayName} a voice` }}
           </h1>
           <span class="draft-badge"><span class="draft-badge__dot"></span>Draft</span>
         </div>
         <p class="studio__sub">Shape how they think, react, and speak.</p>
+        <p v-if="recordLoading" class="studio__state" role="status">Reading the archive…</p>
+        <p v-else-if="recordMissing" class="studio__state" role="alert">
+          No character answers to that id.
+          <template v-if="presets.error.value">
+            The archive did not answer ({{ presets.error.value }}) —
+            <button type="button" class="studio__link" @click="retryPresets()">retry</button>
+          </template>
+        </p>
 
         <InlineStepper
           class="studio__stepper"

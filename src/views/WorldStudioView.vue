@@ -58,9 +58,20 @@ onMounted(() => {
   void presets.load(presetAbort.signal)
 })
 onUnmounted(() => presetAbort?.abort())
+/* New/existing comes from the route, never from catalog membership. */
+const isNew = computed(() => id.value === 'new')
 const serverWorld = computed(() => presets.worlds.value.find((w) => w.id === id.value))
 const world = computed(() => catalog.worlds.find((w) => w.id === id.value))
-const worldName = computed(() => serverWorld.value?.name ?? world.value?.name ?? 'your new world')
+const record = computed(() => serverWorld.value ?? world.value ?? null)
+const recordLoading = computed(() => !isNew.value && !presets.ready.value && record.value === null)
+const recordMissing = computed(() => !isNew.value && presets.ready.value && record.value === null)
+const worldName = computed(() => record.value?.name ?? 'your new world')
+
+function retryPresets(): void {
+  presetAbort?.abort()
+  presetAbort = new AbortController()
+  void presets.load(presetAbort.signal)
+}
 const fromLibrary = computed(() => route.meta.from === 'library')
 const originCrumb = computed(() => (fromLibrary.value ? 'Library' : 'New Story'))
 const originRoute = computed(() => (fromLibrary.value ? '/library?tab=worlds' : '/new-story'))
@@ -193,7 +204,7 @@ function suggest(): void {
           <span class="crumbs__sep">/</span>
           <router-link :to="originRoute">Worlds</router-link>
           <span class="crumbs__sep">/</span>
-          <span class="crumbs__here">{{ world ? worldName : 'New world' }}</span>
+          <span class="crumbs__here">{{ isNew ? 'New world' : worldName }}</span>
         </nav>
 
         <div class="studio__head">
@@ -201,6 +212,14 @@ function suggest(): void {
           <span class="draft-badge"><span class="draft-badge__dot"></span>Draft</span>
         </div>
         <p class="studio__sub">Define the places your stories will inhabit.</p>
+        <p v-if="recordLoading" class="studio__state" role="status">Reading the archive…</p>
+        <p v-else-if="recordMissing" class="studio__state" role="alert">
+          No world answers to that id.
+          <template v-if="presets.error.value">
+            The archive did not answer ({{ presets.error.value }}) —
+            <button type="button" class="studio__link" @click="retryPresets()">retry</button>
+          </template>
+        </p>
 
         <InlineStepper
           class="studio__stepper"

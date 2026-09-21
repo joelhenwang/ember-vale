@@ -131,7 +131,8 @@ function toCharacterDef(p: PresetCharacter): CharacterDef {
     imageSlot: p.imageSlot,
     categories: [p.playerReady ? 'companions' : 'locals'],
     playerReady: p.playerReady,
-    usedInStories: 0,
+    usedInStories: null,
+    revision: p.revision,
     updatedAt: 0
   }
 }

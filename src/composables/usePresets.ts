@@ -47,9 +47,11 @@ const WORLD_IMAGE_BY_NAME: Record<string, ImageSlot> = {
 
 /**
  * Present a server character preset as a Library card record. Pure
- * presentation mapping: usage counts are unknown until stories report
- * them, and the revision doubles as the recency key. Anything without
- * curated art gets the neutral fallback, never another face.
+ * presentation mapping: usage is unknown until story shelves report
+ * it, and the contract offers no update timestamp, so recency sorting
+ * stays unavailable for these records — the revision rides along as
+ * explicit metadata instead. Anything without curated art gets the
+ * neutral fallback, never another face.
  */
 export function toLibraryCharacter(p: PresetCharacter): CharacterDef {
   return {
@@ -64,8 +66,9 @@ export function toLibraryCharacter(p: PresetCharacter): CharacterDef {
     imageSlot: p.imageSlot,
     categories: p.playerReady ? ['companions'] : ['locals'],
     playerReady: p.playerReady,
-    usedInStories: 0,
-    updatedAt: p.revision
+    usedInStories: null,
+    revision: p.revision,
+    updatedAt: 0
   }
 }
 
@@ -78,9 +81,10 @@ export function toLibraryWorld(p: PresetWorld): WorldDef {
     tags: [],
     imageSlot: WORLD_IMAGE_BY_NAME[p.name] ?? 'world.map',
     places: p.places.length,
-    usedInStories: 0,
+    usedInStories: null,
     status: 'ready',
-    updatedAt: p.revision
+    revision: p.revision,
+    updatedAt: 0
   }
 }
 

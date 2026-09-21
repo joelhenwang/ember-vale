@@ -1493,6 +1493,109 @@
         "title": "DraftValidationView",
         "type": "object"
       },
+      "EditorDraftOpenRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "base_revision": {
+            "minimum": 1.0,
+            "title": "Base Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "base_revision"
+        ],
+        "title": "EditorDraftOpenRequest",
+        "type": "object"
+      },
+      "EditorDraftPublishRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_version": {
+            "minimum": 1.0,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "preset_expected_version": {
+            "minimum": 0.0,
+            "title": "Preset Expected Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_version",
+          "preset_expected_version"
+        ],
+        "title": "EditorDraftPublishRequest",
+        "type": "object"
+      },
+      "EditorDraftSaveRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_version": {
+            "minimum": 1.0,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "fields": {
+            "additionalProperties": true,
+            "title": "Fields",
+            "type": "object"
+          }
+        },
+        "required": [
+          "expected_version"
+        ],
+        "title": "EditorDraftSaveRequest",
+        "type": "object"
+      },
+      "EditorDraftView": {
+        "additionalProperties": false,
+        "properties": {
+          "base_revision": {
+            "title": "Base Revision",
+            "type": "integer"
+          },
+          "fields": {
+            "additionalProperties": true,
+            "title": "Fields",
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "preset_id": {
+            "format": "uuid",
+            "title": "Preset Id",
+            "type": "string"
+          },
+          "replayed": {
+            "default": false,
+            "title": "Replayed",
+            "type": "boolean"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "preset_id",
+          "base_revision",
+          "version",
+          "updated_at"
+        ],
+        "title": "EditorDraftView",
+        "type": "object"
+      },
       "EndingView": {
         "additionalProperties": false,
         "properties": {
@@ -6860,6 +6963,287 @@
           }
         },
         "summary": "Duplicate Preset",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/v1/library/presets/{preset_id}/editor-drafts": {
+      "post": {
+        "description": "Open the durable draft for a base revision; same base replays it.",
+        "operationId": "open_editor_draft_api_v1_library_presets__preset_id__editor_drafts_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "preset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Preset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditorDraftOpenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditorDraftView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Open Editor Draft",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/v1/library/presets/{preset_id}/editor-drafts/current": {
+      "get": {
+        "operationId": "read_editor_draft_api_v1_library_presets__preset_id__editor_drafts_current_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "preset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Preset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditorDraftView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Editor Draft",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/v1/library/presets/{preset_id}/editor-drafts/{draft_id}": {
+      "delete": {
+        "description": "Abandon a draft. Published revisions are never touched.",
+        "operationId": "discard_editor_draft_api_v1_library_presets__preset_id__editor_drafts__draft_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "preset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Preset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "draft_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Draft Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Discard Editor Draft Api V1 Library Presets  Preset Id  Editor Drafts  Draft Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Discard Editor Draft",
+        "tags": [
+          "library"
+        ]
+      },
+      "patch": {
+        "description": "Persist partial editor fields; incomplete work is accepted.",
+        "operationId": "save_editor_draft_api_v1_library_presets__preset_id__editor_drafts__draft_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "preset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Preset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "draft_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Draft Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditorDraftSaveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditorDraftView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Editor Draft",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/v1/library/presets/{preset_id}/editor-drafts/{draft_id}/publish": {
+      "post": {
+        "description": "Publish a draft as a new immutable revision (strict validation).",
+        "operationId": "publish_editor_draft_api_v1_library_presets__preset_id__editor_drafts__draft_id__publish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "preset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Preset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "draft_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Draft Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditorDraftPublishRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresetDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Publish Editor Draft",
         "tags": [
           "library"
         ]

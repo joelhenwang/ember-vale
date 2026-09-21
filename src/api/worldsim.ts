@@ -12,6 +12,10 @@ import type {
   ActivityListResponse,
   ActivityView,
   DraftValidationView,
+  EditorDraftOpenRequest,
+  EditorDraftPublishRequest,
+  EditorDraftSaveRequest,
+  EditorDraftView,
   InterventionCancelRequest,
   InterventionEditRequest,
   InterventionRequest,
@@ -60,6 +64,75 @@ export function getPreset(
 ): Promise<PresetDetail> {
   const query = revision !== undefined ? `?revision=${revision}` : ''
   return apiFetch<PresetDetail>(`/library/presets/${id}${query}`, { ...opts, method: 'GET' })
+}
+
+/* Preset editor drafts (E3) ------------------------------------------------ */
+
+export function openEditorDraft(
+  presetId: string,
+  baseRevision: number,
+  opts: CallOptions = {}
+): Promise<EditorDraftView> {
+  const body: EditorDraftOpenRequest = { base_revision: baseRevision }
+  return apiFetch<EditorDraftView>(`/library/presets/${presetId}/editor-drafts`, {
+    ...opts,
+    method: 'POST',
+    body
+  })
+}
+
+export function readEditorDraft(
+  presetId: string,
+  opts: CallOptions = {}
+): Promise<EditorDraftView> {
+  return apiFetch<EditorDraftView>(`/library/presets/${presetId}/editor-drafts/current`, {
+    ...opts,
+    method: 'GET'
+  })
+}
+
+export function saveEditorDraft(
+  presetId: string,
+  draftId: string,
+  fields: EditorDraftSaveRequest['fields'],
+  version: number,
+  opts: CallOptions = {}
+): Promise<EditorDraftView> {
+  const body: EditorDraftSaveRequest = { fields, expected_version: version }
+  return apiFetch<EditorDraftView>(`/library/presets/${presetId}/editor-drafts/${draftId}`, {
+    ...opts,
+    method: 'PATCH',
+    body
+  })
+}
+
+export function discardEditorDraft(
+  presetId: string,
+  draftId: string,
+  opts: CallOptions = {}
+): Promise<{ draft_id: string }> {
+  return apiFetch<{ draft_id: string }>(`/library/presets/${presetId}/editor-drafts/${draftId}`, {
+    ...opts,
+    method: 'DELETE'
+  })
+}
+
+export function publishEditorDraft(
+  presetId: string,
+  draftId: string,
+  version: number,
+  presetVersion: number,
+  opts: CallOptions = {}
+): Promise<PresetDetail> {
+  const body: EditorDraftPublishRequest = {
+    expected_version: version,
+    preset_expected_version: presetVersion
+  }
+  return apiFetch<PresetDetail>(`/library/presets/${presetId}/editor-drafts/${draftId}/publish`, {
+    ...opts,
+    method: 'POST',
+    body
+  })
 }
 
 /* Story drafts ----------------------------------------------------------- */

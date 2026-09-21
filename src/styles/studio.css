@@ -80,6 +80,23 @@
   font-size: 16.5px;
   color: var(--ink-2);
 }
+.studio__state {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fbf6e9;
+  color: var(--ink-2);
+}
+.studio__link {
+  font: inherit;
+  color: #1f4d3f;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
 .studio__stepper {
   margin-top: 14px;
 }

@@ -51,8 +51,8 @@ describe('server preset library mapping', () => {
       role: 'Traveler',
       playerReady: true,
       categories: ['companions'],
-      usedInStories: 0,
-      updatedAt: 2,
+      usedInStories: null,
+      revision: 2,
       imageSlot: 'character.wren'
     })
     expect(record.tags).toContainEqual({ label: 'Player-ready', tone: 'green' })
@@ -73,9 +73,9 @@ describe('server preset library mapping', () => {
       name: 'Ember Vale',
       blurb: 'A welcoming valley.',
       places: 2,
-      usedInStories: 0,
+      usedInStories: null,
       status: 'ready',
-      updatedAt: 2,
+      revision: 2,
       imageSlot: 'world.emberVale'
     })
   })
