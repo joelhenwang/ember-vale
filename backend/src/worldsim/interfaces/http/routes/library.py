@@ -178,6 +178,9 @@ def _draft_view(draft: EditorDraft, replayed: bool = False) -> api.EditorDraftVi
         version=draft.version,
         updated_at=draft.updated_at,
         replayed=replayed,
+        published_version=draft.published_version,
+        published_revision=draft.published_revision,
+        published_hash=draft.published_hash,
     )
 
 
@@ -222,11 +225,30 @@ async def save_editor_draft(
 
 @router.delete("/library/presets/{preset_id}/editor-drafts/{draft_id}")
 async def discard_editor_draft(
-    preset_id: UUID, draft_id: UUID, request: Request
+    preset_id: UUID,
+    draft_id: UUID,
+    request: Request,
+    expected_version: int = 1,
 ) -> dict[str, str]:
-    """Abandon a draft. Published revisions are never touched."""
+    """Abandon a draft; the caller\'s version must still be current."""
     state = request.app.state.app_state
-    await editor_drafts.discard_draft(state.uow_factory(), preset_id, draft_id)
+    await editor_drafts.discard_draft(
+        state.uow_factory(), preset_id, draft_id, expected_version
+    )
+    return {"draft_id": str(draft_id)}
+
+
+@router.post(
+    "/library/presets/{preset_id}/editor-drafts/{draft_id}/complete",
+)
+async def complete_editor_draft(
+    preset_id: UUID, draft_id: UUID, body: api.EditorDraftCompleteRequest, request: Request
+) -> dict[str, str]:
+    """Retire a draft after its publication; refuses newer unpublished edits."""
+    state = request.app.state.app_state
+    await editor_drafts.complete_draft(
+        state.uow_factory(), preset_id, draft_id, body.expected_version
+    )
     return {"draft_id": str(draft_id)}
 
 

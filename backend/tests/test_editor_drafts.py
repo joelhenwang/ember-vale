@@ -104,7 +104,10 @@ def test_open_save_discard_roundtrip(migrated_db: None) -> None:
             "description": "A greener valley."
         }
 
-        await service.discard_draft(factory, preset.id, draft.id)
+        with pytest.raises(DomainError) as exc:
+            await service.discard_draft(factory, preset.id, draft.id, 99)
+        assert exc.value.code is ErrorCode.VERSION_CONFLICT
+        await service.discard_draft(factory, preset.id, draft.id, saved.version)
         async with factory() as uow:
             assert await uow.presets.get_editor_draft(preset.id) is None
 
@@ -149,7 +152,7 @@ def test_reopen_other_base_needs_discard_first(migrated_db: None) -> None:
         with pytest.raises(DomainError) as exc:
             await service.open_draft(factory, preset.id, 2)
         assert exc.value.code is ErrorCode.PRECONDITION_FAILED
-        await service.discard_draft(factory, preset.id, first.id)
+        await service.discard_draft(factory, preset.id, first.id, saved.version)
         second, replayed = await service.open_draft(factory, preset.id, 2)
         assert replayed is False and second.base_revision == 2
 
@@ -209,7 +212,8 @@ def test_readonly_presets_reject_drafts(migrated_db: None) -> None:
     _run(_inner())
 
 
-def test_ambiguous_publish_retry_adopts_on_matching_hash(migrated_db: None) -> None:
+def test_identical_publish_retry_replays_original_revision(migrated_db: None) -> None:
+    """An ambiguous retry returns the recorded revision, never a duplicate."""
     async def _inner() -> None:
         factory = _factory()
         preset = await _make_preset(factory)
@@ -218,18 +222,18 @@ def test_ambiguous_publish_retry_adopts_on_matching_hash(migrated_db: None) -> N
             factory, preset.id, draft.id, 1, {"description": "A greener valley."}
         )
         first = await service.publish_draft(factory, preset.id, draft.id, saved.version, 0)
-        # The response never arrived: retrying with the same stale versions
-        # conflicts, and the latest revision already carries our content.
-        with pytest.raises(DomainError) as exc:
-            await service.publish_draft(factory, preset.id, draft.id, saved.version, 0)
-        assert exc.value.code is ErrorCode.VERSION_CONFLICT
+        assert first.revision == 2
+        # The response never arrived: the identical retry replays revision
+        # 2 instead of conflicting or duplicating.
+        replayed = await service.publish_draft(factory, preset.id, draft.id, saved.version, 0)
+        assert replayed.revision == 2
+        assert replayed.content_hash == first.content_hash
         async with factory() as uow:
             latest = await uow.presets.latest_revision(preset.id)
             assert latest.revision == 2
-            assert latest.content_hash == first.content_hash
 
-        # A genuine rival publication is distinguishable: different hash.
-        await service.discard_draft(factory, preset.id, draft.id)
+        # A different request against the same versions stays a conflict.
+        await service.discard_draft(factory, preset.id, draft.id, saved.version)
         rival, _ = await service.open_draft(factory, preset.id, 1)
         rival_saved = await service.save_draft(
             factory, preset.id, rival.id, 1, {"description": "A drier valley."}
@@ -240,6 +244,219 @@ def test_ambiguous_publish_retry_adopts_on_matching_hash(migrated_db: None) -> N
         async with factory() as uow:
             latest = await uow.presets.latest_revision(preset.id)
             assert latest.content_hash == first.content_hash
+
+    _run(_inner())
+
+
+def test_publish_replay_survives_later_revisions(migrated_db: None) -> None:
+    """Replay returns the original revision even after rev 3 exists."""
+    async def _inner() -> None:
+        factory = _factory()
+        preset = await _make_preset(factory)
+        draft, _ = await service.open_draft(factory, preset.id, 1)
+        saved = await service.save_draft(
+            factory, preset.id, draft.id, 1, {"description": "A greener valley."}
+        )
+        first = await service.publish_draft(factory, preset.id, draft.id, saved.version, 0)
+        assert first.revision == 2
+
+        # A later revision lands through a fresh draft on base 2.
+        await service.complete_draft(factory, preset.id, draft.id, saved.version)
+        second_draft, _ = await service.open_draft(factory, preset.id, 2)
+        second_saved = await service.save_draft(
+            factory, preset.id, second_draft.id, 1, {"description": "A golden valley."}
+        )
+        third = await service.publish_draft(
+            factory, preset.id, second_draft.id, second_saved.version, 1
+        )
+        assert third.revision == 3
+        await service.complete_draft(factory, preset.id, second_draft.id, second_saved.version)
+
+        # The late identical retry of the first publication still replays
+        # revision 2 — from the durable log, after completion, with a
+        # stale preset version and a newer revision in place.
+        replayed = await service.publish_draft(factory, preset.id, draft.id, saved.version, 0)
+        assert replayed.revision == 2
+        assert replayed.content_hash == first.content_hash
+        async with factory() as uow:
+            assert (await uow.presets.get_preset(preset.id)).current_revision == 3
+
+    _run(_inner())
+
+
+def test_publish_rename_updates_display_name(migrated_db: None) -> None:
+    """Rename, publish, reload: Library and studios see the new name."""
+    async def _inner() -> None:
+        factory = _factory()
+        preset = await _make_preset(factory)
+        draft, _ = await service.open_draft(factory, preset.id, 1)
+        saved = await service.save_draft(
+            factory, preset.id, draft.id, 1, {"name": "Greener Vale"}
+        )
+        published = await service.publish_draft(factory, preset.id, draft.id, saved.version, 0)
+        assert published.revision == 2
+        async with factory() as uow:
+            current = await uow.presets.get_preset(preset.id)
+            assert current.name == "Greener Vale"
+            first = await uow.presets.get_revision(preset.id, 1)
+            assert first.payload.model_dump(mode="json")["name"] == "Vale"
+
+        # Lenient save accepts the blank name; strict publish rejects it.
+        blank = await service.save_draft(
+            factory, preset.id, draft.id, saved.version, {"name": "  "}
+        )
+        with pytest.raises(DomainError) as exc:
+            await service.publish_draft(factory, preset.id, draft.id, blank.version, 1)
+        assert exc.value.code is ErrorCode.VALIDATION_FAILED
+
+    _run(_inner())
+
+
+def test_completed_draft_lifecycle(migrated_db: None) -> None:
+    """Completion retires a published draft but never newer edits."""
+    async def _inner() -> None:
+        factory = _factory()
+        preset = await _make_preset(factory)
+        draft, _ = await service.open_draft(factory, preset.id, 1)
+        saved = await service.save_draft(
+            factory, preset.id, draft.id, 1, {"description": "A greener valley."}
+        )
+        # Nothing published yet: completion refuses, discard stays explicit.
+        with pytest.raises(DomainError) as exc:
+            await service.complete_draft(factory, preset.id, draft.id, saved.version)
+        assert exc.value.code is ErrorCode.PRECONDITION_FAILED
+
+        published = await service.publish_draft(factory, preset.id, draft.id, saved.version, 0)
+        assert published.revision == 2
+        await service.complete_draft(factory, preset.id, draft.id, saved.version)
+        async with factory() as uow:
+            assert await uow.presets.get_editor_draft(preset.id) is None
+
+        # Edits after publishing block completion: they are newer work.
+        third, _ = await service.open_draft(factory, preset.id, 2)
+        third_saved = await service.save_draft(
+            factory, preset.id, third.id, 1, {"description": "A golden valley."}
+        )
+        await service.publish_draft(factory, preset.id, third.id, third_saved.version, 1)
+        fourth_saved = await service.save_draft(
+            factory, preset.id, third.id, third_saved.version, {"description": "A blue valley."}
+        )
+        with pytest.raises(DomainError) as exc:
+            await service.complete_draft(factory, preset.id, third.id, fourth_saved.version)
+        assert exc.value.code is ErrorCode.PRECONDITION_FAILED
+
+    _run(_inner())
+
+
+def test_overlapping_saves_serialize_on_the_row(
+    migrated_db: None, monkeypatch: Any
+) -> None:
+    """Two saves inside the window together: one wins, one conflicts."""
+    from worldsim.infrastructure.repositories.presets import SqlAlchemyPresetRepository
+
+    async def _inner() -> None:
+        factory = _factory()
+        preset = await _make_preset(factory)
+        draft, _ = await service.open_draft(factory, preset.id, 1)
+        entered_a = asyncio.Event()
+        entered_b = asyncio.Event()
+        calls: list[str] = []
+        original = SqlAlchemyPresetRepository.lock_editor_draft
+
+        # The gate sits ahead of the row lock: both appliers must be
+        # inside before either can serialize on the row. (Gating behind
+        # the lock would deadlock the second waiter against the first.)
+        async def gated(self: Any, preset_id: UUID) -> Any:
+            calls.append("in")
+            (entered_a if len(calls) == 1 else entered_b).set()
+            await asyncio.gather(entered_a.wait(), entered_b.wait())
+            return await original(self, preset_id)
+
+        monkeypatch.setattr(SqlAlchemyPresetRepository, "lock_editor_draft", gated)
+        outcomes = await asyncio.gather(
+            service.save_draft(factory, preset.id, draft.id, 1, {"description": "A wins."}),
+            service.save_draft(factory, preset.id, draft.id, 1, {"description": "B wins."}),
+            return_exceptions=True,
+        )
+        assert calls == ["in", "in"]
+        wins = [o for o in outcomes if not isinstance(o, BaseException)]
+        losses = [o for o in outcomes if isinstance(o, DomainError)]
+        assert len(wins) == 1 and len(losses) == 1
+        assert losses[0].code is ErrorCode.VERSION_CONFLICT
+        assert await _fields(factory, preset.id, draft.id) in (
+            {"description": "A wins."},
+            {"description": "B wins."},
+        )
+
+    _run(_inner())
+
+
+def test_overlapping_publishes_converge_on_one_revision(
+    migrated_db: None, monkeypatch: Any
+) -> None:
+    """Two publishes inside the window together persist one revision."""
+    from worldsim.infrastructure.repositories.presets import SqlAlchemyPresetRepository
+
+    async def _inner() -> None:
+        factory = _factory()
+        preset = await _make_preset(factory)
+        draft, _ = await service.open_draft(factory, preset.id, 1)
+        saved = await service.save_draft(
+            factory, preset.id, draft.id, 1, {"description": "A greener valley."}
+        )
+        entered_a = asyncio.Event()
+        entered_b = asyncio.Event()
+        calls: list[str] = []
+        original = SqlAlchemyPresetRepository.lock_editor_draft
+
+        async def gated(self: Any, preset_id: UUID) -> Any:
+            calls.append("in")
+            (entered_a if len(calls) == 1 else entered_b).set()
+            await asyncio.gather(entered_a.wait(), entered_b.wait())
+            return await original(self, preset_id)
+
+        monkeypatch.setattr(SqlAlchemyPresetRepository, "lock_editor_draft", gated)
+        first, second = await asyncio.gather(
+            service.publish_draft(factory, preset.id, draft.id, saved.version, 0),
+            service.publish_draft(factory, preset.id, draft.id, saved.version, 0),
+        )
+        assert calls == ["in", "in"]
+        assert first.revision == second.revision == 2
+        assert first.content_hash == second.content_hash
+        async with factory() as uow:
+            assert (await uow.presets.get_preset(preset.id)).current_revision == 2
+
+    _run(_inner())
+
+
+def test_overlapping_opens_resolve_to_one_draft(
+    migrated_db: None, monkeypatch: Any
+) -> None:
+    """Two opens inside the window together share a single draft."""
+    from worldsim.infrastructure.repositories.presets import SqlAlchemyPresetRepository
+
+    async def _inner() -> None:
+        factory = _factory()
+        preset = await _make_preset(factory)
+        entered_a = asyncio.Event()
+        entered_b = asyncio.Event()
+        calls: list[str] = []
+        original = SqlAlchemyPresetRepository.add_editor_draft
+
+        async def gated(self: Any, incoming: Any, created_at: Any) -> Any:
+            calls.append("in")
+            (entered_a if len(calls) == 1 else entered_b).set()
+            await asyncio.gather(entered_a.wait(), entered_b.wait())
+            return await original(self, incoming, created_at)
+
+        monkeypatch.setattr(SqlAlchemyPresetRepository, "add_editor_draft", gated)
+        (left, left_replayed), (right, right_replayed) = await asyncio.gather(
+            service.open_draft(factory, preset.id, 1),
+            service.open_draft(factory, preset.id, 1),
+        )
+        assert calls == ["in", "in"]
+        assert left.id == right.id
+        assert sorted([left_replayed, right_replayed]) == [False, True]
 
     _run(_inner())
 

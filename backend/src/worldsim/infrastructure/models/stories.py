@@ -93,11 +93,33 @@ class EditorDraftRow(Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    published_version: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    published_revision: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    published_hash: Mapped[str | None] = mapped_column(String(128), nullable=True, default=None)
 
     __table_args__ = (
         CheckConstraint("base_revision >= 1", name="ck_editor_draft_base"),
         CheckConstraint("version >= 1", name="ck_editor_draft_version"),
         UniqueConstraint("preset_id", name="uq_editor_draft_preset"),
+    )
+
+
+class EditorPublicationRow(Base):
+    __tablename__ = "editor_publication"
+
+    draft_id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True)
+    preset_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        index=True,
+    )
+    draft_version: Mapped[int] = mapped_column(Integer)
+    revision: Mapped[int] = mapped_column(Integer)
+    content_hash: Mapped[str] = mapped_column(String(128))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        CheckConstraint("draft_version >= 1", name="ck_editor_publication_version"),
+        CheckConstraint("revision >= 1", name="ck_editor_publication_revision"),
     )
 
 

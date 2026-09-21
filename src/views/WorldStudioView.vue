@@ -63,8 +63,17 @@ const isNew = computed(() => id.value === 'new')
 const serverWorld = computed(() => presets.worlds.value.find((w) => w.id === id.value))
 const world = computed(() => catalog.worlds.find((w) => w.id === id.value))
 const record = computed(() => serverWorld.value ?? world.value ?? null)
-const recordLoading = computed(() => !isNew.value && !presets.ready.value && record.value === null)
-const recordMissing = computed(() => !isNew.value && presets.ready.value && record.value === null)
+/* Loading, failed, missing, and loaded stay distinct: a failed lookup
+   must surface Retry, never sit behind the loading line. */
+const recordLoading = computed(() => !isNew.value && presets.loading.value && record.value === null)
+const recordFailed = computed(
+  () =>
+    !isNew.value && !presets.loading.value && presets.error.value !== null && record.value === null
+)
+const recordMissing = computed(
+  () =>
+    !isNew.value && !presets.loading.value && presets.error.value === null && record.value === null
+)
 const worldName = computed(() => record.value?.name ?? 'your new world')
 
 function retryPresets(): void {
@@ -213,12 +222,12 @@ function suggest(): void {
         </div>
         <p class="studio__sub">Define the places your stories will inhabit.</p>
         <p v-if="recordLoading" class="studio__state" role="status">Reading the archive…</p>
+        <p v-else-if="recordFailed" class="studio__state" role="alert">
+          The archive did not answer ({{ presets.error.value }}) —
+          <button type="button" class="studio__link" @click="retryPresets()">retry</button>
+        </p>
         <p v-else-if="recordMissing" class="studio__state" role="alert">
           No world answers to that id.
-          <template v-if="presets.error.value">
-            The archive did not answer ({{ presets.error.value }}) —
-            <button type="button" class="studio__link" @click="retryPresets()">retry</button>
-          </template>
         </p>
 
         <InlineStepper

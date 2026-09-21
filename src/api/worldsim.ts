@@ -12,6 +12,7 @@ import type {
   ActivityListResponse,
   ActivityView,
   DraftValidationView,
+  EditorDraftCompleteRequest,
   EditorDraftOpenRequest,
   EditorDraftPublishRequest,
   EditorDraftSaveRequest,
@@ -109,12 +110,26 @@ export function saveEditorDraft(
 export function discardEditorDraft(
   presetId: string,
   draftId: string,
+  version: number,
   opts: CallOptions = {}
 ): Promise<{ draft_id: string }> {
-  return apiFetch<{ draft_id: string }>(`/library/presets/${presetId}/editor-drafts/${draftId}`, {
-    ...opts,
-    method: 'DELETE'
-  })
+  return apiFetch<{ draft_id: string }>(
+    `/library/presets/${presetId}/editor-drafts/${draftId}?expected_version=${version}`,
+    { ...opts, method: 'DELETE' }
+  )
+}
+
+export function completeEditorDraft(
+  presetId: string,
+  draftId: string,
+  version: number,
+  opts: CallOptions = {}
+): Promise<{ draft_id: string }> {
+  const body: EditorDraftCompleteRequest = { expected_version: version }
+  return apiFetch<{ draft_id: string }>(
+    `/library/presets/${presetId}/editor-drafts/${draftId}/complete`,
+    { ...opts, method: 'POST', body }
+  )
 }
 
 export function publishEditorDraft(

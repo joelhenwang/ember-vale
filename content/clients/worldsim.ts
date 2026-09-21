@@ -877,6 +877,9 @@ export interface EditorDraftView {
   fields?: Record<string, unknown>;
   id: string;
   preset_id: string;
+  published_hash?: string | null;
+  published_revision?: number | null;
+  published_version?: number | null;
   replayed?: boolean;
   updated_at: string;
   version: number;
@@ -894,6 +897,10 @@ export interface EditorDraftSaveRequest {
 export interface EditorDraftPublishRequest {
   expected_version: number;
   preset_expected_version: number;
+}
+
+export interface EditorDraftCompleteRequest {
+  expected_version: number;
 }
 
 export interface PreferencesView {
@@ -1077,6 +1084,7 @@ export const ROUTES = {
   saveEditorDraft: "PATCH /api/v1/library/presets/{preset_id}/editor-drafts/{draft_id}",
   discardEditorDraft: "DELETE /api/v1/library/presets/{preset_id}/editor-drafts/{draft_id}",
   publishEditorDraft: "POST /api/v1/library/presets/{preset_id}/editor-drafts/{draft_id}/publish",
+  completeEditorDraft: "POST /api/v1/library/presets/{preset_id}/editor-drafts/{draft_id}/complete",
   duplicatePreset: "POST /api/v1/library/presets/{preset_id}/duplicate",
   archivePreset: "POST /api/v1/library/presets/{preset_id}/archive",
   unarchivePreset: "POST /api/v1/library/presets/{preset_id}/unarchive",

@@ -1,9 +1,16 @@
 """Durable editor drafts for preset revisions (E3).
 
-One partial draft per preset, guarded by optimistic versions. Draft
+One partial draft per preset, guarded by optimistic versions. Every
+mutation locks the draft row first, so overlapping writers serialize
+on the row instead of racing past a detached version check. Draft
 saves stay lenient so incomplete work survives; publishing merges the
 draft over its base revision payload and validates the strict preset
 schema, so fields the editor never shows are preserved verbatim.
+
+Publication records a receipt (draft version, revision, content
+hash). An identical publish retry replays the recorded revision —
+even after later revisions exist — while anything else stays a
+conflict.
 """
 
 from __future__ import annotations
@@ -20,6 +27,7 @@ from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.ids import new_editor_draft_id
 from worldsim.domain.presets import (
     EditorDraft,
+    EditorPublication,
     PresetPayload,
     PresetRevision,
     canonical_payload_hash,
@@ -30,6 +38,7 @@ _adapter: TypeAdapter[PresetPayload] = TypeAdapter(PresetPayload)
 
 _MAX_FIELDS = 64
 _MAX_BYTES = 32 * 1024
+_MAX_NAME = 128
 
 
 def _check_fields(fields: Any) -> dict[str, Any]:
@@ -64,6 +73,14 @@ def _parse_strict(kind: str, payload: dict[str, Any]) -> PresetPayload:
     return parsed
 
 
+def _check_name(name: Any) -> str | None:
+    if name is None:
+        return None
+    if not isinstance(name, str) or not (1 <= len(name.strip()) <= _MAX_NAME):
+        raise DomainError(ErrorCode.VALIDATION_FAILED, "preset name must be 1..128 characters")
+    return name.strip()
+
+
 async def open_draft(
     factory: Callable[[], UnitOfWork], preset_id: UUID, base_revision: int
 ) -> tuple[EditorDraft, bool]:
@@ -71,40 +88,54 @@ async def open_draft(
 
     Reopening the same base replays the stored draft (second value True).
     A draft already open on another base must be discarded first: silently
-    rebasing it could publish against the wrong content.
+    rebasing it could publish against the wrong content. Concurrent opens
+    resolve the one-draft-per-preset constraint the same way.
     """
-    async with factory() as uow:
-        preset = await uow.presets.get_preset(preset_id)
-        if preset.readonly:
-            raise DomainError(ErrorCode.FORBIDDEN, "built-in presets are read-only")
-        await uow.presets.get_revision(preset_id, base_revision)
-        existing = await uow.presets.get_editor_draft(preset_id)
-        if existing is not None:
-            if existing.base_revision != base_revision:
-                raise DomainError(
-                    ErrorCode.PRECONDITION_FAILED,
-                    f"draft already open on revision {existing.base_revision}; discard it first",
-                )
-            return existing, True
-        now = utcnow()
-        draft = EditorDraft(
-            id=new_editor_draft_id(),
-            preset_id=preset_id,
-            base_revision=base_revision,
-            fields={},
-            updated_at=now,
-        )
-        await uow.presets.add_editor_draft(draft, now)
-        await uow.commit()
-        return draft, False
+    try:
+        async with factory() as uow:
+            preset = await uow.presets.get_preset(preset_id)
+            if preset.readonly:
+                raise DomainError(ErrorCode.FORBIDDEN, "built-in presets are read-only")
+            await uow.presets.get_revision(preset_id, base_revision)
+            existing = await uow.presets.lock_editor_draft(preset_id)
+            if existing is not None:
+                if existing.base_revision != base_revision:
+                    raise DomainError(
+                        ErrorCode.PRECONDITION_FAILED,
+                        f"draft already open on revision {existing.base_revision}; "
+                        "discard it first",
+                    )
+                return existing, True
+            now = utcnow()
+            draft = EditorDraft(
+                id=new_editor_draft_id(),
+                preset_id=preset_id,
+                base_revision=base_revision,
+                fields={},
+                updated_at=now,
+            )
+            await uow.presets.add_editor_draft(draft, now)
+            await uow.commit()
+            return draft, False
+    except DomainError as exc:
+        if exc.code is not ErrorCode.IDEMPOTENCY_CONFLICT:
+            raise
+        # Lost an open race: adopt the winner's draft by the same rules.
+        async with factory() as fresh:
+            winner = await fresh.presets.get_editor_draft(preset_id)
+        if winner is None or winner.base_revision != base_revision:
+            raise DomainError(
+                ErrorCode.PRECONDITION_FAILED,
+                "a draft was opened concurrently on another revision; discard it first",
+            ) from exc
+        return winner, True
 
 
-async def _owned(factory: Callable[[], UnitOfWork], preset_id: UUID, draft_id: UUID) -> EditorDraft:
-    async with factory() as uow:
-        draft = await uow.presets.get_editor_draft(preset_id)
-    if draft is None or draft.id != draft_id:
-        raise DomainError(ErrorCode.NOT_FOUND, f"unknown editor draft: {draft_id}")
-    return draft
+def _stale(kind: str, identity: UUID, expected: int, actual: int) -> DomainError:
+    return DomainError(
+        ErrorCode.VERSION_CONFLICT,
+        f"stale {kind} {identity}: expected={expected} actual={actual}",
+    )
 
 
 async def save_draft(
@@ -114,15 +145,14 @@ async def save_draft(
     expected_version: int,
     fields: Any,
 ) -> EditorDraft:
-    """Persist partial editor fields; incomplete work is accepted."""
-    draft = await _owned(factory, preset_id, draft_id)
-    if draft.version != expected_version:
-        raise DomainError(
-            ErrorCode.VERSION_CONFLICT,
-            f"stale editor draft {draft_id}: expected={expected_version} actual={draft.version}",
-        )
+    """Persist partial editor fields in one locked transaction."""
     cleaned = _check_fields(fields)
     async with factory() as uow:
+        draft = await uow.presets.lock_editor_draft(preset_id)
+        if draft is None or draft.id != draft_id:
+            raise DomainError(ErrorCode.NOT_FOUND, f"unknown editor draft: {draft_id}")
+        if draft.version != expected_version:
+            raise _stale("editor draft", draft_id, expected_version, draft.version)
         saved = await uow.presets.save_editor_draft(
             draft.model_copy(update={"fields": cleaned, "updated_at": utcnow()}),
             expected_version,
@@ -131,12 +161,75 @@ async def save_draft(
         return saved
 
 
-async def discard_draft(factory: Callable[[], UnitOfWork], preset_id: UUID, draft_id: UUID) -> None:
-    """Abandon a draft. Published revisions are never touched."""
-    await _owned(factory, preset_id, draft_id)
+async def discard_draft(
+    factory: Callable[[], UnitOfWork], preset_id: UUID, draft_id: UUID, expected_version: int
+) -> None:
+    """Abandon a draft explicitly. Published revisions are never touched,
+    but the publication receipt is voided with the draft: a later retry
+    of a discarded request meets NOT_FOUND, not a replay."""
     async with factory() as uow:
-        await uow.presets.delete_editor_draft(draft_id)
+        draft = await uow.presets.lock_editor_draft(preset_id)
+        if draft is None or draft.id != draft_id:
+            raise DomainError(ErrorCode.NOT_FOUND, f"unknown editor draft: {draft_id}")
+        if draft.version != expected_version:
+            raise _stale("editor draft", draft_id, expected_version, draft.version)
+        await uow.presets.delete_publications_for_draft(draft_id)
+        await uow.presets.delete_editor_draft(draft_id, expected_version)
         await uow.commit()
+
+
+async def complete_draft(
+    factory: Callable[[], UnitOfWork], preset_id: UUID, draft_id: UUID, expected_version: int
+) -> None:
+    """Retire a draft after its publication, deliberately.
+
+    Succeeds only when the draft version still matches the published
+    receipt: edits made after publishing are newer work that an
+    explicit discard — not completion — must abandon. The durable
+    receipt survives completion, so a late identical retry still
+    replays its revision.
+    """
+    async with factory() as uow:
+        draft = await uow.presets.lock_editor_draft(preset_id)
+        if draft is None or draft.id != draft_id:
+            raise DomainError(ErrorCode.NOT_FOUND, f"unknown editor draft: {draft_id}")
+        if draft.version != expected_version:
+            raise _stale("editor draft", draft_id, expected_version, draft.version)
+        if (
+            draft.published_version is None
+            or draft.published_revision is None
+            or draft.published_hash is None
+            or draft.published_version != draft.version
+        ):
+            raise DomainError(
+                ErrorCode.PRECONDITION_FAILED,
+                "draft has unpublished changes; discard it explicitly",
+            )
+        await uow.presets.delete_editor_draft(draft_id, expected_version)
+        await uow.commit()
+
+
+async def _replay_from_log(
+    uow: UnitOfWork, preset_id: UUID, draft_id: UUID, expected_version: int
+) -> PresetRevision:
+    """Replay the durable receipt for an identical retry.
+
+    Matches on the exact draft and version — versions advance only when
+    fields change, so the recorded version identifies the request — and
+    returns the original revision even when later revisions exist.
+    Anything else is NOT_FOUND (voided or never published) or a stale
+    conflict, never a guess.
+    """
+    receipt = await uow.presets.get_publication(draft_id)
+    if receipt is None or receipt.preset_id != preset_id:
+        raise DomainError(ErrorCode.NOT_FOUND, f"unknown editor draft: {draft_id}")
+    if receipt.draft_version != expected_version:
+        raise DomainError(
+            ErrorCode.VERSION_CONFLICT,
+            f"stale editor draft {draft_id}: expected={expected_version} "
+            f"actual={receipt.draft_version}",
+        )
+    return await uow.presets.get_revision(receipt.preset_id, receipt.revision)
 
 
 async def publish_draft(
@@ -146,42 +239,97 @@ async def publish_draft(
     expected_version: int,
     preset_expected_version: int,
 ) -> PresetRevision:
-    """Publish a draft as a new immutable revision.
+    """Publish a draft as a new immutable revision, atomically.
 
     The draft merges over its base revision payload, so unexposed fields
-    survive; the merged payload validates the strict preset schema. The
-    preset version guards concurrent publishers. An ambiguous retry that
-    meets VERSION_CONFLICT adopts when the latest revision already
-    carries the attempted content hash, else it is a genuine conflict.
+    survive; the merged payload validates the strict preset schema, and
+    a renamed draft updates the preset's display name in the same
+    transaction while historical payloads keep theirs. The draft row
+    lock serializes concurrent publishers; the preset version guards
+    concurrent content. An identical retry — same draft and version —
+    replays the recorded revision instead of conflicting or duplicating,
+    even after later revisions exist or the draft completed.
     """
-    draft = await _owned(factory, preset_id, draft_id)
-    if draft.version != expected_version:
-        raise DomainError(
-            ErrorCode.VERSION_CONFLICT,
-            f"stale editor draft {draft_id}: expected={expected_version} actual={draft.version}",
-        )
-    async with factory() as uow:
-        preset = await uow.presets.get_preset(preset_id)
-        if preset.readonly:
-            raise DomainError(ErrorCode.FORBIDDEN, "built-in presets are read-only")
-        base = await uow.presets.get_revision(preset_id, draft.base_revision)
-        merged = base.payload.model_dump(mode="json")
-        merged.update({k: v for k, v in draft.fields.items() if k != "kind"})
-        merged["kind"] = preset.kind.value
-        parsed = _parse_strict(preset.kind.value, merged)
-        next_revision = preset.current_revision + 1
-        revision = PresetRevision(
-            preset_id=preset_id,
-            revision=next_revision,
-            schema_version=1,
-            payload=parsed,
-            content_hash=canonical_payload_hash(parsed),
-            created_at=utcnow(),
-        )
-        await uow.presets.add_revision(revision)
-        await uow.presets.save_preset(
-            preset.model_copy(update={"current_revision": next_revision}),
-            preset_expected_version,
-        )
-        await uow.commit()
-        return revision
+    try:
+        async with factory() as uow:
+            draft = await uow.presets.lock_editor_draft(preset_id)
+            if draft is None:
+                # Late retry after completion: the draft is gone but the
+                # durable receipt answers for it.
+                return await _replay_from_log(uow, preset_id, draft_id, expected_version)
+            if draft.id != draft_id:
+                raise DomainError(ErrorCode.NOT_FOUND, f"unknown editor draft: {draft_id}")
+            if draft.version != expected_version:
+                # Edited since without a matching receipt: a plain stale
+                # conflict. A receipt decides identical replay, below.
+                if await uow.presets.get_publication(draft_id) is None:
+                    raise _stale("editor draft", draft_id, expected_version, draft.version)
+                return await _replay_from_log(uow, preset_id, draft_id, expected_version)
+            preset = await uow.presets.get_preset(preset_id)
+            if preset.readonly:
+                raise DomainError(ErrorCode.FORBIDDEN, "built-in presets are read-only")
+            base = await uow.presets.get_revision(preset_id, draft.base_revision)
+            merged = base.payload.model_dump(mode="json")
+            merged.update({k: v for k, v in draft.fields.items() if k != "kind"})
+            merged["kind"] = preset.kind.value
+            parsed = _parse_strict(preset.kind.value, merged)
+            content_hash = canonical_payload_hash(parsed)
+            # An identical retry that committed and lost its response
+            # lands here with a receipt already recorded: replay it,
+            # never duplicate — even when later revisions moved on.
+            if (
+                draft.published_version == expected_version
+                and draft.published_hash == content_hash
+                and draft.published_revision is not None
+            ):
+                return await uow.presets.get_revision(preset_id, draft.published_revision)
+            if preset.version != preset_expected_version:
+                raise DomainError(
+                    ErrorCode.VERSION_CONFLICT,
+                    f"stale preset {preset_id}: expected={preset_expected_version} "
+                    f"actual={preset.version}",
+                )
+            next_revision = preset.current_revision + 1
+            now = utcnow()
+            revision = PresetRevision(
+                preset_id=preset_id,
+                revision=next_revision,
+                schema_version=1,
+                payload=parsed,
+                content_hash=content_hash,
+                created_at=now,
+            )
+            await uow.presets.add_revision(revision)
+            renamed = _check_name(draft.fields.get("name"))
+            await uow.presets.save_preset(
+                preset.model_copy(
+                    update={
+                        "current_revision": next_revision,
+                        **({"name": renamed} if renamed is not None else {}),
+                    }
+                ),
+                preset_expected_version,
+            )
+            await uow.presets.add_publication(
+                EditorPublication(
+                    draft_id=draft.id,
+                    preset_id=preset_id,
+                    draft_version=expected_version,
+                    revision=next_revision,
+                    content_hash=content_hash,
+                    created_at=now,
+                )
+            )
+            await uow.presets.record_publication(
+                draft.id, expected_version, next_revision, content_hash, now
+            )
+            await uow.commit()
+            return revision
+    except DomainError as exc:
+        if exc.code is not ErrorCode.IDEMPOTENCY_CONFLICT:
+            raise
+        # Lost a receipt race with a concurrent publisher of this same
+        # draft: the failed session already rolled back on context exit.
+        # Adopt the winner's receipt by the same replay rules.
+        async with factory() as fresh:
+            return await _replay_from_log(fresh, preset_id, draft_id, expected_version)

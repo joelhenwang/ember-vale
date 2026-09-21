@@ -1493,6 +1493,21 @@
         "title": "DraftValidationView",
         "type": "object"
       },
+      "EditorDraftCompleteRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_version": {
+            "minimum": 1.0,
+            "title": "Expected Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_version"
+        ],
+        "title": "EditorDraftCompleteRequest",
+        "type": "object"
+      },
       "EditorDraftOpenRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1570,6 +1585,39 @@
             "format": "uuid",
             "title": "Preset Id",
             "type": "string"
+          },
+          "published_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published Hash"
+          },
+          "published_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published Revision"
+          },
+          "published_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published Version"
           },
           "replayed": {
             "default": false,
@@ -7067,7 +7115,7 @@
     },
     "/api/v1/library/presets/{preset_id}/editor-drafts/{draft_id}": {
       "delete": {
-        "description": "Abandon a draft. Published revisions are never touched.",
+        "description": "Abandon a draft; the caller's version must still be current.",
         "operationId": "discard_editor_draft_api_v1_library_presets__preset_id__editor_drafts__draft_id__delete",
         "parameters": [
           {
@@ -7088,6 +7136,16 @@
               "format": "uuid",
               "title": "Draft Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_version",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "title": "Expected Version",
+              "type": "integer"
             }
           }
         ],
@@ -7180,6 +7238,74 @@
           }
         },
         "summary": "Save Editor Draft",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/v1/library/presets/{preset_id}/editor-drafts/{draft_id}/complete": {
+      "post": {
+        "description": "Retire a draft after its publication; refuses newer unpublished edits.",
+        "operationId": "complete_editor_draft_api_v1_library_presets__preset_id__editor_drafts__draft_id__complete_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "preset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Preset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "draft_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Draft Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditorDraftCompleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Complete Editor Draft Api V1 Library Presets  Preset Id  Editor Drafts  Draft Id  Complete Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Complete Editor Draft",
         "tags": [
           "library"
         ]

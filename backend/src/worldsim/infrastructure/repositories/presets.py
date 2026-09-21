@@ -6,17 +6,29 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError as SqlIntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.ids import EditorDraftId
-from worldsim.domain.presets import EditorDraft, Preset, PresetKind, PresetRevision
+from worldsim.domain.presets import (
+    EditorDraft,
+    EditorPublication,
+    Preset,
+    PresetKind,
+    PresetRevision,
+)
 from worldsim.infrastructure.models.stories import (
     EditorDraftRow,
+    EditorPublicationRow,
     PresetRevisionRow,
     PresetRow,
 )
-from worldsim.infrastructure.repositories._common import missing, version_conflict
+from worldsim.infrastructure.repositories._common import (
+    missing,
+    unique_violation,
+    version_conflict,
+)
 
 
 class SqlAlchemyPresetRepository:
@@ -141,7 +153,25 @@ class SqlAlchemyPresetRepository:
             fields=dict(row.fields),
             version=row.version,
             updated_at=row.updated_at,
+            published_version=row.published_version,
+            published_revision=row.published_revision,
+            published_hash=row.published_hash,
         )
+
+    async def lock_editor_draft(self, preset_id: UUID) -> EditorDraft | None:
+        """Load the preset's draft locked for update within this transaction.
+
+        All draft mutations lock first, so overlapping writers serialize
+        on the row instead of racing past a detached version check.
+        """
+        row = (
+            await self._session.execute(
+                select(EditorDraftRow)
+                .where(EditorDraftRow.preset_id == preset_id)
+                .with_for_update()
+            )
+        ).scalar_one_or_none()
+        return self._to_editor_draft(row) if row is not None else None
 
     async def get_editor_draft(self, preset_id: UUID) -> EditorDraft | None:
         """The one durable draft for a preset, if any."""
@@ -153,21 +183,34 @@ class SqlAlchemyPresetRepository:
         return self._to_editor_draft(row) if row is not None else None
 
     async def add_editor_draft(self, draft: EditorDraft, created_at: datetime) -> None:
-        self._session.add(
-            EditorDraftRow(
-                id=draft.id,
-                preset_id=draft.preset_id,
-                base_revision=draft.base_revision,
-                fields=dict(draft.fields),
-                version=draft.version,
-                created_at=created_at,
-                updated_at=draft.updated_at,
+        try:
+            self._session.add(
+                EditorDraftRow(
+                    id=draft.id,
+                    preset_id=draft.preset_id,
+                    base_revision=draft.base_revision,
+                    fields=dict(draft.fields),
+                    version=draft.version,
+                    created_at=created_at,
+                    updated_at=draft.updated_at,
+                    published_version=draft.published_version,
+                    published_revision=draft.published_revision,
+                    published_hash=draft.published_hash,
+                )
             )
-        )
-        await self._session.flush()
+            await self._session.flush()
+        except SqlIntegrityError as exc:
+            if unique_violation(exc, "uq_editor_draft_preset"):
+                raise DomainError(
+                    ErrorCode.IDEMPOTENCY_CONFLICT,
+                    f"duplicate editor draft for preset: {draft.preset_id}",
+                ) from exc
+            raise
 
     async def save_editor_draft(self, draft: EditorDraft, expected_version: int) -> EditorDraft:
-        row = await self._session.get(EditorDraftRow, draft.id)
+        row = await self._session.get(
+            EditorDraftRow, draft.id, with_for_update=True
+        )
         if row is None:
             raise missing("editor draft", draft.id)
         if row.version != expected_version:
@@ -176,15 +219,91 @@ class SqlAlchemyPresetRepository:
         row.fields = dict(draft.fields)
         row.version = expected_version + 1
         row.updated_at = draft.updated_at
+        row.published_version = draft.published_version
+        row.published_revision = draft.published_revision
+        row.published_hash = draft.published_hash
         await self._session.flush()
         return draft.model_copy(update={"version": expected_version + 1})
 
-    async def delete_editor_draft(self, draft_id: EditorDraftId) -> None:
-        row = await self._session.get(EditorDraftRow, draft_id)
+    async def record_publication(
+        self,
+        draft_id: EditorDraftId,
+        expected_version: int,
+        revision: int,
+        content_hash: str,
+        updated_at: datetime,
+    ) -> None:
+        """Stamp the publication receipt without consuming a draft version.
+
+        The draft stays at its version so an identical retry still
+        matches the receipt, and completion can verify no newer edits
+        exist. Locked and version-checked like every other mutation.
+        """
+        row = await self._session.get(
+            EditorDraftRow, draft_id, with_for_update=True
+        )
         if row is None:
             raise missing("editor draft", draft_id)
+        if row.version != expected_version:
+            raise version_conflict("editor draft", draft_id, expected_version, row.version)
+        row.published_version = expected_version
+        row.published_revision = revision
+        row.published_hash = content_hash
+        row.updated_at = updated_at
+        await self._session.flush()
+
+    async def delete_editor_draft(self, draft_id: EditorDraftId, expected_version: int) -> None:
+        row = await self._session.get(
+            EditorDraftRow, draft_id, with_for_update=True
+        )
+        if row is None:
+            raise missing("editor draft", draft_id)
+        if row.version != expected_version:
+            raise version_conflict("editor draft", draft_id, expected_version, row.version)
         await self._session.delete(row)
         await self._session.flush()
+
+    def _to_publication(self, row: EditorPublicationRow) -> EditorPublication:
+        return EditorPublication(
+            draft_id=row.draft_id,
+            preset_id=row.preset_id,
+            draft_version=row.draft_version,
+            revision=row.revision,
+            content_hash=row.content_hash,
+            created_at=row.created_at,
+        )
+
+    async def add_publication(self, receipt: EditorPublication) -> None:
+        try:
+            self._session.add(
+                EditorPublicationRow(
+                    draft_id=receipt.draft_id,
+                    preset_id=receipt.preset_id,
+                    draft_version=receipt.draft_version,
+                    revision=receipt.revision,
+                    content_hash=receipt.content_hash,
+                    created_at=receipt.created_at,
+                )
+            )
+            await self._session.flush()
+        except SqlIntegrityError as exc:
+            if unique_violation(exc, "editor_publication_pkey"):
+                raise DomainError(
+                    ErrorCode.IDEMPOTENCY_CONFLICT,
+                    f"duplicate publication for draft: {receipt.draft_id}",
+                ) from exc
+            raise
+
+    async def get_publication(self, draft_id: EditorDraftId) -> EditorPublication | None:
+        """Durable replay log: survives draft completion; explicit discard voids it."""
+        row = await self._session.get(EditorPublicationRow, draft_id)
+        return self._to_publication(row) if row is not None else None
+
+    async def delete_publications_for_draft(self, draft_id: EditorDraftId) -> None:
+        row = await self._session.get(EditorPublicationRow, draft_id)
+        if row is not None:
+            await self._session.delete(row)
+            await self._session.flush()
 
     async def latest_revision(self, preset_id: UUID) -> PresetRevision:
         query = (

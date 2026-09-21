@@ -1286,6 +1286,9 @@ class EditorDraftView(BaseModel):
     version: int
     updated_at: datetime
     replayed: bool = False
+    published_version: int | None = None
+    published_revision: int | None = None
+    published_hash: str | None = None
 
 
 class EditorDraftOpenRequest(BaseModel):
@@ -1306,6 +1309,12 @@ class EditorDraftPublishRequest(BaseModel):
 
     expected_version: int = Field(ge=1)
     preset_expected_version: int = Field(ge=0)
+
+
+class EditorDraftCompleteRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    expected_version: int = Field(ge=1)
 
 
 class PreferencesView(BaseModel):

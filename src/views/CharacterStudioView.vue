@@ -58,8 +58,17 @@ const isNew = computed(() => id.value === 'new')
 const serverCharacter = computed(() => presets.characters.value.find((c) => c.id === id.value))
 const character = computed(() => catalog.characters.find((c) => c.id === id.value))
 const record = computed(() => serverCharacter.value ?? character.value ?? null)
-const recordLoading = computed(() => !isNew.value && !presets.ready.value && record.value === null)
-const recordMissing = computed(() => !isNew.value && presets.ready.value && record.value === null)
+/* Loading, failed, missing, and loaded stay distinct: a failed lookup
+   must surface Retry, never sit behind the loading line. */
+const recordLoading = computed(() => !isNew.value && presets.loading.value && record.value === null)
+const recordFailed = computed(
+  () =>
+    !isNew.value && !presets.loading.value && presets.error.value !== null && record.value === null
+)
+const recordMissing = computed(
+  () =>
+    !isNew.value && !presets.loading.value && presets.error.value === null && record.value === null
+)
 const displayName = computed(() => record.value?.name ?? 'the new character')
 
 function retryPresets(): void {
@@ -131,12 +140,12 @@ function suggest(): void {
         </div>
         <p class="studio__sub">Shape how they think, react, and speak.</p>
         <p v-if="recordLoading" class="studio__state" role="status">Reading the archive…</p>
+        <p v-else-if="recordFailed" class="studio__state" role="alert">
+          The archive did not answer ({{ presets.error.value }}) —
+          <button type="button" class="studio__link" @click="retryPresets()">retry</button>
+        </p>
         <p v-else-if="recordMissing" class="studio__state" role="alert">
           No character answers to that id.
-          <template v-if="presets.error.value">
-            The archive did not answer ({{ presets.error.value }}) —
-            <button type="button" class="studio__link" @click="retryPresets()">retry</button>
-          </template>
         </p>
 
         <InlineStepper

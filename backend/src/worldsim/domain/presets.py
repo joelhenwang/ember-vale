@@ -144,3 +144,26 @@ class EditorDraft(BaseModel):
     fields: dict[str, Any] = Field(default_factory=dict)
     version: int = Field(default=1, ge=1)
     updated_at: datetime = Field(default_factory=utcnow)
+    # Publication receipt: which draft version produced which revision
+    # under which content. An identical publish retry replays the
+    # recorded revision; anything else stays a conflict.
+    published_version: int | None = Field(default=None, ge=1)
+    published_revision: int | None = Field(default=None, ge=1)
+    published_hash: str | None = Field(default=None, max_length=128)
+
+
+class EditorPublication(BaseModel):
+    """Durable publication receipt, surviving draft completion.
+
+    Draft versions advance only when fields change, so the recorded
+    version identifies the exact published request.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    draft_id: EditorDraftId
+    preset_id: PresetId
+    draft_version: int = Field(ge=1)
+    revision: int = Field(ge=1)
+    content_hash: str = Field(min_length=1, max_length=128)
+    created_at: datetime = Field(default_factory=utcnow)
