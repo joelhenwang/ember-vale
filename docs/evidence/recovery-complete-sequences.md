@@ -10,12 +10,16 @@ features.
 - `RecoveryDraft.baseVersion`: the acknowledged server version the
   snapshot's local edits build on. Timestamps are display-only; no
   decision reads `at` or `updated_at`.
-- `latestSeen`: the newest local edit revision (canonical snapshot
-  token) per draft, updated on every `save()` enqueue and every
-  `storeRecovery()` write. A delayed save's failure handler stores its
-  own snapshot only when it is still the latest — an older operation
-  neither overwrites newer recovery nor makes it ineligible for
-  restoration, on success (exact-snapshot clear) or failure alike.
+- `latestSeen`: the most recently seen local edit snapshot (canonical
+  content token) per draft, updated on every `save()` enqueue and every
+  `storeRecovery()` write. The token establishes content equality, not
+  chronological recency — editing A → B → A returns the same token.
+  What the failure path needs is seen-order: a leave snapshot written
+  after a save was enqueued supersedes it, so a delayed save's failure
+  handler stores its own snapshot only when nothing newer was seen
+  since. An older operation neither overwrites newer recovery nor makes
+  it ineligible for restoration, on success (exact-snapshot clear) or
+  failure alike.
 - `planBootRecovery(server, recovery)` is the wizard's actual
   restoration logic, shared by the view and the tests: `none` (nothing
   stored), `covered` (server already holds the edits → clear the

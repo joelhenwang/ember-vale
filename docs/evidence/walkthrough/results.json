@@ -1,7 +1,7 @@
 {
   "ok": true,
   "base": "http://127.0.0.1:5173",
-  "at": "2026-09-21T01:19:20.043Z",
+  "at": "2026-09-21T08:56:52.468Z",
   "results": [
     {
       "scenario": "observer",
@@ -19,7 +19,7 @@
       "scenario": "observer",
       "step": "begin navigates to the room",
       "ok": true,
-      "detail": "1b65f4b2-80a0-4101-a9dd-985c80a81d3b"
+      "detail": "d5f6e0da-ff8f-44a1-b415-09ae34456f0a"
     },
     {
       "scenario": "observer",
@@ -112,6 +112,36 @@
       "detail": "Player / Player\nPlaying as Wren\nBeat 0\nInitial configuration\nMode set by the story grant"
     },
     {
+      "scenario": "director",
+      "step": "director badge follows the seat grant",
+      "ok": true,
+      "detail": "Director"
+    },
+    {
+      "scenario": "director",
+      "step": "unmappable direction files as clarification, not silent success",
+      "ok": true,
+      "detail": "Send Wren to the Market\nneeds clarification · influence · v0\n\nI could not map that to a concrete plan; name characters explicitly or pick IDs."
+    },
+    {
+      "scenario": "director",
+      "step": "edit reinterprets with a bumped version",
+      "ok": true,
+      "detail": "Send Wren to the Market\nneeds clarification · influence · v1\n\nI could not map that to a concrete plan; name characters e"
+    },
+    {
+      "scenario": "director",
+      "step": "cancel preserves the direction as cancelled",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "director",
+      "step": "returning restores the observer seat",
+      "ok": true,
+      "detail": "Observer"
+    },
+    {
       "scenario": "dirtynav",
       "step": "unsaved cast survives Home and back",
       "ok": true,
@@ -127,7 +157,7 @@
       "scenario": "dirtynav",
       "step": "post-failure edit survives leave and reopen",
       "ok": true,
-      "detail": "Newest edit muak44yf"
+      "detail": "Newest edit mub0gh9z"
     },
     {
       "scenario": "createleave",

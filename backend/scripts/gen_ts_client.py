@@ -106,6 +106,7 @@ WANTED = (
     "InterventionRequest",
     "InterventionStepView",
     "InterventionView",
+    "InterventionEditRequest",
     "InterventionCancelRequest",
     "SuggestionView",
     "ConditionView",

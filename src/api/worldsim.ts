@@ -12,10 +12,15 @@ import type {
   ActivityListResponse,
   ActivityView,
   DraftValidationView,
+  InterventionCancelRequest,
+  InterventionEditRequest,
+  InterventionRequest,
+  InterventionView,
   MapResponse,
   PresetDetail,
   PresetSummary,
   RoleGrantView,
+  RoleSelectRequest,
   Stage1AdvanceRequest,
   Stage1AdvanceResponse,
   StoryCreateResponse,
@@ -223,4 +228,79 @@ export function getTimeline(
 
 export function getMap(worldId: string, opts: CallOptions = {}): Promise<MapResponse> {
   return apiFetch<MapResponse>(`/stage2/map?world_id=${worldId}`, { ...opts, method: 'GET' })
+}
+
+/* Operating seats -------------------------------------------------------- */
+
+export function selectSeat(
+  worldId: string,
+  role: 'watcher' | 'director' | 'deity',
+  opts: CallOptions = {}
+): Promise<RoleGrantView> {
+  // Taking a seat replaces the world's grant at a safe boundary; the
+  // server rejects mid-run switches with PRECONDITION_FAILED.
+  const body: RoleSelectRequest = { world_id: worldId, role }
+  return apiFetch<RoleGrantView>('/stage2/roles/select', { ...opts, method: 'POST', body })
+}
+
+/* Director/God interventions ---------------------------------------------- */
+
+export function submitIntervention(
+  worldId: string,
+  mode: 'influence' | 'force' | 'attempt',
+  text: string,
+  clientRequestId: string,
+  opts: CallOptions = {}
+): Promise<InterventionView> {
+  // The client request id makes submission idempotent: resubmitting the
+  // same key replays the same queue item instead of duplicating it.
+  const body: InterventionRequest = {
+    world_id: worldId,
+    client_request_id: clientRequestId,
+    mode,
+    text
+  }
+  return apiFetch<InterventionView>('/interventions', { ...opts, method: 'POST', body })
+}
+
+export function listInterventions(
+  worldId: string,
+  opts: CallOptions = {}
+): Promise<InterventionView[]> {
+  // The queue is an operator surface: watcher, director and deity only.
+  return apiFetch<InterventionView[]>(`/interventions?world_id=${worldId}`, {
+    ...opts,
+    method: 'GET'
+  })
+}
+
+export function readIntervention(id: string, opts: CallOptions = {}): Promise<InterventionView> {
+  return apiFetch<InterventionView>(`/interventions/${id}`, { ...opts, method: 'GET' })
+}
+
+export function editIntervention(
+  id: string,
+  expectedVersion: number,
+  text: string,
+  opts: CallOptions = {}
+): Promise<InterventionView> {
+  // Reinterprets before claim with restarted history; a stale version
+  // conflicts instead of overwriting a newer interpretation.
+  const body: InterventionEditRequest = { text, expected_version: expectedVersion }
+  return apiFetch<InterventionView>(`/interventions/${id}`, { ...opts, method: 'PATCH', body })
+}
+
+export function cancelIntervention(
+  id: string,
+  expectedVersion: number,
+  opts: CallOptions = {}
+): Promise<InterventionView> {
+  // Cancels before application; executing work cannot stop. Completed
+  // history is preserved, not rewritten.
+  const body: InterventionCancelRequest = { expected_version: expectedVersion }
+  return apiFetch<InterventionView>(`/interventions/${id}/cancel`, {
+    ...opts,
+    method: 'POST',
+    body
+  })
 }

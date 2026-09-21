@@ -691,6 +691,12 @@ export interface InterventionView {
   world_id: string;
 }
 
+export interface InterventionEditRequest {
+  expected_version: number;
+  scope?: InterventionScope;
+  text: string;
+}
+
 export interface InterventionCancelRequest {
   expected_version: number;
 }

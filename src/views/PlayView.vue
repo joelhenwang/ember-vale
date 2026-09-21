@@ -8,7 +8,10 @@ import MenuButton from '../components/MenuButton.vue'
 import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
 import IconArrowRight from '../components/icons/IconArrowRight.vue'
 import { useBackend } from '../composables/useBackend'
+import { useInterventions, type DirectMode } from '../composables/useInterventions'
 import { useStory } from '../composables/useStory'
+import { selectSeat } from '../api/worldsim'
+import type { Role } from '../api/http'
 import { phaseLabel } from '../game/format'
 
 const route = useRoute()
@@ -29,6 +32,69 @@ const story = useStory(storyId, headerRole, headerChar)
 const showSetup = ref(false)
 const travelChar = ref('')
 const travelTo = ref('')
+
+// Director/God seats (E6): the persisted grant is the seat. Taking one
+// replaces the grant at a safe boundary; the server rejects mid-run
+// switches. The room badge stays a read-only reflection of that grant.
+const seat = computed<'director' | 'deity' | null>(() => {
+  const granted = story.grant.value?.role
+  return granted === 'director' || granted === 'deity' ? granted : null
+})
+const seatLabel = computed(() =>
+  seat.value === 'director'
+    ? 'Director'
+    : seat.value === 'deity'
+      ? 'Deity'
+      : story.effectiveRole.value === 'player'
+        ? 'Player'
+        : 'Observer'
+)
+// A bound player seat is never displaced by the seat buttons.
+const canTakeSeat = computed(() => story.grantLoaded.value && story.grant.value?.role !== 'player')
+const seatBusy = ref(false)
+const seatError = ref<string | null>(null)
+const queueCtl = useInterventions(
+  () => storyId.value,
+  () => ({
+    role: (seat.value ?? story.effectiveRole.value) as Role,
+    characterId: headerChar.value ?? undefined
+  })
+)
+const directMode = computed<DirectMode>(() => (seat.value === 'deity' ? 'force' : 'influence'))
+const directionText = ref('')
+const editText = ref('')
+
+async function takeSeat(next: 'director' | 'deity' | 'watcher'): Promise<void> {
+  seatBusy.value = true
+  seatError.value = null
+  try {
+    await selectSeat(storyId.value, next, { role: story.effectiveRole.value })
+    await story.load()
+    queueCtl.select(null)
+    await queueCtl.refresh()
+  } catch (err) {
+    seatError.value = err instanceof Error ? err.message : 'could not take the seat'
+  } finally {
+    seatBusy.value = false
+  }
+}
+
+async function fileDirection(): Promise<void> {
+  if (!directionText.value.trim() || !seat.value) return
+  const item = await queueCtl.submit(directMode.value, directionText.value.trim())
+  if (item) directionText.value = ''
+}
+
+function pickDirection(id: string): void {
+  queueCtl.select(id)
+  editText.value = queueCtl.active.value?.text ?? ''
+}
+
+async function resubmitEdit(): Promise<void> {
+  if (!editText.value.trim()) return
+  const item = await queueCtl.editActive(editText.value.trim())
+  if (item) editText.value = ''
+}
 
 const detail = computed(() => story.detail.value)
 const cast = computed(() => {
@@ -73,6 +139,8 @@ const nextIndex = computed(() => (detail.value?.absolute_index ?? 0) + 1)
 
 async function advance(): Promise<void> {
   await story.advance()
+  // Queued directions claim at phase boundaries: re-read their states.
+  if (seat.value) await queueCtl.refresh()
 }
 
 async function travel(): Promise<void> {
@@ -98,10 +166,15 @@ watch(destinations, (rows) => {
 })
 
 onMounted(() => {
-  void story.load()
+  void story.load().then(() => {
+    if (seat.value) void queueCtl.refresh()
+  })
   void backend.refresh()
 })
-onUnmounted(() => story.cancel())
+onUnmounted(() => {
+  story.cancel()
+  queueCtl.dispose()
+})
 </script>
 
 <template>
@@ -122,9 +195,7 @@ onUnmounted(() => story.cancel())
     </p>
     <template v-else-if="detail">
       <p class="play__meta">
-        <span class="play__badge">{{
-          story.effectiveRole.value === 'player' ? 'Player' : 'Observer'
-        }}</span>
+        <span class="play__badge">{{ seatLabel }}</span>
         <span v-if="controlledName">Playing as {{ controlledName }}</span>
         <span v-else-if="story.effectiveRole.value === 'player' && !story.grantLoaded.value">
           Resolving player…
@@ -217,6 +288,120 @@ onUnmounted(() => story.cancel())
           </MenuButton>
         </section>
       </div>
+      <section class="play__card" aria-label="Operating seat">
+        <h2>Operating seat</h2>
+        <p v-if="!canTakeSeat" class="play__empty">
+          The player's seat is bound — director seats stay unavailable while it holds.
+        </p>
+        <template v-else>
+          <p class="play__empty">
+            Taking a seat replaces the story grant at a safe boundary; mid-run switches are refused.
+          </p>
+          <div class="play__row">
+            <template v-if="!seat">
+              <MenuButton :disabled="seatBusy" @click="takeSeat('director')">
+                {{ seatBusy ? 'Taking the seat…' : 'Take the Director seat' }}
+              </MenuButton>
+              <MenuButton :disabled="seatBusy" @click="takeSeat('deity')">
+                {{ seatBusy ? 'Taking the seat…' : 'Take the God seat' }}
+              </MenuButton>
+            </template>
+            <MenuButton v-else variant="outline" :disabled="seatBusy" @click="takeSeat('watcher')">
+              {{ seatBusy ? 'Leaving the seat…' : 'Return to Observer seat' }}
+            </MenuButton>
+          </div>
+          <p v-if="seatError" class="play__notice play__notice--error" role="alert">
+            {{ seatError }}
+          </p>
+        </template>
+      </section>
+      <section v-if="seat" class="play__card" aria-label="Direct the story">
+        <h2>Direct the story</h2>
+        <p class="play__empty">
+          {{
+            seat === 'deity'
+              ? 'God mode forces effects: travel, bouts, overrides and persistent conditions.'
+              : 'Direct mode proposes hooks and arcs; forcing effects needs the God seat.'
+          }}
+        </p>
+        <label class="play__field">
+          Direction
+          <textarea
+            v-model="directionText"
+            rows="3"
+            maxlength="2000"
+            :disabled="queueCtl.busy.value"
+            placeholder="Name characters and places explicitly." />
+        </label>
+        <div class="play__row">
+          <MenuButton
+            :disabled="!directionText.trim() || queueCtl.busy.value"
+            @click="fileDirection()">
+            {{ queueCtl.busy.value ? 'Filing…' : `File direction (${directMode})` }}
+          </MenuButton>
+          <MenuButton
+            v-if="queueCtl.pending.value"
+            variant="outline"
+            :disabled="queueCtl.busy.value"
+            @click="queueCtl.retry()">
+            Retry filing
+          </MenuButton>
+        </div>
+        <p
+          v-if="queueCtl.notice.value"
+          class="play__notice"
+          :class="queueCtl.notice.value.kind === 'error' ? 'play__notice--error' : ''"
+          role="status">
+          {{ queueCtl.notice.value.text }}
+        </p>
+        <h3>Queue</h3>
+        <p v-if="!queueCtl.queue.value.length" class="play__empty">Nothing filed yet.</p>
+        <ol v-else class="play__queue">
+          <li v-for="entry in queueCtl.queue.value" :key="entry.id">
+            <button type="button" class="play__link" @click="pickDirection(entry.id)">
+              {{ entry.text }}
+            </button>
+            <span class="play__sub"
+              >{{ entry.status.replace(/_/g, ' ') }} · {{ entry.mode }} · v{{ entry.version }}</span
+            >
+            <ul v-if="entry.steps?.length">
+              <li v-for="step in entry.steps" :key="step.id">
+                {{ step.kind.replace(/_/g, ' ') }} — {{ step.status.replace(/_/g, ' ')
+                }}<span v-if="step.failure_reason">: {{ step.failure_reason }}</span>
+              </li>
+            </ul>
+            <p v-if="entry.failure_reason" class="play__sub">{{ entry.failure_reason }}</p>
+          </li>
+        </ol>
+        <template v-if="queueCtl.active.value">
+          <h3>Selected direction</h3>
+          <label
+            v-if="['needs_clarification', 'queued'].includes(queueCtl.active.value.status)"
+            class="play__field">
+            Revised text
+            <textarea
+              v-model="editText"
+              rows="2"
+              maxlength="2000"
+              :disabled="queueCtl.busy.value" />
+          </label>
+          <div class="play__row">
+            <MenuButton
+              v-if="['needs_clarification', 'queued'].includes(queueCtl.active.value.status)"
+              :disabled="!editText.trim() || queueCtl.busy.value"
+              @click="resubmitEdit()">
+              Resubmit text
+            </MenuButton>
+            <MenuButton
+              v-if="!['completed', 'cancelled', 'failed'].includes(queueCtl.active.value.status)"
+              variant="outline"
+              :disabled="queueCtl.busy.value"
+              @click="queueCtl.cancelActive()">
+              Cancel direction
+            </MenuButton>
+          </div>
+        </template>
+      </section>
       <footer class="play__foot">
         <MenuButton variant="outline" :icon="IconArrowLeft" @click="router.push('/stories')"
           >All stories</MenuButton
@@ -308,6 +493,44 @@ onUnmounted(() => story.cancel())
   margin: 16px 0 8px;
   font-size: 15px;
 }
+.play__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.play__field {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 14px;
+  color: #4a4436;
+}
+.play__field textarea {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf6;
+  resize: vertical;
+}
+.play__queue {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 10px;
+}
+.play__queue ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font-size: 14px;
+  color: #4a4436;
+}
+.play__sub {
+  display: block;
+  font-size: 13px;
+  color: #6b5d43;
+}
 .play__cast {
   list-style: none;
   margin: 0;
@@ -365,6 +588,11 @@ onUnmounted(() => story.cancel())
   color: #6b5d43;
 }
 .play__foot {
+  margin-top: 14px;
+}
+.play__grid + .play__card,
+.play__card + .play__card,
+.play__card + .play__foot {
   margin-top: 14px;
 }
 .play__band {

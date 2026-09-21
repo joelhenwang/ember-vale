@@ -288,6 +288,53 @@ try {
     await ctx.close()
   }
 
+  // ---- Director seat and intervention queue ---------------------------
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+    const page = await ctx.newPage()
+    const S = 'director'
+    await page.goto(`${BASE}/new-story?quickstart=1`, { waitUntil: 'networkidle' })
+    await page.getByRole('button', { name: 'Begin the story' }).waitFor({ timeout: 30000 })
+    await page.getByRole('button', { name: 'Begin the story' }).click()
+    await page.waitForURL(/\/stories\/.+\/play/, { timeout: 30000 })
+    await page.locator('.play__badge').waitFor({ timeout: 30000 })
+    // Observer story: no bound player seat, so the operator seats are offered.
+    await page.getByRole('button', { name: 'Take the Director seat' }).click()
+    await page.getByText('Direct the story', { exact: false }).waitFor({ timeout: 30000 })
+    const badge = await page.locator('.play__badge').innerText()
+    record(S, 'director badge follows the seat grant', badge.includes('Director'), badge)
+    // The dev gateway cannot map names to a typed plan: filing surfaces
+    // needs_clarification deterministically instead of fake success.
+    await page.getByLabel('Direction').fill('Send Wren to the Market')
+    await page.getByRole('button', { name: /File direction/ }).click()
+    await page
+      .getByText('needs clarification', { exact: false })
+      .first()
+      .waitFor({ timeout: 30000 })
+    const queue = await page.locator('.play__queue').innerText()
+    record(
+      S,
+      'unmappable direction files as clarification, not silent success',
+      /needs clarification/.test(queue),
+      queue.slice(0, 160)
+    )
+    // Edit reinterprets with a bumped version; cancel preserves history.
+    await page.locator('.play__queue button').first().click()
+    await page.getByLabel('Revised text').fill('A peddler arrives at the Hearth.')
+    await page.getByRole('button', { name: 'Resubmit text' }).click()
+    await page.getByText('v1', { exact: false }).waitFor({ timeout: 30000 })
+    const revised = await page.locator('.play__queue').innerText()
+    record(S, 'edit reinterprets with a bumped version', /v1/.test(revised), revised.slice(0, 120))
+    await page.getByRole('button', { name: 'Cancel direction' }).click()
+    await page.getByText('cancelled', { exact: false }).first().waitFor({ timeout: 30000 })
+    record(S, 'cancel preserves the direction as cancelled', true)
+    await page.getByRole('button', { name: 'Return to Observer seat' }).click()
+    await page.getByRole('button', { name: 'Take the Director seat' }).waitFor({ timeout: 30000 })
+    const badgeAfter = await page.locator('.play__badge').innerText()
+    record(S, 'returning restores the observer seat', badgeAfter.includes('Observer'), badgeAfter)
+    await ctx.close()
+  }
+
   // ---- Dirty in-app navigation and recovery ------------------------------
   {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
