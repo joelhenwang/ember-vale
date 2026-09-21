@@ -17,6 +17,8 @@ function itemOf(id: string, status = 'queued', version = 0): Record<string, unkn
   return {
     id,
     world_id: 'w1',
+    // Seeded items were filed under their own keys, never the pending one.
+    client_request_id: `seed-filing-${id}`,
     status,
     mode: 'influence',
     role: 'director',
@@ -50,12 +52,12 @@ function installFetch(): void {
           throw new Error('socket hangup')
         }
         const key = (body as { client_request_id: string }).client_request_id
-        const replay = items.find((entry) => entry['key'] === key)
+        const replay = items.find((entry) => entry['client_request_id'] === key)
         if (replay) return json(replay)
         const created = {
           ...itemOf(`q-${items.length + 1}`),
           text: (body as { text: string }).text,
-          key
+          client_request_id: key
         }
         items.push(created)
         return json(created)
@@ -199,13 +201,40 @@ describe('useInterventions queue', () => {
     ).toHaveLength(2)
   })
 
-  it('inspecting a filed item reconciles the ambiguous filing', async () => {
+  it('selecting an unrelated item preserves the unresolved filing', async () => {
     installFetch()
     dropSubmits = 1
     const ctl = useInterventions(worldOf, header)
     expect(await ctl.submit('influence', 'A peddler arrives.')).toBeNull()
+    expect(ctl.pending.value).not.toBeNull()
     await ctl.refresh()
+    // q-1 is an older direction filed under a different request key:
+    // selecting it must not reconcile the timed-out filing.
     ctl.select('q-1')
+    expect(ctl.pending.value).not.toBeNull()
+    expect(await ctl.submit('influence', 'Something else.')).toBeNull()
+    ctl.select(null)
+    expect(ctl.pending.value).not.toBeNull()
+  })
+
+  it('selecting the filing’s own item reconciles it by key and world', async () => {
+    installFetch()
+    dropSubmits = 1
+    const ctl = useInterventions(worldOf, header)
+    expect(await ctl.submit('influence', 'A peddler arrives.')).toBeNull()
+    const key = (seen[0].body as { client_request_id: string }).client_request_id
+    // The timed-out filing landed server-side and appears on refresh.
+    items.push({ ...itemOf('q-9'), client_request_id: key })
+    items.push({ ...itemOf('q-10'), world_id: 'w2', client_request_id: key })
+    await ctl.refresh()
+    // Same key but a foreign world: not our filing.
+    ctl.select('q-10')
+    expect(ctl.pending.value).not.toBeNull()
+    // Unrelated direction: not our filing.
+    ctl.select('q-1')
+    expect(ctl.pending.value).not.toBeNull()
+    // Own key and own world: reconciled.
+    ctl.select('q-9')
     expect(ctl.pending.value).toBeNull()
     expect(await ctl.submit('influence', 'Something else.')).not.toBeNull()
   })

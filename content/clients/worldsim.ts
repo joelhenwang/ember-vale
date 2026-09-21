@@ -680,6 +680,7 @@ export interface InterventionStepView {
 }
 
 export interface InterventionView {
+  client_request_id: string;
   failure_reason?: string;
   id: string;
   mode: string;

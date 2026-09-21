@@ -215,14 +215,14 @@ def _validate_step(
         if step.character_id not in by_id:
             return InterventionStatus.NEEDS_CLARIFICATION, "the actor is unknown"
         # Authoritative identities are resolved server-side, never typed by
-        # the user: the actor defaults from the step and the snapshot is
-        # stamped from the sealed phase at plan time. Validation checks the
+        # the user: the step actor, the validated family, and the sealed
+        # snapshot override anything the model supplied. Validation checks the
         # shape only (a nil snapshot never persists).
         action = dict(step.action)
-        action.setdefault("character_id", str(step.character_id))
-        action.setdefault("snapshot_id", "00000000-0000-0000-0000-000000000000")
+        action["character_id"] = str(step.character_id)
+        action["snapshot_id"] = "00000000-0000-0000-0000-000000000000"
         try:
-            _ACTION_ADAPTER.validate_python({"family": step.family, **action})
+            _ACTION_ADAPTER.validate_python({**action, "family": step.family})
         except Exception:
             return InterventionStatus.NEEDS_CLARIFICATION, "the attempt details do not parse"
         return None
@@ -304,7 +304,8 @@ async def submit(
         )
         try:
             await uow.interventions.add_intervention(intervention)
-            steps = _chain_travel(new_intervention_steps(intervention.id, list(interpretation.steps)))
+            parsed = list(interpretation.steps)
+            steps = _chain_travel(new_intervention_steps(intervention.id, parsed))
             for step in steps:
                 await uow.interventions.add_step(step)
             await uow.commit()
@@ -354,9 +355,9 @@ async def _claim_step_gate(
 ) -> bool:
     """First-writer-wins execution gate for one effect step.
 
-    True means this caller owns the application. False means another
-    beat already recorded it: the caller re-reads and accepts the
-    recorded outcome instead of applying twice.
+    True means this caller owns the application. False means another beat
+    claimed it first: the caller re-reads for a recorded outcome and,
+    when none is recorded yet, re-derives through per-step effect identities.
     """
     try:
         await uow.commands.add(
@@ -374,6 +375,9 @@ async def _claim_step_gate(
         return True
     except DomainError as exc:
         if exc.code is ErrorCode.IDEMPOTENCY_CONFLICT:
+            # The failed flush poisoned this session: roll back so the
+            # caller's follow-up commit/read runs on a clean transaction.
+            await uow.rollback()
             return False
         raise
 
@@ -485,13 +489,24 @@ async def _apply_effect_step(
     intervention_id: UUID,
     characters: dict[UUID, Any],
 ) -> None:
-    """Gate, apply, and durably mark one effect step.
+    """Gate, apply, and durably mark one effect step. Beat-level mutual
+    exclusion comes from guarded() at the HTTP route (one executor per
+    world and phase scope; a rival advance gets SlotBusy, never a second
+    executor), so a taken gate with no recorded outcome means the claiming
+    beat crashed after claiming, or a service-level applier is racing this
+    one. Either way convergence comes from per-step effect identities,
+    never from value matching: the activity carries the step key, hooks
+    and arcs persist a command receipt under the step key, overrides
+    commit under a step-derived idempotency key, and conditions match on
+    the owning intervention plus label. A crash between the effect commit
+    and the completion mark therefore re-derives and adopts the recorded
+    outcome instead of duplicating it or losing it.
 
-    The gate lets concurrent appliers converge: the loser re-reads and
-    accepts the recorded outcome. Effect functions verify-or-apply (same
-    activity, existing title/label, deterministic override key), so a
-    crash between gate and mark re-derives the outcome on recovery
-    instead of duplicating it or losing it.
+    Completed steps are skipped before this point, so replaying a
+    completed beat replays stored results instead of doubling canon;
+    recovery after partial execution re-derives through the per-step
+    receipts above, which is lossless only where the effect left one
+    (activities, hooks/arcs, overrides, same-filing conditions).
     """
     async with factory() as uow:
         owned = await _claim_step_gate(uow, world_id, intervention_id, step.seq)
@@ -500,8 +515,8 @@ async def _apply_effect_step(
         current = await _read_step(factory, intervention_id, step.seq)
         if current is not None and current.status == StepStatus.COMPLETED:
             return
-        # Gate taken with no recorded outcome (crashed predecessor):
-        # fall through and verify-or-apply below.
+        # Gate taken with no recorded outcome: the claiming beat crashed,
+        # or a service-level applier is racing; fall through to per-step verify-or-apply.
     try:
         activity_id, event_id = await _run_effect(
             factory, world_id, index, step, intervention_id, characters
@@ -547,7 +562,7 @@ async def plan_attempts(
 ) -> list[PlannedAttempt]:
     """Validate queued attempt steps against sealed state and stamp identities.
 
-    Called post-seal inside the advancing beat. The actor defaults from
+    Called post-seal inside the advancing beat. The actor, family, and snapshot are stamped from
     the step and the snapshot from the seal: neither is ever typed by
     the user. Conflicting or stale steps fail with reasons; valid ones
     return intents for the beat. Nothing is marked completed here —
@@ -652,7 +667,9 @@ async def _start_directed_activity(
     characters: dict[UUID, Any],
 ) -> UUID | None:
     """Start the directed activity; returns its id. Saves nothing: the
-    caller marks the step once this outcome is durably recorded."""
+    caller marks the step once this outcome is durably recorded. The start
+    is idempotent per step key: a persisted-but-unmarked activity from a
+    crashed attempt is adopted, never duplicated."""
     character_id = UUID(str(targets["character_id"]))
     character = characters.get(character_id)
     if character is None:
@@ -670,7 +687,11 @@ async def _start_directed_activity(
             ),
             None,
         )
-        if same is not None:
+        # Per-step identity, not value matching: only this step's own
+        # activity (stamped with its key) is adopted. A same-valued
+        # activity from a distinct direction is never conflated here;
+        # starting then fails deterministically on the busy character.
+        if same is not None and same.payload.get("direct_step_key") == step.step_key:
             return same.id
         to_location = targets.get("to_location_id")
         activity = await start_activity(
@@ -680,6 +701,7 @@ async def _start_directed_activity(
             ActivityKind(str(targets["activity"])),
             index,
             duration_phases=targets.get("duration_phases"),
+            direct_step_key=step.step_key,
             to_location_id=UUID(str(to_location)) if to_location else None,
         )
         await uow.commit()
@@ -706,9 +728,9 @@ def _direct_attempt(
             ErrorCode.PRECONDITION_FAILED, "actor already directed this phase"
         )
     action = dict(targets.get("action") or {})
-    action.setdefault("character_id", str(character_id))
-    action.setdefault("snapshot_id", str(snapshot_id))
-    intent = _ACTION_ADAPTER.validate_python({"family": targets["family"], **action})
+    action["character_id"] = str(character_id)
+    action["snapshot_id"] = str(snapshot_id)
+    intent = _ACTION_ADAPTER.validate_python({**action, "family": targets["family"]})
     if targets["family"] in ("spar", "communicate", "transfer"):
         other_raw = action.get("target_character_id")
         other = characters.get(UUID(str(other_raw))) if other_raw else None
@@ -717,6 +739,9 @@ def _direct_attempt(
                 ErrorCode.PRECONDITION_FAILED,
                 "actors are not co-located; arrange travel first",
             )
+    # Reserve the actor: a second queued attempt for the same actor fails
+    # deterministically instead of silently overwriting this one.
+    directed[character_id] = intent
     return character_id, intent
 
 
@@ -732,8 +757,11 @@ async def _accept_hook(
 
     async with factory() as uow:
         known = frozenset(c for c, row in characters.items() if row.life_status == LifeStatus.ALIVE)
-        existing = await uow.narrative.list_hooks_for_world(world_id)
-        if any(hook.title == targets["title"] for hook in existing):
+        receipt = await uow.commands.get_by_key(world_id, step.step_key)
+        # Per-step receipt, not title matching: a persisted receipt means
+        # this step already applied (crash recovery adopts it), while a
+        # distinct direction sharing the title applies its own step.
+        if receipt is not None:
             return
         active_hooks = await uow.narrative.count_active_hooks(world_id)
         active_arcs = await uow.narrative.count_active_arcs(world_id)
@@ -749,7 +777,19 @@ async def _accept_hook(
         )
         if not decision.accepted:
             raise DomainError(ErrorCode.VALIDATION_FAILED, decision.reason)
-        await accept_decision(uow, world_id, decision, "director", step.step_key, index)
+        try:
+            await accept_decision(uow, world_id, decision, "director", step.step_key, index)
+        except DomainError as exc:
+            if exc.code is not ErrorCode.IDEMPOTENCY_CONFLICT:
+                raise
+            # Lost a race with a concurrent applier of this same step: the
+            # winner's receipt owns this step key, so adopt it. Anything
+            # else means the conflict is not ours; re-raise it.
+            await uow.rollback()
+            async with factory() as fresh:
+                if await fresh.commands.get_by_key(world_id, step.step_key) is None:
+                    raise
+            return
         await uow.commit()
 
 
@@ -796,7 +836,14 @@ async def _create_condition(
 
     async with factory() as uow:
         existing = await uow.conditions.list_active_for_world(world_id)
-        if any(c.public_label == targets["label"] for c in existing):
+        # Same-filing identity, not bare-label matching: a persisted
+        # condition from this intervention is adopted on recovery, while a
+        # distinct direction sharing the label creates its own condition.
+        if any(
+            c.public_label == targets["label"]
+            and c.source_intervention_id == intervention_id
+            for c in existing
+        ):
             return
     duration = int(targets.get("duration_phases") or 1)
     async with factory() as uow:

@@ -2212,6 +2212,12 @@
       "InterventionView": {
         "additionalProperties": false,
         "properties": {
+          "client_request_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Client Request Id",
+            "type": "string"
+          },
           "failure_reason": {
             "default": "",
             "title": "Failure Reason",
@@ -2262,6 +2268,7 @@
           "mode",
           "role",
           "text",
+          "client_request_id",
           "version"
         ],
         "title": "InterventionView",

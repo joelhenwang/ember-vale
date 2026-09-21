@@ -62,14 +62,25 @@ async def start_activity(
     duration_phases: int | None = None,
     to_location_id: LocationId | None = None,
     skill: str | None = None,
+    direct_step_key: str | None = None,
 ) -> Activity:
-    """Begin one activity; travelers resolve their leg first."""
+    """Begin one activity; travelers resolve their leg first.
+
+    A direct_step_key stamps the owning queue step so recovery adopts it.
+    """
     character = await uow.characters.get(character_id)
     if character.world_id != world_id:
         raise DomainError(ErrorCode.NOT_FOUND, "character is not in this world")
     if character.life_status != LifeStatus.ALIVE:
         raise DomainError(ErrorCode.PRECONDITION_FAILED, "the dead start no activities")
     actives = await uow.activities.list_active_for_world(world_id)
+    if direct_step_key is not None:
+        owned = next(
+            (a for a in actives if a.payload.get("direct_step_key") == direct_step_key),
+            None,
+        )
+        if owned is not None:
+            return owned
     if _active_for(actives, character_id) is not None:
         raise DomainError(ErrorCode.PRECONDITION_FAILED, "character already has an active activity")
     payload: dict[str, object] = {}
@@ -105,6 +116,8 @@ async def start_activity(
             payload = {"skill": skill}
         if duration < 1:
             raise DomainError(ErrorCode.VALIDATION_FAILED, "duration needs a phase")
+    if direct_step_key is not None:
+        payload["direct_step_key"] = direct_step_key
     activity = Activity(
         id=new_activity_id(),
         world_id=world_id,

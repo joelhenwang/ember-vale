@@ -1062,6 +1062,7 @@ class InterventionView(BaseModel):
     mode: str
     role: str
     text: str
+    client_request_id: str = Field(min_length=1, max_length=128)
     steps: list[InterventionStepView] = Field(default_factory=list)
     failure_reason: str = ""
     version: int

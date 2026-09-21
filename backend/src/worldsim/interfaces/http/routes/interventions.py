@@ -40,6 +40,7 @@ def _view(intervention: Intervention, steps: list[InterventionStep]) -> api.Inte
     return api.InterventionView(
         id=intervention.id,
         world_id=intervention.world_id,
+        client_request_id=intervention.client_request_id,
         status=intervention.status.value,
         mode=intervention.mode.value,
         role=intervention.role,

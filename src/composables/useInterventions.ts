@@ -236,16 +236,28 @@ export function useInterventions(worldId: () => string, header: () => CallOption
   function select(id: string | null): void {
     const found = queue.value.find((entry) => entry.id === id) ?? null
     active.value = found
-    // Inspecting a filed item reconciles an ambiguous filing; clearing
-    // the selection alone never does.
-    if (found) pending.value = null
+    // Reconcile an ambiguous filing only against its own item: the
+    // request key and the owning world must both match. Selecting an
+    // unrelated direction preserves Retry/Discard, and clearing the
+    // selection alone never reconciles.
+    const last = pending.value
+    if (
+      found &&
+      last &&
+      found.client_request_id === last.key &&
+      found.world_id === last.worldId
+    ) {
+      pending.value = null
+    }
   }
 
-  /** Explicitly abandon the unresolved filing so a fresh key may be filed. */
+  /** Abandon local reconciliation of the unresolved filing so a fresh key may be filed.
+   * Discarding never cancels a possibly accepted server operation: the filing may
+   * still be queued server-side under its key. */
   function discardPending(): void {
     if (!pending.value) return
     pending.value = null
-    notice.value = { kind: 'info', text: 'Discarded the unresolved filing — file anew.' }
+    notice.value = { kind: 'info', text: 'Stopped tracking the unresolved filing — file anew.' }
   }
 
   function dispose(): void {

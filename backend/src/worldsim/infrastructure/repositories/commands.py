@@ -82,6 +82,29 @@ class SqlAlchemyCommandRepository:
 
 
 def _constraint_name(exc: BaseException) -> str:
-    diag = getattr(getattr(exc, "orig", None), "diag", None)
-    name = getattr(diag, "constraint_name", None)
-    return name if isinstance(name, str) else ""
+    """Name of the violated unique constraint across drivers.
+
+    psycopg surfaces it via ``orig.diag``; asyncpg (the runtime engine
+    driver) exposes ``constraint_name`` directly on the driver error, one
+    extra nesting level down: SQLAlchemy wraps the raw asyncpg error in
+    its own adapter error first. Without the walk, duplicate command
+    keys surface as raw IntegrityError and the execution gate cannot
+    report "taken".
+    """
+    seen: set[int] = set()
+    current: BaseException | None = exc
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        direct = getattr(current, "constraint_name", None)
+        if isinstance(direct, str) and direct:
+            return direct
+        diag = getattr(current, "diag", None)
+        name = getattr(diag, "constraint_name", None)
+        if isinstance(name, str) and name:
+            return name
+        for attr in ("orig", "__cause__", "__context__"):
+            nxt = getattr(current, attr, None)
+            if isinstance(nxt, BaseException) and id(nxt) not in seen:
+                break
+        current = nxt if isinstance(nxt, BaseException) else None
+    return ""

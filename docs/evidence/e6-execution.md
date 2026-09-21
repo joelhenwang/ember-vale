@@ -80,3 +80,36 @@ destination, scope) stays clarification.
 - The dev gateway never returns a plan, so the browser walkthrough
   still exercises submit/clarify/edit/cancel only; live execution
   proof is the deterministic integration above, per direction.
+
+## Follow-up: E6-A..E6-D corrections (2026-09-21, working tree on 6b4771a)
+
+- E6-A: `_validate_step` and `_direct_attempt` now assign (not
+  `setdefault`) server-stamped actor/snapshot and validate with the
+  outer family last, so model-supplied identities cannot survive.
+- E6-B: `_direct_attempt` reserves `directed[character_id]` on accept;
+  a second attempt for the same actor fails with "already directed
+  this phase" instead of silently overwriting.
+- E6-C: per-step effect identities — `direct_step_key` stamped on
+  activities, hook/arc apply guarded by the step's command receipt
+  (not title), conditions matched on owning intervention + label,
+  overrides under step-derived keys, plus an asyncpg-aware
+  `_constraint_name` walk so the gate reports "taken". One further
+  defect found by the new tests: `_claim_step_gate` returned False
+  without rolling back the poisoned session, so the caller's commit
+  raised `PendingRollbackError` (3 failures); it now rolls back on
+  `IDEMPOTENCY_CONFLICT`.
+- E6-D: `select()` reconciles pending only on matching
+  `client_request_id` + world (new `InterventionView.client_request_id`
+  projection, contract regenerated); discard only stops tracking.
+- Observed now (repo root, isolated compose DB): new
+  `test_intervention_execution_fixes.py` 7/7; neighbors 46/46
+  (`test_intervention_advance/queue`, `test_stage1_orchestration/api`,
+  `test_scene_commit`, `test_s2_director/roles`); `ruff check` clean on
+  touched files; `gen_ts_client.py --check` clean;
+  `useInterventions.spec.ts` 11/11 (one-off unsandboxed run).
+- Not re-run here: full frontend suite/typecheck/lint, HTTP journey,
+  browser walkthrough (need live stack/shell approval). Counts in the
+  Acceptance section above remain inherited until re-verified.
+- Corrected above: distinct directions sharing a title/label now apply
+  separately (per-step receipts); pending reconciles by key+world, not
+  any selection; identities are stamped, not defaulted.
