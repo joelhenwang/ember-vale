@@ -31,6 +31,7 @@ class Activity(BaseModel):
     duration_phases: int = Field(ge=1)
     progress_phases: int = Field(default=0, ge=0)
     payload: dict[str, Any] = Field(default_factory=dict)
+    direct_step_key: str | None = Field(default=None, max_length=128)
     version: int = Field(default=0, ge=0)
 
 

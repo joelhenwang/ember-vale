@@ -506,7 +506,7 @@ async def _apply_effect_step(
     completed beat replays stored results instead of doubling canon;
     recovery after partial execution re-derives through the per-step
     receipts above, which is lossless only where the effect left one
-    (activities, hooks/arcs, overrides, same-filing conditions).
+    (activities, hooks/arcs, overrides, conditions).
     """
     async with factory() as uow:
         owned = await _claim_step_gate(uow, world_id, intervention_id, step.seq)
@@ -675,24 +675,14 @@ async def _start_directed_activity(
     if character is None:
         raise DomainError(ErrorCode.NOT_FOUND, "directed character is gone")
     async with factory() as uow:
-        actives = await uow.activities.list_active_for_world(world_id)
-        same = next(
-            (
-                a
-                for a in actives
-                if a.character_id == character_id
-                and a.kind.value == targets["activity"]
-                and str(a.payload.get("to_location_id") or "")
-                == str(targets.get("to_location_id") or "")
-            ),
-            None,
-        )
-        # Per-step identity, not value matching: only this step's own
-        # activity (stamped with its key) is adopted. A same-valued
-        # activity from a distinct direction is never conflated here;
-        # starting then fails deterministically on the busy character.
-        if same is not None and same.payload.get("direct_step_key") == step.step_key:
-            return same.id
+        # Durable step receipt across every status (active, completed,
+        # interrupted, cancelled): only this step's own effect is
+        # adopted. A same-valued activity from a distinct direction
+        # carries a different key and never conflates; starting then
+        # fails deterministically on the busy character.
+        owned = await uow.activities.get_by_direct_step_key(world_id, step.step_key)
+        if owned is not None:
+            return owned.id
         to_location = targets.get("to_location_id")
         activity = await start_activity(
             uow,
@@ -835,30 +825,37 @@ async def _create_condition(
     from worldsim.domain.conditions import ConditionType
 
     async with factory() as uow:
-        existing = await uow.conditions.list_active_for_world(world_id)
-        # Same-filing identity, not bare-label matching: a persisted
-        # condition from this intervention is adopted on recovery, while a
-        # distinct direction sharing the label creates its own condition.
-        if any(
-            c.public_label == targets["label"]
-            and c.source_intervention_id == intervention_id
-            for c in existing
-        ):
+        # Durable step receipt across every status: a persisted condition
+        # from this step is adopted on recovery, even after it recovers
+        # or expires. Labels are display text: two steps sharing one
+        # apply their own conditions.
+        if await uow.conditions.get_by_step_key(world_id, step.step_key) is not None:
             return
     duration = int(targets.get("duration_phases") or 1)
-    async with factory() as uow:
-        await create_condition(
-            uow,
-            world_id,
-            ConditionType.ILLNESS,
-            str(targets["label"]),
-            str(targets.get("detail", "")),
-            [UUID(str(loc)) for loc in targets.get("location_ids", [])],
-            int(targets["severity"]),
-            index,
-            index + duration,
-            source_intervention_id=intervention_id,
-        )
+    try:
+        async with factory() as uow:
+            await create_condition(
+                uow,
+                world_id,
+                ConditionType.ILLNESS,
+                str(targets["label"]),
+                str(targets.get("detail", "")),
+                [UUID(str(loc)) for loc in targets.get("location_ids", [])],
+                int(targets["severity"]),
+                index,
+                index + duration,
+                source_intervention_id=intervention_id,
+                source_step_key=step.step_key,
+            )
+    except DomainError as exc:
+        if exc.code is not ErrorCode.IDEMPOTENCY_CONFLICT:
+            raise
+        # Lost a race with a concurrent applier of this same step; the
+        # failed session already rolled back on context exit. Adopt the
+        # winner's condition, else the conflict is not ours.
+        async with factory() as fresh:
+            if await fresh.conditions.get_by_step_key(world_id, step.step_key) is None:
+                raise
 
 
 async def cancel(

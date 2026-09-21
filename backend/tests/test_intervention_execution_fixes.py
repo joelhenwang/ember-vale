@@ -6,7 +6,9 @@
    instead of silently overwriting the first.
 3. Per-step effect identities: crash/overlap recovery adopts the recorded
    outcome, while distinct directions sharing a label or title apply
-   separately.
+   separately. Identity lives in a durable per-step column (not active
+   status or display text), so recovery works after effects go inactive
+   and overlapping appliers converge on one effect.
 """
 
 from __future__ import annotations
@@ -19,11 +21,13 @@ from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 
 from worldsim.application import interventions as service
+from worldsim.application.commands.activities import interrupt_activity
 from worldsim.application.interventions import Scope
 from worldsim.application.orchestration.service import derive_run_id
 from worldsim.domain.activities import TravelRoute
 from worldsim.domain.characters import Character
 from worldsim.domain.commands import WaitAction
+from worldsim.domain.conditions import ConditionStatus
 from worldsim.domain.enums import UserRole
 from worldsim.domain.ids import (
     new_character_id,
@@ -449,5 +453,165 @@ def test_override_step_key_replays_the_same_event(migrated_db: None) -> None:
         first = await service._apply_override_step(factory, ids["world"], 1, step, item.id)
         second = await service._apply_override_step(factory, ids["world"], 1, step, item.id)
         assert first == second
+
+    _run(_inner())
+
+
+def _condition_step(
+    label: str, detail: str, locations: list[UUID], severity: int = 2
+) -> dict[str, Any]:
+    return {
+        "kind": "world_condition",
+        "explanation": f"{label} spreads.",
+        "label": label,
+        "detail": detail,
+        "location_ids": [str(loc) for loc in locations],
+        "severity": severity,
+        "duration_phases": 3,
+    }
+
+
+def test_same_label_condition_steps_in_one_intervention_stay_separate(
+    migrated_db: None,
+) -> None:
+    """Two steps sharing a label keep their own scopes; recovery adopts."""
+
+    async def _inner() -> None:
+        ids = await _seed_world()
+        factory = _factory()
+        gateway = FakeGateway(profile=DIRECTOR_FAKE_PROFILE)
+        item = await _submit(
+            factory,
+            gateway,
+            ids["world"],
+            "A cough spreads",
+            "e6-fix-samelabel-1",
+            [
+                _condition_step(
+                    "Grey Cough", "A harsh cough at the Hearth.", [ids["hearth"]]
+                ),
+                _condition_step(
+                    "Grey Cough", "A harsh cough at the Market.", [ids["market"]], severity=4
+                ),
+            ],
+        )
+        batch = await service.claim_for_boundary(factory, ids["world"], "e6-fix")
+        await service.apply_batch(factory, ids["world"], 1, batch, set())
+        async with factory() as uow:
+            conditions = await uow.conditions.list_for_world(ids["world"])
+        assert len(conditions) == 2
+        scopes = {tuple(sorted(c.scope_location_ids)) for c in conditions}
+        assert scopes == {(ids["hearth"],), (ids["market"],)}
+        steps = sorted(await _steps_of(factory, item.id), key=lambda s: s.seq)
+        assert sorted(c.source_step_key for c in conditions) == sorted(
+            s.step_key for s in steps
+        )
+
+        # The first condition later goes inactive while its step was never
+        # marked: reapplying the step adopts the original, never a third.
+        async with factory() as uow:
+            first = await uow.conditions.get_condition(conditions[0].id)
+            await uow.conditions.save_condition(
+                first.model_copy(update={"status": ConditionStatus.RECOVERED}),
+                first.version,
+            )
+            await uow.commit()
+        await service._create_condition(
+            factory, ids["world"], 1, steps[0], steps[0].targets, item.id
+        )
+        async with factory() as uow:
+            again = await uow.conditions.list_for_world(ids["world"])
+        assert len(again) == 2
+
+    _run(_inner())
+
+
+def test_inactive_activity_is_adopted_not_reapplied(migrated_db: None) -> None:
+    """An interrupted effect still proves its step: adopt, don't duplicate."""
+
+    async def _inner() -> None:
+        ids = await _seed_world()
+        factory = _factory()
+        gateway = FakeGateway(profile=DIRECTOR_FAKE_PROFILE)
+        item = await _submit(
+            factory,
+            gateway,
+            ids["world"],
+            "Send Wren to Market",
+            "e6-fix-inactive-1",
+            [_travel_step(ids["wren"], ids["market"])],
+        )
+        (step,) = await _steps_of(factory, item.id)
+        chars = await _characters(factory, ids["world"])
+        # The crashed beat persisted the journey but never marked the step;
+        # the journey is later interrupted, so no active lookup can see it.
+        original = await service._start_directed_activity(
+            factory, ids["world"], 1, step, step.targets, chars
+        )
+        async with factory() as uow:
+            await interrupt_activity(uow, original, absolute=1)
+
+        await service._apply_effect_step(factory, ids["world"], 1, step, item.id, chars)
+
+        (done,) = await _steps_of(factory, item.id)
+        assert done.status == StepStatus.COMPLETED
+        assert done.result_activity_id == original
+        async with factory() as uow:
+            mine = await uow.activities.list_for_character(ids["world"], ids["wren"])
+        assert [a.id for a in mine] == [original]
+
+    _run(_inner())
+
+
+def test_overlapping_appliers_converge_on_one_activity(
+    migrated_db: None, monkeypatch: Any
+) -> None:
+    """Two appliers inside the effect window together persist one activity."""
+
+    async def _inner() -> None:
+        ids = await _seed_world()
+        factory = _factory()
+        gateway = FakeGateway(profile=DIRECTOR_FAKE_PROFILE)
+        item = await _submit(
+            factory,
+            gateway,
+            ids["world"],
+            "Send Wren to Market",
+            "e6-fix-overlap-1",
+            [_travel_step(ids["wren"], ids["market"])],
+        )
+        (step,) = await _steps_of(factory, item.id)
+        chars = await _characters(factory, ids["world"])
+        entered_a = asyncio.Event()
+        entered_b = asyncio.Event()
+        calls: list[str] = []
+        original = service._start_directed_activity
+
+        async def gated(
+            fac: Any, wid: UUID, index: int, stp: Any, targets: Any, characters: Any
+        ) -> Any:
+            calls.append("in")
+            (entered_a if len(calls) == 1 else entered_b).set()
+            # Both appliers wait here, so neither has persisted when the
+            # other starts: whatever interleaving follows, the step-key
+            # receipt plus the unique constraint converge on one effect.
+            await asyncio.gather(entered_a.wait(), entered_b.wait())
+            return await original(fac, wid, index, stp, targets, characters)
+
+        monkeypatch.setattr(service, "_start_directed_activity", gated)
+        await asyncio.gather(
+            service._apply_effect_step(factory, ids["world"], 1, step, item.id, chars),
+            service._apply_effect_step(factory, ids["world"], 1, step, item.id, chars),
+        )
+        # Both appliers really were inside the effect window together;
+        # anything less would not prove overlap.
+        assert calls == ["in", "in"]
+
+        (done,) = await _steps_of(factory, item.id)
+        assert done.status == StepStatus.COMPLETED
+        async with factory() as uow:
+            mine = await uow.activities.list_for_character(ids["world"], ids["wren"])
+        assert len(mine) == 1
+        assert done.result_activity_id == mine[0].id
 
     _run(_inner())

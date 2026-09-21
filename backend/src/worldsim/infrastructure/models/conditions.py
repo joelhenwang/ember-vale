@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 
+import sqlalchemy as sa
 from sqlalchemy import CheckConstraint, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
@@ -32,9 +33,16 @@ class WorldConditionRow(Base):
     source_intervention_id: Mapped[uuid.UUID | None] = mapped_column(
         PG_UUID(as_uuid=True), nullable=True, default=None
     )
+    source_step_key: Mapped[str | None] = mapped_column(String(128), nullable=True, default=None)
     version: Mapped[int] = mapped_column(Integer, default=0)
 
     __table_args__ = (
         CheckConstraint("version >= 0", name="ck_condition_version"),
         CheckConstraint("severity BETWEEN 1 AND 5", name="ck_condition_severity"),
+        sa.Index(
+            "uq_condition_source_step_key",
+            "source_step_key",
+            unique=True,
+            postgresql_where=sa.text("source_step_key IS NOT NULL"),
+        ),
     )

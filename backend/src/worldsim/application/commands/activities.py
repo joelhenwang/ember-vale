@@ -73,14 +73,14 @@ async def start_activity(
         raise DomainError(ErrorCode.NOT_FOUND, "character is not in this world")
     if character.life_status != LifeStatus.ALIVE:
         raise DomainError(ErrorCode.PRECONDITION_FAILED, "the dead start no activities")
-    actives = await uow.activities.list_active_for_world(world_id)
     if direct_step_key is not None:
-        owned = next(
-            (a for a in actives if a.payload.get("direct_step_key") == direct_step_key),
-            None,
-        )
+        # Durable step receipt across every status: an already-persisted
+        # effect is adopted even after it completes, is interrupted, or
+        # is cancelled. Step keys identify effects; values never do.
+        owned = await uow.activities.get_by_direct_step_key(world_id, direct_step_key)
         if owned is not None:
             return owned
+    actives = await uow.activities.list_active_for_world(world_id)
     if _active_for(actives, character_id) is not None:
         raise DomainError(ErrorCode.PRECONDITION_FAILED, "character already has an active activity")
     payload: dict[str, object] = {}
@@ -127,8 +127,21 @@ async def start_activity(
         start_absolute=absolute,
         duration_phases=duration,
         payload=payload,
+        direct_step_key=direct_step_key,
     )
-    await uow.activities.add(activity)
+    try:
+        await uow.activities.add(activity)
+    except DomainError as exc:
+        if exc.code is not ErrorCode.IDEMPOTENCY_CONFLICT or direct_step_key is None:
+            raise
+        # Lost a race with a concurrent applier of this same step: roll
+        # back and adopt the winner's persisted effect. Anything else
+        # means the conflict is not ours; re-raise it.
+        await uow.rollback()
+        owned = await uow.activities.get_by_direct_step_key(world_id, direct_step_key)
+        if owned is None:
+            raise
+        return owned
     await uow.commit()
     return activity
 

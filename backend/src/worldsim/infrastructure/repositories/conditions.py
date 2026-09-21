@@ -5,12 +5,18 @@ from __future__ import annotations
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError as SqlIntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from worldsim.domain.conditions import ConditionStatus, ConditionType, WorldCondition
+from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.ids import WorldConditionId
 from worldsim.infrastructure.models.conditions import WorldConditionRow
-from worldsim.infrastructure.repositories._common import missing, version_conflict
+from worldsim.infrastructure.repositories._common import (
+    missing,
+    unique_violation,
+    version_conflict,
+)
 
 
 class SqlAlchemyConditionRepository:
@@ -30,27 +36,49 @@ class SqlAlchemyConditionRepository:
             ends_absolute=row.ends_absolute,
             status=ConditionStatus(row.status),
             source_intervention_id=row.source_intervention_id,
+            source_step_key=row.source_step_key,
             version=row.version,
         )
 
     async def add_condition(self, condition: WorldCondition) -> None:
-        self._session.add(
-            WorldConditionRow(
-                id=condition.id,
-                world_id=condition.world_id,
-                kind=condition.kind.value,
-                public_label=condition.public_label,
-                detail=condition.detail,
-                scope_location_ids=list(condition.scope_location_ids),
-                severity=condition.severity,
-                started_absolute=condition.started_absolute,
-                ends_absolute=condition.ends_absolute,
-                status=condition.status.value,
-                source_intervention_id=condition.source_intervention_id,
-                version=condition.version,
+        try:
+            self._session.add(
+                WorldConditionRow(
+                    id=condition.id,
+                    world_id=condition.world_id,
+                    kind=condition.kind.value,
+                    public_label=condition.public_label,
+                    detail=condition.detail,
+                    scope_location_ids=list(condition.scope_location_ids),
+                    severity=condition.severity,
+                    started_absolute=condition.started_absolute,
+                    ends_absolute=condition.ends_absolute,
+                    status=condition.status.value,
+                    source_intervention_id=condition.source_intervention_id,
+                    source_step_key=condition.source_step_key,
+                    version=condition.version,
+                )
             )
-        )
-        await self._session.flush()
+            await self._session.flush()
+        except SqlIntegrityError as exc:
+            if unique_violation(exc, "uq_condition_source_step_key"):
+                raise DomainError(
+                    ErrorCode.IDEMPOTENCY_CONFLICT,
+                    f"duplicate condition step key: {condition.source_step_key}",
+                ) from exc
+            raise
+
+    async def get_by_step_key(self, world_id: UUID, step_key: str) -> WorldCondition | None:
+        """Durable step receipt across every status, not just active rows."""
+        row = (
+            await self._session.execute(
+                select(WorldConditionRow).where(
+                    WorldConditionRow.world_id == world_id,
+                    WorldConditionRow.source_step_key == step_key,
+                )
+            )
+        ).scalar_one_or_none()
+        return self._to_domain(row) if row is not None else None
 
     async def get_condition(self, condition_id: WorldConditionId) -> WorldCondition:
         row = await self._session.get(WorldConditionRow, condition_id)

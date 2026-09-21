@@ -36,6 +36,7 @@ async def create_condition(
     starts_absolute: int,
     ends_absolute: int,
     source_intervention_id: UUID | None = None,
+    source_step_key: str | None = None,
 ) -> WorldCondition:
     """Persist a bounded condition after validating scope and window."""
     if not location_ids:
@@ -57,6 +58,7 @@ async def create_condition(
         started_absolute=starts_absolute,
         ends_absolute=ends_absolute,
         source_intervention_id=source_intervention_id,
+        source_step_key=source_step_key,
     )
     await uow.conditions.add_condition(condition)
     await uow.commit()

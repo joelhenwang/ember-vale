@@ -5,13 +5,19 @@ from __future__ import annotations
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError as SqlIntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from worldsim.domain.activities import Activity, TravelRoute
 from worldsim.domain.enums import ActivityKind, ActivityStatus
+from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.ids import ActivityId, RouteId
 from worldsim.infrastructure.models.activities import ActivityRow, TravelRouteRow
-from worldsim.infrastructure.repositories._common import missing, version_conflict
+from worldsim.infrastructure.repositories._common import (
+    missing,
+    unique_violation,
+    version_conflict,
+)
 
 
 class SqlAlchemyActivityRepository:
@@ -29,6 +35,7 @@ class SqlAlchemyActivityRepository:
             duration_phases=row.duration_phases,
             progress_phases=row.progress_phases,
             payload=dict(row.payload),
+            direct_step_key=row.direct_step_key,
             version=row.version,
         )
 
@@ -62,21 +69,42 @@ class SqlAlchemyActivityRepository:
         return [self._to_domain(row) for row in rows]
 
     async def add(self, activity: Activity) -> None:
-        self._session.add(
-            ActivityRow(
-                id=activity.id,
-                world_id=activity.world_id,
-                character_id=activity.character_id,
-                kind=activity.kind.value,
-                status=activity.status.value,
-                start_absolute=activity.start_absolute,
-                duration_phases=activity.duration_phases,
-                progress_phases=activity.progress_phases,
-                payload=dict(activity.payload),
-                version=activity.version,
+        try:
+            self._session.add(
+                ActivityRow(
+                    id=activity.id,
+                    world_id=activity.world_id,
+                    character_id=activity.character_id,
+                    kind=activity.kind.value,
+                    status=activity.status.value,
+                    start_absolute=activity.start_absolute,
+                    duration_phases=activity.duration_phases,
+                    progress_phases=activity.progress_phases,
+                    payload=dict(activity.payload),
+                    direct_step_key=activity.direct_step_key,
+                    version=activity.version,
+                )
             )
-        )
-        await self._session.flush()
+            await self._session.flush()
+        except SqlIntegrityError as exc:
+            if unique_violation(exc, "uq_activity_direct_step_key"):
+                raise DomainError(
+                    ErrorCode.IDEMPOTENCY_CONFLICT,
+                    f"duplicate activity step key: {activity.direct_step_key}",
+                ) from exc
+            raise
+
+    async def get_by_direct_step_key(self, world_id: UUID, step_key: str) -> Activity | None:
+        """Durable step receipt across every status, not just active rows."""
+        row = (
+            await self._session.execute(
+                select(ActivityRow).where(
+                    ActivityRow.world_id == world_id,
+                    ActivityRow.direct_step_key == step_key,
+                )
+            )
+        ).scalar_one_or_none()
+        return self._to_domain(row) if row is not None else None
 
     async def save(self, activity: Activity, expected_version: int) -> Activity:
         row = await self._session.get(ActivityRow, activity.id)

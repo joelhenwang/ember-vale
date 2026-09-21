@@ -45,6 +45,7 @@ class WorldCondition(BaseModel):
     ends_absolute: int = Field(ge=0)
     status: ConditionStatus = ConditionStatus.ACTIVE
     source_intervention_id: InterventionId | None = None
+    source_step_key: str | None = Field(default=None, max_length=128)
     version: int = Field(default=0, ge=0)
 
 

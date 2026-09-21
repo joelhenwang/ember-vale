@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
+import sqlalchemy as sa
 from sqlalchemy import CheckConstraint, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
@@ -34,11 +35,18 @@ class ActivityRow(Base):
     progress_phases: Mapped[int] = mapped_column(Integer, default=0)
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     version: Mapped[int] = mapped_column(Integer, default=0)
+    direct_step_key: Mapped[str | None] = mapped_column(String(128), nullable=True, default=None)
 
     __table_args__ = (
         CheckConstraint("version >= 0", name="ck_activity_version"),
         CheckConstraint("duration_phases >= 1", name="ck_activity_duration"),
         CheckConstraint("progress_phases >= 0", name="ck_activity_progress"),
+        sa.Index(
+            "uq_activity_direct_step_key",
+            "direct_step_key",
+            unique=True,
+            postgresql_where=sa.text("direct_step_key IS NOT NULL"),
+        ),
     )
 
 
