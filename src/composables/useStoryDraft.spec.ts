@@ -20,6 +20,9 @@ let patchHold = false
 let heldPatches: Array<() => void> = []
 /** Draft ids whose GET load hangs until released. */
 let heldGets = new Map<string, Array<() => void>>()
+/** When true, story-create POSTs are held for manual release. */
+let storiesHold = false
+let heldStories: Array<{ resolve: (res: Response) => void; reject: (err: Error) => void }> = []
 
 const SEL: NewStorySelections = {
   world: { presetId: 'w', presetRevision: 2 },
@@ -50,6 +53,8 @@ function installFetch(): void {
   patchHold = false
   heldPatches = []
   heldGets = new Map()
+  storiesHold = false
+  heldStories = []
   resetDraftMemoryForTests()
   vi.stubGlobal(
     'fetch',
@@ -86,6 +91,11 @@ function installFetch(): void {
         return json({ valid: validOverride ?? true, issues: [] })
       }
       if (method === 'POST' && url.pathname === '/api/v1/stories') {
+        if (storiesHold) {
+          return new Promise<Response>((resolve, reject) => {
+            heldStories.push({ resolve, reject })
+          })
+        }
         const failure = storyFailures.shift()
         if (failure) throw failure
         storyPosts.push({ body, key: headers['Idempotency-Key'] ?? null })
@@ -347,8 +357,16 @@ describe('useStoryDraft guarded workflow', () => {
     expect(storiesPosts().at(-1)?.headers['Idempotency-Key']).toBe(firstKeys[0])
   })
 
-  it('a reopened wizard replays the receipt without fresh identity', async () => {
+  it('a reopened wizard replays the persisted receipt without fresh identity', async () => {
     installFetch()
+    // Fake persistent storage: proves recovery from storage after a full
+    // reload, not just the module-level map.
+    const store = new Map<string, string>()
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k)
+    })
     storyFailures = [new Error('REQUEST_TIMEOUT'), new Error('REQUEST_TIMEOUT')]
     const first = useStoryDraft()
     await first.openNew(SEL, 'world')
@@ -356,8 +374,9 @@ describe('useStoryDraft guarded workflow', () => {
     const originalKey = storiesPosts()[0].headers['Idempotency-Key']
     const patchesBefore = seen.filter((s) => s.method === 'PATCH').length
 
-    // Leaving and reopening the wizard: a new controller instance, same
-    // module-level receipt. Begin must replay, not re-save/re-key.
+    // Full reload: module memory gone, storage kept. A new controller must
+    // still replay the original receipt instead of a fresh save/key.
+    resetDraftMemoryForTests()
     const second = useStoryDraft()
     await second.openExisting('d-1')
     expect(second.ambiguous.value).toBe(true)
@@ -366,6 +385,44 @@ describe('useStoryDraft guarded workflow', () => {
     const replay = storyTargets().at(-1) as Record<string, unknown>
     expect(replay['draft_id']).toBe('d-1')
     expect(storiesPosts().at(-1)?.headers['Idempotency-Key']).toBe(originalKey)
+  })
+
+  it('a delayed older save never deletes a newer recovery snapshot', async () => {
+    installFetch()
+    patchHold = true
+    const ctl = useStoryDraft()
+    await ctl.openNew(SEL, 'world')
+    const older = { ...SEL, title: 'Older title' }
+    const newer = { ...SEL, title: 'Newest title' }
+    const pendingOlder = ctl.save(older, 'world')
+    await vi.waitFor(() => expect(heldPatches.length).toBeGreaterThan(0))
+    // Edit + leave while the older PATCH is pending: the route guard
+    // snapshots the newest input into this draft's recovery slot.
+    ctl.storeRecovery('d-1', newer, 'world')
+    patchHold = false
+    heldPatches.forEach((release) => release())
+    expect(await pendingOlder).toBe(true)
+    // The server saved the older input, but the newer local copy survives.
+    expect(ctl.readRecovery('d-1')?.selections.title).toBe('Newest title')
+    // A save covering the newest snapshot clears it.
+    expect(await ctl.save(newer, 'world')).toBe(true)
+    expect(ctl.readRecovery('d-1')).toBeNull()
+  })
+
+  it('disposing during creation reconciles without applying', async () => {
+    installFetch()
+    storiesHold = true
+    const ctl = useStoryDraft()
+    await ctl.openNew(SEL, 'world')
+    const pending = ctl.createWorkflow(SEL, 'review')
+    await vi.waitFor(() => expect(heldStories).toHaveLength(1))
+    ctl.dispose()
+    heldStories[0].resolve(json({ world_id: 'w1', replayed: false }))
+    // The server operation completed and reconciled, but the departed
+    // lifecycle applies nothing and navigates nowhere.
+    await expect(pending).resolves.toBeNull()
+    expect(ctl.ambiguous.value).toBe(false)
+    expect(ctl.createError.value).toBeNull()
   })
 
   it("queued A saves behind B's navigation never touch B", async () => {

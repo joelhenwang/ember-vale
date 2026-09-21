@@ -298,6 +298,10 @@ watch(
 
 onUnmounted(() => {
   window.removeEventListener('beforeunload', beforeUnloadGuard)
+  // Leaving invalidates this controller's lifecycle: an outstanding create
+  // may still reconcile its draft's receipt, but it can no longer redirect
+  // this departed view.
+  draftCtl.dispose()
 })
 
 function applyRecoverySelections(s: NewStorySelections): void {
@@ -482,9 +486,11 @@ async function create(): Promise<void> {
   const targetId = draftCtl.draft.value?.id
   if (!targetId || draftCtl.creating.value) return
   // The workflow is owned by the draft mounted here: a late completion
-  // after a draft switch navigates nowhere and touches no other draft.
+  // after a draft switch or after leaving the wizard navigates nowhere and
+  // touches no other draft.
   const worldId = await draftCtl.createWorkflow(selections.value, slugOf(step.value))
   if (!worldId) return
+  if (router.currentRoute.value.name !== 'new-story') return
   if (draftCtl.draft.value?.id !== targetId) {
     draftCtl.notice.value =
       'The previous draft finished creating — find its story on the Stories shelf.'

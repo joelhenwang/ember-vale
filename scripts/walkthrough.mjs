@@ -307,14 +307,16 @@ try {
     const draftId = page.url().match(/[?&]draft=([^&]+)/)[1]
     // Leave for Home without pressing Save: the leave snapshot must keep Wren.
     await page.getByRole('link', { name: 'Home' }).click()
-    await page.waitForURL(`${BASE}/`, { timeout: 15000 })
+    await page.waitForURL(`${BASE}/`, { timeout: 30000 })
     await page.goto(`${BASE}/new-story?draft=${draftId}`, { waitUntil: 'networkidle' })
-    await page.getByText('Selected', { exact: false }).waitFor({ timeout: 15000 })
+    await page.getByText('Selected', { exact: false }).waitFor({ timeout: 30000 })
     const restored = await page.locator('main').innerText()
     record(S, 'unsaved cast survives Home and back', /1 of 6 max/.test(restored), '')
     record(S, 'recovery is labeled local, not saved', /locally/i.test(restored), '')
 
-    // Fail a save, edit again, leave, reopen: the newest edit survives.
+    // Fail a save, edit again AFTER the failure, leave, reopen: the
+    // newest edit — not the pre-failure one — survives.
+    const newestTitle = `Newest edit ${Date.now().toString(36)}`
     docker('stop ember-vale-api-1')
     try {
       await page.getByRole('button', { name: /Ash/ }).click()
@@ -322,17 +324,58 @@ try {
       await page
         .getByText(/save failed/i)
         .first()
-        .waitFor({ timeout: 30000 })
+        .waitFor({ timeout: 60000 })
+      await page.getByRole('button', { name: 'Story' }).click()
+      await page.getByLabel('Title').fill(newestTitle)
       await page.getByRole('link', { name: 'Home' }).click()
-      await page.waitForURL(`${BASE}/`, { timeout: 15000 })
+      await page.waitForURL(`${BASE}/`, { timeout: 30000 })
     } finally {
       docker('start ember-vale-api-1')
       await waitApiReady()
     }
     await page.goto(`${BASE}/new-story?draft=${draftId}`, { waitUntil: 'networkidle' })
-    await page.getByText('Selected', { exact: false }).waitFor({ timeout: 15000 })
+    // Recovery restores the saved step too (Title step here): assert the
+    // input value, then step back to Characters for the cast count.
+    await page.getByLabel('Title').waitFor({ timeout: 60000 })
+    const restoredTitle = await page.getByLabel('Title').inputValue()
+    await page.getByRole('button', { name: 'Characters' }).click()
+    await page.getByText('Selected', { exact: false }).waitFor({ timeout: 30000 })
     const afterFailure = await page.locator('main').innerText()
-    record(S, 'post-failure edit survives leave and reopen', /2 of 6 max/.test(afterFailure), '')
+    record(
+      S,
+      'post-failure edit survives leave and reopen',
+      /2 of 6 max/.test(afterFailure) && restoredTitle === newestTitle,
+      restoredTitle
+    )
+    await ctx.close()
+  }
+
+  // ---- Begin, leave mid-create, release: no redirect --------------------
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+    const page = await ctx.newPage()
+    const S = 'createleave'
+    await page.goto(`${BASE}/new-story?quickstart=1`, { waitUntil: 'networkidle' })
+    await page.getByRole('button', { name: 'Begin the story' }).waitFor({ timeout: 30000 })
+    // Pause first so the create response is deterministically held: Begin
+    // issues the POST, then the user leaves while it is still pending.
+    docker('pause ember-vale-api-1')
+    try {
+      await page.getByRole('button', { name: 'Begin the story' }).click()
+      await page.getByRole('button', { name: 'Creating…' }).waitFor({ timeout: 15000 })
+      await page.getByRole('link', { name: 'Home' }).click()
+      await page.waitForURL(`${BASE}/`, { timeout: 15000 })
+    } finally {
+      docker('unpause ember-vale-api-1')
+      await waitApiReady()
+    }
+    await page.waitForTimeout(3000)
+    record(
+      S,
+      'departed user is not redirected by the late create',
+      page.url() === `${BASE}/`,
+      page.url()
+    )
     await ctx.close()
   }
 

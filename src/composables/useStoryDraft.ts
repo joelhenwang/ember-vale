@@ -76,6 +76,12 @@ export interface RecoveryDraft {
   step: string
   /** ISO timestamp of the snapshot, for newer-than-server comparison. */
   at: string
+  /**
+   * Canonical snapshot the save that produced this entry covered. A later
+   * successful save clears the entry only when it covers this exact
+   * snapshot — a delayed older save must never delete newer edits.
+   */
+  snapshot: string
 }
 
 export type SaveState = 'clean' | 'saving' | 'unsaved' | 'failed'
@@ -154,6 +160,9 @@ interface QueuedSave {
 }
 
 export function useStoryDraft() {
+  // Merge receipts persisted by earlier mounts (or a pre-reload session):
+  // a fresh controller recovers other mounts' protection from storage.
+  loadPersistedReceipts()
   const draft = ref<StoryDraftView | null>(null)
   const busy = ref(false)
   const notice = ref<string | null>(null)
@@ -218,7 +227,8 @@ export function useStoryDraft() {
       draftId,
       selections,
       step,
-      at: new Date().toISOString()
+      at: new Date().toISOString(),
+      snapshot: snapshotOf(selections, step)
     }
     memoryRecovery.set(draftId, recovery)
     try {
@@ -244,6 +254,7 @@ export function useStoryDraft() {
     if (!Array.isArray(s.cast)) return null
     if (s.mode?.role !== 'watcher' && s.mode?.role !== 'player') return null
     if (typeof s.title !== 'string') return null
+    if (typeof r.snapshot !== 'string') return null
     return r as RecoveryDraft
   }
 
@@ -264,6 +275,26 @@ export function useStoryDraft() {
     memoryRecovery.delete(draftId)
     try {
       localStorage.removeItem(recoveryKey(draftId))
+    } catch {
+      /* best-effort */
+    }
+  }
+
+  /**
+   * Clear a recovery entry only when the successful save covered its exact
+   * snapshot. A delayed older save resolving after newer edits were
+   * snapshotted must retain the newer entry.
+   */
+  function clearRecoveryIfCovered(draftId: string, coveredSnapshot: string): void {
+    const memory = memoryRecovery.get(draftId)
+    if (memory && memory.snapshot === coveredSnapshot) memoryRecovery.delete(draftId)
+    try {
+      const raw = localStorage.getItem(recoveryKey(draftId))
+      if (!raw) return
+      const parsed = JSON.parse(raw) as Partial<RecoveryDraft>
+      if (parsed.snapshot === coveredSnapshot || typeof parsed.snapshot !== 'string') {
+        localStorage.removeItem(recoveryKey(draftId))
+      }
     } catch {
       /* best-effort */
     }
@@ -373,11 +404,13 @@ export function useStoryDraft() {
       if (!isCurrent()) {
         // A's queued save still persisted A behind B's navigation, but B's
         // mounted state, acknowledgment, and notices are untouched.
+        // Recovery still clears only if this save covered its snapshot.
+        clearRecoveryIfCovered(draftId, snapshotOf(selections, step))
         return true
       }
       draft.value = updated
       markAcked(draftId, selections, step)
-      clearRecovery(draftId)
+      clearRecoveryIfCovered(draftId, snapshotOf(selections, step))
       return true
     } catch (err) {
       const current = draft.value
@@ -404,6 +437,19 @@ export function useStoryDraft() {
     } finally {
       busy.value = false
     }
+  }
+
+  /**
+   * Invalidate this controller's lifecycle on view departure or disposal.
+   * Already-issued server operations still complete and reconcile their
+   * owning draft's receipts, but late completions change no mounted state
+   * and navigate nowhere. Receipts, errors, and recovery persist keyed by
+   * draft for the next mount.
+   */
+  function dispose(): void {
+    opCycle += 1
+    creating.value = false
+    busy.value = false
   }
 
   /** Persist selections; on a stale version, refresh and keep input. */
@@ -546,6 +592,7 @@ export function useStoryDraft() {
     storeRecovery,
     openNew,
     openExisting,
+    dispose,
     save,
     validate,
     createWorkflow

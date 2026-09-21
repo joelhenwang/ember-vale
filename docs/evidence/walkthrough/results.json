@@ -1,7 +1,7 @@
 {
   "ok": true,
   "base": "http://127.0.0.1:5173",
-  "at": "2026-09-21T00:31:19.123Z",
+  "at": "2026-09-21T00:51:36.186Z",
   "results": [
     {
       "scenario": "observer",
@@ -19,7 +19,7 @@
       "scenario": "observer",
       "step": "begin navigates to the room",
       "ok": true,
-      "detail": "744ad0c5-7ffb-4fd7-9ae0-040c7ddf353a"
+      "detail": "d878cb58-1df9-4f5b-8177-de510e0cd480"
     },
     {
       "scenario": "observer",
@@ -127,7 +127,13 @@
       "scenario": "dirtynav",
       "step": "post-failure edit survives leave and reopen",
       "ok": true,
-      "detail": ""
+      "detail": "Newest edit muaj3pq2"
+    },
+    {
+      "scenario": "createleave",
+      "step": "departed user is not redirected by the late create",
+      "ok": true,
+      "detail": "http://127.0.0.1:5173/"
     },
     {
       "scenario": "failedsave",
