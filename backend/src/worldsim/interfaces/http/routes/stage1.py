@@ -18,7 +18,6 @@ from worldsim.application.capabilities import Capability, parse_role, require_ca
 from worldsim.application.commands.party import begin_adventure, create_character, link_member
 from worldsim.application.conditions import tick_conditions
 from worldsim.application.execution import guarded, new_owner, phase_run_id, phase_scope
-from worldsim.application.interventions import apply_batch, claim_for_boundary
 from worldsim.application.orchestration.stage1 import Stage1Orchestrator, Stage1PhaseReport
 from worldsim.application.queries.suggestions import suggestions_for
 from worldsim.application.stories.guards import require_unarchived
@@ -330,14 +329,13 @@ async def advance(body: api.Stage1AdvanceRequest, request: Request) -> api.Stage
     orchestrator = _stage1(request)
 
     async def _run() -> Stage1PhaseReport:
-        batch = await claim_for_boundary(factory, body.world_id, owner)
-        directed = await apply_batch(
-            factory, body.world_id, body.absolute_index, batch, set(player_intents)
-        )
-        merged = dict(player_intents)
-        merged.update(directed)
+        # The queue drains inside the beat (past its duplicate replay):
+        # effects apply pre-decision, attempts merge into the decision and
+        # complete only once their scenes commit.
         await tick_conditions(factory, body.world_id, body.absolute_index)
-        return await orchestrator.advance_phase(body.world_id, body.absolute_index, merged)
+        return await orchestrator.advance_phase(
+            body.world_id, body.absolute_index, player_intents, drain_queue=True
+        )
 
     factory = state.uow_factory()
     report = await guarded(

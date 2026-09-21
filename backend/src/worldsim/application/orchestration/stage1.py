@@ -79,6 +79,12 @@ from worldsim.application.graphs.summary import (
     load_digest_prompt,
     load_summary_prompt,
 )
+from worldsim.application.interventions import (
+    apply_batch,
+    claim_for_boundary,
+    plan_attempts,
+    record_attempts,
+)
 from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
 from worldsim.application.ports.model_gateway import ModelGateway
 from worldsim.application.settings.resolution import SamplingParams, resolve_sampling
@@ -341,6 +347,7 @@ class Stage1Orchestrator:
         world_id: UUID,
         index: int,
         player_intents: Mapping[UUID, ActionIntent] | None = None,
+        drain_queue: bool = False,
     ) -> Stage1PhaseReport:
         """Advance one phase end to end (manual advancement unit)."""
         await self._tasks.reconcile()
@@ -377,7 +384,20 @@ class Stage1Orchestrator:
         await self._tick(world_id, run_id, index)
         sealed = await self._seal(world_id, run_id, index)
         await self._director_phase(world_id, run_id, index, sealed)
-        intents = await self._decide_all(world_id, run_id, sealed, player_intents or {})
+        # Queued directions drain inside the beat (past the duplicate
+        # replay above): effects apply pre-decision, attempts merge into
+        # the decision and complete only once their scenes commit.
+        directed: dict[UUID, tuple[ActionIntent, str]] = {}
+        if drain_queue:
+            batch = await claim_for_boundary(self._factory, world_id, f"s1:{run_id.hex[:8]}")
+            await apply_batch(self._factory, world_id, index, batch, set(player_intents or {}))
+            for planned in await plan_attempts(
+                self._factory, world_id, sealed.snapshot_id, set(player_intents or {})
+            ):
+                directed[planned.actor] = (planned.intent, planned.ref)
+        merged = dict(player_intents or {})
+        merged.update({actor: intent for actor, (intent, _ref) in directed.items()})
+        intents = await self._decide_all(world_id, run_id, sealed, merged, directed)
         await self._set_state(run_id, PhaseRunState.INTENTS_COMPLETE)
         quiet = is_quiet_phase(intent.action.family for intent in intents)
         async with self._factory() as uow:
@@ -1212,6 +1232,7 @@ class Stage1Orchestrator:
         run_id: UUID,
         sealed: SealedPhase,
         player_intents: Mapping[UUID, ActionIntent],
+        directed: Mapping[UUID, tuple[ActionIntent, str]] | None = None,
     ) -> list[Intent]:
         """Concurrent character decisions after the snapshot seal (barrier)."""
         async with self._factory() as uow:
@@ -1226,7 +1247,14 @@ class Stage1Orchestrator:
         decisions = await asyncio.gather(
             *(
                 self._decide_one(
-                    world_id, run_id, sealed, character, known, place_ids, player_intents
+                    world_id,
+                    run_id,
+                    sealed,
+                    character,
+                    known,
+                    place_ids,
+                    player_intents,
+                    directed or {},
                 )
                 for character in sorted(characters, key=lambda c: c.id.hex)
             )
@@ -1242,6 +1270,7 @@ class Stage1Orchestrator:
         known: list[str],
         place_ids: list[str],
         player_intents: Mapping[UUID, ActionIntent],
+        directed: Mapping[UUID, tuple[ActionIntent, str]],
     ) -> Intent:
         task_run_id = derive_task_id(run_id, "character", character.id)
         owner = f"s1char:{run_id.hex[:8]}"
@@ -1264,6 +1293,30 @@ class Stage1Orchestrator:
                 author_character_id=character.id,
                 action=player_action,
                 idempotency_key=f"player:{task_run_id}",
+            )
+            await self._finish_task(task_run_id, owner, True)
+            return intent
+        direct = directed.get(character.id)
+        if direct is not None:
+            direct_intent, ref = direct
+            denial = precheck_action(
+                direct_intent,
+                known_character_ids=frozenset(known),
+                location_ids=frozenset(place_ids),
+            )
+            if denial is not None:
+                await self._finish_task(task_run_id, owner, False)
+                raise DomainError(
+                    ErrorCode.VALIDATION_FAILED, f"directed intent rejected: {denial}"
+                )
+            intent = Intent(
+                id=derive_intent_id(world_id, sealed.snapshot_id, character.id),
+                world_id=world_id,
+                snapshot_id=sealed.snapshot_id,
+                phase_run_id=run_id,
+                author_character_id=character.id,
+                action=direct_intent,
+                idempotency_key=f"direct:{ref}",
             )
             await self._finish_task(task_run_id, owner, True)
             return intent
@@ -1525,6 +1578,15 @@ class Stage1Orchestrator:
                 memories=memories,
             )
         )
+        # A directed attempt is completed only now that its execution is
+        # durably recorded: the scene event is the proof.
+        directed_outcomes = [
+            (member.idempotency_key[len("direct:"):], result.event_id)
+            for member in members
+            if member.idempotency_key.startswith("direct:")
+        ]
+        if directed_outcomes:
+            await record_attempts(self._factory, directed_outcomes)
         self._fire("before_narration")
         narration = await self._narrate_scene(
             world_id, run_id, scene, result.event_id, quiet, over_budget

@@ -139,7 +139,7 @@ const nextIndex = computed(() => (detail.value?.absolute_index ?? 0) + 1)
 
 async function advance(): Promise<void> {
   await story.advance()
-  // Queued directions claim at phase boundaries: re-read their states.
+  // Queued directions drain during the beat: re-read their states afterward.
   if (seat.value) await queueCtl.refresh()
 }
 
@@ -318,6 +318,10 @@ onUnmounted(() => {
       <section v-if="seat" class="play__card" aria-label="Direct the story">
         <h2>Direct the story</h2>
         <p class="play__empty">
+          Directions can be submitted, edited, and cancelled. Queued directions apply when beats
+          commit: starting travel begins a journey — arrival follows when it completes.
+        </p>
+        <p class="play__empty">
           {{
             seat === 'deity'
               ? 'God mode forces effects: travel, bouts, overrides and persistent conditions.'
@@ -345,6 +349,13 @@ onUnmounted(() => {
             :disabled="queueCtl.busy.value"
             @click="queueCtl.retry()">
             Retry filing
+          </MenuButton>
+          <MenuButton
+            v-if="queueCtl.pending.value"
+            variant="outline"
+            :disabled="queueCtl.busy.value"
+            @click="queueCtl.discardPending()">
+            Discard
           </MenuButton>
         </div>
         <p

@@ -31,6 +31,11 @@ interface PendingSubmission {
   key: string
   mode: DirectMode
   text: string
+  /** Owning world: a retry never re-targets another world. */
+  worldId: string
+  /** Seat header the filing went out under: a seat change must not
+   * silently reinterpret its retry. */
+  role: string | undefined
 }
 
 function newRequestId(): string {
@@ -78,10 +83,25 @@ export function useInterventions(worldId: () => string, header: () => CallOption
   }
 
   async function submit(mode: DirectMode, text: string): Promise<InterventionView | null> {
+    // An unresolved filing blocks a fresh key: reconcile (select the
+    // filed item) or discard it explicitly before filing anew.
+    if (pending.value) {
+      notice.value = {
+        kind: 'error',
+        text: 'A direction is still unresolved — retry the filing or discard it before filing anew.'
+      }
+      return null
+    }
     const seen = cycle
     busy.value = true
     notice.value = null
-    const submission: PendingSubmission = { key: newRequestId(), mode, text }
+    const submission: PendingSubmission = {
+      key: newRequestId(),
+      mode,
+      text,
+      worldId: worldId(),
+      role: header().role
+    }
     try {
       const item = await submitIntervention(worldId(), mode, text, submission.key, header())
       if (seen !== cycle) return null
@@ -114,6 +134,15 @@ export function useInterventions(worldId: () => string, header: () => CallOption
   async function retry(): Promise<InterventionView | null> {
     const last = pending.value
     if (!last) return null
+    // Frozen ownership: a world or seat change since the filing must not
+    // silently reinterpret its retry.
+    if (last.worldId !== worldId() || last.role !== header().role) {
+      notice.value = {
+        kind: 'error',
+        text: 'The world or seat changed since this was filed — review the queue, then file anew.'
+      }
+      return null
+    }
     const seen = cycle
     busy.value = true
     try {
@@ -205,7 +234,18 @@ export function useInterventions(worldId: () => string, header: () => CallOption
   }
 
   function select(id: string | null): void {
-    active.value = queue.value.find((entry) => entry.id === id) ?? null
+    const found = queue.value.find((entry) => entry.id === id) ?? null
+    active.value = found
+    // Inspecting a filed item reconciles an ambiguous filing; clearing
+    // the selection alone never does.
+    if (found) pending.value = null
+  }
+
+  /** Explicitly abandon the unresolved filing so a fresh key may be filed. */
+  function discardPending(): void {
+    if (!pending.value) return
+    pending.value = null
+    notice.value = { kind: 'info', text: 'Discarded the unresolved filing — file anew.' }
   }
 
   function dispose(): void {
@@ -226,6 +266,7 @@ export function useInterventions(worldId: () => string, header: () => CallOption
     editActive,
     cancelActive,
     select,
+    discardPending,
     dispose
   }
 }

@@ -35,6 +35,7 @@ async def apply_override(
     life_status: LifeStatus | None = None,
     conditions: list[str] | None = None,
     retcon: bool = False,
+    key: str | None = None,
 ) -> UUID:
     """Patch one character through a deity commit; returns the event ID."""
     if all(value is None for value in (stamina, mana, life_status, conditions)):
@@ -53,7 +54,9 @@ async def apply_override(
         conditions=conditions,
         retcon=retcon,
     )
-    key = f"deity:{character_id.hex}:{uuid4().hex}"
+    # A caller-supplied key makes replays collide instead of duplicating;
+    # the recorded event is the proof. Omitted keys stay unique per call.
+    key = key if key is not None else f"deity:{character_id.hex}:{uuid4().hex}"
     outbox = (
         [
             OutboxSpec(

@@ -138,8 +138,7 @@ def test_deity_travel_queues_and_applies(migrated_db: None) -> None:
 
         batch = await service.claim_for_boundary(factory, ids["world"], "e6-test")
         assert len(batch) == 1
-        directed = await service.apply_batch(factory, ids["world"], 1, batch, set())
-        assert directed == {}
+        await service.apply_batch(factory, ids["world"], 1, batch, set())
         async with factory() as uow:
             steps = await uow.interventions.list_steps(item.id)
             assert steps[0].status == StepStatus.COMPLETED
@@ -385,12 +384,30 @@ def test_spar_attempt_directs_for_advance(migrated_db: None) -> None:
         )
         assert item.status == InterventionStatus.QUEUED
         batch = await service.claim_for_boundary(factory, ids["world"], "e6-test")
-        directed = await service.apply_batch(factory, ids["world"], 1, batch, set())
-        assert set(directed) == {ids["wren"]}
-        assert directed[ids["wren"]].family == "spar"
+        # Attempts are not applied pre-beat: the step stays queued under the
+        # claimed intervention until the beat records its resolution.
+        await service.apply_batch(factory, ids["world"], 1, batch, set())
+        async with factory() as uow:
+            steps = await uow.interventions.list_steps(item.id)
+            assert steps[0].status == StepStatus.QUEUED
+        # Post-seal planning stamps the sealed snapshot server-side.
+        planned = await service.plan_attempts(
+            factory, ids["world"], new_snapshot_id(), set()
+        )
+        assert len(planned) == 1
+        assert planned[0].actor == ids["wren"]
+        assert planned[0].intent.family == "spar"
+        assert planned[0].ref.startswith(f"{item.id.hex}:")
+        # Recording twice converges: the second write accepts the first
+        # write's recorded outcome instead of failing.
+        await service.record_attempts(factory, [(planned[0].ref, ids["world"])])
+        await service.record_attempts(factory, [(planned[0].ref, ids["world"])])
         async with factory() as uow:
             steps = await uow.interventions.list_steps(item.id)
             assert steps[0].status == StepStatus.COMPLETED
+            assert steps[0].result_event_id == ids["world"]
+            current = await uow.interventions.get_intervention(item.id)
+            assert current.status == InterventionStatus.COMPLETED
 
     _run(_inner())
 
@@ -436,5 +453,96 @@ def test_world_condition_persists(migrated_db: None) -> None:
             current = await uow.interventions.get_intervention(item.id)
         assert [c.public_label for c in conditions] == ["Hearth cough"]
         assert current.status == InterventionStatus.COMPLETED
+
+    _run(_inner())
+
+
+def test_interrupted_execution_recovers_without_loss_or_duplicates(
+    migrated_db: None,
+) -> None:
+    async def _inner() -> None:
+        ids = await _seed_travel_world()
+        gateway = FakeGateway(profile=DIRECTOR_FAKE_PROFILE)
+        gateway.enqueue_text(_travel_plan(ids["wren"], ids["market"]))
+        factory = _factory()
+        item = await service.submit(
+            factory,
+            gateway,
+            ids["world"],
+            UserRole.DEITY,
+            InterventionMode.FORCE,
+            "Send Wren to Market",
+            Scope(),
+            "e6-crash-1",
+        )
+        # Crash between claim and apply: nothing applied, nothing lost.
+        claimed = await service.claim_for_boundary(factory, ids["world"], "e6-test")
+        assert len(claimed) == 1
+        async with factory() as uow:
+            actives = await uow.activities.list_active_for_world(ids["world"])
+        assert actives == []
+        # Recovery re-claims the stranded item (still open) and applies it.
+        again = await service.claim_for_boundary(factory, ids["world"], "e6-test")
+        assert [i.id for i, _ in again] == [item.id]
+        await service.apply_batch(factory, ids["world"], 1, again, set())
+        # Replaying the whole cycle converges: completed steps are
+        # skipped, so no second journey starts.
+        replayed = await service.claim_for_boundary(factory, ids["world"], "e6-test")
+        assert replayed == []
+        await service.apply_batch(factory, ids["world"], 1, replayed, set())
+        async with factory() as uow:
+            steps = await uow.interventions.list_steps(item.id)
+            current = await uow.interventions.get_intervention(item.id)
+            actives = await uow.activities.list_active_for_world(ids["world"])
+        assert steps[0].status == StepStatus.COMPLETED
+        assert current.status == InterventionStatus.COMPLETED
+        travel = [a for a in actives if a.character_id == ids["wren"]]
+        assert len(travel) == 1
+
+    _run(_inner())
+
+
+def test_player_attempt_resolves_identities_server_side(migrated_db: None) -> None:
+    async def _inner() -> None:
+        ids = await _seed_travel_world()
+        # The plan carries no technical IDs in the action: the actor
+        # defaults from the step, the snapshot is stamped at plan time.
+        plan = json.dumps(
+            {
+                "schema_version": 1,
+                "steps": [
+                    {
+                        "kind": "direct_attempt",
+                        "explanation": "Wren spars with Ash.",
+                        "character_id": str(ids["wren"]),
+                        "family": "spar",
+                        "action": {"target_character_id": str(ids["ash"])},
+                    }
+                ],
+                "clarification": "",
+            }
+        )
+        gateway = FakeGateway(profile=DIRECTOR_FAKE_PROFILE)
+        gateway.enqueue_text(plan)
+        factory = _factory()
+        item = await service.submit(
+            factory,
+            gateway,
+            ids["world"],
+            UserRole.PLAYER,
+            InterventionMode.ATTEMPT,
+            "Wren spars with Ash",
+            Scope(character_ids=[ids["wren"]]),
+            "e6-player-1",
+            viewer=ids["wren"],
+        )
+        assert item.status == InterventionStatus.QUEUED
+        snapshot = new_snapshot_id()
+        planned = await service.plan_attempts(factory, ids["world"], snapshot, set())
+        assert len(planned) == 1
+        intent = planned[0].intent
+        assert intent.character_id == ids["wren"]
+        assert intent.snapshot_id == snapshot
+        assert intent.family == "spar"
 
     _run(_inner())

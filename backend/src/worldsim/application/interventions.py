@@ -11,7 +11,7 @@ import json
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import TypeAdapter
 
@@ -20,6 +20,7 @@ from worldsim.application.commands.deity import apply_override
 from worldsim.application.commands.director import accept_decision
 from worldsim.application.orchestration.service import derive_run_id
 from worldsim.application.ports.model_gateway import CompletionRequest, ModelGateway
+from worldsim.application.transactions.canonical import canonical_input_hash
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.commands import ActionIntent
 from worldsim.domain.director import DirectorProposal, validate_proposal
@@ -213,8 +214,15 @@ def _validate_step(
             )
         if step.character_id not in by_id:
             return InterventionStatus.NEEDS_CLARIFICATION, "the actor is unknown"
+        # Authoritative identities are resolved server-side, never typed by
+        # the user: the actor defaults from the step and the snapshot is
+        # stamped from the sealed phase at plan time. Validation checks the
+        # shape only (a nil snapshot never persists).
+        action = dict(step.action)
+        action.setdefault("character_id", str(step.character_id))
+        action.setdefault("snapshot_id", "00000000-0000-0000-0000-000000000000")
         try:
-            _ACTION_ADAPTER.validate_python({"family": step.family, **step.action})
+            _ACTION_ADAPTER.validate_python({"family": step.family, **action})
         except Exception:
             return InterventionStatus.NEEDS_CLARIFICATION, "the attempt details do not parse"
         return None
@@ -327,6 +335,49 @@ def _chain_travel(steps: list[InterventionStep]) -> list[InterventionStep]:
     return chained
 
 
+@dataclass(frozen=True)
+class PlannedAttempt:
+    """A validated directed attempt awaiting beat resolution."""
+
+    actor: UUID
+    intent: ActionIntent
+    #: "intervention_hex:seq" — the idempotency key suffix the beat records.
+    ref: str
+
+
+def _step_gate_key(intervention_id: UUID, seq: int) -> str:
+    return f"direct:{intervention_id.hex}:{seq}"
+
+
+async def _claim_step_gate(
+    uow: UnitOfWork, world_id: UUID, intervention_id: UUID, seq: int
+) -> bool:
+    """First-writer-wins execution gate for one effect step.
+
+    True means this caller owns the application. False means another
+    beat already recorded it: the caller re-reads and accepts the
+    recorded outcome instead of applying twice.
+    """
+    try:
+        await uow.commands.add(
+            command_id=uuid4(),
+            world_id=world_id,
+            key=_step_gate_key(intervention_id, seq),
+            actor_role="system",
+            command_type="direct_step",
+            expected_versions={},
+            payload={"intervention_id": str(intervention_id), "seq": seq},
+            input_hash=canonical_input_hash(
+                {"intervention_id": str(intervention_id), "seq": seq}
+            ),
+        )
+        return True
+    except DomainError as exc:
+        if exc.code is ErrorCode.IDEMPOTENCY_CONFLICT:
+            return False
+        raise
+
+
 async def claim_for_boundary(
     factory: Callable[[], UnitOfWork], world_id: UUID, owner: str
 ) -> list[tuple[Intervention, list[InterventionStep]]]:
@@ -352,9 +403,16 @@ async def apply_batch(
     index: int,
     batch: list[tuple[Intervention, list[InterventionStep]]],
     player_actors: set[UUID],
-) -> dict[UUID, ActionIntent]:
-    """Apply pre-phase steps; returns directed attempts for the advance call."""
-    directed: dict[UUID, ActionIntent] = {}
+) -> None:
+    """Apply pre-phase effects for claimed items.
+
+    Travel, conditions, overrides, hooks and arcs execute here, each
+    step behind its execution gate. Directed attempts are NOT applied
+    here: plan_attempts validates them post-seal and record_attempts
+    completes them only after their beat commits. Steps already
+    completed are skipped, so replaying a beat or restarting after a
+    crash cannot double-apply.
+    """
     async with factory() as uow:
         characters = {c.id: c for c in await uow.characters.list_for_world(world_id)}
         actives = await uow.activities.list_active_for_world(world_id)
@@ -363,6 +421,8 @@ async def apply_batch(
         done = {step.seq for step in steps if step.status == StepStatus.COMPLETED}
         for step in steps:
             if step.status != StepStatus.QUEUED:
+                continue
+            if step.kind == StepKind.DIRECT_ATTEMPT:
                 continue
             dep = step.targets.get("after_seq")
             if isinstance(dep, int) and dep not in done:
@@ -375,18 +435,181 @@ async def apply_batch(
                     actor = None
                 if actor is not None and actor in active_actors:
                     continue
+            await _apply_effect_step(
+                factory, world_id, index, step, intervention.id, characters
+            )
+        await _finish_intervention(factory, intervention)
+
+
+async def _read_step(
+    factory: Callable[[], UnitOfWork], intervention_id: UUID, seq: int
+) -> InterventionStep | None:
+    async with factory() as uow:
+        steps = await uow.interventions.list_steps(intervention_id)
+    return next((step for step in steps if step.seq == seq), None)
+
+
+async def _mark_completed(
+    factory: Callable[[], UnitOfWork],
+    step: InterventionStep,
+    activity_id: UUID | None = None,
+    event_id: UUID | None = None,
+) -> None:
+    """Durably record a completed step; an already-completed step is accepted.
+
+    Conflict tolerance is what lets crash-recovery replays converge:
+    the winner's recorded outcome stands, the loser adopts it.
+    """
+    update: dict[str, Any] = {"status": StepStatus.COMPLETED}
+    if activity_id is not None:
+        update["result_activity_id"] = activity_id
+    if event_id is not None:
+        update["result_event_id"] = event_id
+    try:
+        async with factory() as uow:
+            await uow.interventions.save_step(step.model_copy(update=update), step.version)
+            await uow.commit()
+    except DomainError as exc:
+        if exc.code is not ErrorCode.VERSION_CONFLICT:
+            raise
+        current = await _read_step(factory, step.intervention_id, step.seq)
+        if current is None or current.status != StepStatus.COMPLETED:
+            raise
+
+
+async def _apply_effect_step(
+    factory: Callable[[], UnitOfWork],
+    world_id: UUID,
+    index: int,
+    step: InterventionStep,
+    intervention_id: UUID,
+    characters: dict[UUID, Any],
+) -> None:
+    """Gate, apply, and durably mark one effect step.
+
+    The gate lets concurrent appliers converge: the loser re-reads and
+    accepts the recorded outcome. Effect functions verify-or-apply (same
+    activity, existing title/label, deterministic override key), so a
+    crash between gate and mark re-derives the outcome on recovery
+    instead of duplicating it or losing it.
+    """
+    async with factory() as uow:
+        owned = await _claim_step_gate(uow, world_id, intervention_id, step.seq)
+        await uow.commit()
+    if not owned:
+        current = await _read_step(factory, intervention_id, step.seq)
+        if current is not None and current.status == StepStatus.COMPLETED:
+            return
+        # Gate taken with no recorded outcome (crashed predecessor):
+        # fall through and verify-or-apply below.
+    try:
+        activity_id, event_id = await _run_effect(
+            factory, world_id, index, step, intervention_id, characters
+        )
+    except DomainError as error:
+        await _mark_step(factory, step, StepStatus.FAILED, str(error))
+        return
+    await _mark_completed(factory, step, activity_id, event_id)
+
+
+async def _run_effect(
+    factory: Callable[[], UnitOfWork],
+    world_id: UUID,
+    index: int,
+    step: InterventionStep,
+    intervention_id: UUID,
+    characters: dict[UUID, Any],
+) -> tuple[UUID | None, UUID | None]:
+    """Run one effect; returns (result_activity_id, result_event_id)."""
+    targets = step.targets
+    if step.kind == StepKind.DIRECT_ACTIVITY:
+        activity_id = await _start_directed_activity(
+            factory, world_id, index, step, targets, characters
+        )
+        return activity_id, None
+    if step.kind in (StepKind.PROPOSE_HOOK, StepKind.PROPOSE_ARC):
+        await _accept_hook(factory, world_id, index, step, targets, characters)
+        return None, None
+    if step.kind == StepKind.OVERRIDE_CHARACTER:
+        event_id = await _apply_override_step(factory, world_id, index, step, intervention_id)
+        return None, event_id
+    if step.kind == StepKind.WORLD_CONDITION:
+        await _create_condition(factory, world_id, index, step, targets, intervention_id)
+        return None, None
+    raise DomainError(ErrorCode.VALIDATION_FAILED, f"unsupported step: {step.kind.value}")
+
+
+async def plan_attempts(
+    factory: Callable[[], UnitOfWork],
+    world_id: UUID,
+    snapshot_id: UUID,
+    filed_actors: set[UUID] | frozenset[UUID] = frozenset(),
+) -> list[PlannedAttempt]:
+    """Validate queued attempt steps against sealed state and stamp identities.
+
+    Called post-seal inside the advancing beat. The actor defaults from
+    the step and the snapshot from the seal: neither is ever typed by
+    the user. Conflicting or stale steps fail with reasons; valid ones
+    return intents for the beat. Nothing is marked completed here —
+    record_attempts completes steps only after their beat commits.
+    """
+    planned: list[PlannedAttempt] = []
+    directed: dict[UUID, ActionIntent] = {}
+    async with factory() as uow:
+        characters = {
+            character.id: character
+            for character in await uow.characters.list_for_world(world_id)
+            if character.life_status == LifeStatus.ALIVE
+        }
+        queued = await uow.interventions.list_open_for_world(world_id)
+    for intervention in queued:
+        async with factory() as uow:
+            steps = await uow.interventions.list_steps(intervention.id)
+        for step in steps:
+            if step.kind != StepKind.DIRECT_ATTEMPT or step.status != StepStatus.QUEUED:
+                continue
             try:
-                attempt, current = await _apply_step(
-                    factory, world_id, index, step, characters, player_actors, directed,
-                    intervention.id,
+                actor, intent = _direct_attempt(
+                    step, step.targets, characters, set(filed_actors), directed,
+                    snapshot_id,
                 )
-                if attempt is not None:
-                    directed[attempt[0]] = attempt[1]
-                await _mark_step(factory, current, StepStatus.COMPLETED)
             except DomainError as error:
                 await _mark_step(factory, step, StepStatus.FAILED, str(error))
-        await _finish_intervention(factory, intervention)
-    return directed
+                continue
+            planned.append(
+                PlannedAttempt(
+                    actor=actor, intent=intent, ref=f"{intervention.id.hex}:{step.seq}"
+                )
+            )
+    return planned
+
+
+async def record_attempts(
+    factory: Callable[[], UnitOfWork], outcomes: list[tuple[str, UUID]]
+) -> None:
+    """Mark planned attempts completed once their beat commits.
+
+    Each outcome pairs the plan ref with the committed scene event: the
+    durable record of execution. Conflict-tolerant like _mark_completed,
+    then each touched intervention is finished from its step states.
+    """
+    touched: set[UUID] = set()
+    for ref, event_id in outcomes:
+        raw_id, _, raw_seq = ref.partition(":")
+        try:
+            intervention_id = UUID(hex=raw_id)
+            seq = int(raw_seq)
+        except ValueError:
+            continue
+        step = await _read_step(factory, intervention_id, seq)
+        if step is None or step.status == StepStatus.COMPLETED:
+            continue
+        await _mark_completed(factory, step, event_id=event_id)
+        touched.add(intervention_id)
+    for intervention_id in touched:
+        async with factory() as uow:
+            current = await uow.interventions.get_intervention(intervention_id)
+        await _finish_intervention(factory, current)
 
 
 async def _mark_step(
@@ -420,42 +643,16 @@ async def _finish_intervention(
         await uow.commit()
 
 
-async def _apply_step(
-    factory: Callable[[], UnitOfWork],
-    world_id: UUID,
-    index: int,
-    step: InterventionStep,
-    characters: dict[UUID, Any],
-    player_actors: set[UUID],
-    directed: dict[UUID, ActionIntent],
-    intervention_id: UUID,
-) -> tuple[tuple[UUID, ActionIntent] | None, InterventionStep]:
-    targets = step.targets
-    if step.kind == StepKind.DIRECT_ACTIVITY:
-        saved = await _start_directed(factory, world_id, index, step, targets, characters)
-        return None, saved
-    if step.kind == StepKind.DIRECT_ATTEMPT:
-        return _direct_attempt(step, targets, characters, player_actors, directed), step
-    if step.kind in (StepKind.PROPOSE_HOOK, StepKind.PROPOSE_ARC):
-        await _accept_hook(factory, world_id, index, step, targets, characters)
-        return None, step
-    if step.kind == StepKind.OVERRIDE_CHARACTER:
-        await _apply_override(factory, world_id, index, targets)
-        return None, step
-    if step.kind == StepKind.WORLD_CONDITION:
-        await _create_condition(factory, world_id, index, step, targets, intervention_id)
-        return None, step
-    raise DomainError(ErrorCode.VALIDATION_FAILED, f"unsupported step: {step.kind.value}")
-
-
-async def _start_directed(
+async def _start_directed_activity(
     factory: Callable[[], UnitOfWork],
     world_id: UUID,
     index: int,
     step: InterventionStep,
     targets: dict[str, Any],
     characters: dict[UUID, Any],
-) -> InterventionStep:
+) -> UUID | None:
+    """Start the directed activity; returns its id. Saves nothing: the
+    caller marks the step once this outcome is durably recorded."""
     character_id = UUID(str(targets["character_id"]))
     character = characters.get(character_id)
     if character is None:
@@ -474,14 +671,7 @@ async def _start_directed(
             None,
         )
         if same is not None:
-            saved = await uow.interventions.save_step(
-                step.model_copy(
-                    update={"status": StepStatus.COMPLETED, "result_activity_id": same.id}
-                ),
-                step.version,
-            )
-            await uow.commit()
-            return saved
+            return same.id
         to_location = targets.get("to_location_id")
         activity = await start_activity(
             uow,
@@ -492,14 +682,8 @@ async def _start_directed(
             duration_phases=targets.get("duration_phases"),
             to_location_id=UUID(str(to_location)) if to_location else None,
         )
-        saved = await uow.interventions.save_step(
-            step.model_copy(
-                update={"status": StepStatus.COMPLETED, "result_activity_id": activity.id}
-            ),
-            step.version,
-        )
         await uow.commit()
-        return saved
+        return activity.id
 
 
 def _direct_attempt(
@@ -508,7 +692,8 @@ def _direct_attempt(
     characters: dict[UUID, Any],
     player_actors: set[UUID],
     directed: dict[UUID, ActionIntent],
-) -> tuple[UUID, ActionIntent] | None:
+    snapshot_id: UUID,
+) -> tuple[UUID, ActionIntent]:
     character_id = UUID(str(targets["character_id"]))
     if character_id not in characters:
         raise DomainError(ErrorCode.NOT_FOUND, "directed actor is gone")
@@ -522,6 +707,7 @@ def _direct_attempt(
         )
     action = dict(targets.get("action") or {})
     action.setdefault("character_id", str(character_id))
+    action.setdefault("snapshot_id", str(snapshot_id))
     intent = _ACTION_ADAPTER.validate_python({"family": targets["family"], **action})
     if targets["family"] in ("spar", "communicate", "transfer"):
         other_raw = action.get("target_character_id")
@@ -567,12 +753,22 @@ async def _accept_hook(
         await uow.commit()
 
 
-async def _apply_override(
-    factory: Callable[[], UnitOfWork], world_id: UUID, index: int, targets: dict[str, Any]
-) -> None:
+async def _apply_override_step(
+    factory: Callable[[], UnitOfWork],
+    world_id: UUID,
+    index: int,
+    step: InterventionStep,
+    intervention_id: UUID,
+) -> UUID:
+    """Deity override with a step-deterministic idempotency key.
+
+    A replayed commit key collides instead of duplicating: the recorded
+    event is the proof, so crash recovery converges on it.
+    """
+    targets = step.targets
     character_id = UUID(str(targets["character_id"]))
     life_status = targets.get("life_status")
-    await apply_override(
+    return await apply_override(
         factory,
         world_id,
         character_id,
@@ -583,6 +779,7 @@ async def _apply_override(
         life_status=LifeStatus(life_status) if life_status else None,
         conditions=list(targets.get("conditions") or []),
         retcon=bool(targets.get("retcon", False)),
+        key=f"{_step_gate_key(intervention_id, step.seq)}:override",
     )
 
 
