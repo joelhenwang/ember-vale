@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
+  connectionLabel,
+  connectionOptions,
   normalizePlaceKey,
   packCharacter,
   packWorld,
+  placeForConnectionLabel,
   removeWorldPlace,
   renamePlaceReferences,
+  resolveConnectionKeys,
   slugPlaceKey,
   unpackCharacter,
   unpackWorld
@@ -44,8 +48,11 @@ function worldDraft(): WorldDraft {
         appearance: 'Low beams.',
         landmark: 'The fire',
         connectedTo: 'Market',
+        connectedKey: 'market_east',
         sounds: 'Kettles.',
-        detailExtra: ''
+        detailExtra: '',
+        detailBase: '',
+        detailBaseCanonical: ''
       },
       {
         id: 'market',
@@ -56,8 +63,11 @@ function worldDraft(): WorldDraft {
         appearance: 'Stalls.',
         landmark: 'Well',
         connectedTo: 'Hearth',
+        connectedKey: 'hearth',
         sounds: 'Haggling.',
-        detailExtra: ''
+        detailExtra: '',
+        detailBase: '',
+        detailBaseCanonical: ''
       }
     ],
     activePlace: 'market',
@@ -217,8 +227,11 @@ describe('studio field bridge', () => {
       ['market_east', 'hearth']
     ])
     // Clearing both connections clears the routes instead of preserving them.
+    // (The picker clears the stored key and the display name together.)
     draft.places[0]!.connectedTo = ''
+    draft.places[0]!.connectedKey = ''
     draft.places[1]!.connectedTo = ''
+    draft.places[1]!.connectedKey = ''
     const cleared = packWorld(draft, packed as unknown as Record<string, unknown>)
     expect(cleared.travel).toEqual([])
   })
@@ -246,6 +259,8 @@ describe('studio field bridge', () => {
     expect(packed.description).toBe('Mossy riverbanks, at dawn.')
     // The graph is untouched, so no travel rewrite ships at all.
     expect(packed.travel).toBeUndefined()
+    // The empty descriptions never gained generated sections either.
+    expect(packed.locations).toBeUndefined()
   })
 
   it('preserves legs the form cannot represent', () => {
@@ -303,6 +318,7 @@ describe('studio field bridge', () => {
     // the opaque second leg stays. (Market never had an outgoing leg
     // in this map, so nothing else ships.)
     draft.places[0]!.connectedTo = ''
+    draft.places[0]!.connectedKey = ''
     const packed = packWorld(draft, server)
     expect(packed.travel).toEqual([['hearth', 'mill']])
   })
@@ -379,5 +395,221 @@ describe('studio field bridge', () => {
     expect(normalizePlaceKey('Hearth', 'market_east', 'place-9')).toBe('market_east')
     expect(normalizePlaceKey('Hearth', undefined, 'place-9')).toBe('hearth')
     expect(normalizePlaceKey('Hearth', '  ', 'place-9')).toBe('hearth')
+  })
+
+  it('keeps a route on the second of two same-named places', () => {
+    const server = {
+      description: '',
+      lore: '',
+      locations: [
+        { key: 'market_east', name: 'Market', description: '' },
+        { key: 'market_west', name: 'Market', description: '' },
+        { key: 'hearth', name: 'Hearth', description: '' }
+      ],
+      starting_location_key: 'hearth',
+      travel: [['hearth', 'market_west']]
+    }
+    const restored = unpackWorld(server)
+    // The link is stored by key even though both names read "Market".
+    expect(restored.places?.[2]?.connectedKey).toBe('market_west')
+    expect(restored.places?.[2]?.connectedTo).toBe('Market')
+    // An unrelated edit re-saves without redirecting the route east.
+    const draft: WorldDraft = {
+      terrain: [],
+      climate: '',
+      architecture: '',
+      details: 'Mossy riverbanks, at dawn.',
+      exclusions: '',
+      places: restored.places!,
+      activePlace: restored.activePlace!,
+      startPlace: restored.startPlace!,
+      loreExtra: '',
+      travelExtra: restored.travelExtra ?? []
+    }
+    const packed = packWorld(draft, server)
+    expect(packed.description).toBe('Mossy riverbanks, at dawn.')
+    expect(packed.travel).toBeUndefined()
+    expect(packed.locations).toBeUndefined()
+  })
+
+  it('labels duplicate connections by key and resolves picks by label', () => {
+    const server = {
+      description: '',
+      lore: '',
+      locations: [
+        { key: 'market_east', name: 'Market', description: '' },
+        { key: 'market_west', name: 'Market', description: '' },
+        { key: 'hearth', name: 'Hearth', description: '' }
+      ],
+      starting_location_key: 'hearth',
+      travel: []
+    }
+    const places = unpackWorld(server).places!
+    const hearth = places.find((p) => p.key === 'hearth')!
+    expect(connectionOptions(places, hearth.id)).toEqual([
+      'Market (market_east)',
+      'Market (market_west)'
+    ])
+    expect(connectionLabel(places, 'market_west')).toBe('Market (market_west)')
+    expect(placeForConnectionLabel(places, 'Market (market_west)')?.key).toBe('market_west')
+    expect(placeForConnectionLabel(places, 'Market (market_east)')?.key).toBe('market_east')
+    expect(placeForConnectionLabel(places, '')).toBeUndefined()
+    // Unique names stay plain labels.
+    const solo = worldDraft().places
+    expect(connectionOptions(solo, 'hearth')).toEqual(['Market'])
+    expect(connectionLabel(solo, 'market_east')).toBe('Market')
+    expect(placeForConnectionLabel(solo, 'Market')?.key).toBe('market_east')
+  })
+
+  it('repoints only the linked place when duplicate names rename', () => {
+    const server = {
+      description: '',
+      lore: '',
+      locations: [
+        { key: 'market_east', name: 'Market', description: '' },
+        { key: 'market_west', name: 'Market', description: '' },
+        { key: 'hearth', name: 'Hearth', description: '' }
+      ],
+      starting_location_key: 'hearth',
+      travel: [['hearth', 'market_west']]
+    }
+    const places = unpackWorld(server).places!
+    const west = places.find((p) => p.key === 'market_west')!
+    expect(renamePlaceReferences(places, west.id, 'Market', 'Grand Market')).toBe(1)
+    // Hearth links west by key, so its display name follows the rename.
+    expect(places.find((p) => p.key === 'hearth')?.connectedTo).toBe('Grand Market')
+    // Nothing else named "Market" moved.
+    expect(places.find((p) => p.key === 'market_east')?.connectedTo).toBe('')
+    // The route still targets the western key, so the rename ships
+    // location records but no travel rewrite at all.
+    const draft: WorldDraft = {
+      terrain: [],
+      climate: '',
+      architecture: '',
+      details: '',
+      exclusions: '',
+      places,
+      activePlace: places[0]!.id,
+      startPlace: places[2]!.id,
+      loreExtra: '',
+      travelExtra: []
+    }
+    const packed = packWorld(draft, server)
+    expect(packed.travel).toBeUndefined()
+    expect(packed.locations).toHaveLength(3)
+  })
+
+  it('leaves plain and empty server descriptions byte-identical on a no-op save', () => {
+    const plain = 'A quiet room above the shop.'
+    const server = {
+      description: '',
+      lore: '',
+      locations: [
+        { key: 'hearth', name: 'Hearth', description: '' },
+        { key: 'loft', name: 'Loft', description: plain }
+      ],
+      starting_location_key: 'hearth',
+      travel: [['hearth', 'loft']]
+    }
+    const restored = unpackWorld(server)
+    // Hydration filled in defaults the prose never had...
+    expect(restored.places?.[0]?.type).toBe('Other')
+    expect(restored.places?.[0]?.connectedTo).toBe('Loft')
+    expect(restored.places?.[1]?.detailExtra).toBe(plain)
+    // ...but an unrelated world-description edit leaves every location
+    // byte-identical: no generated Type / Connected-to sections appear.
+    const draft: WorldDraft = {
+      terrain: [],
+      climate: '',
+      architecture: '',
+      details: 'Mossy riverbanks.',
+      exclusions: '',
+      places: restored.places!,
+      activePlace: restored.activePlace!,
+      startPlace: restored.startPlace!,
+      loreExtra: '',
+      travelExtra: restored.travelExtra ?? []
+    }
+    const packed = packWorld(draft, server)
+    expect(packed.description).toBe('Mossy riverbanks.')
+    expect(packed.locations).toBeUndefined()
+    expect(packed.travel).toBeUndefined()
+  })
+
+  it('regenerates a location description only after a relevant edit', () => {
+    const plain = 'A quiet room above the shop.'
+    const server = {
+      description: '',
+      lore: '',
+      locations: [
+        { key: 'hearth', name: 'Hearth', description: '' },
+        { key: 'loft', name: 'Loft', description: plain }
+      ],
+      starting_location_key: 'hearth',
+      travel: [['hearth', 'loft']]
+    }
+    const restored = unpackWorld(server)
+    const draft: WorldDraft = {
+      terrain: [],
+      climate: '',
+      architecture: '',
+      details: '',
+      exclusions: '',
+      places: restored.places!,
+      activePlace: restored.activePlace!,
+      startPlace: restored.startPlace!,
+      loreExtra: '',
+      travelExtra: restored.travelExtra ?? []
+    }
+    // Editing the loft's purpose regenerates only the loft's record.
+    draft.places[1]!.purpose = 'Storage.'
+    const packed = packWorld(draft, server)
+    const entries = packed.locations as { key: string; description?: string }[]
+    expect(entries).toHaveLength(2)
+    const loft = entries.find((e) => e.key === 'loft')!
+    expect(loft.description).toContain(plain)
+    expect(loft.description).toContain('Purpose: Storage.')
+    // The untouched hearth ships its original bytes, not a rewrite.
+    expect(entries.find((e) => e.key === 'hearth')?.description).toBe('')
+  })
+
+  it('backfills stored keys from legacy display names', () => {
+    const draft = worldDraft()
+    for (const p of draft.places) p.connectedKey = ''
+    resolveConnectionKeys(draft.places)
+    expect(draft.places[0]!.connectedKey).toBe('market_east')
+    expect(draft.places[1]!.connectedKey).toBe('hearth')
+    // Unresolvable names stay unlinked rather than guessing.
+    draft.places[0]!.connectedTo = 'Nowhere'
+    draft.places[0]!.connectedKey = ''
+    resolveConnectionKeys(draft.places)
+    expect(draft.places[0]!.connectedKey).toBe('')
+  })
+
+  it('derives travel from display names only for keyless legacy drafts', () => {
+    const draft = worldDraft()
+    draft.places[0]!.connectedKey = ''
+    draft.places[1]!.connectedKey = ''
+    const packed = packWorld(draft)
+    expect(packed.travel).toEqual([
+      ['hearth', 'market_east'],
+      ['market_east', 'hearth']
+    ])
+  })
+
+  it('drops a stored key that no longer names a live place', () => {
+    const draft = worldDraft()
+    // The display name still resolves, but the stale key must not fall
+    // back to it — that guess could redirect at a same-named stranger.
+    draft.places[0]!.connectedKey = 'gone'
+    const packed = packWorld(draft)
+    expect(packed.travel).toEqual([['market_east', 'hearth']])
+  })
+
+  it('clears the stored key when its place is removed', () => {
+    const draft = worldDraft()
+    expect(removeWorldPlace(draft, 'market')).toBe(true)
+    expect(draft.places[0]!.connectedTo).toBe('')
+    expect(draft.places[0]!.connectedKey).toBe('')
   })
 })

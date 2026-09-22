@@ -23,7 +23,18 @@ export interface PlaceDraft {
   purpose: string
   appearance: string
   landmark: string
+  /**
+   * Display name of the linked place (prose mirror). The authoritative
+   * link is `connectedKey`; this carries the human-readable name into
+   * the description prose and the connection picker.
+   */
   connectedTo: string
+  /**
+   * Stable destination key of the outgoing connection ('' = none).
+   * Routes resolve through this, never through display names, so
+   * duplicate names cannot redirect a route during an unrelated save.
+   */
+  connectedKey: string
   sounds: string
   /**
    * Server prose the section parser did not attribute to a known
@@ -31,6 +42,19 @@ export interface PlaceDraft {
    * prose is never lost by editing a section.
    */
   detailExtra: string
+  /**
+   * Original server description bytes at unpack time. When the
+   * description fields are unchanged (compared against
+   * `detailBaseCanonical`), these exact bytes ship back — a no-op save
+   * never rewrites plain or empty prose with generated sections.
+   */
+  detailBase: string
+  /**
+   * Canonical pack of the unpacked description (same combine step the
+   * packer uses, including travel-hydrated connections). The editable
+   * baseline: only a recompute that differs from this regenerates.
+   */
+  detailBaseCanonical: string
 }
 
 export interface CharacterDraft {
@@ -109,8 +133,11 @@ const blankPlace = (n: number): PlaceDraft => ({
   appearance: '',
   landmark: '',
   connectedTo: '',
+  connectedKey: '',
   sounds: '',
-  detailExtra: ''
+  detailExtra: '',
+  detailBase: '',
+  detailBaseCanonical: ''
 })
 
 export const charDrafts = reactive<Record<string, CharacterDraft>>({})
@@ -171,8 +198,11 @@ export function ensureWorldDraft(id: string): WorldDraft {
             appearance: 'Low beams, a wide stone hearth, lantern light and the smell of bread.',
             landmark: 'The common-room fire',
             connectedTo: 'Market',
+            connectedKey: 'market',
             sounds: 'Kettles, chairs scraping, someone tuning a bad lute.',
-            detailExtra: ''
+            detailExtra: '',
+            detailBase: '',
+            detailBaseCanonical: ''
           },
           {
             id: 'market',
@@ -184,8 +214,11 @@ export function ensureWorldDraft(id: string): WorldDraft {
               'A small cobbled square with striped canvas stalls, low timber buildings and a stone well.',
             landmark: 'Old stone well',
             connectedTo: 'Hearth',
+            connectedKey: 'hearth',
             sounds: 'Apples tumbling into crates, haggling, a bell at noon.',
-            detailExtra: ''
+            detailExtra: '',
+            detailBase: '',
+            detailBaseCanonical: ''
           }
         ],
         activePlace: 'market',
@@ -210,8 +243,11 @@ export function ensureWorldDraft(id: string): WorldDraft {
             appearance: 'A white tower on the headland, a lamp that never quite stays lit.',
             landmark: 'The broken stair',
             connectedTo: '',
+            connectedKey: '',
             sounds: 'Foghorn, gulls, the sea rearranging itself.',
-            detailExtra: ''
+            detailExtra: '',
+            detailBase: '',
+            detailBaseCanonical: ''
           }
         ],
         activePlace: 'lighthouse',

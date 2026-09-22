@@ -243,10 +243,19 @@ export function packWorld(
     pairs.push([src, dst])
   }
   for (const { place: p, key: src } of keyed) {
+    const stored = (p.connectedKey ?? '').trim()
+    if (stored) {
+      // Authoritative: a stored key that still names a live place wins.
+      // A stale key contributes nothing — falling back to the display
+      // name could redirect the route at a same-named stranger.
+      if (stored !== src && keySet.has(stored)) addPair(src, stored)
+      continue
+    }
+    // Legacy drafts predate stored keys: resolve the display name once.
     const target = p.connectedTo.trim()
     if (!target) continue
     const dst = byName.get(target)
-    if (dst === undefined) continue
+    if (dst === undefined || dst === src) continue
     addPair(src, dst)
   }
   for (const leg of draft.travelExtra ?? []) {
@@ -294,11 +303,16 @@ export function packWorld(
     // omitted descriptions would disappear. An unchanged map ships
     // nothing at all.
     const sameKeys = prevByKey.size === keyed.length && keyed.every(({ key }) => prevByKey.has(key))
-    const locations: WorldServerLocation[] = keyed.map(({ place: p, key }) => ({
-      key,
-      name: p.name,
-      description: combineSections(p.detailExtra, packPlaceEntries(p))
-    }))
+    const locations: WorldServerLocation[] = keyed.map(({ place: p, key }) => {
+      const current = combineSections(p.detailExtra, packPlaceEntries(p))
+      // Untouched descriptions ship back byte-identical: the recompute
+      // adds defaults the prose never had (Type, hydrated connections),
+      // so only a recompute that differs from the unpack-time baseline
+      // regenerates. Graph hydration never counts as a description edit.
+      const base = p.detailBaseCanonical ?? ''
+      const description = current === base ? (p.detailBase ?? '') : current
+      return { key, name: p.name, description }
+    })
     const unchanged =
       sameKeys &&
       locations.every((entry) => {
@@ -361,11 +375,13 @@ export function unpackWorld(fields: Record<string, unknown>): Partial<WorldDraft
       legsBySource.set(src, list)
     }
     const nameByKey = new Map<string, string>()
+    const keyByName = new Map<string, string>()
     for (const item of fields['locations'] as unknown[]) {
       if (typeof item !== 'object' || item === null) continue
       const rec = item as Record<string, unknown>
       if (typeof rec['name'] !== 'string' || typeof rec['key'] !== 'string') continue
       if (!nameByKey.has(rec['key'])) nameByKey.set(rec['key'], rec['name'])
+      if (!keyByName.has(rec['name'])) keyByName.set(rec['name'], rec['key'])
     }
     const places: PlaceDraft[] = []
     const consumed = new Set<string>()
@@ -378,19 +394,25 @@ export function unpackWorld(fields: Record<string, unknown>): Partial<WorldDraft
       const s = splitSections(detail, PLACE_PREFIXES)
       const key = normalizePlaceKey(rec['name'], rec['key'], `place-${places.length + 1}`)
       // Prefer the travel graph; fall back to description prose for maps
-      // whose routes were never materialized as legs.
+      // whose routes were never materialized as legs. The stored link is
+      // the destination KEY — display names never route, so duplicate
+      // names cannot redirect a route during an unrelated save.
       let connectedTo = s.values['Connected to'] ?? ''
+      let connectedKey = ''
       const legs = legsBySource.get(key) ?? []
       const firstLeg = legs[0]
       if (firstLeg !== undefined) {
         connectedTo = nameByKey.get(firstLeg) ?? connectedTo
+        connectedKey = firstLeg
         consumed.add(`${key}→${firstLeg}`)
         for (const dst of legs.slice(1)) {
           consumed.add(`${key}→${dst}`)
           travelExtra.push([key, dst])
         }
+      } else if (connectedTo) {
+        connectedKey = keyByName.get(connectedTo) ?? ''
       }
-      places.push({
+      const place: PlaceDraft = {
         id: `place-${places.length}`,
         key,
         name: rec['name'],
@@ -399,9 +421,17 @@ export function unpackWorld(fields: Record<string, unknown>): Partial<WorldDraft
         appearance: s.values['Appearance'] ?? '',
         landmark: s.values['Landmark'] ?? '',
         connectedTo,
+        connectedKey,
         sounds: s.values['Texture'] ?? '',
-        detailExtra: s.rest
-      })
+        detailExtra: s.rest,
+        detailBase: detail,
+        detailBaseCanonical: ''
+      }
+      // The editable baseline: the canonical pack of exactly what
+      // unpack produced (including hydrated connections). Only a
+      // recompute that differs from this regenerates the description.
+      place.detailBaseCanonical = combineSections(place.detailExtra, packPlaceEntries(place))
+      places.push(place)
     }
     // Legs from unknown sources survive too: the pack step drops them
     // only when an endpoint is gone (explicit deletion cleanup).
@@ -427,11 +457,60 @@ export function unpackWorld(fields: Record<string, unknown>): Partial<WorldDraft
 }
 
 /**
+ * Connection picker labels: the form stores the destination KEY while
+ * the picker shows the display name. A unique name is its own label;
+ * duplicates gain their key so two same-named places stay
+ * distinguishable and the picked label always resolves to one place.
+ */
+function connectionLabelFor(places: PlaceDraft[], key: string): string {
+  const target = places.find((p) => p.key === key)
+  if (target === undefined) return ''
+  const duplicate = places.some((p) => p !== target && p.name === target.name)
+  return duplicate ? `${target.name} (${target.key})` : target.name
+}
+
+/** Display label for a stored connection key ('' = no connection). */
+export function connectionLabel(places: PlaceDraft[], key: string): string {
+  if (!key) return ''
+  return connectionLabelFor(places, key)
+}
+
+/** Picker options for one place: every other place's unique label. */
+export function connectionOptions(places: PlaceDraft[], exceptId: string): string[] {
+  return places.filter((p) => p.id !== exceptId).map((p) => connectionLabelFor(places, p.key))
+}
+
+/** Resolve a picked label back to its place (undefined = clear). */
+export function placeForConnectionLabel(
+  places: PlaceDraft[],
+  label: string
+): PlaceDraft | undefined {
+  if (!label) return undefined
+  return places.find((p) => connectionLabelFor(places, p.key) === label)
+}
+
+/**
+ * Backfill stored connection keys for drafts that predate them (legacy
+ * local saves carry display names only). First name match wins — the
+ * same legacy ambiguity the packer used — and anything unresolvable
+ * stays unlinked rather than guessing.
+ */
+export function resolveConnectionKeys(places: PlaceDraft[]): void {
+  const byName = new Map<string, string>()
+  for (const p of places) {
+    if (!byName.has(p.name)) byName.set(p.name, p.key)
+  }
+  for (const p of places) {
+    if (!p.connectedKey) p.connectedKey = byName.get(p.connectedTo.trim()) ?? ''
+  }
+}
+
+/**
  * Follow a place rename across dependent references: every other place
  * whose connection names the old name is repointed at the new one.
- * Connections are name-based in the form (keys stay stable underneath),
- * so without this a rename would silently drop the route. Returns the
- * number of references repointed.
+ * The link itself is key-stable, so this only refreshes the display
+ * name — and with duplicate names only the places actually linked to
+ * the renamed place follow it. Returns the number repointed.
  */
 export function renamePlaceReferences(
   places: PlaceDraft[],
@@ -440,13 +519,14 @@ export function renamePlaceReferences(
   to: string
 ): number {
   if (from === to) return 0
-  if (!places.some((p) => p.id === placeId)) return 0
+  const renamed = places.find((p) => p.id === placeId)
+  if (renamed === undefined) return 0
   let repaired = 0
   for (const p of places) {
-    if (p.id !== placeId && p.connectedTo === from) {
-      p.connectedTo = to
-      repaired += 1
-    }
+    if (p.id === placeId || p.connectedTo !== from) continue
+    if (p.connectedKey && p.connectedKey !== renamed.key) continue
+    p.connectedTo = to
+    repaired += 1
   }
   return repaired
 }
@@ -466,7 +546,12 @@ export function removeWorldPlace(draft: WorldDraft, id: string): boolean {
   if (removed === undefined) return false
   draft.places.splice(idx, 1)
   for (const p of draft.places) {
-    if (p.connectedTo === removed.name) p.connectedTo = ''
+    if (p.connectedKey === removed.key) {
+      p.connectedKey = ''
+      p.connectedTo = ''
+    } else if (!p.connectedKey && p.connectedTo === removed.name) {
+      p.connectedTo = ''
+    }
   }
   // Routes touching the removed place go with it: endpoints must name
   // live places, so dropping them here is the explicit deletion cleanup

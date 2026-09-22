@@ -38,10 +38,14 @@ import {
   type WorldDraft
 } from '../game/studio'
 import {
+  connectionLabel,
+  connectionOptions,
   normalizePlaceKey,
   packWorld,
+  placeForConnectionLabel,
   removeWorldPlace,
   renamePlaceReferences,
+  resolveConnectionKeys,
   unpackWorld
 } from '../game/studioFields'
 import InlineStepper from '../components/studio/InlineStepper.vue'
@@ -179,8 +183,11 @@ function coercePlace(raw: unknown, i: number): WorldDraft['places'][number] {
     appearance: str(r['appearance']),
     landmark: str(r['landmark']),
     connectedTo: str(r['connectedTo']),
+    connectedKey: str(r['connectedKey']),
     sounds: str(r['sounds']),
-    detailExtra: str(r['detailExtra'])
+    detailExtra: str(r['detailExtra']),
+    detailBase: str(r['detailBase']),
+    detailBaseCanonical: str(r['detailBaseCanonical'])
   }
 }
 
@@ -197,6 +204,9 @@ function applyWorldRestore(restored: ReturnType<typeof unpackWorld>): void {
   }
   if (restored.places !== undefined) {
     d.places.splice(0, d.places.length, ...restored.places)
+    // Legacy local saves carry display names only; resolve them once so
+    // every in-session link is key-stable from here on.
+    resolveConnectionKeys(d.places)
     const ids = new Set(d.places.map((p) => p.id))
     const fallback = d.places[0]?.id ?? d.activePlace
     d.startPlace =
@@ -213,7 +223,7 @@ function applyWorldRestore(restored: ReturnType<typeof unpackWorld>): void {
 }
 
 /**
- * Connections name places, so a rename must repoint dependents.
+ * Links are key-stable, but the display-name mirror must follow renames.
  * placeNamesById tracks the last seen name per tab: bulk replacements
  * (hydrate/restore/add/remove) resync it silently, while a pure rename
  * of one tab repairs references through renamePlaceReferences.
@@ -473,8 +483,11 @@ function addPlace(): void {
     appearance: '',
     landmark: '',
     connectedTo: d.places[0]?.name ?? '',
+    connectedKey: d.places[0]?.key ?? '',
     sounds: '',
-    detailExtra: ''
+    detailExtra: '',
+    detailBase: '',
+    detailBaseCanonical: ''
   }
   d.places.push(p)
   d.activePlace = p.id
@@ -492,9 +505,15 @@ const startPlaceName = computed({
     if (found) draft.value.startPlace = found.id
   }
 })
-function otherPlaceNames(): string[] {
-  const d = draft.value
-  return d.places.filter((p) => p.id !== d.activePlace).map((p) => p.name)
+/**
+ * The connection picker stores the destination KEY while showing the
+ * display name: duplicate names gain their key as a label suffix, so a
+ * picked route always resolves to exactly one place.
+ */
+function setConnection(place: WorldDraft['places'][number], label: string): void {
+  const found = placeForConnectionLabel(draft.value.places, label)
+  place.connectedKey = found?.key ?? ''
+  place.connectedTo = found?.name ?? ''
 }
 
 /* preview ------------------------------------------------------------------ */
@@ -674,7 +693,10 @@ function suggest(): void {
               </div>
               <div>
                 <span class="ev-field-label">Connected to</span>
-                <StudioSelect v-model="place.connectedTo" :options="otherPlaceNames()" />
+                <StudioSelect
+                  :model-value="connectionLabel(draft.places, place.connectedKey)"
+                  :options="connectionOptions(draft.places, place.id)"
+                  @update:model-value="setConnection(place, $event)" />
               </div>
               <div class="grid2__wide">
                 <CollapseBox title="Sounds, scents & hidden details">
