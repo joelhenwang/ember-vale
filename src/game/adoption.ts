@@ -99,17 +99,31 @@ export function applyAdoption(
   }
 }
 
-/** The pins an adoption accept may change, for rollback on dismiss. */
+/**
+ * The pins an adoption accept may change, for rollback on dismiss:
+ * world pins, cast revision pins, and cast starting locations (which
+ * reconciliation may reset). Keyed by cast member key.
+ */
 export interface PinSnapshot {
   worldId: string
   worldRev: number
   castRevs: Record<string, number>
+  castLocs: Record<string, string>
 }
 
 export function snapshotPins(selections: NewStorySelections): PinSnapshot {
   const castRevs: Record<string, number> = {}
-  for (const m of selections.cast) castRevs[m.key] = m.presetRevision
-  return { worldId: selections.world.presetId, worldRev: selections.world.presetRevision, castRevs }
+  const castLocs: Record<string, string> = {}
+  for (const m of selections.cast) {
+    castRevs[m.key] = m.presetRevision
+    castLocs[m.key] = m.locationKey ?? ''
+  }
+  return {
+    worldId: selections.world.presetId,
+    worldRev: selections.world.presetRevision,
+    castRevs,
+    castLocs
+  }
 }
 
 /** True when the live selections still carry exactly the snapshotted pins. */
@@ -125,6 +139,34 @@ export function pinsEqual(snapshot: PinSnapshot, selections: NewStorySelections)
   const bKeys = Object.keys(live.castRevs).sort()
   return (
     aKeys.length === bKeys.length &&
-    aKeys.every((k, i) => k === bKeys[i] && snapshot.castRevs[k] === live.castRevs[k])
+    aKeys.every(
+      (k, i) =>
+        k === bKeys[i] &&
+        snapshot.castRevs[k] === live.castRevs[k] &&
+        snapshot.castLocs[k] === live.castLocs[k]
+    )
   )
+}
+
+/**
+ * The mutable pin surface an adoption accept or dismiss drives: the
+ * wizard form shape (`location`, not the payload's `locationKey`).
+ */
+export interface RestorablePins {
+  worldId: string
+  worldRev: number
+  cast: { key: string; presetRevision: number; location: string }[]
+}
+
+/** Write a snapshot back onto live pins (dismissal after a failed accept). */
+export function restoreSnapshot(target: RestorablePins, snapshot: PinSnapshot): void {
+  target.worldId = snapshot.worldId
+  target.worldRev = snapshot.worldRev
+  for (const member of target.cast) {
+    const rev = snapshot.castRevs[member.key]
+    if (rev !== undefined) member.presetRevision = rev
+    if (member.key in snapshot.castLocs) {
+      member.location = snapshot.castLocs[member.key] ?? member.location
+    }
+  }
 }

@@ -89,6 +89,15 @@ onMounted(() => {
         details: typeof kept['details'] === 'string' ? kept['details'] : undefined,
         exclusions: typeof kept['exclusions'] === 'string' ? kept['exclusions'] : undefined,
         loreExtra: typeof kept['loreExtra'] === 'string' ? kept['loreExtra'] : undefined,
+        travelExtra: Array.isArray(kept['travelExtra'])
+          ? (kept['travelExtra'] as unknown[]).filter(
+              (leg): leg is string[] =>
+                Array.isArray(leg) &&
+                leg.length === 2 &&
+                typeof leg[0] === 'string' &&
+                typeof leg[1] === 'string'
+            )
+          : undefined,
         places,
         activePlace: pickId(kept['activePlace'], places?.[0]?.id),
         startPlace: pickId(kept['startPlace'], pickId(kept['activePlace'], places?.[0]?.id))
@@ -183,6 +192,9 @@ function applyWorldRestore(restored: ReturnType<typeof unpackWorld>): void {
   if (restored.details !== undefined) d.details = restored.details
   if (restored.exclusions !== undefined) d.exclusions = restored.exclusions
   if (restored.loreExtra !== undefined) d.loreExtra = restored.loreExtra
+  if (restored.travelExtra !== undefined) {
+    d.travelExtra = restored.travelExtra.map((leg) => [...leg])
+  }
   if (restored.places !== undefined) {
     d.places.splice(0, d.places.length, ...restored.places)
     const ids = new Set(d.places.map((p) => p.id))
@@ -292,6 +304,7 @@ function formSnapshot(): string {
 function markSaved(before: string): void {
   if (JSON.stringify(draft.value) !== before) return
   saveWorldDraft(id.value)
+  unsavedAfterPublish.value = false
   savedFlash.value = true
   clearTimeout(saveTimer)
   saveTimer = setTimeout(() => (savedFlash.value = false), 1400)
@@ -306,6 +319,7 @@ async function save(): Promise<boolean> {
       details: draft.value.details,
       exclusions: draft.value.exclusions,
       loreExtra: draft.value.loreExtra,
+      travelExtra: draft.value.travelExtra,
       places: draft.value.places,
       activePlace: draft.value.activePlace,
       startPlace: draft.value.startPlace
@@ -357,26 +371,39 @@ const pubStatus = computed(() => {
   }
 })
 
+/** Set when a publish lands while newer edits remain: the studio stays put. */
+const unsavedAfterPublish = ref(false)
+
 async function publish(): Promise<void> {
   if (isNew.value) return
+  unsavedAfterPublish.value = false
   const before = formSnapshot()
   const pending = editor.pendingPublication.value
   let view
+  let acked: string
   if (pending && pending.draftId === editor.draft.value?.id) {
     // An ambiguous publication is still outstanding: replay it frozen
     // instead of saving again. A fresh save would mint a new version and
-    // risk a duplicate revision next to the already-committed one.
+    // risk a duplicate revision next to the already-committed one. Only
+    // the acknowledged snapshot may go clean — never the current form.
+    acked = pending.formSnapshot
     view = await editor.retryPublish(id.value)
   } else {
     editor.fields.value = {
       ...editor.fields.value,
       ...packWorld(draft.value, editor.fields.value)
     }
-    view = await editor.saveAndPublish(id.value, { ...editor.fields.value })
+    acked = before
+    view = await editor.saveAndPublish(id.value, { ...editor.fields.value }, before)
   }
   if (!view) return
-  if (JSON.stringify(draft.value) === before) saveWorldDraft(id.value)
-  if (!fromLibrary.value) {
+  // A replay publishes Older content: only a form still matching the
+  // acknowledged snapshot goes clean and returns. Newer edits stay
+  // dirty, recoverable, and right here.
+  const coversCurrent = acked !== '' && JSON.stringify(draft.value) === acked
+  if (coversCurrent) saveWorldDraft(id.value)
+  else unsavedAfterPublish.value = true
+  if (!fromLibrary.value && coversCurrent) {
     // Nested return: the wizard offers deliberate adoption of the exact
     // published revision — never an automatic switch. The originating
     // story draft rides along so the offer binds to it, never to
@@ -396,6 +423,8 @@ async function publish(): Promise<void> {
 }
 
 async function finishAndReturn(): Promise<void> {
+  // Never abandon unsaved edits: persist first, then complete.
+  if (dirty.value && !(await save())) return
   if (!isNew.value && editor.draft.value) {
     if (!(await editor.complete(id.value))) return
   }
@@ -689,6 +718,10 @@ function suggest(): void {
           </div>
           <div v-else>
             <p v-if="pubStatus" class="studio__state" role="status">{{ pubStatus }}</p>
+            <p v-if="unsavedAfterPublish" class="studio__state" role="status">
+              Newer edits are still unsaved — save or publish again before leaving, or finish from
+              the button below once everything is saved.
+            </p>
             <p v-if="editor.status.value === 'failed'" class="studio__state" role="alert">
               <button type="button" class="studio__link" @click="retryLast()">
                 retry {{ editor.lastFailedOp.value ?? 'operation' }}

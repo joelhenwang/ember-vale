@@ -39,11 +39,17 @@ export type EditorStatus =
 /** Which operation failed last: retries are operation-specific, never a blind reopen. */
 export type FailedOp = 'open' | 'save' | 'publish' | 'complete' | 'discard' | null
 
-/** A frozen publication attempt: retry replays exactly this, never a fresh save. */
+/**
+ * A frozen publication attempt: retry replays exactly this, never a
+ * fresh save. `formSnapshot` is the caller form's JSON at the moment it
+ * was saved for this publication — the acknowledged content. A replay
+ * may mark only that snapshot clean; anything newer stays dirty.
+ */
 export interface PendingPublication {
   draftId: string
   version: number
   presetVersion: number
+  formSnapshot: string
 }
 
 const LOCAL_KEY = (kind: string, id: string): string => `ember-vale.local-preset.${kind}.${id}`
@@ -243,7 +249,8 @@ export function useEditorDraft() {
     pendingPublication.value = {
       draftId: owned.id,
       version: owned.version,
-      presetVersion
+      presetVersion,
+      formSnapshot: ''
     }
     return runPublish(presetId)
   }
@@ -256,7 +263,8 @@ export function useEditorDraft() {
    */
   async function saveAndPublish(
     presetId: string,
-    nextFields: Record<string, unknown>
+    nextFields: Record<string, unknown>,
+    formSnapshot: string
   ): Promise<PresetPublishView | null> {
     const owned = draft.value
     if (!owned) return null
@@ -286,7 +294,8 @@ export function useEditorDraft() {
     pendingPublication.value = {
       draftId: wantDraft,
       version: updated.version,
-      presetVersion: baseDetail.value?.version ?? 0
+      presetVersion: baseDetail.value?.version ?? 0,
+      formSnapshot
     }
     return runPublish(presetId)
   }

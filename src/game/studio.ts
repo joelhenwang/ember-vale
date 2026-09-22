@@ -75,6 +75,13 @@ export interface WorldDraft {
    * field. Invisible in the form; packed back verbatim.
    */
   loreExtra: string
+  /**
+   * Server travel legs the form cannot represent (anything beyond one
+   * connection per place). Invisible in the form; packed back verbatim
+   * so routes authored outside the connection fields survive saves.
+   * Pruned explicitly when a place is removed.
+   */
+  travelExtra: string[][]
 }
 
 const blankCharacter = (): CharacterDraft => ({
@@ -183,7 +190,8 @@ export function ensureWorldDraft(id: string): WorldDraft {
         ],
         activePlace: 'market',
         startPlace: 'market',
-        loreExtra: ''
+        loreExtra: '',
+        travelExtra: []
       }
     } else if (id === 'silverleaf-coast') {
       worldDrafts[id] = {
@@ -208,7 +216,8 @@ export function ensureWorldDraft(id: string): WorldDraft {
         ],
         activePlace: 'lighthouse',
         startPlace: 'lighthouse',
-        loreExtra: ''
+        loreExtra: '',
+        travelExtra: []
       }
     } else {
       worldDrafts[id] = {
@@ -220,7 +229,8 @@ export function ensureWorldDraft(id: string): WorldDraft {
         places: [blankPlace(0)],
         activePlace: 'boot',
         startPlace: 'boot',
-        loreExtra: ''
+        loreExtra: '',
+        travelExtra: []
       }
       const p = worldDrafts[id].places[0]!
       worldDrafts[id].activePlace = p.id

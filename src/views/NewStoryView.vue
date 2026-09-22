@@ -21,6 +21,7 @@ import {
   pinsEqual,
   planAdoption,
   parseAdoptionOffer,
+  restoreSnapshot,
   snapshotPins,
   type AdoptionOffer,
   type PinSnapshot
@@ -67,7 +68,10 @@ const serverAlternative = ref<{ payload: Record<string, unknown>; step: number }
  */
 interface PendingAdoption {
   offer: AdoptionOffer
+  /** Pins before the accept attempt: the restoration target on dismiss. */
   rollback: PinSnapshot | null
+  /** Pins the accept attempt produced: dismiss restores only while live still matches these. */
+  attempted: PinSnapshot | null
 }
 const adoptOffer = ref<PendingAdoption | null>(null)
 /** True while acceptAdoption drives pin changes itself (watcher stands down). */
@@ -518,7 +522,7 @@ async function boot(
   // only when it belongs to the mounted draft; anything else is cleared
   // so a delayed return can never modify another wizard draft.
   if (incomingAdopt && !adoptDead && offerTargetsDraft(incomingAdopt, opened.id)) {
-    adoptOffer.value = { offer: incomingAdopt, rollback: null }
+    adoptOffer.value = { offer: incomingAdopt, rollback: null, attempted: null }
   } else {
     // Clearing targets the live query: while booting from a pending
     // navigation the route query is stale, so leave it — the next mount
@@ -599,6 +603,10 @@ async function acceptAdoption(): Promise<void> {
         await prefetchCharRevs()
       }
     }
+    // Record what this attempt produced (pins and reconciled starting
+    // locations): dismissal restores the rollback only while live still
+    // matches exactly this.
+    pending.attempted = snapshotPins(selections.value)
     if (!(await persist())) {
       // The pins changed locally but did not persist: keep the offer
       // (and its query) so accepting again retries, and say so plainly.
@@ -616,27 +624,32 @@ async function acceptAdoption(): Promise<void> {
 
 async function dismissAdoption(): Promise<void> {
   const pending = adoptOffer.value
-  adoptOffer.value = null
-  clearAdoptQuery()
-  if (pending?.rollback && pinsEqual(pending.rollback, selections.value)) {
-    // A failed accept changed the pins but never persisted: put them
-    // back and save the restoration. Pins the user edited themselves
-    // meanwhile are left alone. The world watcher stands down while
-    // the rollback drives, so it persists exactly once.
+  if (pending?.rollback && pending.attempted && pinsEqual(pending.attempted, selections.value)) {
+    // A failed accept changed the pins (and possibly reconciled
+    // starting locations) but never persisted: put the originals back
+    // and save the restoration. Anything the user edited themselves
+    // meanwhile no longer matches the attempt, so it stands untouched.
+    // The world watcher stands down while the rollback drives, so the
+    // restoration persists exactly once.
     adoptingWorld = true
     try {
-      sel.worldId = pending.rollback.worldId
-      sel.worldRev = pending.rollback.worldRev
-      for (const member of sel.cast) {
-        const rev = pending.rollback.castRevs[member.key]
-        if (rev !== undefined) member.presetRevision = rev
-      }
+      restoreSnapshot(sel, pending.rollback)
       await ensurePinned()
-      await persist()
+      if (!(await persist())) {
+        // The restoration is local-only: retain the offer and its
+        // recovery state so dismissing again retries the save instead
+        // of abandoning the pins.
+        pending.attempted = snapshotPins(selections.value)
+        bootNotice.value =
+          'Could not save the restored pins — they are kept locally. Dismiss again to retry.'
+        return
+      }
     } finally {
       adoptingWorld = false
     }
   }
+  adoptOffer.value = null
+  clearAdoptQuery()
 }
 
 function recalledId(): string | null {
@@ -752,7 +765,7 @@ onBeforeRouteUpdate((to) => {
   if (!incoming) return
   const current = draftCtl.draft.value?.id ?? null
   if (incoming.draftId === current) {
-    adoptOffer.value = { offer: incoming, rollback: null }
+    adoptOffer.value = { offer: incoming, rollback: null, attempted: null }
   } else {
     void boot(incoming.draftId, to.query as Record<string, unknown>)
   }

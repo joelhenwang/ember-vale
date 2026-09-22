@@ -5,8 +5,10 @@ import {
   pinsEqual,
   planAdoption,
   parseAdoptionOffer,
+  restoreSnapshot,
   snapshotPins,
-  type AdoptionOffer
+  type AdoptionOffer,
+  type RestorablePins
 } from './adoption'
 import type { NewStorySelections } from './drafting'
 
@@ -137,17 +139,64 @@ describe('nested adoption', () => {
     expect(pinsEqual(snapshot, before)).toBe(true)
     const after = applyAdoption(before, offer)
     expect(pinsEqual(snapshot, after)).toBe(false)
-    // Restoring the snapshot is exact: the pins match again.
-    const restored: NewStorySelections = {
-      ...after,
-      world: { presetId: snapshot.worldId, presetRevision: snapshot.worldRev },
-      cast: after.cast.map((m) => ({ ...m, presetRevision: snapshot.castRevs[m.key] ?? 1 }))
+    // Restoring the snapshot is exact: revisions and locations return.
+    const live: RestorablePins = {
+      worldId: after.world.presetId,
+      worldRev: after.world.presetRevision,
+      cast: after.cast.map((m) => ({
+        key: m.key,
+        presetRevision: m.presetRevision,
+        location: m.locationKey ?? ''
+      }))
     }
-    expect(pinsEqual(snapshot, restored)).toBe(true)
-    // Manual pin edits after accepting defeat the rollback: dismissing
-    // must not clobber the user's newer choices.
-    restored.cast[0]!.presetRevision = 9
-    expect(pinsEqual(snapshot, restored)).toBe(false)
+    restoreSnapshot(live, snapshot)
+    expect(live).toEqual({
+      worldId: 'world-1',
+      worldRev: 2,
+      cast: [
+        { key: 'wren', presetRevision: 2, location: 'hearth' },
+        { key: 'ash', presetRevision: 1, location: 'market' }
+      ]
+    })
+  })
+
+  it('tracks starting locations through adoption and rollback', () => {
+    const before = selections()
+    const snapshot = snapshotPins(before)
+    // Reconciliation reset a member's starting location…
+    const live: RestorablePins = {
+      worldId: 'world-1',
+      worldRev: 4,
+      cast: [
+        { key: 'wren', presetRevision: 3, location: 'market' },
+        { key: 'ash', presetRevision: 1, location: 'market' }
+      ]
+    }
+    const asSelections: NewStorySelections = {
+      ...before,
+      world: { presetId: live.worldId, presetRevision: live.worldRev },
+      cast: before.cast.map((m) => {
+        const peer = live.cast.find((c) => c.key === m.key)!
+        return { ...m, presetRevision: peer.presetRevision, locationKey: peer.location }
+      })
+    }
+    expect(pinsEqual(snapshot, asSelections)).toBe(false)
+    // …and dismissal puts the original revision and location back.
+    restoreSnapshot(live, snapshot)
+    expect(live.cast[0]).toEqual({ key: 'wren', presetRevision: 2, location: 'hearth' })
+  })
+
+  it('leaves intervening user edits alone on dismiss', () => {
+    const before = selections()
+    const snapshot = snapshotPins(before)
+    // The user re-pinned Wren themselves after the failed accept: the
+    // live pins no longer match the attempted state, so the guard in
+    // the wizard skips the restore and their choice stands.
+    const edited: NewStorySelections = {
+      ...before,
+      cast: before.cast.map((m) => (m.key === 'wren' ? { ...m, presetRevision: 9 } : m))
+    }
+    expect(pinsEqual(snapshot, edited)).toBe(false)
   })
 
   it('journey proof: a new story uses the adopted revision while the original stays unchanged', () => {

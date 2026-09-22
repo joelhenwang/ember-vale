@@ -218,10 +218,17 @@ describe('useEditorDraft', () => {
     installFetch()
     const ctl = useEditorDraft()
     await ctl.open('preset-1', 2)
-    const view = await ctl.saveAndPublish('preset-1', {
-      ...ctl.fields.value,
-      appearance: 'edited without saving first'
-    })
+    const form = JSON.stringify({ appearance: 'edited without saving first' })
+    const view = await ctl.saveAndPublish(
+      'preset-1',
+      {
+        ...ctl.fields.value,
+        appearance: 'edited without saving first'
+      },
+      form
+    )
+    // A resolved publication clears the frozen state entirely.
+    expect(ctl.pendingPublication.value).toBeNull()
     expect(view?.published_revision).toBe(2)
     expect(ctl.status.value).toBe('published')
     // One save carrying the form, then one publish of the acknowledged
@@ -241,13 +248,24 @@ describe('useEditorDraft', () => {
     const ctl = useEditorDraft()
     await ctl.open('preset-1', 2)
     failNextPublish = true
-    const lost = await ctl.saveAndPublish('preset-1', {
-      ...ctl.fields.value,
-      appearance: 'ambiguous edits'
-    })
+    const olderForm = JSON.stringify({ appearance: 'ambiguous edits' })
+    const lost = await ctl.saveAndPublish(
+      'preset-1',
+      {
+        ...ctl.fields.value,
+        appearance: 'ambiguous edits'
+      },
+      olderForm
+    )
     expect(lost).toBeNull()
     expect(ctl.status.value).toBe('failed')
     expect(ctl.lastFailedOp.value).toBe('publish')
+    // The frozen publication keeps the acknowledged form snapshot.
+    expect(ctl.pendingPublication.value).toMatchObject({
+      version: 2,
+      presetVersion: 3,
+      formSnapshot: olderForm
+    })
     const patches = calls.filter((c) => c.startsWith('PATCH')).length
     // The retry replays the frozen draft version and preset version: no
     // second save, so no new version and no duplicate revision.
@@ -265,16 +283,47 @@ describe('useEditorDraft', () => {
     const ctl = useEditorDraft()
     await ctl.open('preset-1', 2)
     expect(ctl.baseDetail.value?.version).toBe(3)
-    await ctl.saveAndPublish('preset-1', { ...ctl.fields.value })
+    await ctl.saveAndPublish('preset-1', { ...ctl.fields.value }, JSON.stringify({ round: 1 }))
     // The publish bumped the preset: our copy moves with it.
     expect(ctl.baseDetail.value?.version).toBe(4)
     // A second edit publishes against the fresh version, not a stale one.
-    await ctl.saveAndPublish('preset-1', {
-      ...ctl.fields.value,
-      appearance: 'second round'
-    })
+    await ctl.saveAndPublish(
+      'preset-1',
+      {
+        ...ctl.fields.value,
+        appearance: 'second round'
+      },
+      JSON.stringify({ round: 2 })
+    )
     expect(publishBodies[1]).toMatchObject({ preset_expected_version: 4 })
     expect(ctl.status.value).toBe('published')
+  })
+
+  it('replays Older on retry after Newest saved: the revision holds Older', async () => {
+    installFetch()
+    const ctl = useEditorDraft()
+    await ctl.open('preset-1', 2)
+    // Publish Older; the response is lost in transport (ambiguous).
+    failNextPublish = true
+    const olderForm = JSON.stringify({ appearance: 'Older' })
+    expect(
+      await ctl.saveAndPublish('preset-1', { ...ctl.fields.value, appearance: 'Older' }, olderForm)
+    ).toBeNull()
+    expect(ctl.pendingPublication.value?.formSnapshot).toBe(olderForm)
+    // The user edits Newest and saves it: version 3, acknowledged.
+    const newerForm = JSON.stringify({ appearance: 'Newest' })
+    ctl.fields.value = { ...ctl.fields.value, appearance: 'Newest' }
+    expect(await ctl.save('preset-1')).toBe(true)
+    expect(ctl.draft.value?.version).toBe(3)
+    // Retry replays the frozen Older version — not the newer save.
+    const view = await ctl.retryPublish('preset-1')
+    expect(view?.published_revision).toBe(2)
+    expect(publishBodies).toEqual([{ expected_version: 2, preset_expected_version: 3 }])
+    // Success clears the frozen state; the caller still holds the Older
+    // snapshot to decide what the replay may mark clean. Newest was
+    // never published, so only a match with Older may go clean.
+    expect(ctl.pendingPublication.value).toBeNull()
+    expect(newerForm === olderForm).toBe(false)
   })
 
   it('tracks the failed operation and clears it on success', async () => {

@@ -62,7 +62,8 @@ function worldDraft(): WorldDraft {
     ],
     activePlace: 'market',
     startPlace: 'hearth',
-    loreExtra: ''
+    loreExtra: '',
+    travelExtra: []
   }
 }
 
@@ -220,6 +221,123 @@ describe('studio field bridge', () => {
     draft.places[1]!.connectedTo = ''
     const cleared = packWorld(draft, packed as unknown as Record<string, unknown>)
     expect(cleared.travel).toEqual([])
+  })
+
+  it('keeps server-authored routes through an unrelated save', () => {
+    // The map arrived with routes but no "Connected to" prose: editing
+    // the description must not touch a single route.
+    const server = {
+      description: 'Mossy riverbanks.',
+      lore: '',
+      locations: [
+        { key: 'hearth', name: 'Hearth', description: '' },
+        { key: 'market_east', name: 'Market', description: '' }
+      ],
+      starting_location_key: 'hearth',
+      travel: [
+        ['hearth', 'market_east'],
+        ['market_east', 'hearth']
+      ]
+    }
+    const restored = unpackWorld(server)
+    expect(restored.places?.[0]?.connectedTo).toBe('Market')
+    const draft = { ...worldDraft(), ...restored, details: 'Mossy riverbanks, at dawn.' }
+    const packed = packWorld(draft, server)
+    expect(packed.description).toBe('Mossy riverbanks, at dawn.')
+    // The graph is untouched, so no travel rewrite ships at all.
+    expect(packed.travel).toBeUndefined()
+  })
+
+  it('preserves legs the form cannot represent', () => {
+    const server = {
+      description: '',
+      lore: '',
+      locations: [
+        { key: 'hearth', name: 'Hearth', description: '' },
+        { key: 'market_east', name: 'Market', description: '' },
+        { key: 'mill', name: 'Mill', description: '' }
+      ],
+      starting_location_key: 'hearth',
+      travel: [
+        ['hearth', 'market_east'],
+        ['hearth', 'mill'],
+        ['mill', 'market_east']
+      ]
+    }
+    const restored = unpackWorld(server)
+    // The first leg per source hydrates the field; the rest go opaque.
+    // (Mill's own leg hydrates Mill's field, so only Hearth's second
+    // leg is unrepresentable.)
+    expect(restored.places?.[0]?.connectedTo).toBe('Market')
+    expect(restored.places?.[2]?.connectedTo).toBe('Market')
+    expect(restored.travelExtra).toEqual([['hearth', 'mill']])
+    // An unrelated save re-emits the full graph, order-stable.
+    const draft = { ...worldDraft(), ...restored }
+    draft.places = restored.places!
+    draft.activePlace = restored.activePlace!
+    draft.startPlace = restored.startPlace!
+    draft.travelExtra = restored.travelExtra!
+    const packed = packWorld(draft, server)
+    expect(packed.travel).toBeUndefined()
+  })
+
+  it('removes only the cleared leg, keeping unrepresentable ones', () => {
+    const server = {
+      description: '',
+      lore: '',
+      locations: [
+        { key: 'hearth', name: 'Hearth', description: '' },
+        { key: 'market_east', name: 'Market', description: '' },
+        { key: 'mill', name: 'Mill', description: '' }
+      ],
+      starting_location_key: 'hearth',
+      travel: [
+        ['hearth', 'market_east'],
+        ['hearth', 'mill']
+      ]
+    }
+    const draft = { ...worldDraft(), ...unpackWorld(server) }
+    draft.places = unpackWorld(server).places!
+    draft.travelExtra = unpackWorld(server).travelExtra!
+    // Hearth's visible connection is cleared: its hydrated leg goes,
+    // the opaque second leg stays. (Market never had an outgoing leg
+    // in this map, so nothing else ships.)
+    draft.places[0]!.connectedTo = ''
+    const packed = packWorld(draft, server)
+    expect(packed.travel).toEqual([['hearth', 'mill']])
+  })
+
+  it('prunes routes of a deleted place explicitly', () => {
+    const draft = worldDraft()
+    draft.travelExtra = [['market_east', 'hearth']]
+    expect(removeWorldPlace(draft, 'market')).toBe(true)
+    expect(draft.travelExtra).toEqual([])
+    const packed = packWorld(draft)
+    // Nothing to rewrite against an empty previous graph: omit, not [].
+    expect(packed.travel).toBeUndefined()
+    expect(packed.locations).toHaveLength(1)
+  })
+
+  it('sends complete location records on change and nothing when unchanged', () => {
+    const draft = worldDraft()
+    const first = packWorld(draft) as unknown as Record<string, unknown>
+    // A second identical save ships no locations at all.
+    expect(packWorld(draft, first).locations).toBeUndefined()
+    // Renaming one place ships every record complete with descriptions.
+    draft.places[1]!.name = 'Grand Market'
+    renamePlaceReferences(draft.places, 'market', 'Market', 'Grand Market')
+    const second = packWorld(draft, first)
+    expect(second.locations).toHaveLength(2)
+    for (const entry of second.locations as { key: string; description?: string }[]) {
+      expect(typeof entry.description).toBe('string')
+    }
+    // Reloading the published map keeps every unchanged description.
+    const reloaded = unpackWorld({
+      ...(first as Record<string, unknown>),
+      ...(second as Record<string, unknown>)
+    })
+    expect(reloaded.places?.[0]?.purpose).toBe('Warm rest.')
+    expect(reloaded.places?.[1]?.name).toBe('Grand Market')
   })
 
   it('preserves lore residue and clears explicitly emptied lore', () => {
