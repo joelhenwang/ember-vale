@@ -33,6 +33,15 @@ const BASE = opt('--base', 'http://127.0.0.1:5173')
 const OUT = opt('--out', 'docs/evidence/walkthrough')
 const EDGE = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
 const API = `${BASE}/api/v1`
+// Subset runner for iteration: --only adoptretry,publishretry,...
+const ONLY = new Set(
+  opt('--only', '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+)
+const run = (name) => ONLY.size === 0 || ONLY.has(name)
+const COMMIT = execSync('git rev-parse --short HEAD', { stdio: 'pipe' }).toString().trim()
 
 fs.mkdirSync(OUT, { recursive: true })
 
@@ -61,10 +70,10 @@ async function waitApiReady() {
   }
 }
 
-async function apiCall(method, urlPath, body) {
+async function apiCall(method, urlPath, body, extraHeaders = {}) {
   const res = await fetch(`${API}${urlPath}`, {
     method,
-    headers: { 'Content-Type': 'application/json', 'X-Worldsim-Role': 'watcher' },
+    headers: { 'Content-Type': 'application/json', 'X-Worldsim-Role': 'watcher', ...extraHeaders },
     body: body === undefined ? undefined : JSON.stringify(body)
   })
   if (!res.ok)
@@ -72,10 +81,49 @@ async function apiCall(method, urlPath, body) {
   return res.json()
 }
 
+/** Throwaway world preset for the studio view flows (archived afterwards). */
+async function createStudioWorld(tag) {
+  const stamp = Date.now().toString(36)
+  const name = `Walkthrough ${tag} ${stamp}`
+  return apiCall(
+    'POST',
+    '/library/presets',
+    {
+      kind: 'world',
+      name,
+      payload: {
+        kind: 'world',
+        name,
+        description: `${name} basin.`,
+        lore: `${name} lore.`,
+        locations: [
+          { key: 'hearth', name: 'Hearth', description: 'A warm room.' },
+          { key: 'market', name: 'Market', description: 'Stalls and bells.' }
+        ],
+        travel: [
+          ['hearth', 'market'],
+          ['market', 'hearth']
+        ],
+        starting_location_key: 'hearth'
+      }
+    },
+    { 'Idempotency-Key': `walkthrough-studio-${stamp}-${tag}` }
+  )
+}
+
+async function archiveStudioWorld(id) {
+  const detail = await apiCall('GET', `/library/presets/${id}`)
+  await apiCall('POST', `/library/presets/${id}/archive`, { expected_version: detail.version })
+}
+
+/** Studio fields pair a bare span label with their control: scope by label. */
+const fieldControl = (page, label, tag) =>
+  page.locator(`div:has(> .ev-field-label:text-is("${label}")) ${tag}`)
+
 const browser = await chromium.launch({ executablePath: EDGE, headless: true })
 
 try {
-  // ---- Observer journey (desktop) -------------------------------------
+  if (run('observer')) // ---- Observer journey (desktop) -------------------------------------
   {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
     const page = await ctx.newPage()
@@ -147,7 +195,7 @@ try {
     await ctx.close()
   }
 
-  // ---- Player journey (Wren controlled, Ash sorts first) ----------------
+  if (run('player')) // ---- Player journey (Wren controlled, Ash sorts first) ----------------
   {
     const presets = await apiCall('GET', '/library/presets?kind=world')
     const emberVale = presets.find((p) => p.name === 'Ember Vale')
@@ -230,7 +278,9 @@ try {
     await ctx.close()
   }
 
-  // ---- Wizard Player creation (explicit Wren selection) -----------------
+  if (
+    run('wizardplayer')
+  ) // ---- Wizard Player creation (explicit Wren selection) -----------------
   {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
     const page = await ctx.newPage()
@@ -288,7 +338,7 @@ try {
     await ctx.close()
   }
 
-  // ---- Director seat and intervention queue ---------------------------
+  if (run('director')) // ---- Director seat and intervention queue ---------------------------
   {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
     const page = await ctx.newPage()
@@ -335,7 +385,7 @@ try {
     await ctx.close()
   }
 
-  // ---- Dirty in-app navigation and recovery ------------------------------
+  if (run('dirtynav')) // ---- Dirty in-app navigation and recovery ------------------------------
   {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
     const page = await ctx.newPage()
@@ -397,7 +447,7 @@ try {
     await ctx.close()
   }
 
-  // ---- Begin, leave mid-create, release: no redirect --------------------
+  if (run('createleave')) // ---- Begin, leave mid-create, release: no redirect --------------------
   {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
     const page = await ctx.newPage()
@@ -426,7 +476,7 @@ try {
     await ctx.close()
   }
 
-  // ---- Failed wizard save ----------------------------------------------
+  if (run('failedsave')) // ---- Failed wizard save ----------------------------------------------
   {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
     const page = await ctx.newPage()
@@ -464,7 +514,262 @@ try {
     await ctx.close()
   }
 
-  // ---- Route compile gate -------------------------------------------------
+  if (run('adoptretry')) // ---- Failed adoption -> failed restore -> retry dismissal ----
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+    const page = await ctx.newPage()
+    const S = 'adoptretry'
+    const world = await createStudioWorld('Adopt')
+    record(S, 'throwaway world preset created', true, `${world.id} rev ${world.current_revision}`)
+    await page.goto(`${BASE}/new-story`, { waitUntil: 'networkidle' })
+    await page.getByRole('button', { name: world.name }).first().waitFor({ timeout: 30000 })
+    await page.getByRole('button', { name: world.name }).first().click()
+    await page.getByRole('button', { name: 'Continue', exact: true }).click()
+    await page.waitForURL(/draft=/, { timeout: 30000 })
+    const draftId = page.url().match(/[?&]draft=([^&]+)/)[1]
+    await page.getByRole('button', { name: /Wren/ }).click()
+    await page.getByRole('button', { name: /Ash/ }).click()
+    await page.getByRole('button', { name: 'Save draft', exact: true }).click()
+    await page
+      .getByText(/· saved/, { exact: false })
+      .first()
+      .waitFor({ timeout: 30000 })
+    const before = await apiCall('GET', `/story-drafts/${draftId}`)
+    const pinsOf = (d) => ({
+      world: [d.payload.world.preset_id, d.payload.world.preset_revision],
+      cast: d.payload.cast.map((m) => [
+        m.instance_key,
+        m.preset_id,
+        m.preset_revision,
+        m.location_key
+      ])
+    })
+    record(
+      S,
+      'wizard draft pins world rev 1 with cast',
+      before.payload.world.preset_revision === 1,
+      JSON.stringify(pinsOf(before))
+    )
+
+    // Publish a new world revision from the studio: the return carries
+    // the adoption offer bound to this draft.
+    await page.goto(`${BASE}/new-story/world/${world.id}?draft=${draftId}`, {
+      waitUntil: 'networkidle'
+    })
+    await page.getByRole('button', { name: 'Publish new revision' }).waitFor({ timeout: 30000 })
+    await fieldControl(page, 'Distinctive details', 'textarea').fill('Adoption walkthrough marker.')
+    await page.getByRole('button', { name: 'Publish new revision' }).click()
+    await page.waitForURL(/adopt_revision=2/, { timeout: 60000 })
+    await page.getByRole('group', { name: 'Adopt published revision' }).waitFor({ timeout: 30000 })
+    record(S, 'studio publish returns the rev-2 adoption offer', true)
+
+    // Accept while the API is down: the pins change locally but the
+    // failure notice says the server is untouched.
+    docker('stop ember-vale-api-1')
+    try {
+      await page.getByRole('button', { name: /Adopt revision 2/ }).click()
+      await page.getByText('Adoption could not save', { exact: false }).waitFor({ timeout: 60000 })
+      record(S, 'failed accept keeps the offer and says pins are unchanged', true)
+      // Dismiss while still down: the restoration cannot save either.
+      await page.getByRole('button', { name: 'Keep current pins' }).click()
+      await page
+        .getByText('Could not save the restored pins', { exact: false })
+        .waitFor({ timeout: 60000 })
+      record(S, 'failed dismissal keeps recovery state for retry', true)
+    } finally {
+      docker('start ember-vale-api-1')
+      await waitApiReady()
+    }
+    // Retry the dismissal with the API back: the originals restore.
+    await page.getByRole('button', { name: 'Keep current pins' }).click()
+    await page
+      .getByRole('group', { name: 'Adopt published revision' })
+      .waitFor({ state: 'detached', timeout: 30000 })
+    record(S, 'retry dismissal clears the offer', true)
+
+    // Reload: the durable outcome is the ORIGINAL pins and locations.
+    await page.reload({ waitUntil: 'networkidle' })
+    await page.getByText(/This draft pins .* rev 1/, { exact: false }).waitFor({ timeout: 30000 })
+    const after = await apiCall('GET', `/story-drafts/${draftId}`)
+    record(
+      S,
+      'reload shows original pins and starting locations',
+      JSON.stringify(pinsOf(after)) === JSON.stringify(pinsOf(before)),
+      JSON.stringify(pinsOf(after))
+    )
+    await archiveStudioWorld(world.id)
+    await ctx.close()
+  }
+
+  if (run('publishretry')) // ---- Ambiguous publish replays Older, Newest stays dirty ----
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+    const page = await ctx.newPage()
+    const S = 'publishretry'
+    const world = await createStudioWorld('Publish')
+    const OLDER = `Older marker ${Date.now().toString(36)}`
+    const NEWER = `Newest marker ${Date.now().toString(36)}`
+    await page.goto(`${BASE}/library/world/${world.id}`, { waitUntil: 'networkidle' })
+    await page.getByRole('button', { name: 'Publish new revision' }).waitFor({ timeout: 30000 })
+    await fieldControl(page, 'Distinctive details', 'textarea').fill(OLDER)
+    // Lose exactly the publish response: the save commits server-side,
+    // the client sees a failure and freezes the Older snapshot.
+    await page.route(
+      '**/editor-drafts/*/publish*',
+      async (route) => {
+        const real = await route.fetch()
+        await real.text()
+        await route.fulfill({
+          status: 502,
+          contentType: 'application/json',
+          body: '{"error":{"code":"BAD_GATEWAY","message":"walkthrough dropped the publish response"}}'
+        })
+      },
+      { times: 1 }
+    )
+    await page.getByRole('button', { name: 'Publish new revision' }).click()
+    await page
+      .getByRole('button', { name: 'Retry publish', exact: true })
+      .waitFor({ timeout: 30000 })
+    record(S, 'lost publish response surfaces Retry publish', true)
+    // Newer edits land after the frozen snapshot.
+    await fieldControl(page, 'Distinctive details', 'textarea').fill(`${OLDER} ${NEWER}`)
+    await page.getByRole('button', { name: 'Retry publish', exact: true }).click()
+    await page.getByText(/Published revision 2/, { exact: false }).waitFor({ timeout: 30000 })
+    await page
+      .getByText('Newer edits are still unsaved', { exact: false })
+      .waitFor({ timeout: 30000 })
+    record(S, 'replay publishes while newer edits stay dirty', true)
+    const formText = await fieldControl(page, 'Distinctive details', 'textarea').inputValue()
+    record(
+      S,
+      'newer edits remain in the form and recoverable',
+      formText.includes(NEWER),
+      formText.slice(0, 80)
+    )
+    // Durable outcome: exactly one new revision, carrying Older only.
+    const head = await apiCall('GET', `/library/presets/${world.id}`)
+    const rev2 = await apiCall('GET', `/library/presets/${world.id}?revision=2`)
+    record(
+      S,
+      'published revision contains Older, not Newest, with no duplicate',
+      head.current_revision === 2 &&
+        rev2.revision.description.includes(OLDER) &&
+        !rev2.revision.description.includes(NEWER),
+      `rev ${head.current_revision}: ${rev2.revision.description.slice(0, 80)}`
+    )
+    // Finish with newer edits outstanding must stay: completing would
+    // abandon them, so the studio holds its ground instead of leaving.
+    const replayUrl = page.url()
+    await page.getByRole('button', { name: 'Finish & return' }).click()
+    await page.waitForTimeout(3000)
+    record(
+      S,
+      'Finish with newer edits stays instead of abandoning',
+      page.url() === replayUrl,
+      page.url()
+    )
+    // Publish the newer edits too, then finish cleanly.
+    await page.getByRole('button', { name: 'Publish new revision' }).click()
+    await page.getByText(/Published revision 3/, { exact: false }).waitFor({ timeout: 60000 })
+    await page.getByRole('button', { name: 'Finish & return' }).click()
+    await page.waitForURL(/\/library\?tab=worlds/, { timeout: 30000 })
+    record(S, 'finish after publishing everything returns', true)
+    await archiveStudioWorld(world.id)
+    await ctx.close()
+  }
+
+  if (run('finishblocked')) // ---- Failed save blocks Finish, edits intact ----
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+    const page = await ctx.newPage()
+    const S = 'finishblocked'
+    const world = await createStudioWorld('Finish')
+    const MARKER = `Finish marker ${Date.now().toString(36)}`
+    await page.goto(`${BASE}/library/world/${world.id}`, { waitUntil: 'networkidle' })
+    await page.getByRole('button', { name: 'Publish new revision' }).waitFor({ timeout: 30000 })
+    await fieldControl(page, 'Distinctive details', 'textarea').fill(MARKER)
+    const studioUrl = page.url()
+    docker('stop ember-vale-api-1')
+    try {
+      await page.getByRole('button', { name: 'Publish new revision' }).click()
+      await page.getByRole('button', { name: /retry save/ }).waitFor({ timeout: 60000 })
+      record(S, 'failed publish surfaces operation-specific retry', true)
+      // Finish must not navigate away while the save cannot land.
+      await page.locator('.istep').getByRole('button', { name: 'Review' }).click()
+      await page.getByRole('button', { name: 'Finish & save' }).click()
+      await page.waitForTimeout(3000)
+      const stayed = page.url() === studioUrl
+      const kept = await fieldControl(page, 'Distinctive details', 'textarea').inputValue()
+      record(S, 'Finish does not abandon unsaved edits', stayed && kept === MARKER, page.url())
+    } finally {
+      docker('start ember-vale-api-1')
+      await waitApiReady()
+    }
+    await page.getByRole('button', { name: /retry save/ }).click()
+    await page.getByText('Saved.', { exact: false }).first().waitFor({ timeout: 30000 })
+    record(S, 'retry after recovery saves', true)
+    // Reload: the marker persisted server-side, not just locally.
+    await page.reload({ waitUntil: 'networkidle' })
+    await page.getByRole('button', { name: 'Publish new revision' }).waitFor({ timeout: 30000 })
+    const reloaded = await fieldControl(page, 'Distinctive details', 'textarea').inputValue()
+    record(S, 'saved edit survives reload', reloaded === MARKER, reloaded.slice(0, 60))
+    await archiveStudioWorld(world.id)
+    await ctx.close()
+  }
+
+  if (run('duplicateroute')) // ---- Second same-named destination survives save/publish/reload ----
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+    const page = await ctx.newPage()
+    const S = 'duplicateroute'
+    const world = await createStudioWorld('Duplicates')
+    await page.goto(`${BASE}/library/world/${world.id}`, { waitUntil: 'networkidle' })
+    await page.getByRole('button', { name: 'Publish new revision' }).waitFor({ timeout: 30000 })
+    // A second place named Market: both Markets gain key-suffixed labels.
+    await page.getByRole('button', { name: 'Add place' }).click()
+    await fieldControl(page, 'Name', 'input').fill('Market')
+    await page.locator('.places__tab', { hasText: 'Hearth' }).click()
+    const connSel = fieldControl(page, 'Connected to', 'select')
+    const options = await connSel.evaluate((el) => Array.from(el.options).map((o) => o.text))
+    const dupes = options.filter((o) => /^Market \(.+\)$/.test(o))
+    record(
+      S,
+      'duplicate names render key-disambiguated labels',
+      dupes.length === 2,
+      options.join(' | ')
+    )
+    await connSel.selectOption({ label: dupes[1] })
+    const pickedKey = dupes[1].match(/\((.+)\)/)[1]
+    await page.getByRole('button', { name: 'Save draft', exact: true }).click()
+    await page
+      .locator('.dirty', { hasText: 'Unsaved changes' })
+      .waitFor({ state: 'detached', timeout: 30000 })
+    await page.getByRole('button', { name: 'Publish new revision' }).click()
+    await page.getByText(/Published revision 2/, { exact: false }).waitFor({ timeout: 60000 })
+    record(S, 'duplicate-target save and publish land', true)
+    // Reload: the destination key — not the first same name — is selected.
+    await page.reload({ waitUntil: 'networkidle' })
+    await page.getByRole('button', { name: 'Publish new revision' }).waitFor({ timeout: 30000 })
+    await page.locator('.places__tab', { hasText: 'Hearth' }).waitFor({ timeout: 30000 })
+    const rehydrated = await page.locator('.places__tab').allInnerTexts()
+    record(S, 'places rehydrate after reload', rehydrated.length === 3, rehydrated.join(' | '))
+    await page.screenshot({ path: path.join(OUT, 'studio-duplicates.png') })
+    await page.locator('.places__tab', { hasText: 'Hearth' }).click()
+    const reselected = await fieldControl(page, 'Connected to', 'select').inputValue()
+    const rev2 = await apiCall('GET', `/library/presets/${world.id}?revision=2`)
+    const legs = rev2.revision.travel.filter(([src]) => src === 'hearth')
+    record(
+      S,
+      'reload keeps the second Market selected by key',
+      reselected === dupes[1] && legs.length === 1 && legs[0][1] === pickedKey,
+      `${reselected} / ${JSON.stringify(legs)}`
+    )
+    await archiveStudioWorld(world.id)
+    await ctx.close()
+  }
+
+  if (run('routes')) // ---- Route compile gate -------------------------------------------------
   {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
     const page = await ctx.newPage()
@@ -487,7 +792,7 @@ try {
     await ctx.close()
   }
 
-  // ---- Narrow viewport ----------------------------------------------------
+  if (run('narrow')) // ---- Narrow viewport ----------------------------------------------------
   {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } })
     const page = await ctx.newPage()
@@ -510,7 +815,13 @@ try {
   fs.writeFileSync(
     path.join(OUT, 'results.json'),
     JSON.stringify(
-      { ok: process.exitCode !== 1, base: BASE, at: new Date().toISOString(), results },
+      {
+        ok: process.exitCode !== 1,
+        base: BASE,
+        commit: COMMIT,
+        at: new Date().toISOString(),
+        results
+      },
       null,
       2
     )

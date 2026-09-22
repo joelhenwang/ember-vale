@@ -14,6 +14,8 @@ interface DraftRow {
   baseRevision: number
   fields: Record<string, unknown>
   version: number
+  publishedVersion: number | null
+  publishedRevision: number | null
 }
 
 const drafts = new Map<string, DraftRow>()
@@ -24,6 +26,8 @@ let calls: string[] = []
 let publishBodies: Record<string, unknown>[] = []
 /** Fail the next publish call once with a transport error (ambiguous outcome). */
 let failNextPublish = false
+/** A draft left open on a superseded base (reload-after-publish setup). */
+let staleDraft: DraftRow | null = null
 
 function detailFor(presetId: string, revision: number): Record<string, unknown> {
   return {
@@ -52,6 +56,7 @@ function installFetch(): void {
   calls = []
   publishBodies = []
   failNextPublish = false
+  staleDraft = null
   vi.stubGlobal(
     'fetch',
     vi.fn(async (rawUrl: string, init: RequestInit = {}) => {
@@ -71,13 +76,23 @@ function installFetch(): void {
       if (draftOpen && method === 'POST') {
         const presetId = draftOpen[1] as string
         const base = Number((body as Record<string, unknown>)['base_revision'])
+        if (staleDraft && staleDraft.presetId === presetId && staleDraft.baseRevision !== base) {
+          return new Response(
+            JSON.stringify({
+              error: { code: 'PRECONDITION_FAILED', message: 'draft already open' }
+            }),
+            { status: 409 }
+          )
+        }
         const id = `draft-${presetId}-r${base}`
         const row: DraftRow = drafts.get(id) ?? {
           id,
           presetId,
           baseRevision: base,
           fields: {},
-          version: 1
+          version: 1,
+          publishedVersion: null,
+          publishedRevision: null
         }
         drafts.set(id, row)
         return new Response(
@@ -87,9 +102,57 @@ function installFetch(): void {
             base_revision: base,
             fields: row.fields,
             version: row.version,
+            published_version: row.publishedVersion,
+            published_revision: row.publishedRevision,
             updated_at: new Date().toISOString()
           }),
           { status: 200 }
+        )
+      }
+
+      const current = path.match(/\/library\/presets\/([^/]+)\/editor-drafts\/current$/)
+      if (current && method === 'GET') {
+        const row = staleDraft?.presetId === current[1] ? staleDraft : null
+        if (!row) {
+          return new Response(
+            JSON.stringify({ error: { code: 'NOT_FOUND', message: 'no draft' } }),
+            { status: 404 }
+          )
+        }
+        return new Response(
+          JSON.stringify({
+            id: row.id,
+            preset_id: row.presetId,
+            base_revision: row.baseRevision,
+            fields: row.fields,
+            version: row.version,
+            published_version: row.publishedVersion,
+            published_revision: row.publishedRevision,
+            updated_at: new Date().toISOString()
+          }),
+          { status: 200 }
+        )
+      }
+
+      const complete = path.match(/\/library\/presets\/([^/]+)\/editor-drafts\/([^/]+)\/complete$/)
+      if (complete && method === 'POST') {
+        const row = staleDraft?.id === complete[2] ? staleDraft : null
+        // Mirrors the server: only a version matching the published
+        // receipt may retire; anything newer is an explicit discard.
+        if (
+          row &&
+          row.publishedVersion !== null &&
+          row.publishedRevision !== null &&
+          row.publishedVersion === row.version
+        ) {
+          staleDraft = null
+          return new Response(JSON.stringify({ draft_id: row.id }), { status: 200 })
+        }
+        return new Response(
+          JSON.stringify({
+            error: { code: 'PRECONDITION_FAILED', message: 'draft has unpublished changes' }
+          }),
+          { status: 409 }
         )
       }
 
@@ -350,6 +413,57 @@ describe('useEditorDraft', () => {
     expect(ctl.status.value).toBe('failed')
     expect(ctl.error.value).toBeTruthy()
     expect(ctl.draft.value?.id).toBe('missing')
+  })
+
+  it('retires a fully-published stale draft and reopens the new head', async () => {
+    installFetch()
+    // Reload after a publish: a base-1 draft lingers whose version
+    // still matches its published receipt — retiring it abandons
+    // nothing, since the revision preserves the content.
+    staleDraft = {
+      id: 'draft-stale',
+      presetId: 'preset-1',
+      baseRevision: 1,
+      fields: {},
+      version: 3,
+      publishedVersion: 3,
+      publishedRevision: 2
+    }
+    const ctl = useEditorDraft()
+    await ctl.open('preset-1', 2)
+    expect(ctl.status.value).toBe('editing')
+    expect(ctl.draft.value?.base_revision).toBe(2)
+    expect(ctl.lastFailedOp.value).toBeNull()
+    // The stale draft retired through complete, then the head opened.
+    expect(calls).toContain(
+      'POST /api/v1/library/presets/preset-1/editor-drafts/draft-stale/complete'
+    )
+    expect(
+      calls.filter((c) => c === 'POST /api/v1/library/presets/preset-1/editor-drafts')
+    ).toHaveLength(2)
+  })
+
+  it('surfaces the conflict when the stale draft holds unpublished work', async () => {
+    installFetch()
+    // Saved after publishing: the version moved past the receipt, so
+    // retiring it would abandon newer work — the open stays failed.
+    staleDraft = {
+      id: 'draft-stale',
+      presetId: 'preset-1',
+      baseRevision: 1,
+      fields: { appearance: 'newer' },
+      version: 4,
+      publishedVersion: 3,
+      publishedRevision: 2
+    }
+    const ctl = useEditorDraft()
+    await expect(ctl.open('preset-1', 2)).rejects.toThrow()
+    expect(ctl.status.value).toBe('failed')
+    expect(ctl.lastFailedOp.value).toBe('open')
+    // No second open attempted: the conflict stands for explicit discard.
+    expect(
+      calls.filter((c) => c === 'POST /api/v1/library/presets/preset-1/editor-drafts')
+    ).toHaveLength(1)
   })
 })
 

@@ -23,13 +23,14 @@ import type {
   PresetDetail,
   PresetPublishView
 } from '../../content/clients/worldsim'
-import { newOperationKey } from '../api/http'
+import { ApiError, newOperationKey } from '../api/http'
 import {
   completeEditorDraft,
   discardEditorDraft,
   getPreset,
   openEditorDraft,
   publishEditorDraft,
+  readEditorDraft,
   saveEditorDraft
 } from '../api/worldsim'
 
@@ -185,32 +186,70 @@ export function useEditorDraft() {
 
   const hydrated = computed(() => hydrateFields(baseDetail.value, draft.value))
 
-  async function open(presetId: string, baseRevision: number, signal?: AbortSignal): Promise<void> {
-    cycle += 1
-    const seen = cycle
-    const wantPreset = presetId
-    status.value = 'loading'
-    error.value = null
-    publishedRevision.value = null
-    lastFailedOp.value = null
-    pendingPublication.value = null
+  /**
+   * Retire a draft left open on a superseded base (reload after a
+   * publish) exactly when retirement is provably safe: complete()
+   * succeeds only when the draft version still matches the published
+   * receipt, so nothing unpublished is ever abandoned. Anything newer
+   * stays a surfaced conflict for an explicit discard.
+   */
+  async function recoverSupersededDraft(
+    presetId: string,
+    baseRevision: number,
+    signal?: AbortSignal
+  ): Promise<boolean> {
+    let current
     try {
-      const [detail, opened] = await Promise.all([
-        getPreset(wantPreset, baseRevision, { signal }),
-        openEditorDraft(wantPreset, baseRevision, { signal })
-      ])
-      if (seen !== cycle) return
-      baseDetail.value = detail
-      draft.value = opened
-      fields.value = hydrateFields(detail, opened)
-      status.value = 'editing'
-    } catch (err) {
-      if (seen !== cycle) return
-      if (err instanceof Error && (err as { cancelled?: boolean }).cancelled) return
-      status.value = 'failed'
-      lastFailedOp.value = 'open'
-      error.value = err instanceof Error ? err.message : 'could not open the draft'
-      throw err
+      current = await readEditorDraft(presetId, { signal })
+    } catch {
+      return false
+    }
+    if (current.base_revision >= baseRevision) return false
+    try {
+      await completeEditorDraft(presetId, current.id, current.version, { signal })
+    } catch {
+      return false
+    }
+    return true
+  }
+
+  async function open(presetId: string, baseRevision: number, signal?: AbortSignal): Promise<void> {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      cycle += 1
+      const seen = cycle
+      const wantPreset = presetId
+      status.value = 'loading'
+      error.value = null
+      publishedRevision.value = null
+      lastFailedOp.value = null
+      pendingPublication.value = null
+      try {
+        const [detail, opened] = await Promise.all([
+          getPreset(wantPreset, baseRevision, { signal }),
+          openEditorDraft(wantPreset, baseRevision, { signal })
+        ])
+        if (seen !== cycle) return
+        baseDetail.value = detail
+        draft.value = opened
+        fields.value = hydrateFields(detail, opened)
+        status.value = 'editing'
+        return
+      } catch (err) {
+        if (seen !== cycle) return
+        if (err instanceof Error && (err as { cancelled?: boolean }).cancelled) return
+        if (
+          attempt === 0 &&
+          err instanceof ApiError &&
+          err.code === 'PRECONDITION_FAILED' &&
+          (await recoverSupersededDraft(wantPreset, baseRevision, signal))
+        ) {
+          continue
+        }
+        status.value = 'failed'
+        lastFailedOp.value = 'open'
+        error.value = err instanceof Error ? err.message : 'could not open the draft'
+        throw err
+      }
     }
   }
 

@@ -1,7 +1,8 @@
 {
   "ok": true,
   "base": "http://127.0.0.1:5173",
-  "at": "2026-09-21T10:14:14.761Z",
+  "commit": "4a56c86",
+  "at": "2026-09-22T17:01:10.198Z",
   "results": [
     {
       "scenario": "observer",
@@ -19,7 +20,7 @@
       "scenario": "observer",
       "step": "begin navigates to the room",
       "ok": true,
-      "detail": "adef480e-8abb-47e6-97da-992115b0b7b9"
+      "detail": "f9910444-1707-4a6b-b42f-04db3dd6a460"
     },
     {
       "scenario": "observer",
@@ -157,7 +158,7 @@
       "scenario": "dirtynav",
       "step": "post-failure edit survives leave and reopen",
       "ok": true,
-      "detail": "Newest edit mub37pe4"
+      "detail": "Newest edit mucx673u"
     },
     {
       "scenario": "createleave",
@@ -182,6 +183,132 @@
       "step": "retry after recovery persists the draft",
       "ok": true,
       "detail": ""
+    },
+    {
+      "scenario": "adoptretry",
+      "step": "throwaway world preset created",
+      "ok": true,
+      "detail": "e93dc228-4ae1-40e7-8aa9-ea5c32c2559c rev 1"
+    },
+    {
+      "scenario": "adoptretry",
+      "step": "wizard draft pins world rev 1 with cast",
+      "ok": true,
+      "detail": "{\"world\":[\"e93dc228-4ae1-40e7-8aa9-ea5c32c2559c\",1],\"cast\":[[\"wren\",\"20000000-0000-4000-8000-000000000101\",1,\"hearth\"],[\"ash\",\"20000000-0000-4000-8000-000000000102\",1,\"market\"]]}"
+    },
+    {
+      "scenario": "adoptretry",
+      "step": "studio publish returns the rev-2 adoption offer",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "adoptretry",
+      "step": "failed accept keeps the offer and says pins are unchanged",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "adoptretry",
+      "step": "failed dismissal keeps recovery state for retry",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "adoptretry",
+      "step": "retry dismissal clears the offer",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "adoptretry",
+      "step": "reload shows original pins and starting locations",
+      "ok": true,
+      "detail": "{\"world\":[\"e93dc228-4ae1-40e7-8aa9-ea5c32c2559c\",1],\"cast\":[[\"wren\",\"20000000-0000-4000-8000-000000000101\",1,\"hearth\"],[\"ash\",\"20000000-0000-4000-8000-000000000102\",1,\"market\"]]}"
+    },
+    {
+      "scenario": "publishretry",
+      "step": "lost publish response surfaces Retry publish",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "publishretry",
+      "step": "replay publishes while newer edits stay dirty",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "publishretry",
+      "step": "newer edits remain in the form and recoverable",
+      "ok": true,
+      "detail": "Older marker mucx73rv Newest marker mucx73rv"
+    },
+    {
+      "scenario": "publishretry",
+      "step": "published revision contains Older, not Newest, with no duplicate",
+      "ok": true,
+      "detail": "rev 2: Older marker mucx73rv"
+    },
+    {
+      "scenario": "publishretry",
+      "step": "Finish with newer edits stays instead of abandoning",
+      "ok": true,
+      "detail": "http://127.0.0.1:5173/library/world/4ee7b815-bf17-4d02-afcd-ed5f1b48f1da"
+    },
+    {
+      "scenario": "publishretry",
+      "step": "finish after publishing everything returns",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "finishblocked",
+      "step": "failed publish surfaces operation-specific retry",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "finishblocked",
+      "step": "Finish does not abandon unsaved edits",
+      "ok": true,
+      "detail": "http://127.0.0.1:5173/library/world/eb69665c-f86e-4786-825a-093f53e15ce9"
+    },
+    {
+      "scenario": "finishblocked",
+      "step": "retry after recovery saves",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "finishblocked",
+      "step": "saved edit survives reload",
+      "ok": true,
+      "detail": "Finish marker mucx7813"
+    },
+    {
+      "scenario": "duplicateroute",
+      "step": "duplicate names render key-disambiguated labels",
+      "ok": true,
+      "detail": "Market (market) | Market (new-place)"
+    },
+    {
+      "scenario": "duplicateroute",
+      "step": "duplicate-target save and publish land",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "duplicateroute",
+      "step": "places rehydrate after reload",
+      "ok": true,
+      "detail": "Hearth | Market | Market"
+    },
+    {
+      "scenario": "duplicateroute",
+      "step": "reload keeps the second Market selected by key",
+      "ok": true,
+      "detail": "Market (new-place) / [[\"hearth\",\"new-place\"]]"
     },
     {
       "scenario": "routes",
