@@ -1,8 +1,16 @@
 {
   "ok": true,
   "base": "http://127.0.0.1:5173",
-  "commit": "4a56c86",
-  "at": "2026-09-22T17:01:10.198Z",
+  "commit": "18679ce",
+  "dirty": true,
+  "diffSha256": "ad896eb88bf86f3172b4916dd6e7ef79164557c509a5fcc7b71b9d82707eb197",
+  "untracked": [
+    "docs/evidence/walkthrough/PROVENANCE.md",
+    "src/composables/usePresetCreation.spec.ts",
+    "src/composables/usePresetCreation.ts"
+  ],
+  "only": [],
+  "at": "2026-09-22T20:31:27.332Z",
   "results": [
     {
       "scenario": "observer",
@@ -20,7 +28,7 @@
       "scenario": "observer",
       "step": "begin navigates to the room",
       "ok": true,
-      "detail": "f9910444-1707-4a6b-b42f-04db3dd6a460"
+      "detail": "de6e453e-7366-4e1a-b63c-9ebcba761dc0"
     },
     {
       "scenario": "observer",
@@ -158,7 +166,7 @@
       "scenario": "dirtynav",
       "step": "post-failure edit survives leave and reopen",
       "ok": true,
-      "detail": "Newest edit mucx673u"
+      "detail": "Newest edit mud4o026"
     },
     {
       "scenario": "createleave",
@@ -188,13 +196,13 @@
       "scenario": "adoptretry",
       "step": "throwaway world preset created",
       "ok": true,
-      "detail": "e93dc228-4ae1-40e7-8aa9-ea5c32c2559c rev 1"
+      "detail": "c7333383-7898-4838-aa1c-a3a123d9df6b rev 1"
     },
     {
       "scenario": "adoptretry",
       "step": "wizard draft pins world rev 1 with cast",
       "ok": true,
-      "detail": "{\"world\":[\"e93dc228-4ae1-40e7-8aa9-ea5c32c2559c\",1],\"cast\":[[\"wren\",\"20000000-0000-4000-8000-000000000101\",1,\"hearth\"],[\"ash\",\"20000000-0000-4000-8000-000000000102\",1,\"market\"]]}"
+      "detail": "{\"world\":[\"c7333383-7898-4838-aa1c-a3a123d9df6b\",1],\"cast\":[[\"wren\",\"20000000-0000-4000-8000-000000000101\",1,\"hearth\"],[\"ash\",\"20000000-0000-4000-8000-000000000102\",1,\"market\"]]}"
     },
     {
       "scenario": "adoptretry",
@@ -224,7 +232,7 @@
       "scenario": "adoptretry",
       "step": "reload shows original pins and starting locations",
       "ok": true,
-      "detail": "{\"world\":[\"e93dc228-4ae1-40e7-8aa9-ea5c32c2559c\",1],\"cast\":[[\"wren\",\"20000000-0000-4000-8000-000000000101\",1,\"hearth\"],[\"ash\",\"20000000-0000-4000-8000-000000000102\",1,\"market\"]]}"
+      "detail": "{\"world\":[\"c7333383-7898-4838-aa1c-a3a123d9df6b\",1],\"cast\":[[\"wren\",\"20000000-0000-4000-8000-000000000101\",1,\"hearth\"],[\"ash\",\"20000000-0000-4000-8000-000000000102\",1,\"market\"]]}"
     },
     {
       "scenario": "publishretry",
@@ -242,19 +250,19 @@
       "scenario": "publishretry",
       "step": "newer edits remain in the form and recoverable",
       "ok": true,
-      "detail": "Older marker mucx73rv Newest marker mucx73rv"
+      "detail": "Older marker mud4oxc8 Newest marker mud4oxc8"
     },
     {
       "scenario": "publishretry",
       "step": "published revision contains Older, not Newest, with no duplicate",
       "ok": true,
-      "detail": "rev 2: Older marker mucx73rv"
+      "detail": "rev 2: Older marker mud4oxc8"
     },
     {
       "scenario": "publishretry",
       "step": "Finish with newer edits stays instead of abandoning",
       "ok": true,
-      "detail": "http://127.0.0.1:5173/library/world/4ee7b815-bf17-4d02-afcd-ed5f1b48f1da"
+      "detail": "http://127.0.0.1:5173/library/world/30e7927d-4ee4-4f77-bf4c-c05be6046cda"
     },
     {
       "scenario": "publishretry",
@@ -272,7 +280,7 @@
       "scenario": "finishblocked",
       "step": "Finish does not abandon unsaved edits",
       "ok": true,
-      "detail": "http://127.0.0.1:5173/library/world/eb69665c-f86e-4786-825a-093f53e15ce9"
+      "detail": "http://127.0.0.1:5173/library/world/0d697c50-30e3-4187-b23d-73869d347431"
     },
     {
       "scenario": "finishblocked",
@@ -284,7 +292,7 @@
       "scenario": "finishblocked",
       "step": "saved edit survives reload",
       "ok": true,
-      "detail": "Finish marker mucx7813"
+      "detail": "Finish marker mud4p1ix"
     },
     {
       "scenario": "duplicateroute",
@@ -309,6 +317,78 @@
       "step": "reload keeps the second Market selected by key",
       "ok": true,
       "detail": "Market (new-place) / [[\"hearth\",\"new-place\"]]"
+    },
+    {
+      "scenario": "firstcreate",
+      "step": "world creation persists rev 1 and hands off to its studio",
+      "ok": true,
+      "detail": "Walkthrough First mud4pe8i rev 1"
+    },
+    {
+      "scenario": "firstcreate",
+      "step": "character creation persists rev 1",
+      "ok": true,
+      "detail": "Walkthrough First Char mud4pe8i rev 1"
+    },
+    {
+      "scenario": "firstcreate",
+      "step": "failed creation keeps the frozen request",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "firstcreate",
+      "step": "reload resumes the frozen name and offers retry",
+      "ok": true,
+      "detail": "Walkthrough Retry mud4pe8i"
+    },
+    {
+      "scenario": "firstcreate",
+      "step": "retry after reload mints exactly one preset with its content",
+      "ok": true,
+      "detail": "1 preset(s) named Walkthrough Retry mud4pe8i"
+    },
+    {
+      "scenario": "twostories",
+      "step": "story B drafts on world rev 1",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "twostories",
+      "step": "story A plays on rev 1 with committed runtime state",
+      "ok": true,
+      "detail": "5 entries"
+    },
+    {
+      "scenario": "twostories",
+      "step": "story B explicitly adopts rev 2",
+      "ok": true,
+      "detail": "world rev 2"
+    },
+    {
+      "scenario": "twostories",
+      "step": "story A setup is byte-identical after publish+adopt",
+      "ok": true,
+      "detail": "world rev 1"
+    },
+    {
+      "scenario": "twostories",
+      "step": "reloaded play action bar",
+      "ok": true,
+      "detail": "Help | Lyria | Initial configuration | Start journey | Commit beat 2 | All stories"
+    },
+    {
+      "scenario": "twostories",
+      "step": "reloaded B uses the current map with no stale-pin notice",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "twostories",
+      "step": "reload keeps A on rev 1 and B on rev 2, independently",
+      "ok": true,
+      "detail": "A feed 5, B rev 2"
     },
     {
       "scenario": "routes",

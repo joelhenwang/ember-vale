@@ -119,6 +119,21 @@ export function clearLocalPreset(kind: string, id: string): void {
  * mid-retry). The server receipt is pending; until it lands this key is
  * stored but never sent.
  */
+/**
+ * Forget a creation key after its receipt lands, so the next distinct
+ * submission mints a fresh identity instead of conflicting with the
+ * recorded request under the old one.
+ */
+export function clearCreateKey(localId: string): void {
+  const name = CREATE_KEY_NAME(localId)
+  memoryKeys.delete(name)
+  try {
+    localStorage.removeItem(name)
+  } catch {
+    /* best-effort */
+  }
+}
+
 export function stableCreateKey(localId: string): string {
   const name = CREATE_KEY_NAME(localId)
   const remembered = memoryKeys.get(name)
@@ -173,6 +188,13 @@ export function useEditorDraft() {
   const storageOk = ref(true)
   /** Last failed operation, so Retry replays exactly that — never a blind reopen. */
   const lastFailedOp = ref<FailedOp>(null)
+  /**
+   * True when the last open failed on a draft left open on another base
+   * whose unpublished work blocked auto-retirement. The studios offer
+   * "Resume saved draft" while this holds: re-enter that draft at its
+   * saved base revision instead of requiring deletion first.
+   */
+  const openConflict = ref(false)
   /**
    * Frozen publication identity. Set when a save is acknowledged for
    * publishing and cleared only when that exact publication resolves:
@@ -234,6 +256,7 @@ export function useEditorDraft() {
       error.value = null
       publishedRevision.value = null
       lastFailedOp.value = null
+      openConflict.value = false
       pendingPublication.value = null
       try {
         const [detail, opened] = await Promise.all([
@@ -263,6 +286,9 @@ export function useEditorDraft() {
         if (seen !== cycle) return
         status.value = 'failed'
         lastFailedOp.value = 'open'
+        // A surviving draft conflict offers "Resume saved draft" in the
+        // studios; every other open failure stays retry-only.
+        openConflict.value = err instanceof ApiError && err.code === 'PRECONDITION_FAILED'
         error.value = err instanceof Error ? err.message : 'could not open the draft'
         throw err
       }
@@ -454,6 +480,51 @@ export function useEditorDraft() {
     cycle += 1
   }
 
+  /**
+   * Re-enter the draft left open on its saved base revision, keeping its
+   * retained fields. Used when a fresh open conflicts with unpublished
+   * work: the saved draft stays accessible without requiring deletion,
+   * and discarding it stays an explicit separate choice. Later saves and
+   * publishes run against the resumed base; a moved head surfaces as an
+   * ordinary version conflict there, never as silent loss here.
+   */
+  async function resumeStaleDraft(presetId: string, signal?: AbortSignal): Promise<boolean> {
+    cycle += 1
+    const seen = cycle
+    const wantPreset = presetId
+    status.value = 'loading'
+    error.value = null
+    let current
+    try {
+      current = await readEditorDraft(wantPreset, { signal })
+    } catch (err) {
+      if (seen !== cycle) return false
+      status.value = 'failed'
+      lastFailedOp.value = 'open'
+      error.value = err instanceof Error ? err.message : 'could not resume the saved draft'
+      return false
+    }
+    if (seen !== cycle) return false
+    try {
+      const detail = await getPreset(wantPreset, current.base_revision, { signal })
+      if (seen !== cycle) return false
+      baseDetail.value = detail
+      draft.value = current
+      fields.value = hydrateFields(detail, current)
+      status.value = 'editing'
+      lastFailedOp.value = null
+      openConflict.value = false
+      pendingPublication.value = null
+      return true
+    } catch (err) {
+      if (seen !== cycle) return false
+      status.value = 'failed'
+      lastFailedOp.value = 'open'
+      error.value = err instanceof Error ? err.message : 'could not resume the saved draft'
+      return false
+    }
+  }
+
   return {
     draft,
     baseDetail,
@@ -464,8 +535,10 @@ export function useEditorDraft() {
     publishedRevision,
     storageOk,
     lastFailedOp,
+    openConflict,
     pendingPublication,
     open,
+    resumeStaleDraft,
     save,
     publish,
     saveAndPublish,

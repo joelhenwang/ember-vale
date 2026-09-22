@@ -70,6 +70,12 @@ export interface CharacterDraft {
   secretFear: string
   appearanceSaved: boolean
   /**
+   * Name for first publication. The server requires it at creation, but
+   * the form otherwise never edits it — existing presets keep the
+   * library name and never pack this.
+   */
+  presetName: string
+  /**
    * Server prose the section parser did not attribute to a known
    * field (leading free text in personality / background). Invisible
    * in the form; packed back verbatim ahead of the regenerated
@@ -80,6 +86,12 @@ export interface CharacterDraft {
 }
 
 export interface WorldDraft {
+  /**
+   * Name for first publication. The server requires it at creation, but
+   * the form otherwise never edits it — existing presets keep the
+   * library name and never pack this.
+   */
+  presetName: string
   terrain: string[]
   climate: string
   architecture: string
@@ -120,6 +132,7 @@ const blankCharacter = (): CharacterDraft => ({
   boundaries: '',
   secretFear: '',
   appearanceSaved: false,
+  presetName: '',
   personalityExtra: '',
   backgroundExtra: ''
 })
@@ -161,6 +174,7 @@ export function ensureCharDraft(id: string): CharacterDraft {
         boundaries: '',
         secretFear: '',
         appearanceSaved: false,
+        presetName: '',
         personalityExtra: '',
         backgroundExtra: ''
       }
@@ -183,6 +197,7 @@ export function ensureWorldDraft(id: string): WorldDraft {
   if (!worldDrafts[id]) {
     if (id === 'ember-vale') {
       worldDrafts[id] = {
+        presetName: '',
         terrain: ['River valley', 'Woodland'],
         climate: 'Temperate',
         architecture: 'Timber and pale stone, weathered copper roofs, modest village squares.',
@@ -228,6 +243,7 @@ export function ensureWorldDraft(id: string): WorldDraft {
       }
     } else if (id === 'silverleaf-coast') {
       worldDrafts[id] = {
+        presetName: '',
         terrain: ['Sea cliffs', 'Harbors'],
         climate: 'Mild coastal',
         architecture: 'Whitewashed stone, terracotta roofs, stair-streets down to the water.',
@@ -257,6 +273,7 @@ export function ensureWorldDraft(id: string): WorldDraft {
       }
     } else {
       worldDrafts[id] = {
+        presetName: '',
         terrain: [],
         climate: 'Temperate',
         architecture: '',

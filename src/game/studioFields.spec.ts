@@ -27,12 +27,14 @@ const charDraft: CharacterDraft = {
   boundaries: 'Will not lie for anyone.',
   secretFear: 'Being forgotten.',
   appearanceSaved: false,
+  presetName: '',
   personalityExtra: '',
   backgroundExtra: ''
 }
 
 function worldDraft(): WorldDraft {
   return {
+    presetName: '',
     terrain: ['River valley', 'Woodland'],
     climate: 'Temperate',
     architecture: 'Timber and pale stone.',
@@ -415,6 +417,7 @@ describe('studio field bridge', () => {
     expect(restored.places?.[2]?.connectedTo).toBe('Market')
     // An unrelated edit re-saves without redirecting the route east.
     const draft: WorldDraft = {
+      presetName: '',
       terrain: [],
       climate: '',
       architecture: '',
@@ -483,6 +486,7 @@ describe('studio field bridge', () => {
     // The route still targets the western key, so the rename ships
     // location records but no travel rewrite at all.
     const draft: WorldDraft = {
+      presetName: '',
       terrain: [],
       climate: '',
       architecture: '',
@@ -519,6 +523,7 @@ describe('studio field bridge', () => {
     // ...but an unrelated world-description edit leaves every location
     // byte-identical: no generated Type / Connected-to sections appear.
     const draft: WorldDraft = {
+      presetName: '',
       terrain: [],
       climate: '',
       architecture: '',
@@ -550,6 +555,7 @@ describe('studio field bridge', () => {
     }
     const restored = unpackWorld(server)
     const draft: WorldDraft = {
+      presetName: '',
       terrain: [],
       climate: '',
       architecture: '',

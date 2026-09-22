@@ -19,6 +19,7 @@
  */
 
 import { execSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { chromium } from 'playwright-core'
@@ -42,6 +43,26 @@ const ONLY = new Set(
 )
 const run = (name) => ONLY.size === 0 || ONLY.has(name)
 const COMMIT = execSync('git rev-parse --short HEAD', { stdio: 'pipe' }).toString().trim()
+// Tested-tree identity, captured at run start: a record run should be a
+// clean committed tree (dirty === false, only === []). Anything else is
+// partial or baseline-plus-modifications evidence — see PROVENANCE.md.
+let DIRTY = false
+let DIFF_SHA = null
+let UNTRACKED = []
+try {
+  const porcelain = execSync('git status --porcelain', { stdio: 'pipe' }).toString().trim()
+  DIRTY = porcelain.length > 0
+  UNTRACKED = porcelain
+    .split('\n')
+    .filter((line) => line.startsWith('??'))
+    .map((line) => line.slice(3).trim())
+    .filter(Boolean)
+  DIFF_SHA = createHash('sha256')
+    .update(execSync('git diff HEAD', { stdio: 'pipe', maxBuffer: 64 * 1024 * 1024 }))
+    .digest('hex')
+} catch {
+  /* not a git tree: provenance stays null, the run still records */
+}
 
 fs.mkdirSync(OUT, { recursive: true })
 
@@ -769,6 +790,227 @@ try {
     await ctx.close()
   }
 
+  if (run('firstcreate')) // ---- First-preset creation, frozen across reload ----
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+    const page = await ctx.newPage()
+    const S = 'firstcreate'
+    const stamp = Date.now().toString(36)
+    const pub = (page) => page.locator('section[aria-label="Publication"]')
+    // World creation: name, create, land on the real studio at rev 1.
+    await page.goto(`${BASE}/library/world/new`, { waitUntil: 'networkidle' })
+    await page
+      .getByRole('button', { name: 'Create preset', exact: true })
+      .waitFor({ timeout: 30000 })
+    await pub(page).locator('input').fill(`Walkthrough First ${stamp}`)
+    await page.getByRole('button', { name: 'Create preset', exact: true }).click()
+    await page.waitForURL(/\/library\/world\/[0-9a-f-]+/, { timeout: 60000 })
+    const worldId = page.url().match(/\/library\/world\/([0-9a-f-]+)/)[1]
+    const worldDetail = await apiCall('GET', `/library/presets/${worldId}`)
+    record(
+      S,
+      'world creation persists rev 1 and hands off to its studio',
+      worldDetail.current_revision === 1 && worldDetail.name === `Walkthrough First ${stamp}`,
+      `${worldDetail.name} rev ${worldDetail.current_revision}`
+    )
+    // Character creation through the same frozen-request machinery.
+    await page.goto(`${BASE}/library/character/new`, { waitUntil: 'networkidle' })
+    await page
+      .getByRole('button', { name: 'Create preset', exact: true })
+      .waitFor({ timeout: 30000 })
+    await pub(page).locator('input').fill(`Walkthrough First Char ${stamp}`)
+    await page.getByRole('button', { name: 'Create preset', exact: true }).click()
+    await page.waitForURL(/\/library\/character\/[0-9a-f-]+/, { timeout: 60000 })
+    const charId = page.url().match(/\/library\/character\/([0-9a-f-]+)/)[1]
+    const charDetail = await apiCall('GET', `/library/presets/${charId}`)
+    record(
+      S,
+      'character creation persists rev 1',
+      charDetail.current_revision === 1 && charDetail.name === `Walkthrough First Char ${stamp}`,
+      `${charDetail.name} rev ${charDetail.current_revision}`
+    )
+    // Failed creation freezes the request; reload resumes the identical
+    // bytes under the identical key, minting exactly one preset.
+    const retryName = `Walkthrough Retry ${stamp}`
+    const retryDetails = `Retry marker ${stamp}`
+    await page.goto(`${BASE}/library/world/new`, { waitUntil: 'networkidle' })
+    await page
+      .getByRole('button', { name: 'Create preset', exact: true })
+      .waitFor({ timeout: 30000 })
+    await pub(page).locator('input').fill(retryName)
+    await fieldControl(page, 'Distinctive details', 'textarea').fill(retryDetails)
+    docker('stop ember-vale-api-1')
+    try {
+      await page.getByRole('button', { name: 'Save draft', exact: true }).click()
+      await page.getByRole('button', { name: 'Create preset', exact: true }).click()
+      await page
+        .getByText(/request failed|network failure/, { exact: false })
+        .waitFor({ timeout: 60000 })
+      record(S, 'failed creation keeps the frozen request', true)
+    } finally {
+      docker('start ember-vale-api-1')
+      await waitApiReady()
+    }
+    await page.reload({ waitUntil: 'networkidle' })
+    await page
+      .getByRole('button', { name: 'Retry creation', exact: true })
+      .waitFor({ timeout: 30000 })
+    const keptName = await pub(page).locator('input').inputValue()
+    record(S, 'reload resumes the frozen name and offers retry', keptName === retryName, keptName)
+    await page.getByRole('button', { name: 'Retry creation', exact: true }).click()
+    await page.waitForURL(/\/library\/world\/[0-9a-f-]+/, { timeout: 60000 })
+    const retryId = page.url().match(/\/library\/world\/([0-9a-f-]+)/)[1]
+    const listed = await apiCall('GET', '/library/presets?kind=world')
+    const dupes = listed.filter((p) => p.name === retryName)
+    const retryDetail = await apiCall('GET', `/library/presets/${retryId}`)
+    record(
+      S,
+      'retry after reload mints exactly one preset with its content',
+      dupes.length === 1 && retryDetail.revision.description.includes(retryDetails),
+      `${dupes.length} preset(s) named ${retryName}`
+    )
+    await archiveStudioWorld(worldId)
+    await archiveStudioWorld(charId)
+    await archiveStudioWorld(retryId)
+    await ctx.close()
+  }
+
+  if (run('twostories')) // ---- Two stories stay independent across publish+adopt ----
+  {
+    const ctxA = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+    const ctxB = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+    const playA = await ctxA.newPage()
+    const wizB = await ctxB.newPage()
+    const S = 'twostories'
+    const world = await createStudioWorld('TwoStories')
+    const chars = await apiCall('GET', '/library/presets?kind=character')
+    const wren = chars.find((p) => p.name === 'Wren')
+    const ash = chars.find((p) => p.name === 'Ash')
+    // Story B draft on revision 1 through the wizard.
+    await wizB.goto(`${BASE}/new-story`, { waitUntil: 'networkidle' })
+    await wizB.getByRole('button', { name: world.name }).first().waitFor({ timeout: 30000 })
+    await wizB.getByRole('button', { name: world.name }).first().click()
+    await wizB.getByRole('button', { name: 'Continue', exact: true }).click()
+    await wizB.waitForURL(/draft=/, { timeout: 30000 })
+    const draftB = wizB.url().match(/[?&]draft=([^&]+)/)[1]
+    await wizB.getByRole('button', { name: /Wren/ }).click()
+    await wizB.getByRole('button', { name: /Ash/ }).click()
+    await wizB.getByRole('button', { name: 'Save draft', exact: true }).click()
+    await wizB
+      .getByText(/· saved/, { exact: false })
+      .first()
+      .waitFor({ timeout: 30000 })
+    record(S, 'story B drafts on world rev 1', true)
+    // Story A created on revision 1, then played: journey plus one beat.
+    const draftA = await apiCall('POST', '/story-drafts', {
+      payload: {
+        world: { preset_id: world.id, preset_revision: 1 },
+        cast: [
+          {
+            instance_key: 'wren',
+            preset_id: wren.id,
+            preset_revision: wren.current_revision,
+            name: 'Wren',
+            location_key: 'hearth'
+          },
+          {
+            instance_key: 'ash',
+            preset_id: ash.id,
+            preset_revision: ash.current_revision,
+            name: 'Ash',
+            location_key: 'market'
+          }
+        ],
+        mode: { role: 'player', controlled_cast_key: 'wren' },
+        story: { title: `Walkthrough two-stories A ${Date.now().toString(36)}` },
+        ai: { art_source: 'curated' }
+      },
+      current_step: 'review'
+    })
+    const createRes = await fetch(`${API}/stories`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Worldsim-Role': 'watcher',
+        'Idempotency-Key': `walkthrough-twostories-${Date.now()}`
+      },
+      body: JSON.stringify({ draft_id: draftA.id, expected_draft_version: 1 })
+    })
+    if (!createRes.ok) throw new Error(`story A create -> ${createRes.status}`)
+    const storyA = (await createRes.json()).world_id
+    await playA.goto(`${BASE}/stories/${storyA}/play`, { waitUntil: 'networkidle' })
+    await playA.locator('.play__badge').waitFor({ timeout: 30000 })
+    await playA.getByRole('button', { name: 'Start journey' }).click()
+    await playA.getByText('Journey begun', { exact: false }).waitFor({ timeout: 15000 })
+    await playA.getByRole('button', { name: /Commit beat/ }).click()
+    await playA.getByRole('button', { name: /Commit beat 2/ }).waitFor({ timeout: 60000 })
+    const castBefore = await playA.locator('.play__cast').innerText()
+    const feedBefore = await playA.locator('.play__feed li').count()
+    const setupBefore = await apiCall('GET', `/stories/${storyA}/setup`)
+    record(
+      S,
+      'story A plays on rev 1 with committed runtime state',
+      feedBefore > 0,
+      `${feedBefore} entries`
+    )
+    // Publish revision 2 from the studio and explicitly adopt it into B.
+    const R2 = `TwoStories rev2 ${Date.now().toString(36)}`
+    await wizB.goto(`${BASE}/new-story/world/${world.id}?draft=${draftB}`, {
+      waitUntil: 'networkidle'
+    })
+    await wizB.getByRole('button', { name: 'Publish new revision' }).waitFor({ timeout: 30000 })
+    await fieldControl(wizB, 'Distinctive details', 'textarea').fill(R2)
+    await wizB.getByRole('button', { name: 'Publish new revision' }).click()
+    await wizB.waitForURL(/adopt_revision=2/, { timeout: 60000 })
+    await wizB.getByRole('button', { name: /Adopt revision 2/ }).click()
+    await wizB.getByText(/Adopted revision 2/, { exact: false }).waitFor({ timeout: 30000 })
+    const draftBAfter = await apiCall('GET', `/story-drafts/${draftB}`)
+    record(
+      S,
+      'story B explicitly adopts rev 2',
+      draftBAfter.payload.world.preset_revision === 2,
+      `world rev ${draftBAfter.payload.world.preset_revision}`
+    )
+    // A is untouched by the publish and the adoption: same setup bytes.
+    const setupAfter = await apiCall('GET', `/stories/${storyA}/setup`)
+    record(
+      S,
+      'story A setup is byte-identical after publish+adopt',
+      JSON.stringify(setupAfter.payload) === JSON.stringify(setupBefore.payload),
+      `world rev ${setupAfter.payload.world.preset_revision}`
+    )
+    // Reload both: A keeps its rev-1 runtime, B keeps its rev-2 pins.
+    await playA.reload({ waitUntil: 'networkidle' })
+    await playA.waitForTimeout(8000)
+    const reloadedButtons = await playA.getByRole('button').allInnerTexts()
+    record(S, 'reloaded play action bar', true, reloadedButtons.join(' | ').slice(0, 200))
+    await playA.getByRole('button', { name: /Commit beat 2/ }).waitFor({ timeout: 30000 })
+    const castAfter = await playA.locator('.play__cast').innerText()
+    const feedAfter = await playA.locator('.play__feed li').count()
+    // B pins the head revision, so the older-revision pins notice stays
+    // hidden by design (it only shows when the draft pins behind the
+    // library map); the draft pins rev 2 on the server.
+    await wizB.goto(`${BASE}/new-story?draft=${draftB}`, { waitUntil: 'networkidle' })
+    await wizB.getByText(/Draft rev \d+/, { exact: false }).waitFor({ timeout: 30000 })
+    const pinsNotices = await wizB.getByText(/This draft pins/, { exact: false }).count()
+    record(S, 'reloaded B uses the current map with no stale-pin notice', pinsNotices === 0)
+    const draftBFinal = await apiCall('GET', `/story-drafts/${draftB}`)
+    const setupFinal = await apiCall('GET', `/stories/${storyA}/setup`)
+    record(
+      S,
+      'reload keeps A on rev 1 and B on rev 2, independently',
+      castAfter === castBefore &&
+        feedAfter === feedBefore &&
+        JSON.stringify(setupFinal.payload) === JSON.stringify(setupBefore.payload) &&
+        draftBFinal.payload.world.preset_revision === 2 &&
+        draftBFinal.payload.cast.every((m) => ['hearth', 'market'].includes(m.location_key)),
+      `A feed ${feedAfter}, B rev ${draftBFinal.payload.world.preset_revision}`
+    )
+    await archiveStudioWorld(world.id)
+    await ctxA.close()
+    await ctxB.close()
+  }
+
   if (run('routes')) // ---- Route compile gate -------------------------------------------------
   {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
@@ -819,6 +1061,10 @@ try {
         ok: process.exitCode !== 1,
         base: BASE,
         commit: COMMIT,
+        dirty: DIRTY,
+        diffSha256: DIFF_SHA,
+        untracked: UNTRACKED,
+        only: [...ONLY],
         at: new Date().toISOString(),
         results
       },

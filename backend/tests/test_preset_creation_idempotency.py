@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import threading
 from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +32,20 @@ MIGRATIONS = ROOT / "backend" / "migrations"
 
 @pytest.fixture
 def client(migrated_db: None) -> Iterator[ApiClient]:
+    gateway = FakeGateway(profile=FAKE_TEST_PROFILE)
+    app = create_app(
+        Settings(),
+        seed_dir=SEED_DIR,
+        migrations_dir=MIGRATIONS,
+        gateway_factory=lambda: gateway,
+    )
+    with TestClient(app) as raw:
+        yield ApiClient(raw)
+
+
+@contextmanager
+def fresh_client() -> Iterator[ApiClient]:
+    """A second app instance on the same database: a full restart."""
     gateway = FakeGateway(profile=FAKE_TEST_PROFILE)
     app = create_app(
         Settings(),
@@ -119,6 +134,25 @@ def test_simultaneous_submissions_mint_one_preset(client: ApiClient) -> None:
     ]
     assert outcomes[0].json()["id"] == outcomes[1].json()["id"]
     assert _count(client) == before + 1
+
+
+def test_receipt_survives_app_restart_returns_same_preset(
+    migrated_db: None,
+) -> None:
+    """The receipt is durable, not in-memory: after a full restart (a new
+    app instance over the same database) the identical retry replays the
+    original preset instead of minting a second one."""
+    with fresh_client() as first:
+        before = _count(first)
+        created = _create(first, "restart-key", _body())
+        assert created.status_code == 200, created.text
+        first_id = created.json()["id"]
+    with fresh_client() as second:
+        retry = _create(second, "restart-key", _body())
+        assert retry.status_code == 200, retry.text
+        assert retry.json()["id"] == first_id
+        assert retry.json()["current_revision"] == 1
+        assert _count(second) == before + 1
 
 
 def test_keyless_creation_stays_legacy(client: ApiClient) -> None:

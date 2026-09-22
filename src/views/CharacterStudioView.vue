@@ -27,6 +27,7 @@ import {
   storeLocalPreset,
   useEditorDraft
 } from '../composables/useEditorDraft'
+import { usePresetCreation } from '../composables/usePresetCreation'
 import {
   ensureCharDraft,
   isCharDirty,
@@ -74,6 +75,7 @@ onMounted(() => {
         'exampleLine',
         'boundaries',
         'secretFear',
+        'presetName',
         'personalityExtra',
         'backgroundExtra'
       ] as const) {
@@ -135,6 +137,33 @@ let saveTimer: ReturnType<typeof setTimeout> | undefined
 const editor = useEditorDraft()
 const editorOpenedFor = ref<string | null>(null)
 
+/* First-preset creation (E3): local drafts only. The frozen request and
+   its key survive reloads, so retries replay instead of duplicating. */
+const creation = usePresetCreation(`character-${id.value}`)
+
+async function createCharacter(): Promise<void> {
+  if (!isNew.value) return
+  const packed = packCharacter(draft.value)
+  const presetId = await creation.submit('character', {
+    kind: 'character',
+    name: draft.value.presetName,
+    ...packed
+  })
+  if (!presetId) return
+  // The receipt is durable: hand off to the real studio, which opens an
+  // editor on revision 1 from here. Publication wiring stays separate.
+  if (fromLibrary.value) {
+    await router.push(`/library/character/${presetId}`)
+  } else {
+    const storyDraft =
+      typeof route.query.draft === 'string' && route.query.draft ? route.query.draft : null
+    await router.push({
+      path: '/new-story',
+      query: { ...(storyDraft ? { draft: storyDraft } : {}) }
+    })
+  }
+}
+
 function hydrateFromEditor(): void {
   const restored = unpackCharacter(editor.fields.value)
   Object.assign(draft.value, restored)
@@ -161,6 +190,16 @@ function retryEditor(): void {
     .open(id.value, rec.revision)
     .then(hydrateFromEditor)
     .catch(() => {})
+}
+
+/**
+ * Re-enter the saved draft at its own base revision after an open
+ * conflict: unpublished work stays accessible without deletion.
+ */
+async function resumeSavedDraft(): Promise<void> {
+  if (isNew.value) return
+  editorOpenedFor.value = id.value
+  if (await editor.resumeStaleDraft(id.value)) hydrateFromEditor()
 }
 
 /**
@@ -474,6 +513,32 @@ function suggest(): void {
             <p class="studio__state" role="status">
               New characters live on this device until first publication.
             </p>
+            <div>
+              <span class="ev-field-label">Name</span>
+              <input
+                v-model="draft.presetName"
+                class="ev-input"
+                maxlength="64"
+                placeholder="Name this character" />
+            </div>
+            <p v-if="creation.status.value === 'failed'" class="studio__state" role="alert">
+              {{ creation.error.value }}
+            </p>
+            <div class="preview__actions">
+              <button
+                type="button"
+                class="cta cta--sm"
+                :disabled="creation.status.value === 'creating'"
+                @click="createCharacter">
+                {{
+                  creation.status.value === 'creating'
+                    ? 'Creating…'
+                    : creation.pending.value
+                      ? 'Retry creation'
+                      : 'Create preset'
+                }}
+              </button>
+            </div>
             <p v-if="deviceSavedFlash" class="studio__state" role="status">Saved on this device.</p>
             <p v-if="deviceStorageFailed" class="studio__state" role="alert">
               This device would not keep the draft (storage unavailable) — keep this tab open until
@@ -489,6 +554,13 @@ function suggest(): void {
             <p v-if="editor.status.value === 'failed'" class="studio__state" role="alert">
               <button type="button" class="studio__link" @click="retryLast()">
                 retry {{ editor.lastFailedOp.value ?? 'operation' }}
+              </button>
+              <button
+                v-if="editor.openConflict.value"
+                type="button"
+                class="studio__link"
+                @click="resumeSavedDraft()">
+                Resume saved draft
               </button>
             </p>
             <div class="preview__actions">

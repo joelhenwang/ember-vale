@@ -164,7 +164,8 @@ function installFetch(): void {
 
       const save = path.match(/\/library\/presets\/([^/]+)\/editor-drafts\/([^/]+)$/)
       if (save && method === 'PATCH') {
-        const row = drafts.get(save[2] as string)
+        const row =
+          drafts.get(save[2] as string) ?? (staleDraft?.id === save[2] ? staleDraft : null)
         if (!row) {
           return new Response(
             JSON.stringify({ error: { code: 'NOT_FOUND', message: 'no draft' } }),
@@ -507,6 +508,73 @@ describe('useEditorDraft', () => {
       calls.filter((c) => c === 'POST /api/v1/library/presets/preset-a/editor-drafts')
     ).toHaveLength(1)
     expect(calls.some((c) => c.includes('draft-stale/complete'))).toBe(false)
+  })
+
+  it('resume re-enters the saved draft at its base with retained fields', async () => {
+    installFetch()
+    staleDraft = {
+      id: 'draft-stale',
+      presetId: 'preset-1',
+      baseRevision: 1,
+      fields: { appearance: 'unpublished work' },
+      version: 4,
+      publishedVersion: 3,
+      publishedRevision: 2
+    }
+    const ctl = useEditorDraft()
+    await expect(ctl.open('preset-1', 2)).rejects.toThrow()
+    expect(ctl.openConflict.value).toBe(true)
+    expect(await ctl.resumeStaleDraft('preset-1')).toBe(true)
+    expect(ctl.status.value).toBe('editing')
+    expect(ctl.draft.value?.id).toBe('draft-stale')
+    expect(ctl.openConflict.value).toBe(false)
+    expect(ctl.lastFailedOp.value).toBeNull()
+    // Base-1 revision content plus the retained draft fields.
+    expect(ctl.fields.value).toMatchObject({
+      appearance: 'unpublished work',
+      personality: 'dry humor',
+      portrait_asset_id: 'asset-9'
+    })
+    // A resumed base saves normally against its own draft version.
+    ctl.fields.value = { ...ctl.fields.value, appearance: 'continued' }
+    expect(await ctl.save('preset-1')).toBe(true)
+    expect(ctl.status.value).toBe('saved')
+  })
+
+  it('resume reports failure when no saved draft exists', async () => {
+    installFetch()
+    const ctl = useEditorDraft()
+    expect(await ctl.resumeStaleDraft('preset-1')).toBe(false)
+    expect(ctl.status.value).toBe('failed')
+    expect(ctl.draft.value).toBeNull()
+  })
+
+  it('a superseded resume stops without touching the newer editor', async () => {
+    installFetch()
+    staleDraft = {
+      id: 'draft-stale',
+      presetId: 'preset-a',
+      baseRevision: 1,
+      fields: { appearance: 'unpublished work' },
+      version: 4,
+      publishedVersion: 3,
+      publishedRevision: 2
+    }
+    // Hold the base-revision fetch so B opens mid-resume.
+    holdWhen = (method, path) => method === 'GET' && path === '/api/v1/library/presets/preset-a'
+    const ctl = useEditorDraft()
+    const pendingResume = ctl.resumeStaleDraft('preset-a')
+    await vi.waitFor(() => {
+      if (held.length === 0) throw new Error('base fetch not held yet')
+    })
+    await ctl.open('preset-b', 1)
+    expect(ctl.draft.value?.preset_id).toBe('preset-b')
+    holdWhen = null
+    held.splice(0).forEach((release) => release())
+    expect(await pendingResume).toBe(false)
+    expect(ctl.draft.value?.preset_id).toBe('preset-b')
+    expect(ctl.status.value).toBe('editing')
+    expect(ctl.error.value).toBeNull()
   })
 
   it('disposal during recovery prevents reopening', async () => {

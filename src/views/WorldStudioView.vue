@@ -23,6 +23,7 @@ import {
   storeLocalPreset,
   useEditorDraft
 } from '../composables/useEditorDraft'
+import { usePresetCreation } from '../composables/usePresetCreation'
 import { resolveImage, setGeneratedImage } from '../game/images'
 import type { ImageSlot } from '../game/model'
 import {
@@ -87,6 +88,7 @@ onMounted(() => {
         return fallback
       }
       applyWorldRestore({
+        presetName: typeof kept['presetName'] === 'string' ? kept['presetName'] : undefined,
         terrain: Array.isArray(kept['terrain']) ? kept['terrain'].map(String) : undefined,
         climate: typeof kept['climate'] === 'string' ? kept['climate'] : undefined,
         architecture: typeof kept['architecture'] === 'string' ? kept['architecture'] : undefined,
@@ -169,6 +171,33 @@ let saveTimer: ReturnType<typeof setTimeout> | undefined
 const editor = useEditorDraft()
 const editorOpenedFor = ref<string | null>(null)
 
+/* First-preset creation (E3): local drafts only. The frozen request and
+   its key survive reloads, so retries replay instead of duplicating. */
+const creation = usePresetCreation(`world-${id.value}`)
+
+async function createWorld(): Promise<void> {
+  if (!isNew.value) return
+  const packed = packWorld(draft.value)
+  const presetId = await creation.submit('world', {
+    kind: 'world',
+    name: draft.value.presetName,
+    ...packed
+  })
+  if (!presetId) return
+  // The receipt is durable: hand off to the real studio, which opens an
+  // editor on revision 1 from here. Publication wiring stays separate.
+  if (fromLibrary.value) {
+    await router.push(`/library/world/${presetId}`)
+  } else {
+    const storyDraft =
+      typeof route.query.draft === 'string' && route.query.draft ? route.query.draft : null
+    await router.push({
+      path: '/new-story',
+      query: { ...(storyDraft ? { draft: storyDraft } : {}) }
+    })
+  }
+}
+
 /** Coerce one stored place into a valid form place (stable key included). */
 function coercePlace(raw: unknown, i: number): WorldDraft['places'][number] {
   const r = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>
@@ -193,6 +222,7 @@ function coercePlace(raw: unknown, i: number): WorldDraft['places'][number] {
 
 function applyWorldRestore(restored: ReturnType<typeof unpackWorld>): void {
   const d = draft.value
+  if (restored.presetName !== undefined) d.presetName = restored.presetName
   if (restored.terrain !== undefined) d.terrain = [...restored.terrain]
   if (restored.climate !== undefined) d.climate = restored.climate
   if (restored.architecture !== undefined) d.architecture = restored.architecture
@@ -285,6 +315,16 @@ function retryEditor(): void {
 }
 
 /**
+ * Re-enter the saved draft at its own base revision after an open
+ * conflict: unpublished work stays accessible without deletion.
+ */
+async function resumeSavedDraft(): Promise<void> {
+  if (isNew.value) return
+  editorOpenedFor.value = id.value
+  if (await editor.resumeStaleDraft(id.value)) hydrateFromEditor()
+}
+
+/**
  * Retry exactly the failed operation: a failed save re-sends the current
  * form (never a server re-hydrate, which would overwrite it), an
  * ambiguous publish replays the frozen request without another save,
@@ -323,6 +363,7 @@ function markSaved(before: string): void {
 async function save(): Promise<boolean> {
   if (isNew.value) {
     const kept = storeLocalPreset('world', id.value, {
+      presetName: draft.value.presetName,
       terrain: draft.value.terrain,
       climate: draft.value.climate,
       architecture: draft.value.architecture,
@@ -732,6 +773,32 @@ function suggest(): void {
             <p class="studio__state" role="status">
               New worlds live on this device until first publication.
             </p>
+            <div>
+              <span class="ev-field-label">Name</span>
+              <input
+                v-model="draft.presetName"
+                class="ev-input"
+                maxlength="128"
+                placeholder="Name this world" />
+            </div>
+            <p v-if="creation.status.value === 'failed'" class="studio__state" role="alert">
+              {{ creation.error.value }}
+            </p>
+            <div class="preview__actions">
+              <button
+                type="button"
+                class="cta cta--sm"
+                :disabled="creation.status.value === 'creating'"
+                @click="createWorld">
+                {{
+                  creation.status.value === 'creating'
+                    ? 'Creating…'
+                    : creation.pending.value
+                      ? 'Retry creation'
+                      : 'Create preset'
+                }}
+              </button>
+            </div>
             <p v-if="deviceSavedFlash" class="studio__state" role="status">Saved on this device.</p>
             <p v-if="deviceStorageFailed" class="studio__state" role="alert">
               This device would not keep the draft (storage unavailable) — keep this tab open until
@@ -747,6 +814,13 @@ function suggest(): void {
             <p v-if="editor.status.value === 'failed'" class="studio__state" role="alert">
               <button type="button" class="studio__link" @click="retryLast()">
                 retry {{ editor.lastFailedOp.value ?? 'operation' }}
+              </button>
+              <button
+                v-if="editor.openConflict.value"
+                type="button"
+                class="studio__link"
+                @click="resumeSavedDraft()">
+                Resume saved draft
               </button>
             </p>
             <div class="preview__actions">
