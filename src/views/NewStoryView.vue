@@ -15,6 +15,7 @@ import IconPlay from '../components/icons/IconPlay.vue'
 import MountainRidge from '../components/decor/MountainRidge.vue'
 import PageIntro from '../components/ui/PageIntro.vue'
 import { useBackend } from '../composables/useBackend'
+import { applyAdoption, parseAdoptionOffer, type AdoptionOffer } from '../game/adoption'
 import { usePresets, type PresetCharacter } from '../composables/usePresets'
 import { planBootRecovery, useStoryDraft } from '../composables/useStoryDraft'
 import { usePinnedPresets } from '../composables/usePinnedPresets'
@@ -49,6 +50,11 @@ const bootError = ref<string | null>(null)
 const bootNotice = ref<string | null>(null)
 /** Independent server state preserved while a recovery conflict awaits choice. */
 const serverAlternative = ref<{ payload: Record<string, unknown>; step: number } | null>(null)
+/**
+ * Nested return from a studio publish: adopting is deliberate, never
+ * automatic. The offer pins the exact published revision, not the head.
+ */
+const adoptOffer = ref<AdoptionOffer | null>(null)
 let bootCycle = 0
 
 function keepLocalRecovery(): void {
@@ -461,8 +467,47 @@ async function boot(draftOverride?: string): Promise<void> {
     await persist()
   }
   if (seen !== bootCycle) return
+  // A studio publish returns here with an adoption offer. It applies only
+  // on explicit accept; the draft otherwise keeps its existing pins.
+  adoptOffer.value = parseAdoptionOffer(route.query as Record<string, unknown>)
+  if (seen !== bootCycle) return
   booted.value = true
   void backend.refresh()
+}
+
+function clearAdoptQuery(): void {
+  const next = { ...route.query }
+  delete next['adopt_kind']
+  delete next['adopt_preset']
+  delete next['adopt_revision']
+  void router.replace({ query: next })
+}
+
+async function acceptAdoption(): Promise<void> {
+  const offer = adoptOffer.value
+  if (!offer) return
+  const applied = applyAdoption(selections.value, offer)
+  if (offer.kind === 'world') {
+    sel.worldId = applied.world.presetId
+    sel.worldRev = applied.world.presetRevision
+    await ensurePinned()
+  } else {
+    const member = applied.cast.find((m) => m.presetId === offer.presetId)
+    const target = sel.cast.find((c) => c.presetId === offer.presetId)
+    if (member && target) {
+      target.presetRevision = member.presetRevision
+      await prefetchCharRevs()
+    }
+  }
+  await persist()
+  adoptOffer.value = null
+  clearAdoptQuery()
+  bootNotice.value = `Adopted revision ${offer.revision} — everything else in this draft is unchanged.`
+}
+
+function dismissAdoption(): void {
+  adoptOffer.value = null
+  clearAdoptQuery()
 }
 
 function recalledId(): string | null {
@@ -648,6 +693,22 @@ onMounted(() => {
           <span class="nsv__world-desc"
             >Discard the kept choices and show what the server holds.</span
           >
+        </button>
+      </div>
+      <div v-if="adoptOffer" class="nsv__modes" role="group" aria-label="Adopt published revision">
+        <button type="button" class="nsv__world" :aria-pressed="false" @click="acceptAdoption">
+          <span class="nsv__world-name"
+            >Adopt revision {{ adoptOffer.revision }} ({{
+              adoptOffer.kind === 'world' ? 'world' : 'character'
+            }})</span
+          >
+          <span class="nsv__world-desc"
+            >Pins exactly this revision. Everything else in the draft stays as it is.</span
+          >
+        </button>
+        <button type="button" class="nsv__world" :aria-pressed="false" @click="dismissAdoption">
+          <span class="nsv__world-name">Keep current pins</span>
+          <span class="nsv__world-desc">Stay on the revisions this draft already uses.</span>
         </button>
       </div>
       <p v-if="worldNotice" class="nsv__notice" role="status">{{ worldNotice }}</p>

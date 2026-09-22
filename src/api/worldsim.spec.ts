@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { advanceStory, createDraft, getRole, listActivities, type CallOptions } from './worldsim'
+import {
+  advanceStory,
+  createDraft,
+  getRole,
+  listActivities,
+  publishEditorDraft,
+  type CallOptions
+} from './worldsim'
 
 interface Seen {
   url: string
@@ -67,6 +74,29 @@ describe('worldsim adapter bodies', () => {
     const list = await listActivities('world-1', opts)
     expect(list.members).toEqual(members)
     expect(list).not.toHaveProperty('items')
+  })
+
+  it('reads published_revision from the publish envelope, not the head', async () => {
+    installFetch()
+    const detail = {
+      id: 'preset-1',
+      kind: 'character',
+      name: 'Wren',
+      builtin: false,
+      readonly: false,
+      archived_at: null,
+      current_revision: 3,
+      version: 3,
+      revision: { appearance: 'rev 2 text' }
+    }
+    responder = () => ({ published_revision: 2, detail })
+    const view = await publishEditorDraft('preset-1', 'draft-1', 1, 2, opts)
+    expect(view.published_revision).toBe(2)
+    expect(view.detail).toEqual(detail)
+    // Nested adoption must pin the replayed revision, never the head.
+    expect(view.published_revision).not.toBe(view.detail.current_revision)
+    expect(seen[0].body).toEqual({ expected_version: 1, preset_expected_version: 2 })
+    expect(seen[0].url).toContain('/editor-drafts/draft-1/publish')
   })
 
   it('returns the persisted grant, including null', async () => {

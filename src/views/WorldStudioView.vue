@@ -13,10 +13,16 @@
   increments `step`. Production replaces it with per-step routes + validation.
 -->
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { catalog } from '../game/catalog'
 import { usePresets } from '../composables/usePresets'
+import {
+  loadLocalPreset,
+  stableCreateKey,
+  storeLocalPreset,
+  useEditorDraft
+} from '../composables/useEditorDraft'
 import { resolveImage, setGeneratedImage } from '../game/images'
 import type { ImageSlot } from '../game/model'
 import {
@@ -28,8 +34,10 @@ import {
   suggestWorld,
   TIMES,
   WEATHERS,
-  worldSample
+  worldSample,
+  type WorldDraft
 } from '../game/studio'
+import { packWorld, unpackWorld } from '../game/studioFields'
 import InlineStepper from '../components/studio/InlineStepper.vue'
 import ChipEditor from '../components/studio/ChipEditor.vue'
 import CollapseBox from '../components/studio/CollapseBox.vue'
@@ -56,6 +64,27 @@ let presetAbort: AbortController | null = null
 onMounted(() => {
   presetAbort = new AbortController()
   void presets.load(presetAbort.signal)
+  if (isNew.value) {
+    // Reload-persistent local draft: unfinished work survives navigation.
+    // Only known form keys are restored, never stray storage content.
+    const kept = loadLocalPreset('world', id.value)
+    if (kept) {
+      applyWorldRestore({
+        terrain: Array.isArray(kept['terrain'])
+          ? (kept['terrain'] as string[]).map(String)
+          : undefined,
+        climate: typeof kept['climate'] === 'string' ? kept['climate'] : undefined,
+        architecture: typeof kept['architecture'] === 'string' ? kept['architecture'] : undefined,
+        details: typeof kept['details'] === 'string' ? kept['details'] : undefined,
+        exclusions: typeof kept['exclusions'] === 'string' ? kept['exclusions'] : undefined,
+        places: Array.isArray(kept['places'])
+          ? (kept['places'] as WorldDraft['places'])
+          : undefined,
+        activePlace: typeof kept['activePlace'] === 'string' ? kept['activePlace'] : undefined
+      })
+      saveWorldDraft(id.value)
+    }
+  }
 })
 onUnmounted(() => presetAbort?.abort())
 /* New/existing comes from the route, never from catalog membership. */
@@ -104,14 +133,146 @@ const step = ref(2)
 /* save / dirty ----------------------------------------------------------- */
 const dirty = computed(() => isWorldDirty(id.value))
 const savedFlash = ref(false)
+/** New presets live on this device until first publication. */
+const deviceSavedFlash = ref(false)
+const deviceStorageFailed = ref(false)
 let saveTimer: ReturnType<typeof setTimeout> | undefined
-function save(): void {
-  saveWorldDraft(id.value)
-  savedFlash.value = true
-  clearTimeout(saveTimer)
-  saveTimer = setTimeout(() => (savedFlash.value = false), 1400)
+
+/* Server editor draft (E3): existing presets only. Every operation freezes
+   its owning draft id and versions, so a late response for one editor can
+   never alter another. Unmapped payload keys are never packed, so the
+   server merge preserves them verbatim. */
+const editor = useEditorDraft()
+const editorOpenedFor = ref<string | null>(null)
+
+function applyWorldRestore(restored: ReturnType<typeof unpackWorld>): void {
+  const d = draft.value
+  if (restored.terrain !== undefined) d.terrain = [...restored.terrain]
+  if (restored.climate !== undefined) d.climate = restored.climate
+  if (restored.architecture !== undefined) d.architecture = restored.architecture
+  if (restored.details !== undefined) d.details = restored.details
+  if (restored.exclusions !== undefined) d.exclusions = restored.exclusions
+  if (restored.places !== undefined) {
+    d.places.splice(0, d.places.length, ...restored.places)
+    d.activePlace = restored.activePlace ?? restored.places[0]?.id ?? d.activePlace
+  }
 }
-onBeforeUnmount(() => clearTimeout(saveTimer))
+
+function hydrateFromEditor(): void {
+  applyWorldRestore(unpackWorld(editor.fields.value))
+  // Hydration is the clean baseline: entering the studio is not an edit.
+  saveWorldDraft(id.value)
+}
+
+watch(serverWorld, (rec) => {
+  if (isNew.value || !rec || editorOpenedFor.value === id.value) return
+  editorOpenedFor.value = id.value
+  void editor
+    .open(id.value, rec.revision)
+    .then(hydrateFromEditor)
+    .catch(() => {})
+})
+
+function retryEditor(): void {
+  const rec = serverWorld.value
+  if (isNew.value || !rec) return
+  editorOpenedFor.value = null
+  editor.dispose()
+  editorOpenedFor.value = id.value
+  void editor
+    .open(id.value, rec.revision)
+    .then(hydrateFromEditor)
+    .catch(() => {})
+}
+
+async function save(): Promise<void> {
+  if (isNew.value) {
+    const kept = storeLocalPreset('world', id.value, {
+      terrain: draft.value.terrain,
+      climate: draft.value.climate,
+      architecture: draft.value.architecture,
+      details: draft.value.details,
+      exclusions: draft.value.exclusions,
+      places: draft.value.places,
+      activePlace: draft.value.activePlace
+    })
+    // Durable creation identity, minted once: stored, not yet sent. First
+    // publication stays unwired until the server receipt lands.
+    stableCreateKey(`world-${id.value}`)
+    deviceStorageFailed.value = !kept
+    if (!kept) return
+    saveWorldDraft(id.value)
+    deviceSavedFlash.value = true
+    savedFlash.value = true
+    clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => {
+      savedFlash.value = false
+      deviceSavedFlash.value = false
+    }, 1400)
+    return
+  }
+  editor.fields.value = { ...editor.fields.value, ...packWorld(draft.value) }
+  const ok = await editor.save(id.value)
+  if (ok) {
+    saveWorldDraft(id.value)
+    savedFlash.value = true
+    clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => (savedFlash.value = false), 1400)
+  }
+}
+
+const pubStatus = computed(() => {
+  if (isNew.value) return null
+  switch (editor.status.value) {
+    case 'loading':
+      return 'Reading the archive draft…'
+    case 'saving':
+      return 'Saving…'
+    case 'saved':
+      return 'Saved.'
+    case 'publishing':
+      return 'Publishing…'
+    case 'published':
+      return `Published revision ${editor.publishedRevision.value}.`
+    case 'failed':
+      return editor.error.value ?? 'Something failed.'
+    default:
+      return null
+  }
+})
+
+async function publish(): Promise<void> {
+  if (isNew.value) return
+  editor.fields.value = { ...editor.fields.value, ...packWorld(draft.value) }
+  const presetVersion = editor.baseDetail.value?.version ?? 0
+  const view = await editor.publish(id.value, presetVersion)
+  if (!view) return
+  saveWorldDraft(id.value)
+  if (!fromLibrary.value) {
+    // Nested return: the wizard offers deliberate adoption of the exact
+    // published revision — never an automatic switch.
+    await router.push({
+      path: '/new-story',
+      query: {
+        adopt_kind: 'world',
+        adopt_preset: id.value,
+        adopt_revision: String(view.published_revision)
+      }
+    })
+  }
+}
+
+async function finishAndReturn(): Promise<void> {
+  if (!isNew.value && editor.draft.value) {
+    await editor.complete(id.value)
+  }
+  router.push(originRoute.value)
+}
+
+onBeforeUnmount(() => {
+  clearTimeout(saveTimer)
+  editor.dispose()
+})
 
 const nextLabel = computed(() =>
   step.value <= 2 ? 'Rules' : step.value === 3 ? 'Review' : 'Finish'
@@ -122,8 +283,9 @@ function advance(): void {
     step.value++
     return
   }
-  save()
-  router.push(originRoute.value)
+  void save().then(() => {
+    router.push(originRoute.value)
+  })
 }
 
 /* places ----------------------------------------------------------------- */
@@ -335,6 +497,46 @@ function suggest(): void {
                     placeholder="What does it sound like at dusk?" />
                 </CollapseBox>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card ev-card" aria-label="Publication">
+          <header class="card__head">
+            <h2 class="card__title">Publication</h2>
+          </header>
+          <div v-if="isNew">
+            <p class="studio__state" role="status">
+              New worlds live on this device until first publication.
+            </p>
+            <p v-if="deviceSavedFlash" class="studio__state" role="status">Saved on this device.</p>
+            <p v-if="deviceStorageFailed" class="studio__state" role="alert">
+              This device would not keep the draft (storage unavailable) — keep this tab open until
+              you can save elsewhere.
+            </p>
+          </div>
+          <div v-else>
+            <p v-if="pubStatus" class="studio__state" role="status">{{ pubStatus }}</p>
+            <p v-if="editor.status.value === 'failed'" class="studio__state" role="alert">
+              <button type="button" class="studio__link" @click="retryEditor()">retry</button>
+            </p>
+            <div class="preview__actions">
+              <button
+                type="button"
+                class="cta cta--sm"
+                :disabled="
+                  editor.status.value === 'publishing' || editor.status.value === 'loading'
+                "
+                @click="publish">
+                {{ editor.status.value === 'publishing' ? 'Publishing…' : 'Publish new revision' }}
+              </button>
+              <button
+                v-if="editor.status.value === 'published'"
+                type="button"
+                class="ghost ghost--sm"
+                @click="finishAndReturn">
+                Finish &amp; return
+              </button>
             </div>
           </div>
         </section>

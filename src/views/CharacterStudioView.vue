@@ -17,10 +17,16 @@
   "Save draft"/dirty state survive navigating to the Library and back.
 -->
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { catalog } from '../game/catalog'
 import { usePresets } from '../composables/usePresets'
+import {
+  loadLocalPreset,
+  stableCreateKey,
+  storeLocalPreset,
+  useEditorDraft
+} from '../composables/useEditorDraft'
 import {
   ensureCharDraft,
   isCharDirty,
@@ -28,6 +34,7 @@ import {
   STRANGER_STANCES,
   suggestCharacter
 } from '../game/studio'
+import { packCharacter, unpackCharacter } from '../game/studioFields'
 import CharacterPreviewPanel from '../components/studio/CharacterPreviewPanel.vue'
 import InlineStepper from '../components/studio/InlineStepper.vue'
 import ChipEditor from '../components/studio/ChipEditor.vue'
@@ -50,6 +57,29 @@ let presetAbort: AbortController | null = null
 onMounted(() => {
   presetAbort = new AbortController()
   void presets.load(presetAbort.signal)
+  if (isNew.value) {
+    // Reload-persistent local draft: unfinished work survives navigation.
+    // New presets store the raw form (not packed fields); only known form
+    // keys are restored, never stray storage content.
+    const kept = loadLocalPreset('character', id.value)
+    if (kept) {
+      for (const key of [
+        'want',
+        'avoid',
+        'pressure',
+        'contradiction',
+        'styleTags',
+        'withStrangers',
+        'whenTheyCare',
+        'exampleLine',
+        'boundaries',
+        'secretFear'
+      ] as const) {
+        if (key in kept) (draft.value[key] as unknown) = kept[key]
+      }
+      saveCharDraft(id.value)
+    }
+  }
 })
 onUnmounted(() => presetAbort?.abort())
 /* New/existing comes from the route, never from catalog membership:
@@ -91,14 +121,126 @@ const step = ref(2)
 /* ————— save / dirty ————— */
 const dirty = computed(() => isCharDirty(id.value))
 const savedFlash = ref(false)
+/** New presets live on this device until first publication. */
+const deviceSavedFlash = ref(false)
+const deviceStorageFailed = ref(false)
 let saveTimer: ReturnType<typeof setTimeout> | undefined
-function save(): void {
+
+/* Server editor draft (E3): existing presets only. Every operation freezes
+   its owning draft id and versions, so a late response for one editor can
+   never alter another. Unmapped payload keys are never packed, so the
+   server merge preserves them verbatim. */
+const editor = useEditorDraft()
+const editorOpenedFor = ref<string | null>(null)
+
+function hydrateFromEditor(): void {
+  const restored = unpackCharacter(editor.fields.value)
+  Object.assign(draft.value, restored)
+  // Hydration is the clean baseline: entering the studio is not an edit.
   saveCharDraft(id.value)
-  savedFlash.value = true
-  clearTimeout(saveTimer)
-  saveTimer = setTimeout(() => (savedFlash.value = false), 1400)
 }
-onBeforeUnmount(() => clearTimeout(saveTimer))
+
+watch(serverCharacter, (rec) => {
+  if (isNew.value || !rec || editorOpenedFor.value === id.value) return
+  editorOpenedFor.value = id.value
+  void editor
+    .open(id.value, rec.revision)
+    .then(hydrateFromEditor)
+    .catch(() => {})
+})
+
+function retryEditor(): void {
+  const rec = serverCharacter.value
+  if (isNew.value || !rec) return
+  editorOpenedFor.value = null
+  editor.dispose()
+  editorOpenedFor.value = id.value
+  void editor
+    .open(id.value, rec.revision)
+    .then(hydrateFromEditor)
+    .catch(() => {})
+}
+
+async function save(): Promise<void> {
+  if (isNew.value) {
+    const kept = storeLocalPreset('character', id.value, { ...draft.value })
+    // Durable creation identity, minted once: stored, not yet sent. First
+    // publication stays unwired until the server receipt lands.
+    stableCreateKey(`character-${id.value}`)
+    deviceStorageFailed.value = !kept
+    if (!kept) return
+    saveCharDraft(id.value)
+    deviceSavedFlash.value = true
+    savedFlash.value = true
+    clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => {
+      savedFlash.value = false
+      deviceSavedFlash.value = false
+    }, 1400)
+    return
+  }
+  editor.fields.value = { ...editor.fields.value, ...packCharacter(draft.value) }
+  const ok = await editor.save(id.value)
+  if (ok) {
+    saveCharDraft(id.value)
+    savedFlash.value = true
+    clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => (savedFlash.value = false), 1400)
+  }
+}
+
+const pubStatus = computed(() => {
+  if (isNew.value) return null
+  switch (editor.status.value) {
+    case 'loading':
+      return 'Reading the archive draft…'
+    case 'saving':
+      return 'Saving…'
+    case 'saved':
+      return 'Saved.'
+    case 'publishing':
+      return 'Publishing…'
+    case 'published':
+      return `Published revision ${editor.publishedRevision.value}.`
+    case 'failed':
+      return editor.error.value ?? 'Something failed.'
+    default:
+      return null
+  }
+})
+
+async function publish(): Promise<void> {
+  if (isNew.value) return
+  editor.fields.value = { ...editor.fields.value, ...packCharacter(draft.value) }
+  const presetVersion = editor.baseDetail.value?.version ?? 0
+  const view = await editor.publish(id.value, presetVersion)
+  if (!view) return
+  saveCharDraft(id.value)
+  if (!fromLibrary.value) {
+    // Nested return: the wizard offers deliberate adoption of the exact
+    // published revision — never an automatic switch.
+    await router.push({
+      path: '/new-story',
+      query: {
+        adopt_kind: 'character',
+        adopt_preset: id.value,
+        adopt_revision: String(view.published_revision)
+      }
+    })
+  }
+}
+
+async function finishAndReturn(): Promise<void> {
+  if (!isNew.value && editor.draft.value) {
+    await editor.complete(id.value)
+  }
+  router.push(originRoute.value)
+}
+
+onBeforeUnmount(() => {
+  clearTimeout(saveTimer)
+  editor.dispose()
+})
 
 /* ————— advance ————— */
 const nextLabel = computed(() =>
@@ -109,8 +251,9 @@ function advance(): void {
     step.value++
     return
   }
-  save()
-  router.push(originRoute.value)
+  void save().then(() => {
+    router.push(originRoute.value)
+  })
 }
 
 /* ————— suggest ————— */
@@ -249,6 +392,46 @@ function suggest(): void {
               </div>
             </div>
           </CollapseBox>
+        </section>
+
+        <section class="card ev-card" aria-label="Publication">
+          <header class="card__head">
+            <h2 class="card__title">Publication</h2>
+          </header>
+          <div v-if="isNew">
+            <p class="studio__state" role="status">
+              New characters live on this device until first publication.
+            </p>
+            <p v-if="deviceSavedFlash" class="studio__state" role="status">Saved on this device.</p>
+            <p v-if="deviceStorageFailed" class="studio__state" role="alert">
+              This device would not keep the draft (storage unavailable) — keep this tab open until
+              you can save elsewhere.
+            </p>
+          </div>
+          <div v-else>
+            <p v-if="pubStatus" class="studio__state" role="status">{{ pubStatus }}</p>
+            <p v-if="editor.status.value === 'failed'" class="studio__state" role="alert">
+              <button type="button" class="studio__link" @click="retryEditor()">retry</button>
+            </p>
+            <div class="preview__actions">
+              <button
+                type="button"
+                class="cta cta--sm"
+                :disabled="
+                  editor.status.value === 'publishing' || editor.status.value === 'loading'
+                "
+                @click="publish">
+                {{ editor.status.value === 'publishing' ? 'Publishing…' : 'Publish new revision' }}
+              </button>
+              <button
+                v-if="editor.status.value === 'published'"
+                type="button"
+                class="ghost ghost--sm"
+                @click="finishAndReturn">
+                Finish &amp; return
+              </button>
+            </div>
+          </div>
         </section>
       </div>
 

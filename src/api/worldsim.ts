@@ -23,6 +23,7 @@ import type {
   InterventionView,
   MapResponse,
   PresetDetail,
+  PresetPublishView,
   PresetSummary,
   RoleGrantView,
   RoleSelectRequest,
@@ -65,6 +66,26 @@ export function getPreset(
 ): Promise<PresetDetail> {
   const query = revision !== undefined ? `?revision=${revision}` : ''
   return apiFetch<PresetDetail>(`/library/presets/${id}${query}`, { ...opts, method: 'GET' })
+}
+
+export function createPreset(
+  kind: string,
+  name: string,
+  payload: Record<string, unknown>,
+  idempotencyKey: string,
+  opts: CallOptions = {}
+): Promise<PresetDetail> {
+  // Durable creation identity: the caller mints one stable key per local
+  // draft and reuses it across retries, so a lost response replays instead
+  // of minting a second preset. The server receipt is still pending — new
+  // presets stay local-until-publish and this wrapper is not yet wired to
+  // any publish path.
+  return apiFetch<PresetDetail>('/library/presets', {
+    ...opts,
+    method: 'POST',
+    body: { kind, name, payload },
+    idempotencyKey
+  })
 }
 
 /* Preset editor drafts (E3) ------------------------------------------------ */
@@ -138,16 +159,19 @@ export function publishEditorDraft(
   version: number,
   presetVersion: number,
   opts: CallOptions = {}
-): Promise<PresetDetail> {
+): Promise<PresetPublishView> {
   const body: EditorDraftPublishRequest = {
     expected_version: version,
     preset_expected_version: presetVersion
   }
-  return apiFetch<PresetDetail>(`/library/presets/${presetId}/editor-drafts/${draftId}/publish`, {
-    ...opts,
-    method: 'POST',
-    body
-  })
+  return apiFetch<PresetPublishView>(
+    `/library/presets/${presetId}/editor-drafts/${draftId}/publish`,
+    {
+      ...opts,
+      method: 'POST',
+      body
+    }
+  )
 }
 
 /* Story drafts ----------------------------------------------------------- */
