@@ -35,7 +35,13 @@ from worldsim.domain.narrative import NarrativeArc, NarrativeHook
 from worldsim.domain.party import Monster, PartyMember
 from worldsim.domain.perception import Observation, RecentMemory
 from worldsim.domain.phases import PhaseRun, PhaseSnapshot
-from worldsim.domain.presets import EditorDraft, EditorPublication, Preset, PresetRevision
+from worldsim.domain.presets import (
+    EditorDraft,
+    EditorPublication,
+    Preset,
+    PresetCreationReceipt,
+    PresetRevision,
+)
 from worldsim.domain.progress import CharacterSkill, ItemInstance, SkillDefinition, TrainingSession
 from worldsim.domain.relationships import Relationship, RelationshipEvidence
 from worldsim.domain.roles import RoleGrant
@@ -493,6 +499,10 @@ class PresetRepository(Protocol):
         self, draft_id: UUID
     ) -> list[EditorPublication]: ...
     async def delete_publications_for_draft(self, draft_id: UUID) -> None: ...
+    async def put_creation_receipt(self, receipt: PresetCreationReceipt) -> None: ...
+    async def find_creation_receipt(
+        self, operator: str, key: str
+    ) -> PresetCreationReceipt | None: ...
 
 
 class SettingsRepository(Protocol):

@@ -73,7 +73,9 @@ onMounted(() => {
         'whenTheyCare',
         'exampleLine',
         'boundaries',
-        'secretFear'
+        'secretFear',
+        'personalityExtra',
+        'backgroundExtra'
       ] as const) {
         if (key in kept) (draft.value[key] as unknown) = kept[key]
       }
@@ -161,14 +163,49 @@ function retryEditor(): void {
     .catch(() => {})
 }
 
-async function save(): Promise<void> {
+/**
+ * Retry exactly the failed operation: a failed save re-sends the current
+ * form (never a server re-hydrate, which would overwrite it), an
+ * ambiguous publish replays the frozen request without another save,
+ * and only a failed open reopens and hydrates.
+ */
+async function retryLast(): Promise<void> {
+  if (isNew.value) return
+  const op = editor.lastFailedOp.value
+  if (op === 'save') {
+    await save()
+  } else if (op === 'publish') {
+    await publish()
+  } else if (op === 'complete') {
+    await editor.complete(id.value)
+  } else if (op === 'discard') {
+    await editor.discard(id.value)
+  } else {
+    retryEditor()
+  }
+}
+
+/** Snapshot the form so a delayed success marks clean only what it saved. */
+function formSnapshot(): string {
+  return JSON.stringify(draft.value)
+}
+
+function markSaved(before: string): void {
+  if (JSON.stringify(draft.value) !== before) return
+  saveCharDraft(id.value)
+  savedFlash.value = true
+  clearTimeout(saveTimer)
+  saveTimer = setTimeout(() => (savedFlash.value = false), 1400)
+}
+
+async function save(): Promise<boolean> {
   if (isNew.value) {
     const kept = storeLocalPreset('character', id.value, { ...draft.value })
     // Durable creation identity, minted once: stored, not yet sent. First
     // publication stays unwired until the server receipt lands.
     stableCreateKey(`character-${id.value}`)
     deviceStorageFailed.value = !kept
-    if (!kept) return
+    if (!kept) return false
     saveCharDraft(id.value)
     deviceSavedFlash.value = true
     savedFlash.value = true
@@ -177,16 +214,18 @@ async function save(): Promise<void> {
       savedFlash.value = false
       deviceSavedFlash.value = false
     }, 1400)
-    return
+    return true
   }
-  editor.fields.value = { ...editor.fields.value, ...packCharacter(draft.value) }
+  const before = formSnapshot()
+  editor.fields.value = {
+    ...editor.fields.value,
+    ...packCharacter(draft.value, editor.fields.value)
+  }
   const ok = await editor.save(id.value)
-  if (ok) {
-    saveCharDraft(id.value)
-    savedFlash.value = true
-    clearTimeout(saveTimer)
-    saveTimer = setTimeout(() => (savedFlash.value = false), 1400)
-  }
+  // A delayed success must not mark newer edits clean: only the
+  // acknowledged snapshot goes clean.
+  if (ok) markSaved(before)
+  return ok
 }
 
 const pubStatus = computed(() => {
@@ -211,20 +250,37 @@ const pubStatus = computed(() => {
 
 async function publish(): Promise<void> {
   if (isNew.value) return
-  editor.fields.value = { ...editor.fields.value, ...packCharacter(draft.value) }
-  const presetVersion = editor.baseDetail.value?.version ?? 0
-  const view = await editor.publish(id.value, presetVersion)
+  const before = formSnapshot()
+  const pending = editor.pendingPublication.value
+  let view
+  if (pending && pending.draftId === editor.draft.value?.id) {
+    // An ambiguous publication is still outstanding: replay it frozen
+    // instead of saving again. A fresh save would mint a new version and
+    // risk a duplicate revision next to the already-committed one.
+    view = await editor.retryPublish(id.value)
+  } else {
+    editor.fields.value = {
+      ...editor.fields.value,
+      ...packCharacter(draft.value, editor.fields.value)
+    }
+    view = await editor.saveAndPublish(id.value, { ...editor.fields.value })
+  }
   if (!view) return
-  saveCharDraft(id.value)
+  if (JSON.stringify(draft.value) === before) saveCharDraft(id.value)
   if (!fromLibrary.value) {
     // Nested return: the wizard offers deliberate adoption of the exact
-    // published revision — never an automatic switch.
+    // published revision — never an automatic switch. The originating
+    // story draft rides along so the offer binds to it, never to
+    // whatever the wizard recalls later.
+    const storyDraft =
+      typeof route.query.draft === 'string' && route.query.draft ? route.query.draft : null
     await router.push({
       path: '/new-story',
       query: {
         adopt_kind: 'character',
         adopt_preset: id.value,
-        adopt_revision: String(view.published_revision)
+        adopt_revision: String(view.published_revision),
+        ...(storyDraft ? { adopt_draft: storyDraft } : {})
       }
     })
   }
@@ -232,7 +288,7 @@ async function publish(): Promise<void> {
 
 async function finishAndReturn(): Promise<void> {
   if (!isNew.value && editor.draft.value) {
-    await editor.complete(id.value)
+    if (!(await editor.complete(id.value))) return
   }
   router.push(originRoute.value)
 }
@@ -246,14 +302,14 @@ onBeforeUnmount(() => {
 const nextLabel = computed(() =>
   step.value <= 2 ? 'Background' : step.value === 3 ? 'Review' : 'Finish'
 )
-function advance(): void {
+async function advance(): Promise<void> {
   if (step.value < 4) {
     step.value++
     return
   }
-  void save().then(() => {
-    router.push(originRoute.value)
-  })
+  // Navigation waits for persistence: a failed save keeps the user here
+  // with their edits intact instead of leaving anyway.
+  if (await save()) router.push(originRoute.value)
 }
 
 /* ————— suggest ————— */
@@ -411,7 +467,9 @@ function suggest(): void {
           <div v-else>
             <p v-if="pubStatus" class="studio__state" role="status">{{ pubStatus }}</p>
             <p v-if="editor.status.value === 'failed'" class="studio__state" role="alert">
-              <button type="button" class="studio__link" @click="retryEditor()">retry</button>
+              <button type="button" class="studio__link" @click="retryLast()">
+                retry {{ editor.lastFailedOp.value ?? 'operation' }}
+              </button>
             </p>
             <div class="preview__actions">
               <button
@@ -421,7 +479,13 @@ function suggest(): void {
                   editor.status.value === 'publishing' || editor.status.value === 'loading'
                 "
                 @click="publish">
-                {{ editor.status.value === 'publishing' ? 'Publishing…' : 'Publish new revision' }}
+                {{
+                  editor.status.value === 'publishing'
+                    ? 'Publishing…'
+                    : editor.pendingPublication.value
+                      ? 'Retry publish'
+                      : 'Publish new revision'
+                }}
               </button>
               <button
                 v-if="editor.status.value === 'published'"

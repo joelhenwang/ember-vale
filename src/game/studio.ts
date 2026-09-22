@@ -10,7 +10,14 @@ import { reactive } from 'vue'
  */
 
 export interface PlaceDraft {
+  /** Local tab identity: stable for this editing session only. */
   id: string
+  /**
+   * Stable server location key, independent of the display name.
+   * Renaming a place never changes its key, so route references and
+   * the starting-location pin survive renames.
+   */
+  key: string
   name: string
   type: string
   purpose: string
@@ -18,6 +25,12 @@ export interface PlaceDraft {
   landmark: string
   connectedTo: string
   sounds: string
+  /**
+   * Server prose the section parser did not attribute to a known
+   * field. Invisible in the form; packed back verbatim so unrelated
+   * prose is never lost by editing a section.
+   */
+  detailExtra: string
 }
 
 export interface CharacterDraft {
@@ -32,6 +45,14 @@ export interface CharacterDraft {
   boundaries: string
   secretFear: string
   appearanceSaved: boolean
+  /**
+   * Server prose the section parser did not attribute to a known
+   * field (leading free text in personality / background). Invisible
+   * in the form; packed back verbatim ahead of the regenerated
+   * sections so unrelated prose survives section edits.
+   */
+  personalityExtra: string
+  backgroundExtra: string
 }
 
 export interface WorldDraft {
@@ -41,7 +62,19 @@ export interface WorldDraft {
   details: string
   exclusions: string
   places: PlaceDraft[]
+  /** Local id of the tab being edited. Inspecting tabs never publishes. */
   activePlace: string
+  /**
+   * Local id of the place configured as the world's starting location.
+   * This — never the inspected tab — is what publishes as
+   * starting_location_key.
+   */
+  startPlace: string
+  /**
+   * Server prose the section parser did not attribute to a known lore
+   * field. Invisible in the form; packed back verbatim.
+   */
+  loreExtra: string
 }
 
 const blankCharacter = (): CharacterDraft => ({
@@ -55,18 +88,22 @@ const blankCharacter = (): CharacterDraft => ({
   exampleLine: '',
   boundaries: '',
   secretFear: '',
-  appearanceSaved: false
+  appearanceSaved: false,
+  personalityExtra: '',
+  backgroundExtra: ''
 })
 
 const blankPlace = (n: number): PlaceDraft => ({
   id: `place-${Date.now()}-${n}`,
+  key: `place-${n}`,
   name: 'New place',
   type: 'Village square',
   purpose: '',
   appearance: '',
   landmark: '',
   connectedTo: '',
-  sounds: ''
+  sounds: '',
+  detailExtra: ''
 })
 
 export const charDrafts = reactive<Record<string, CharacterDraft>>({})
@@ -89,7 +126,9 @@ export function ensureCharDraft(id: string): CharacterDraft {
         exampleLine: 'I said I knew the road. I never said it was a good one.',
         boundaries: '',
         secretFear: '',
-        appearanceSaved: false
+        appearanceSaved: false,
+        personalityExtra: '',
+        backgroundExtra: ''
       }
     } else if (id === 'nessa') {
       charDrafts[id] = {
@@ -118,16 +157,19 @@ export function ensureWorldDraft(id: string): WorldDraft {
         places: [
           {
             id: 'hearth',
+            key: 'hearth',
             name: 'Hearth',
             type: 'Village inn',
             purpose: 'Warm rest, shared meals, and rumor trading.',
             appearance: 'Low beams, a wide stone hearth, lantern light and the smell of bread.',
             landmark: 'The common-room fire',
             connectedTo: 'Market',
-            sounds: 'Kettles, chairs scraping, someone tuning a bad lute.'
+            sounds: 'Kettles, chairs scraping, someone tuning a bad lute.',
+            detailExtra: ''
           },
           {
             id: 'market',
+            key: 'market',
             name: 'Market',
             type: 'Open-air market',
             purpose: 'Trade, news, and chance encounters.',
@@ -135,10 +177,13 @@ export function ensureWorldDraft(id: string): WorldDraft {
               'A small cobbled square with striped canvas stalls, low timber buildings and a stone well.',
             landmark: 'Old stone well',
             connectedTo: 'Hearth',
-            sounds: 'Apples tumbling into crates, haggling, a bell at noon.'
+            sounds: 'Apples tumbling into crates, haggling, a bell at noon.',
+            detailExtra: ''
           }
         ],
-        activePlace: 'market'
+        activePlace: 'market',
+        startPlace: 'market',
+        loreExtra: ''
       }
     } else if (id === 'silverleaf-coast') {
       worldDrafts[id] = {
@@ -150,16 +195,20 @@ export function ensureWorldDraft(id: string): WorldDraft {
         places: [
           {
             id: 'lighthouse',
+            key: 'lighthouse',
             name: 'The Lantern Point',
             type: 'Lighthouse',
             purpose: 'Guides ships — and hides the keeper’s ledger.',
             appearance: 'A white tower on the headland, a lamp that never quite stays lit.',
             landmark: 'The broken stair',
             connectedTo: '',
-            sounds: 'Foghorn, gulls, the sea rearranging itself.'
+            sounds: 'Foghorn, gulls, the sea rearranging itself.',
+            detailExtra: ''
           }
         ],
-        activePlace: 'lighthouse'
+        activePlace: 'lighthouse',
+        startPlace: 'lighthouse',
+        loreExtra: ''
       }
     } else {
       worldDrafts[id] = {
@@ -169,10 +218,13 @@ export function ensureWorldDraft(id: string): WorldDraft {
         details: '',
         exclusions: '',
         places: [blankPlace(0)],
-        activePlace: 'boot'
+        activePlace: 'boot',
+        startPlace: 'boot',
+        loreExtra: ''
       }
       const p = worldDrafts[id].places[0]!
       worldDrafts[id].activePlace = p.id
+      worldDrafts[id].startPlace = p.id
     }
     worldSnap[id] = JSON.stringify(worldDrafts[id])
   }

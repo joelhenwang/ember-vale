@@ -19,6 +19,11 @@ interface DraftRow {
 const drafts = new Map<string, DraftRow>()
 let holdResponses = false
 let held: Array<() => void> = []
+/** Ordered request log (method + path) and publish request bodies. */
+let calls: string[] = []
+let publishBodies: Record<string, unknown>[] = []
+/** Fail the next publish call once with a transport error (ambiguous outcome). */
+let failNextPublish = false
 
 function detailFor(presetId: string, revision: number): Record<string, unknown> {
   return {
@@ -44,6 +49,9 @@ function installFetch(): void {
   drafts.clear()
   held = []
   holdResponses = false
+  calls = []
+  publishBodies = []
+  failNextPublish = false
   vi.stubGlobal(
     'fetch',
     vi.fn(async (rawUrl: string, init: RequestInit = {}) => {
@@ -53,6 +61,7 @@ function installFetch(): void {
       const url = new URL(rawUrl, 'http://test')
       const path = url.pathname
       const method = init.method ?? 'GET'
+      calls.push(`${method} ${path}`)
       const body =
         init.body === undefined
           ? undefined
@@ -118,13 +127,18 @@ function installFetch(): void {
             { status: 404 }
           )
         }
-        return new Response(
-          JSON.stringify({
-            published_revision: 2,
-            detail: detailFor(presetId, 2)
-          }),
-          { status: 200 }
-        )
+        if (failNextPublish) {
+          failNextPublish = false
+          // Transport failure: the request may still have committed.
+          throw new Error('network failure: connection reset')
+        }
+        publishBodies.push({ ...(body as Record<string, unknown>) })
+        // The publish bumps the preset version, like the real backend.
+        const detail = {
+          ...(detailFor(presetId, 2) as Record<string, unknown>),
+          version: 4
+        }
+        return new Response(JSON.stringify({ published_revision: 2, detail }), { status: 200 })
       }
 
       const read = path.match(/\/library\/presets\/([^/]+)$/)
@@ -198,6 +212,81 @@ describe('useEditorDraft', () => {
     await Promise.all([pendingA, pendingB])
     expect(ctl.draft.value?.preset_id).toBe('preset-b')
     expect(ctl.baseDetail.value?.id).toBe('preset-b')
+  })
+
+  it('saveAndPublish saves the current form, then publishes the acked version', async () => {
+    installFetch()
+    const ctl = useEditorDraft()
+    await ctl.open('preset-1', 2)
+    const view = await ctl.saveAndPublish('preset-1', {
+      ...ctl.fields.value,
+      appearance: 'edited without saving first'
+    })
+    expect(view?.published_revision).toBe(2)
+    expect(ctl.status.value).toBe('published')
+    // One save carrying the form, then one publish of the acknowledged
+    // version (1 -> 2): the publish never runs ahead of the save.
+    expect(calls.filter((c) => c.startsWith('PATCH'))).toHaveLength(1)
+    expect(publishBodies).toHaveLength(1)
+    expect(publishBodies[0]).toEqual({ expected_version: 2, preset_expected_version: 3 })
+    // The published content is the edited form, not the last saved draft.
+    const row = drafts.get('draft-preset-1-r2')
+    expect((row?.fields as Record<string, unknown>)['appearance']).toBe(
+      'edited without saving first'
+    )
+  })
+
+  it('an ambiguous publish retries the frozen request without another save', async () => {
+    installFetch()
+    const ctl = useEditorDraft()
+    await ctl.open('preset-1', 2)
+    failNextPublish = true
+    const lost = await ctl.saveAndPublish('preset-1', {
+      ...ctl.fields.value,
+      appearance: 'ambiguous edits'
+    })
+    expect(lost).toBeNull()
+    expect(ctl.status.value).toBe('failed')
+    expect(ctl.lastFailedOp.value).toBe('publish')
+    const patches = calls.filter((c) => c.startsWith('PATCH')).length
+    // The retry replays the frozen draft version and preset version: no
+    // second save, so no new version and no duplicate revision.
+    const view = await ctl.retryPublish('preset-1')
+    expect(view?.published_revision).toBe(2)
+    expect(ctl.status.value).toBe('published')
+    expect(calls.filter((c) => c.startsWith('PATCH'))).toHaveLength(patches)
+    // Only the retry reached the server (the first attempt died in
+    // transport), replaying the exact frozen identity.
+    expect(publishBodies).toEqual([{ expected_version: 2, preset_expected_version: 3 }])
+  })
+
+  it('refreshes the preset version after publish so the next publish is current', async () => {
+    installFetch()
+    const ctl = useEditorDraft()
+    await ctl.open('preset-1', 2)
+    expect(ctl.baseDetail.value?.version).toBe(3)
+    await ctl.saveAndPublish('preset-1', { ...ctl.fields.value })
+    // The publish bumped the preset: our copy moves with it.
+    expect(ctl.baseDetail.value?.version).toBe(4)
+    // A second edit publishes against the fresh version, not a stale one.
+    await ctl.saveAndPublish('preset-1', {
+      ...ctl.fields.value,
+      appearance: 'second round'
+    })
+    expect(publishBodies[1]).toMatchObject({ preset_expected_version: 4 })
+    expect(ctl.status.value).toBe('published')
+  })
+
+  it('tracks the failed operation and clears it on success', async () => {
+    installFetch()
+    const ctl = useEditorDraft()
+    await ctl.open('preset-1', 2)
+    expect(ctl.lastFailedOp.value).toBeNull()
+    ctl.draft.value = { ...ctl.draft.value!, id: 'missing' }
+    expect(await ctl.save('preset-1')).toBe(false)
+    expect(ctl.lastFailedOp.value).toBe('save')
+    // A retry with nothing frozen resolves nothing and changes nothing.
+    expect(await ctl.retryPublish('preset-1')).toBeNull()
   })
 
   it('a failed save reports failed without losing the draft', async () => {

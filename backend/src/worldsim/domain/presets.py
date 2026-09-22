@@ -168,3 +168,15 @@ class EditorPublication(BaseModel):
     revision: int = Field(ge=1)
     content_hash: str = Field(min_length=1, max_length=128)
     created_at: datetime = Field(default_factory=utcnow)
+
+
+class PresetCreationReceipt(BaseModel):
+    """Idempotent first-publication record: same key plus same hash replays one preset."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    operator: str = Field(min_length=1, max_length=64)
+    idempotency_key: str = Field(min_length=1, max_length=128)
+    request_hash: str = Field(min_length=1, max_length=128)
+    created_preset_id: PresetId
+    created_at: datetime = Field(default_factory=utcnow)

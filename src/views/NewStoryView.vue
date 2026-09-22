@@ -15,7 +15,16 @@ import IconPlay from '../components/icons/IconPlay.vue'
 import MountainRidge from '../components/decor/MountainRidge.vue'
 import PageIntro from '../components/ui/PageIntro.vue'
 import { useBackend } from '../composables/useBackend'
-import { applyAdoption, parseAdoptionOffer, type AdoptionOffer } from '../game/adoption'
+import {
+  applyAdoption,
+  offerTargetsDraft,
+  pinsEqual,
+  planAdoption,
+  parseAdoptionOffer,
+  snapshotPins,
+  type AdoptionOffer,
+  type PinSnapshot
+} from '../game/adoption'
 import { usePresets, type PresetCharacter } from '../composables/usePresets'
 import { planBootRecovery, useStoryDraft } from '../composables/useStoryDraft'
 import { usePinnedPresets } from '../composables/usePinnedPresets'
@@ -52,9 +61,17 @@ const bootNotice = ref<string | null>(null)
 const serverAlternative = ref<{ payload: Record<string, unknown>; step: number } | null>(null)
 /**
  * Nested return from a studio publish: adopting is deliberate, never
- * automatic. The offer pins the exact published revision, not the head.
+ * automatic. The offer pins the exact published revision, not the head,
+ * and belongs to exactly one story draft. `rollback` snapshots the pins
+ * at accept time so dismissing a failed accept restores them.
  */
-const adoptOffer = ref<AdoptionOffer | null>(null)
+interface PendingAdoption {
+  offer: AdoptionOffer
+  rollback: PinSnapshot | null
+}
+const adoptOffer = ref<PendingAdoption | null>(null)
+/** True while acceptAdoption drives pin changes itself (watcher stands down). */
+let adoptingWorld = false
 let bootCycle = 0
 
 function keepLocalRecovery(): void {
@@ -377,7 +394,22 @@ async function prefillQuickStart(): Promise<void> {
     : 'Quick Start filled in Ember Vale with Wren and Ash, but the save failed — your choices are kept here, not yet on the server. Retry the save before leaving.'
 }
 
-async function boot(draftOverride?: string): Promise<void> {
+async function openRecalled(): Promise<void> {
+  if (recalledId()) {
+    try {
+      await draftCtl.openExisting(recalledId() as string)
+    } catch {
+      await startFresh()
+    }
+  } else {
+    await startFresh()
+  }
+}
+
+async function boot(
+  draftOverride?: string,
+  queryOverride?: Record<string, unknown>
+): Promise<void> {
   bootCycle += 1
   const seen = bootCycle
   booted.value = false
@@ -394,19 +426,34 @@ async function boot(draftOverride?: string): Promise<void> {
   }
   const emberVale =
     presets.worlds.value.find((w) => w.name === 'Ember Vale') ?? presets.worlds.value[0]
+  // A studio return carries its originating draft: boot it explicitly so
+  // the offer lands on its own draft even when another flow recalled a
+  // different one meanwhile. An explicit ?draft= always wins.
+  const incomingAdopt = parseAdoptionOffer(
+    (queryOverride ?? route.query) as Record<string, unknown>
+  )
   const queryDraft =
-    draftOverride ?? (typeof route.query.draft === 'string' ? route.query.draft : null)
+    draftOverride ??
+    (typeof route.query.draft === 'string' ? route.query.draft : null) ??
+    incomingAdopt?.draftId ??
+    null
+  let adoptDead = false
   try {
     if (queryDraft) {
-      await draftCtl.openExisting(queryDraft)
-    } else if (recalledId()) {
       try {
-        await draftCtl.openExisting(recalledId() as string)
+        await draftCtl.openExisting(queryDraft)
       } catch {
-        await startFresh()
+        if (incomingAdopt && !draftOverride && queryDraft === incomingAdopt.draftId) {
+          // The originating draft no longer opens: fall back to the
+          // recalled flow and drop the orphaned offer below.
+          adoptDead = true
+          await openRecalled()
+        } else {
+          throw new Error(draftCtl.notice.value ?? 'could not start a draft')
+        }
       }
     } else {
-      await startFresh()
+      await openRecalled()
     }
   } catch {
     if (seen !== bootCycle) return
@@ -467,9 +514,18 @@ async function boot(draftOverride?: string): Promise<void> {
     await persist()
   }
   if (seen !== bootCycle) return
-  // A studio publish returns here with an adoption offer. It applies only
-  // on explicit accept; the draft otherwise keeps its existing pins.
-  adoptOffer.value = parseAdoptionOffer(route.query as Record<string, unknown>)
+  // A studio publish returns here with an adoption offer. It presents
+  // only when it belongs to the mounted draft; anything else is cleared
+  // so a delayed return can never modify another wizard draft.
+  if (incomingAdopt && !adoptDead && offerTargetsDraft(incomingAdopt, opened.id)) {
+    adoptOffer.value = { offer: incomingAdopt, rollback: null }
+  } else {
+    // Clearing targets the live query: while booting from a pending
+    // navigation the route query is stale, so leave it — the next mount
+    // parses (and clears, if still foreign) against the settled URL.
+    if (incomingAdopt && !queryOverride) clearAdoptQuery()
+    adoptOffer.value = null
+  }
   if (seen !== bootCycle) return
   booted.value = true
   void backend.refresh()
@@ -480,34 +536,107 @@ function clearAdoptQuery(): void {
   delete next['adopt_kind']
   delete next['adopt_preset']
   delete next['adopt_revision']
+  delete next['adopt_draft']
   void router.replace({ query: next })
 }
 
-async function acceptAdoption(): Promise<void> {
-  const offer = adoptOffer.value
-  if (!offer) return
-  const applied = applyAdoption(selections.value, offer)
-  if (offer.kind === 'world') {
-    sel.worldId = applied.world.presetId
-    sel.worldRev = applied.world.presetRevision
-    await ensurePinned()
-  } else {
-    const member = applied.cast.find((m) => m.presetId === offer.presetId)
-    const target = sel.cast.find((c) => c.presetId === offer.presetId)
-    if (member && target) {
-      target.presetRevision = member.presetRevision
-      await prefetchCharRevs()
-    }
-  }
-  await persist()
-  adoptOffer.value = null
-  clearAdoptQuery()
-  bootNotice.value = `Adopted revision ${offer.revision} — everything else in this draft is unchanged.`
+/**
+ * Reconcile cast starting locations against the exact adopted world
+ * revision: members whose location the new map no longer has are reset
+ * to the revision's default and named, like a manual world change.
+ */
+async function reconcileAdoptedWorld(): Promise<void> {
+  await ensurePinned()
+  const reset = rehomeInvalidLocations(
+    sel.cast,
+    new Set(worldPlaces.value.map((p) => p.key)),
+    (presetId) => defaultLocation(presetId)
+  )
+  worldNotice.value =
+    reset > 0
+      ? `Revision ${sel.worldRev} no longer has ${reset} starting place(s) — reset to the new map.`
+      : null
 }
 
-function dismissAdoption(): void {
+async function acceptAdoption(): Promise<void> {
+  const pending = adoptOffer.value
+  if (!pending) return
+  const draftId = draftCtl.draft.value?.id ?? null
+  const plan = planAdoption(
+    pending.offer,
+    selections.value,
+    draftId,
+    WORLD_BY_ID.value.has(pending.offer.presetId) || pending.offer.kind === 'character'
+  )
+  if (plan.kind === 'stale-draft') {
+    adoptOffer.value = null
+    clearAdoptQuery()
+    bootNotice.value = 'That adoption belongs to another story draft — nothing was changed.'
+    return
+  }
+  if (plan.kind === 'unknown-target') {
+    adoptOffer.value = null
+    clearAdoptQuery()
+    bootNotice.value =
+      pending.offer.kind === 'world'
+        ? 'That world is no longer on the shelf — nothing was adopted.'
+        : 'That cast member is no longer in this draft — nothing was adopted.'
+    return
+  }
+  if (pending.rollback === null) pending.rollback = snapshotPins(selections.value)
+  const applied = applyAdoption(selections.value, pending.offer)
+  adoptingWorld = true
+  try {
+    if (pending.offer.kind === 'world') {
+      sel.worldId = applied.world.presetId
+      sel.worldRev = applied.world.presetRevision
+      await reconcileAdoptedWorld()
+    } else {
+      const target = sel.cast.find((c) => c.presetId === pending.offer.presetId)
+      const member = applied.cast.find((m) => m.presetId === pending.offer.presetId)
+      if (target && member) {
+        target.presetRevision = member.presetRevision
+        await prefetchCharRevs()
+      }
+    }
+    if (!(await persist())) {
+      // The pins changed locally but did not persist: keep the offer
+      // (and its query) so accepting again retries, and say so plainly.
+      bootNotice.value =
+        'Adoption could not save — your pins are unchanged on the server. Accept again to retry.'
+      return
+    }
+  } finally {
+    adoptingWorld = false
+  }
   adoptOffer.value = null
   clearAdoptQuery()
+  bootNotice.value = `Adopted revision ${pending.offer.revision} — everything else in this draft is unchanged.`
+}
+
+async function dismissAdoption(): Promise<void> {
+  const pending = adoptOffer.value
+  adoptOffer.value = null
+  clearAdoptQuery()
+  if (pending?.rollback && pinsEqual(pending.rollback, selections.value)) {
+    // A failed accept changed the pins but never persisted: put them
+    // back and save the restoration. Pins the user edited themselves
+    // meanwhile are left alone. The world watcher stands down while
+    // the rollback drives, so it persists exactly once.
+    adoptingWorld = true
+    try {
+      sel.worldId = pending.rollback.worldId
+      sel.worldRev = pending.rollback.worldRev
+      for (const member of sel.cast) {
+        const rev = pending.rollback.castRevs[member.key]
+        if (rev !== undefined) member.presetRevision = rev
+      }
+      await ensurePinned()
+      await persist()
+    } finally {
+      adoptingWorld = false
+    }
+  }
 }
 
 function recalledId(): string | null {
@@ -529,7 +658,15 @@ async function startFresh(): Promise<void> {
     },
     'world'
   )
-  await router.replace({ query: { ...route.query, draft: draftCtl.draft.value?.id } })
+  const query: Record<string, string | string[] | null | undefined> = {
+    ...route.query,
+    draft: draftCtl.draft.value?.id
+  }
+  delete query['adopt_kind']
+  delete query['adopt_preset']
+  delete query['adopt_revision']
+  delete query['adopt_draft']
+  await router.replace({ query })
 }
 
 function navBusy(): boolean {
@@ -606,30 +743,52 @@ onBeforeRouteUpdate((to) => {
   const next = typeof to.query.draft === 'string' ? to.query.draft : null
   if (next && next !== draftCtl.draft.value?.id && booted.value) {
     void boot(next)
+    return
+  }
+  // A studio return onto the already-mounted route carries no draft
+  // switch: present its offer when it belongs here, or boot its draft.
+  if (!booted.value) return
+  const incoming = parseAdoptionOffer(to.query as Record<string, unknown>)
+  if (!incoming) return
+  const current = draftCtl.draft.value?.id ?? null
+  if (incoming.draftId === current) {
+    adoptOffer.value = { offer: incoming, rollback: null }
+  } else {
+    void boot(incoming.draftId, to.query as Record<string, unknown>)
   }
 })
 
-// The user changing worlds adopts the latest revision deliberately:
-// pinned content is dropped, starting places absent from the new map are
-// reset (and named), and the change persists.
-watch([() => sel.worldId, () => sel.worldRev], async ([wid, rev], [prevId]) => {
-  if (!booted.value) return
+// The user changing worlds adopts the latest revision deliberately, and an
+// adopted revision change within the same world reconciles the same way:
+// pinned content is dropped, starting places absent from the exact
+// revision's map are reset (and named), and the change persists.
+watch([() => sel.worldId, () => sel.worldRev], async ([wid, rev], [prevId, prevRev]) => {
+  if (!booted.value || adoptingWorld) return
   if (wid !== prevId) {
     const latest = WORLD_BY_ID.value.get(wid)
     if (latest && rev !== latest.revision) {
+      // Re-fire reconciles against the latest revision's exact map.
       sel.worldRev = latest.revision
+      return
     }
     pinned.clearWorld()
-    const reset = rehomeInvalidLocations(
-      sel.cast,
-      new Set(worldPlaces.value.map((p) => p.key)),
-      (presetId) => defaultLocation(presetId)
-    )
-    worldNotice.value =
-      reset > 0 ? `New world, new map — ${reset} starting place(s) were reset.` : null
-    await persist()
+  } else if (rev === prevRev) {
+    await ensurePinned()
+    return
   }
   await ensurePinned()
+  const reset = rehomeInvalidLocations(
+    sel.cast,
+    new Set(worldPlaces.value.map((p) => p.key)),
+    (presetId) => defaultLocation(presetId)
+  )
+  worldNotice.value =
+    reset > 0
+      ? wid !== prevId
+        ? `New world, new map — ${reset} starting place(s) were reset.`
+        : `Revision ${rev} no longer has ${reset} starting place(s) — reset to the new map.`
+      : null
+  await persist()
 })
 
 // Resolve older pinned character revisions for display as the cast changes;
@@ -698,8 +857,8 @@ onMounted(() => {
       <div v-if="adoptOffer" class="nsv__modes" role="group" aria-label="Adopt published revision">
         <button type="button" class="nsv__world" :aria-pressed="false" @click="acceptAdoption">
           <span class="nsv__world-name"
-            >Adopt revision {{ adoptOffer.revision }} ({{
-              adoptOffer.kind === 'world' ? 'world' : 'character'
+            >Adopt revision {{ adoptOffer.offer.revision }} ({{
+              adoptOffer.offer.kind === 'world' ? 'world' : 'character'
             }})</span
           >
           <span class="nsv__world-desc"
@@ -730,6 +889,18 @@ onMounted(() => {
 
       <section v-if="step === 1" class="nsv__panel" aria-label="Choose a world">
         <h2 class="nsv__h">Where does the story begin?</h2>
+        <p v-if="sel.worldId" class="nsv__hint">
+          Shaping this world further?
+          <router-link
+            class="sel__refine"
+            :to="{
+              path: `/new-story/world/${sel.worldId}`,
+              query: { draft: draftCtl.draft.value?.id }
+            }">
+            Refine it in the studio
+          </router-link>
+          — publishing returns here so the new revision can be adopted deliberately.
+        </p>
         <ul class="nsv__worlds">
           <li v-for="world in presets.worlds.value" :key="world.id">
             <button
@@ -798,6 +969,14 @@ onMounted(() => {
                   ">
                   Remove
                 </button>
+                <router-link
+                  class="sel__refine"
+                  :to="{
+                    path: `/new-story/character/${member.presetId}`,
+                    query: { draft: draftCtl.draft.value?.id }
+                  }">
+                  Refine
+                </router-link>
               </li>
             </ul>
           </aside>
@@ -1235,5 +1414,12 @@ onMounted(() => {
   cursor: pointer;
   text-decoration: underline;
   padding: 0;
+}
+/* Studio entry links carry ?draft= so the return adoption binds to this draft. */
+.sel__refine {
+  justify-self: start;
+  font-size: 13px;
+  color: var(--teal-ink);
+  text-decoration: underline;
 }
 </style>

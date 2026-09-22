@@ -15,12 +15,14 @@ from worldsim.domain.presets import (
     EditorDraft,
     EditorPublication,
     Preset,
+    PresetCreationReceipt,
     PresetKind,
     PresetRevision,
 )
 from worldsim.infrastructure.models.stories import (
     EditorDraftRow,
     EditorPublicationRow,
+    PresetCreationReceiptRow,
     PresetRevisionRow,
     PresetRow,
 )
@@ -317,6 +319,33 @@ class SqlAlchemyPresetRepository:
             await self._session.delete(row)
         if rows:
             await self._session.flush()
+
+    def _to_creation_receipt(self, row: PresetCreationReceiptRow) -> PresetCreationReceipt:
+        return PresetCreationReceipt(
+            operator=row.operator,
+            idempotency_key=row.idempotency_key,
+            request_hash=row.request_hash,
+            created_preset_id=row.created_preset_id,
+            created_at=row.created_at,
+        )
+
+    async def put_creation_receipt(self, receipt: PresetCreationReceipt) -> None:
+        self._session.add(
+            PresetCreationReceiptRow(
+                operator=receipt.operator,
+                idempotency_key=receipt.idempotency_key,
+                request_hash=receipt.request_hash,
+                created_preset_id=receipt.created_preset_id,
+                created_at=receipt.created_at,
+            )
+        )
+        await self._session.flush()
+
+    async def find_creation_receipt(
+        self, operator: str, key: str
+    ) -> PresetCreationReceipt | None:
+        row = await self._session.get(PresetCreationReceiptRow, (operator, key))
+        return self._to_creation_receipt(row) if row is not None else None
 
     async def latest_revision(self, preset_id: UUID) -> PresetRevision:
         query = (

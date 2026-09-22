@@ -159,6 +159,20 @@ class PresetRevisionRow(Base):
     __table_args__ = (CheckConstraint("revision >= 1", name="ck_revision_number"),)
 
 
+class PresetCreationReceiptRow(Base):
+    __tablename__ = "preset_creation_receipt"
+
+    operator: Mapped[str] = mapped_column(String(64), primary_key=True)
+    idempotency_key: Mapped[str] = mapped_column(String(128), primary_key=True)
+    request_hash: Mapped[str] = mapped_column(String(128))
+    created_preset_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("preset.id", name="fk_preset_receipt_preset"),
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class StoryCreationReceiptRow(Base):
     __tablename__ = "story_creation_receipt"
 

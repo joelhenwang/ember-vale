@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, Header, Request, Response
 from pydantic import TypeAdapter
 
 from worldsim.application import editor_drafts
@@ -104,33 +104,53 @@ async def list_presets(
 
 
 @router.post("/library/presets", response_model=api.PresetDetail)
-async def create_preset(body: api.PresetCreateRequest, request: Request) -> api.PresetDetail:
-    try:
-        kind = PresetKind(body.kind)
-    except ValueError as exc:
-        raise DomainError(ErrorCode.VALIDATION_FAILED, f"unknown kind: {body.kind}") from exc
-    payload = _parse_payload(kind.value, body.payload)
-    now = utcnow()
-    preset = Preset(
-        id=new_preset_id(),
-        kind=kind,
-        name=body.name,
-        created_at=now,
-    )
-    revision = PresetRevision(
-        preset_id=preset.id,
-        revision=1,
-        schema_version=1,
-        payload=payload,
-        content_hash=_hash(payload),
-        created_at=now,
-    )
+async def create_preset(
+    body: api.PresetCreateRequest,
+    request: Request,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> api.PresetDetail:
+    """Create a preset as revision 1.
+
+    With an Idempotency-Key header the creation is idempotent: the same
+    key plus the same request replays the same preset (receipt, preset,
+    and revision commit atomically), while the same key with different
+    content conflicts. Without a key every call mints a fresh preset,
+    preserving the legacy behavior older clients rely on.
+    """
+    from worldsim.application.library.preset_create import create_preset as create_one
+
     state = request.app.state.app_state
-    async with state.uow_factory()() as uow:
-        await uow.presets.add_preset(preset)
-        await uow.presets.add_revision(revision)
-        await uow.commit()
-    return await _detail(request, preset.id, 1)
+    key = (idempotency_key or "").strip()
+    if not key:
+        try:
+            kind = PresetKind(body.kind)
+        except ValueError as exc:
+            raise DomainError(ErrorCode.VALIDATION_FAILED, f"unknown kind: {body.kind}") from exc
+        payload = _parse_payload(kind.value, body.payload)
+        now = utcnow()
+        preset = Preset(
+            id=new_preset_id(),
+            kind=kind,
+            name=body.name,
+            created_at=now,
+        )
+        revision = PresetRevision(
+            preset_id=preset.id,
+            revision=1,
+            schema_version=1,
+            payload=payload,
+            content_hash=_hash(payload),
+            created_at=now,
+        )
+        async with state.uow_factory()() as uow:
+            await uow.presets.add_preset(preset)
+            await uow.presets.add_revision(revision)
+            await uow.commit()
+        return await _detail(request, preset.id, 1)
+    preset_id = await create_one(
+        state.uow_factory(), body.kind, body.name, body.payload, key
+    )
+    return await _detail(request, preset_id, 1)
 
 
 @router.get("/library/presets/{preset_id}", response_model=api.PresetDetail)

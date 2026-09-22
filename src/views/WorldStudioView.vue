@@ -37,7 +37,13 @@ import {
   worldSample,
   type WorldDraft
 } from '../game/studio'
-import { packWorld, unpackWorld } from '../game/studioFields'
+import {
+  normalizePlaceKey,
+  packWorld,
+  removeWorldPlace,
+  renamePlaceReferences,
+  unpackWorld
+} from '../game/studioFields'
 import InlineStepper from '../components/studio/InlineStepper.vue'
 import ChipEditor from '../components/studio/ChipEditor.vue'
 import CollapseBox from '../components/studio/CollapseBox.vue'
@@ -69,18 +75,23 @@ onMounted(() => {
     // Only known form keys are restored, never stray storage content.
     const kept = loadLocalPreset('world', id.value)
     if (kept) {
+      const rawPlaces = Array.isArray(kept['places']) ? kept['places'] : undefined
+      const places = rawPlaces?.map((raw, i) => coercePlace(raw, i))
+      const ids = new Set(places?.map((p) => p.id) ?? [])
+      const pickId = (v: unknown, fallback: string | undefined): string | undefined => {
+        if (typeof v === 'string' && ids.has(v)) return v
+        return fallback
+      }
       applyWorldRestore({
-        terrain: Array.isArray(kept['terrain'])
-          ? (kept['terrain'] as string[]).map(String)
-          : undefined,
+        terrain: Array.isArray(kept['terrain']) ? kept['terrain'].map(String) : undefined,
         climate: typeof kept['climate'] === 'string' ? kept['climate'] : undefined,
         architecture: typeof kept['architecture'] === 'string' ? kept['architecture'] : undefined,
         details: typeof kept['details'] === 'string' ? kept['details'] : undefined,
         exclusions: typeof kept['exclusions'] === 'string' ? kept['exclusions'] : undefined,
-        places: Array.isArray(kept['places'])
-          ? (kept['places'] as WorldDraft['places'])
-          : undefined,
-        activePlace: typeof kept['activePlace'] === 'string' ? kept['activePlace'] : undefined
+        loreExtra: typeof kept['loreExtra'] === 'string' ? kept['loreExtra'] : undefined,
+        places,
+        activePlace: pickId(kept['activePlace'], places?.[0]?.id),
+        startPlace: pickId(kept['startPlace'], pickId(kept['activePlace'], places?.[0]?.id))
       })
       saveWorldDraft(id.value)
     }
@@ -145,6 +156,25 @@ let saveTimer: ReturnType<typeof setTimeout> | undefined
 const editor = useEditorDraft()
 const editorOpenedFor = ref<string | null>(null)
 
+/** Coerce one stored place into a valid form place (stable key included). */
+function coercePlace(raw: unknown, i: number): WorldDraft['places'][number] {
+  const r = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>
+  const str = (v: unknown, fallback = ''): string => (typeof v === 'string' ? v : fallback)
+  const name = str(r['name'], 'New place')
+  return {
+    id: str(r['id'], `place-${i}`),
+    key: normalizePlaceKey(name, r['key'], `place-${i + 1}`),
+    name,
+    type: str(r['type'], 'Other'),
+    purpose: str(r['purpose']),
+    appearance: str(r['appearance']),
+    landmark: str(r['landmark']),
+    connectedTo: str(r['connectedTo']),
+    sounds: str(r['sounds']),
+    detailExtra: str(r['detailExtra'])
+  }
+}
+
 function applyWorldRestore(restored: ReturnType<typeof unpackWorld>): void {
   const d = draft.value
   if (restored.terrain !== undefined) d.terrain = [...restored.terrain]
@@ -152,11 +182,58 @@ function applyWorldRestore(restored: ReturnType<typeof unpackWorld>): void {
   if (restored.architecture !== undefined) d.architecture = restored.architecture
   if (restored.details !== undefined) d.details = restored.details
   if (restored.exclusions !== undefined) d.exclusions = restored.exclusions
+  if (restored.loreExtra !== undefined) d.loreExtra = restored.loreExtra
   if (restored.places !== undefined) {
     d.places.splice(0, d.places.length, ...restored.places)
-    d.activePlace = restored.activePlace ?? restored.places[0]?.id ?? d.activePlace
+    const ids = new Set(d.places.map((p) => p.id))
+    const fallback = d.places[0]?.id ?? d.activePlace
+    d.startPlace =
+      restored.startPlace !== undefined && ids.has(restored.startPlace)
+        ? restored.startPlace
+        : fallback
+    d.activePlace =
+      restored.activePlace !== undefined && ids.has(restored.activePlace)
+        ? restored.activePlace
+        : fallback
+  } else if (restored.startPlace !== undefined) {
+    if (d.places.some((p) => p.id === restored.startPlace)) d.startPlace = restored.startPlace
   }
 }
+
+/**
+ * Connections name places, so a rename must repoint dependents.
+ * placeNamesById tracks the last seen name per tab: bulk replacements
+ * (hydrate/restore/add/remove) resync it silently, while a pure rename
+ * of one tab repairs references through renamePlaceReferences.
+ */
+const placeNamesById = new Map<string, string>()
+
+function syncPlaceNameMap(): void {
+  placeNamesById.clear()
+  for (const p of draft.value.places) placeNamesById.set(p.id, p.name)
+}
+
+watch(
+  () => JSON.stringify(draft.value.places.map((p) => [p.id, p.name])),
+  () => {
+    const current = draft.value.places
+    const currentIds = new Set(current.map((p) => p.id))
+    if (
+      currentIds.size !== placeNamesById.size ||
+      [...currentIds].some((id) => !placeNamesById.has(id))
+    ) {
+      syncPlaceNameMap()
+      return
+    }
+    for (const p of current) {
+      const prev = placeNamesById.get(p.id)
+      if (prev !== undefined && prev !== p.name) {
+        renamePlaceReferences(current, p.id, prev, p.name)
+        placeNamesById.set(p.id, p.name)
+      }
+    }
+  }
+)
 
 function hydrateFromEditor(): void {
   applyWorldRestore(unpackWorld(editor.fields.value))
@@ -185,7 +262,42 @@ function retryEditor(): void {
     .catch(() => {})
 }
 
-async function save(): Promise<void> {
+/**
+ * Retry exactly the failed operation: a failed save re-sends the current
+ * form (never a server re-hydrate, which would overwrite it), an
+ * ambiguous publish replays the frozen request without another save,
+ * and only a failed open reopens and hydrates.
+ */
+async function retryLast(): Promise<void> {
+  if (isNew.value) return
+  const op = editor.lastFailedOp.value
+  if (op === 'save') {
+    await save()
+  } else if (op === 'publish') {
+    await publish()
+  } else if (op === 'complete') {
+    await editor.complete(id.value)
+  } else if (op === 'discard') {
+    await editor.discard(id.value)
+  } else {
+    retryEditor()
+  }
+}
+
+/** Snapshot the form so a delayed success marks clean only what it saved. */
+function formSnapshot(): string {
+  return JSON.stringify(draft.value)
+}
+
+function markSaved(before: string): void {
+  if (JSON.stringify(draft.value) !== before) return
+  saveWorldDraft(id.value)
+  savedFlash.value = true
+  clearTimeout(saveTimer)
+  saveTimer = setTimeout(() => (savedFlash.value = false), 1400)
+}
+
+async function save(): Promise<boolean> {
   if (isNew.value) {
     const kept = storeLocalPreset('world', id.value, {
       terrain: draft.value.terrain,
@@ -193,14 +305,16 @@ async function save(): Promise<void> {
       architecture: draft.value.architecture,
       details: draft.value.details,
       exclusions: draft.value.exclusions,
+      loreExtra: draft.value.loreExtra,
       places: draft.value.places,
-      activePlace: draft.value.activePlace
+      activePlace: draft.value.activePlace,
+      startPlace: draft.value.startPlace
     })
     // Durable creation identity, minted once: stored, not yet sent. First
     // publication stays unwired until the server receipt lands.
     stableCreateKey(`world-${id.value}`)
     deviceStorageFailed.value = !kept
-    if (!kept) return
+    if (!kept) return false
     saveWorldDraft(id.value)
     deviceSavedFlash.value = true
     savedFlash.value = true
@@ -209,16 +323,18 @@ async function save(): Promise<void> {
       savedFlash.value = false
       deviceSavedFlash.value = false
     }, 1400)
-    return
+    return true
   }
-  editor.fields.value = { ...editor.fields.value, ...packWorld(draft.value) }
+  const before = formSnapshot()
+  editor.fields.value = {
+    ...editor.fields.value,
+    ...packWorld(draft.value, editor.fields.value)
+  }
   const ok = await editor.save(id.value)
-  if (ok) {
-    saveWorldDraft(id.value)
-    savedFlash.value = true
-    clearTimeout(saveTimer)
-    saveTimer = setTimeout(() => (savedFlash.value = false), 1400)
-  }
+  // A delayed success must not mark newer edits clean: only the
+  // acknowledged snapshot goes clean.
+  if (ok) markSaved(before)
+  return ok
 }
 
 const pubStatus = computed(() => {
@@ -243,20 +359,37 @@ const pubStatus = computed(() => {
 
 async function publish(): Promise<void> {
   if (isNew.value) return
-  editor.fields.value = { ...editor.fields.value, ...packWorld(draft.value) }
-  const presetVersion = editor.baseDetail.value?.version ?? 0
-  const view = await editor.publish(id.value, presetVersion)
+  const before = formSnapshot()
+  const pending = editor.pendingPublication.value
+  let view
+  if (pending && pending.draftId === editor.draft.value?.id) {
+    // An ambiguous publication is still outstanding: replay it frozen
+    // instead of saving again. A fresh save would mint a new version and
+    // risk a duplicate revision next to the already-committed one.
+    view = await editor.retryPublish(id.value)
+  } else {
+    editor.fields.value = {
+      ...editor.fields.value,
+      ...packWorld(draft.value, editor.fields.value)
+    }
+    view = await editor.saveAndPublish(id.value, { ...editor.fields.value })
+  }
   if (!view) return
-  saveWorldDraft(id.value)
+  if (JSON.stringify(draft.value) === before) saveWorldDraft(id.value)
   if (!fromLibrary.value) {
     // Nested return: the wizard offers deliberate adoption of the exact
-    // published revision — never an automatic switch.
+    // published revision — never an automatic switch. The originating
+    // story draft rides along so the offer binds to it, never to
+    // whatever the wizard recalls later.
+    const storyDraft =
+      typeof route.query.draft === 'string' && route.query.draft ? route.query.draft : null
     await router.push({
       path: '/new-story',
       query: {
         adopt_kind: 'world',
         adopt_preset: id.value,
-        adopt_revision: String(view.published_revision)
+        adopt_revision: String(view.published_revision),
+        ...(storyDraft ? { adopt_draft: storyDraft } : {})
       }
     })
   }
@@ -264,7 +397,7 @@ async function publish(): Promise<void> {
 
 async function finishAndReturn(): Promise<void> {
   if (!isNew.value && editor.draft.value) {
-    await editor.complete(id.value)
+    if (!(await editor.complete(id.value))) return
   }
   router.push(originRoute.value)
 }
@@ -277,33 +410,59 @@ onBeforeUnmount(() => {
 const nextLabel = computed(() =>
   step.value <= 2 ? 'Rules' : step.value === 3 ? 'Review' : 'Finish'
 )
-function advance(): void {
+async function advance(): Promise<void> {
   // DEMO: stepper is cosmetic (see header note) — production gates by validation.
   if (step.value < 4) {
     step.value++
     return
   }
-  void save().then(() => {
-    router.push(originRoute.value)
-  })
+  // Navigation waits for persistence: a failed save keeps the user here
+  // with their edits intact instead of leaving anyway.
+  if (await save()) router.push(originRoute.value)
 }
 
 /* places ----------------------------------------------------------------- */
+
+/** A fresh place mints a unique stable key once; renames never re-key it. */
+function freshPlaceKey(name: string): string {
+  const taken = new Set(draft.value.places.map((p) => p.key))
+  const base = normalizePlaceKey(name, undefined, 'place')
+  if (!taken.has(base)) return base
+  let n = 2
+  while (taken.has(`${base}-${n}`)) n += 1
+  return `${base}-${n}`
+}
+
 function addPlace(): void {
   const d = draft.value
   const p = {
     id: `place-${Date.now()}`,
+    key: freshPlaceKey('New place'),
     name: 'New place',
     type: 'Village square',
     purpose: '',
     appearance: '',
     landmark: '',
     connectedTo: d.places[0]?.name ?? '',
-    sounds: ''
+    sounds: '',
+    detailExtra: ''
   }
   d.places.push(p)
   d.activePlace = p.id
 }
+
+function removeActivePlace(): void {
+  removeWorldPlace(draft.value, draft.value.activePlace)
+}
+
+/** The configured starting place, independent of the inspected tab. */
+const startPlaceName = computed({
+  get: () => draft.value.places.find((p) => p.id === draft.value.startPlace)?.name ?? '',
+  set: (name: string) => {
+    const found = draft.value.places.find((p) => p.name === name)
+    if (found) draft.value.startPlace = found.id
+  }
+})
 function otherPlaceNames(): string[] {
   const d = draft.value
   return d.places.filter((p) => p.id !== d.activePlace).map((p) => p.name)
@@ -498,6 +657,19 @@ function suggest(): void {
                 </CollapseBox>
               </div>
             </div>
+            <div class="places__foot">
+              <div>
+                <span class="ev-field-label">Starting place</span>
+                <StudioSelect v-model="startPlaceName" :options="draft.places.map((p) => p.name)" />
+              </div>
+              <button
+                type="button"
+                class="ghost ghost--sm"
+                :disabled="draft.places.length <= 1"
+                @click="removeActivePlace">
+                Remove this place
+              </button>
+            </div>
           </div>
         </section>
 
@@ -518,7 +690,9 @@ function suggest(): void {
           <div v-else>
             <p v-if="pubStatus" class="studio__state" role="status">{{ pubStatus }}</p>
             <p v-if="editor.status.value === 'failed'" class="studio__state" role="alert">
-              <button type="button" class="studio__link" @click="retryEditor()">retry</button>
+              <button type="button" class="studio__link" @click="retryLast()">
+                retry {{ editor.lastFailedOp.value ?? 'operation' }}
+              </button>
             </p>
             <div class="preview__actions">
               <button
@@ -528,7 +702,13 @@ function suggest(): void {
                   editor.status.value === 'publishing' || editor.status.value === 'loading'
                 "
                 @click="publish">
-                {{ editor.status.value === 'publishing' ? 'Publishing…' : 'Publish new revision' }}
+                {{
+                  editor.status.value === 'publishing'
+                    ? 'Publishing…'
+                    : editor.pendingPublication.value
+                      ? 'Retry publish'
+                      : 'Publish new revision'
+                }}
               </button>
               <button
                 v-if="editor.status.value === 'published'"
@@ -736,5 +916,18 @@ function suggest(): void {
 }
 .places__fields {
   gap: 15px 18px;
+}
+/* starting-place picker + explicit place removal ---------------------------- */
+.places__foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #e6d9bb;
+}
+.places__foot > div {
+  min-width: 220px;
 }
 </style>

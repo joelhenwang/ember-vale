@@ -6795,7 +6795,26 @@
         ]
       },
       "post": {
+        "description": "Create a preset as revision 1.\n\nWith an Idempotency-Key header the creation is idempotent: the same\nkey plus the same request replays the same preset (receipt, preset,\nand revision commit atomically), while the same key with different\ncontent conflicts. Without a key every call mints a fresh preset,\npreserving the legacy behavior older clients rely on.",
         "operationId": "create_preset_api_v1_library_presets_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {

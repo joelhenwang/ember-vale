@@ -36,6 +36,16 @@ import {
 export type EditorStatus =
   'idle' | 'loading' | 'editing' | 'saving' | 'saved' | 'failed' | 'publishing' | 'published'
 
+/** Which operation failed last: retries are operation-specific, never a blind reopen. */
+export type FailedOp = 'open' | 'save' | 'publish' | 'complete' | 'discard' | null
+
+/** A frozen publication attempt: retry replays exactly this, never a fresh save. */
+export interface PendingPublication {
+  draftId: string
+  version: number
+  presetVersion: number
+}
+
 const LOCAL_KEY = (kind: string, id: string): string => `ember-vale.local-preset.${kind}.${id}`
 const CREATE_KEY_NAME = (localId: string): string => `ember-vale.preset-create-key.${localId}`
 
@@ -154,6 +164,16 @@ export function useEditorDraft() {
   const publishedRevision = ref<number | null>(null)
   /** localStorage unavailable: session-only durability, keep the tab open. */
   const storageOk = ref(true)
+  /** Last failed operation, so Retry replays exactly that — never a blind reopen. */
+  const lastFailedOp = ref<FailedOp>(null)
+  /**
+   * Frozen publication identity. Set when a save is acknowledged for
+   * publishing and cleared only when that exact publication resolves:
+   * an ambiguous publish retries these frozen values without another
+   * save (a fresh save would mint a new version and risk a duplicate
+   * revision alongside the already-committed one).
+   */
+  const pendingPublication = ref<PendingPublication | null>(null)
 
   let cycle = 0
 
@@ -166,6 +186,8 @@ export function useEditorDraft() {
     status.value = 'loading'
     error.value = null
     publishedRevision.value = null
+    lastFailedOp.value = null
+    pendingPublication.value = null
     try {
       const [detail, opened] = await Promise.all([
         getPreset(wantPreset, baseRevision, { signal }),
@@ -180,6 +202,7 @@ export function useEditorDraft() {
       if (seen !== cycle) return
       if (err instanceof Error && (err as { cancelled?: boolean }).cancelled) return
       status.value = 'failed'
+      lastFailedOp.value = 'open'
       error.value = err instanceof Error ? err.message : 'could not open the draft'
       throw err
     }
@@ -200,10 +223,12 @@ export function useEditorDraft() {
       draft.value = updated
       fields.value = hydrateFields(baseDetail.value, updated)
       status.value = 'saved'
+      lastFailedOp.value = null
       return true
     } catch (err) {
       if (seen !== cycle || draft.value?.id !== wantDraft) return false
       status.value = 'failed'
+      lastFailedOp.value = 'save'
       error.value = err instanceof Error ? err.message : 'could not save the draft'
       return false
     }
@@ -215,22 +240,105 @@ export function useEditorDraft() {
   ): Promise<PresetPublishView | null> {
     const owned = draft.value
     if (!owned) return null
+    pendingPublication.value = {
+      draftId: owned.id,
+      version: owned.version,
+      presetVersion
+    }
+    return runPublish(presetId)
+  }
+
+  /**
+   * One guarded workflow: capture the form, save and acknowledge it, then
+   * publish exactly that acknowledged version. Publishing the current
+   * form without the intermediate save would publish the last
+   * server-saved content instead of what the user sees.
+   */
+  async function saveAndPublish(
+    presetId: string,
+    nextFields: Record<string, unknown>
+  ): Promise<PresetPublishView | null> {
+    const owned = draft.value
+    if (!owned) return null
     cycle += 1
     const seen = cycle
     const wantDraft = owned.id
     const wantVersion = owned.version
+    status.value = 'saving'
+    error.value = null
+    lastFailedOp.value = null
+    let updated: EditorDraftView
+    try {
+      updated = await saveEditorDraft(presetId, wantDraft, nextFields, wantVersion)
+    } catch (err) {
+      if (seen !== cycle || draft.value?.id !== wantDraft) return null
+      status.value = 'failed'
+      lastFailedOp.value = 'save'
+      error.value = err instanceof Error ? err.message : 'could not save the draft'
+      return null
+    }
+    if (seen !== cycle || draft.value?.id !== wantDraft) return null
+    draft.value = updated
+    fields.value = hydrateFields(baseDetail.value, updated)
+    status.value = 'saved'
+    // Freeze the acknowledged version: the publication below — and any
+    // retry of it — replays exactly this, never a fresh save.
+    pendingPublication.value = {
+      draftId: wantDraft,
+      version: updated.version,
+      presetVersion: baseDetail.value?.version ?? 0
+    }
+    return runPublish(presetId)
+  }
+
+  /**
+   * Retry the frozen publication without another save. Used after an
+   * ambiguous publish (the request may have committed server-side: the
+   * same draft and version replay the recorded revision instead of
+   * duplicating it).
+   */
+  async function retryPublish(presetId: string): Promise<PresetPublishView | null> {
+    const pending = pendingPublication.value
+    if (!pending || draft.value?.id !== pending.draftId) return null
+    return runPublish(presetId)
+  }
+
+  async function runPublish(presetId: string): Promise<PresetPublishView | null> {
+    const pending = pendingPublication.value
+    if (!pending) return null
+    cycle += 1
+    const seen = cycle
     status.value = 'publishing'
     error.value = null
     try {
-      const view = await publishEditorDraft(presetId, wantDraft, wantVersion, presetVersion)
-      if (seen !== cycle || draft.value?.id !== wantDraft) return null
+      const view = await publishEditorDraft(
+        presetId,
+        pending.draftId,
+        pending.version,
+        pending.presetVersion
+      )
+      if (seen !== cycle || draft.value?.id !== pending.draftId) return null
+      pendingPublication.value = null
+      lastFailedOp.value = null
+      // The publish bumped the preset version: refresh our copy so a
+      // subsequent publication does not reuse an outdated version and
+      // conflict spuriously. The revision payload stays the base one —
+      // only head identity (version, current_revision) moves.
+      if (baseDetail.value) {
+        baseDetail.value = {
+          ...baseDetail.value,
+          version: view.detail.version,
+          current_revision: view.detail.current_revision
+        }
+      }
       // Nested adoption pins the replayed revision, never the head.
       publishedRevision.value = view.published_revision
       status.value = 'published'
       return view
     } catch (err) {
-      if (seen !== cycle || draft.value?.id !== wantDraft) return null
+      if (seen !== cycle || draft.value?.id !== pending.draftId) return null
       status.value = 'failed'
+      lastFailedOp.value = 'publish'
       error.value = err instanceof Error ? err.message : 'could not publish the draft'
       return null
     }
@@ -246,10 +354,12 @@ export function useEditorDraft() {
       if (draft.value?.id !== wantDraft) return false
       draft.value = null
       status.value = 'idle'
+      lastFailedOp.value = null
       return true
     } catch (err) {
       if (draft.value?.id !== wantDraft) return false
       status.value = 'failed'
+      lastFailedOp.value = 'complete'
       error.value = err instanceof Error ? err.message : 'could not complete the draft'
       return false
     }
@@ -265,10 +375,12 @@ export function useEditorDraft() {
       if (draft.value?.id !== wantDraft) return false
       draft.value = null
       status.value = 'idle'
+      lastFailedOp.value = null
       return true
     } catch (err) {
       if (draft.value?.id !== wantDraft) return false
       status.value = 'failed'
+      lastFailedOp.value = 'discard'
       error.value = err instanceof Error ? err.message : 'could not discard the draft'
       return false
     }
@@ -287,9 +399,13 @@ export function useEditorDraft() {
     error,
     publishedRevision,
     storageOk,
+    lastFailedOp,
+    pendingPublication,
     open,
     save,
     publish,
+    saveAndPublish,
+    retryPublish,
     complete,
     discard,
     dispose
