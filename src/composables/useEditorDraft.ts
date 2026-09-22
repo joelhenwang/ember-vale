@@ -192,10 +192,16 @@ export function useEditorDraft() {
    * succeeds only when the draft version still matches the published
    * receipt, so nothing unpublished is ever abandoned. Anything newer
    * stays a surfaced conflict for an explicit discard.
+   *
+   * Every await is ownership-checked against `seen`: a newer open (or a
+   * dispose) supersedes this recovery, which then stops without issuing
+   * further requests or touching editor state. In particular the
+   * completion runs only while this operation still owns the lifecycle.
    */
   async function recoverSupersededDraft(
     presetId: string,
     baseRevision: number,
+    seen: number,
     signal?: AbortSignal
   ): Promise<boolean> {
     let current
@@ -204,20 +210,26 @@ export function useEditorDraft() {
     } catch {
       return false
     }
+    if (seen !== cycle) return false
     if (current.base_revision >= baseRevision) return false
     try {
       await completeEditorDraft(presetId, current.id, current.version, { signal })
     } catch {
       return false
     }
+    if (seen !== cycle) return false
     return true
   }
 
   async function open(presetId: string, baseRevision: number, signal?: AbortSignal): Promise<void> {
+    // One ownership generation for the whole open-and-recover
+    // operation: the recovery retry never mints a new one, so a newer
+    // open (or dispose) supersedes everything below at every checkpoint.
+    cycle += 1
+    const seen = cycle
+    const wantPreset = presetId
     for (let attempt = 0; attempt < 2; attempt++) {
-      cycle += 1
-      const seen = cycle
-      const wantPreset = presetId
+      if (seen !== cycle) return
       status.value = 'loading'
       error.value = null
       publishedRevision.value = null
@@ -241,10 +253,14 @@ export function useEditorDraft() {
           attempt === 0 &&
           err instanceof ApiError &&
           err.code === 'PRECONDITION_FAILED' &&
-          (await recoverSupersededDraft(wantPreset, baseRevision, signal))
+          (await recoverSupersededDraft(wantPreset, baseRevision, seen, signal))
         ) {
+          if (seen !== cycle) return
           continue
         }
+        // A slow failure (or failed recovery) that lost ownership must
+        // not write failed state — or throw — onto the newer operation.
+        if (seen !== cycle) return
         status.value = 'failed'
         lastFailedOp.value = 'open'
         error.value = err instanceof Error ? err.message : 'could not open the draft'

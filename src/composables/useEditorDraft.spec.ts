@@ -28,6 +28,8 @@ let publishBodies: Record<string, unknown>[] = []
 let failNextPublish = false
 /** A draft left open on a superseded base (reload-after-publish setup). */
 let staleDraft: DraftRow | null = null
+/** Hold matching requests until released (lifecycle-race control). */
+let holdWhen: ((method: string, path: string) => boolean) | null = null
 
 function detailFor(presetId: string, revision: number): Record<string, unknown> {
   return {
@@ -57,6 +59,7 @@ function installFetch(): void {
   publishBodies = []
   failNextPublish = false
   staleDraft = null
+  holdWhen = null
   vi.stubGlobal(
     'fetch',
     vi.fn(async (rawUrl: string, init: RequestInit = {}) => {
@@ -66,6 +69,9 @@ function installFetch(): void {
       const url = new URL(rawUrl, 'http://test')
       const path = url.pathname
       const method = init.method ?? 'GET'
+      if (holdWhen?.(method, path)) {
+        await new Promise<void>((resolve) => held.push(resolve))
+      }
       calls.push(`${method} ${path}`)
       const body =
         init.body === undefined
@@ -464,6 +470,73 @@ describe('useEditorDraft', () => {
     expect(
       calls.filter((c) => c === 'POST /api/v1/library/presets/preset-1/editor-drafts')
     ).toHaveLength(1)
+  })
+
+  it('a superseded recovery never disturbs the newer editor', async () => {
+    installFetch()
+    staleDraft = {
+      id: 'draft-stale',
+      presetId: 'preset-a',
+      baseRevision: 1,
+      fields: {},
+      version: 3,
+      publishedVersion: 3,
+      publishedRevision: 2
+    }
+    // Hold A's recovery read so B opens while A is still recovering.
+    holdWhen = (method, path) => method === 'GET' && path.endsWith('/editor-drafts/current')
+    const ctl = useEditorDraft()
+    const pendingA = ctl.open('preset-a', 2)
+    await vi.waitFor(() => {
+      if (held.length === 0) throw new Error('recovery read not held yet')
+    })
+    await ctl.open('preset-b', 1)
+    expect(ctl.draft.value?.preset_id).toBe('preset-b')
+    expect(ctl.status.value).toBe('editing')
+    // Release A: it must stop without reopening, without issuing the
+    // completion it no longer owns, and without throwing onto B.
+    holdWhen = null
+    held.splice(0).forEach((release) => release())
+    await pendingA
+    expect(ctl.draft.value?.preset_id).toBe('preset-b')
+    expect(ctl.baseDetail.value?.id).toBe('preset-b')
+    expect(ctl.status.value).toBe('editing')
+    expect(ctl.error.value).toBeNull()
+    expect(ctl.lastFailedOp.value).toBeNull()
+    expect(
+      calls.filter((c) => c === 'POST /api/v1/library/presets/preset-a/editor-drafts')
+    ).toHaveLength(1)
+    expect(calls.some((c) => c.includes('draft-stale/complete'))).toBe(false)
+  })
+
+  it('disposal during recovery prevents reopening', async () => {
+    installFetch()
+    staleDraft = {
+      id: 'draft-stale',
+      presetId: 'preset-a',
+      baseRevision: 1,
+      fields: {},
+      version: 3,
+      publishedVersion: 3,
+      publishedRevision: 2
+    }
+    holdWhen = (method, path) => method === 'GET' && path.endsWith('/editor-drafts/current')
+    const ctl = useEditorDraft()
+    const pendingA = ctl.open('preset-a', 2)
+    await vi.waitFor(() => {
+      if (held.length === 0) throw new Error('recovery read not held yet')
+    })
+    ctl.dispose()
+    holdWhen = null
+    held.splice(0).forEach((release) => release())
+    await pendingA
+    // Nothing assigned, nothing reopened, nothing completed, no throw.
+    expect(ctl.draft.value).toBeNull()
+    expect(ctl.baseDetail.value).toBeNull()
+    expect(
+      calls.filter((c) => c === 'POST /api/v1/library/presets/preset-a/editor-drafts')
+    ).toHaveLength(1)
+    expect(calls.some((c) => c.includes('draft-stale/complete'))).toBe(false)
   })
 })
 
