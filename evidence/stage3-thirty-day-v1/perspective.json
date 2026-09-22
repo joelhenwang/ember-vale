@@ -1,0 +1,15 @@
+{
+  "ash_beliefs": [
+    "the mill is haunted"
+  ],
+  "bridge_kept_from_ash": true,
+  "recall": {
+    "verdict": "included",
+    "via_digest": [
+      "a87ce0d1-05bc-41c8-9f76-cf1c24a0cb16"
+    ],
+    "reasons": {
+      "permitted": 10
+    }
+  }
+}

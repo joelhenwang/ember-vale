@@ -1,0 +1,5 @@
+{
+  "belief_privacy": "holder- or watcher-only reads enforced",
+  "hooks_director_side": true,
+  "role_denials": "403 on wrong-role commands"
+}

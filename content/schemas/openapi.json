@@ -3876,6 +3876,26 @@
         "title": "PresetDetail",
         "type": "object"
       },
+      "PresetPublishView": {
+        "additionalProperties": false,
+        "description": "Published revision pinned separately from the Library head.\n\n`detail` carries the resolved revision payload alongside the\npreset's current head metadata; `published_revision` names exactly\nwhich revision this publication (or replay) produced, so a caller\ncan adopt it unambiguously even after later revisions exist.",
+        "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/PresetDetail"
+          },
+          "published_revision": {
+            "minimum": 1.0,
+            "title": "Published Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "published_revision",
+          "detail"
+        ],
+        "title": "PresetPublishView",
+        "type": "object"
+      },
       "PresetRevisionRequest": {
         "additionalProperties": false,
         "properties": {
@@ -7352,7 +7372,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PresetDetail"
+                  "$ref": "#/components/schemas/PresetPublishView"
                 }
               }
             },

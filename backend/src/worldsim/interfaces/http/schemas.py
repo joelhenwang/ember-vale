@@ -1255,6 +1255,21 @@ class PresetDetail(BaseModel):
     revision: dict[str, Any] = Field(default_factory=dict)
 
 
+class PresetPublishView(BaseModel):
+    """Published revision pinned separately from the Library head.
+
+    `detail` carries the resolved revision payload alongside the
+    preset's current head metadata; `published_revision` names exactly
+    which revision this publication (or replay) produced, so a caller
+    can adopt it unambiguously even after later revisions exist.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    published_revision: int = Field(ge=1)
+    detail: PresetDetail
+
+
 class PresetCreateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 

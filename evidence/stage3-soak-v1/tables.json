@@ -1,0 +1,302 @@
+{
+  "10": {
+    "events": 30,
+    "obs_wren": 11,
+    "obs_ash": 11,
+    "mem_wren": 11,
+    "mem_ash": 10,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "20": {
+    "events": 60,
+    "obs_wren": 21,
+    "obs_ash": 21,
+    "mem_wren": 21,
+    "mem_ash": 20,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "30": {
+    "events": 90,
+    "obs_wren": 31,
+    "obs_ash": 31,
+    "mem_wren": 31,
+    "mem_ash": 30,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "40": {
+    "events": 120,
+    "obs_wren": 41,
+    "obs_ash": 41,
+    "mem_wren": 41,
+    "mem_ash": 40,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "50": {
+    "events": 150,
+    "obs_wren": 51,
+    "obs_ash": 51,
+    "mem_wren": 51,
+    "mem_ash": 50,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "60": {
+    "events": 180,
+    "obs_wren": 61,
+    "obs_ash": 61,
+    "mem_wren": 61,
+    "mem_ash": 60,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "70": {
+    "events": 210,
+    "obs_wren": 71,
+    "obs_ash": 71,
+    "mem_wren": 71,
+    "mem_ash": 70,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "80": {
+    "events": 240,
+    "obs_wren": 81,
+    "obs_ash": 81,
+    "mem_wren": 81,
+    "mem_ash": 80,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "90": {
+    "events": 270,
+    "obs_wren": 91,
+    "obs_ash": 91,
+    "mem_wren": 91,
+    "mem_ash": 90,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "100": {
+    "events": 300,
+    "obs_wren": 101,
+    "obs_ash": 101,
+    "mem_wren": 101,
+    "mem_ash": 100,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "110": {
+    "events": 330,
+    "obs_wren": 111,
+    "obs_ash": 111,
+    "mem_wren": 111,
+    "mem_ash": 110,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "120": {
+    "events": 360,
+    "obs_wren": 121,
+    "obs_ash": 121,
+    "mem_wren": 121,
+    "mem_ash": 120,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "130": {
+    "events": 390,
+    "obs_wren": 131,
+    "obs_ash": 131,
+    "mem_wren": 131,
+    "mem_ash": 130,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "140": {
+    "events": 420,
+    "obs_wren": 141,
+    "obs_ash": 141,
+    "mem_wren": 141,
+    "mem_ash": 140,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "150": {
+    "events": 450,
+    "obs_wren": 151,
+    "obs_ash": 151,
+    "mem_wren": 151,
+    "mem_ash": 150,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "160": {
+    "events": 480,
+    "obs_wren": 161,
+    "obs_ash": 161,
+    "mem_wren": 161,
+    "mem_ash": 160,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "170": {
+    "events": 510,
+    "obs_wren": 171,
+    "obs_ash": 171,
+    "mem_wren": 171,
+    "mem_ash": 170,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "180": {
+    "events": 540,
+    "obs_wren": 181,
+    "obs_ash": 181,
+    "mem_wren": 181,
+    "mem_ash": 180,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "190": {
+    "events": 570,
+    "obs_wren": 191,
+    "obs_ash": 191,
+    "mem_wren": 191,
+    "mem_ash": 190,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "200": {
+    "events": 600,
+    "obs_wren": 201,
+    "obs_ash": 201,
+    "mem_wren": 201,
+    "mem_ash": 200,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "210": {
+    "events": 630,
+    "obs_wren": 211,
+    "obs_ash": 211,
+    "mem_wren": 211,
+    "mem_ash": 210,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "220": {
+    "events": 660,
+    "obs_wren": 221,
+    "obs_ash": 221,
+    "mem_wren": 221,
+    "mem_ash": 220,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "230": {
+    "events": 690,
+    "obs_wren": 231,
+    "obs_ash": 231,
+    "mem_wren": 231,
+    "mem_ash": 230,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "240": {
+    "events": 720,
+    "obs_wren": 241,
+    "obs_ash": 241,
+    "mem_wren": 241,
+    "mem_ash": 240,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "250": {
+    "events": 750,
+    "obs_wren": 251,
+    "obs_ash": 251,
+    "mem_wren": 251,
+    "mem_ash": 250,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "260": {
+    "events": 780,
+    "obs_wren": 261,
+    "obs_ash": 261,
+    "mem_wren": 261,
+    "mem_ash": 260,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "270": {
+    "events": 810,
+    "obs_wren": 271,
+    "obs_ash": 271,
+    "mem_wren": 271,
+    "mem_ash": 270,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "280": {
+    "events": 840,
+    "obs_wren": 281,
+    "obs_ash": 281,
+    "mem_wren": 281,
+    "mem_ash": 280,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "290": {
+    "events": 870,
+    "obs_wren": 291,
+    "obs_ash": 291,
+    "mem_wren": 291,
+    "mem_ash": 290,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  },
+  "300": {
+    "events": 900,
+    "obs_wren": 301,
+    "obs_ash": 301,
+    "mem_wren": 301,
+    "mem_ash": 300,
+    "characters": 2,
+    "hooks": 0,
+    "arcs": 0
+  }
+}

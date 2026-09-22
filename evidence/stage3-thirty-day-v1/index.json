@@ -1,0 +1,17 @@
+{
+  "scenario": "stage3-thirty-day-v1",
+  "world_id": "10000000-0000-4000-8000-000000000001",
+  "migration_head": "0022_s3_hook_phase",
+  "files": [
+    "accessibility.json",
+    "budget.json",
+    "consistency.json",
+    "migration.json",
+    "performance.json",
+    "perspective.json",
+    "quality.json",
+    "recovery.json",
+    "scenario.json",
+    "security.json"
+  ]
+}

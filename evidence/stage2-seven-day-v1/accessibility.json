@@ -1,0 +1,5 @@
+{
+  "verify_mjs": "9/9 green against the routed Vue surface (S2-UI-001)",
+  "reduced_motion": "first-class CSS rule in frontend/src/style.css",
+  "keyboard": "arrow-key scene movement, slash focuses action input"
+}

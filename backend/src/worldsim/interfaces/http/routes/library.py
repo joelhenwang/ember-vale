@@ -254,11 +254,11 @@ async def complete_editor_draft(
 
 @router.post(
     "/library/presets/{preset_id}/editor-drafts/{draft_id}/publish",
-    response_model=api.PresetDetail,
+    response_model=api.PresetPublishView,
 )
 async def publish_editor_draft(
     preset_id: UUID, draft_id: UUID, body: api.EditorDraftPublishRequest, request: Request
-) -> api.PresetDetail:
+) -> api.PresetPublishView:
     """Publish a draft as a new immutable revision (strict validation)."""
     state = request.app.state.app_state
     revision = await editor_drafts.publish_draft(
@@ -268,7 +268,8 @@ async def publish_editor_draft(
         body.expected_version,
         body.preset_expected_version,
     )
-    return await _detail(request, preset_id, revision.revision)
+    detail = await _detail(request, preset_id, revision.revision)
+    return api.PresetPublishView(published_revision=revision.revision, detail=detail)
 
 
 @router.post("/library/presets/{preset_id}/archive", response_model=api.PresetDetail)

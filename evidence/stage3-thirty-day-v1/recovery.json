@@ -1,0 +1,4 @@
+{
+  "replay_duplicates": true,
+  "crash_resume": "covered by test_seven_days_survive_injected_failure"
+}

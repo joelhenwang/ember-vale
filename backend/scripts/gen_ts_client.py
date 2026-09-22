@@ -126,6 +126,7 @@ WANTED = (
     "StoryCreateResponse",
     "PresetSummary",
     "PresetDetail",
+    "PresetPublishView",
     "PresetCreateRequest",
     "PresetArchiveRequest",
     "PresetRevisionRequest",

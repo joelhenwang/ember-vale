@@ -32,9 +32,9 @@ def upgrade() -> None:
         sa.Column("published_hash", sa.String(length=128), nullable=True),
     )
     # Durable publication log: survives draft completion so a late
-    # identical retry still replays its revision. Keyed by draft:
-    # versions only advance when fields change, so the recorded version
-    # identifies the exact request.
+    # identical retry still replays its revision. Keyed by draft (0037
+    # widens this to draft and version): every successful save advances
+    # the version, so the recorded version identifies the exact request.
     op.create_table(
         "editor_publication",
         sa.Column("draft_id", postgresql.UUID(as_uuid=True), nullable=False),

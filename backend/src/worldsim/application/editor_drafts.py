@@ -7,10 +7,12 @@ saves stay lenient so incomplete work survives; publishing merges the
 draft over its base revision payload and validates the strict preset
 schema, so fields the editor never shows are preserved verbatim.
 
-Publication records a receipt (draft version, revision, content
-hash). An identical publish retry replays the recorded revision —
-even after later revisions exist — while anything else stays a
-conflict.
+Publication records a receipt per published draft version (draft
+version, revision, content hash), so edits saved after publishing
+publish as the next revision under their own receipt. An identical
+publish retry replays the recorded revision — even after later
+revisions exist, or while another draft occupies the preset — while
+anything else stays a conflict.
 """
 
 from __future__ import annotations
@@ -165,8 +167,8 @@ async def discard_draft(
     factory: Callable[[], UnitOfWork], preset_id: UUID, draft_id: UUID, expected_version: int
 ) -> None:
     """Abandon a draft explicitly. Published revisions are never touched,
-    but the publication receipt is voided with the draft: a later retry
-    of a discarded request meets NOT_FOUND, not a replay."""
+    but every publication receipt for the draft is voided with it: a
+    later retry of a discarded request meets NOT_FOUND, not a replay."""
     async with factory() as uow:
         draft = await uow.presets.lock_editor_draft(preset_id)
         if draft is None or draft.id != draft_id:
@@ -214,22 +216,28 @@ async def _replay_from_log(
 ) -> PresetRevision:
     """Replay the durable receipt for an identical retry.
 
-    Matches on the exact draft and version — versions advance only when
-    fields change, so the recorded version identifies the request — and
-    returns the original revision even when later revisions exist.
-    Anything else is NOT_FOUND (voided or never published) or a stale
-    conflict, never a guess.
+    Matches on the exact draft and version — every successful save
+    advances the version, so a matching version implies matching
+    fields — and returns the original revision even when later
+    revisions exist. A version this draft never published is a stale
+    conflict; a draft that never published (or a receipt for another
+    preset) is NOT_FOUND, never a guess.
     """
-    receipt = await uow.presets.get_publication(draft_id)
-    if receipt is None or receipt.preset_id != preset_id:
+    receipts = [
+        receipt
+        for receipt in await uow.presets.list_publications_for_draft(draft_id)
+        if receipt.preset_id == preset_id
+    ]
+    for receipt in receipts:
+        if receipt.draft_version == expected_version:
+            return await uow.presets.get_revision(receipt.preset_id, receipt.revision)
+    if not receipts:
         raise DomainError(ErrorCode.NOT_FOUND, f"unknown editor draft: {draft_id}")
-    if receipt.draft_version != expected_version:
-        raise DomainError(
-            ErrorCode.VERSION_CONFLICT,
-            f"stale editor draft {draft_id}: expected={expected_version} "
-            f"actual={receipt.draft_version}",
-        )
-    return await uow.presets.get_revision(receipt.preset_id, receipt.revision)
+    latest = max(receipt.draft_version for receipt in receipts)
+    raise DomainError(
+        ErrorCode.VERSION_CONFLICT,
+        f"stale editor draft {draft_id}: expected={expected_version} actual={latest}",
+    )
 
 
 async def publish_draft(
@@ -248,7 +256,10 @@ async def publish_draft(
     lock serializes concurrent publishers; the preset version guards
     concurrent content. An identical retry — same draft and version —
     replays the recorded revision instead of conflicting or duplicating,
-    even after later revisions exist or the draft completed.
+    even after later revisions exist, after the draft completed, or
+    while another draft occupies the preset. Each published draft
+    version keeps its own receipt, so edits saved after publishing
+    publish as the next revision.
     """
     try:
         async with factory() as uow:
@@ -258,11 +269,14 @@ async def publish_draft(
                 # durable receipt answers for it.
                 return await _replay_from_log(uow, preset_id, draft_id, expected_version)
             if draft.id != draft_id:
-                raise DomainError(ErrorCode.NOT_FOUND, f"unknown editor draft: {draft_id}")
+                # Another draft occupies the preset. The requested draft
+                # may still have a durable receipt: resolve it by the
+                # same replay rules, without touching the live draft.
+                return await _replay_from_log(uow, preset_id, draft_id, expected_version)
             if draft.version != expected_version:
                 # Edited since without a matching receipt: a plain stale
                 # conflict. A receipt decides identical replay, below.
-                if await uow.presets.get_publication(draft_id) is None:
+                if not await uow.presets.list_publications_for_draft(draft_id):
                     raise _stale("editor draft", draft_id, expected_version, draft.version)
                 return await _replay_from_log(uow, preset_id, draft_id, expected_version)
             preset = await uow.presets.get_preset(preset_id)
@@ -276,13 +290,22 @@ async def publish_draft(
             content_hash = canonical_payload_hash(parsed)
             # An identical retry that committed and lost its response
             # lands here with a receipt already recorded: replay it,
-            # never duplicate — even when later revisions moved on.
-            if (
-                draft.published_version == expected_version
-                and draft.published_hash == content_hash
-                and draft.published_revision is not None
-            ):
-                return await uow.presets.get_revision(preset_id, draft.published_revision)
+            # never duplicate — even when later revisions moved on. A
+            # matching version implies matching fields (every save
+            # advances the version), so the hash must agree too.
+            prior = [
+                receipt
+                for receipt in await uow.presets.list_publications_for_draft(draft.id)
+                if receipt.draft_version == expected_version
+            ]
+            if prior:
+                if prior[0].content_hash != content_hash:
+                    raise DomainError(
+                        ErrorCode.VERSION_CONFLICT,
+                        f"draft {draft.id} version {expected_version} "
+                        "already published different content",
+                    )
+                return await uow.presets.get_revision(preset_id, prior[0].revision)
             if preset.version != preset_expected_version:
                 raise DomainError(
                     ErrorCode.VERSION_CONFLICT,

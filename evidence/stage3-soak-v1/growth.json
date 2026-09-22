@@ -1,0 +1,3836 @@
+{
+  "per_phase": {
+    "1": {
+      "model_calls": 7,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "reaction": 0,
+        "resolver": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1123,
+        "decide": 21878,
+        "react": 21263,
+        "resolve": 14175,
+        "narrate": 5837
+      }
+    },
+    "2": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 22446,
+        "narrate": 12316
+      }
+    },
+    "3": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 22745,
+        "narrate": 12316
+      }
+    },
+    "4": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1123,
+        "decide": 23044,
+        "narrate": 12316
+      }
+    },
+    "5": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 23343,
+        "narrate": 12316
+      }
+    },
+    "6": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 23642,
+        "narrate": 12316
+      }
+    },
+    "7": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1123,
+        "decide": 23941,
+        "narrate": 12316
+      }
+    },
+    "8": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 24240,
+        "narrate": 12316
+      }
+    },
+    "9": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 24539,
+        "narrate": 12316,
+        "summarize": 4103
+      }
+    },
+    "10": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 24838,
+        "narrate": 12316
+      }
+    },
+    "11": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 25137,
+        "narrate": 12316
+      }
+    },
+    "12": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 25436,
+        "narrate": 12316
+      }
+    },
+    "13": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 25735,
+        "narrate": 12316
+      }
+    },
+    "14": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 26034,
+        "narrate": 12316
+      }
+    },
+    "15": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 26333,
+        "narrate": 12316
+      }
+    },
+    "16": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 26632,
+        "narrate": 12316
+      }
+    },
+    "17": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 26931,
+        "narrate": 12316
+      }
+    },
+    "18": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 27230,
+        "narrate": 12316
+      }
+    },
+    "19": {
+      "model_calls": 7,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 27529,
+        "narrate": 12316,
+        "summarize": 4013
+      }
+    },
+    "20": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 27828,
+        "narrate": 12316
+      }
+    },
+    "21": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 28127,
+        "narrate": 12316
+      }
+    },
+    "22": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 28426,
+        "narrate": 12316
+      }
+    },
+    "23": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 28725,
+        "narrate": 12316
+      }
+    },
+    "24": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29024,
+        "narrate": 12316
+      }
+    },
+    "25": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29323,
+        "narrate": 12316
+      }
+    },
+    "26": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29566,
+        "narrate": 12316
+      }
+    },
+    "27": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29709,
+        "narrate": 12316
+      }
+    },
+    "28": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29800,
+        "narrate": 12316
+      }
+    },
+    "29": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 29871,
+        "narrate": 12316,
+        "summarize": 4013
+      }
+    },
+    "30": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "31": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "32": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "33": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "34": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "35": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "36": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "37": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "38": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "39": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4013
+      }
+    },
+    "40": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "41": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "42": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "43": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "44": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "45": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "46": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "47": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "48": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "49": {
+      "model_calls": 7,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4013
+      }
+    },
+    "50": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "51": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "52": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "53": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "54": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "55": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "56": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "57": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "58": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "59": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4013
+      }
+    },
+    "60": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "61": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "62": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "63": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "64": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "65": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "66": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "67": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "68": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "69": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4013
+      }
+    },
+    "70": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "71": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "72": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "73": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "74": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "75": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "76": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "77": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "78": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "79": {
+      "model_calls": 7,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4013
+      }
+    },
+    "80": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "81": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "82": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "83": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "84": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "85": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "86": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "87": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "88": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "89": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4013
+      }
+    },
+    "90": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "91": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "92": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "93": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "94": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "95": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "96": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "97": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1124,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "98": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "99": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "100": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "101": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "102": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "103": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "104": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "105": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "106": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "107": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "108": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "109": {
+      "model_calls": 7,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "110": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "111": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "112": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "113": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "114": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "115": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "116": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "117": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "118": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "119": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "120": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "121": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "122": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "123": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "124": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "125": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "126": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "127": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "128": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "129": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "130": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "131": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "132": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "133": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "134": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "135": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "136": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "137": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "138": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "139": {
+      "model_calls": 7,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "140": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "141": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "142": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "143": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "144": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "145": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "146": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "147": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "148": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "149": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "150": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "151": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "152": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "153": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "154": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "155": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "156": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "157": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "158": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "159": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "160": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "161": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "162": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "163": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "164": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "165": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "166": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "167": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "168": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "169": {
+      "model_calls": 7,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "170": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "171": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "172": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "173": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "174": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "175": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "176": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "177": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "178": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "179": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "180": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "181": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "182": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "183": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "184": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "185": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "186": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "187": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "188": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "189": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "190": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "191": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "192": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "193": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "194": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "195": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "196": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "197": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "198": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "199": {
+      "model_calls": 7,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "200": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "201": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "202": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "203": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "204": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "205": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "206": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "207": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "208": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "209": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "210": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "211": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "212": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "213": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "214": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "215": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "216": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "217": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "218": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "219": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "220": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "221": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "222": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "223": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "224": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "225": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "226": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "227": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "228": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "229": {
+      "model_calls": 7,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "230": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "231": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "232": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "233": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "234": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "235": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "236": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "237": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "238": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "239": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "240": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "241": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "242": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "243": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "244": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "245": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "246": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "247": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "248": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "249": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "250": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "251": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "252": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "253": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "254": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "255": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "256": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "257": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "258": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "259": {
+      "model_calls": 7,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "260": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "261": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "262": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "263": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "264": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "265": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "266": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "267": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "268": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "269": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "270": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "271": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "272": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "273": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "274": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "275": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "276": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "277": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "278": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "279": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "280": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "281": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "282": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "283": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "284": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "285": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "286": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "287": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "288": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "289": {
+      "model_calls": 7,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "290": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "291": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "292": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "293": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "294": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "295": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "296": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "297": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "298": {
+      "model_calls": 5,
+      "tokens": {
+        "director": 0,
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "direct": 1125,
+        "decide": 29928,
+        "narrate": 12316
+      }
+    },
+    "299": {
+      "model_calls": 6,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0,
+        "daily_summary": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316,
+        "summarize": 4015
+      }
+    },
+    "300": {
+      "model_calls": 4,
+      "tokens": {
+        "character_decision": 0,
+        "narrator": 0
+      },
+      "prompt_bytes": {
+        "decide": 29928,
+        "narrate": 12316
+      }
+    }
+  },
+  "manifest_samples": {
+    "10": {
+      "included": 45,
+      "excluded": 4,
+      "excluded_by_reason": {
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "20": {
+      "included": 85,
+      "excluded": 4,
+      "excluded_by_reason": {
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "30": {
+      "included": 116,
+      "excluded": 13,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 1,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "40": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "50": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "60": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "70": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "80": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "90": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "100": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "110": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "120": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "130": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "140": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "150": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "160": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "170": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "180": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "190": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "200": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "210": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "220": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "230": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "240": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "250": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "260": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "270": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "280": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "290": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    },
+    "300": {
+      "included": 116,
+      "excluded": 14,
+      "excluded_by_reason": {
+        "observations:section budget exhausted": 8,
+        "memories:section budget exhausted": 2,
+        "dnd-sheet:party sheet": 4
+      }
+    }
+  }
+}

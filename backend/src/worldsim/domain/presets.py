@@ -155,8 +155,9 @@ class EditorDraft(BaseModel):
 class EditorPublication(BaseModel):
     """Durable publication receipt, surviving draft completion.
 
-    Draft versions advance only when fields change, so the recorded
-    version identifies the exact published request.
+    One receipt per published draft version: every successful save
+    advances the version, so fields cannot change without one, and a
+    matching version identifies the exact published request.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)

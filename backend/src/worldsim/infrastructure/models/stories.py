@@ -112,7 +112,7 @@ class EditorPublicationRow(Base):
         PG_UUID(as_uuid=True),
         index=True,
     )
-    draft_version: Mapped[int] = mapped_column(Integer)
+    draft_version: Mapped[int] = mapped_column(Integer, primary_key=True)
     revision: Mapped[int] = mapped_column(Integer)
     content_hash: Mapped[str] = mapped_column(String(128))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

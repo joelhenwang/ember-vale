@@ -248,6 +248,68 @@ def test_identical_publish_retry_replays_original_revision(migrated_db: None) ->
     _run(_inner())
 
 
+def test_publish_retry_replays_while_successor_draft_live(migrated_db: None) -> None:
+    """Publish A, complete A, open B, retry A: A's receipt answers, B untouched."""
+    async def _inner() -> None:
+        factory = _factory()
+        preset = await _make_preset(factory)
+        draft, _ = await service.open_draft(factory, preset.id, 1)
+        saved = await service.save_draft(
+            factory, preset.id, draft.id, 1, {"description": "A greener valley."}
+        )
+        first = await service.publish_draft(factory, preset.id, draft.id, saved.version, 0)
+        assert first.revision == 2
+        await service.complete_draft(factory, preset.id, draft.id, saved.version)
+        second_draft, _ = await service.open_draft(factory, preset.id, 2)
+
+        # The late identical retry of A replays revision 2 even though B
+        # currently occupies the preset — and B is untouched.
+        replayed = await service.publish_draft(factory, preset.id, draft.id, saved.version, 0)
+        assert replayed.revision == 2
+        assert replayed.content_hash == first.content_hash
+        async with factory() as uow:
+            live = await uow.presets.get_editor_draft(preset.id)
+            assert live is not None
+            assert live.id == second_draft.id and live.version == 1
+
+    _run(_inner())
+
+
+def test_publish_edit_publish_keeps_both_replays(migrated_db: None) -> None:
+    """Saved edits after publication publish as a new revision; both replays survive."""
+    async def _inner() -> None:
+        factory = _factory()
+        preset = await _make_preset(factory)
+        draft, _ = await service.open_draft(factory, preset.id, 1)
+        saved = await service.save_draft(
+            factory, preset.id, draft.id, 1, {"description": "A greener valley."}
+        )
+        first = await service.publish_draft(factory, preset.id, draft.id, saved.version, 0)
+        assert first.revision == 2
+
+        # Edits saved after publishing are publishable newer work, not
+        # stranded: they land as the next revision under their own receipt.
+        edited = await service.save_draft(
+            factory, preset.id, draft.id, saved.version, {"description": "A golden valley."}
+        )
+        second = await service.publish_draft(factory, preset.id, draft.id, edited.version, 1)
+        assert second.revision == 3
+
+        replay_first = await service.publish_draft(
+            factory, preset.id, draft.id, saved.version, 0
+        )
+        assert replay_first.revision == 2
+        assert replay_first.content_hash == first.content_hash
+        replay_second = await service.publish_draft(
+            factory, preset.id, draft.id, edited.version, 1
+        )
+        assert replay_second.revision == 3
+        async with factory() as uow:
+            assert (await uow.presets.get_preset(preset.id)).current_revision == 3
+
+    _run(_inner())
+
+
 def test_publish_replay_survives_later_revisions(migrated_db: None) -> None:
     """Replay returns the original revision even after rev 3 exists."""
     async def _inner() -> None:

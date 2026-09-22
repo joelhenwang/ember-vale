@@ -287,22 +287,35 @@ class SqlAlchemyPresetRepository:
             )
             await self._session.flush()
         except SqlIntegrityError as exc:
-            if unique_violation(exc, "editor_publication_pkey"):
+            if unique_violation(exc, "pk_editor_publication"):
                 raise DomainError(
                     ErrorCode.IDEMPOTENCY_CONFLICT,
-                    f"duplicate publication for draft: {receipt.draft_id}",
+                    f"duplicate publication for draft {receipt.draft_id} "
+                    f"version {receipt.draft_version}",
                 ) from exc
             raise
 
-    async def get_publication(self, draft_id: EditorDraftId) -> EditorPublication | None:
+    async def list_publications_for_draft(
+        self, draft_id: EditorDraftId
+    ) -> list[EditorPublication]:
         """Durable replay log: survives draft completion; explicit discard voids it."""
-        row = await self._session.get(EditorPublicationRow, draft_id)
-        return self._to_publication(row) if row is not None else None
+        query = (
+            select(EditorPublicationRow)
+            .where(EditorPublicationRow.draft_id == draft_id)
+            .order_by(EditorPublicationRow.draft_version)
+        )
+        rows = (await self._session.execute(query)).scalars().all()
+        return [self._to_publication(row) for row in rows]
 
     async def delete_publications_for_draft(self, draft_id: EditorDraftId) -> None:
-        row = await self._session.get(EditorPublicationRow, draft_id)
-        if row is not None:
+        """Void every receipt for the draft: no version replays afterwards."""
+        query = select(EditorPublicationRow).where(
+            EditorPublicationRow.draft_id == draft_id
+        )
+        rows = (await self._session.execute(query)).scalars().all()
+        for row in rows:
             await self._session.delete(row)
+        if rows:
             await self._session.flush()
 
     async def latest_revision(self, preset_id: UUID) -> PresetRevision:

@@ -857,6 +857,11 @@ export interface PresetDetail {
   version: number;
 }
 
+export interface PresetPublishView {
+  detail: PresetDetail;
+  published_revision: number;
+}
+
 export interface PresetCreateRequest {
   kind: string;
   name: string;

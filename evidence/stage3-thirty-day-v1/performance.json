@@ -1,0 +1,158 @@
+{
+  "p50_phase_seconds": 0.892,
+  "p95_phase_seconds": 1.479,
+  "manifest_tokens_day1": 964,
+  "manifest_tokens_day30": 2507,
+  "tables": {
+    "10": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "20": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "30": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "40": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "50": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "60": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "70": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "80": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "90": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "100": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "110": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "120": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "130": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "140": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "150": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "160": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "170": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "180": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "190": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "200": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "210": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "220": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "230": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "240": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "250": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "260": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "270": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "280": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "290": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    },
+    "300": {
+      "events": 901,
+      "mem_wren": 301,
+      "digests": 8
+    }
+  }
+}

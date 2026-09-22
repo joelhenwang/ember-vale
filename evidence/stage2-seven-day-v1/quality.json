@@ -1,0 +1,6 @@
+{
+  "quiet_phases": 70,
+  "fallback_scenes": 0,
+  "hooks_proposed": 1,
+  "note": "Restraint metrics: quiet phases skip narration calls; the Director runs on cooldown and usually no-ops."
+}

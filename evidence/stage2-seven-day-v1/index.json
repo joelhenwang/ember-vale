@@ -1,0 +1,17 @@
+{
+  "scenario": "stage2-seven-day-v1",
+  "world_id": "10000000-0000-4000-8000-000000000001",
+  "migration_head": "0018_s2_roles",
+  "files": [
+    "scenario.json",
+    "consistency.json",
+    "perspective.json",
+    "quality.json",
+    "budget.json",
+    "performance.json",
+    "recovery.json",
+    "accessibility.json",
+    "migration.json",
+    "security.json"
+  ]
+}

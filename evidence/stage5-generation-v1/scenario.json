@@ -1,0 +1,165 @@
+{
+  "runs": [
+    {
+      "period": [
+        0,
+        3600
+      ],
+      "state": "completed"
+    },
+    {
+      "period": [
+        3600,
+        3900
+      ],
+      "state": "interrupted",
+      "at": 3700
+    },
+    {
+      "period": [
+        3700,
+        3710
+      ],
+      "state": "completed"
+    },
+    {
+      "period": [
+        3710,
+        3780
+      ],
+      "state": "completed"
+    },
+    {
+      "period": [
+        3780,
+        3850
+      ],
+      "state": "completed"
+    },
+    {
+      "period": [
+        3850,
+        3920
+      ],
+      "state": "completed"
+    },
+    {
+      "period": [
+        3920,
+        3990
+      ],
+      "state": "completed"
+    },
+    {
+      "period": [
+        3990,
+        4060
+      ],
+      "state": "completed"
+    },
+    {
+      "period": [
+        4060,
+        4130
+      ],
+      "state": "completed"
+    },
+    {
+      "period": [
+        4130,
+        4200
+      ],
+      "state": "completed"
+    },
+    {
+      "period": [
+        4200,
+        4500
+      ],
+      "state": "completed"
+    },
+    {
+      "period": [
+        4500,
+        4800
+      ],
+      "state": "completed"
+    },
+    {
+      "period": [
+        4800,
+        5100
+      ],
+      "state": "completed"
+    },
+    {
+      "period": [
+        5100,
+        5400
+      ],
+      "state": "completed"
+    },
+    {
+      "period": [
+        5400,
+        5700
+      ],
+      "state": "completed"
+    },
+    {
+      "period": [
+        5700,
+        6000
+      ],
+      "state": "completed"
+    },
+    {
+      "period": [
+        6000,
+        6300
+      ],
+      "state": "completed"
+    },
+    {
+      "period": [
+        6300,
+        6600
+      ],
+      "state": "completed"
+    },
+    {
+      "period": [
+        6600,
+        6900
+      ],
+      "state": "completed"
+    },
+    {
+      "period": [
+        6900,
+        7200
+      ],
+      "state": "completed"
+    }
+  ],
+  "events": {
+    "year1_sources": 2,
+    "year2_sources": 29
+  },
+  "focus": [
+    {
+      "holder": "Bram",
+      "at": 0,
+      "version": 0
+    },
+    {
+      "holder": "Cora",
+      "at": 3800,
+      "version": 1
+    }
+  ],
+  "endings": [
+    "maximum_day",
+    "sustained_peace"
+  ]
+}

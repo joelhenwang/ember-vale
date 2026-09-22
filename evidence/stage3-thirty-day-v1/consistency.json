@@ -1,0 +1,11 @@
+{
+  "runs_completed": 300,
+  "replays_duplicate": [
+    5,
+    150,
+    300
+  ],
+  "combats": 1,
+  "digests": 8,
+  "immutability": true
+}

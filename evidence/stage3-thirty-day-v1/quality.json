@@ -1,0 +1,1808 @@
+{
+  "mean_repetition": 0.4924,
+  "mean_diversity": 0.5067,
+  "quiet_ratio": 0.9867,
+  "director_creations": 1,
+  "per_phase": {
+    "1": {
+      "repetition": 0.0,
+      "diversity": 1.0,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "2": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "3": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "4": {
+      "repetition": 0.2222,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "5": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "6": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "7": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "8": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "9": {
+      "repetition": 0.0,
+      "diversity": 1.0,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "10": {
+      "repetition": 0.0,
+      "diversity": 1.0,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "11": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "12": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "13": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "14": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "15": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "16": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "17": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "18": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "19": {
+      "repetition": 0.0,
+      "diversity": 1.0,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "20": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "21": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "22": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "23": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "24": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "25": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "26": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "27": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "28": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "29": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "30": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 1
+    },
+    "31": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "32": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "33": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "34": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "35": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "36": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "37": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "38": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "39": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "40": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "41": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "42": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "43": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "44": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "45": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "46": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "47": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "48": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "49": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "50": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "51": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "52": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "53": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "54": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "55": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "56": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "57": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "58": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "59": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "60": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "61": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "62": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "63": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "64": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "65": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "66": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "67": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "68": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "69": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "70": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "71": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "72": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "73": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "74": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "75": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "76": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "77": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "78": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "79": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "80": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "81": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "82": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "83": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "84": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "85": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "86": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "87": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "88": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "89": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "90": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "91": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "92": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "93": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "94": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "95": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "96": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "97": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "98": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "99": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "100": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "101": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "102": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "103": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "104": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "105": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "106": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "107": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "108": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "109": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "110": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "111": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "112": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "113": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "114": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "115": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "116": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "117": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "118": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "119": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "120": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "121": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "122": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "123": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "124": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "125": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "126": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "127": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "128": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "129": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "130": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "131": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "132": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "133": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "134": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "135": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "136": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "137": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "138": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "139": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "140": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "141": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "142": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "143": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "144": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "145": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "146": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "147": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "148": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "149": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "150": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "151": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "152": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "153": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "154": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "155": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "156": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "157": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "158": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "159": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "160": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "161": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "162": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "163": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "164": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "165": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "166": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "167": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "168": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "169": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "170": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "171": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "172": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "173": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "174": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "175": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "176": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "177": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "178": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "179": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "180": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "181": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "182": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "183": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "184": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "185": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "186": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "187": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "188": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "189": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "190": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "191": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "192": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "193": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "194": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "195": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "196": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "197": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "198": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "199": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "200": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "201": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "202": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "203": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "204": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "205": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "206": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "207": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "208": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "209": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "210": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "211": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "212": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "213": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "214": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "215": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "216": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "217": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "218": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "219": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "220": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "221": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "222": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "223": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "224": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "225": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "226": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "227": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "228": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "229": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "230": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "231": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "232": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "233": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "234": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "235": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "236": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "237": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "238": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "239": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "240": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "241": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "242": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "243": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "244": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "245": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "246": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "247": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "248": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "249": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "250": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "251": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "252": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "253": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "254": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "255": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "256": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "257": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "258": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "259": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "260": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "261": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "262": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "263": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "264": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "265": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "266": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "267": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "268": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "269": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "270": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "271": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "272": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "273": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "274": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "275": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "276": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "277": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "278": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "279": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "280": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "281": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "282": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "283": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "284": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "285": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "286": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "287": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "288": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "289": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "290": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "291": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "292": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "293": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "294": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "295": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "296": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "297": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "298": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "299": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    },
+    "300": {
+      "repetition": 0.5,
+      "diversity": 0.5,
+      "fallback_rate": 0.0,
+      "director_creations": 0
+    }
+  }
+}
