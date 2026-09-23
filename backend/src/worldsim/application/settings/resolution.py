@@ -14,7 +14,7 @@ from uuid import UUID
 
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.errors import DomainError
-from worldsim.domain.settings import ProviderProfileRevision
+from worldsim.domain.settings import ProviderConnection, ProviderProfileRevision
 
 
 @dataclass(frozen=True)
@@ -56,11 +56,9 @@ async def resolve_profile(uow: UnitOfWork, world_id: UUID) -> ProviderProfileRev
         return None
 
 
-async def resolve_sampling(uow: UnitOfWork, world_id: UUID) -> SamplingParams:
-    """Effective sampling for one phase run, captured once at admission."""
-    profile = await resolve_profile(uow, world_id)
-    if profile is None:
-        return SamplingParams()
+def sampling_from_pin(pin: PinnedRuntime) -> SamplingParams:
+    """Sampling values for one pinned revision."""
+    profile = pin.profile
     return SamplingParams(
         temperature=profile.temperature,
         top_p=profile.top_p,
@@ -70,3 +68,36 @@ async def resolve_sampling(uow: UnitOfWork, world_id: UUID) -> SamplingParams:
         profile_id=str(profile.id),
         profile_revision=profile.revision,
     )
+
+
+@dataclass(frozen=True)
+class PinnedRuntime:
+    """A story pin: revision plus the connection it executes through.
+
+    The connection carries the adapter, endpoint, and credential
+    reference the runtime gateway is built from; the revision carries
+    the pinned model and sampling. Neither follows the profile head.
+    """
+
+    profile: ProviderProfileRevision
+    connection: ProviderConnection
+
+
+async def resolve_pin(uow: UnitOfWork, world_id: UUID) -> PinnedRuntime | None:
+    """Pinned runtime for one story, or None for environment defaults."""
+    profile = await resolve_profile(uow, world_id)
+    if profile is None:
+        return None
+    try:
+        connection = await uow.settings.get_connection(profile.connection_id)
+    except DomainError:
+        return None
+    return PinnedRuntime(profile=profile, connection=connection)
+
+
+async def resolve_sampling(uow: UnitOfWork, world_id: UUID) -> SamplingParams:
+    """Effective sampling for one phase run, captured once at admission."""
+    pin = await resolve_pin(uow, world_id)
+    if pin is None:
+        return SamplingParams()
+    return sampling_from_pin(pin)

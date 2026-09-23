@@ -27,7 +27,7 @@ import random
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import timedelta
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 from uuid import UUID, uuid4
 
 from sqlalchemy.exc import IntegrityError
@@ -86,8 +86,13 @@ from worldsim.application.interventions import (
     record_attempts,
 )
 from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
-from worldsim.application.ports.model_gateway import ModelGateway
-from worldsim.application.settings.resolution import SamplingParams, resolve_sampling
+from worldsim.application.ports.model_gateway import ModelGateway, ModelProfile
+from worldsim.application.settings.resolution import (
+    PinnedRuntime,
+    SamplingParams,
+    resolve_pin,
+    sampling_from_pin,
+)
 from worldsim.application.tasks.service import TaskService
 from worldsim.application.tracing.gateway import TracedGateway
 from worldsim.application.tracing.service import ManifestSpec, TraceService
@@ -225,6 +230,38 @@ class GatewayFactory(Protocol):
     def __call__(self, role: str) -> ModelGateway: ...
 
 
+class PinGatewayFactory(Protocol):
+    """Pinned story runtime (revision plus connection) to gateway."""
+
+    def __call__(self, role: str, pin: PinnedRuntime) -> ModelGateway: ...
+
+
+@dataclass(frozen=True)
+class PhaseRuntime:
+    """Everything one phase run executes with, captured once at admission.
+
+    Pinned stories run their revision model through a gateway built
+    from the pinned connection; unpinned stories keep the environment
+    gateways. Each run builds its own instances, so no story can leak
+    its selection into another through shared gateway state.
+    """
+
+    sampling: SamplingParams
+    gateways: dict[str, ModelGateway]
+    profiles: dict[str, ModelProfile]
+    pin: PinnedRuntime | None
+
+    @property
+    def pin_id(self) -> str | None:
+        """Requested pin identity for the audit chain, if any."""
+        return str(self.pin.profile.id) if self.pin is not None else None
+
+    @property
+    def pin_revision(self) -> int | None:
+        """Requested pin revision for the audit chain, if any."""
+        return self.pin.profile.revision if self.pin is not None else None
+
+
 class UnitOfWorkFactory(Protocol):
     def __call__(self) -> UnitOfWork: ...
 
@@ -323,6 +360,7 @@ class Stage1Orchestrator:
         gateway_factory: GatewayFactory,
         profiles: Mapping[str, object],
         fault_hook: Callable[[str], None] | None = None,
+        pin_gateway_factory: PinGatewayFactory | None = None,
     ) -> None:
         self._factory = uow_factory
         self._canonical = canonical
@@ -330,6 +368,7 @@ class Stage1Orchestrator:
         self._traces = traces
         self._gateways = gateway_factory
         self._profiles = dict(profiles)
+        self._pin_gateways = pin_gateway_factory
         self._hook = fault_hook
         self._dnd_data: DataTables | None = None
 
@@ -337,10 +376,33 @@ class Stage1Orchestrator:
         if self._hook is not None:
             self._hook(point)
 
-    async def _sampling(self, world_id: UUID) -> SamplingParams:
-        """Pinned sampling captured once per phase run; env defaults unpinned."""
+    async def _runtime(self, world_id: UUID) -> PhaseRuntime:
+        """Resolve sampling plus gateway selection once per phase run."""
         async with self._factory() as uow:
-            return await resolve_sampling(uow, world_id)
+            pin = await resolve_pin(uow, world_id)
+        sampling = sampling_from_pin(pin) if pin is not None else SamplingParams()
+        gateways: dict[str, ModelGateway] = {}
+        profiles: dict[str, ModelProfile] = {}
+        if pin is None:
+            for role, profile in self._profiles.items():
+                gateways[role] = self._gateways(role)
+                profiles[role] = cast(ModelProfile, profile)
+            return PhaseRuntime(
+                sampling=sampling, gateways=gateways, profiles=profiles, pin=None
+            )
+        if self._pin_gateways is None:
+            raise DomainError(
+                ErrorCode.PRECONDITION_FAILED,
+                "story pins a provider profile the runtime cannot select",
+                {"profile_id": str(pin.profile.id)},
+            )
+        for role in self._profiles:
+            gateway = self._pin_gateways(role, pin)
+            gateways[role] = gateway
+            profiles[role] = gateway.profile
+        return PhaseRuntime(
+            sampling=sampling, gateways=gateways, profiles=profiles, pin=pin
+        )
 
     async def advance_phase(
         self,
@@ -365,7 +427,17 @@ class Stage1Orchestrator:
                 ErrorCode.PRECONDITION_FAILED,
                 f"phase run is {run.state.value}; resume before advancing",
             )
-        await self._probe_gate()
+        async with self._factory() as uow:
+            open_run = await uow.phases.find_open_run(world_id)
+        if open_run is not None and open_run.id != run_id:
+            raise DomainError(
+                ErrorCode.PRECONDITION_FAILED,
+                f"phase run {open_run.id} is still open; reconcile or resume it "
+                "before advancing another index",
+                {"open_run_id": str(open_run.id), "run_id": str(run_id)},
+            )
+        runtime = await self._runtime(world_id)
+        await self._probe_gate(runtime)
         current = absolute_index(world.day, world.phase)
         if current + 1 != index and current != index:
             raise DomainError(
@@ -383,7 +455,7 @@ class Stage1Orchestrator:
         await self._require_previous_complete(world_id, index)
         await self._tick(world_id, run_id, index)
         sealed = await self._seal(world_id, run_id, index)
-        await self._director_phase(world_id, run_id, index, sealed)
+        await self._director_phase(world_id, run_id, index, sealed, runtime)
         # Queued directions drain inside the beat (past the duplicate
         # replay above): effects apply pre-decision, attempts merge into
         # the decision and complete only once their scenes commit.
@@ -397,7 +469,9 @@ class Stage1Orchestrator:
                 directed[planned.actor] = (planned.intent, planned.ref)
         merged = dict(player_intents or {})
         merged.update({actor: intent for actor, (intent, _ref) in directed.items()})
-        intents = await self._decide_all(world_id, run_id, sealed, merged, directed)
+        intents = await self._decide_all(
+            world_id, run_id, sealed, merged, directed, runtime=runtime
+        )
         await self._set_state(run_id, PhaseRunState.INTENTS_COMPLETE)
         quiet = is_quiet_phase(intent.action.family for intent in intents)
         async with self._factory() as uow:
@@ -428,14 +502,17 @@ class Stage1Orchestrator:
                     names,
                     quiet,
                     over_budget,
+                    runtime=runtime,
                 )
             )
         await self._set_state(run_id, PhaseRunState.SCENES_COMMITTED)
         self._fire("after_scenes_committed")
         await self._set_state(run_id, PhaseRunState.COMPLETED)
         if index % PHASES_PER_DAY == PHASES_PER_DAY - 1:
-            await self._summarize_day(world_id, run_id, index, index // PHASES_PER_DAY + 1)
-            await self._promote_memories(world_id, run_id, index, index // PHASES_PER_DAY + 1)
+            await self._summarize_day(world_id, run_id, index, index // PHASES_PER_DAY + 1, runtime)
+            await self._promote_memories(
+                world_id, run_id, index, index // PHASES_PER_DAY + 1, runtime
+            )
         return Stage1PhaseReport(
             run_id=run_id,
             world_id=world_id,
@@ -494,9 +571,9 @@ class Stage1Orchestrator:
             await uow.phases.set_run_state(run_id, state.value)
             await uow.commit()
 
-    async def _probe_gate(self) -> None:
+    async def _probe_gate(self, runtime: PhaseRuntime) -> None:
         for role in ("character", "reaction", "resolver", "narrator"):
-            probe = await self._gateways(role).probe()
+            probe = await runtime.gateways[role].probe()
             if not probe.ok:
                 raise DomainError(
                     ErrorCode.PRECONDITION_FAILED,
@@ -780,7 +857,9 @@ class Stage1Orchestrator:
             except DomainError:
                 pass
 
-    async def _summarize_day(self, world_id: UUID, run_id: UUID, index: int, day: int) -> int:
+    async def _summarize_day(
+        self, world_id: UUID, run_id: UUID, index: int, day: int, runtime: PhaseRuntime
+    ) -> int:
         """Record one versioned summary per owner with same-day sources.
 
         Runs after midnight commits and never fails the phase: each
@@ -797,7 +876,9 @@ class Stage1Orchestrator:
         written = 0
         for character in sorted(characters, key=lambda c: c.id.hex):
             try:
-                if await self._summarize_owner(world_id, run_id, character, day, start, end):
+                if await self._summarize_owner(
+                    world_id, run_id, character, day, start, end, runtime
+                ):
                     written += 1
             except Exception:
                 continue
@@ -811,6 +892,7 @@ class Stage1Orchestrator:
         day: int,
         start: int,
         end: int,
+        runtime: PhaseRuntime,
     ) -> bool:
         """Propose and store one owner's day account; False when sourceless."""
         async with self._factory() as uow:
@@ -840,7 +922,7 @@ class Stage1Orchestrator:
         await self._track_task(world_id, task_run_id, owner)
         spec = ManifestSpec(
             role="daily_summary",
-            profile=self._profiles["summary"],  # type: ignore[arg-type]
+            profile=runtime.profiles["summary"],
             prompt_version=SUMMARY_PROMPT_VERSION,
             world_id=world_id,
             phase_run_id=run_id,
@@ -850,8 +932,10 @@ class Stage1Orchestrator:
             budgets={},
             tokens={},
             dropped=[],
+            pin_profile_id=runtime.pin_id,
+            pin_profile_revision=runtime.pin_revision,
         )
-        traced = TracedGateway(self._gateways("summary"), self._traces, spec)
+        traced = TracedGateway(runtime.gateways["summary"], self._traces, spec)
         invocation = GraphInvocation(
             graph_name="daily-summary",
             graph_version="v1",
@@ -870,11 +954,11 @@ class Stage1Orchestrator:
                 "source_ids": sorted(set(source_ids)),
             },
         )
-        sampling = await self._sampling(world_id)
+        sampling = runtime.sampling
         graph = build_summary_graph(
             SummaryGraphDeps(
                 gateway=traced,
-                profile=self._profiles["summary"],  # type: ignore[arg-type]
+                profile=runtime.profiles["summary"],
                 system_template=load_summary_prompt(),
                 temperature=sampling.temperature,
                 top_p=sampling.top_p,
@@ -940,7 +1024,9 @@ class Stage1Orchestrator:
         if obs_ids or mem_ids:
             await uow.perception.bump_salience(obs_ids, mem_ids, bump, MAX_SALIENCE)
 
-    async def _promote_memories(self, world_id: UUID, run_id: UUID, index: int, day: int) -> int:
+    async def _promote_memories(
+        self, world_id: UUID, run_id: UUID, index: int, day: int, runtime: PhaseRuntime
+    ) -> int:
         """Compress qualifying old sources into digests; never fails the phase."""
         async with self._factory() as uow:
             config = await uow.worlds.get_config(world_id)
@@ -955,7 +1041,9 @@ class Stage1Orchestrator:
         written = 0
         for character in sorted(characters, key=lambda c: c.id.hex):
             try:
-                if await self._promote_owner(world_id, run_id, index, day, character, config):
+                if await self._promote_owner(
+                    world_id, run_id, index, day, character, config, runtime
+                ):
                     written += 1
             except Exception:
                 continue
@@ -969,6 +1057,7 @@ class Stage1Orchestrator:
         day: int,
         character: Character,
         config: dict[str, object],
+        runtime: PhaseRuntime,
     ) -> bool:
         """Digest one owner's qualifying old sources; False when none qualify."""
         threshold = _config_float(config, PROMOTION_THRESHOLD_KEY, DEFAULT_PROMOTION_THRESHOLD)
@@ -1013,7 +1102,7 @@ class Stage1Orchestrator:
         await self._track_task(world_id, task_run_id, owner)
         spec = ManifestSpec(
             role="memory_digest",
-            profile=self._profiles["summary"],  # type: ignore[arg-type]
+            profile=runtime.profiles["summary"],
             prompt_version=DIGEST_PROMPT_VERSION,
             world_id=world_id,
             phase_run_id=run_id,
@@ -1023,8 +1112,10 @@ class Stage1Orchestrator:
             budgets={},
             tokens={},
             dropped=[],
+            pin_profile_id=runtime.pin_id,
+            pin_profile_revision=runtime.pin_revision,
         )
-        traced = TracedGateway(self._gateways("summary"), self._traces, spec)
+        traced = TracedGateway(runtime.gateways["summary"], self._traces, spec)
         invocation = GraphInvocation(
             graph_name="memory-digest",
             graph_version="v1",
@@ -1043,11 +1134,11 @@ class Stage1Orchestrator:
                 "source_ids": sorted(set(source_ids)),
             },
         )
-        sampling = await self._sampling(world_id)
+        sampling = runtime.sampling
         graph = build_summary_graph(
             SummaryGraphDeps(
                 gateway=traced,
-                profile=self._profiles["summary"],  # type: ignore[arg-type]
+                profile=runtime.profiles["summary"],
                 system_template=load_digest_prompt(),
                 temperature=sampling.temperature,
                 top_p=sampling.top_p,
@@ -1118,7 +1209,12 @@ class Stage1Orchestrator:
         )
 
     async def _director_phase(
-        self, world_id: UUID, run_id: UUID, index: int, sealed: SealedPhase
+        self,
+        world_id: UUID,
+        run_id: UUID,
+        index: int,
+        sealed: SealedPhase,
+        runtime: PhaseRuntime,
     ) -> str:
         """Run the Director when the cooldown elapsed; phases never block on it.
 
@@ -1160,7 +1256,7 @@ class Stage1Orchestrator:
         arc_id = new_arc_id()
         spec = ManifestSpec(
             role="director",
-            profile=self._profiles["director"],  # type: ignore[arg-type]
+            profile=runtime.profiles["director"],
             prompt_version=DIRECTOR_PROMPT_VERSION,
             world_id=world_id,
             phase_run_id=run_id,
@@ -1170,8 +1266,10 @@ class Stage1Orchestrator:
             budgets={},
             tokens={},
             dropped=[],
+            pin_profile_id=runtime.pin_id,
+            pin_profile_revision=runtime.pin_revision,
         )
-        traced = TracedGateway(self._gateways("director"), self._traces, spec)
+        traced = TracedGateway(runtime.gateways["director"], self._traces, spec)
         invocation = GraphInvocation(
             graph_name="director-proposal",
             graph_version="v1",
@@ -1194,11 +1292,11 @@ class Stage1Orchestrator:
                 "world_id": str(world_id),
             },
         )
-        sampling = await self._sampling(world_id)
+        sampling = runtime.sampling
         graph = build_director_graph(
             DirectorGraphDeps(
                 gateway=traced,
-                profile=self._profiles["director"],  # type: ignore[arg-type]
+                profile=runtime.profiles["director"],
                 system_template=load_director_prompt(),
                 temperature=sampling.temperature,
                 top_p=sampling.top_p,
@@ -1236,6 +1334,8 @@ class Stage1Orchestrator:
         sealed: SealedPhase,
         player_intents: Mapping[UUID, ActionIntent],
         directed: Mapping[UUID, tuple[ActionIntent, str]] | None = None,
+        *,
+        runtime: PhaseRuntime,
     ) -> list[Intent]:
         """Concurrent character decisions after the snapshot seal (barrier)."""
         async with self._factory() as uow:
@@ -1258,6 +1358,7 @@ class Stage1Orchestrator:
                     place_ids,
                     player_intents,
                     directed or {},
+                    runtime,
                 )
                 for character in sorted(characters, key=lambda c: c.id.hex)
             )
@@ -1274,6 +1375,7 @@ class Stage1Orchestrator:
         place_ids: list[str],
         player_intents: Mapping[UUID, ActionIntent],
         directed: Mapping[UUID, tuple[ActionIntent, str]],
+        runtime: PhaseRuntime,
     ) -> Intent:
         task_run_id = derive_task_id(run_id, "character", character.id)
         owner = f"s1char:{run_id.hex[:8]}"
@@ -1329,7 +1431,7 @@ class Stage1Orchestrator:
         sources, dropped = to_manifest_dict(included, excluded)
         spec = ManifestSpec(
             role="character_decision",
-            profile=self._profiles["character"],  # type: ignore[arg-type]
+            profile=runtime.profiles["character"],
             prompt_version=CHARACTER_PROMPT_VERSION,
             world_id=world_id,
             phase_run_id=run_id,
@@ -1339,8 +1441,10 @@ class Stage1Orchestrator:
             budgets={},
             tokens={"total": envelope.total_estimated_tokens},
             dropped=dropped,
+            pin_profile_id=runtime.pin_id,
+            pin_profile_revision=runtime.pin_revision,
         )
-        traced = TracedGateway(self._gateways("character"), self._traces, spec)
+        traced = TracedGateway(runtime.gateways["character"], self._traces, spec)
         invocation = GraphInvocation(
             graph_name="character-decision",
             graph_version="v1",
@@ -1360,11 +1464,11 @@ class Stage1Orchestrator:
                 "location_ids": place_ids,
             },
         )
-        sampling = await self._sampling(world_id)
+        sampling = runtime.sampling
         graph = build_character_graph(
             CharacterGraphDeps(
                 gateway=traced,
-                profile=self._profiles["character"],  # type: ignore[arg-type]
+                profile=runtime.profiles["character"],
                 system_template=load_character_prompt(),
                 temperature=sampling.temperature,
                 top_p=sampling.top_p,
@@ -1541,6 +1645,8 @@ class Stage1Orchestrator:
         names: Mapping[UUID, str],
         quiet: bool = False,
         over_budget: bool = False,
+        *,
+        runtime: PhaseRuntime,
     ) -> SceneOutcome:
         """React, resolve, commit, and narrate one scene (sequential barrier)."""
         members = [i for i in intents if i.id in scene.intent_ids]
@@ -1555,9 +1661,9 @@ class Stage1Orchestrator:
             )
             for i in sorted(members, key=lambda x: str(x.id))
         ]
-        reactions = await self._react_all(world_id, run_id, sealed, scene, attempts, names)
+        reactions = await self._react_all(world_id, run_id, sealed, scene, attempts, names, runtime)
         resolution, live_versions = await self._resolve_scene(
-            world_id, run_id, sealed, scene, members
+            world_id, run_id, sealed, scene, members, runtime
         )
         observations, memories = self._perceive_scene(world_id, sealed, scene, members, names)
         # Only the aggregates this scene mutates enter the version check,
@@ -1593,7 +1699,7 @@ class Stage1Orchestrator:
             await record_attempts(self._factory, directed_outcomes)
         self._fire("before_narration")
         narration = await self._narrate_scene(
-            world_id, run_id, scene, result.event_id, quiet, over_budget
+            world_id, run_id, scene, result.event_id, quiet, over_budget, runtime=runtime
         )
         if resolution.outcome == ResolutionOutcome.SUCCESS:
             await self._settle_scene_verbs(world_id, run_id, index, scene, members, result.event_id)
@@ -1760,6 +1866,7 @@ class Stage1Orchestrator:
         scene: Scene,
         attempts: list[Attempt],
         names: Mapping[UUID, str],
+        runtime: PhaseRuntime,
     ) -> list[Reaction]:
         """One bounded reaction graph per eligible reactor (sequential)."""
         reactions: list[Reaction] = []
@@ -1778,6 +1885,7 @@ class Stage1Orchestrator:
                     reactor_id,
                     participant_ids,
                     names,
+                    runtime,
                 )
                 if reaction is not None:
                     reactions.append(reaction)
@@ -1793,6 +1901,7 @@ class Stage1Orchestrator:
         reactor_id: UUID,
         participant_ids: list[str],
         names: Mapping[UUID, str],
+        runtime: PhaseRuntime,
     ) -> Reaction | None:
         async with self._factory() as uow:
             reactor = await uow.characters.get(reactor_id)
@@ -1804,7 +1913,7 @@ class Stage1Orchestrator:
         sources, dropped = to_manifest_dict(included, excluded)
         spec = ManifestSpec(
             role="reaction",
-            profile=self._profiles["reaction"],  # type: ignore[arg-type]
+            profile=runtime.profiles["reaction"],
             prompt_version=REACTION_PROMPT_VERSION,
             world_id=world_id,
             phase_run_id=run_id,
@@ -1814,8 +1923,10 @@ class Stage1Orchestrator:
             budgets={},
             tokens={"total": envelope.total_estimated_tokens},
             dropped=dropped,
+            pin_profile_id=runtime.pin_id,
+            pin_profile_revision=runtime.pin_revision,
         )
-        traced = TracedGateway(self._gateways("reaction"), self._traces, spec)
+        traced = TracedGateway(runtime.gateways["reaction"], self._traces, spec)
         invocation = GraphInvocation(
             graph_name="reaction",
             graph_version="v1",
@@ -1843,11 +1954,11 @@ class Stage1Orchestrator:
                 "attempt_actor_id": str(attempt.actor_character_id),
             },
         )
-        sampling = await self._sampling(world_id)
+        sampling = runtime.sampling
         graph = build_reaction_graph(
             ReactionGraphDeps(
                 gateway=traced,
-                profile=self._profiles["reaction"],  # type: ignore[arg-type]
+                profile=runtime.profiles["reaction"],
                 system_template=load_reaction_prompt(),
                 temperature=sampling.temperature,
                 top_p=sampling.top_p,
@@ -1867,6 +1978,7 @@ class Stage1Orchestrator:
         sealed: SealedPhase,
         scene: Scene,
         members: list[Intent],
+        runtime: PhaseRuntime,
     ) -> tuple[Resolution, dict[str, int]]:
         """Hybrid resolution with an audited resolver call when ambiguous."""
 
@@ -1877,7 +1989,7 @@ class Stage1Orchestrator:
         task_run_id = derive_task_id(run_id, "resolver", scene.id)
         spec = ManifestSpec(
             role="resolver",
-            profile=self._profiles["resolver"],  # type: ignore[arg-type]
+            profile=runtime.profiles["resolver"],
             prompt_version=RESOLVER_PROMPT_VERSION,
             world_id=world_id,
             phase_run_id=run_id,
@@ -1886,8 +1998,10 @@ class Stage1Orchestrator:
             budgets={},
             tokens={},
             dropped=[],
+            pin_profile_id=runtime.pin_id,
+            pin_profile_revision=runtime.pin_revision,
         )
-        traced = TracedGateway(self._gateways("resolver"), self._traces, spec)
+        traced = TracedGateway(runtime.gateways["resolver"], self._traces, spec)
         invocation = GraphInvocation(
             graph_name="resolve",
             graph_version="v1",
@@ -1906,11 +2020,11 @@ class Stage1Orchestrator:
                 "expected_versions": live_versions,
             },
         )
-        sampling = await self._sampling(world_id)
+        sampling = runtime.sampling
         graph = build_resolve_graph(
             ResolverGraphDeps(
                 gateway=traced,
-                profile=self._profiles["resolver"],  # type: ignore[arg-type]
+                profile=runtime.profiles["resolver"],
                 system_template=load_resolver_prompt(),
                 temperature=sampling.temperature,
                 top_p=sampling.top_p,
@@ -2010,6 +2124,8 @@ class Stage1Orchestrator:
         event_id: UUID,
         quiet: bool = False,
         over_budget: bool = False,
+        *,
+        runtime: PhaseRuntime,
     ) -> str:
         """Narrate one committed scene; failures never fail the phase.
 
@@ -2055,7 +2171,7 @@ class Stage1Orchestrator:
         task_run_id = derive_task_id(run_id, "narrator", scene.id)
         spec = ManifestSpec(
             role="narrator",
-            profile=self._profiles["narrator"],  # type: ignore[arg-type]
+            profile=runtime.profiles["narrator"],
             prompt_version=NARRATOR_PROMPT_VERSION,
             world_id=world_id,
             phase_run_id=run_id,
@@ -2064,8 +2180,10 @@ class Stage1Orchestrator:
             budgets={},
             tokens={},
             dropped=[],
+            pin_profile_id=runtime.pin_id,
+            pin_profile_revision=runtime.pin_revision,
         )
-        traced = TracedGateway(self._gateways("narrator"), self._traces, spec)
+        traced = TracedGateway(runtime.gateways["narrator"], self._traces, spec)
         invocation = GraphInvocation(
             graph_name="narrate",
             graph_version="v1",
@@ -2100,11 +2218,11 @@ class Stage1Orchestrator:
                 await uow.commit()
             return "fallback"
         try:
-            sampling = await self._sampling(world_id)
+            sampling = runtime.sampling
             graph = build_narration_graph(
                 NarratorGraphDeps(
                     gateway=traced,
-                    profile=self._profiles["narrator"],  # type: ignore[arg-type]
+                    profile=runtime.profiles["narrator"],
                     system_template=load_narrator_prompt(),
                     temperature=sampling.temperature,
                     top_p=sampling.top_p,

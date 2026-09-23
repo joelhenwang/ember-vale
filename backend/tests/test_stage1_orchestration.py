@@ -232,6 +232,46 @@ def test_duplicate_phase_replays_without_new_canon(migrated_db: None) -> None:
     asyncio.run(_inner())
 
 
+def test_advance_refuses_second_open_run(migrated_db: None) -> None:
+    """Overlapping advances cannot stack another open run.
+
+    A later request for a different index while the first run is
+    still active must fail closed (409) instead of creating a
+    second open run that breaks reconciliation later.
+    """
+    async def _inner() -> None:
+        ids = await _seed()
+        orch = _orchestrator(_role_gateways(ids))
+        engine = create_engine(Settings())
+        try:
+            # Simulate an advance still in flight on another path.
+            async with create_unit_of_work(engine) as uow:
+                await uow.phases.create_run(
+                    PhaseRun(
+                        id=derive_run_id(ids["world"], 2),
+                        world_id=ids["world"],
+                        absolute_index=2,
+                    )
+                )
+                await uow.commit()
+            with pytest.raises(DomainError) as caught:
+                await orch.advance_phase(ids["world"], 1)
+            assert caught.value.code is ErrorCode.PRECONDITION_FAILED
+            async with create_unit_of_work(engine) as uow:
+                open_run = await uow.phases.find_open_run(ids["world"])
+                assert open_run is not None and open_run.absolute_index == 2
+                try:
+                    await uow.phases.get_run(derive_run_id(ids["world"], 1))
+                except DomainError:
+                    pass
+                else:
+                    raise AssertionError("second open run must not be created")
+        finally:
+            await engine.dispose()
+
+    asyncio.run(_inner())
+
+
 def test_restart_during_commit_resolves_once(migrated_db: None) -> None:
     async def _inner() -> None:
         ids = await _seed()

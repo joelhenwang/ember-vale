@@ -477,6 +477,42 @@ def test_created_story_executes_with_pinned_sampling(migrated_db: None) -> None:
         )
         assert resolved.profile_revision == pin["revision"]
 
+        def _executed_models(world_id: str, index: int) -> list[str]:
+            async def _inner() -> list[str]:
+                from sqlalchemy import select as sa_select
+                from sqlalchemy.ext.asyncio import AsyncSession
+
+                from worldsim.application.orchestration.service import derive_run_id
+                from worldsim.infrastructure.models.calls import ModelCallRow
+
+                engine = create_engine(Settings())
+                try:
+                    async with AsyncSession(engine) as session:
+                        rows = (
+                            (
+                                await session.execute(
+                                    sa_select(ModelCallRow).where(
+                                        ModelCallRow.phase_run_id
+                                        == derive_run_id(UUID(world_id), index)
+                                    )
+                                )
+                            )
+                            .scalars()
+                            .all()
+                        )
+                        return [str(row.result.get("model")) for row in rows]
+                finally:
+                    await engine.dispose()
+
+            return asyncio.run(_inner())
+
+        executed = _executed_models(pinned, 1)
+        assert executed, "expected audited model calls for the pinned run"
+        assert all(model == "fake-echo" for model in executed), (
+            "executed model must come from the pin, not the gateway: "
+            f"{executed}"
+        )
+
         moved = api.post(
             f"/api/v1/settings/providers/{connection['id']}/profiles",
             json={"model_id": "fake-echo-2", "temperature": 0.9},
@@ -501,3 +537,229 @@ def test_created_story_executes_with_pinned_sampling(migrated_db: None) -> None:
         assert seen, "expected recorded model requests"
         assert all(r.temperature is None for r in seen)
         assert all(r.max_tokens == 512 for r in seen)
+
+
+def test_pinned_profile_selects_gateway_model_on_wire(
+    migrated_db: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Pinned sampling must select the runtime gateway, not just resolve.
+
+    Environment model A against pinned model B through the real
+    selection path: the adapter HTTP transport is intercepted, pinned
+    and unpinned stories advance interleaved, and every outbound body
+    must carry its own story model plus pinned sampling. After the
+    profile head moves to C, the pinned story still sends B. Audit rows
+    record the requested pin next to the executed model and provider.
+    """
+    from uuid import uuid4
+
+    import httpx
+
+    from worldsim.application.orchestration.service import derive_run_id
+    from worldsim.application.orchestration.stage1 import Stage1Orchestrator
+    from worldsim.application.settings.resolution import PinnedRuntime
+    from worldsim.application.tasks.service import TaskService
+    from worldsim.application.tracing.service import TraceService
+    from worldsim.application.transactions.canonical import CanonicalTransaction
+    from worldsim.domain.settings import (
+        AdapterKind,
+        ProviderConnection,
+        ProviderProfileRevision,
+    )
+    from worldsim.infrastructure.model_gateway.selection import (
+        gateway_for_pin,
+        gateways_for_settings,
+    )
+    from worldsim.infrastructure.models.calls import ModelCallRow, ModelProfileRow
+    from worldsim.infrastructure.settings import ProviderSettings
+
+    monkeypatch.setenv("WORLDSIM_TEST_PIN_KEY", "pin-secret")
+    bodies: list[dict[str, object]] = []
+
+    wait_text = (
+        '{"family": "wait",'
+        ' "character_id": "00000000-0000-0000-0000-000000000000",'
+        ' "snapshot_id": "00000000-0000-0000-0000-000000000000"}'
+    )
+    beats_text = json.dumps([{"text": "The phase passes.", "cited_fact_keys": ["attempt:wait"]}])
+
+    def _handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/models"):
+            return httpx.Response(200, json={"data": [{"id": "m"}]})
+        body = json.loads(request.content.decode("utf-8"))
+        bodies.append(body)
+        system = ""
+        for message in body.get("messages", []):
+            if isinstance(message, dict) and message.get("role") == "system":
+                system = str(message.get("content", ""))
+        text = beats_text if "You narrate" in system else wait_text
+        return httpx.Response(
+            200,
+            json={
+                "id": "mock-call",
+                "model": body.get("model", "unknown"),
+                "choices": [{"message": {"content": text}, "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+            },
+        )
+
+    settings = Settings(
+        provider=ProviderSettings(
+            active_profile="openrouter",
+            openrouter_api_key=SecretStr("test-key"),
+            openrouter_model="env-model-A",
+        )
+    )
+    client = httpx.AsyncClient(transport=httpx.MockTransport(_handler))
+    env_gateways, env_profiles = gateways_for_settings(settings, None, client=client)
+
+    async def _inner() -> None:
+        from test_stage1_api import _seed_two  # pyright: ignore[reportPrivateUsage]
+
+        from worldsim.domain.stories import SetupProvenance, StoryInitialSetup
+        from worldsim.domain.time import utcnow
+        from worldsim.infrastructure.tracing.langsmith import NullExporter
+
+        engine = create_engine(Settings())
+        try:
+            factory = lambda: create_unit_of_work(engine)  # noqa: E731
+
+            def _for_role(role: str):
+                return env_gateways[role]
+
+            def _for_pin(role: str, pin: PinnedRuntime):
+                return gateway_for_pin(role, pin.profile, pin.connection, client=client)
+
+            orch = Stage1Orchestrator(
+                factory,
+                CanonicalTransaction(factory),
+                TaskService(factory),
+                TraceService(factory, NullExporter()),
+                _for_role,
+                env_profiles,
+                pin_gateway_factory=_for_pin,
+            )
+
+            pinned_ids = await _seed_two()
+            plain_ids = await _seed_two()
+            pinned_world = pinned_ids["world"]
+            plain_world = plain_ids["world"]
+
+            connection = ProviderConnection(
+                id=uuid4(),
+                adapter=AdapterKind.OPENROUTER,
+                name="Pin",
+                endpoint="http://127.0.0.1:7144/v1",
+                credential_env="WORLDSIM_TEST_PIN_KEY",
+                allow_local_endpoint=True,
+            )
+            revision_b = ProviderProfileRevision(
+                id=uuid4(),
+                connection_id=connection.id,
+                revision=1,
+                model_id="pinned-model-B",
+                temperature=0.2,
+                max_tokens=4096,
+                capabilities=["chat", "json_mode", "temperature", "top_p", "top_k"],
+            )
+            async with create_unit_of_work(engine) as uow:
+                await uow.settings.add_connection(connection)
+                await uow.settings.add_profile(revision_b)
+                await uow.stories.put_setup(
+                    StoryInitialSetup(
+                        world_id=pinned_world,
+                        payload={
+                            "schema_version": 1,
+                            "provenance": "created",
+                            "art": {
+                                "profile_id": str(revision_b.id),
+                                "profile_revision": 1,
+                            },
+                        },
+                        content_hash="wire-pin",
+                        created_at=utcnow(),
+                        provenance=SetupProvenance.CREATED,
+                    )
+                )
+                await uow.commit()
+
+            def _models() -> list[str]:
+                return [str(body.get("model")) for body in bodies]
+
+            await orch.advance_phase(pinned_world, 1)
+            assert bodies, "expected outbound calls for the pinned story"
+            assert all(model == "pinned-model-B" for model in _models()), _models()
+            assert all(body.get("temperature") == 0.2 for body in bodies)
+            assert all(body.get("max_tokens") == 4096 for body in bodies)
+            bodies.clear()
+
+            await orch.advance_phase(plain_world, 1)
+            assert bodies, "expected outbound calls for the unpinned story"
+            assert all(model == "env-model-A" for model in _models()), _models()
+            assert all("temperature" not in body for body in bodies)
+            assert all(body.get("max_tokens") == 512 for body in bodies)
+            bodies.clear()
+
+            revision_c = revision_b.model_copy(
+                update={"revision": 2, "model_id": "pinned-model-C", "temperature": 0.9}
+            )
+            async with create_unit_of_work(engine) as uow:
+                await uow.settings.add_profile(revision_c)
+                await uow.commit()
+
+            await orch.advance_phase(pinned_world, 2)
+            assert bodies, "expected outbound calls after the head moves"
+            assert all(model == "pinned-model-B" for model in _models()), _models()
+            assert all(body.get("temperature") == 0.2 for body in bodies)
+            bodies.clear()
+
+            await orch.advance_phase(plain_world, 2)
+            assert bodies, "expected outbound calls for the unpinned story"
+            assert all(model == "env-model-A" for model in _models()), _models()
+            bodies.clear()
+
+            assert env_gateways["narrator"].profile.model_id == "env-model-A"
+            assert env_profiles["narrator"].model_id == "env-model-A"
+
+            from sqlalchemy import select as sa_select
+            from sqlalchemy.ext.asyncio import AsyncSession
+
+            async with AsyncSession(engine) as session:
+                pinned_rows = (
+                    await session.execute(
+                        sa_select(ModelCallRow).where(
+                            ModelCallRow.phase_run_id == derive_run_id(pinned_world, 2)
+                        )
+                    )
+                ).scalars().all()
+                assert pinned_rows, "expected audited calls for the pinned run"
+                for row in pinned_rows:
+                    sampling = row.request["sampling"]
+                    assert sampling["model_id"] == "pinned-model-B"
+                    assert sampling["pin_profile_id"] == str(revision_b.id)
+                    assert sampling["pin_profile_revision"] == 1
+                    assert row.result["model"] == "pinned-model-B"
+                profile_row = await session.get(
+                    ModelProfileRow, (pinned_rows[0].profile_name, pinned_rows[0].profile_version)
+                )
+                assert profile_row is not None
+                assert profile_row.adapter == "openrouter"
+                assert profile_row.model_id == "pinned-model-B"
+                plain_rows = (
+                    await session.execute(
+                        sa_select(ModelCallRow).where(
+                            ModelCallRow.phase_run_id == derive_run_id(plain_world, 2)
+                        )
+                    )
+                ).scalars().all()
+                assert plain_rows, "expected audited calls for the unpinned run"
+                for row in plain_rows:
+                    sampling = row.request["sampling"]
+                    assert sampling["model_id"] == "env-model-A"
+                    assert "pin_profile_id" not in sampling
+                    assert row.result["model"] == "env-model-A"
+        finally:
+            await engine.dispose()
+        await client.aclose()
+
+    asyncio.run(_inner())

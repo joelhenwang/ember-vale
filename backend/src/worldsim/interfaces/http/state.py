@@ -18,6 +18,7 @@ from worldsim.application.orchestration.service import PhaseOrchestrator
 from worldsim.application.orchestration.stage1 import Stage1Orchestrator
 from worldsim.application.ports.model_gateway import ModelGateway
 from worldsim.application.ports.traces import TraceExporter
+from worldsim.application.settings.resolution import PinnedRuntime
 from worldsim.application.tasks.service import TaskService
 from worldsim.application.tracing.service import TraceService
 from worldsim.application.transactions.canonical import CanonicalTransaction
@@ -90,7 +91,10 @@ class AppState:
 
     def stage1(self) -> Stage1Orchestrator:
         """Stage 1 orchestrator with per-role gateways for the active profile."""
-        from worldsim.infrastructure.model_gateway.selection import gateways_for_settings
+        from worldsim.infrastructure.model_gateway.selection import (
+            gateway_for_pin,
+            gateways_for_settings,
+        )
 
         factory = self.uow_factory()
         override = self.gateway_factory if self.gateway_factory is not stage0_gateway else None
@@ -99,6 +103,11 @@ class AppState:
         def _for_role(role: str) -> ModelGateway:
             return gateways[role]
 
+        def _for_pin(role: str, pin: PinnedRuntime) -> ModelGateway:
+            return gateway_for_pin(
+                role, pin.profile, pin.connection, env_gateway=gateways[role]
+            )
+
         return Stage1Orchestrator(
             factory,
             CanonicalTransaction(factory),
@@ -106,6 +115,7 @@ class AppState:
             TraceService(factory, self.exporter),
             _for_role,
             profiles,
+            pin_gateway_factory=_for_pin,
         )
 
 

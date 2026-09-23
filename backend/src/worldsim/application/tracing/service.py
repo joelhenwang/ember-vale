@@ -15,7 +15,7 @@ import json
 import re
 import time
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import UUID, uuid4
 
 from worldsim.application.ports.model_gateway import (
@@ -110,6 +110,8 @@ class ManifestSpec:
     budgets: dict[str, int] = field(default_factory=dict)
     tokens: dict[str, int] = field(default_factory=dict)
     dropped: list[str] = field(default_factory=list)
+    pin_profile_id: str | None = None
+    pin_profile_revision: int | None = None
 
 
 @dataclass(frozen=True)
@@ -170,17 +172,21 @@ class TraceService:
                 spec.profile.max_context_tokens,
                 list(spec.profile.capabilities),
             )
+            sampling: dict[str, Any] = {
+                "model_id": spec.profile.model_id,
+                "temperature": request.temperature,
+                "top_p": request.top_p,
+                "top_k": request.top_k,
+            }
+            if spec.pin_profile_id is not None and spec.pin_profile_revision is not None:
+                sampling["pin_profile_id"] = spec.pin_profile_id
+                sampling["pin_profile_revision"] = spec.pin_profile_revision
             await uow.traces.start_call(
                 call,
                 redact(request.prompt),
                 spec.prompt_version,
                 request.max_tokens,
-                {
-                    "model_id": spec.profile.model_id,
-                    "temperature": request.temperature,
-                    "top_p": request.top_p,
-                    "top_k": request.top_k,
-                },
+                sampling,
             )
             await uow.traces.save_manifest(manifest)
             await uow.commit()
