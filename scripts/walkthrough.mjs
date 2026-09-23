@@ -167,6 +167,9 @@ try {
     await page.getByText('Observer', { exact: false }).first().waitFor({ timeout: 15000 })
     const badge = await page.locator('.play__badge').innerText()
     record(S, 'observer badge is read-only grant state', badge.includes('Observer'), badge)
+    // The room fetches backend readiness asynchronously on mount; wait for
+    // the banner instead of asserting on first paint (cold stacks flake).
+    await page.getByText('Development model active', { exact: false }).waitFor({ timeout: 15000 })
     const profile = await page.locator('.play').innerText()
     record(
       S,

@@ -25,6 +25,11 @@ npm run dev                                        # UI at http://localhost:5173
 
 Stop here and report if any command fails, including the exact output.
 
+Notes: the first `docker compose up` builds the API image and can take
+several minutes with no output — let it finish. If compose reports a
+port already allocated (5433, 8101, or 5173), another stack is running
+on this machine; stop it before continuing.
+
 ## 3. First story (observer, ~10 minutes)
 
 1. Open the UI. On the home screen press **Begin a new tale**.
