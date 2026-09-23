@@ -15,6 +15,12 @@
  * an edit and a retry still yields exactly one preset. A second preset
  * is only ever minted through the explicit `submitFresh` action.
  *
+ * A recovered slot stays associated with its preset: dismissing the
+ * notice hides it without forgetting the creation, and the superseded
+ * edits survive until they are applied, explicitly discarded, or sent
+ * as an explicit separate preset. Both survive reloads, so an ordinary
+ * `submit` can never mint from a recovered draft by accident.
+ *
  * Reload safety depends on the frozen request surviving in storage: a
  * freeze that only reaches memory is flagged via `requestPersisted`,
  * and the views must not present that state as reload-safe.
@@ -44,10 +50,12 @@ export type CreationStatus = 'idle' | 'creating' | 'failed'
 const REQUEST_KEY = (localId: string): string => `ember-vale.preset-create-request.${localId}`
 const SUPERSEDED_KEY = (localId: string): string => `ember-vale.preset-create-superseded.${localId}`
 const RECOVERED_KEY = (localId: string): string => `ember-vale.preset-create-recovered.${localId}`
+const DISMISSED_KEY = (localId: string): string => `ember-vale.preset-create-dismissed.${localId}`
 
 const memoryRequests = new Map<string, string>()
 const memorySuperseded = new Map<string, string>()
 const memoryRecovered = new Map<string, string>()
+const memoryDismissed = new Map<string, string>()
 /** Slots whose frozen request never reached storage: reload-unsafe. */
 const memoryOnlyRequests = new Set<string>()
 
@@ -56,6 +64,7 @@ export function resetPresetCreationMemoryForTests(): void {
   memoryRequests.clear()
   memorySuperseded.clear()
   memoryRecovered.clear()
+  memoryDismissed.clear()
   memoryOnlyRequests.clear()
 }
 
@@ -183,6 +192,30 @@ function clearRecoveredPresetId(localId: string): void {
   }
 }
 
+/** Whether the recovery notice was dismissed (the association is kept). */
+export function loadNoticeDismissed(localId: string): boolean {
+  const raw = memoryDismissed.get(DISMISSED_KEY(localId)) ?? readStorage(DISMISSED_KEY(localId))
+  return raw === '1'
+}
+
+function storeNoticeDismissed(localId: string): void {
+  memoryDismissed.set(DISMISSED_KEY(localId), '1')
+  try {
+    localStorage.setItem(DISMISSED_KEY(localId), '1')
+  } catch {
+    /* the notice simply reshows after a reload */
+  }
+}
+
+function clearNoticeDismissed(localId: string): void {
+  memoryDismissed.delete(DISMISSED_KEY(localId))
+  try {
+    localStorage.removeItem(DISMISSED_KEY(localId))
+  } catch {
+    /* best-effort */
+  }
+}
+
 function sameSubmission(
   a: FrozenCreateRequest,
   kind: string,
@@ -213,6 +246,8 @@ export function usePresetCreation(localId: string) {
   const supersededEdits = ref<SupersededCreateEdits | null>(loadSupersededEdits(localId))
   /** Preset id recovered by a replay that set edits aside. */
   const recoveredId = ref<string | null>(loadRecoveredPresetId(localId))
+  /** The recovery notice was dismissed; the association is retained. */
+  const noticeDismissed = ref(loadNoticeDismissed(localId))
   /** Whether the most recent submit replayed the frozen request. */
   const replayed = ref(false)
 
@@ -306,6 +341,8 @@ export function usePresetCreation(localId: string) {
     clearRecoveredPresetId(localId)
     clearSupersededEdits(localId)
     supersededEdits.value = null
+    noticeDismissed.value = false
+    clearNoticeDismissed(localId)
     const req: FrozenCreateRequest = { key: stableCreateKey(localId), kind, payload }
     requestPersisted.value = storeCreateRequest(localId, req)
     if (!requestPersisted.value) {
@@ -345,6 +382,8 @@ export function usePresetCreation(localId: string) {
     supersededEdits.value = null
     recoveredId.value = null
     clearRecoveredPresetId(localId)
+    noticeDismissed.value = false
+    clearNoticeDismissed(localId)
     const req: FrozenCreateRequest = { key: stableCreateKey(localId), kind, payload }
     requestPersisted.value = storeCreateRequest(localId, req)
     replayed.value = false
@@ -352,12 +391,29 @@ export function usePresetCreation(localId: string) {
     return send(req)
   }
 
-  /** Dismiss the recovery notice; the live form is untouched. */
+  /**
+   * Dismiss the recovery notice only. The recovered preset association
+   * and the set-aside edits are retained — across reloads too — so an
+   * ordinary `submit` stays blocked until an explicit separate preset.
+   * The live form is untouched.
+   */
   function dismissRecovery(): void {
+    noticeDismissed.value = true
+    storeNoticeDismissed(localId)
+    if (status.value === 'failed') {
+      status.value = 'idle'
+      error.value = null
+    }
+  }
+
+  /**
+   * Explicitly discard the set-aside newer edits (the live form is
+   * untouched). The recovered preset association is retained: only an
+   * explicit separate preset may mint a new identity from this draft.
+   */
+  function discardNewerEdits(): void {
     clearSupersededEdits(localId)
     supersededEdits.value = null
-    recoveredId.value = null
-    clearRecoveredPresetId(localId)
     if (status.value === 'failed') {
       status.value = 'idle'
       error.value = null
@@ -371,9 +427,11 @@ export function usePresetCreation(localId: string) {
     requestPersisted,
     supersededEdits,
     recoveredId,
+    noticeDismissed,
     replayed,
     submit,
     submitFresh,
-    dismissRecovery
+    dismissRecovery,
+    discardNewerEdits
   }
 }

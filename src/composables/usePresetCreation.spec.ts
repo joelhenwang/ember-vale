@@ -16,6 +16,7 @@ let nextId = 0
 const REQUEST_KEY = 'ember-vale.preset-create-request.world-new'
 const SUPERSEDED_KEY = 'ember-vale.preset-create-superseded.world-new'
 const RECOVERED_KEY = 'ember-vale.preset-create-recovered.world-new'
+const DISMISSED_KEY = 'ember-vale.preset-create-dismissed.world-new'
 const CREATE_KEY = 'ember-vale.preset-create-key.world-new'
 
 function installFetch(): void {
@@ -25,7 +26,7 @@ function installFetch(): void {
   nextId = 0
   resetPresetCreationMemoryForTests()
   resetEditorDraftMemoryForTests()
-  for (const key of [REQUEST_KEY, SUPERSEDED_KEY, RECOVERED_KEY, CREATE_KEY]) {
+  for (const key of [REQUEST_KEY, SUPERSEDED_KEY, RECOVERED_KEY, DISMISSED_KEY, CREATE_KEY]) {
     try {
       localStorage.removeItem(key)
     } catch {
@@ -162,11 +163,46 @@ describe('usePresetCreation', () => {
     expect(await second.submit('world', payloadB())).toBeNull()
     expect(second.error.value).toMatch(/already created/)
     expect(bodies).toHaveLength(2)
-    // Dismissing the recovery re-arms a deliberate fresh submission.
-    second.dismissRecovery()
-    expect(await second.submit('world', payloadB())).toBe('preset-2')
+    // Only the explicit separate action mints a second preset.
+    expect(await second.submitFresh('world', payloadB())).toBe('preset-2')
     expect(bodies).toHaveLength(3)
     expect(bodies[2]!.key).not.toBe(bodies[0]!.key)
+  })
+
+  it('dismiss keeps the recovered association; only a separate preset mints again', async () => {
+    installFetch()
+    const first = usePresetCreation('world-new')
+    failNextCreate = 'transport'
+    expect(await first.submit('world', payloadA())).toBeNull()
+    // Newest edits, retry recovers Older: exactly one preset exists.
+    expect(await first.submit('world', payloadB())).toBe('preset-1')
+    expect(first.recoveredId.value).toBe('preset-1')
+    expect(bodies).toHaveLength(2)
+    // Dismiss hides the notice but forgets nothing.
+    first.dismissRecovery()
+    expect(first.noticeDismissed.value).toBe(true)
+    expect(first.recoveredId.value).toBe('preset-1')
+    expect(first.supersededEdits.value).not.toBeNull()
+    // Ordinary Create stays blocked after dismissal.
+    expect(await first.submit('world', payloadB())).toBeNull()
+    expect(first.error.value).toMatch(/already created/)
+    expect(bodies).toHaveLength(2)
+    // A remount (reload) keeps the association: still blocked.
+    const second = usePresetCreation('world-new')
+    expect(second.noticeDismissed.value).toBe(true)
+    expect(second.recoveredId.value).toBe('preset-1')
+    expect(second.supersededEdits.value).not.toBeNull()
+    expect(await second.submit('world', payloadB())).toBeNull()
+    expect(bodies).toHaveLength(2)
+    // Explicitly discarding the newer edits keeps the association too.
+    second.discardNewerEdits()
+    expect(second.supersededEdits.value).toBeNull()
+    expect(second.recoveredId.value).toBe('preset-1')
+    expect(await second.submit('world', payloadB())).toBeNull()
+    expect(bodies).toHaveLength(2)
+    // Only the explicit separate action mints a second preset.
+    expect(await second.submitFresh('world', payloadB())).toBe('preset-2')
+    expect(bodies).toHaveLength(3)
   })
 
   it('mints a separate preset only through the explicit fresh action', async () => {

@@ -29,6 +29,30 @@ These carry inline tree identity (`commit`, `dirty`, `diffSha256`,
 `untracked`, `only`) in `results.json` itself; the note above applies
 only to the 2026-09-22 record.
 
+## 2026-09-22 subset (`results-firstcreate-twostories-2026-09-22.json`)
+
+18/18 PASS, `only: [firstcreate, twostories]`, at `2026-09-22T23:45:41Z`.
+The recorded `commit` is `0d63193` with `dirty: true`: the tested tree
+was `0d63193` plus working-tree modifications comprising the 7 files
+committed as `b5c56ee` (creation replay/superseded controller, both
+studio handoffs, the ambiguous-creation and two-story scenario
+extensions, and the ledger note). Read it as verification of that
+code — the first-preset ambiguous-creation replay and the full two-story
+independence proof — not as whole-tree evidence.
+
+## 2026-09-23 subset (`results-firstcreate-2026-09-23.json`)
+
+15/15 PASS, `only: [firstcreate]`, at `2026-09-23T00:30:00Z`. The
+recorded `commit` is `b5c56ee` with `dirty: true`: the tested tree was
+`b5c56ee` plus the uncommitted dismiss-bypass correction (dismiss hides
+the notice only; the recovered association and set-aside edits survive
+dismissal and reload), the wizard-origin creation handoff (return
+adoption offer, character-add and cast-full plans, entry links), and
+the matching scenario extensions. Read it as verification of that
+code — dismiss-plus-reload leaving one preset with ordinary Create
+withheld, and the world/character creation adoption proof — not as
+whole-tree evidence.
+
 ## Future runs
 
 `results.json` now records the actual tested tree at run start:

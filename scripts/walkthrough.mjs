@@ -939,7 +939,110 @@ try {
       ambNote = `rev ${ambDetail.current_revision}: ${ambDetail.revision.description.slice(0, 80)}`
     }
     record(S, 'exactly one preset from the original key carries Older, not Newest', ambOk, ambNote)
+    // Dismiss must not forget the creation: the association — and the
+    // withheld ordinary Create — survive dismissal and reload. Only an
+    // explicit separate preset could mint again.
+    await page.getByRole('button', { name: 'Dismiss', exact: true }).click()
+    await page.getByText(/already created preset/, { exact: false }).waitFor({ timeout: 30000 })
+    record(S, 'dismiss keeps the created-preset association', true)
+    await page.reload({ waitUntil: 'networkidle' })
+    await page.getByText(/already created preset/, { exact: false }).waitFor({ timeout: 30000 })
+    const ambFormAfter = await fieldControl(page, 'Distinctive details', 'textarea').inputValue()
+    const ambListedAfter = await apiCall('GET', '/library/presets?kind=world')
+    const ordinaryCreates = await page
+      .getByRole('button', { name: 'Create preset', exact: true })
+      .count()
+    record(
+      S,
+      'dismiss plus reload leaves one preset, newer edits kept, ordinary Create withheld',
+      ambListedAfter.filter((p) => p.name === ambName).length === 1 &&
+        ambFormAfter.includes(NEWER_A) &&
+        ordinaryCreates === 0,
+      `${ambListedAfter.filter((p) => p.name === ambName).length} preset(s), ${ordinaryCreates} ordinary Create button(s)`
+    )
     if (ambDupes.length > 0) await archiveStudioWorld(ambDupes[0].id)
+    // Wizard-origin handoff: creating from the wizard returns an
+    // explicit adoption offer for revision 1 — never an automatic pin.
+    // A fresh context keeps this independent of the recovered slot above.
+    const ctxH = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+    const wizH = await ctxH.newPage()
+    const emberH = (await apiCall('GET', '/library/presets?kind=world')).find(
+      (p) => p.name === 'Ember Vale'
+    )
+    const wrenH = (await apiCall('GET', '/library/presets?kind=character')).find(
+      (p) => p.name === 'Wren'
+    )
+    const wizDraft = await apiCall('POST', '/story-drafts', {
+      payload: {
+        world: { preset_id: emberH.id, preset_revision: emberH.current_revision },
+        cast: [
+          {
+            instance_key: 'wren',
+            preset_id: wrenH.id,
+            preset_revision: wrenH.current_revision,
+            name: 'Wren',
+            location_key: 'hearth'
+          }
+        ],
+        mode: { role: 'watcher' },
+        story: { title: `Walkthrough handoff ${stamp}` },
+        ai: { art_source: 'curated' }
+      },
+      current_step: 'review'
+    })
+    // Created world: the return offers rev 1, accepting pins it.
+    await wizH.goto(`${BASE}/new-story/world/new?draft=${wizDraft.id}`, {
+      waitUntil: 'networkidle'
+    })
+    await wizH
+      .getByRole('button', { name: 'Create preset', exact: true })
+      .waitFor({ timeout: 30000 })
+    await pub(wizH).locator('input').fill(`Walkthrough Handoff World ${stamp}`)
+    await wizH.getByRole('button', { name: 'Create preset', exact: true }).click()
+    await wizH.waitForURL(/adopt_preset=/, { timeout: 60000 })
+    const handoffWorldId = new URL(wizH.url()).searchParams.get('adopt_preset')
+    await wizH.getByRole('group', { name: 'Adopt created preset' }).waitFor({ timeout: 30000 })
+    record(
+      S,
+      'wizard-origin world creation returns a created-preset offer',
+      !!handoffWorldId,
+      handoffWorldId ?? ''
+    )
+    await wizH.getByRole('button', { name: /Adopt revision 1 \(world\)/ }).click()
+    await wizH.getByText(/Adopted revision 1/, { exact: false }).waitFor({ timeout: 30000 })
+    const wizAfterWorld = await apiCall('GET', `/story-drafts/${wizDraft.id}`)
+    record(
+      S,
+      'accepting pins the created world at rev 1',
+      wizAfterWorld.payload.world.preset_id === handoffWorldId &&
+        wizAfterWorld.payload.world.preset_revision === 1,
+      `world ${wizAfterWorld.payload.world.preset_id} rev ${wizAfterWorld.payload.world.preset_revision}`
+    )
+    // Created character: accepting adds it to the cast at rev 1.
+    await wizH.goto(`${BASE}/new-story/character/new?draft=${wizDraft.id}`, {
+      waitUntil: 'networkidle'
+    })
+    await wizH
+      .getByRole('button', { name: 'Create preset', exact: true })
+      .waitFor({ timeout: 30000 })
+    await pub(wizH).locator('input').fill(`Walkthrough Handoff Char ${stamp}`)
+    await wizH.getByRole('button', { name: 'Create preset', exact: true }).click()
+    await wizH.waitForURL(/adopt_preset=/, { timeout: 60000 })
+    const handoffCharId = new URL(wizH.url()).searchParams.get('adopt_preset')
+    await wizH.getByRole('group', { name: 'Adopt created preset' }).waitFor({ timeout: 30000 })
+    await wizH.getByRole('button', { name: /Adopt revision 1 \(character\)/ }).click()
+    await wizH.getByText(/to the cast/, { exact: false }).waitFor({ timeout: 30000 })
+    const wizAfterChar = await apiCall('GET', `/story-drafts/${wizDraft.id}`)
+    const addedMember = wizAfterChar.payload.cast.find((m) => m.preset_id === handoffCharId)
+    record(
+      S,
+      'accepting adds the created character at rev 1, world pin untouched',
+      addedMember?.preset_revision === 1 && wizAfterChar.payload.world.preset_id === handoffWorldId,
+      `cast ${wizAfterChar.payload.cast.length} member(s)`
+    )
+    if (handoffWorldId) await archiveStudioWorld(handoffWorldId)
+    if (handoffCharId) await archiveStudioWorld(handoffCharId)
+    await ctxH.close()
     await archiveStudioWorld(worldId)
     await archiveStudioWorld(charId)
     await archiveStudioWorld(retryId)

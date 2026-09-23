@@ -1,0 +1,106 @@
+{
+  "ok": true,
+  "base": "http://127.0.0.1:5173",
+  "commit": "b5c56ee",
+  "dirty": true,
+  "diffSha256": "0e3a493ce1d484d7d575f3487494fe5bcdd2cf7676f28927679359d44f15e66c",
+  "untracked": [
+    "docs/evidence/walkthrough/results-firstcreate-twostories-2026-09-22.json"
+  ],
+  "only": [
+    "firstcreate"
+  ],
+  "at": "2026-09-23T00:30:00.045Z",
+  "results": [
+    {
+      "scenario": "firstcreate",
+      "step": "world creation persists rev 1 and hands off to its studio",
+      "ok": true,
+      "detail": "Walkthrough First mudd77n3 rev 1"
+    },
+    {
+      "scenario": "firstcreate",
+      "step": "character creation persists rev 1",
+      "ok": true,
+      "detail": "Walkthrough First Char mudd77n3 rev 1"
+    },
+    {
+      "scenario": "firstcreate",
+      "step": "failed creation keeps the frozen request",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "firstcreate",
+      "step": "reload resumes the frozen name and offers retry",
+      "ok": true,
+      "detail": "Walkthrough Retry mudd77n3"
+    },
+    {
+      "scenario": "firstcreate",
+      "step": "retry after reload mints exactly one preset with its content",
+      "ok": true,
+      "detail": "1 preset(s) named Walkthrough Retry mudd77n3"
+    },
+    {
+      "scenario": "firstcreate",
+      "step": "ambiguous creation keeps the frozen request with retry",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "firstcreate",
+      "step": "reload resumes the ambiguous name and offers retry",
+      "ok": true,
+      "detail": "Walkthrough Ambiguous mudd77n3"
+    },
+    {
+      "scenario": "firstcreate",
+      "step": "replay recovers the preset instead of navigating away",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "firstcreate",
+      "step": "newer edits remain in the form after recovery",
+      "ok": true,
+      "detail": "Ambiguous older mudd77n3 Ambiguous newer mudd77n3"
+    },
+    {
+      "scenario": "firstcreate",
+      "step": "exactly one preset from the original key carries Older, not Newest",
+      "ok": true,
+      "detail": "rev 1: Ambiguous older mudd77n3"
+    },
+    {
+      "scenario": "firstcreate",
+      "step": "dismiss keeps the created-preset association",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "firstcreate",
+      "step": "dismiss plus reload leaves one preset, newer edits kept, ordinary Create withheld",
+      "ok": true,
+      "detail": "1 preset(s), 0 ordinary Create button(s)"
+    },
+    {
+      "scenario": "firstcreate",
+      "step": "wizard-origin world creation returns a created-preset offer",
+      "ok": true,
+      "detail": "df10a871-5c4c-42e6-a990-2708891928a7"
+    },
+    {
+      "scenario": "firstcreate",
+      "step": "accepting pins the created world at rev 1",
+      "ok": true,
+      "detail": "world df10a871-5c4c-42e6-a990-2708891928a7 rev 1"
+    },
+    {
+      "scenario": "firstcreate",
+      "step": "accepting adds the created character at rev 1, world pin untouched",
+      "ok": true,
+      "detail": "cast 2 member(s)"
+    }
+  ]
+}

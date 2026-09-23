@@ -192,9 +192,9 @@ const creationFormDiffers = computed(() => {
 
 async function goToCreatedPreset(presetId: string): Promise<void> {
   // The receipt is durable: hand off to the real studio at revision 1
-  // (library origin) or return to the wizard with the calling draft
-  // intact (wizard origin). That return carries no adoption offer: the
-  // new preset is not auto-pinned into the calling draft.
+  // (library origin) or return to the wizard with an adoption offer for
+  // revision 1 bound to the calling draft (wizard origin). The wizard
+  // applies it only on explicit accept — never automatically.
   if (fromLibrary.value) {
     await router.push(`/library/world/${presetId}`)
   } else {
@@ -202,7 +202,18 @@ async function goToCreatedPreset(presetId: string): Promise<void> {
       typeof route.query.draft === 'string' && route.query.draft ? route.query.draft : null
     await router.push({
       path: '/new-story',
-      query: { ...(storyDraft ? { draft: storyDraft } : {}) }
+      query: {
+        ...(storyDraft
+          ? {
+              draft: storyDraft,
+              adopt_kind: 'world',
+              adopt_preset: presetId,
+              adopt_revision: '1',
+              adopt_draft: storyDraft,
+              adopt_created: '1'
+            }
+          : {})
+      }
     })
   }
 }
@@ -841,10 +852,15 @@ function suggest(): void {
               tab, but a reload before the receipt lands may create a duplicate. Keep this tab open.
             </p>
             <div v-if="creation.recoveredId.value" class="preview__actions">
-              <p class="studio__state" role="status">
-                Recovered preset {{ creation.recoveredId.value }} from the original request. Newer
-                edits are still in the form — open the preset to apply them there, or create a
-                separate preset explicitly.
+              <p v-if="!creation.noticeDismissed.value" class="studio__state" role="status">
+                Recovered preset {{ creation.recoveredId.value }} from the original request.
+                <template v-if="creation.supersededEdits.value">
+                  Newer edits are still in the form — open the preset to apply them there, or create
+                  a separate preset explicitly.
+                </template>
+              </p>
+              <p v-else class="studio__state" role="status">
+                This draft already created preset {{ creation.recoveredId.value }}.
               </p>
               <button type="button" class="cta cta--sm" @click="openRecoveredWorld">
                 Open preset
@@ -852,7 +868,20 @@ function suggest(): void {
               <button type="button" class="ghost ghost--sm" @click="createSeparateWorld">
                 Create a separate preset
               </button>
-              <button type="button" class="ghost ghost--sm" @click="creation.dismissRecovery()">
+              <button
+                v-if="creation.supersededEdits.value"
+                type="button"
+                class="ghost ghost--sm"
+                title="Forget the set-aside edits. The created preset stays associated with this draft."
+                @click="creation.discardNewerEdits()">
+                Discard newer edits
+              </button>
+              <button
+                v-if="!creation.noticeDismissed.value"
+                type="button"
+                class="ghost ghost--sm"
+                title="Hide this notice. The created preset and any set-aside edits are kept."
+                @click="creation.dismissRecovery()">
                 Dismiss
               </button>
             </div>

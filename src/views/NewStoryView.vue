@@ -17,6 +17,7 @@ import PageIntro from '../components/ui/PageIntro.vue'
 import { useBackend } from '../composables/useBackend'
 import {
   applyAdoption,
+  MAX_CAST,
   offerTargetsDraft,
   pinsEqual,
   planAdoption,
@@ -61,10 +62,11 @@ const bootNotice = ref<string | null>(null)
 /** Independent server state preserved while a recovery conflict awaits choice. */
 const serverAlternative = ref<{ payload: Record<string, unknown>; step: number } | null>(null)
 /**
- * Nested return from a studio publish: adopting is deliberate, never
- * automatic. The offer pins the exact published revision, not the head,
- * and belongs to exactly one story draft. `rollback` snapshots the pins
- * at accept time so dismissing a failed accept restores them.
+ * Nested return from a studio publish or first-preset creation: adopting
+ * is deliberate, never automatic. The offer pins the exact offered
+ * revision, not the head, and belongs to exactly one story draft.
+ * `rollback` snapshots the pins at accept time so dismissing a failed
+ * accept restores them (including removing an added cast member).
  */
 interface PendingAdoption {
   offer: AdoptionOffer
@@ -198,6 +200,20 @@ const canContinue = computed(() => {
 function chooseWorld(world: { id: string; revision: number }): void {
   sel.worldId = world.id
   sel.worldRev = world.revision
+}
+
+/**
+ * Enter the character creation studio bound to this draft: leaving
+ * snapshots unsaved choices, and creating returns here with an adoption
+ * offer for revision 1. Without a draft the studio still opens, but the
+ * return carries no offer.
+ */
+function goCreateCharacter(): void {
+  const draftId = draftCtl.draft.value?.id
+  void router.push({
+    path: '/new-story/character/new',
+    query: { ...(draftId ? { draft: draftId } : {}) }
+  })
 }
 
 function castKeyFor(presetId: string, index: number): string {
@@ -541,6 +557,7 @@ function clearAdoptQuery(): void {
   delete next['adopt_preset']
   delete next['adopt_revision']
   delete next['adopt_draft']
+  delete next['adopt_created']
   void router.replace({ query: next })
 }
 
@@ -565,12 +582,20 @@ async function reconcileAdoptedWorld(): Promise<void> {
 async function acceptAdoption(): Promise<void> {
   const pending = adoptOffer.value
   if (!pending) return
+  // A creation return may name a preset younger than this shelf: refresh
+  // once so a brand-new world or character is not mistaken for unknown.
+  const shelfKnows =
+    pending.offer.kind === 'world'
+      ? WORLD_BY_ID.value.has(pending.offer.presetId)
+      : presets.characters.value.some((c) => c.id === pending.offer.presetId)
+  if (!shelfKnows) await presets.load()
   const draftId = draftCtl.draft.value?.id ?? null
   const plan = planAdoption(
     pending.offer,
     selections.value,
     draftId,
-    WORLD_BY_ID.value.has(pending.offer.presetId) || pending.offer.kind === 'character'
+    WORLD_BY_ID.value.has(pending.offer.presetId),
+    presets.characters.value.some((c) => c.id === pending.offer.presetId)
   )
   if (plan.kind === 'stale-draft') {
     adoptOffer.value = null
@@ -587,9 +612,15 @@ async function acceptAdoption(): Promise<void> {
         : 'That cast member is no longer in this draft — nothing was adopted.'
     return
   }
+  if (plan.kind === 'cast-full') {
+    // Keep the offer: removing a member and accepting again must work.
+    bootNotice.value = 'The cast is full (6 max) — remove a member, then accept again.'
+    return
+  }
   if (pending.rollback === null) pending.rollback = snapshotPins(selections.value)
   const applied = applyAdoption(selections.value, pending.offer)
   adoptingWorld = true
+  let addedName: string | null = null
   try {
     if (pending.offer.kind === 'world') {
       sel.worldId = applied.world.presetId
@@ -601,6 +632,25 @@ async function acceptAdoption(): Promise<void> {
       if (target && member) {
         target.presetRevision = member.presetRevision
         await prefetchCharRevs()
+      } else if (plan.kind === 'apply-character-add') {
+        // A created character joins the cast on explicit accept, like a
+        // manual pick: keyed, named, and placed by the same rules.
+        const preset = presets.characters.value.find((c) => c.id === pending.offer.presetId)
+        if (preset && sel.cast.length < MAX_CAST) {
+          const key = castKeyFor(preset.id, sel.cast.length + 1)
+          sel.cast.push({
+            key,
+            presetId: preset.id,
+            presetRevision: pending.offer.revision,
+            name: preset.name,
+            location: defaultLocation(preset.id)
+          })
+          addedName = preset.name
+          if (sel.role === 'player' && !sel.controlledKey && preset.playerReady) {
+            sel.controlledKey = key
+          }
+          await prefetchCharRevs()
+        }
       }
     }
     // Record what this attempt produced (pins and reconciled starting
@@ -619,7 +669,10 @@ async function acceptAdoption(): Promise<void> {
   }
   adoptOffer.value = null
   clearAdoptQuery()
-  bootNotice.value = `Adopted revision ${pending.offer.revision} — everything else in this draft is unchanged.`
+  bootNotice.value =
+    addedName !== null
+      ? `Added ${addedName} to the cast at revision ${pending.offer.revision} — everything else in this draft is unchanged.`
+      : `Adopted revision ${pending.offer.revision} — everything else in this draft is unchanged.`
 }
 
 async function dismissAdoption(): Promise<void> {
@@ -633,6 +686,11 @@ async function dismissAdoption(): Promise<void> {
     // restoration persists exactly once.
     adoptingWorld = true
     try {
+      // An accepted character add introduced a member the rollback
+      // predates: remove it so dismissal truly restores the originals.
+      for (let i = sel.cast.length - 1; i >= 0; i--) {
+        if (!(sel.cast[i]!.key in pending.rollback.castRevs)) sel.cast.splice(i, 1)
+      }
       restoreSnapshot(sel, pending.rollback)
       await ensurePinned()
       if (!(await persist())) {
@@ -679,6 +737,7 @@ async function startFresh(): Promise<void> {
   delete query['adopt_preset']
   delete query['adopt_revision']
   delete query['adopt_draft']
+  delete query['adopt_created']
   await router.replace({ query })
 }
 
@@ -867,7 +926,13 @@ onMounted(() => {
           >
         </button>
       </div>
-      <div v-if="adoptOffer" class="nsv__modes" role="group" aria-label="Adopt published revision">
+      <div
+        v-if="adoptOffer"
+        class="nsv__modes"
+        role="group"
+        :aria-label="
+          adoptOffer.offer.created ? 'Adopt created preset' : 'Adopt published revision'
+        ">
         <button type="button" class="nsv__world" :aria-pressed="false" @click="acceptAdoption">
           <span class="nsv__world-name"
             >Adopt revision {{ adoptOffer.offer.revision }} ({{
@@ -913,6 +978,15 @@ onMounted(() => {
             Refine it in the studio
           </router-link>
           — publishing returns here so the new revision can be adopted deliberately.
+          <router-link
+            class="sel__refine"
+            :to="{
+              path: '/new-story/world/new',
+              query: { draft: draftCtl.draft.value?.id }
+            }">
+            Or shape a new world
+          </router-link>
+          — creating returns here so it can be adopted deliberately.
         </p>
         <ul class="nsv__worlds">
           <li v-for="world in presets.worlds.value" :key="world.id">
@@ -948,7 +1022,7 @@ onMounted(() => {
                 :character="def"
                 :selected="selectedIds.has(def.id)"
                 @toggle="toggleCast(def)" />
-              <CreateCharacterTile />
+              <CreateCharacterTile @create="goCreateCharacter" />
             </div>
             <p class="nsv__hint">Only saved library presets can join a real story.</p>
           </div>

@@ -1,11 +1,13 @@
 /**
  * Deliberate adoption of a published preset revision (E3 nested return).
  *
- * The studio never switches the wizard automatically: publishing returns
- * to the owning story draft with an adoption offer, and the wizard applies
- * it only on explicit accept. Adoption pins `published_revision` exactly —
- * never the Library head — and touches nothing else, so the original
- * story's other pins stay unchanged.
+ * The studio never switches the wizard automatically: publishing — or a
+ * first-preset creation returning to its calling draft — returns with an
+ * adoption offer, and the wizard applies it only on explicit accept.
+ * Adoption pins the offered revision exactly — never the Library head —
+ * and touches nothing else, so the original story's other pins stay
+ * unchanged. A character offer for a preset outside the cast adds it
+ * (the wizard caps the cast at six); it never edits anything implicitly.
  *
  * Every offer carries its originating story draft (`draftId`). An offer
  * applies only to that draft: a delayed return that lands while another
@@ -23,6 +25,8 @@ export interface AdoptionOffer {
   revision: number
   /** Originating story draft: the only draft this offer may modify. */
   draftId: string
+  /** True when the offer returns a first-preset creation, not a publish. */
+  created: boolean
 }
 
 export function parseAdoptionOffer(query: Record<string, unknown>): AdoptionOffer | null {
@@ -40,7 +44,13 @@ export function parseAdoptionOffer(query: Record<string, unknown>): AdoptionOffe
     typeof draft === 'string' &&
     draft.length > 0
   ) {
-    return { kind, presetId: preset, revision, draftId: draft }
+    return {
+      kind,
+      presetId: preset,
+      revision,
+      draftId: draft,
+      created: query['adopt_created'] === '1'
+    }
   }
   return null
 }
@@ -53,26 +63,38 @@ export function offerTargetsDraft(offer: AdoptionOffer, draftId: string | null):
 export type AdoptionPlan =
   | { kind: 'apply-world' }
   | { kind: 'apply-character' }
+  | { kind: 'apply-character-add' }
+  | { kind: 'cast-full' }
   | { kind: 'stale-draft' }
   | { kind: 'unknown-target' }
+
+/** The wizard caps the cast at six members. */
+export const MAX_CAST = 6
 
 /**
  * Decide what an offer means for the mounted draft without touching
  * anything. `worldKnown` names whether the offered world preset is on
- * the shelf; character offers match by cast preset id.
+ * the shelf; `charKnown` names the same for a character preset.
+ * Character offers re-pin a matching member, or add a known preset
+ * outside a non-full cast on explicit accept.
  */
 export function planAdoption(
   offer: AdoptionOffer,
   selections: NewStorySelections,
   draftId: string | null,
-  worldKnown: boolean
+  worldKnown: boolean,
+  charKnown = false
 ): AdoptionPlan {
   if (!offerTargetsDraft(offer, draftId)) return { kind: 'stale-draft' }
   if (offer.kind === 'world') {
     return worldKnown ? { kind: 'apply-world' } : { kind: 'unknown-target' }
   }
   const member = selections.cast.find((m) => m.presetId === offer.presetId)
-  return member ? { kind: 'apply-character' } : { kind: 'unknown-target' }
+  if (member) return { kind: 'apply-character' }
+  if (!charKnown) return { kind: 'unknown-target' }
+  return selections.cast.length >= MAX_CAST
+    ? { kind: 'cast-full' }
+    : { kind: 'apply-character-add' }
 }
 
 /**

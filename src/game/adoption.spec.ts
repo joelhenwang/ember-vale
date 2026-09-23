@@ -41,7 +41,8 @@ const offer: AdoptionOffer = {
   kind: 'character',
   presetId: 'char-1',
   revision: 3,
-  draftId: 'draft-a'
+  draftId: 'draft-a',
+  created: false
 }
 
 describe('nested adoption', () => {
@@ -53,7 +54,28 @@ describe('nested adoption', () => {
         adopt_revision: '3',
         adopt_draft: 'draft-a'
       })
-    ).toEqual({ kind: 'character', presetId: 'char-1', revision: 3, draftId: 'draft-a' })
+    ).toEqual({
+      kind: 'character',
+      presetId: 'char-1',
+      revision: 3,
+      draftId: 'draft-a',
+      created: false
+    })
+    expect(
+      parseAdoptionOffer({
+        adopt_kind: 'world',
+        adopt_preset: 'world-9',
+        adopt_revision: '1',
+        adopt_draft: 'draft-a',
+        adopt_created: '1'
+      })
+    ).toEqual({
+      kind: 'world',
+      presetId: 'world-9',
+      revision: 1,
+      draftId: 'draft-a',
+      created: true
+    })
     expect(parseAdoptionOffer({})).toBeNull()
     expect(parseAdoptionOffer({ adopt_kind: 'character', adopt_preset: 'char-1' })).toBeNull()
     expect(
@@ -101,11 +123,49 @@ describe('nested adoption', () => {
       kind: 'world',
       presetId: 'world-1',
       revision: 4,
-      draftId: 'draft-a'
+      draftId: 'draft-a',
+      created: false
     }
     expect(planAdoption(world, sel, 'draft-a', true)).toEqual({ kind: 'apply-world' })
     expect(planAdoption(world, sel, 'draft-a', false)).toEqual({ kind: 'unknown-target' })
     expect(planAdoption(world, sel, 'draft-b', true)).toEqual({ kind: 'stale-draft' })
+  })
+
+  it('plans a known-character add, a full cast, and unknown characters', () => {
+    const sel = selections()
+    const created: AdoptionOffer = {
+      kind: 'character',
+      presetId: 'char-9',
+      revision: 1,
+      draftId: 'draft-a',
+      created: true
+    }
+    // A preset outside the cast and off the shelf is unknown.
+    expect(planAdoption(created, sel, 'draft-a', true)).toEqual({ kind: 'unknown-target' })
+    expect(planAdoption(created, sel, 'draft-a', true, false)).toEqual({
+      kind: 'unknown-target'
+    })
+    // A known preset outside a non-full cast joins on explicit accept.
+    expect(planAdoption(created, sel, 'draft-a', true, true)).toEqual({
+      kind: 'apply-character-add'
+    })
+    expect(planAdoption(created, sel, 'draft-b', true, true)).toEqual({ kind: 'stale-draft' })
+    // A full cast cannot take another member.
+    const full = {
+      ...sel,
+      cast: [
+        ...sel.cast,
+        ...[3, 4, 5, 6].map((i) => ({
+          key: `extra-${i}`,
+          presetId: `char-extra-${i}`,
+          presetRevision: 1,
+          name: `Extra ${i}`,
+          locationKey: 'hearth'
+        }))
+      ]
+    }
+    expect(full.cast).toHaveLength(6)
+    expect(planAdoption(created, full, 'draft-a', true, true)).toEqual({ kind: 'cast-full' })
   })
 
   it('pins the published revision on the matching cast member only', () => {
@@ -127,7 +187,8 @@ describe('nested adoption', () => {
       kind: 'world',
       presetId: 'world-1',
       revision: 4,
-      draftId: 'draft-a'
+      draftId: 'draft-a',
+      created: false
     })
     expect(after.world).toEqual({ presetId: 'world-1', presetRevision: 4 })
     expect(after.cast).toEqual(before.cast)
