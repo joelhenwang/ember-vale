@@ -86,9 +86,10 @@ def test_previous_complete_guard(migrated_db: None) -> None:
                 await uow.worlds.add(World(id=wid, name="Vale", seed_version="s2-test"))
                 await uow.commit()
             orchestrator = _bare_orchestrator()
-            await orchestrator._require_previous_complete(wid, 1)
-            with pytest.raises(DomainError, match="previous phase 2"):
-                await orchestrator._require_previous_complete(wid, 3)
+            async with create_unit_of_work(engine) as uow:
+                await orchestrator._require_previous_complete_in(uow, wid, 1)
+                with pytest.raises(DomainError, match="previous phase 2"):
+                    await orchestrator._require_previous_complete_in(uow, wid, 3)
         finally:
             await engine.dispose()
 

@@ -40,6 +40,24 @@ class SqlAlchemyWorldRepository:
             raise missing("world clock", world_id)
         return _to_domain(row, clock)
 
+    async def lock(self, world_id: UUID) -> World:
+        """Load the world locked for update within this transaction.
+
+        Serializes per-world admission: concurrent advancers queue
+        on the world row instead of interleaving open-run checks.
+        """
+        row = (
+            await self._session.execute(
+                select(WorldRow).where(WorldRow.id == world_id).with_for_update()
+            )
+        ).scalar_one_or_none()
+        if row is None:
+            raise missing("world", world_id)
+        clock = await self._session.get(WorldClockRow, world_id)
+        if clock is None:
+            raise missing("world clock", world_id)
+        return _to_domain(row, clock)
+
     async def list_worlds(self) -> list[World]:
         rows = (await self._session.execute(select(WorldRow).order_by(WorldRow.id))).scalars()
         worlds: list[World] = []

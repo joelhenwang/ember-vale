@@ -415,7 +415,6 @@ class Stage1Orchestrator:
         await self._tasks.reconcile()
         run_id = derive_run_id(world_id, index)
         async with self._factory() as uow:
-            world = await uow.worlds.get(world_id)
             try:
                 run = await uow.phases.get_run(run_id)
             except DomainError:
@@ -427,32 +426,11 @@ class Stage1Orchestrator:
                 ErrorCode.PRECONDITION_FAILED,
                 f"phase run is {run.state.value}; resume before advancing",
             )
-        async with self._factory() as uow:
-            open_run = await uow.phases.find_open_run(world_id)
-        if open_run is not None and open_run.id != run_id:
-            raise DomainError(
-                ErrorCode.PRECONDITION_FAILED,
-                f"phase run {open_run.id} is still open; reconcile or resume it "
-                "before advancing another index",
-                {"open_run_id": str(open_run.id), "run_id": str(run_id)},
-            )
+        run = await self._admit_run(world_id, index)
+        if run.state.value == PhaseRunState.COMPLETED.value:
+            return await self._duplicate_report(world_id, run_id)
         runtime = await self._runtime(world_id)
         await self._probe_gate(runtime)
-        current = absolute_index(world.day, world.phase)
-        if current + 1 != index and current != index:
-            raise DomainError(
-                ErrorCode.VALIDATION_FAILED,
-                f"phases advance consecutively: clock={current} target={index}",
-            )
-        try:
-            async with self._factory() as uow:
-                await uow.phases.create_run(
-                    PhaseRun(id=run_id, world_id=world_id, absolute_index=index)
-                )
-                await uow.commit()
-        except IntegrityError:
-            pass
-        await self._require_previous_complete(world_id, index)
         await self._tick(world_id, run_id, index)
         sealed = await self._seal(world_id, run_id, index)
         await self._director_phase(world_id, run_id, index, sealed, runtime)
@@ -580,19 +558,66 @@ class Stage1Orchestrator:
                     f"provider unavailable for {role}: {probe.detail}",
                 )
 
-    async def _require_previous_complete(self, world_id: UUID, index: int) -> None:
-        """Refuse a new phase while the prior run is not completed."""
+    async def _admit_run(self, world_id: UUID, index: int) -> PhaseRun:
+        """Create-or-resume one phase run under a per-world admission lock.
+
+        One transaction holds the world row locked while it validates
+        the clock and the previous run, refuses a different open run,
+        and creates this index run. Same-run replay resumes: only a
+        twin commit of this exact run is tolerated, verified by
+        re-reading it; every other integrity failure raises. No model
+        calls happen inside.
+        """
+        run_id = derive_run_id(world_id, index)
+        self._fire("before_admission")
+        try:
+            async with self._factory() as uow:
+                world = await uow.worlds.lock(world_id)
+                current = absolute_index(world.day, world.phase)
+                if current + 1 != index and current != index:
+                    raise DomainError(
+                        ErrorCode.VALIDATION_FAILED,
+                        f"phases advance consecutively: clock={current} target={index}",
+                    )
+                await self._require_previous_complete_in(uow, world_id, index)
+                open_run = await uow.phases.find_open_run(world_id)
+                if open_run is not None and open_run.id != run_id:
+                    raise DomainError(
+                        ErrorCode.PRECONDITION_FAILED,
+                        f"phase run {open_run.id} is still open; reconcile or resume it "
+                        "before advancing another index",
+                        {"open_run_id": str(open_run.id), "run_id": str(run_id)},
+                    )
+                await uow.phases.create_run(
+                    PhaseRun(id=run_id, world_id=world_id, absolute_index=index)
+                )
+                await uow.commit()
+                return await uow.phases.get_run(run_id)
+        except IntegrityError as exc:
+            async with self._factory() as uow:
+                try:
+                    return await uow.phases.get_run(run_id)
+                except DomainError:
+                    raise exc from None
+
+
+    async def _require_previous_complete_in(
+        self, uow: UnitOfWork, world_id: UUID, index: int
+    ) -> None:
+        """Refuse a new phase while the prior run is not completed.
+
+        Same-transaction variant for admission: shares the world-row
+        lock so the previous run cannot change mid-check.
+        """
         if index <= 1:
             return
         previous_id = derive_run_id(world_id, index - 1)
         try:
-            async with self._factory() as uow:
-                previous = await uow.phases.get_run(previous_id)
+            previous = await uow.phases.get_run(previous_id)
         except DomainError:
             # A completed macro run ending exactly here covers every prior
             # phase; detailed simulation resumes at the macro clock.
-            async with self._factory() as uow:
-                covered = await uow.macro.find_covering_run(world_id, index)
+            covered = await uow.macro.find_covering_run(world_id, index)
             if covered is None:
                 raise DomainError(
                     ErrorCode.PRECONDITION_FAILED,

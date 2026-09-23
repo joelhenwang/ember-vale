@@ -242,7 +242,8 @@ def test_midnight_summaries_differ_by_owner(migrated_db: None) -> None:
     async def _inner() -> None:
         ids = await _seed_summary_world()
         orch = _orchestrator(gateway)
-        written = await orch._summarize_day(ids["world"], ids["run"], 9, 1)
+        runtime = await orch._runtime(ids["world"])
+        written = await orch._summarize_day(ids["world"], ids["run"], 9, 1, runtime)
         assert written == 2
         engine = create_engine(Settings())
         try:
@@ -257,7 +258,7 @@ def test_midnight_summaries_differ_by_owner(migrated_db: None) -> None:
                 # Raw records survive untouched.
                 assert len(await uow.perception.observations_for_observer(ids["wren"], 20)) == 1
             # Regeneration versions instead of replacing.
-            written_again = await orch._summarize_day(ids["world"], ids["run"], 9, 1)
+            written_again = await orch._summarize_day(ids["world"], ids["run"], 9, 1, runtime)
             assert written_again == 2
             async with create_unit_of_work(engine) as uow:
                 wren = await uow.summaries.list_for_owner(ids["world"], ids["wren"])
@@ -278,7 +279,8 @@ def test_summary_outage_records_fallback(migrated_db: None) -> None:
     async def _inner() -> None:
         ids = await _seed_summary_world()
         orch = _orchestrator(gateway)
-        written = await orch._summarize_day(ids["world"], ids["run"], 9, 1)
+        runtime = await orch._runtime(ids["world"])
+        written = await orch._summarize_day(ids["world"], ids["run"], 9, 1, runtime)
         assert written == 2
         engine = create_engine(Settings())
         try:

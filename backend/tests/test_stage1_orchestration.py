@@ -472,3 +472,83 @@ def test_derived_ids_converge() -> None:
     first = derive_intent_id(world, snapshot, author)
     assert derive_intent_id(world, snapshot, author) == first
     assert derive_intent_id(world, snapshot, uuid.uuid4()) != first
+
+
+def test_concurrent_admission_leaves_single_open_run(migrated_db: None) -> None:
+    """Competing advances cannot stack open runs, even when overlapping.
+
+    Two threads drive indexes 1 and 2 with separate engines and
+    rendezvous at admission entry, so the admission transactions truly
+    overlap. Index 1 must complete; index 2 must fail closed (4xx);
+    no second run row may exist; a later index 2 advance (the
+    reconciliation path) must then succeed.
+    """
+    import threading
+
+    from worldsim.application.orchestration.stage1 import Stage1PhaseReport
+
+    entered: list[str] = []
+    barrier = threading.Barrier(2, timeout=120)
+
+    def _hook(point: str) -> None:
+        if point == "before_admission":
+            entered.append(point)
+            barrier.wait(timeout=120)
+
+    async def _seed_once() -> dict[str, Any]:
+        return await _seed()
+
+    ids = asyncio.run(_seed_once())
+    world_id = ids["world"]
+    outcomes: dict[str, object] = {}
+
+    def _advance(index: int, key: str) -> None:
+        async def _run() -> None:
+            orch = _orchestrator(_role_gateways(ids), hook=_hook)
+            try:
+                outcomes[key] = await orch.advance_phase(world_id, index)
+            except DomainError as exc:
+                outcomes[key] = exc
+
+        asyncio.run(_run())
+
+    first = threading.Thread(target=_advance, args=(1, "first"))
+    second = threading.Thread(target=_advance, args=(2, "second"))
+    first.start()
+    second.start()
+    first.join(timeout=300)
+    second.join(timeout=300)
+    assert not first.is_alive(), "index 1 advance hung"
+    assert not second.is_alive(), "index 2 advance hung"
+    assert len(entered) == 2, "both admissions must overlap at the barrier"
+
+    async def _verify() -> None:
+        won = outcomes["first"]
+        assert isinstance(won, Stage1PhaseReport), outcomes
+        assert not won.duplicate
+        lost = outcomes["second"]
+        assert isinstance(lost, DomainError), outcomes
+        # Either refusal is fail-closed, depending on which admission
+        # wins the world-row lock: a too-early index trips the clock
+        # check, a too-late one trips the previous/open checks.
+        assert lost.code in (
+            ErrorCode.PRECONDITION_FAILED,
+            ErrorCode.VALIDATION_FAILED,
+        ), lost
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                assert await uow.phases.find_open_run(world_id) is None
+                try:
+                    await uow.phases.get_run(derive_run_id(world_id, 2))
+                except DomainError:
+                    pass
+                else:
+                    raise AssertionError("second open run must not exist")
+        finally:
+            await engine.dispose()
+        orch = _orchestrator(_role_gateways(ids))
+        followup = await orch.advance_phase(world_id, 2)
+        assert not followup.duplicate
+
+    asyncio.run(_verify())

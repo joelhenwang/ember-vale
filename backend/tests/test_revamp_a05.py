@@ -763,3 +763,158 @@ def test_pinned_profile_selects_gateway_model_on_wire(
         await client.aclose()
 
     asyncio.run(_inner())
+
+
+def test_explicit_pin_missing_revision_fails_closed(migrated_db: None) -> None:
+    """A setup naming a nonexistent pin revision must fail before generation.
+
+    Broken explicit pins are actionable errors, never silent environment
+    fallback: advance raises 409 and the environment provider sees zero
+    calls, because resolution runs before probing or generation.
+    """
+    from uuid import uuid4
+
+    from test_stage1_orchestration import _orchestrator, _role_gateways, _seed
+
+    from worldsim.domain.errors import ErrorCode
+    from worldsim.domain.settings import (
+        AdapterKind,
+        ProviderConnection,
+        ProviderProfileRevision,
+    )
+    from worldsim.domain.stories import SetupProvenance, StoryInitialSetup
+    from worldsim.domain.time import utcnow
+
+    async def _inner() -> None:
+        ids = await _seed()
+        gateways = _role_gateways(ids)
+        orch = _orchestrator(gateways)
+        engine = create_engine(Settings())
+        try:
+            connection = ProviderConnection(
+                id=uuid4(),
+                adapter=AdapterKind.FAKE,
+                name="Pin",
+                endpoint="http://127.0.0.1:7144/v1",
+                allow_local_endpoint=True,
+            )
+            revision = ProviderProfileRevision(
+                id=uuid4(),
+                connection_id=connection.id,
+                revision=1,
+                model_id="pinned-fake",
+            )
+            async with create_unit_of_work(engine) as uow:
+                await uow.settings.add_connection(connection)
+                await uow.settings.add_profile(revision)
+                await uow.stories.put_setup(
+                    StoryInitialSetup(
+                        world_id=ids["world"],
+                        payload={
+                            "schema_version": 1,
+                            "provenance": "created",
+                            "art": {
+                                "profile_id": str(revision.id),
+                                "profile_revision": 99,
+                            },
+                        },
+                        content_hash="broken-pin-revision",
+                        created_at=utcnow(),
+                        provenance=SetupProvenance.CREATED,
+                    )
+                )
+                await uow.commit()
+            with pytest.raises(DomainError) as caught:
+                await orch.advance_phase(ids["world"], 1)
+            assert caught.value.code is ErrorCode.PRECONDITION_FAILED
+            assert caught.value.details["profile_revision"] == 99
+            for gateway in gateways.values():
+                assert gateway.sent_requests == []
+        finally:
+            await engine.dispose()
+
+    asyncio.run(_inner())
+
+
+def test_explicit_pin_missing_connection_fails_closed(migrated_db: None) -> None:
+    """A pin whose provider connection is gone must fail before generation.
+
+    Like a missing revision, an unresolvable connection is an actionable
+    error, never silent environment fallback: advance raises 409 and the
+    environment provider sees zero calls.
+    """
+    from unittest import mock
+    from uuid import uuid4
+
+    from test_stage1_orchestration import _orchestrator, _role_gateways, _seed
+
+    from worldsim.domain.errors import ErrorCode
+    from worldsim.domain.settings import (
+        AdapterKind,
+        ProviderConnection,
+        ProviderProfileRevision,
+    )
+    from worldsim.domain.stories import SetupProvenance, StoryInitialSetup
+    from worldsim.domain.time import utcnow
+    from worldsim.infrastructure.repositories.settings import SqlAlchemySettingsRepository
+
+    async def _inner() -> None:
+        ids = await _seed()
+        gateways = _role_gateways(ids)
+        orch = _orchestrator(gateways)
+        engine = create_engine(Settings())
+        try:
+            connection = ProviderConnection(
+                id=uuid4(),
+                adapter=AdapterKind.FAKE,
+                name="Pin",
+                endpoint="http://127.0.0.1:7144/v1",
+                allow_local_endpoint=True,
+            )
+            revision = ProviderProfileRevision(
+                id=uuid4(),
+                connection_id=connection.id,
+                revision=1,
+                model_id="pinned-fake",
+            )
+            async with create_unit_of_work(engine) as uow:
+                await uow.settings.add_connection(connection)
+                await uow.settings.add_profile(revision)
+                await uow.stories.put_setup(
+                    StoryInitialSetup(
+                        world_id=ids["world"],
+                        payload={
+                            "schema_version": 1,
+                            "provenance": "created",
+                            "art": {
+                                "profile_id": str(revision.id),
+                                "profile_revision": 1,
+                            },
+                        },
+                        content_hash="broken-pin-connection",
+                        created_at=utcnow(),
+                        provenance=SetupProvenance.CREATED,
+                    )
+                )
+                await uow.commit()
+
+            real_get_connection = SqlAlchemySettingsRepository.get_connection
+
+            async def _gone(self, connection_id):
+                if connection_id == connection.id:
+                    raise DomainError(ErrorCode.NOT_FOUND, "connection removed")
+                return await real_get_connection(self, connection_id)
+
+            with mock.patch.object(
+                SqlAlchemySettingsRepository, "get_connection", _gone
+            ):
+                with pytest.raises(DomainError) as caught:
+                    await orch.advance_phase(ids["world"], 1)
+            assert caught.value.code is ErrorCode.PRECONDITION_FAILED
+            assert caught.value.details["connection_id"] == str(connection.id)
+            for gateway in gateways.values():
+                assert gateway.sent_requests == []
+        finally:
+            await engine.dispose()
+
+    asyncio.run(_inner())

@@ -160,9 +160,10 @@ def test_detailed_resumes_at_macro_clock(migrated_db: None) -> None:
             assert await macro_covers(factory, wid, 71) is False
 
             stage1 = _bare_stage1()
-            await stage1._require_previous_complete(wid, 70)
-            with pytest.raises(DomainError, match="previous phase 70"):
-                await stage1._require_previous_complete(wid, 71)
+            async with factory() as uow:
+                await stage1._require_previous_complete_in(uow, wid, 70)
+                with pytest.raises(DomainError, match="previous phase 70"):
+                    await stage1._require_previous_complete_in(uow, wid, 71)
         finally:
             await engine.dispose()
 

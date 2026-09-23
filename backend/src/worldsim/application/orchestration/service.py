@@ -211,8 +211,14 @@ class PhaseOrchestrator:
                         PhaseRun(id=run_id, world_id=world_id, absolute_index=target)
                     )
                     await uow.commit()
-            except IntegrityError:
-                pass
+            except IntegrityError as exc:
+                # A twin advance committed the same deterministic run;
+                # anything else must surface instead of being swallowed.
+                async with self._factory() as uow:
+                    try:
+                        await uow.phases.get_run(run_id)
+                    except DomainError:
+                        raise exc from None
             self._fire("after_run_created")
 
             async with self._factory() as uow:

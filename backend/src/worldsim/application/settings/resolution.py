@@ -13,7 +13,7 @@ from typing import Any, cast
 from uuid import UUID
 
 from worldsim.application.unit_of_work import UnitOfWork
-from worldsim.domain.errors import DomainError
+from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.settings import ProviderConnection, ProviderProfileRevision
 
 
@@ -29,7 +29,12 @@ class SamplingParams:
 
 
 async def resolve_profile(uow: UnitOfWork, world_id: UUID) -> ProviderProfileRevision | None:
-    """The story's pinned profile revision, or None for environment defaults."""
+    """The story's pinned profile revision, or None for environment defaults.
+
+    A setup that names a pin must resolve: an unparsable reference
+    or a missing revision raises instead of silently falling back,
+    so broken explicit pins fail closed before any generation.
+    """
     try:
         setup = await uow.stories.get_setup(world_id)
     except DomainError:
@@ -49,11 +54,22 @@ async def resolve_profile(uow: UnitOfWork, world_id: UUID) -> ProviderProfileRev
         profile_uuid = UUID(profile_id)
         revision_int = int(options.get("profile_revision", 1))
     except (ValueError, TypeError):
-        return None
+        raise DomainError(
+            ErrorCode.PRECONDITION_FAILED,
+            f"story pins an invalid provider profile reference {profile_id!r}",
+            {"profile_id": profile_id},
+        ) from None
     try:
         return await uow.settings.get_profile(profile_uuid, revision_int)
     except DomainError:
-        return None
+        raise DomainError(
+            ErrorCode.PRECONDITION_FAILED,
+            f"story pins unknown provider profile {profile_uuid} revision {revision_int}",
+            {
+                "profile_id": str(profile_uuid),
+                "profile_revision": revision_int,
+            },
+        ) from None
 
 
 def sampling_from_pin(pin: PinnedRuntime) -> SamplingParams:
@@ -84,14 +100,28 @@ class PinnedRuntime:
 
 
 async def resolve_pin(uow: UnitOfWork, world_id: UUID) -> PinnedRuntime | None:
-    """Pinned runtime for one story, or None for environment defaults."""
+    """Pinned runtime for one story, or None for environment defaults.
+
+    Only a story with no pin configured falls back. A resolved
+    revision whose connection is unavailable raises instead, so a
+    broken explicit pin never silently becomes environment execution.
+    """
     profile = await resolve_profile(uow, world_id)
     if profile is None:
         return None
     try:
         connection = await uow.settings.get_connection(profile.connection_id)
     except DomainError:
-        return None
+        raise DomainError(
+            ErrorCode.PRECONDITION_FAILED,
+            f"story pins provider profile {profile.id} whose connection "
+            "{profile.connection_id} is unavailable",
+            {
+                "profile_id": str(profile.id),
+                "profile_revision": profile.revision,
+                "connection_id": str(profile.connection_id),
+            },
+        ) from None
     return PinnedRuntime(profile=profile, connection=connection)
 
 

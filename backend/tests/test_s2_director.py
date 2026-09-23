@@ -291,7 +291,8 @@ def test_director_phase_accepts_and_records(migrated_db: None) -> None:
         engine = create_engine(Settings())
         try:
             sealed = SealedPhase(snapshot_id=ids["run"], versions={}, locations={})
-            status = await orch._director_phase(ids["world"], ids["run"], 4, sealed)
+            runtime = await orch._runtime(ids["world"])
+            status = await orch._director_phase(ids["world"], ids["run"], 4, sealed, runtime)
             assert status == "proposed"
             async with create_unit_of_work(engine) as uow:
                 hooks = await uow.narrative.list_hooks_for_world(ids["world"])
@@ -303,7 +304,7 @@ def test_director_phase_accepts_and_records(migrated_db: None) -> None:
                 assert run.state.value == PhaseRunState.DIRECTOR_COMPLETE.value
             # Cooldown now skips the next phases without a model call.
             gateway.route = None
-            status = await orch._director_phase(ids["world"], ids["run"], 5, sealed)
+            status = await orch._director_phase(ids["world"], ids["run"], 5, sealed, runtime)
             assert status == "skipped"
         finally:
             await engine.dispose()
