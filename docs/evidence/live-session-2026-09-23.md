@@ -76,25 +76,63 @@ ramblings. Engine requests are well-formed (`json_mode=True`, bounded
 retry with backoff, one repair, then safe WAIT fallback); temperature is
 unset (model default). Test story archived.
 
+## Fourth run: pinned temperature 0.2 + player intents (same day)
+
+Created a provider connection and pinned profile revision through the
+designed Settings API (`temperature=0.2`, `max_tokens=1024`, deepseek
+model), and pinned it on new stories via the draft `ai` section. Schema
+adherence improved immediately: character decisions 6/9 succeeded (was
+3/9), director 2/2 with compact valid JSON (was 4k-token prose). But all
+committed intents were still WAIT — at low temperature the model hews to
+"when in doubt, wait", and a validated-but-bland direction ("Ash greets
+Wren at the Market.", status `completed`) produced no visible action
+across two further beats.
+
+Forced the issue with a player story (Wren controlled): `communicate`
+intents accepted two beats running. The pipeline engaged end to end —
+reaction (1,866 tokens), resolver (512), director — but the narrator
+failed 0/2 and only attempt-echoes were recorded.
+
+## Root cause: narrator token cap starves reasoning models
+
+Direct probe with the real `narrator.v1.md` template:
+
+| max_tokens | finish | reasoning | content |
+|------------|--------|-----------|---------|
+| 512 (engine default) | length | 491 | 6 chars (`[ {`) — unparseable |
+| 2048 | stop | 282 | 417 chars, valid fact-cited beat JSON |
+
+The engine hard-codes `max_tokens=512` in every role graph's deps
+(`NarratorGraphDeps`, `CharacterGraphDeps`, `DirectorGraphDeps`), and
+`stage1.py` passes only temperature/top_p/top_k from sampling — the
+pinned revision's `max_tokens` is never consumed. ~490 reasoning tokens
+eat the 512 budget before content starts, so narrator output arrives
+truncated-to-empty and records `malformed`. The 2048-cap sample is the
+first genuine live prose of the day (narrator voice, fact keys cited).
+Voice distinctness for Wren/Ash remains unproven — no dialogue was ever
+rendered. Both test worlds archived.
+
 ## Findings (separate)
 
-1. **Provider execution: serving, but unreliable.** Configuration is
-   correct, requests are billed, and 5/12 deepseek calls succeeded at the
-   adapter. But intermittent empty/unparseable responses plus
-   schema-invalid output under `json_object` mode mean no beat ever
-   produced narratable actions (free-tier pools: 0/30 across two models).
-   No fake fallback masqueraded as live output — failures are honestly
-   recorded.
-2. **Storytelling quality: unproven.** No live prose was produced, so voice
-   distinctness, continuity, and travel/state agreement in narration cannot
-   be judged from this session.
-3. **State consistency: holds.** Travel, beats, direction queue, and
-   reload/resume all behaved on the live profile.
+1. **Provider execution: serving; cap is the blocker.** At temperature
+   0.2 the model follows schemas reliably (character 6/9, director 2/2
+   compact). The remaining failures are token starvation, not
+   capability: the hard-coded 512-token cap truncates reasoning-model
+   output to empty. No fake fallback masqueraded as live output —
+   failures are honestly recorded.
+2. **Storytelling quality: first sample exists, verdict still open.** One
+   valid narrator sample (fact-cited, understated). Voice distinctness,
+   continuity, and travel/state agreement in prose remain unjudged — no
+   dialogue has rendered yet.
+3. **State consistency: holds.** Travel, beats, direction queue
+   (including a `completed` direction), player intents, and reload/resume
+   all behaved on the live profile.
 
 No blocking integration defect was fixed: the engine records `rate_limited`
 and falls back without retry, and that orchestration lives in the vendored
-read-only engine. Paid flash serving works but is too flaky at default
-sampling for strict-schema roles. Remedies for the maintainer: pin a
-more capable model, pin a low temperature via profile revision
-(currently unset), retry free pools when they clear, or revisit
-graph/adapter robustness in the engine (out of scope for this task).
+read-only engine. The concrete defect: role graphs hard-code
+`max_tokens=512` and ignore the pinned revision's `max_tokens`, which
+starves reasoning models. Fixes are maintainer-side (upstream or
+vendored patch): consume `sampling.max_tokens` in the graph deps, or
+raise the narrator cap. Temperature pinning via profile revision is
+proven working and worth keeping regardless.
