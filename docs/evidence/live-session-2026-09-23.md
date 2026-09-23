@@ -45,6 +45,16 @@ key; generations never reached the provider.
 - Director direction filed and returned `needs_clarification`, matching the
   documented expectation; the beat still committed around it.
 
+## Second model: qwen3.8-27b (same day)
+
+Switched `WORLDSIM_PROVIDER__OPENROUTER_MODEL` to `qwen/qwen3.8-27b:free`
+(picked live from `/models`; 21 free models listed) and reran the same
+session. Result: 8× `rate_limited`, 2× `malformed`, still fallback-only
+narration. Direct probes of the qwen model (plain, story-like, and
+`json_object` modes) all returned the same upstream 429 from its shared
+pool, so the two `malformed` rows were likely load-shedding 200s with
+empty choices, not usable prose. Test story archived.
+
 ## Findings (separate)
 
 1. **Provider execution: attempted, not achieved.** Configuration is correct
@@ -58,6 +68,8 @@ key; generations never reached the provider.
 
 No blocking integration defect was fixed: the engine records `rate_limited`
 and falls back without retry, and that orchestration lives in the vendored
-read-only engine. Remedies for the maintainer: retry when the free pool
-clears, use a credited key or non-free model, or revisit retry semantics in
-the engine (out of scope for this task).
+read-only engine. Two independent provider pools (Google, Qwen) throttled
+within the same hour, so further free-model rotation has diminishing
+returns. Remedies for the maintainer: retry when the free pool clears, use
+a credited key or non-free model (real cost — maintainer decision), or
+revisit retry semantics in the engine (out of scope for this task).
