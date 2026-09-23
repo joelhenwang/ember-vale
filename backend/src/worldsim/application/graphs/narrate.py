@@ -89,6 +89,17 @@ def render_system_prompt(template: str) -> str:
     return template.replace("{{RESPONSE_SCHEMA}}", schema_json)
 
 
+def unfence_json(raw: str) -> str:
+    """Strip ``` fences models wrap around JSON; content otherwise untouched."""
+    text = raw.strip()
+    if not text.startswith("```"):
+        return raw
+    lines = text.splitlines()[1:]
+    if lines and lines[-1].strip() == "```":
+        lines = lines[:-1]
+    return "\n".join(lines)
+
+
 def render_user_prompt(
     audience_ids: list[str],
     visible_facts: list[dict[str, str]],
@@ -102,7 +113,7 @@ def render_user_prompt(
         f"Event {event_id}" + (f" in scene {scene_id}." if scene_id else "."),
         f"Audience: {', '.join(audience_ids) or 'none'}.",
         "Visible facts:",
-        *[f"- {fact['key']}: {fact['value']}" for fact in visible_facts],
+        *[f'- key "{fact["key"]}": {fact["value"]}' for fact in visible_facts],
         f"Beat budget: {beats_budget}.",
     ]
     if dnd_context:
@@ -276,7 +287,7 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
         raw: str | None = result.text
         while True:
             try:
-                proposals = _BEATS_ADAPTER.validate_json(raw)
+                proposals = _BEATS_ADAPTER.validate_json(unfence_json(raw))
             except ValidationError as exc:
                 errors.append(f"attempt {repairs}: {exc.error_count()} schema errors")
                 if repairs >= deps.repair_budget:

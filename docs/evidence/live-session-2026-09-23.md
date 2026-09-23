@@ -174,15 +174,30 @@ Regression test added (created-snapshot shape); old test aligned to it.
 
 ## Narrator failure anatomy (from recorded diagnostics)
 
-Failing narrator row: HTTP 200, 1 choice, `finish_reason=length`,
-`reasoning_tokens == max_tokens` (4096/4096), content null. The repair
-prompt is small (545 chars) — the model spends the whole budget
-reasoning and returns nothing. Exact failing input was extracted from
-the audit chain and replayed unchanged against two models:
-- deepseek-v4-flash-0731: `length`, 4,076 reasoning, zero content —
-  reproduces the in-session failure exactly.
+Failing narrator rows: HTTP 200, 1 choice, `finish_reason=length`,
+`reasoning_tokens == max_tokens`, content null (type `NoneType` vs
+`""` now distinguished). The repair prompt is small (545 chars) — the
+model spends the whole budget reasoning and returns nothing. Exact
+failing input was extracted from the audit chain and replayed
+unchanged against two models:
+- deepseek-v4-flash-0731: `length`, ~4,076 reasoning, zero content —
+  reproduces the in-session failure exactly on this input and budget.
+  This establishes failure on this input, not a general incapability
+  of the model.
 - gpt-4o-mini: `stop`, 0 reasoning, 258 tokens, valid 4-beat array.
-Provider/model limitation established with one variable changed.
+
+## Fact-key validation defect (found via the trace above)
+
+The b4b8a825 adapter-success text never persisted because graph
+validation denied it: `unsupported facts cited:
+['attempt:wait: Ash waits']`. The context renders facts as
+`- attempt:wait: Ash waits`, so the model glued key+value while the
+validator wants the bare key. Fixed at the source: facts now render
+as `- key "attempt:wait": Ash waits`, plus one prompt line ("cite
+keys exactly as quoted"). Fence tolerance (`unfence_json`) was also
+added at the single validate_json choke point. Both covered by tests
+proven to fail without their fix. The c5cc9969 milestone beats cite
+bare keys and validate with zero repairs — the live proof.
 
 ## Completed-direction inspection
 
@@ -194,18 +209,36 @@ while the clean greeting completed. A `completed` queue item plus its
 hook row is the effect proof; user-visible action arrives when beats
 play the hook, not at completion time.
 
-## Milestone: first rendered interaction
+## Milestone: first persisted rendered interaction (corrected)
 
-With pins actually applying (cap 4096 + temp 0.2 recorded per row):
-two consecutive player-intent beats rendered narrator prose with
-dialogue, fact citations, and speaker ids; beat 2 continues beat 1's
-exchange coherently (Market question → stalls follow-up, Ash
-consistently waiting). Reload re-read index 2, day 1, phase morning;
-timeline consistent with attempts/intents/map. World archived. Voice
-distinctness is still thin (sparse dialogue); continuity and
-state-agreement hold on this sample. (One wedged test world from an
-abandoned client timeout, `e5e5ae47`, could not be archived — open-run
-invariant; labeled test data, inert.)
+Correction: the earlier b4b8a825 claim was wrong. That world ran
+UNPINNED (env profile `openrouter/chat-v1`, deepseek model, default
+temp, cap 512); its adapter-success narrator text never validated (see
+fact-key defect below) and only fallback echoes persisted. The genuine
+milestone is world `c5cc9969`, pinned rev8 (deepseek-v4-flash-0731,
+temp 0.2, cap 4096 — all recorded per row), beat 2: four persisted
+`narration` rows, e.g. `Wren says to Ash: "Ask Ash whether the stalls
+are open yet."` (cited `attempt:communicate`) and `Ash waits.` (cited
+`attempt:wait`). Reload re-read index 2, phase morning; timeline
+consistent with attempts/intents/map; archived normally (200).
+
+"Rendered" means API-returned and DB-persisted narration rows, not
+browser-visible play (no browser pass was run on this world). Voice
+distinctness is thin (sparse exchange); continuity (Market question →
+stalls follow-up across beats 1–2) and state agreement hold.
+
+## Wedged-world recovery (timeout → reopen → reconcile)
+
+World `e5e5ae47` (abandoned 180s client timeout): server showed no
+running work (no `started` calls, no leased tasks), one `pending`
+execution task, runs idx1 `scenes_assembled` + idx2 `created`.
+Reconcile first 500'd on multiple open runs, then 200'd with zero
+requeues once idx1 sealed; committed effects intact (index 1,
+timeline 3). Retrying the identical beat-2 advance committed cleanly
+(timeline 3→5, no duplicates — derived ids make replay idempotent),
+then archived 200. An abandoned client request recovers through the
+normal guard/reconcile path; nothing was bypassed. Tracked separately
+from closed recovery work, as instructed.
 
 ## Findings (separate)
 
@@ -215,18 +248,21 @@ invariant; labeled test data, inert.)
    characterized (finish=length, reasoning==cap) and reproduced in a
    controlled comparison. No fake fallback masqueraded as live output —
    failures are honestly recorded.
-2. **Storytelling quality: milestone met, depth open.** Two consecutive
-   rendered beats with dialogue, fact citations, continuity
-   (question → follow-up) and state agreement. Voice distinctness is
-   thin so far; several coherent beats remain future work.
+2. **Storytelling quality: first persisted beats, depth open.** One
+   beat (world `c5cc9969`, pinned rev8) persisted four model-rendered
+   rows with dialogue, bare-key citations, and zero repairs; continuity
+   across the exchange (Market question → stalls follow-up) and
+   state-agreement hold. Adapter-level successes elsewhere did not all
+   persist (validation or starvation downstream). Voice distinctness is
+   thin; several coherent beats remain future work.
 3. **State consistency: holds.** Travel, beats, direction queue with
    hook persistence, player intents, and reload/resume all behaved on
    the live profile.
 
-No blocking integration defect was fixed: the engine records `rate_limited`
-and falls back without retry, and that orchestration lives in the vendored
-read-only engine — with two deliberate exceptions made this session,
-both candidates for upstreaming: (1) `sampling.max_tokens` consumed at all seven
-graph construction sites (unpinned default still 512); (2) provider
-diagnostics + the snapshot/pin key fix above. Profile pinning via the
-Settings API is proven working and worth keeping regardless.
+Integration defects fixed this session (all in vendored code, all
+candidates for upstreaming): (1) `sampling.max_tokens` consumed at all
+seven graph construction sites (unpinned default still 512);
+(2) snapshot/pin key mismatch (`art` vs `ai`) — no created story could
+pin a profile; (3) fence-tolerant narrator parsing; (4) unambiguous
+fact-key rendering. Plus opt-in provider diagnostics. Profile pinning
+via the Settings API is proven working end to end and worth keeping.

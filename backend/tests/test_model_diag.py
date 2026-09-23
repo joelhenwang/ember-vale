@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any
 from uuid import UUID
 
@@ -35,11 +36,8 @@ from worldsim.infrastructure.model_gateway.profiles import (
     OPENROUTER_CHAT_PROFILE,
 )
 from worldsim.infrastructure.model_gateway.retry import RetryingGateway
-from worldsim.infrastructure.repositories.unit_of_work import create_unit_of_work
 from worldsim.infrastructure.settings import Settings
 from worldsim.interfaces.http.app import create_app
-
-from pathlib import Path
 
 ROOT = Path(__file__).parent.parent.parent
 SEED_DIR = ROOT / "content" / "seeds" / "stage0"
@@ -221,3 +219,66 @@ def test_failed_call_persists_diagnostics(failing_app: ApiClient) -> None:
     assert rows, "expected failed model_call rows"
     assert rows[0]["result"]["http_status"] == 200
     assert rows[0]["result"]["choices_count"] == 0
+
+
+def test_body_capture_off_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("WORLDSIM_MODEL_DIAG_BODY", raising=False)
+    gateway = _gateway(
+        {"id": "r-off", "choices": [{"finish_reason": "stop", "message": {"content": ""}}]},
+    )
+    with pytest.raises(ModelMalformedError) as caught:
+        asyncio.run(gateway.complete(_request()))
+    assert caught.value.detail is not None
+    assert caught.value.detail["content_length"] == 0
+    assert "raw_body" not in caught.value.detail
+
+
+def test_body_capture_on_for_null_content(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("WORLDSIM_MODEL_DIAG_BODY", "1")
+    gateway = _gateway(
+        {"id": "r-on", "choices": [{"finish_reason": "stop", "message": {"content": ""}}]},
+    )
+    with pytest.raises(ModelMalformedError) as caught:
+        asyncio.run(gateway.complete(_request()))
+    assert caught.value.detail is not None
+    assert "raw_body" in caught.value.detail
+    assert json.loads(caught.value.detail["raw_body"])["id"] == "r-on"
+
+
+def test_body_capture_bounded_for_invalid_json(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("WORLDSIM_MODEL_DIAG_BODY", "1")
+
+    def _handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text="{" + "x" * 9000)
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(_handler))
+    gateway = OpenRouterGateway(
+        OPENROUTER_CHAT_PROFILE, api_key=SecretStr("test-key"), client=client
+    )
+    with pytest.raises(ModelMalformedError) as caught:
+        asyncio.run(gateway.complete(_request()))
+    assert caught.value.detail is not None
+    assert len(caught.value.detail["raw_body"]) == 4096
+
+
+def test_rate_limit_extracts_provider_error_envelope() -> None:
+    gateway = _gateway(
+        {"error": {"message": "pool throttled", "code": 429}},
+        status=429,
+    )
+    with pytest.raises(ModelRateLimitedError) as caught:
+        asyncio.run(gateway.complete(_request()))
+    assert caught.value.detail is not None
+    assert caught.value.detail["http_status"] == 429
+    assert "pool throttled" in str(caught.value.detail.get("provider_error"))
+
+
+def test_non_string_content_keeps_type() -> None:
+    gateway = _gateway(
+        {"choices": [{"finish_reason": "stop", "message": {"content": ["a", "b"]}}]},
+    )
+    with pytest.raises(ModelMalformedError) as caught:
+        asyncio.run(gateway.complete(_request()))
+    assert caught.value.detail is not None
+    assert caught.value.detail["content_type"] == "list"
+    assert caught.value.detail["content_length"] is None

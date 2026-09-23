@@ -12,8 +12,10 @@ from uuid import UUID
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
+from test_preset_revisions import ASH_PRESET_ID, WORLD_PRESET_ID, WREN_PRESET_ID
 from test_stage1_api import ApiClient
 
+from worldsim.application.library.builtins import ensure_builtin_presets
 from worldsim.application.ports.model_gateway import CompletionRequest
 from worldsim.application.settings.endpoints import EndpointPolicy, validate_endpoint
 from worldsim.application.settings.resolution import SamplingParams, resolve_sampling
@@ -334,3 +336,141 @@ def test_probe_shape_and_cache_scopes(client: ApiClient) -> None:
     )
     assert cleared.status_code == 200, cleared.text
     assert cleared.json()["removed"] >= 0
+
+def test_created_story_executes_with_pinned_sampling(migrated_db: None) -> None:
+    """Creation -> resolution -> execution stays connected.
+
+    A story created with a profile pin advances through a recording
+    gateway carrying the pin\u2019s temperature and cap; moving the profile
+    head does not move the story; an unpinned story uses defaults.
+    """
+    seen: list[CompletionRequest] = []
+    gateway = FakeGateway(profile=FAKE_TEST_PROFILE)
+
+    def _route(request: CompletionRequest) -> str:
+        seen.append(request)
+        return ('{"family": "wait", "character_id": "00000000-0000-0000-0000-000000000000",'
+            ' "snapshot_id": "00000000-0000-0000-0000-000000000000"}')
+
+    gateway.route = _route
+    app = create_app(
+        Settings(),
+        seed_dir=SEED_DIR,
+        migrations_dir=MIGRATIONS,
+        gateway_factory=lambda: gateway,
+    )
+
+    async def _ensure() -> None:
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                await ensure_builtin_presets(uow)
+                await uow.commit()
+        finally:
+            await engine.dispose()
+
+    asyncio.run(_ensure())
+    with TestClient(app) as raw:
+        api = ApiClient(raw)
+        connection = api.post(
+            "/api/v1/settings/providers",
+            json={
+                "adapter": "fake",
+                "name": "Demo",
+                "endpoint": "http://127.0.0.1:7144/v1",
+                "allow_local_endpoint": True,
+            },
+            headers={},
+        ).json()
+        pin = api.post(
+            f"/api/v1/settings/providers/{connection['id']}/profiles",
+            json={"model_id": "fake-echo", "temperature": 0.2, "max_tokens": 4096},
+            headers={},
+        ).json()
+
+        def _draft(ai: dict) -> str:
+            created = api.post(
+                "/api/v1/story-drafts",
+                json={
+                    "payload": {
+                        "world": {"preset_id": WORLD_PRESET_ID, "preset_revision": 2},
+                        "cast": [
+                            {
+                                "instance_key": "cast-wren",
+                                "preset_id": WREN_PRESET_ID,
+                                "preset_revision": 1,
+                                "name": "Wren",
+                                "location_key": "hearth",
+                            },
+                            {
+                                "instance_key": "cast-ash",
+                                "preset_id": ASH_PRESET_ID,
+                                "preset_revision": 1,
+                                "name": "Ash",
+                                "location_key": "market",
+                            },
+                        ],
+                        "mode": {"role": "watcher"},
+                        "story": {"title": "Pin probe"},
+                        "ai": ai,
+                    },
+                    "current_step": "review",
+                },
+                headers={},
+            )
+            assert created.status_code == 200, created.text
+            return created.json()["id"]
+
+        def _create(draft_id: str, key: str) -> str:
+            created = api.post(
+                "/api/v1/stories",
+                json={"draft_id": draft_id, "expected_draft_version": 1},
+                headers={"Idempotency-Key": key},
+            )
+            assert created.status_code == 200, created.text
+            return created.json()["world_id"]
+
+        def _advance(world_id: str, index: int) -> None:
+            response = api.post(
+                "/api/v1/stage1/advance",
+                json={"world_id": world_id, "absolute_index": index},
+                headers={"X-Worldsim-Role": "watcher"},
+            )
+            assert response.status_code == 200, response.text
+
+        pinned = _create(
+            _draft(
+                {
+                    "art_source": "curated",
+                    "profile_id": pin["id"],
+                    "profile_revision": pin["revision"],
+                }
+            ),
+            "pin-key",
+        )
+        setup = api.get(f"/api/v1/stories/{pinned}/setup", headers={}).json()
+        assert setup["payload"]["art"]["profile_id"] == pin["id"]
+        _advance(pinned, 1)
+        assert seen, "expected recorded model requests"
+        assert pin["model_id"] == "fake-echo"
+        assert all(r.temperature == 0.2 for r in seen)
+        assert all(r.max_tokens == 4096 for r in seen)
+
+        moved = api.post(
+            f"/api/v1/settings/providers/{connection['id']}/profiles",
+            json={"model_id": "fake-echo-2", "temperature": 0.9},
+            headers={},
+        ).json()
+        assert moved["revision"] == pin["revision"] + 1
+        seen.clear()
+        _advance(pinned, 2)
+        assert seen, "expected recorded model requests"
+        assert all(r.temperature == 0.2 for r in seen)
+        assert all(r.max_tokens == 4096 for r in seen)
+
+        plain = _create(_draft({"art_source": "curated"}), "plain-key")
+        seen.clear()
+        _advance(plain, 1)
+        assert seen, "expected recorded model requests"
+        assert all(r.temperature is None for r in seen)
+        assert all(r.max_tokens == 512 for r in seen)

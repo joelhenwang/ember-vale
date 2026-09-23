@@ -127,10 +127,20 @@ class OpenRouterGateway:
         }
 
     @staticmethod
+    def _payload_or_none(response: httpx.Response) -> dict[str, Any] | None:
+        """Best-effort envelope for HTTP failures; never raises."""
+        try:
+            payload = response.json()
+        except ValueError:
+            return None
+        return payload if isinstance(payload, dict) else None
+
+    @staticmethod
     def _diag(
         response: httpx.Response,
         payload: dict[str, Any] | None,
-        content: str | None,
+        content: Any,
+        raw_body: str | None = None,
     ) -> dict[str, Any]:
         """Provider-boundary facts. No headers, no credentials, no prompts."""
         choices = payload.get("choices") if isinstance(payload, dict) else None
@@ -143,9 +153,11 @@ class OpenRouterGateway:
             "finish_reason": first.get("finish_reason") if isinstance(first, dict) else None,
             "usage": OpenRouterGateway._usage_of(payload) if isinstance(payload, dict) else None,
             "choices_count": len(choices) if isinstance(choices, list) else None,
-            "content_type": type(content).__name__ if content is not None else None,
+            "content_type": type(content).__name__,
             "content_length": len(content) if isinstance(content, str) else None,
         }
+        if raw_body is not None:
+            diag["raw_body"] = raw_body
         error = payload.get("error") if isinstance(payload, dict) else None
         if error is not None:
             if isinstance(error, (str, int, float)):
@@ -171,38 +183,48 @@ class OpenRouterGateway:
             raise ModelRateLimitedError(
                 "openrouter rate limited",
                 retry_after_s=_retry_after_s(response),
-                detail=self._diag(response, None, None),
+                detail=self._diag(
+                    response,
+                    self._payload_or_none(response),
+                    None,
+                    self._captured_body(response),
+                ),
             )
         if response.status_code >= 400:
             raise ModelUnavailableError(
                 f"openrouter rejected the request: HTTP {response.status_code}",
-                detail=self._diag(response, None, None),
+                detail=self._diag(
+                    response,
+                    self._payload_or_none(response),
+                    None,
+                    self._captured_body(response),
+                ),
             )
         try:
             raw: Any = response.json()
         except ValueError as exc:
             raise ModelMalformedError(
                 "openrouter returned invalid JSON",
-                detail=self._diag(response, None, self._captured_body(response)),
+                detail=self._diag(response, None, None, raw_body=self._captured_body(response)),
             ) from exc
         if not isinstance(raw, dict):
             raise ModelMalformedError(
                 "openrouter returned a non-object payload",
-                detail=self._diag(response, None, self._captured_body(response)),
+                detail=self._diag(response, None, None, raw_body=self._captured_body(response)),
             )
         payload = cast("dict[str, Any]", raw)
         choices_raw = payload.get("choices")
         if not isinstance(choices_raw, list) or not choices_raw:
             raise ModelMalformedError(
                 "openrouter response has no choices",
-                detail=self._diag(response, payload, self._captured_body(response)),
+                detail=self._diag(response, payload, None, raw_body=self._captured_body(response)),
             )
         choices = cast("list[Any]", choices_raw)
         choice_raw = choices[0]
         if not isinstance(choice_raw, dict):
             raise ModelMalformedError(
                 "openrouter response has no choices",
-                detail=self._diag(response, payload, self._captured_body(response)),
+                detail=self._diag(response, payload, None, raw_body=self._captured_body(response)),
             )
         choice = cast("dict[str, Any]", choice_raw)
         if choice.get("finish_reason") == "content_filter":
@@ -214,14 +236,16 @@ class OpenRouterGateway:
         if not isinstance(message_raw, dict):
             raise ModelMalformedError(
                 "openrouter response has no message",
-                detail=self._diag(response, payload, self._captured_body(response)),
+                detail=self._diag(response, payload, None, raw_body=self._captured_body(response)),
             )
         message = cast("dict[str, Any]", message_raw)
         text = message.get("content")
         if not isinstance(text, str) or not text:
             raise ModelMalformedError(
                 "openrouter response has no message text",
-                detail=self._diag(response, payload, text if isinstance(text, str) else None),
+                detail=self._diag(
+                    response, payload, text, self._captured_body(response)
+                ),
             )
         usage = self._usage_of(payload)
         model_raw = payload.get("model")
@@ -267,7 +291,12 @@ class OpenRouterGateway:
         if response.status_code >= 400:
             raise ModelUnavailableError(
                 f"openrouter rejected the request: HTTP {response.status_code}",
-                detail=self._diag(response, None, None),
+                detail=self._diag(
+                    response,
+                    self._payload_or_none(response),
+                    None,
+                    self._captured_body(response),
+                ),
             )
         try:
             payload = response.json()

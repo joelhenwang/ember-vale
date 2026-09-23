@@ -83,6 +83,21 @@ def test_valid_beats_accepted_with_event_linkage() -> None:
     assert beats[0]["cited_fact_keys"] == ["arrival"]
 
 
+def test_fenced_json_accepted_without_repair() -> None:
+    event_id = uuid.uuid4()
+    gateway = FakeGateway(profile=NARRATOR_FAKE_PROFILE)
+    gateway.enqueue_text(
+        "```json\n" + json.dumps([_beat("Wren arrives.", ["arrival"])]) + "\n```"
+    )
+
+    result = asyncio.run(invoke(build_narration_graph(_deps(gateway)), _invocation(event_id)))
+
+    assert result["status"] == "narrated"
+    assert result["proposal"]["fallback"] is False
+    assert result["repair_count"] == 0
+    assert result["proposal"]["beats"][0]["cited_fact_keys"] == ["arrival"]
+
+
 def test_unsupported_fact_repaired_once() -> None:
     event_id = uuid.uuid4()
     gateway = FakeGateway(profile=NARRATOR_FAKE_PROFILE)

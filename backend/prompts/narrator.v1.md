@@ -9,6 +9,7 @@ Rules:
 
 - Output a JSON array of beat objects matching RESPONSE_SCHEMA below.
 - Every beat needs at least one cited fact key from the visible set.
+- Cite keys exactly as quoted after `key` (the description after the colon is not part of the key).
 - `speaker_id` must be null (narrator voice) or an audience member.
 - Never add characters, places, injuries, items, or outcomes absent
   from the visible facts. Understatement beats invention.
