@@ -55,18 +55,18 @@ whole-tree evidence.
 
 ## 2026-09-23 subset (`results-addrollback-2026-09-23.json`)
 
-11/11 PASS, `only: [addrollback]`, at `2026-09-23T01:31:48Z`. The
-recorded `commit` is `df2ae94` with `dirty: true`: the tested tree was
-`df2ae94` plus the uncommitted wizard integration fixes (step-slug
-contract, recovery null normalization) and the direct step-3
-`addrollback` journey. Read it as verification of that code — failed
+11/11 PASS, `only: [addrollback]`, at `2026-09-23T01:45:16Z`. The
+recorded `commit` is `0dc8691` with `dirty: true`: the tested tree was
+`0dc8691` plus the uncommitted normalization narrowing (documented
+optional paths only) with the direct step-3 `addrollback` journey
+unchanged. Read it as verification of that code — failed
 character-add accept controlling the newcomer locally, failed dismiss
 keeping recovery, retry dismissal on step 3 removing it and restoring
 no-control, reload with no false recovery conflict, and the preserved
 intervening location with an untouched server — not as whole-tree
-evidence. (An earlier 10/10 run of the same scenario detoured through
-the recovery choice UI and a step-2 dismissal workaround; this run
-supersedes it with the direct journey.)
+evidence. (Earlier runs detoured through the recovery choice UI and a
+step-2 dismissal workaround; this run supersedes them with the direct
+journey under the narrowed comparison.)
 
 ## Future runs
 

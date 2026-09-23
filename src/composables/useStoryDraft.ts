@@ -102,27 +102,52 @@ export type RecoveryDecision = 'covered' | 'restore' | 'conflict'
  * base version with different content ('conflict').
  */
 /**
- * Normalize a draft payload for equivalence checks (is the server already
- * holding these choices? is this form acknowledged?). The server
- * serializes absent optionals as explicit nulls while the builder omits
- * them, and the builder omits empty strings the same way — all three
- * mean "no value" for these optional display/location fields. Arrays
- * keep their identity (both sides always carry them), and numbers and
- * booleans pass through untouched, so genuinely different content never
- * compares equal.
+ * Optional draft-payload leaves where the backend (`str | None`, default
+ * `None`) and the payload builder (omits falsy) agree that representations
+ * mean "no value". `EMPTY_EQUIVALENT` paths collapse null, omitted, and
+ * `''` (the builder maps `''` to omitted there); `NULL_EQUIVALENT` paths
+ * collapse null and omitted only (the builder never emits them, so a
+ * stored `''` there is foreign data worth distinguishing). Every other
+ * field — required fields like `story.title`, identity fields, unknown
+ * fields, arrays, numbers, booleans — passes through exactly, so
+ * empty/null/omitted stay distinguishable outside these paths.
  */
+const EMPTY_EQUIVALENT: Record<string, readonly string[]> = {
+  world: ['name'],
+  'cast[]': ['location_key'],
+  mode: ['controlled_cast_key'],
+  story: ['tone']
+}
+
+const NULL_EQUIVALENT: Record<string, readonly string[]> = {
+  world: ['description'],
+  story: ['premise', 'pacing'],
+  ai: ['profile_id', 'profile_revision', 'model', 'style_pack_revision']
+}
+
 export function normalizeRecoveryPayload(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(normalizeRecoveryPayload)
-  if (typeof value === 'object' && value !== null) {
-    const out: Record<string, unknown> = {}
-    for (const [k, v] of Object.entries(value)) {
-      if (v === null || v === undefined) continue
-      if (typeof v === 'string' && v === '') continue
-      out[k] = normalizeRecoveryPayload(v)
-    }
-    return out
+  return normalizeAt(value, '')
+}
+
+function normalizeAt(value: unknown, path: string): unknown {
+  if (typeof value !== 'object' || value === null) return value
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeAt(item, `${path}[]`))
   }
-  return value
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(value)) {
+    // `undefined` is serialization-neutral (JSON drops it either way).
+    if (v === undefined) continue
+    const emptyOk = EMPTY_EQUIVALENT[path]?.includes(k) ?? false
+    const nullOk = emptyOk || (NULL_EQUIVALENT[path]?.includes(k) ?? false)
+    if (v === null && nullOk) continue
+    if (typeof v === 'string' && v === '' && emptyOk) continue
+    const child = path ? `${path}.${k}` : k
+    out[k] = Array.isArray(v)
+      ? v.map((item) => normalizeAt(item, `${child}[]`))
+      : normalizeAt(v, child)
+  }
+  return out
 }
 
 export function resolveRecovery(

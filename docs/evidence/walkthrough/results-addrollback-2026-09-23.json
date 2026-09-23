@@ -1,17 +1,14 @@
 {
   "ok": true,
   "base": "http://127.0.0.1:5173",
-  "commit": "df2ae94",
+  "commit": "0dc8691",
   "dirty": true,
-  "diffSha256": "5335d4aa4b9fcd5f3ca8f7e235ddc032bac8b9a60c6c21dc83a19dec9ae7f095",
-  "untracked": [
-    "src/game/wizardSteps.spec.ts",
-    "src/game/wizardSteps.ts"
-  ],
+  "diffSha256": "3f08ae5e07f16fe55d0e1676c1fc3d6f94f90488b6d8ef474ddc8c464c523c96",
+  "untracked": [],
   "only": [
     "addrollback"
   ],
-  "at": "2026-09-23T01:31:48.372Z",
+  "at": "2026-09-23T01:45:16.594Z",
   "results": [
     {
       "scenario": "addrollback",

@@ -565,18 +565,65 @@ describe('useStoryDraft guarded workflow', () => {
     ).toBe('covered')
   })
 
-  it('normalizeRecoveryPayload drops nulls and empties while keeping shape', () => {
+  it('normalizeRecoveryPayload collapses only documented optional leaves', () => {
     expect(
       normalizeRecoveryPayload({
-        a: null,
-        b: undefined,
-        c: '',
-        d: [],
-        e: 0,
-        f: false,
-        g: { h: null, i: 'x', j: [{ k: null, l: 1 }] }
+        world: { preset_id: 'w', preset_revision: 2, name: '', description: null },
+        cast: [{ instance_key: 'wren', location_key: '' }],
+        mode: { role: 'player', controlled_cast_key: null },
+        story: { title: 'T', tone: '', premise: null },
+        ai: { profile_id: null, art_source: 'curated' }
       })
-    ).toEqual({ d: [], e: 0, f: false, g: { i: 'x', j: [{ l: 1 }] } })
+    ).toEqual({
+      world: { preset_id: 'w', preset_revision: 2 },
+      cast: [{ instance_key: 'wren' }],
+      mode: { role: 'player' },
+      story: { title: 'T' },
+      ai: { art_source: 'curated' }
+    })
+  })
+
+  it('normalizeRecoveryPayload keeps empty/null/omitted distinct elsewhere', () => {
+    // story.title is always emitted by the builder: '' stays distinct.
+    expect(normalizeRecoveryPayload({ story: { title: '' } })).toEqual({
+      story: { title: '' }
+    })
+    expect(normalizeRecoveryPayload({ story: { title: null } })).toEqual({
+      story: { title: null }
+    })
+    // Unknown fields pass through exactly, including their nulls.
+    expect(normalizeRecoveryPayload({ lore: null, notes: '' })).toEqual({
+      lore: null,
+      notes: ''
+    })
+    // Identity fields and arrays keep their values: '' preset ids,
+    // empty casts, and numbers/booleans are never collapsed.
+    expect(
+      normalizeRecoveryPayload({ world: { preset_id: '' }, cast: [], ai: { profile_revision: 0 } })
+    ).toEqual({ world: { preset_id: '' }, cast: [], ai: { profile_revision: 0 } })
+  })
+
+  it('planBootRecovery distinguishes an explicitly empty title from a missing one', () => {
+    // The builder always includes the title, so a cleared title ('')
+    // against a server null is a genuine difference: available, not covered.
+    const emptied: NewStorySelections = { ...SEL, title: '' }
+    const stored: RecoveryDraft = {
+      draftId: 'd-1',
+      selections: emptied,
+      step: 'world',
+      at: '2026-01-01T01:00:01Z',
+      snapshot: '',
+      baseVersion: 1
+    }
+    const built = buildDraftPayload({ ...SEL, title: 'T' }) as unknown as Record<string, unknown>
+    const serverPayload = {
+      ...built,
+      story: { title: null }
+    }
+    const plan = planBootRecovery({ payload: serverPayload, version: 1, step: 'world' }, stored)
+    expect(plan.kind).toBe('restore')
+    if (plan.kind !== 'restore') return
+    expect(plan.conflict).toBe(false)
   })
 
   it('planBootRecovery treats server nulls as omitted local fields', () => {
