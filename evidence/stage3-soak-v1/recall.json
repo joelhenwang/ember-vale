@@ -1,6 +1,6 @@
 {
   "probe_text": "the north bridge is cursed",
-  "probe_source": "mem:990c2cc8-026c-4b55-be89-e3385eee4ee8",
+  "probe_source": "mem:958401a1-10e9-4a73-9396-381831336c50",
   "day29_verdict": {
     "verdict": "absent",
     "detail": "probe source in no day-29 manifest",

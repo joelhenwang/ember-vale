@@ -43,12 +43,12 @@
     {
       "role": "character_decision",
       "actor_hint": "wren",
-      "has_secret": false
+      "has_secret": true
     },
     {
       "role": "character_decision",
       "actor_hint": "wren",
-      "has_secret": true
+      "has_secret": false
     }
   ],
   "secret_scoped_to_wren": true

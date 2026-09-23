@@ -10,13 +10,13 @@
       "scenes": [
         {
           "scene_id": "4d642dbc-c81a-5425-877f-96077f0d61ee",
-          "event_id": "4c5b7d0f-4df1-4575-a7e4-32114bc8d48e",
+          "event_id": "724f0ecc-9b15-43c7-9bce-0f5f2fcee403",
           "resolution_outcome": "success",
           "narration": "fallback"
         },
         {
           "scene_id": "c50986eb-2000-5981-a851-8d5af176dc8e",
-          "event_id": "ee95584b-9014-4f5e-97f5-a62996c71ca6",
+          "event_id": "dc2e3af4-b404-4294-b756-3741b24c8ec8",
           "resolution_outcome": "success",
           "narration": "fallback"
         }
@@ -32,7 +32,7 @@
       "scenes": [
         {
           "scene_id": "63dc6324-2d36-53fd-be26-7cde1e705a84",
-          "event_id": "5efcea7f-730b-4ee2-99ae-80fcdbbf7096",
+          "event_id": "7089ebf5-7964-4cda-b02b-d72fb97d8cd2",
           "resolution_outcome": "success",
           "narration": "narrated"
         }
@@ -48,13 +48,13 @@
       "scenes": [
         {
           "scene_id": "4047c1df-7649-52fb-8fff-b62d61975cd3",
-          "event_id": "60ff8fcb-34ae-40da-8da0-597548cbfc14",
+          "event_id": "988056a9-337b-45a2-a182-18755dc53d0a",
           "resolution_outcome": "success",
           "narration": "fallback"
         },
         {
           "scene_id": "2b04fa0e-9444-58ec-87bf-274d55d8681b",
-          "event_id": "b362fc08-9422-4c03-a9c6-1e6c79982fb3",
+          "event_id": "462fbe6c-0556-45f5-935b-24c939734903",
           "resolution_outcome": "success",
           "narration": "fallback"
         }
@@ -64,8 +64,8 @@
     }
   ],
   "phase_seconds": {
-    "1": 0.925,
-    "2": 0.653,
-    "3": 0.514
+    "1": 1.581,
+    "2": 1.576,
+    "3": 1.245
   }
 }

@@ -14,6 +14,7 @@ from worldsim.application.graphs.narrate import (
     NarratorGraphDeps,
     build_narration_graph,
     load_narrator_prompt,
+    unfence_json,
 )
 from worldsim.application.graphs.runtime import invoke
 from worldsim.application.graphs.state import GraphInvocation
@@ -96,6 +97,61 @@ def test_fenced_json_accepted_without_repair() -> None:
     assert result["proposal"]["fallback"] is False
     assert result["repair_count"] == 0
     assert result["proposal"]["beats"][0]["cited_fact_keys"] == ["arrival"]
+
+
+def test_unlabelled_fence_accepted_without_repair() -> None:
+    event_id = uuid.uuid4()
+    gateway = FakeGateway(profile=NARRATOR_FAKE_PROFILE)
+    gateway.enqueue_text(
+        "```\n" + json.dumps([_beat("Wren arrives.", ["arrival"])]) + "\n```"
+    )
+
+    result = asyncio.run(invoke(build_narration_graph(_deps(gateway)), _invocation(event_id)))
+
+    assert result["status"] == "narrated"
+    assert result["repair_count"] == 0
+    assert result["proposal"]["beats"][0]["cited_fact_keys"] == ["arrival"]
+
+
+def test_incomplete_fence_left_untouched_for_repair() -> None:
+    """An unclosed fence is not stripped; the repair path handles it."""
+    event_id = uuid.uuid4()
+    gateway = FakeGateway(profile=NARRATOR_FAKE_PROFILE)
+    unclosed = "```json\n" + json.dumps([_beat("Wren arrives.", ["arrival"])])
+    assert unfence_json(unclosed) == unclosed
+    gateway.enqueue_text(unclosed)
+    gateway.enqueue_text(json.dumps([_beat("Wren arrives.", ["arrival"])]))
+
+    result = asyncio.run(invoke(build_narration_graph(_deps(gateway)), _invocation(event_id)))
+
+    assert result["status"] == "narrated"
+    assert result["repair_count"] == 1
+    assert result["proposal"]["beats"][0]["cited_fact_keys"] == ["arrival"]
+
+
+def test_commentary_around_fence_left_untouched_for_repair() -> None:
+    """Surrounding prose is not stripped; the repair path handles it."""
+    event_id = uuid.uuid4()
+    gateway = FakeGateway(profile=NARRATOR_FAKE_PROFILE)
+    wrapped = (
+        "Here is the narration:\n```json\n"
+        + json.dumps([_beat("Wren arrives.", ["arrival"])])
+        + "\n```"
+    )
+    assert unfence_json(wrapped) == wrapped
+    gateway.enqueue_text(wrapped)
+    gateway.enqueue_text(json.dumps([_beat("Wren arrives.", ["arrival"])]))
+
+    result = asyncio.run(invoke(build_narration_graph(_deps(gateway)), _invocation(event_id)))
+
+    assert result["status"] == "narrated"
+    assert result["repair_count"] == 1
+    assert result["proposal"]["beats"][0]["cited_fact_keys"] == ["arrival"]
+
+
+def test_unrelated_fence_opener_left_untouched() -> None:
+    tagged = "```python\n" + json.dumps([_beat("Wren arrives.", ["arrival"])]) + "\n```"
+    assert unfence_json(tagged) == tagged
 
 
 def test_unsupported_fact_repaired_once() -> None:

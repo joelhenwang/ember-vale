@@ -240,6 +240,38 @@ then archived 200. An abandoned client request recovers through the
 normal guard/reconcile path; nothing was bypassed. Tracked separately
 from closed recovery work, as instructed.
 
+### Recovery sequence clarified (code review, not a rerun)
+
+- **What sealed idx1: the original work finished.** The only writer of
+  the `scenes_assembled → completed` transition on this path is
+  `_finalize` (`backend/src/worldsim/application/orchestration/service.py:576`),
+  which seals the run and finishes its task in one transaction at the
+  end of the advance coroutine. `reconcile_world` never seals runs —
+  it only requeues expired/claimed tasks and reports the open run
+  (`service.py:617`), and it reported zero requeues here. No operator
+  operation sealed idx1: the abandoned client request completed
+  server-side after the client gave up waiting (mid-flight observation
+  caught it between the scenes commit and the final seal commit). The
+  retry 409s were the open-run guard working as designed.
+- **The 500 was self-inflicted.** The second open run (idx2 `created`)
+  came from the investigation's own timeout-reopen retry while idx1 was
+  still open. With two open runs, `find_open_run`
+  (`infrastructure/repositories/phases.py:60`) raises
+  `INVARIANT_VIOLATED`, surfacing as 500 instead of a 409. It resolved
+  itself once idx1's original work sealed. Minor finding: a multi-open
+  state returns 500 where a 409 would be friendlier; recorded
+  separately, not fixed here.
+- **The normal client can reach the same recovery.** Every recovery
+  step was a public API call — advance (409 guard), `POST
+  /operations/reconcile` (200 with `open_run_id`/`open_state`; no
+  elevated role guard on the route), retry advance (200). Database
+  access during diagnosis was read-only `SELECT`s; no state was written
+  outside the API.
+- **Scope limit.** This demonstrates recovery for one case (late
+  server-side completion + idempotent retry via derived ids). It does
+  not establish general crash-replay safety. Broader stall recovery
+  stays a separate finding.
+
 ## Findings (separate)
 
 1. **Provider execution: serving, now observable.** Pins apply

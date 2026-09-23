@@ -1,6 +1,6 @@
 {
-  "p50_phase_seconds": 0.892,
-  "p95_phase_seconds": 1.479,
+  "p50_phase_seconds": 1.331,
+  "p95_phase_seconds": 2.452,
   "manifest_tokens_day1": 964,
   "manifest_tokens_day30": 2507,
   "tables": {

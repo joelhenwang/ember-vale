@@ -341,11 +341,16 @@ def test_created_story_executes_with_pinned_sampling(migrated_db: None) -> None:
     """Creation -> resolution -> execution stays connected.
 
     A story created with a profile pin advances through a recording
-    gateway carrying the pin\u2019s temperature and cap; moving the profile
-    head does not move the story; an unpinned story uses defaults.
+    gateway carrying the pin\u2019s temperature and cap; the resolved model
+    stays on the pinned revision after the profile head moves; an
+    unpinned story uses defaults.
     """
     seen: list[CompletionRequest] = []
-    gateway = FakeGateway(profile=FAKE_TEST_PROFILE)
+    # Gateway model differs from the pinned row on purpose: the model
+    # assertions below must come from the pin, not the injected gateway.
+    gateway = FakeGateway(
+        profile=FAKE_TEST_PROFILE.model_copy(update={"model_id": "gateway-env-model"})
+    )
 
     def _route(request: CompletionRequest) -> str:
         seen.append(request)
@@ -438,6 +443,17 @@ def test_created_story_executes_with_pinned_sampling(migrated_db: None) -> None:
             )
             assert response.status_code == 200, response.text
 
+        def _sampling(world_id: str) -> SamplingParams:
+            async def _inner() -> SamplingParams:
+                engine = create_engine(Settings())
+                try:
+                    async with create_unit_of_work(engine) as uow:
+                        return await resolve_sampling(uow, UUID(world_id))
+                finally:
+                    await engine.dispose()
+
+            return asyncio.run(_inner())
+
         pinned = _create(
             _draft(
                 {
@@ -455,6 +471,11 @@ def test_created_story_executes_with_pinned_sampling(migrated_db: None) -> None:
         assert pin["model_id"] == "fake-echo"
         assert all(r.temperature == 0.2 for r in seen)
         assert all(r.max_tokens == 4096 for r in seen)
+        resolved = _sampling(pinned)
+        assert resolved.model_id == "fake-echo", (
+            "runtime model must come from the pin, not the gateway"
+        )
+        assert resolved.profile_revision == pin["revision"]
 
         moved = api.post(
             f"/api/v1/settings/providers/{connection['id']}/profiles",
@@ -467,6 +488,12 @@ def test_created_story_executes_with_pinned_sampling(migrated_db: None) -> None:
         assert seen, "expected recorded model requests"
         assert all(r.temperature == 0.2 for r in seen)
         assert all(r.max_tokens == 4096 for r in seen)
+        moved_on = _sampling(pinned)
+        assert moved_on.model_id == "fake-echo", (
+            "selected model must stay pinned after the head moves"
+        )
+        assert moved_on.profile_revision == pin["revision"]
+        assert moved_on.temperature == 0.2
 
         plain = _create(_draft({"art_source": "curated"}), "plain-key")
         seen.clear()
