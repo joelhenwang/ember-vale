@@ -879,6 +879,7 @@ class Stage1Orchestrator:
                 temperature=sampling.temperature,
                 top_p=sampling.top_p,
                 top_k=sampling.top_k,
+                max_tokens=sampling.max_tokens,
             )
         )
         try:
@@ -1051,6 +1052,7 @@ class Stage1Orchestrator:
                 temperature=sampling.temperature,
                 top_p=sampling.top_p,
                 top_k=sampling.top_k,
+                max_tokens=sampling.max_tokens,
             )
         )
         try:
@@ -1201,6 +1203,7 @@ class Stage1Orchestrator:
                 temperature=sampling.temperature,
                 top_p=sampling.top_p,
                 top_k=sampling.top_k,
+                max_tokens=sampling.max_tokens,
             )
         )
         try:
@@ -1366,6 +1369,7 @@ class Stage1Orchestrator:
                 temperature=sampling.temperature,
                 top_p=sampling.top_p,
                 top_k=sampling.top_k,
+                max_tokens=sampling.max_tokens,
             )
         )
         result = await invoke(graph, invocation)
@@ -1848,6 +1852,7 @@ class Stage1Orchestrator:
                 temperature=sampling.temperature,
                 top_p=sampling.top_p,
                 top_k=sampling.top_k,
+                max_tokens=sampling.max_tokens,
             )
         )
         result = await invoke(graph, invocation)
@@ -1910,6 +1915,7 @@ class Stage1Orchestrator:
                 temperature=sampling.temperature,
                 top_p=sampling.top_p,
                 top_k=sampling.top_k,
+                max_tokens=sampling.max_tokens,
             )
         )
         result = await invoke(graph, invocation)
@@ -2103,6 +2109,7 @@ class Stage1Orchestrator:
                     temperature=sampling.temperature,
                     top_p=sampling.top_p,
                     top_k=sampling.top_k,
+                    max_tokens=sampling.max_tokens,
                 )
             )
             result = await invoke(graph, invocation)

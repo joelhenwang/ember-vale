@@ -112,27 +112,49 @@ first genuine live prose of the day (narrator voice, fact keys cited).
 Voice distinctness for Wren/Ash remains unproven — no dialogue was ever
 rendered. Both test worlds archived.
 
+## Fifth run: cap wired through + 4096 pin (same day)
+
+Per maintainer direction, wired `sampling.max_tokens` into all seven
+role-graph construction sites in
+`backend/.../orchestration/stage1.py` (7-line diff; unpinned default
+stays 512, so default behavior is unchanged). Deliberate engine
+deviation in vendored code — candidate for upstreaming. Rebuilt the api
+image (the image bakes in `backend/src`, recreate alone is not enough),
+`ruff` clean, `test_revamp_a05.py` green. Pinned revision 3
+(`temperature=0.2`, `max_tokens=4096`).
+
+Decision quality transformed: character completions are now crisp valid
+JSON (24–54 tokens), director compact. But every model-chosen intent is
+still WAIT, and a `completed` direction produced no visible action.
+
+Player-intent runs (Wren controlled, pinned rev3) engaged the full
+pipeline: reaction (1,866 tokens), resolver (up to 7,293 — the 4096 cap
+flowing), director. Yet the narrator failed 0/3 (9–13s `malformed`,
+not timeouts) while neighboring roles intermittently succeed — something
+narrator-specific (largest prompts?) still returns empty 200s on this
+model. Only attempt-echoes recorded; both worlds archived.
+
 ## Findings (separate)
 
-1. **Provider execution: serving; cap is the blocker.** At temperature
-   0.2 the model follows schemas reliably (character 6/9, director 2/2
-   compact). The remaining failures are token starvation, not
-   capability: the hard-coded 512-token cap truncates reasoning-model
-   output to empty. No fake fallback masqueraded as live output —
-   failures are honestly recorded.
-2. **Storytelling quality: first sample exists, verdict still open.** One
-   valid narrator sample (fact-cited, understated). Voice distinctness,
+1. **Provider execution: serving; decisions fixed, narrator not.** The
+   cap wiring + temperature pin transformed decision roles (crisp valid
+   JSON; resolver flowing 7k tokens). The narrator fails 0/3 with empty
+   200s while other roles succeed — narrator-specific, still model-side
+   as far as current evidence shows. No fake fallback masqueraded as
+   live output — failures are honestly recorded.
+2. **Storytelling quality: still open.** One valid narrator sample from
+   a direct probe (fact-cited, understated). Voice distinctness,
    continuity, and travel/state agreement in prose remain unjudged — no
-   dialogue has rendered yet.
+   dialogue has rendered in-session yet.
 3. **State consistency: holds.** Travel, beats, direction queue
    (including a `completed` direction), player intents, and reload/resume
    all behaved on the live profile.
 
 No blocking integration defect was fixed: the engine records `rate_limited`
 and falls back without retry, and that orchestration lives in the vendored
-read-only engine. The concrete defect: role graphs hard-code
-`max_tokens=512` and ignore the pinned revision's `max_tokens`, which
-starves reasoning models. Fixes are maintainer-side (upstream or
-vendored patch): consume `sampling.max_tokens` in the graph deps, or
-raise the narrator cap. Temperature pinning via profile revision is
-proven working and worth keeping regardless.
+read-only engine — with one deliberate exception made this session at
+maintainer direction: `sampling.max_tokens` is now consumed at all seven
+graph construction sites (unpinned default still 512). Remaining
+narrator empties need either raw-response logging to see what the
+provider actually returns (engine change), or a different model. The
+temperature pin is proven and worth keeping regardless.
