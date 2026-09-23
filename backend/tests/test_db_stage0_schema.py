@@ -7,13 +7,10 @@ from urllib.parse import urlparse, urlunparse
 import pytest
 from alembic import command as alembic_command
 from alembic.config import Config
-from psycopg import connect
-from psycopg.errors import DuplicateDatabase
 from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from worldsim.infrastructure.db.engine import create_engine, session_factory
-from worldsim.infrastructure.db.urls import to_sync_url
 from worldsim.infrastructure.models.calls import (
     ContextManifestRow,
     ModelCallRow,
@@ -43,8 +40,6 @@ from worldsim.infrastructure.models.world import (
 )
 from worldsim.infrastructure.settings import Settings
 
-SCRATCH_DB = "worldsim_schema_test"
-
 
 async def _add(session: AsyncSession, row: object) -> None:
     """Add one row and flush immediately: without ORM relationships the
@@ -61,27 +56,19 @@ def _replace_database(url: str, database: str) -> str:
 
 @pytest.fixture
 def migrated_scratch(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    base = to_sync_url(Settings().database.url)
-    admin = connect(_replace_database(base, "postgres"), autocommit=True)
-    try:
-        try:
-            admin.execute(f"CREATE DATABASE {SCRATCH_DB}")
-        except DuplicateDatabase:
-            pass
-    finally:
-        admin.close()
+    from fixtures.postgres import create_scratch_database, drop_scratch_database, scratch_name
+
+    name = scratch_name("worldsim_schema_test")
+    settings = Settings()
+    create_scratch_database(settings, name)
     monkeypatch.setenv(
-        "WORLDSIM_DATABASE__URL", _replace_database(Settings().database.url, SCRATCH_DB)
+        "WORLDSIM_DATABASE__URL", _replace_database(settings.database.url, name)
     )
     config = Config()
     config.set_main_option("script_location", str(Path(__file__).parent.parent / "migrations"))
     alembic_command.upgrade(config, "head")
     yield
-    admin = connect(_replace_database(base, "postgres"), autocommit=True)
-    try:
-        admin.execute(f"DROP DATABASE IF EXISTS {SCRATCH_DB} WITH (FORCE)")
-    finally:
-        admin.close()
+    drop_scratch_database(Settings(), name)
 
 
 async def _seed_world() -> uuid.UUID:

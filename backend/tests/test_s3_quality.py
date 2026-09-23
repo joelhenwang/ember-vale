@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -30,7 +31,12 @@ from worldsim.interfaces.http.app import create_app
 ROOT = Path(__file__).parent.parent.parent
 SEED_DIR = ROOT / "content" / "seeds" / "stage0"
 MIGRATIONS = ROOT / "backend" / "migrations"
-BASELINE = ROOT / "docs" / "stage3-quality-baseline-v1.json"
+BASELINE = Path(
+    os.environ.get(
+        "WORLDSIM_QUALITY_BASELINE",
+        ROOT / "docs" / "stage3-quality-baseline-v1.json",
+    )
+)
 
 WORLD_ID = UUID("10000000-0000-4000-8000-000000000001")
 WREN_ID = UUID("10000000-0000-4000-8000-000000000101")
@@ -224,6 +230,7 @@ def _rollup(
     }
 
 
+@pytest.mark.sim_gate
 def test_thirty_phase_quality_baseline(qual: tuple[ApiClient, FakeGateway]) -> None:
     client, gateway = qual
     reports = _run_scenario(client, gateway, 30)
@@ -234,6 +241,7 @@ def test_thirty_phase_quality_baseline(qual: tuple[ApiClient, FakeGateway]) -> N
     _record_baseline("thirty_phase", rollup)
 
 
+@pytest.mark.sim_gate
 def test_seven_day_quality_baseline(qual: tuple[ApiClient, FakeGateway]) -> None:
     client, gateway = qual
     reports = _run_scenario(client, gateway, 70)

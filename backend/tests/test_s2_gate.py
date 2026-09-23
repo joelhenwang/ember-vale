@@ -20,6 +20,7 @@ from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
+from helpers_evidence import evidence_dir
 from test_stage1_api import ApiClient
 
 from worldsim.application.orchestration.service import derive_run_id
@@ -34,7 +35,7 @@ from worldsim.interfaces.http.app import create_app
 ROOT = Path(__file__).parent.parent.parent
 SEED_DIR = ROOT / "content" / "seeds" / "stage0"
 MIGRATIONS = ROOT / "backend" / "migrations"
-EVIDENCE = ROOT / "evidence" / "stage2-seven-day-v1"
+EVIDENCE = evidence_dir("stage2-seven-day-v1")
 
 WORLD_ID = UUID("10000000-0000-4000-8000-000000000001")
 WREN_ID = UUID("10000000-0000-4000-8000-000000000101")
@@ -115,6 +116,7 @@ def _route_for() -> Any:
     return _route
 
 
+@pytest.mark.sim_gate
 def test_seven_day_gate(gate: tuple[ApiClient, FakeGateway]) -> None:
     client, gateway = gate
     gateway.route = _route_for()

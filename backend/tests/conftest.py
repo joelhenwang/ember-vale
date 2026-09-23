@@ -120,25 +120,64 @@ def pg_conn(
         conn.close()
 
 
-@pytest.fixture
-def migrated_db(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    """Scratch database at the migration head for application tests."""
+@pytest.fixture(scope="session")
+def _db_template() -> Iterator[str]:
+    """Fully migrated template database, built once per invocation.
+
+    Application tests clone this template instead of replaying the
+    migration history per test. Migration-history tests keep their
+    own real upgrade/downgrade paths and never use this template.
+    """
+    import os
+
     from fixtures.postgres import (
         create_scratch_database,
         drop_scratch_database,
         replace_database,
+        scratch_name,
         upgrade_head,
     )
 
     from worldsim.infrastructure.settings import Settings
 
-    name = "worldsim_stage0_test"
+    name = scratch_name("worldsim_stage0_template")
     settings = Settings()
     create_scratch_database(settings, name)
+    previous = os.environ.get("WORLDSIM_DATABASE__URL")
+    os.environ["WORLDSIM_DATABASE__URL"] = replace_database(settings.database.url, name)
+    try:
+        upgrade_head()
+    finally:
+        # Restore BEFORE yield: while tests run, the process environment
+        # must never point at the template, or tests without migrated_db
+        # (graph checkpointer, app defaults) open sessions on it and
+        # block every later WITH TEMPLATE clone.
+        if previous is None:
+            os.environ.pop("WORLDSIM_DATABASE__URL", None)
+        else:
+            os.environ["WORLDSIM_DATABASE__URL"] = previous
+    yield name
+    drop_scratch_database(Settings(), name)
+
+
+@pytest.fixture
+def migrated_db(monkeypatch: pytest.MonkeyPatch, _db_template: str) -> Iterator[None]:
+    """Scratch database cloned from the migration-head template."""
+    from fixtures.postgres import (
+        clone_database,
+        drop_scratch_database,
+        replace_database,
+        scratch_name,
+    )
+
+    from worldsim.infrastructure.settings import Settings
+
+    name = scratch_name("worldsim_stage0_test")
+    settings = Settings()
+    clone_database(settings, _db_template, name)
     monkeypatch.setenv(
         "WORLDSIM_DATABASE__URL",
         replace_database(settings.database.url, name),
     )
-    upgrade_head()
     yield
     drop_scratch_database(Settings(), name)

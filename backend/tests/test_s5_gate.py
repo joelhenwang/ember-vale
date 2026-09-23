@@ -18,6 +18,9 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
+import pytest
+from helpers_evidence import evidence_dir
+
 from worldsim.application.macro.endings import evaluate_endings
 from worldsim.application.macro.engine import MacroEngine
 from worldsim.application.macro.eras import compose_era
@@ -53,8 +56,10 @@ from worldsim.infrastructure.db.engine import create_engine
 from worldsim.infrastructure.repositories.unit_of_work import create_unit_of_work
 from worldsim.infrastructure.settings import Settings
 
+pytestmark = pytest.mark.sim_gate
+
 ROOT = Path(__file__).parent.parent.parent
-EVIDENCE = ROOT / "evidence" / "stage5-generation-v1"
+EVIDENCE = evidence_dir("stage5-generation-v1")
 
 
 def _run(awaitable: Any) -> Any:

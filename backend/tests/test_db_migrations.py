@@ -7,12 +7,9 @@ import pytest
 from alembic import command as alembic_command
 from alembic.config import Config
 from alembic.script import ScriptDirectory
-from psycopg import connect
-from psycopg.errors import DuplicateDatabase
 from sqlalchemy import text
 
 from worldsim.infrastructure.db.engine import create_engine
-from worldsim.infrastructure.db.urls import to_sync_url
 from worldsim.infrastructure.db.verify import (
     MigrationReport,
     database_current,
@@ -21,8 +18,6 @@ from worldsim.infrastructure.db.verify import (
     verify,
 )
 from worldsim.infrastructure.settings import Settings
-
-SCRATCH_DB = "worldsim_migtest"
 
 
 def _head() -> str:
@@ -43,25 +38,20 @@ def _replace_database(url: str, database: str) -> str:
 
 @pytest.fixture
 def scratch_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[str]:
-    """Create a scratch database; drop it after the test finishes."""
-    base = to_sync_url(Settings().database.url)
-    maintenance = _replace_database(base, "postgres")
-    admin = connect(maintenance, autocommit=True)
-    try:
-        try:
-            admin.execute(f"CREATE DATABASE {SCRATCH_DB}")
-        except DuplicateDatabase:
-            pass
-    finally:
-        admin.close()
-    scratch_async = _replace_database(Settings().database.url, SCRATCH_DB)
+    """Create an invocation-unique scratch database; drop it after."""
+    from fixtures.postgres import (
+        create_scratch_database,
+        drop_scratch_database,
+        scratch_name,
+    )
+
+    name = scratch_name("worldsim_migtest")
+    settings = Settings()
+    create_scratch_database(settings, name)
+    scratch_async = _replace_database(settings.database.url, name)
     monkeypatch.setenv("WORLDSIM_DATABASE__URL", scratch_async)
     yield scratch_async
-    admin = connect(maintenance, autocommit=True)
-    try:
-        admin.execute(f"DROP DATABASE IF EXISTS {SCRATCH_DB} WITH (FORCE)")
-    finally:
-        admin.close()
+    drop_scratch_database(Settings(), name)
 
 
 def _config() -> Config:

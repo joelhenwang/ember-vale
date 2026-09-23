@@ -24,6 +24,7 @@ dev = [
   "basedpyright>=1.20",
   "pre-commit>=4.0",
   "psycopg[binary]>=3.2",
+  "pytest-xdist>=3.8.0",
 ]
 
 [build-system]
@@ -36,7 +37,14 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = "-q"
+# Routine runs exclude long simulations: bare `pytest` is the fast suite.
+# Gates: `pytest -m "not soak"` — adds sim_gate back (excludes only soak).
+# Soak: `pytest -m soak` — diagnostic, explicit investigations only.
+addopts = "-q -m 'not soak and not sim_gate'"
+markers = [
+  "sim_gate: multi-phase simulation gates (merge slices, orchestration/memory changes, releases)",
+  "soak: diagnostic soak scenarios (explicit performance investigations or scheduled runs)",
+]
 
 [tool.uv]
 package = true

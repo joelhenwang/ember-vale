@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-import time
 from pathlib import Path
 from typing import Any
 
 import httpx
+import pytest
 from test_stage1_api import _route_for, _seed_two  # pyright: ignore[reportPrivateUsage]
 
 from worldsim.application.execution import admit, new_owner, phase_scope, release
@@ -77,20 +77,40 @@ def test_failed_slot_requeues(migrated_db: None) -> None:
 
     asyncio.run(_inner_requeue())
 
-def test_concurrent_advance_executes_once(migrated_db: None) -> None:
+def test_concurrent_advance_executes_once(
+    migrated_db: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import worldsim.application.execution as execution
+
+    admitted = asyncio.Event()
+    release = asyncio.Event()
+    arrivals = {"count": 0}
+    real_admit = execution.admit
+
+    async def _barrier_admit(
+        factory: Any, world_id: Any, scope: str, owner: str, run_id: Any = None
+    ) -> Any:
+        arrivals["count"] += 1
+        if arrivals["count"] == 1:
+            slot = await real_admit(factory, world_id, scope, owner, run_id)
+            admitted.set()
+            await asyncio.wait_for(release.wait(), timeout=10)
+            return slot
+        try:
+            return await real_admit(factory, world_id, scope, owner, run_id)
+        finally:
+            release.set()
+
+    monkeypatch.setattr(execution, "admit", _barrier_admit)
+
     async def _inner_race() -> None:
         settings = Settings()
         ids = await _seed_two()
         snapshots = {1: derive_snapshot_id(derive_run_id(ids["world"], 1))}
         base = _route_for(ids, snapshots)
 
-        def slow(request: Any) -> Any:
-            if "You decide" in (request.system or ""):
-                time.sleep(2.5)
-            return base(request)
-
         gateway = FakeGateway(profile=FAKE_TEST_PROFILE)
-        gateway.route = slow
+        gateway.route = base
         app = create_app(
             settings,
             seed_dir=SEED_DIR,

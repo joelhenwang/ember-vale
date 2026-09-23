@@ -19,6 +19,7 @@ import httpx
 import pytest
 from alembic.config import Config
 from alembic.script import ScriptDirectory
+from helpers_evidence import evidence_dir
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -42,7 +43,7 @@ from worldsim.interfaces.http.app import create_app
 ROOT = Path(__file__).parent.parent.parent
 SEED_DIR = ROOT / "content" / "seeds" / "stage0"
 MIGRATIONS = ROOT / "backend" / "migrations"
-EVIDENCE = ROOT / "evidence" / "stage0-foundation-v1"
+EVIDENCE = evidence_dir("stage0-foundation-v1")
 
 SENTINELS = ("sentinel-gate-key-1", "sentinel-gate-key-2")
 

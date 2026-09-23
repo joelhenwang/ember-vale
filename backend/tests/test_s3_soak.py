@@ -29,6 +29,7 @@ from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
+from helpers_evidence import evidence_dir
 from test_stage1_api import ApiClient
 
 from worldsim.application.orchestration.service import derive_run_id
@@ -39,10 +40,12 @@ from worldsim.infrastructure.repositories.unit_of_work import create_unit_of_wor
 from worldsim.infrastructure.settings import Settings
 from worldsim.interfaces.http.app import create_app
 
+pytestmark = pytest.mark.soak
+
 ROOT = Path(__file__).parent.parent.parent
 SEED_DIR = ROOT / "content" / "seeds" / "stage0"
 MIGRATIONS = ROOT / "backend" / "migrations"
-EVIDENCE = ROOT / "evidence" / "stage3-soak-v1"
+EVIDENCE = evidence_dir("stage3-soak-v1")
 
 WORLD_ID = UUID("10000000-0000-4000-8000-000000000001")
 WREN_ID = UUID("10000000-0000-4000-8000-000000000101")
