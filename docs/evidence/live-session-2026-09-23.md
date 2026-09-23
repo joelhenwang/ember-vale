@@ -55,11 +55,36 @@ narration. Direct probes of the qwen model (plain, story-like, and
 pool, so the two `malformed` rows were likely load-shedding 200s with
 empty choices, not usable prose. Test story archived.
 
+## Third model: deepseek-v4-flash-0731 (same day, paid)
+
+Maintainer-named model; verified on `/models` first ($0.04/M prompt,
+$0.64/M completion). Session cost ≈ $0.003 (8,851 prompt + 4,193
+completion tokens); total spend incl. probes ≈ $0.005.
+
+Result per role (`model_call`): character_decision 3 succeeded / 6
+`malformed`; director 2 succeeded / 1 `malformed`. The 2 director
+successes carried ~4k completion tokens — prose-shaped output under
+`json_object` mode that could not validate. All 8 committed intents are
+validated WAIT (including deterministic fallbacks), so the narrator had
+nothing to narrate: still zero live prose.
+
+Control probe with the exact versioned character system prompt and
+representative Wren context returned perfect schema JSON (a `move`
+intent, 205 tokens, $0.0002). The model can follow the schema; in-session
+output is intermittent — empty/unparseable 200s plus schema-invalid
+ramblings. Engine requests are well-formed (`json_mode=True`, bounded
+retry with backoff, one repair, then safe WAIT fallback); temperature is
+unset (model default). Test story archived.
+
 ## Findings (separate)
 
-1. **Provider execution: attempted, not achieved.** Configuration is correct
-   and requests reach OpenRouter, but 0/20 generations succeeded. No fake
-   fallback masqueraded as live output — failures are honestly recorded.
+1. **Provider execution: serving, but unreliable.** Configuration is
+   correct, requests are billed, and 5/12 deepseek calls succeeded at the
+   adapter. But intermittent empty/unparseable responses plus
+   schema-invalid output under `json_object` mode mean no beat ever
+   produced narratable actions (free-tier pools: 0/30 across two models).
+   No fake fallback masqueraded as live output — failures are honestly
+   recorded.
 2. **Storytelling quality: unproven.** No live prose was produced, so voice
    distinctness, continuity, and travel/state agreement in narration cannot
    be judged from this session.
@@ -68,8 +93,8 @@ empty choices, not usable prose. Test story archived.
 
 No blocking integration defect was fixed: the engine records `rate_limited`
 and falls back without retry, and that orchestration lives in the vendored
-read-only engine. Two independent provider pools (Google, Qwen) throttled
-within the same hour, so further free-model rotation has diminishing
-returns. Remedies for the maintainer: retry when the free pool clears, use
-a credited key or non-free model (real cost — maintainer decision), or
-revisit retry semantics in the engine (out of scope for this task).
+read-only engine. Paid flash serving works but is too flaky at default
+sampling for strict-schema roles. Remedies for the maintainer: pin a
+more capable model, pin a low temperature via profile revision
+(currently unset), retry free pools when they clear, or revisit
+graph/adapter robustness in the engine (out of scope for this task).
