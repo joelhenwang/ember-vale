@@ -23,6 +23,7 @@ import {
   storeLocalPreset,
   useEditorDraft
 } from '../composables/useEditorDraft'
+import { loadCreateRequest } from '../composables/usePresetCreation'
 import { usePresetCreation } from '../composables/usePresetCreation'
 import { resolveImage, setGeneratedImage } from '../game/images'
 import type { ImageSlot } from '../game/model'
@@ -172,20 +173,28 @@ const editor = useEditorDraft()
 const editorOpenedFor = ref<string | null>(null)
 
 /* First-preset creation (E3): local drafts only. The frozen request and
-   its key survive reloads, so retries replay instead of duplicating. */
-const creation = usePresetCreation(`world-${id.value}`)
+   its key survive reloads. While a submission is unresolved, retries
+   replay the ORIGINAL frozen request under its original key; newer edits
+   are set aside as superseded, and a second preset needs the explicit
+   separate action. A memory-only freeze is flagged, never reload-safe. */
+const creationSlot = `world-${id.value}`
+const creation = usePresetCreation(creationSlot)
 
-async function createWorld(): Promise<void> {
-  if (!isNew.value) return
-  const packed = packWorld(draft.value)
-  const presetId = await creation.submit('world', {
-    kind: 'world',
-    name: draft.value.presetName,
-    ...packed
-  })
-  if (!presetId) return
-  // The receipt is durable: hand off to the real studio, which opens an
-  // editor on revision 1 from here. Publication wiring stays separate.
+/** True when the live form has moved past the unresolved frozen request. */
+const creationFormDiffers = computed(() => {
+  void creation.pending.value
+  void creation.status.value
+  const frozen = loadCreateRequest(creationSlot)
+  if (!frozen) return false
+  const current = { kind: 'world', name: draft.value.presetName, ...packWorld(draft.value) }
+  return !(frozen.kind === 'world' && JSON.stringify(frozen.payload) === JSON.stringify(current))
+})
+
+async function goToCreatedPreset(presetId: string): Promise<void> {
+  // The receipt is durable: hand off to the real studio at revision 1
+  // (library origin) or return to the wizard with the calling draft
+  // intact (wizard origin). That return carries no adoption offer: the
+  // new preset is not auto-pinned into the calling draft.
   if (fromLibrary.value) {
     await router.push(`/library/world/${presetId}`)
   } else {
@@ -196,6 +205,40 @@ async function createWorld(): Promise<void> {
       query: { ...(storyDraft ? { draft: storyDraft } : {}) }
     })
   }
+}
+
+async function createWorld(): Promise<void> {
+  if (!isNew.value) return
+  const packed = packWorld(draft.value)
+  const presetId = await creation.submit('world', {
+    kind: 'world',
+    name: draft.value.presetName,
+    ...packed
+  })
+  if (!presetId) return
+  // A replay that set newer edits aside stays put: the recovered panel
+  // keeps those edits available instead of abandoning them by leaving.
+  if (creation.supersededEdits.value) return
+  await goToCreatedPreset(presetId)
+}
+
+/** Explicit second-preset action: never taken implicitly by a retry. */
+async function createSeparateWorld(): Promise<void> {
+  if (!isNew.value) return
+  const packed = packWorld(draft.value)
+  const presetId = await creation.submitFresh('world', {
+    kind: 'world',
+    name: draft.value.presetName,
+    ...packed
+  })
+  if (!presetId) return
+  await goToCreatedPreset(presetId)
+}
+
+async function openRecoveredWorld(): Promise<void> {
+  const presetId = creation.recoveredId.value
+  if (!presetId) return
+  await goToCreatedPreset(presetId)
 }
 
 /** Coerce one stored place into a valid form place (stable key included). */
@@ -375,8 +418,7 @@ async function save(): Promise<boolean> {
       activePlace: draft.value.activePlace,
       startPlace: draft.value.startPlace
     })
-    // Durable creation identity, minted once: stored, not yet sent. First
-    // publication stays unwired until the server receipt lands.
+    // Durable creation identity, minted once: stored, not yet sent.
     stableCreateKey(`world-${id.value}`)
     deviceStorageFailed.value = !kept
     if (!kept) return false
@@ -784,7 +826,37 @@ function suggest(): void {
             <p v-if="creation.status.value === 'failed'" class="studio__state" role="alert">
               {{ creation.error.value }}
             </p>
-            <div class="preview__actions">
+            <p
+              v-if="creation.pending.value && creationFormDiffers"
+              class="studio__state"
+              role="status">
+              An earlier creation is still unresolved — retrying replays the original request under
+              its original key. Newer edits stay in the form and are never sent implicitly.
+            </p>
+            <p
+              v-if="creation.pending.value && !creation.requestPersisted.value"
+              class="studio__state"
+              role="alert">
+              The creation request is in memory only (storage unavailable) — retry works in this
+              tab, but a reload before the receipt lands may create a duplicate. Keep this tab open.
+            </p>
+            <div v-if="creation.recoveredId.value" class="preview__actions">
+              <p class="studio__state" role="status">
+                Recovered preset {{ creation.recoveredId.value }} from the original request. Newer
+                edits are still in the form — open the preset to apply them there, or create a
+                separate preset explicitly.
+              </p>
+              <button type="button" class="cta cta--sm" @click="openRecoveredWorld">
+                Open preset
+              </button>
+              <button type="button" class="ghost ghost--sm" @click="createSeparateWorld">
+                Create a separate preset
+              </button>
+              <button type="button" class="ghost ghost--sm" @click="creation.dismissRecovery()">
+                Dismiss
+              </button>
+            </div>
+            <div v-else class="preview__actions">
               <button
                 type="button"
                 class="cta cta--sm"
@@ -797,6 +869,14 @@ function suggest(): void {
                       ? 'Retry creation'
                       : 'Create preset'
                 }}
+              </button>
+              <button
+                v-if="creation.pending.value && creationFormDiffers"
+                type="button"
+                class="ghost ghost--sm"
+                title="The unresolved request may already have created a preset; use only if you intend a second one."
+                @click="createSeparateWorld">
+                Create a separate preset instead
               </button>
             </div>
             <p v-if="deviceSavedFlash" class="studio__state" role="status">Saved on this device.</p>

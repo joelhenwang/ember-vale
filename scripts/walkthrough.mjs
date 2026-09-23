@@ -869,6 +869,77 @@ try {
       dupes.length === 1 && retryDetail.revision.description.includes(retryDetails),
       `${dupes.length} preset(s) named ${retryName}`
     )
+    // Ambiguous creation: the server commits but the client sees a 502.
+    // Changed content must NOT mint a second preset: the retry replays
+    // the Older bytes under the Older key, and the Newer edits stay.
+    const ambName = `Walkthrough Ambiguous ${stamp}`
+    const OLDER_A = `Ambiguous older ${stamp}`
+    const NEWER_A = `Ambiguous newer ${stamp}`
+    await page.goto(`${BASE}/library/world/new`, { waitUntil: 'networkidle' })
+    await page
+      .getByRole('button', { name: 'Create preset', exact: true })
+      .waitFor({ timeout: 30000 })
+    await pub(page).locator('input').fill(ambName)
+    await fieldControl(page, 'Distinctive details', 'textarea').fill(OLDER_A)
+    await page.getByRole('button', { name: 'Save draft', exact: true }).click()
+    await page.waitForTimeout(1000)
+    let ambushed = false
+    await page.route('**/library/presets**', async (route) => {
+      const req = route.request()
+      if (req.method() !== 'POST' || ambushed) return route.fallback()
+      ambushed = true
+      const real = await route.fetch()
+      await real.text()
+      await route.fulfill({
+        status: 502,
+        contentType: 'application/json',
+        body: '{"error":{"code":"BAD_GATEWAY","message":"walkthrough dropped the creation response"}}'
+      })
+    })
+    await page.getByRole('button', { name: 'Create preset', exact: true }).click()
+    await page
+      .getByRole('button', { name: 'Retry creation', exact: true })
+      .waitFor({ timeout: 60000 })
+    record(S, 'ambiguous creation keeps the frozen request with retry', true)
+    // Newer edits land after the frozen snapshot; reload before retrying.
+    await fieldControl(page, 'Distinctive details', 'textarea').fill(`${OLDER_A} ${NEWER_A}`)
+    await page.getByRole('button', { name: 'Save draft', exact: true }).click()
+    await page.waitForTimeout(1000)
+    await page.reload({ waitUntil: 'networkidle' })
+    await page
+      .getByRole('button', { name: 'Retry creation', exact: true })
+      .waitFor({ timeout: 30000 })
+    const ambKeptName = await pub(page).locator('input').inputValue()
+    record(
+      S,
+      'reload resumes the ambiguous name and offers retry',
+      ambKeptName === ambName,
+      ambKeptName
+    )
+    await page.getByRole('button', { name: 'Retry creation', exact: true }).click()
+    await page.getByText(/Recovered preset/, { exact: false }).waitFor({ timeout: 60000 })
+    record(S, 'replay recovers the preset instead of navigating away', true)
+    const ambForm = await fieldControl(page, 'Distinctive details', 'textarea').inputValue()
+    record(
+      S,
+      'newer edits remain in the form after recovery',
+      ambForm.includes(NEWER_A),
+      ambForm.slice(0, 80)
+    )
+    const ambListed = await apiCall('GET', '/library/presets?kind=world')
+    const ambDupes = ambListed.filter((p) => p.name === ambName)
+    let ambOk = ambDupes.length === 1
+    let ambNote = `${ambDupes.length} preset(s) named ${ambName}`
+    if (ambOk) {
+      const ambDetail = await apiCall('GET', `/library/presets/${ambDupes[0].id}`)
+      ambOk =
+        ambDetail.current_revision === 1 &&
+        ambDetail.revision.description.includes(OLDER_A) &&
+        !ambDetail.revision.description.includes(NEWER_A)
+      ambNote = `rev ${ambDetail.current_revision}: ${ambDetail.revision.description.slice(0, 80)}`
+    }
+    record(S, 'exactly one preset from the original key carries Older, not Newest', ambOk, ambNote)
+    if (ambDupes.length > 0) await archiveStudioWorld(ambDupes[0].id)
     await archiveStudioWorld(worldId)
     await archiveStudioWorld(charId)
     await archiveStudioWorld(retryId)
@@ -979,32 +1050,76 @@ try {
       JSON.stringify(setupAfter.payload) === JSON.stringify(setupBefore.payload),
       `world rev ${setupAfter.payload.world.preset_revision}`
     )
-    // Reload both: A keeps its rev-1 runtime, B keeps its rev-2 pins.
+    // Create story B from the adopted draft: it must pin rev 2.
+    const draftBNow = await apiCall('GET', `/story-drafts/${draftB}`)
+    const createBRes = await fetch(`${API}/stories`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Worldsim-Role': 'watcher',
+        'Idempotency-Key': `walkthrough-twostories-b-${Date.now()}`
+      },
+      body: JSON.stringify({ draft_id: draftB, expected_draft_version: draftBNow.version })
+    })
+    if (!createBRes.ok) throw new Error(`story B create -> ${createBRes.status}`)
+    const storyB = (await createBRes.json()).world_id
+    record(S, 'story B is created from the adopted draft', storyB !== storyA, storyB)
+    const setupB = await apiCall('GET', `/stories/${storyB}/setup`)
+    const rev2 = await apiCall('GET', `/library/presets/${world.id}?revision=2`)
+    record(
+      S,
+      'story B initial setup pins rev 2 with its content',
+      setupB.payload.world.preset_revision === 2 && rev2.revision.description.includes(R2),
+      `world rev ${setupB.payload.world.preset_revision}`
+    )
+    // Play a beat in B as an observer: journey plus one beat, on rev 2.
+    await wizB.goto(`${BASE}/stories/${storyB}/play`, { waitUntil: 'networkidle' })
+    await wizB.locator('.play__badge').waitFor({ timeout: 30000 })
+    await wizB.getByLabel('Who').selectOption(
+      await wizB.getByLabel('Who').evaluate((el) => {
+        const at = Array.from(el.options).findIndex((o) => o.text.includes('Wren'))
+        if (at < 0) throw new Error('no Wren option')
+        return { index: at }
+      })
+    )
+    await wizB.getByRole('button', { name: 'Start journey' }).click()
+    await wizB.getByText('Journey begun', { exact: false }).waitFor({ timeout: 15000 })
+    await wizB.getByRole('button', { name: /Commit beat/ }).click()
+    await wizB.getByRole('button', { name: /Commit beat 2/ }).waitFor({ timeout: 60000 })
+    const castB = await wizB.locator('.play__cast').innerText()
+    const feedB = await wizB.locator('.play__feed li').count()
+    record(
+      S,
+      'story B plays on rev 2 with its own runtime state',
+      feedB > 0 && /Wren[\s\S]*Market/.test(castB),
+      `${feedB} entries`
+    )
+    // Reload both stories: distinct ids, expected setup snapshots, and
+    // independent runtime state. B's actions must leave A unchanged.
     await playA.reload({ waitUntil: 'networkidle' })
-    await playA.waitForTimeout(8000)
-    const reloadedButtons = await playA.getByRole('button').allInnerTexts()
-    record(S, 'reloaded play action bar', true, reloadedButtons.join(' | ').slice(0, 200))
     await playA.getByRole('button', { name: /Commit beat 2/ }).waitFor({ timeout: 30000 })
     const castAfter = await playA.locator('.play__cast').innerText()
     const feedAfter = await playA.locator('.play__feed li').count()
-    // B pins the head revision, so the older-revision pins notice stays
-    // hidden by design (it only shows when the draft pins behind the
-    // library map); the draft pins rev 2 on the server.
-    await wizB.goto(`${BASE}/new-story?draft=${draftB}`, { waitUntil: 'networkidle' })
-    await wizB.getByText(/Draft rev \d+/, { exact: false }).waitFor({ timeout: 30000 })
-    const pinsNotices = await wizB.getByText(/This draft pins/, { exact: false }).count()
-    record(S, 'reloaded B uses the current map with no stale-pin notice', pinsNotices === 0)
+    await wizB.reload({ waitUntil: 'networkidle' })
+    await wizB.getByRole('button', { name: /Commit beat 2/ }).waitFor({ timeout: 30000 })
+    const castBAfter = await wizB.locator('.play__cast').innerText()
+    const feedBAfter = await wizB.locator('.play__feed li').count()
+    const setupAFinal = await apiCall('GET', `/stories/${storyA}/setup`)
+    const setupBFinal = await apiCall('GET', `/stories/${storyB}/setup`)
     const draftBFinal = await apiCall('GET', `/story-drafts/${draftB}`)
-    const setupFinal = await apiCall('GET', `/stories/${storyA}/setup`)
     record(
       S,
-      'reload keeps A on rev 1 and B on rev 2, independently',
-      castAfter === castBefore &&
+      'reload keeps two independent stories: A on rev 1, B on rev 2',
+      storyA !== storyB &&
+        castAfter === castBefore &&
         feedAfter === feedBefore &&
-        JSON.stringify(setupFinal.payload) === JSON.stringify(setupBefore.payload) &&
+        castBAfter === castB &&
+        feedBAfter === feedB &&
+        JSON.stringify(setupAFinal.payload) === JSON.stringify(setupBefore.payload) &&
+        setupBFinal.payload.world.preset_revision === 2 &&
         draftBFinal.payload.world.preset_revision === 2 &&
         draftBFinal.payload.cast.every((m) => ['hearth', 'market'].includes(m.location_key)),
-      `A feed ${feedAfter}, B rev ${draftBFinal.payload.world.preset_revision}`
+      `A feed ${feedAfter}, B feed ${feedBAfter}`
     )
     await archiveStudioWorld(world.id)
     await ctxA.close()

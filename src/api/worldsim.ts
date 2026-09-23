@@ -77,9 +77,9 @@ export function createPreset(
 ): Promise<PresetDetail> {
   // Durable creation identity: the caller mints one stable key per local
   // draft and reuses it across retries, so a lost response replays instead
-  // of minting a second preset. The server receipt is still pending — new
-  // presets stay local-until-publish and this wrapper is not yet wired to
-  // any publish path.
+  // of minting a second preset. First creation is wired through this
+  // wrapper: the frozen request creates revision 1 and the studios hand
+  // off to the real preset on the receipt.
   return apiFetch<PresetDetail>('/library/presets', {
     ...opts,
     method: 'POST',

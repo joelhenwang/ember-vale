@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   loadCreateRequest,
+  loadRecoveredPresetId,
+  loadSupersededEdits,
   resetPresetCreationMemoryForTests,
   usePresetCreation
 } from './usePresetCreation'
@@ -11,6 +13,11 @@ let held: Array<() => void> = []
 let failNextCreate: 'transport' | 'conflict' | null = null
 let nextId = 0
 
+const REQUEST_KEY = 'ember-vale.preset-create-request.world-new'
+const SUPERSEDED_KEY = 'ember-vale.preset-create-superseded.world-new'
+const RECOVERED_KEY = 'ember-vale.preset-create-recovered.world-new'
+const CREATE_KEY = 'ember-vale.preset-create-key.world-new'
+
 function installFetch(): void {
   bodies = []
   held = []
@@ -18,6 +25,13 @@ function installFetch(): void {
   nextId = 0
   resetPresetCreationMemoryForTests()
   resetEditorDraftMemoryForTests()
+  for (const key of [REQUEST_KEY, SUPERSEDED_KEY, RECOVERED_KEY, CREATE_KEY]) {
+    try {
+      localStorage.removeItem(key)
+    } catch {
+      /* no storage in this environment */
+    }
+  }
   vi.stubGlobal(
     'fetch',
     vi.fn(async (rawUrl: string, init: RequestInit = {}) => {
@@ -107,16 +121,89 @@ describe('usePresetCreation', () => {
     expect(bodies[1]!.key).toBe(bodies[0]!.key)
   })
 
-  it('changed content starts a distinct submission under a fresh key', async () => {
+  it('replays the original key when the form changed while unresolved', async () => {
     installFetch()
     const ctl = usePresetCreation('world-new')
     failNextCreate = 'transport'
     expect(await ctl.submit('world', payloadA())).toBeNull()
+    // Changed content under the same unresolved submission must NOT mint
+    // a second preset: the retry replays the Older bytes under the Older key.
     const id = await ctl.submit('world', payloadB())
     expect(id).toBe('preset-1')
     expect(bodies).toHaveLength(2)
+    expect(bodies[1]!.key).toBe(bodies[0]!.key)
+    expect(JSON.stringify(bodies[1]!.body)).toBe(JSON.stringify(bodies[0]!.body))
+    expect(ctl.replayed.value).toBe(true)
+    // The receipt clears the frozen request but preserves the newer edits
+    // and records the recovered preset.
+    expect(loadCreateRequest('world-new')).toBeNull()
+    expect(ctl.supersededEdits.value).toMatchObject({ kind: 'world' })
+    expect(ctl.supersededEdits.value!.payload).toMatchObject({ description: 'Basin, revised.' })
+    expect(ctl.recoveredId.value).toBe('preset-1')
+    expect(loadSupersededEdits('world-new')).not.toBeNull()
+    expect(loadRecoveredPresetId('world-new')).toBe('preset-1')
+  })
+
+  it('reloads the superseded recovery state after a replay', async () => {
+    installFetch()
+    const first = usePresetCreation('world-new')
+    failNextCreate = 'transport'
+    expect(await first.submit('world', payloadA())).toBeNull()
+    expect(await first.submit('world', payloadB())).toBe('preset-1')
+    // A remount (reload) after the replay still offers the recovered
+    // preset and the set-aside edits instead of a blank submission.
+    const second = usePresetCreation('world-new')
+    expect(second.pending.value).toBe(false)
+    expect(second.recoveredId.value).toBe('preset-1')
+    expect(second.supersededEdits.value!.payload).toMatchObject({
+      description: 'Basin, revised.'
+    })
+    // A plain submit must not silently mint a second preset.
+    expect(await second.submit('world', payloadB())).toBeNull()
+    expect(second.error.value).toMatch(/already created/)
+    expect(bodies).toHaveLength(2)
+    // Dismissing the recovery re-arms a deliberate fresh submission.
+    second.dismissRecovery()
+    expect(await second.submit('world', payloadB())).toBe('preset-2')
+    expect(bodies).toHaveLength(3)
+    expect(bodies[2]!.key).not.toBe(bodies[0]!.key)
+  })
+
+  it('mints a separate preset only through the explicit fresh action', async () => {
+    installFetch()
+    const ctl = usePresetCreation('world-new')
+    failNextCreate = 'transport'
+    expect(await ctl.submit('world', payloadA())).toBeNull()
+    const id = await ctl.submitFresh('world', payloadB())
+    expect(id).toBe('preset-1')
+    expect(bodies).toHaveLength(2)
     expect(bodies[1]!.key).not.toBe(bodies[0]!.key)
-    expect(bodies[1]!.body).toMatchObject({ name: 'Basin Vale' })
+    expect(bodies[1]!.body).toMatchObject({
+      payload: { description: 'Basin, revised.' }
+    })
+    expect(ctl.replayed.value).toBe(false)
+  })
+
+  it('flags a memory-only freeze instead of claiming reload safety', async () => {
+    installFetch()
+    const store = {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error('storage unavailable')
+      },
+      removeItem: () => {}
+    }
+    vi.stubGlobal('localStorage', store)
+    const ctl = usePresetCreation('world-new')
+    failNextCreate = 'transport'
+    expect(await ctl.submit('world', payloadA())).toBeNull()
+    expect(ctl.pending.value).toBe(true)
+    expect(ctl.requestPersisted.value).toBe(false)
+    expect(ctl.error.value).toMatch(/memory only/)
+    // In-tab retry still replays the identical key from memory.
+    const retry = await ctl.submit('world', payloadA())
+    expect(retry).toBe('preset-1')
+    expect(bodies[1]!.key).toBe(bodies[0]!.key)
   })
 
   it('surfaces a key conflict and keeps the frozen request for recovery', async () => {
