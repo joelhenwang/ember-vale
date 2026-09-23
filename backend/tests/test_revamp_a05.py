@@ -856,3 +856,199 @@ def test_explicit_pin_missing_connection_fails_closed(migrated_db: None) -> None
             await engine.dispose()
 
     asyncio.run(_inner())
+
+
+def test_broken_pin_advance_leaves_no_open_run(migrated_db: None) -> None:
+    """A rejected fresh advance must not leave an orphan open run.
+
+    Runtime resolution runs before admission: the broken pin raises
+    before any run row exists, so reconciliation sees no stale open
+    run and a later retry starts clean.
+    """
+    from uuid import uuid4
+
+    from test_stage1_orchestration import _orchestrator, _role_gateways, _seed
+
+    from worldsim.application.orchestration.service import derive_run_id
+    from worldsim.domain.errors import ErrorCode
+    from worldsim.domain.settings import (
+        AdapterKind,
+        ProviderConnection,
+        ProviderProfileRevision,
+    )
+    from worldsim.domain.stories import SetupProvenance, StoryInitialSetup
+    from worldsim.domain.time import utcnow
+
+    async def _inner() -> None:
+        ids = await _seed()
+        gateways = _role_gateways(ids)
+        orch = _orchestrator(gateways)
+        engine = create_engine(Settings())
+        try:
+            connection = ProviderConnection(
+                id=uuid4(),
+                adapter=AdapterKind.FAKE,
+                name="Pin",
+                endpoint="http://127.0.0.1:7144/v1",
+                allow_local_endpoint=True,
+            )
+            revision = ProviderProfileRevision(
+                id=uuid4(),
+                connection_id=connection.id,
+                revision=1,
+                model_id="pinned-fake",
+            )
+            async with create_unit_of_work(engine) as uow:
+                await uow.settings.add_connection(connection)
+                await uow.settings.add_profile(revision)
+                await uow.stories.put_setup(
+                    StoryInitialSetup(
+                        world_id=ids["world"],
+                        payload={
+                            "schema_version": 1,
+                            "provenance": "created",
+                            "art": {
+                                "profile_id": str(revision.id),
+                                "profile_revision": 99,
+                            },
+                        },
+                        content_hash="broken-pin-no-orphan",
+                        created_at=utcnow(),
+                        provenance=SetupProvenance.CREATED,
+                    )
+                )
+                await uow.commit()
+            run_id = derive_run_id(ids["world"], 1)
+            with pytest.raises(DomainError) as caught:
+                await orch.advance_phase(ids["world"], 1)
+            assert caught.value.code is ErrorCode.PRECONDITION_FAILED
+            async with create_unit_of_work(engine) as uow:
+                assert await uow.phases.find_open_run(ids["world"]) is None
+                with pytest.raises(DomainError):
+                    await uow.phases.get_run(run_id)
+            for gateway in gateways.values():
+                assert gateway.sent_requests == []
+        finally:
+            await engine.dispose()
+
+    asyncio.run(_inner())
+
+
+def test_failed_probe_leaves_no_run_and_retry_succeeds(migrated_db: None) -> None:
+    """Provider preflight runs before admission: a down provider leaves
+    no run row, and the same index advances cleanly once it recovers.
+    """
+    from unittest import mock
+
+    from test_stage1_orchestration import _orchestrator, _role_gateways, _seed
+
+    from worldsim.application.orchestration.service import derive_run_id
+    from worldsim.application.ports.model_gateway import ProbeResult
+    from worldsim.domain.errors import ErrorCode
+
+    async def _inner() -> None:
+        ids = await _seed()
+        gateways = _role_gateways(ids)
+        orch = _orchestrator(gateways)
+        engine = create_engine(Settings())
+        try:
+            run_id = derive_run_id(ids["world"], 1)
+            dead = mock.AsyncMock(
+                return_value=ProbeResult(
+                    ok=False, profile="fake", latency_ms=0, detail="provider down"
+                )
+            )
+            with mock.patch.object(gateways["narrator"], "probe", dead):
+                with pytest.raises(DomainError) as caught:
+                    await orch.advance_phase(ids["world"], 1)
+            assert caught.value.code is ErrorCode.PRECONDITION_FAILED
+            async with create_unit_of_work(engine) as uow:
+                assert await uow.phases.find_open_run(ids["world"]) is None
+                with pytest.raises(DomainError):
+                    await uow.phases.get_run(run_id)
+            report = await orch.advance_phase(ids["world"], 1)
+            assert report.run_id == run_id
+            assert not report.duplicate
+            async with create_unit_of_work(engine) as uow:
+                run = await uow.phases.get_run(run_id)
+                assert run.state.value == "completed"
+        finally:
+            await engine.dispose()
+
+    asyncio.run(_inner())
+
+
+def test_failed_resume_preserves_open_run(migrated_db: None) -> None:
+    """A resume blocked by configuration keeps the existing open run.
+
+    The admitted run is committed progress: a later preflight failure
+    must neither delete it nor advance its state, so fixing the
+    configuration can resume the same run.
+    """
+    from uuid import uuid4
+
+    from test_stage1_orchestration import _orchestrator, _role_gateways, _seed
+
+    from worldsim.domain.errors import ErrorCode
+    from worldsim.domain.settings import (
+        AdapterKind,
+        ProviderConnection,
+        ProviderProfileRevision,
+    )
+    from worldsim.domain.stories import SetupProvenance, StoryInitialSetup
+    from worldsim.domain.time import utcnow
+
+    async def _inner() -> None:
+        ids = await _seed()
+        gateways = _role_gateways(ids)
+        orch = _orchestrator(gateways)
+        engine = create_engine(Settings())
+        try:
+            admitted = await orch._admit_run(ids["world"], 1)  # pyright: ignore[reportPrivateUsage]
+            connection = ProviderConnection(
+                id=uuid4(),
+                adapter=AdapterKind.FAKE,
+                name="Pin",
+                endpoint="http://127.0.0.1:7144/v1",
+                allow_local_endpoint=True,
+            )
+            revision = ProviderProfileRevision(
+                id=uuid4(),
+                connection_id=connection.id,
+                revision=1,
+                model_id="pinned-fake",
+            )
+            async with create_unit_of_work(engine) as uow:
+                await uow.settings.add_connection(connection)
+                await uow.settings.add_profile(revision)
+                await uow.stories.put_setup(
+                    StoryInitialSetup(
+                        world_id=ids["world"],
+                        payload={
+                            "schema_version": 1,
+                            "provenance": "created",
+                            "art": {
+                                "profile_id": str(revision.id),
+                                "profile_revision": 99,
+                            },
+                        },
+                        content_hash="broken-pin-preserve-run",
+                        created_at=utcnow(),
+                        provenance=SetupProvenance.CREATED,
+                    )
+                )
+                await uow.commit()
+            with pytest.raises(DomainError) as caught:
+                await orch.advance_phase(ids["world"], 1)
+            assert caught.value.code is ErrorCode.PRECONDITION_FAILED
+            async with create_unit_of_work(engine) as uow:
+                kept = await uow.phases.find_open_run(ids["world"])
+                assert kept is not None
+                assert kept.id == admitted.id
+                assert kept.state.value == admitted.state.value
+            for gateway in gateways.values():
+                assert gateway.sent_requests == []
+        finally:
+            await engine.dispose()
+
+    asyncio.run(_inner())

@@ -426,11 +426,14 @@ class Stage1Orchestrator:
                 ErrorCode.PRECONDITION_FAILED,
                 f"phase run is {run.state.value}; resume before advancing",
             )
+        # Preflight before admission: a broken pin or a down provider
+        # raises before any run row exists, so a rejected fresh advance
+        # leaves no orphan open run and the same index can retry.
+        runtime = await self._runtime(world_id)
+        await self._probe_gate(runtime)
         run = await self._admit_run(world_id, index)
         if run.state.value == PhaseRunState.COMPLETED.value:
             return await self._duplicate_report(world_id, run_id)
-        runtime = await self._runtime(world_id)
-        await self._probe_gate(runtime)
         await self._tick(world_id, run_id, index)
         sealed = await self._seal(world_id, run_id, index)
         await self._director_phase(world_id, run_id, index, sealed, runtime)
@@ -563,10 +566,10 @@ class Stage1Orchestrator:
 
         One transaction holds the world row locked while it validates
         the clock and the previous run, refuses a different open run,
-        and creates this index run. Same-run replay resumes: only a
-        twin commit of this exact run is tolerated, verified by
-        re-reading it; every other integrity failure raises. No model
-        calls happen inside.
+        and creates this index run. Same-run replay resumes via a
+        pre-read under the lock; only a twin commit of this exact run
+        is tolerated, verified by identity-matching re-read, and every
+        other integrity failure raises. No model calls happen inside.
         """
         run_id = derive_run_id(world_id, index)
         self._fire("before_admission")
@@ -588,17 +591,29 @@ class Stage1Orchestrator:
                         "before advancing another index",
                         {"open_run_id": str(open_run.id), "run_id": str(run_id)},
                     )
+                try:
+                    existing = await uow.phases.get_run(run_id)
+                except DomainError:
+                    existing = None
+                if existing is not None:
+                    return existing
                 await uow.phases.create_run(
                     PhaseRun(id=run_id, world_id=world_id, absolute_index=index)
                 )
                 await uow.commit()
                 return await uow.phases.get_run(run_id)
         except IntegrityError as exc:
+            # Only a twin insert of this exact run can reach here: the
+            # pre-read above runs under the same world lock, so any
+            # other constraint failure finds no such row and re-raises.
             async with self._factory() as uow:
                 try:
-                    return await uow.phases.get_run(run_id)
+                    twin = await uow.phases.get_run(run_id)
                 except DomainError:
                     raise exc from None
+                if twin.world_id != world_id or twin.absolute_index != index:
+                    raise exc from None
+                return twin
 
 
     async def _require_previous_complete_in(
