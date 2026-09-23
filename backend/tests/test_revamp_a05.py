@@ -178,12 +178,80 @@ def test_pinned_profile_resolves_per_world(client: ApiClient) -> None:
                         payload={
                             "schema_version": 1,
                             "provenance": "created",
-                            "ai": {
+                            "art": {
                                 "profile_id": profile["id"],
                                 "profile_revision": profile["revision"],
                             },
                         },
                         content_hash="a05-test",
+                        created_at=utcnow(),
+                        provenance=SetupProvenance.CREATED,
+                    )
+                )
+                await uow.commit()
+                return ids["world"]
+        finally:
+            await engine.dispose()
+
+    world_id = asyncio.run(_setup())
+
+    async def _resolve() -> SamplingParams:
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                return await resolve_sampling(uow, world_id)
+        finally:
+            await engine.dispose()
+
+    sampling = asyncio.run(_resolve())
+    assert sampling.temperature == 0.3
+    assert sampling.profile_id == profile["id"]
+
+def test_pinned_profile_resolves_from_created_snapshot_shape(client: ApiClient) -> None:
+    """Regression: stories.create nests DraftAi under "art", not "ai".
+
+    Resolution must read the section the writer emits, or every created
+    story silently runs environment defaults.
+    """
+    connection = client.post(
+        "/api/v1/settings/providers",
+        json={
+            "adapter": "fake",
+            "name": "Demo",
+            "endpoint": "http://127.0.0.1:7144/v1",
+            "allow_local_endpoint": True,
+        },
+        headers={},
+    ).json()
+    profile = client.post(
+        f"/api/v1/settings/providers/{connection['id']}/profiles",
+        json={"model_id": "fake-echo", "temperature": 0.3},
+        headers={},
+    ).json()
+
+    async def _setup() -> UUID:
+        from test_stage1_api import _seed_two  # pyright: ignore[reportPrivateUsage]
+
+        from worldsim.domain.stories import SetupProvenance, StoryInitialSetup
+        from worldsim.domain.time import utcnow
+
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                ids = await _seed_two()
+                await uow.stories.put_setup(
+                    StoryInitialSetup(
+                        world_id=ids["world"],
+                        payload={
+                            "schema_version": 1,
+                            "provenance": "created",
+                            # Shape emitted by stories.create._snapshot_payload.
+                            "art": {
+                                "profile_id": profile["id"],
+                                "profile_revision": profile["revision"],
+                            },
+                        },
+                        content_hash="a05-created-shape",
                         created_at=utcnow(),
                         provenance=SetupProvenance.CREATED,
                     )

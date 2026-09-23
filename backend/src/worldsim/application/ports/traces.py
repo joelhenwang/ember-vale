@@ -8,7 +8,7 @@ JSONB; the service redacts them before they reach any adapter.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -35,11 +35,14 @@ class TraceRepository(Protocol):
         prompt_redacted: str,
         prompt_version: str,
         max_tokens: int,
+        sampling: dict[str, Any] | None = None,
     ) -> None: ...
 
     async def finish_call(self, call_id: UUID, completion: StoredCompletion) -> None: ...
 
-    async def fail_call(self, call_id: UUID, error_code: str, latency_ms: int) -> None: ...
+    async def fail_call(
+        self, call_id: UUID, error_code: str, latency_ms: int, detail: dict[str, Any] | None = None
+    ) -> None: ...
 
     async def save_manifest(self, manifest: ContextManifest) -> None: ...
 
@@ -61,6 +64,10 @@ class StoredCompletion(BaseModel):
     prompt_tokens: int = Field(ge=0)
     completion_tokens: int = Field(ge=0)
     latency_ms: int = Field(ge=0)
+    reasoning_tokens: int = Field(default=0, ge=0)
+    finish_reason: str | None = Field(default=None, max_length=64)
+    response_id: str | None = Field(default=None, max_length=128)
+    attempts: list[dict[str, Any]] = Field(default_factory=list)
 
 
 @dataclass(frozen=True)

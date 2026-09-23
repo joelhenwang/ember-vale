@@ -171,7 +171,16 @@ class TraceService:
                 list(spec.profile.capabilities),
             )
             await uow.traces.start_call(
-                call, redact(request.prompt), spec.prompt_version, request.max_tokens
+                call,
+                redact(request.prompt),
+                spec.prompt_version,
+                request.max_tokens,
+                {
+                    "model_id": spec.profile.model_id,
+                    "temperature": request.temperature,
+                    "top_p": request.top_p,
+                    "top_k": request.top_k,
+                },
             )
             await uow.traces.save_manifest(manifest)
             await uow.commit()
@@ -181,6 +190,7 @@ class TraceService:
             result = await gateway.complete(request)
         except ModelGatewayError as exc:
             latency_ms = int((time.perf_counter() - started) * 1000)
+            detail = getattr(exc, "detail", None)
             failed = call.model_copy(
                 update={
                     "status": CallStatus.FAILED,
@@ -189,7 +199,12 @@ class TraceService:
                 }
             )
             async with self._factory() as uow:
-                await uow.traces.fail_call(call_id, _error_code(exc), latency_ms)
+                await uow.traces.fail_call(
+                    call_id,
+                    _error_code(exc),
+                    latency_ms,
+                    detail if isinstance(detail, dict) else None,
+                )
                 await uow.commit()
             export = await self._exporter.export(failed, manifest, None)
             raise
@@ -201,6 +216,10 @@ class TraceService:
             prompt_tokens=result.prompt_tokens,
             completion_tokens=result.completion_tokens,
             latency_ms=latency_ms,
+            reasoning_tokens=result.reasoning_tokens,
+            finish_reason=result.finish_reason,
+            response_id=result.response_id,
+            attempts=list(result.attempts),
         )
         finished = call.model_copy(
             update={

@@ -14,6 +14,7 @@ Policy, frozen here and in backend/README.md:
 from __future__ import annotations
 
 import asyncio
+import time
 from collections.abc import Callable, Coroutine
 from typing import Any
 
@@ -63,15 +64,31 @@ class RetryingGateway:
     async def complete(self, request: CompletionRequest) -> CompletionResult:
         last: ModelGatewayError | None = None
         hint: float | None = None
+        attempts: list[dict[str, Any]] = []
         for attempt in range(self._max_attempts):
+            started = time.monotonic()
             try:
-                return await self._inner.complete(request)
+                result = await self._inner.complete(request)
+                return result.model_copy(update={"attempts": attempts})
             except ModelRateLimitedError as exc:
                 last, hint = exc, exc.retry_after_s
             except (ModelTimeoutError, ModelUnavailableError) as exc:
                 last, hint = exc, None
+            latency_ms = max(0, int((time.monotonic() - started) * 1000))
+            record: dict[str, Any] = {
+                "attempt": attempt + 1,
+                "error": type(last).__name__ if last is not None else "unknown",
+                "latency_ms": latency_ms,
+            }
+            detail = getattr(last, "detail", None)
+            if isinstance(detail, dict):
+                record["http_status"] = detail.get("http_status")
+                record["usage"] = detail.get("usage")
+            attempts.append(record)
             if attempt >= self._max_attempts - 1:
                 assert last is not None
+                prior = last.detail if isinstance(last.detail, dict) else {}
+                last.detail = {**prior, "attempts": attempts}
                 raise last
             await self._sleep(self._delay(attempt, hint))
         assert last is not None

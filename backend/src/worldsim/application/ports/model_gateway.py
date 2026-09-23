@@ -6,7 +6,7 @@ Failures are normalized here so callers handle six cases, not HTTP details.
 
 from __future__ import annotations
 
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -14,7 +14,20 @@ AdapterName = Literal["fake", "openrouter"]
 
 
 class ModelGatewayError(Exception):
-    """Base for normalized model failures."""
+    """Base for normalized model failures.
+
+    ``detail`` carries provider-boundary diagnostics (HTTP status,
+    response id, finish reason, usage, shape notes). It never holds
+    credentials or full prompts; full bodies are captured separately,
+    locally, and only when explicitly enabled.
+    """
+
+
+    def __init__(
+        self, message: str = "", *, detail: dict[str, Any] | None = None
+    ) -> None:
+        super().__init__(message)
+        self.detail = detail
 
 
 class ModelTimeoutError(ModelGatewayError):
@@ -23,9 +36,13 @@ class ModelTimeoutError(ModelGatewayError):
 
 class ModelRateLimitedError(ModelGatewayError):
     def __init__(
-        self, message: str = "model rate limited", retry_after_s: float | None = None
+        self,
+        message: str = "model rate limited",
+        retry_after_s: float | None = None,
+        *,
+        detail: dict[str, Any] | None = None,
     ) -> None:
-        super().__init__(message)
+        super().__init__(message, detail=detail)
         self.retry_after_s = retry_after_s
 
 
@@ -81,6 +98,10 @@ class CompletionResult(BaseModel):
     model: str
     profile_version: str
     latency_ms: int = Field(ge=0)
+    reasoning_tokens: int = Field(default=0, ge=0)
+    finish_reason: str | None = Field(default=None, max_length=64)
+    response_id: str | None = Field(default=None, max_length=128)
+    attempts: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class EmbeddingRequest(BaseModel):

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
@@ -92,6 +93,7 @@ class SqlAlchemyTraceRepository:
         prompt_redacted: str,
         prompt_version: str,
         max_tokens: int,
+        sampling: dict[str, Any] | None = None,
     ) -> None:
         self._session.add(
             ModelCallRow(
@@ -109,6 +111,7 @@ class SqlAlchemyTraceRepository:
                     "prompt": prompt_redacted,
                     "prompt_version": prompt_version,
                     "max_tokens": max_tokens,
+                    "sampling": dict(sampling) if sampling is not None else {},
                 },
                 result={},
             )
@@ -131,14 +134,21 @@ class SqlAlchemyTraceRepository:
             "text": completion.text,
             "model": completion.model,
             "profile_version": completion.profile_version,
+            "reasoning_tokens": completion.reasoning_tokens,
+            "finish_reason": completion.finish_reason,
+            "response_id": completion.response_id,
+            "attempts": list(completion.attempts),
         }
         await self._session.flush()
 
-    async def fail_call(self, call_id: UUID, error_code: str, latency_ms: int) -> None:
+    async def fail_call(
+        self, call_id: UUID, error_code: str, latency_ms: int, detail: dict[str, Any] | None = None
+    ) -> None:
         row = await self._require_row(call_id)
         row.status = "failed"
         row.error_code = error_code
         row.latency_ms = latency_ms
+        row.result = dict(detail) if detail is not None else {}
         await self._session.flush()
 
     async def save_manifest(self, manifest: ContextManifest) -> None:

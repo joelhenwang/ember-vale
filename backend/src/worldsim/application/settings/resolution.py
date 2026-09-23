@@ -37,7 +37,8 @@ async def resolve_profile(uow: UnitOfWork, world_id: UUID) -> ProviderProfileRev
     payload: Any = setup.payload
     if not isinstance(payload, dict):
         return None
-    section = cast(dict[str, Any], payload).get("ai")
+    # Created snapshots nest DraftAi under "art" (stories.create); "ai" never exists there.
+    section = cast(dict[str, Any], payload).get("art")
     if not isinstance(section, dict):
         return None
     options = cast(dict[str, Any], section)
