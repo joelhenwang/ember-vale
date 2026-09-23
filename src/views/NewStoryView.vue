@@ -37,6 +37,7 @@ import {
   type NewStorySelections
 } from '../game/drafting'
 import { filterCast, type CastFilter } from '../game/filters'
+import { persistStepSlug, stepFromSlug } from '../game/wizardSteps'
 import type { CharacterDef } from '../game/model'
 
 const route = useRoute()
@@ -45,16 +46,12 @@ const presets = usePresets()
 const backend = useBackend()
 const draftCtl = useStoryDraft()
 
-const STEP_SLUGS = ['world', 'characters', 'play-mode', 'story', 'ai', 'review']
-// current_step is the visible step: persisted on every navigation, restored
-// on reload so return visits land where the draft left off.
-function slugOf(n: number): string {
-  return STEP_SLUGS[n - 1] ?? 'world'
-}
-function stepOf(slug: unknown): number {
-  const at = typeof slug === 'string' ? STEP_SLUGS.indexOf(slug) : -1
-  return at >= 0 ? at + 1 : 1
-}
+// current_step is the persisted step identifier: saved on every
+// navigation, restored on reload so return visits land where the draft
+// left off. Labels render in the stepper; only backend-accepted
+// identifiers persist (see game/wizardSteps).
+const slugOf = persistStepSlug
+const stepOf = stepFromSlug
 const step = ref(1)
 const booted = ref(false)
 const bootError = ref<string | null>(null)

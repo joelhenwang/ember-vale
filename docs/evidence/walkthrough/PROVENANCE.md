@@ -55,18 +55,18 @@ whole-tree evidence.
 
 ## 2026-09-23 subset (`results-addrollback-2026-09-23.json`)
 
-10/10 PASS, `only: [addrollback]`, at `2026-09-23T01:07:16Z`. The
-recorded `commit` is `c324807` with `dirty: true`: the tested tree was
-`c324807` plus the uncommitted character-add rollback correction
-(controlled key in adoption snapshots, restored on dismiss, compared
-for intervening edits) and the matching `addrollback` scenario.
-Read it as verification of that code — failed character-add accept
-controlling the newcomer locally, dismiss retry removing it and
-restoring no-control, persistence recovery, reload, and the preserved
+11/11 PASS, `only: [addrollback]`, at `2026-09-23T01:31:48Z`. The
+recorded `commit` is `df2ae94` with `dirty: true`: the tested tree was
+`df2ae94` plus the uncommitted wizard integration fixes (step-slug
+contract, recovery null normalization) and the direct step-3
+`addrollback` journey. Read it as verification of that code — failed
+character-add accept controlling the newcomer locally, failed dismiss
+keeping recovery, retry dismissal on step 3 removing it and restoring
+no-control, reload with no false recovery conflict, and the preserved
 intervening location with an untouched server — not as whole-tree
-evidence. The reload passes through the designed recovery choice
-("server version chosen") because a stale failure snapshot never
-compares covered; see the ledger findings.
+evidence. (An earlier 10/10 run of the same scenario detoured through
+the recovery choice UI and a step-2 dismissal workaround; this run
+supersedes it with the direct journey.)
 
 ## Future runs
 

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  normalizeRecoveryPayload,
   planBootRecovery,
   resetDraftMemoryForTests,
   useStoryDraft,
@@ -562,6 +563,92 @@ describe('useStoryDraft guarded workflow', () => {
         stored
       ).kind
     ).toBe('covered')
+  })
+
+  it('normalizeRecoveryPayload drops nulls and empties while keeping shape', () => {
+    expect(
+      normalizeRecoveryPayload({
+        a: null,
+        b: undefined,
+        c: '',
+        d: [],
+        e: 0,
+        f: false,
+        g: { h: null, i: 'x', j: [{ k: null, l: 1 }] }
+      })
+    ).toEqual({ d: [], e: 0, f: false, g: { i: 'x', j: [{ l: 1 }] } })
+  })
+
+  it('planBootRecovery treats server nulls as omitted local fields', () => {
+    const selections: NewStorySelections = { ...SEL, title: 'Newest title' }
+    const stored: RecoveryDraft = {
+      draftId: 'd-1',
+      selections,
+      step: 'world',
+      at: '2026-01-01T01:00:01Z',
+      snapshot: '',
+      baseVersion: 1
+    }
+    // Server view shape: absent optionals serialize as explicit nulls.
+    const built = buildDraftPayload(selections) as unknown as Record<string, unknown>
+    const serverPayload = {
+      ...built,
+      world: { ...(built['world'] as object), name: null, description: null },
+      mode: { role: 'watcher', controlled_cast_key: null },
+      story: { ...(built['story'] as object), premise: null, pacing: null },
+      ai: { profile_id: null, art_source: 'curated' }
+    }
+    // The server already holds the saved choices: covered, no conflict UI.
+    expect(
+      planBootRecovery({ payload: serverPayload, version: 2, step: 'world' }, stored).kind
+    ).toBe('covered')
+  })
+
+  it('planBootRecovery keeps genuinely newer local edits available', () => {
+    const older: NewStorySelections = { ...SEL, title: 'Older title' }
+    const newer: NewStorySelections = {
+      ...SEL,
+      title: 'Newest title',
+      cast: [
+        {
+          key: 'wren',
+          presetId: 'char-1',
+          presetRevision: 2,
+          name: 'Wren',
+          locationKey: 'hearth'
+        }
+      ]
+    }
+    const serverPayload = {
+      ...buildDraftPayload(older),
+      mode: { role: 'watcher', controlled_cast_key: null }
+    }
+    const mkStored = (baseVersion: number | null): RecoveryDraft => ({
+      draftId: 'd-1',
+      selections: newer,
+      step: 'world',
+      at: '2026-01-01T01:00:01Z',
+      snapshot: '',
+      baseVersion
+    })
+    // Newer edits on an unmoved server restore without conflict…
+    const same = planBootRecovery(
+      { payload: serverPayload, version: 1, step: 'world' },
+      mkStored(1)
+    )
+    expect(same.kind).toBe('restore')
+    if (same.kind !== 'restore') return
+    expect(same.conflict).toBe(false)
+    expect(same.selections.title).toBe('Newest title')
+    // …and surface a conflict, never a silent clear, once the server moved.
+    const moved = planBootRecovery(
+      { payload: serverPayload, version: 2, step: 'world' },
+      mkStored(1)
+    )
+    expect(moved.kind).toBe('restore')
+    if (moved.kind !== 'restore') return
+    expect(moved.conflict).toBe(true)
+    expect(moved.selections.title).toBe('Newest title')
   })
 
   it('disposing during creation reconciles without applying', async () => {

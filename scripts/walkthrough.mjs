@@ -691,31 +691,24 @@ try {
       docker('start ember-vale-api-1')
       await waitApiReady()
     }
-    // Step 2 persists under a valid slug; retry the dismissal there.
-    await page.getByRole('button', { name: 'Characters' }).click()
-    await page.getByText('Selected', { exact: false }).waitFor({ timeout: 30000 })
+    // Step 3 persists under the contracted `mode` slug, so the dismissal
+    // retries exactly where the failure happened — no step workaround.
     await page.getByRole('button', { name: 'Keep current pins' }).click()
     await page
       .getByRole('group', { name: 'Adopt published revision' })
       .waitFor({ state: 'detached', timeout: 30000 })
     record(S, 'retry dismissal clears the offer', true)
-    // Reload: a stale failure snapshot can force the designed recovery
-    // choice even when the server already holds the restored pins (server
-    // nulls vs omitted keys never compare covered). Take the server
-    // version when offered; either path must land on the durable outcome.
+    // Reload boots clean on step 3: no false recovery conflict, because
+    // server nulls now compare covered against omitted local fields.
     await page.reload({ waitUntil: 'networkidle' })
-    await page.waitForFunction(
-      () =>
-        document.body.innerText.includes('No one yet') ||
-        document.body.innerText.includes('Use server version'),
-      { timeout: 30000 }
+    await page.getByLabel('Play as').waitFor({ timeout: 30000 })
+    const choiceGroups = await page.getByRole('group', { name: 'Recovery choice' }).count()
+    record(
+      S,
+      'reload boots with no false recovery conflict',
+      choiceGroups === 0,
+      `${choiceGroups} choice group(s)`
     )
-    let recoveryPath = 'clean boot'
-    if ((await page.getByRole('group', { name: 'Recovery choice' }).count()) > 0) {
-      recoveryPath = 'server version chosen'
-      await page.getByRole('button', { name: 'Use server version' }).click()
-    }
-    await page.getByText('No one yet', { exact: false }).waitFor({ timeout: 30000 })
     const after = await apiCall('GET', `/story-drafts/${draft.id}`)
     record(
       S,
@@ -723,15 +716,8 @@ try {
       after.payload.cast.length === 0 && (after.payload.mode.controlled_cast_key ?? null) === null,
       JSON.stringify(after.payload.mode)
     )
-    await page.getByRole('button', { name: 'Play Mode' }).click()
-    await page.getByLabel('Play as').waitFor({ timeout: 30000 })
     const afterOpts = await whoOptions(page)
-    record(
-      S,
-      'reload offers no one again',
-      afterOpts.length === 0,
-      `${afterOpts.length} via ${recoveryPath}`
-    )
+    record(S, 'reload offers no one again', afterOpts.length === 0, `${afterOpts.length}`)
     // Second round: a deliberate intervening location survives dismissal.
     await page.goto(offerUrl, { waitUntil: 'networkidle' })
     await page.getByRole('group', { name: 'Adopt published revision' }).waitFor({ timeout: 30000 })

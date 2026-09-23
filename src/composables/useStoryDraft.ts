@@ -101,12 +101,39 @@ export type RecoveryDecision = 'covered' | 'restore' | 'conflict'
  * explicit conflict notice because the server moved past the snapshot's
  * base version with different content ('conflict').
  */
+/**
+ * Normalize a draft payload for equivalence checks (is the server already
+ * holding these choices? is this form acknowledged?). The server
+ * serializes absent optionals as explicit nulls while the builder omits
+ * them, and the builder omits empty strings the same way — all three
+ * mean "no value" for these optional display/location fields. Arrays
+ * keep their identity (both sides always carry them), and numbers and
+ * booleans pass through untouched, so genuinely different content never
+ * compares equal.
+ */
+export function normalizeRecoveryPayload(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(normalizeRecoveryPayload)
+  if (typeof value === 'object' && value !== null) {
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(value)) {
+      if (v === null || v === undefined) continue
+      if (typeof v === 'string' && v === '') continue
+      out[k] = normalizeRecoveryPayload(v)
+    }
+    return out
+  }
+  return value
+}
+
 export function resolveRecovery(
   serverPayload: unknown,
   serverVersion: number,
   recovery: RecoveryDraft
 ): RecoveryDecision {
-  if (canonical(serverPayload) === canonical(buildDraftPayload(recovery.selections)))
+  if (
+    canonical(normalizeRecoveryPayload(serverPayload)) ===
+    canonical(normalizeRecoveryPayload(buildDraftPayload(recovery.selections)))
+  )
     return 'covered'
   if (recovery.baseVersion === null || recovery.baseVersion < serverVersion) return 'conflict'
   return 'restore'
@@ -159,7 +186,7 @@ export function planBootRecovery(
 export type SaveState = 'clean' | 'saving' | 'unsaved' | 'failed'
 
 function snapshotOf(selections: NewStorySelections, step: string): string {
-  return canonical({ payload: buildDraftPayload(selections), step })
+  return canonical({ payload: normalizeRecoveryPayload(buildDraftPayload(selections)), step })
 }
 
 function canonical(value: unknown): string {
@@ -446,8 +473,10 @@ export function useStoryDraft() {
       rememberDraftId(loaded.id)
       // Other drafts' receipts, errors, and recovery are preserved as-is:
       // only this draft's acknowledgment state is (re)established.
+      // Normalized like snapshotOf so a pristine form reads acknowledged
+      // instead of phantom-unsaved.
       acked.value = canonical({
-        payload: loaded.payload as Record<string, unknown>,
+        payload: normalizeRecoveryPayload(loaded.payload as Record<string, unknown>),
         step: loaded.current_step
       })
       saveState.value = 'clean'
