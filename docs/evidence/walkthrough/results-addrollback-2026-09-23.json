@@ -1,0 +1,74 @@
+{
+  "ok": true,
+  "base": "http://127.0.0.1:5173",
+  "commit": "c324807",
+  "dirty": true,
+  "diffSha256": "6ecc3a277624e51235a250beb6e604e2d55822250746854d22477e061793fc1b",
+  "untracked": [],
+  "only": [
+    "addrollback"
+  ],
+  "at": "2026-09-23T01:07:16.009Z",
+  "results": [
+    {
+      "scenario": "addrollback",
+      "step": "character-add offer presents for the mounted draft",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "addrollback",
+      "step": "uncontrolled draft offers no one",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "scenario": "addrollback",
+      "step": "failed accept keeps the offer and says pins are unchanged",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "addrollback",
+      "step": "failed accept controls the added character locally",
+      "ok": true,
+      "detail": "ash in ash"
+    },
+    {
+      "scenario": "addrollback",
+      "step": "failed dismissal keeps recovery state for retry",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "addrollback",
+      "step": "retry dismissal clears the offer",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "addrollback",
+      "step": "reload leaves the cast empty and uncontrolled on the server",
+      "ok": true,
+      "detail": "{\"role\":\"player\",\"controlled_cast_key\":null}"
+    },
+    {
+      "scenario": "addrollback",
+      "step": "reload offers no one again",
+      "ok": true,
+      "detail": "0 via server version chosen"
+    },
+    {
+      "scenario": "addrollback",
+      "step": "deliberate intervening location is preserved on dismiss",
+      "ok": true,
+      "detail": "hearth with ash"
+    },
+    {
+      "scenario": "addrollback",
+      "step": "skipped rollback leaves the server draft untouched",
+      "ok": true,
+      "detail": "0 member(s)"
+    }
+  ]
+}

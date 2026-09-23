@@ -53,6 +53,21 @@ code — dismiss-plus-reload leaving one preset with ordinary Create
 withheld, and the world/character creation adoption proof — not as
 whole-tree evidence.
 
+## 2026-09-23 subset (`results-addrollback-2026-09-23.json`)
+
+10/10 PASS, `only: [addrollback]`, at `2026-09-23T01:07:16Z`. The
+recorded `commit` is `c324807` with `dirty: true`: the tested tree was
+`c324807` plus the uncommitted character-add rollback correction
+(controlled key in adoption snapshots, restored on dismiss, compared
+for intervening edits) and the matching `addrollback` scenario.
+Read it as verification of that code — failed character-add accept
+controlling the newcomer locally, dismiss retry removing it and
+restoring no-control, persistence recovery, reload, and the preserved
+intervening location with an untouched server — not as whole-tree
+evidence. The reload passes through the designed recovery choice
+("server version chosen") because a stale failure snapshot never
+compares covered; see the ledger findings.
+
 ## Future runs
 
 `results.json` now records the actual tested tree at run start:

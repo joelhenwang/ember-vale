@@ -622,6 +622,158 @@ try {
     await ctx.close()
   }
 
+  if (run('addrollback')) // ---- Failed character-add accept restores control ----
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+    const page = await ctx.newPage()
+    const S = 'addrollback'
+    const emberVale = (await apiCall('GET', '/library/presets?kind=world')).find(
+      (p) => p.name === 'Ember Vale'
+    )
+    const chars = await apiCall('GET', '/library/presets?kind=character')
+    const ash = chars.find((p) => p.name === 'Ash')
+    const whoOptions = (pg) =>
+      pg
+        .getByLabel('Play as')
+        .evaluate((el) => Array.from(el.options).map((o) => ({ text: o.text, value: o.value })))
+    // Player-mode draft with an empty cast: uncontrolled, so accepting
+    // Ash (player-ready, outside the cast) takes the add path and hands
+    // Ash control. The stepper reaches step 3 without gates. The tone
+    // matches the wizard default so failure-stored recovery snapshots
+    // compare covered against the server instead of forcing a choice UI.
+    const draft = await apiCall('POST', '/story-drafts', {
+      payload: {
+        world: { preset_id: emberVale.id, preset_revision: emberVale.current_revision },
+        cast: [],
+        mode: { role: 'player' },
+        story: {
+          title: `Walkthrough addrollback ${Date.now().toString(36)}`,
+          tone: 'hopeful mystery'
+        },
+        ai: { art_source: 'curated' }
+      },
+      current_step: 'characters'
+    })
+    const offerUrl =
+      `${BASE}/new-story?draft=${draft.id}` +
+      `&adopt_kind=character&adopt_preset=${ash.id}` +
+      `&adopt_revision=${ash.current_revision}&adopt_draft=${draft.id}`
+    await page.goto(offerUrl, { waitUntil: 'networkidle' })
+    await page.getByRole('group', { name: 'Adopt published revision' }).waitFor({ timeout: 30000 })
+    record(S, 'character-add offer presents for the mounted draft', true)
+    // Step 3 hosts the Play-as control; the offer rides along.
+    await page.getByRole('button', { name: 'Play Mode' }).click()
+    await page.getByLabel('Play as').waitFor({ timeout: 30000 })
+    const beforeOpts = await whoOptions(page)
+    record(S, 'uncontrolled draft offers no one', beforeOpts.length === 0, `${beforeOpts.length}`)
+    // Fail the accept: Ash joins locally and takes control, but nothing
+    // persists.
+    docker('stop ember-vale-api-1')
+    try {
+      await page.getByRole('button', { name: /Adopt revision \d+ \(character\)/ }).click()
+      await page.getByText('Adoption could not save', { exact: false }).waitFor({ timeout: 60000 })
+      record(S, 'failed accept keeps the offer and says pins are unchanged', true)
+      const duringOpts = await whoOptions(page)
+      const duringValue = await page.getByLabel('Play as').inputValue()
+      record(
+        S,
+        'failed accept controls the added character locally',
+        duringOpts.length === 1 && duringValue === 'ash',
+        `${duringValue} in ${duringOpts.map((o) => o.value).join(',')}`
+      )
+      // Dismiss while still down: the restoration cannot save either.
+      await page.getByRole('button', { name: 'Keep current pins' }).click()
+      await page
+        .getByText('Could not save the restored pins', { exact: false })
+        .waitFor({ timeout: 60000 })
+      record(S, 'failed dismissal keeps recovery state for retry', true)
+    } finally {
+      docker('start ember-vale-api-1')
+      await waitApiReady()
+    }
+    // Step 2 persists under a valid slug; retry the dismissal there.
+    await page.getByRole('button', { name: 'Characters' }).click()
+    await page.getByText('Selected', { exact: false }).waitFor({ timeout: 30000 })
+    await page.getByRole('button', { name: 'Keep current pins' }).click()
+    await page
+      .getByRole('group', { name: 'Adopt published revision' })
+      .waitFor({ state: 'detached', timeout: 30000 })
+    record(S, 'retry dismissal clears the offer', true)
+    // Reload: a stale failure snapshot can force the designed recovery
+    // choice even when the server already holds the restored pins (server
+    // nulls vs omitted keys never compare covered). Take the server
+    // version when offered; either path must land on the durable outcome.
+    await page.reload({ waitUntil: 'networkidle' })
+    await page.waitForFunction(
+      () =>
+        document.body.innerText.includes('No one yet') ||
+        document.body.innerText.includes('Use server version'),
+      { timeout: 30000 }
+    )
+    let recoveryPath = 'clean boot'
+    if ((await page.getByRole('group', { name: 'Recovery choice' }).count()) > 0) {
+      recoveryPath = 'server version chosen'
+      await page.getByRole('button', { name: 'Use server version' }).click()
+    }
+    await page.getByText('No one yet', { exact: false }).waitFor({ timeout: 30000 })
+    const after = await apiCall('GET', `/story-drafts/${draft.id}`)
+    record(
+      S,
+      'reload leaves the cast empty and uncontrolled on the server',
+      after.payload.cast.length === 0 && (after.payload.mode.controlled_cast_key ?? null) === null,
+      JSON.stringify(after.payload.mode)
+    )
+    await page.getByRole('button', { name: 'Play Mode' }).click()
+    await page.getByLabel('Play as').waitFor({ timeout: 30000 })
+    const afterOpts = await whoOptions(page)
+    record(
+      S,
+      'reload offers no one again',
+      afterOpts.length === 0,
+      `${afterOpts.length} via ${recoveryPath}`
+    )
+    // Second round: a deliberate intervening location survives dismissal.
+    await page.goto(offerUrl, { waitUntil: 'networkidle' })
+    await page.getByRole('group', { name: 'Adopt published revision' }).waitFor({ timeout: 30000 })
+    await page.getByRole('button', { name: 'Characters' }).click()
+    await page.getByText('Selected', { exact: false }).waitFor({ timeout: 30000 })
+    docker('stop ember-vale-api-1')
+    try {
+      await page.getByRole('button', { name: /Adopt revision \d+ \(character\)/ }).click()
+      await page.getByText('Adoption could not save', { exact: false }).waitFor({ timeout: 60000 })
+      // Ash defaults to Market; move Ash to Hearth, then dismiss. The
+      // pins no longer match the attempt, so the rollback must stand down.
+      await page.getByLabel('Starts at').selectOption('hearth')
+      await page.getByRole('button', { name: 'Keep current pins' }).click()
+      await page
+        .getByRole('group', { name: 'Adopt published revision' })
+        .waitFor({ state: 'detached', timeout: 30000 })
+      const keptLoc = await page.getByLabel('Starts at').inputValue()
+      await page.getByRole('button', { name: 'Play Mode' }).click()
+      await page.getByLabel('Play as').waitFor({ timeout: 30000 })
+      const keptOpts = await whoOptions(page)
+      record(
+        S,
+        'deliberate intervening location is preserved on dismiss',
+        keptLoc === 'hearth' && keptOpts.length === 1,
+        `${keptLoc} with ${keptOpts.map((o) => o.value).join(',')}`
+      )
+    } finally {
+      docker('start ember-vale-api-1')
+      await waitApiReady()
+    }
+    // The skipped rollback persisted nothing: the server never saw Ash.
+    await page.reload({ waitUntil: 'networkidle' })
+    const final = await apiCall('GET', `/story-drafts/${draft.id}`)
+    record(
+      S,
+      'skipped rollback leaves the server draft untouched',
+      final.payload.cast.length === 0 && (final.payload.mode.controlled_cast_key ?? null) === null,
+      `${final.payload.cast.length} member(s)`
+    )
+    await ctx.close()
+  }
+
   if (run('publishretry')) // ---- Ambiguous publish replays Older, Newest stays dirty ----
   {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })

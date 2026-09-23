@@ -204,6 +204,7 @@ describe('nested adoption', () => {
     const live: RestorablePins = {
       worldId: after.world.presetId,
       worldRev: after.world.presetRevision,
+      controlledKey: undefined,
       cast: after.cast.map((m) => ({
         key: m.key,
         presetRevision: m.presetRevision,
@@ -214,11 +215,89 @@ describe('nested adoption', () => {
     expect(live).toEqual({
       worldId: 'world-1',
       worldRev: 2,
+      controlledKey: undefined,
       cast: [
         { key: 'wren', presetRevision: 2, location: 'hearth' },
         { key: 'ash', presetRevision: 1, location: 'market' }
       ]
     })
+  })
+
+  it('carries the controlled selection through snapshot, compare, and restore', () => {
+    const base = selections()
+    const player: NewStorySelections = {
+      ...base,
+      mode: { role: 'player', controlledKey: 'wren' }
+    }
+    const snapshot = snapshotPins(player)
+    expect(snapshot.controlledKey).toBe('wren')
+    expect(pinsEqual(snapshot, player)).toBe(true)
+    // A changed controlled selection breaks equality: the wizard treats
+    // it as an intervening user edit and skips the restore.
+    const reselected: NewStorySelections = {
+      ...player,
+      mode: { role: 'player', controlledKey: 'ash' }
+    }
+    expect(pinsEqual(snapshot, reselected)).toBe(false)
+    // Restoring returns the original controlled selection.
+    const live: RestorablePins = {
+      worldId: player.world.presetId,
+      worldRev: player.world.presetRevision,
+      controlledKey: 'ash',
+      cast: player.cast.map((m) => ({
+        key: m.key,
+        presetRevision: m.presetRevision,
+        location: m.locationKey ?? ''
+      }))
+    }
+    restoreSnapshot(live, snapshot)
+    expect(live.controlledKey).toBe('wren')
+  })
+
+  it('restores no-control after a character add controlled the newcomer', () => {
+    const base = selections()
+    // Player mode with no controlled character and a lone Wren.
+    const uncontrolled: NewStorySelections = {
+      ...base,
+      cast: [base.cast[0]!],
+      mode: { role: 'player' }
+    }
+    const snapshot = snapshotPins(uncontrolled)
+    expect(snapshot.controlledKey).toBeUndefined()
+    // The failed accept added char-9 and controlled it.
+    const attempted: NewStorySelections = {
+      ...uncontrolled,
+      cast: [
+        ...uncontrolled.cast,
+        {
+          key: 'char-9',
+          presetId: 'char-9',
+          presetRevision: 1,
+          name: 'Nova',
+          locationKey: 'hearth'
+        }
+      ],
+      mode: { role: 'player', controlledKey: 'char-9' }
+    }
+    expect(pinsEqual(snapshot, attempted)).toBe(false)
+    // Dismissal drops the added member (absent from the rollback) and
+    // restores the original uncontrolled selection — never a controlled
+    // key pointing at a removed cast member.
+    const live: RestorablePins = {
+      worldId: attempted.world.presetId,
+      worldRev: attempted.world.presetRevision,
+      controlledKey: 'char-9',
+      cast: attempted.cast.map((m) => ({
+        key: m.key,
+        presetRevision: m.presetRevision,
+        location: m.locationKey ?? ''
+      }))
+    }
+    const kept = live.cast.filter((m) => m.key in snapshot.castRevs)
+    const restored: RestorablePins = { ...live, cast: kept }
+    restoreSnapshot(restored, snapshot)
+    expect(restored.cast.map((m) => m.key)).toEqual(['wren'])
+    expect(restored.controlledKey).toBeUndefined()
   })
 
   it('tracks starting locations through adoption and rollback', () => {
@@ -228,6 +307,7 @@ describe('nested adoption', () => {
     const live: RestorablePins = {
       worldId: 'world-1',
       worldRev: 4,
+      controlledKey: undefined,
       cast: [
         { key: 'wren', presetRevision: 3, location: 'market' },
         { key: 'ash', presetRevision: 1, location: 'market' }

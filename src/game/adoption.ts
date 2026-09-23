@@ -123,14 +123,17 @@ export function applyAdoption(
 
 /**
  * The pins an adoption accept may change, for rollback on dismiss:
- * world pins, cast revision pins, and cast starting locations (which
- * reconciliation may reset). Keyed by cast member key.
+ * world pins, cast revision pins, cast starting locations (which
+ * reconciliation may reset), and the controlled-character selection
+ * (which a character add may set). Cast maps are keyed by member key.
  */
 export interface PinSnapshot {
   worldId: string
   worldRev: number
   castRevs: Record<string, number>
   castLocs: Record<string, string>
+  /** Controlled cast key; undefined when the draft is uncontrolled. */
+  controlledKey: string | undefined
 }
 
 export function snapshotPins(selections: NewStorySelections): PinSnapshot {
@@ -144,7 +147,8 @@ export function snapshotPins(selections: NewStorySelections): PinSnapshot {
     worldId: selections.world.presetId,
     worldRev: selections.world.presetRevision,
     castRevs,
-    castLocs
+    castLocs,
+    controlledKey: selections.mode.controlledKey
   }
 }
 
@@ -152,7 +156,8 @@ export function snapshotPins(selections: NewStorySelections): PinSnapshot {
 export function pinsEqual(snapshot: PinSnapshot, selections: NewStorySelections): boolean {
   if (
     snapshot.worldId !== selections.world.presetId ||
-    snapshot.worldRev !== selections.world.presetRevision
+    snapshot.worldRev !== selections.world.presetRevision ||
+    snapshot.controlledKey !== selections.mode.controlledKey
   ) {
     return false
   }
@@ -172,11 +177,13 @@ export function pinsEqual(snapshot: PinSnapshot, selections: NewStorySelections)
 
 /**
  * The mutable pin surface an adoption accept or dismiss drives: the
- * wizard form shape (`location`, not the payload's `locationKey`).
+ * wizard form shape (`location`, not the payload's `locationKey`, and
+ * a top-level controlled key).
  */
 export interface RestorablePins {
   worldId: string
   worldRev: number
+  controlledKey: string | undefined
   cast: { key: string; presetRevision: number; location: string }[]
 }
 
@@ -184,6 +191,7 @@ export interface RestorablePins {
 export function restoreSnapshot(target: RestorablePins, snapshot: PinSnapshot): void {
   target.worldId = snapshot.worldId
   target.worldRev = snapshot.worldRev
+  target.controlledKey = snapshot.controlledKey
   for (const member of target.cast) {
     const rev = snapshot.castRevs[member.key]
     if (rev !== undefined) member.presetRevision = rev
