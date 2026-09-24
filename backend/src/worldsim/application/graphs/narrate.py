@@ -15,6 +15,7 @@ back to structured event text; canon never waits for prose.
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -34,10 +35,12 @@ from worldsim.application.ports.model_gateway import (
     ModelTimeoutError,
     ModelUnavailableError,
 )
-from worldsim.domain.enums import NarrationKind
+from worldsim.domain.commands import CommunicateAction
+from worldsim.domain.enums import NarrationKind, ReactionStatus
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.ids import new_narration_id
 from worldsim.domain.narration import BeatProposal, NarrationBeat
+from worldsim.domain.scenes import Reaction
 
 #: Versioned narrator prompt file.
 NARRATOR_PROMPT_VERSION = "narrator.v1"
@@ -108,6 +111,18 @@ def unfence_json(raw: str) -> str:
     return "\n".join(lines[1:-1])
 
 
+def _fact_view(raw: Any) -> dict[str, str]:
+    """Prompt/validation view of one visible fact, keeping attribution."""
+    view = {"key": str(raw["key"]), "value": str(raw["value"])}
+    speaker = raw.get("speaker")
+    if speaker:
+        view["speaker"] = str(speaker)
+    utterance = raw.get("utterance")
+    if utterance:
+        view["utterance"] = str(utterance)
+    return view
+
+
 def render_user_prompt(
     audience_ids: list[str],
     visible_facts: list[dict[str, str]],
@@ -129,18 +144,65 @@ def render_user_prompt(
     return "\n".join(lines)
 
 
+def communication_facts(
+    reactions: list[Reaction],
+    names: Mapping[UUID, str],
+    audience_ids: list[str] | frozenset[str],
+) -> list[dict[str, str]]:
+    """Visible facts for committed spoken communications.
+
+    One fact per committed ``communicate`` reaction whose speaker and
+    target are both in the audience. The citation key derives from the
+    stable reaction ID, so concurrent speakers never collide. Rejected
+    proposals never reach this input: only committed rows are read, and
+    the reaction carries no hidden rationale.
+    """
+    audience = frozenset(str(a) for a in audience_ids)
+    facts: list[dict[str, str]] = []
+    for reaction in reactions:
+        if reaction.status != ReactionStatus.COMMITTED:
+            continue
+        action = reaction.action
+        if not isinstance(action, CommunicateAction):
+            continue
+        speaker = reaction.reactor_character_id
+        target = action.target_character_id
+        if str(speaker) not in audience or str(target) not in audience:
+            continue
+        topic = action.topic.strip()
+        if not topic:
+            continue
+        speaker_name = names.get(speaker, speaker.hex[:8])
+        target_name = names.get(target, target.hex[:8])
+        facts.append(
+            {
+                "key": f"reaction:{reaction.id}",
+                "value": f'{speaker_name} says to {target_name}: "{topic}"',
+                "speaker": str(speaker),
+                "utterance": topic,
+            }
+        )
+    return facts
+
+
 def beats_valid(
     proposals: list[BeatProposal],
     *,
     visible_keys: frozenset[str],
     audience_ids: frozenset[str],
     beats_budget: int,
+    fact_speakers: Mapping[str, str] | None = None,
 ) -> str | None:
-    """Unsupported-fact validator: cited keys, speakers, and budget."""
+    """Unsupported-fact validator: cited keys, speakers, and budget.
+
+    Beats citing a spoken-communication fact must carry that fact's
+    speaker; attribution is checked against the source, not the audience.
+    """
     if not proposals:
         return "narration needs at least one beat"
     if len(proposals) > beats_budget:
         return f"beat budget exceeded: {len(proposals)} > {beats_budget}"
+    speakers = dict(fact_speakers or {})
     for proposal in proposals:
         unknown = set(proposal.cited_fact_keys) - visible_keys
         if unknown:
@@ -149,7 +211,38 @@ def beats_valid(
             return "every beat must cite at least one visible fact"
         if proposal.speaker_id is not None and str(proposal.speaker_id) not in audience_ids:
             return f"speaker outside the audience: {proposal.speaker_id}"
+        for key in proposal.cited_fact_keys:
+            expected = speakers.get(key)
+            if (
+                expected is not None
+                and proposal.speaker_id is not None
+                and str(proposal.speaker_id) != expected
+            ):
+                return f"speaker does not match cited source: {key}"
     return None
+
+
+def _normalize_fallback_fact(fact: dict[str, Any]) -> dict[str, Any]:
+    """Deterministic attributed fallback shape for one visible fact.
+
+    Spoken-communication facts (speaker plus utterance) become DIALOGUE
+    beats voiced by their speaker through the same persisted feed path;
+    everything else keeps the legacy key: value narrator rendering.
+    """
+    speaker = fact.get("speaker")
+    if speaker:
+        return {
+            "key": fact["key"],
+            "kind": NarrationKind.DIALOGUE,
+            "speaker": UUID(str(speaker)),
+            "text": str(fact.get("utterance") or fact["value"]),
+        }
+    return {
+        "key": fact["key"],
+        "kind": NarrationKind.NARRATION,
+        "speaker": None,
+        "text": f"{fact['key']}: {fact['value']}",
+    }
 
 
 def fallback_beats(
@@ -161,7 +254,10 @@ def fallback_beats(
     beats_budget: int,
 ) -> list[NarrationBeat]:
     """Structured-event fallback: one beat per visible fact, budget-capped."""
-    facts = visible_facts[: max(beats_budget, 1)]
+    ordered = [f for f in visible_facts if f.get("speaker")] + [
+        f for f in visible_facts if not f.get("speaker")
+    ]
+    facts = [_normalize_fallback_fact(f) for f in ordered[: max(beats_budget, 1)]]
     if not facts:
         return [
             NarrationBeat(
@@ -180,8 +276,9 @@ def fallback_beats(
             scene_id=scene_id,
             source_event_id=event_id,
             cited_fact_keys=[fact["key"]],
-            kind=NarrationKind.NARRATION,
-            text=f"{fact['key']}: {fact['value']}",
+            speaker_id=fact["speaker"],
+            kind=fact["kind"],
+            text=fact["text"],
         )
         for fact in facts
     ]
@@ -237,7 +334,7 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
             "system_prompt": render_system_prompt(deps.system_template),
             "user_prompt": render_user_prompt(
                 [str(a) for a in audience_raw],
-                [{"key": str(f["key"]), "value": str(f["value"])} for f in facts_raw],
+                [_fact_view(f) for f in facts_raw],
                 event_raw,
                 str(scene_raw) if scene_raw else None,
                 budget_raw,
@@ -256,12 +353,13 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
         world_id, event_id = UUID(world_raw), UUID(event_raw)
         scene_id = UUID(str(scene_raw)) if scene_raw else None
         facts = [
-            {"key": str(f["key"]), "value": str(f["value"])} for f in state.get("visible_facts", [])
+            _fact_view(f) for f in state.get("visible_facts", [])
         ]
         visible_keys = frozenset(f["key"] for f in facts)
         audience = frozenset(str(a) for a in state.get("audience_ids", []))
         budget_raw = state.get("beats_budget")
         budget = budget_raw if isinstance(budget_raw, int) else 8
+        fact_speakers = {f["key"]: f["speaker"] for f in facts if "speaker" in f}
         errors: list[str] = []
         repairs = 0
         try:
@@ -310,7 +408,11 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
                     )
                 continue
             denial = beats_valid(
-                proposals, visible_keys=visible_keys, audience_ids=audience, beats_budget=budget
+                proposals,
+                visible_keys=visible_keys,
+                audience_ids=audience,
+                beats_budget=budget,
+                fact_speakers=fact_speakers,
             )
             if denial is not None:
                 errors.append(f"attempt {repairs}: {denial}")

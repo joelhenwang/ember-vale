@@ -334,3 +334,121 @@ def test_narration_persistence_leaves_projections(migrated_db: None) -> None:
             await engine.dispose()
 
     asyncio.run(_inner())
+
+
+def _communicate_reaction(
+    reactor: uuid.UUID,
+    target: uuid.UUID,
+    topic: str = "The Market holds stalls, wind, and trade.",
+    status: str = "committed",
+) -> Any:
+    from worldsim.domain.commands import CommunicateAction
+    from worldsim.domain.scenes import Reaction
+
+    return Reaction(
+        id=uuid.uuid4(),
+        world_id=uuid.uuid4(),
+        attempt_id=uuid.uuid4(),
+        scene_id=uuid.uuid4(),
+        reactor_character_id=reactor,
+        action=CommunicateAction(
+            character_id=reactor,
+            snapshot_id=uuid.uuid4(),
+            target_character_id=target,
+            topic=topic,
+        ),
+        status=status,  # type: ignore[assignment]
+    )
+
+
+def test_communication_fact_carries_unique_citation_and_speaker() -> None:
+    from worldsim.application.graphs.narrate import communication_facts
+
+    ash, wren, outsider = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    spoken = _communicate_reaction(ash, wren)
+    facts = communication_facts(
+        [spoken],
+        {ash: "Ash", wren: "Wren"},
+        [str(ash), str(wren)],
+    )
+
+    assert len(facts) == 1
+    fact = facts[0]
+    assert fact["key"] == f"reaction:{spoken.id}"
+    assert fact["speaker"] == str(ash)
+    assert fact["utterance"] == "The Market holds stalls, wind, and trade."
+    assert "Ash says to Wren" in fact["value"]
+    # Pending rows, non-speech families, and out-of-audience targets stay out.
+    from worldsim.domain.commands import WaitAction
+    from worldsim.domain.scenes import Reaction as ReactionRow
+
+    waiting = ReactionRow(
+        id=uuid.uuid4(),
+        world_id=uuid.uuid4(),
+        attempt_id=uuid.uuid4(),
+        scene_id=uuid.uuid4(),
+        reactor_character_id=ash,
+        action=WaitAction(character_id=ash, snapshot_id=uuid.uuid4()),
+    )
+    assert (
+        communication_facts(
+            [
+                _communicate_reaction(ash, wren, status="pending"),
+                _communicate_reaction(ash, outsider),
+                waiting,
+            ],
+            {ash: "Ash", wren: "Wren"},
+            [str(ash), str(wren)],
+        )
+        == []
+    )
+
+
+def test_dialogue_beat_with_wrong_speaker_denied() -> None:
+    from worldsim.application.graphs.narrate import beats_valid
+    from worldsim.domain.narration import BeatProposal
+
+    ash, wren = uuid.uuid4(), uuid.uuid4()
+    key = "reaction:11111111-2222-4333-8444-555555555555"
+    proposal = BeatProposal(
+        speaker_id=wren,
+        kind="dialogue",  # type: ignore[assignment]
+        text="Those are my words.",
+        cited_fact_keys=[key],
+    )
+    denial = beats_valid(
+        [proposal],
+        visible_keys=frozenset({key}),
+        audience_ids=frozenset({str(ash), str(wren)}),
+        beats_budget=8,
+        fact_speakers={key: str(ash)},
+    )
+    assert denial is not None
+    assert key in denial
+
+
+def test_fallback_renders_attributed_dialogue() -> None:
+    from worldsim.application.graphs.narrate import fallback_beats
+
+    ash = uuid.uuid4()
+    event_id, world_id = uuid.uuid4(), uuid.uuid4()
+    beats = fallback_beats(
+        world_id=world_id,
+        scene_id=None,
+        event_id=event_id,
+        visible_facts=[
+            {
+                "key": "reaction:abc",
+                "value": 'Ash says to Wren: "Market news."',
+                "speaker": str(ash),
+                "utterance": "Market news.",
+            }
+        ],
+        beats_budget=8,
+    )
+
+    assert len(beats) == 1
+    assert beats[0].kind == "dialogue"
+    assert beats[0].speaker_id == ash
+    assert beats[0].cited_fact_keys == ["reaction:abc"]
+    assert beats[0].text == "Market news."

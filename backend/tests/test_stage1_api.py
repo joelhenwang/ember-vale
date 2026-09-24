@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import subprocess
 import sys
 import uuid
@@ -16,9 +17,17 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from worldsim.application.ports.model_gateway import CompletionRequest
+from worldsim.application.ports.model_gateway import CompletionRequest, ModelUnavailableError
 from worldsim.domain.characters import Character, CharacterCard
-from worldsim.domain.ids import new_card_id, new_character_id, new_location_id, new_world_id
+from worldsim.domain.ids import (
+    derive_attempt_id,
+    derive_intent_id,
+    derive_reaction_id,
+    new_card_id,
+    new_character_id,
+    new_location_id,
+    new_world_id,
+)
 from worldsim.domain.world import Location, World
 from worldsim.infrastructure.db.engine import create_engine
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
@@ -365,3 +374,209 @@ def test_ts_client_current() -> None:
         timeout=120,
     )
     assert result.returncode == 0, result.stderr
+
+
+MARKET_ANSWER = "The Market holds stalls, wind, and trade."
+
+
+async def _seed_two_at_hearth() -> dict[str, UUID]:
+    engine = create_engine(Settings())
+    try:
+        async with create_unit_of_work(engine) as uow:
+            wid = new_world_id()
+            await uow.worlds.add(World(id=wid, name="ApiSpeech", seed_version="s1-test"))
+            hearth = new_location_id()
+            await uow.locations.add(Location(id=hearth, world_id=wid, name="Hearth"))
+            wren, ash = new_character_id(), new_character_id()
+            for cid, name in ((wren, "Wren"), (ash, "Ash")):
+                await uow.characters.add_identity(cid, wid, name)
+                await uow.characters.add_card(
+                    CharacterCard(id=new_card_id(), character_id=cid, name=name, version=1)
+                )
+                await uow.characters.add_state(
+                    Character(
+                        id=cid,
+                        world_id=wid,
+                        name=name,
+                        card_version=1,
+                        location_id=hearth,
+                        stamina=80,
+                        mana=40,
+                    )
+                )
+                await uow.versions.ensure(cid, wid, "character")
+            await uow.versions.ensure(wid, wid, "world")
+            await uow.commit()
+            return {"world": wid, "wren": wren, "ash": ash}
+    finally:
+        await engine.dispose()
+
+
+def _snapshots(ids: dict[str, UUID]) -> dict[int, UUID]:
+    from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
+
+    return {1: derive_snapshot_id(derive_run_id(ids["world"], 1))}
+
+
+def _speech_route(ids: dict[str, UUID], snapshots: dict[int, UUID], narrator: str = "speak"):
+    """Ash answers Wren; the narrator voices the committed answer."""
+
+    def _route(request: CompletionRequest) -> Any:
+        prompt, system = request.prompt, request.system or ""
+        snapshot = snapshots[1]
+        if "You decide" in system:
+            if "Wren" in prompt:
+                return json.dumps(
+                    {
+                        "family": "communicate",
+                        "character_id": str(ids["wren"]),
+                        "snapshot_id": str(snapshot),
+                        "target_character_id": str(ids["ash"]),
+                        "topic": "Ask Ash what the Market holds today.",
+                    }
+                )
+            return json.dumps(
+                {
+                    "family": "wait",
+                    "character_id": str(ids["ash"]),
+                    "snapshot_id": str(snapshot),
+                }
+            )
+        if "You react" in system:
+            if "Wren says to Ash" in prompt:
+                return json.dumps(
+                    {
+                        "family": "communicate",
+                        "character_id": str(ids["ash"]),
+                        "snapshot_id": str(snapshot),
+                        "target_character_id": str(ids["wren"]),
+                        "topic": MARKET_ANSWER,
+                    }
+                )
+            return json.dumps(
+                {
+                    "family": "wait",
+                    "character_id": str(ids["wren"]),
+                    "snapshot_id": str(snapshot),
+                }
+            )
+        if "You resolve" in system:
+            return json.dumps(
+                {"outcome": "success", "effects": [], "rationale": "The question is heard."}
+            )
+        if "You narrate" in system:
+            if narrator == "outage":
+                return ModelUnavailableError("provider down")
+            key = re.search(r"reaction:[0-9a-f-]{36}", prompt).group(0)  # type: ignore[union-attr]
+            return json.dumps(
+                [
+                    {
+                        "speaker_id": str(ids["ash"]),
+                        "kind": "dialogue",
+                        "text": MARKET_ANSWER,
+                        "cited_fact_keys": [key],
+                    }
+                ]
+            )
+        return None
+
+    return _route
+
+
+def _expected_reaction_key(ids: dict[str, UUID]) -> str:
+    from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
+
+    run = derive_run_id(ids["world"], 1)
+    snapshot = derive_snapshot_id(run)
+    intent = derive_intent_id(ids["world"], snapshot, ids["wren"])
+    attempt = derive_attempt_id(intent)
+    return f"reaction:{derive_reaction_id(attempt, ids['ash'])}"
+
+
+def _narration_beats(client: ApiClient, scene_id: str) -> Any:
+    res = client.get(f"/api/v1/stage1/scenes/{scene_id}/narration", headers=_watcher())
+    assert res.status_code == 200, res.text
+    return res.json()
+
+
+def _stored_citations(scene_id: str, event_id: str) -> Any:
+    async def _read() -> Any:
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                return await uow.scenes.narrations_for_event(UUID(event_id))
+        finally:
+            await engine.dispose()
+
+    return asyncio.run(_read())
+
+
+def test_committed_communication_narrated_with_attribution(
+    api: tuple[ApiClient, FakeGateway, dict[str, UUID]],
+) -> None:
+    client, gateway, _ = api
+    ids = asyncio.run(_seed_two_at_hearth())
+    snapshots = _snapshots(ids)
+    gateway.route = _speech_route(ids, snapshots)
+    report = _advance(client, ids["world"], 1)
+    assert report.status_code == 200, report.text
+    assert report.json()["duplicate"] is False
+    assert len(report.json()["scenes"]) == 1
+    scene_id = report.json()["scenes"][0]["scene_id"]
+
+    expected_key = _expected_reaction_key(ids)
+    narrator_reqs = [
+        r for r in gateway.sent_requests if "reaction:" in r.prompt and "Event " in r.prompt
+    ]
+    assert len(narrator_reqs) == 1
+    assert expected_key in narrator_reqs[0].prompt
+    reaction_reqs = [r for r in gateway.sent_requests if "Known characters" in r.prompt]
+    assert reaction_reqs, "roster missing from reaction prompt"
+    assert str(ids["wren"]) in reaction_reqs[0].prompt
+    assert str(ids["ash"]) in reaction_reqs[0].prompt
+
+    beats = _narration_beats(client, scene_id)
+    spoken = [b for b in beats if b["kind"] == "dialogue"]
+    assert len(spoken) == 1
+    assert spoken[0]["speaker_id"] == str(ids["ash"])
+    assert spoken[0]["text"] == MARKET_ANSWER
+
+    stored = _stored_citations(scene_id, spoken[0]["source_event_id"])
+    cited = [b for b in stored if b.kind == "dialogue"]
+    assert len(cited) == 1
+    assert cited[0].cited_fact_keys == [expected_key]
+    assert cited[0].speaker_id == ids["ash"]
+
+    assert _narration_beats(client, scene_id) == beats
+    dup = _advance(client, ids["world"], 1)
+    assert dup.json()["duplicate"] is True
+    assert _narration_beats(client, scene_id) == beats
+
+
+def test_narrator_outage_keeps_attributed_answer(
+    api: tuple[ApiClient, FakeGateway, dict[str, UUID]],
+) -> None:
+    client, gateway, _ = api
+    ids = asyncio.run(_seed_two_at_hearth())
+    snapshots = _snapshots(ids)
+    gateway.route = _speech_route(ids, snapshots, narrator="outage")
+    report = _advance(client, ids["world"], 1)
+    assert report.status_code == 200, report.text
+    scene_id = report.json()["scenes"][0]["scene_id"]
+
+    expected_key = _expected_reaction_key(ids)
+    beats = _narration_beats(client, scene_id)
+    spoken = [b for b in beats if b["kind"] == "dialogue"]
+    assert len(spoken) == 1
+    assert spoken[0]["speaker_id"] == str(ids["ash"])
+    assert spoken[0]["text"] == MARKET_ANSWER
+
+    stored = _stored_citations(scene_id, spoken[0]["source_event_id"])
+    cited = [b for b in stored if b.kind == "dialogue"]
+    assert len(cited) == 1
+    assert cited[0].cited_fact_keys == [expected_key]
+
+    assert _narration_beats(client, scene_id) == beats
+    dup = _advance(client, ids["world"], 1)
+    assert dup.json()["duplicate"] is True
+    assert _narration_beats(client, scene_id) == beats

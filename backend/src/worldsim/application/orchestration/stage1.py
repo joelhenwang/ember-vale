@@ -54,6 +54,7 @@ from worldsim.application.graphs.narrate import (
     NARRATOR_PROMPT_VERSION,
     NarratorGraphDeps,
     build_narration_graph,
+    communication_facts,
     fallback_beats,
     load_narrator_prompt,
 )
@@ -2181,6 +2182,8 @@ class Stage1Orchestrator:
         async with self._factory() as uow:
             existing = await uow.scenes.narrations_for_event(event_id)
             observations = await uow.perception.observations_for_event(event_id)
+            scene_reactions = await uow.scenes.reactions_for_scene(scene.id)
+            characters = await uow.characters.list_for_world(world_id)
             participants = [
                 str(p.character_id) for p in (await uow.scenes.get_scene(scene.id)).participants
             ]
@@ -2190,6 +2193,8 @@ class Stage1Orchestrator:
         facts = [
             {"key": fact.key, "value": fact.value} for obs in observations for fact in obs.facts
         ]
+        names = {c.id: c.name for c in characters}
+        facts.extend(communication_facts(scene_reactions, names, participants))
         dnd_context: str | None = None
         dnd_sources: list[ManifestSource] = []
         if roster:
