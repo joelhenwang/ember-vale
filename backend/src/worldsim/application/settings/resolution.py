@@ -13,6 +13,7 @@ from typing import Any, cast
 from uuid import UUID
 
 from worldsim.application.unit_of_work import UnitOfWork
+from worldsim.domain.enums import UserRole
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.settings import ProviderConnection, ProviderProfileRevision
 
@@ -75,30 +76,18 @@ async def resolve_profile(uow: UnitOfWork, world_id: UUID) -> ProviderProfileRev
 async def resolve_controlled_character(
     uow: UnitOfWork, world_id: UUID
 ) -> UUID | None:
-    """The persisted player grant's controlled character, if any.
+    """The active player grant's bound character, if any.
 
-    Reads the story setup snapshot once per phase run: only an explicit
-    player-mode grant yields an owner. Missing setups, non-player modes,
-    and unparsable references all resolve to None, preserving automatic
-    behavior exactly as before.
+    Ownership follows the same persisted role grant that execution
+    authorization enforces: an active Player grant protects its bound
+    character, and anything else (including no grant at all) leaves
+    automatic behavior untouched. Grant changes take effect at the next
+    run admission, matching the role-select safe boundary.
     """
-    try:
-        setup = await uow.stories.get_setup(world_id)
-    except DomainError:
+    grant = await uow.roles.get_for_world(world_id)
+    if grant is None or grant.role != UserRole.PLAYER:
         return None
-    payload = setup.payload
-    if not isinstance(payload, dict):
-        return None
-    mode = payload.get("mode")
-    if not isinstance(mode, dict) or mode.get("role") != "player":
-        return None
-    raw = mode.get("controlled_character_id")
-    if not raw:
-        return None
-    try:
-        return UUID(str(raw))
-    except (ValueError, TypeError, AttributeError):
-        return None
+    return grant.character_id
 
 
 def sampling_from_pin(pin: PinnedRuntime) -> SamplingParams:

@@ -19,15 +19,18 @@ from worldsim.application.tracing.service import TraceService
 from worldsim.application.transactions.canonical import CanonicalTransaction
 from worldsim.domain.characters import Character, CharacterCard
 from worldsim.domain.commands import CommunicateAction
+from worldsim.domain.enums import UserRole
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.ids import (
     derive_intent_id,
     new_card_id,
     new_character_id,
     new_location_id,
+    new_role_grant_id,
     new_world_id,
 )
 from worldsim.domain.phases import PhaseRun
+from worldsim.domain.roles import RoleGrant
 from worldsim.domain.stories import StoryInitialSetup
 from worldsim.domain.time import absolute_index
 from worldsim.domain.world import Location, World
@@ -555,21 +558,17 @@ def test_concurrent_admission_leaves_single_open_run(migrated_db: None) -> None:
     asyncio.run(_verify())
 
 
-async def _grant_wren_control(ids: dict[str, UUID]) -> None:
+async def _set_grant(ids: dict[str, UUID], role: str, character: UUID | None) -> None:
     engine = create_engine(Settings())
     try:
         async with create_unit_of_work(engine) as uow:
-            await uow.stories.put_setup(
-                StoryInitialSetup(
+            await uow.roles.set_grant(
+                RoleGrant(
+                    id=new_role_grant_id(),
                     world_id=ids["world"],
-                    payload={
-                        "schema_version": 1,
-                        "mode": {
-                            "role": "player",
-                            "controlled_character_id": str(ids["wren"]),
-                        },
-                    },
-                    content_hash="agency-test",
+                    role=UserRole(role),
+                    character_id=character,
+                    granted_absolute=0,
                 )
             )
             await uow.commit()
@@ -625,7 +624,7 @@ def _wren_ask(ids: dict[str, UUID]) -> dict[UUID, CommunicateAction]:
 def test_controlled_character_has_no_model_proposals(migrated_db: None) -> None:
     async def _inner() -> None:
         ids = await _seed()
-        await _grant_wren_control(ids)
+        await _set_grant(ids, "player", ids["wren"])
         orch = _orchestrator(_agency_gateways(ids))
         report = await orch.advance_phase(ids["world"], 1, _wren_ask(ids))
         engine = create_engine(Settings())
@@ -663,7 +662,7 @@ def test_controlled_character_has_no_model_proposals(migrated_db: None) -> None:
 def test_controlled_ownership_survives_reload_and_retry(migrated_db: None) -> None:
     async def _inner() -> None:
         ids = await _seed()
-        await _grant_wren_control(ids)
+        await _set_grant(ids, "player", ids["wren"])
         gateways = _agency_gateways(ids)
         first = await _orchestrator(gateways).advance_phase(ids["world"], 1, _wren_ask(ids))
         assert not first.duplicate
@@ -700,24 +699,11 @@ def test_controlled_ownership_survives_reload_and_retry(migrated_db: None) -> No
     asyncio.run(_inner())
 
 
-async def _world_with_mode(mode: object) -> UUID:
-    engine = create_engine(Settings())
-    try:
-        async with create_unit_of_work(engine) as uow:
-            wid = new_world_id()
-            await uow.worlds.add(World(id=wid, name="Grant", seed_version="s1-test"))
-            if mode is not None:
-                await uow.stories.put_setup(
-                    StoryInitialSetup(
-                        world_id=wid,
-                        payload={"schema_version": 1, "mode": mode},
-                        content_hash="grant-unit",
-                    )
-                )
-            await uow.commit()
-            return wid
-    finally:
-        await engine.dispose()
+async def _grant_ids(role: str | None, character: UUID | None = None) -> dict[str, UUID]:
+    ids = await _seed()
+    if role is not None:
+        await _set_grant(ids, role, character)
+    return ids
 
 
 async def _resolve_grant(world_id: UUID) -> UUID | None:
@@ -733,33 +719,140 @@ async def _resolve_grant(world_id: UUID) -> UUID | None:
 
 def test_resolve_controlled_character_reads_player_grant(migrated_db: None) -> None:
     async def _inner() -> None:
-        wren = new_character_id()
-        wid = await _world_with_mode(
-            {"role": "player", "controlled_character_id": str(wren)}
-        )
-        assert await _resolve_grant(wid) == wren
+        ids = await _grant_ids("player", None)
+        assert await _resolve_grant(ids["world"]) is None
+        await _set_grant(ids, "player", ids["wren"])
+        assert await _resolve_grant(ids["world"]) == ids["wren"]
 
     asyncio.run(_inner())
 
 
 def test_resolve_controlled_character_rejects_other_grants(migrated_db: None) -> None:
     async def _inner() -> None:
-        assert await _resolve_grant(await _world_with_mode(None)) is None
-        assert (
-            await _resolve_grant(
-                await _world_with_mode(
-                    {"role": "observer", "controlled_character_id": str(new_character_id())}
+        assert await _resolve_grant((await _seed())["world"]) is None
+        assert await _resolve_grant((await _grant_ids("watcher"))["world"]) is None
+
+    asyncio.run(_inner())
+
+def test_observer_setup_with_player_grant_protects(migrated_db: None) -> None:
+    """The setup snapshot says observer; the active Player grant still owns Wren."""
+    asyncio.run(_observer_setup_inner())
+
+
+async def _observer_setup_inner() -> None:
+    ids = await _seed()
+    engine = create_engine(Settings())
+    try:
+        async with create_unit_of_work(engine) as uow:
+            await uow.stories.put_setup(
+                StoryInitialSetup(
+                    world_id=ids["world"],
+                    payload={"schema_version": 1, "mode": {"role": "watcher"}},
+                    content_hash="agency-observer-setup",
                 )
             )
-            is None
-        )
-        assert await _resolve_grant(await _world_with_mode({"role": "player"})) is None
-        assert (
-            await _resolve_grant(
-                await _world_with_mode({"role": "player", "controlled_character_id": "not-a-uuid"})
+            await uow.commit()
+    finally:
+        await engine.dispose()
+    await _set_grant(ids, "player", ids["wren"])
+    orch = _orchestrator(_agency_gateways(ids))
+    report = await orch.advance_phase(ids["world"], 1, _wren_ask(ids))
+    engine = create_engine(Settings())
+    try:
+        async with create_unit_of_work(engine) as uow:
+            run = await uow.phases.get_run(report.run_id)
+            assert run.state.value == "completed"
+            intent = await uow.scenes.get_intent(
+                derive_intent_id(ids["world"], report.snapshot_id, ids["wren"])
             )
-            is None
+            assert intent.action.topic == "dawn patrol"  # type: ignore[union-attr]
+            reactions = []
+            for scene in await uow.scenes.list_for_run(report.run_id):
+                reactions.extend(await uow.scenes.reactions_for_scene(scene.id))
+            assert len([r for r in reactions if r.reactor_character_id == ids["ash"]]) == 1
+            assert not [r for r in reactions if r.reactor_character_id == ids["wren"]]
+            calls = await uow.traces.list_for_phase_run(report.run_id)
+            assert not [
+                c
+                for c in calls
+                if c.role in ("character_decision", "reaction") and c.actor_id == ids["wren"]
+            ]
+    finally:
+        await engine.dispose()
+
+
+def test_role_change_moves_protection_to_ash(migrated_db: None) -> None:
+    async def _inner() -> None:
+        ids = await _seed()
+        await _set_grant(ids, "player", ids["wren"])
+        first = await _orchestrator(_agency_gateways(ids)).advance_phase(
+            ids["world"], 1, _wren_ask(ids)
         )
-        assert await _resolve_grant(await _world_with_mode("player")) is None
+        assert not first.duplicate
+        await _set_grant(ids, "player", ids["ash"])
+        second = await _orchestrator(_role_gateways(ids)).advance_phase(ids["world"], 2)
+        assert not second.duplicate
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                run = await uow.phases.get_run(second.run_id)
+                assert run.state.value == "completed"
+                intent = await uow.scenes.get_intent(
+                    derive_intent_id(ids["world"], second.snapshot_id, ids["wren"])
+                )
+                assert intent.action.family.value == "wait"
+                calls = await uow.traces.list_for_phase_run(second.run_id)
+                assert [
+                    c
+                    for c in calls
+                    if c.role == "character_decision" and c.actor_id == ids["wren"]
+                ]
+                assert not [
+                    c
+                    for c in calls
+                    if c.role in ("character_decision", "reaction")
+                    and c.actor_id == ids["ash"]
+                ]
+                try:
+                    await uow.scenes.get_intent(
+                        derive_intent_id(ids["world"], second.snapshot_id, ids["ash"])
+                    )
+                except DomainError:
+                    pass
+                else:
+                    raise AssertionError("newly controlled Ash must have no model intent")
+        finally:
+            await engine.dispose()
+
+    asyncio.run(_inner())
+
+
+def test_observer_grant_restores_automatic_behavior(migrated_db: None) -> None:
+    async def _inner() -> None:
+        ids = await _seed()
+        await _set_grant(ids, "player", ids["wren"])
+        first = await _orchestrator(_agency_gateways(ids)).advance_phase(
+            ids["world"], 1, _wren_ask(ids)
+        )
+        assert not first.duplicate
+        await _set_grant(ids, "watcher", None)
+        second = await _orchestrator(_role_gateways(ids)).advance_phase(ids["world"], 2)
+        assert not second.duplicate
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                calls = await uow.traces.list_for_phase_run(second.run_id)
+                for character_id in (ids["wren"], ids["ash"]):
+                    assert [
+                        c
+                        for c in calls
+                        if c.role == "character_decision" and c.actor_id == character_id
+                    ]
+                    intent = await uow.scenes.get_intent(
+                        derive_intent_id(ids["world"], second.snapshot_id, character_id)
+                    )
+                    assert intent.action.family.value == "wait"
+        finally:
+            await engine.dispose()
 
     asyncio.run(_inner())
