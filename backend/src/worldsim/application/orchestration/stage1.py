@@ -413,6 +413,7 @@ class Stage1Orchestrator:
         index: int,
         player_intents: Mapping[UUID, ActionIntent] | None = None,
         drain_queue: bool = False,
+        submitter_id: UUID | None = None,
     ) -> Stage1PhaseReport:
         """Advance one phase end to end (manual advancement unit)."""
         await self._tasks.reconcile()
@@ -435,7 +436,9 @@ class Stage1Orchestrator:
         runtime = await self._runtime(world_id)
         self._fire("before_probe")
         await self._probe_gate(runtime)
-        run, admitted_owner = await self._admit_run(world_id, index)
+        run, admitted_owner = await self._admit_run(
+            world_id, index, player_intents, submitter_id
+        )
         runtime = replace(runtime, controlled_character_id=admitted_owner)
         if run.state.value == PhaseRunState.COMPLETED.value:
             return await self._duplicate_report(world_id, run_id)
@@ -456,7 +459,13 @@ class Stage1Orchestrator:
         merged = dict(player_intents or {})
         merged.update({actor: intent for actor, (intent, _ref) in directed.items()})
         intents = await self._decide_all(
-            world_id, run_id, sealed, merged, directed, runtime=runtime
+            world_id,
+            run_id,
+            sealed,
+            merged,
+            directed,
+            runtime=runtime,
+            submitter_id=submitter_id,
         )
         await self._set_state(run_id, PhaseRunState.INTENTS_COMPLETE)
         quiet = is_quiet_phase(intent.action.family for intent in intents)
@@ -567,15 +576,21 @@ class Stage1Orchestrator:
                 )
 
     async def _admit_run(
-        self, world_id: UUID, index: int
+        self,
+        world_id: UUID,
+        index: int,
+        player_intents: Mapping[UUID, ActionIntent] | None = None,
+        submitter_id: UUID | None = None,
     ) -> tuple[PhaseRun, UUID | None]:
         """Create-or-resume one phase run under a per-world admission lock.
 
         One transaction holds the world row locked while it validates
         the clock and the previous run, refuses a different open run,
-        and creates this index run. The active player grant is captured
-        inside the same transaction, after provider preflight, so a
-        grant change racing preflight cannot leak stale ownership into
+        resolves the active player grant, rejects submissions that no
+        longer match it, and creates this index run. The active player
+        grant is captured inside the same transaction, after provider
+        preflight and before the commit, so a grant change racing
+        preflight cannot leak stale ownership or a stale submission into
         the beat; the admitted owner is frozen for the run. Same-run
         replay resumes via a pre-read under the lock (role changes are
         refused while any run is open, so the re-read is stable); only
@@ -607,15 +622,15 @@ class Stage1Orchestrator:
                     existing = await uow.phases.get_run(run_id)
                 except DomainError:
                     existing = None
+                owner = await resolve_controlled_character(uow, world_id)
+                self._reject_stale_submissions(owner, player_intents, submitter_id)
                 if existing is not None:
-                    owner = await resolve_controlled_character(uow, world_id)
                     return existing, owner
                 await uow.phases.create_run(
                     PhaseRun(id=run_id, world_id=world_id, absolute_index=index)
                 )
                 await uow.commit()
                 admitted = await uow.phases.get_run(run_id)
-                owner = await resolve_controlled_character(uow, world_id)
                 return admitted, owner
         except IntegrityError as exc:
             # Only a twin insert of this exact run can reach here: the
@@ -629,8 +644,51 @@ class Stage1Orchestrator:
                 if twin.world_id != world_id or twin.absolute_index != index:
                     raise exc from None
                 await uow.worlds.lock(world_id)
-                owner = await resolve_controlled_character(uow, world_id)
-                return twin, owner
+                twin_owner = await resolve_controlled_character(uow, world_id)
+                self._reject_stale_submissions(twin_owner, player_intents, submitter_id)
+                return twin, twin_owner
+
+
+    @staticmethod
+    def _reject_stale_submissions(
+        owner: UUID | None,
+        player_intents: Mapping[UUID, ActionIntent] | None,
+        submitter_id: UUID | None = None,
+    ) -> None:
+        """Refuse player submissions that no longer match the authorization.
+
+        Submissions carry the request-time authorization (which actor each
+        action was filed for, plus who filed them), but provider preflight
+        runs before admission; a grant change inside that window must not
+        let a stale action commit. An active player grant is authoritative:
+        only its bound character may file. With no player grant, only the
+        request-time authorized submitter (header player, no grant) may
+        file. Directed and system execution paths never flow through
+        player_intents, so they are unaffected. Rejection happens before
+        any run row is created, leaving no orphan open run.
+        """
+        if not player_intents:
+            return
+        if owner is not None:
+            stale = [actor for actor in player_intents if actor != owner]
+            if not stale:
+                return
+            raise DomainError(
+                ErrorCode.FORBIDDEN,
+                "player submission is stale: the active grant now controls "
+                f"{owner}, not {stale[0]}",
+                {
+                    "controlled_character_id": str(owner),
+                    "stale_actor_id": str(stale[0]),
+                },
+            )
+        if submitter_id is None or any(
+            actor != submitter_id for actor in player_intents
+        ):
+            raise DomainError(
+                ErrorCode.FORBIDDEN,
+                "player submission is stale: no player currently controls a character",
+            )
 
 
     async def _require_previous_complete_in(
@@ -1393,6 +1451,7 @@ class Stage1Orchestrator:
         directed: Mapping[UUID, tuple[ActionIntent, str]] | None = None,
         *,
         runtime: PhaseRuntime,
+        submitter_id: UUID | None = None,
     ) -> list[Intent]:
         """Concurrent character decisions after the snapshot seal (barrier)."""
         async with self._factory() as uow:
@@ -1416,6 +1475,7 @@ class Stage1Orchestrator:
                     player_intents,
                     directed or {},
                     runtime,
+                    submitter_id,
                 )
                 for character in sorted(characters, key=lambda c: c.id.hex)
             )
@@ -1433,6 +1493,7 @@ class Stage1Orchestrator:
         player_intents: Mapping[UUID, ActionIntent],
         directed: Mapping[UUID, tuple[ActionIntent, str]],
         runtime: PhaseRuntime,
+        submitter_id: UUID | None = None,
     ) -> Intent | None:
         if (
             player_intents.get(character.id) is None
@@ -1446,6 +1507,23 @@ class Stage1Orchestrator:
         owner = f"s1char:{run_id.hex[:8]}"
         await self._track_task(world_id, task_run_id, owner)
         player_action = player_intents.get(character.id)
+        if player_action is not None and directed.get(character.id) is None:
+            if (
+                character.id != runtime.controlled_character_id
+                and character.id != submitter_id
+            ):
+                raise DomainError(
+                    ErrorCode.FORBIDDEN,
+                    "player submission is stale for the admitted run",
+                    {
+                        "controlled_character_id": (
+                            str(runtime.controlled_character_id)
+                            if runtime.controlled_character_id is not None
+                            else None
+                        ),
+                        "stale_actor_id": str(character.id),
+                    },
+                )
         if player_action is not None:
             denial = precheck_action(
                 player_action,

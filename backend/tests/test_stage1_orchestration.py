@@ -359,7 +359,10 @@ def test_player_substitution_controls_attempt(migrated_db: None) -> None:
                 topic="dawn patrol",
             )
         }
-        report = await orch.advance_phase(ids["world"], 1, player)
+        # No grant: pass the request-time submitter as the HTTP route would.
+        report = await orch.advance_phase(
+            ids["world"], 1, player, submitter_id=ids["ash"]
+        )
         engine = create_engine(Settings())
         try:
             async with create_unit_of_work(engine) as uow:

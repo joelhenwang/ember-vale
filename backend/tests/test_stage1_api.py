@@ -591,3 +591,277 @@ def test_narrator_outage_keeps_attributed_answer(
     dup = _advance(client, ids["world"], 1)
     assert dup.json()["duplicate"] is True
     assert _narration_beats(client, scene_id) == beats
+
+
+def test_stale_player_submission_rejected_at_admission(
+    api: tuple[ApiClient, FakeGateway, dict[str, UUID]],
+) -> None:
+    """A grant change during preflight rejects the stale submission.
+
+    Wren files a question, provider preflight holds, the grant moves to
+    Ash, then preflight releases: admission must reject the Wren action
+    with 403, commit nothing for Wren, and leave no orphan run behind,
+    so the same index stays retryable for Ash.
+    """
+    import threading
+
+    from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
+    from worldsim.application.ports.model_gateway import ProbeResult
+    from worldsim.domain.errors import DomainError
+
+    client, gateway, _ = api
+    ids = asyncio.run(_seed_two())
+    snapshots = {1: derive_snapshot_id(derive_run_id(ids["world"], 1))}
+    gateway.route = _route_for(ids, snapshots)
+
+    selected = client.post(
+        "/api/v1/stage2/roles/select",
+        json={
+            "world_id": str(ids["world"]),
+            "role": "player",
+            "character_id": str(ids["wren"]),
+        },
+        headers=_watcher(),
+    )
+    assert selected.status_code == 200, selected.text
+
+    snapshot = snapshots[1]
+    wren_question = {
+        str(ids["wren"]): {
+            "family": "communicate",
+            "character_id": str(ids["wren"]),
+            "snapshot_id": str(snapshot),
+            "target_character_id": str(ids["ash"]),
+            "topic": "dawn patrol",
+        }
+    }
+
+    arrived = threading.Event()
+    release = threading.Event()
+    real_probe = gateway.probe
+    probe_calls = {"count": 0}
+
+    async def _held_probe() -> ProbeResult:
+        probe_calls["count"] += 1
+        if probe_calls["count"] == 1:
+            arrived.set()
+            await asyncio.to_thread(release.wait, 120)
+
+        return await real_probe()
+
+    gateway.probe = _held_probe  # type: ignore[method-assign]
+    outcomes: dict[str, Any] = {}
+
+    def _advance_in_thread() -> None:
+        try:
+            outcomes["response"] = _advance(
+                client, ids["world"], 1, wren_question, _player(ids["wren"])
+            )
+        except Exception as exc:  # recorded for the verdict
+            outcomes["error"] = exc
+
+    thread = threading.Thread(target=_advance_in_thread)
+    try:
+        thread.start()
+        assert arrived.wait(timeout=120), "advance never reached preflight"
+        switched = client.post(
+            "/api/v1/stage2/roles/select",
+            json={
+                "world_id": str(ids["world"]),
+                "role": "player",
+                "character_id": str(ids["ash"]),
+            },
+            headers=_watcher(),
+        )
+        assert switched.status_code == 200, switched.text
+        release.set()
+        thread.join(timeout=300)
+        assert not thread.is_alive(), "stale advance hung"
+    finally:
+        release.set()
+        gateway.probe = real_probe  # type: ignore[method-assign]
+
+    assert "error" not in outcomes, outcomes.get("error")
+    rejected = outcomes["response"]
+    assert rejected.status_code == 403, rejected.text
+    assert rejected.json()["error"]["code"] == "FORBIDDEN"
+    assert "stale" in rejected.json()["error"]["message"].lower()
+
+    run_id = derive_run_id(ids["world"], 1)
+
+    async def _inspect() -> dict[str, Any]:
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                events = await uow.events.count_events(ids["world"])
+                open_run = await uow.phases.find_open_run(ids["world"])
+                try:
+                    await uow.phases.get_run(run_id)
+                    run_missing = False
+                except DomainError:
+                    run_missing = True
+                try:
+                    await uow.scenes.get_intent(
+                        derive_intent_id(ids["world"], snapshot, ids["wren"])
+                    )
+                    intent_missing = False
+                except DomainError:
+                    intent_missing = True
+                return {
+                    "events": events,
+                    "open_run": open_run,
+                    "run_missing": run_missing,
+                    "intent_missing": intent_missing,
+                }
+        finally:
+            await engine.dispose()
+
+    state = asyncio.run(_inspect())
+    assert state["events"] == 0
+    assert state["open_run"] is None
+    assert state["run_missing"] is True
+    assert state["intent_missing"] is True
+
+    ash_question = {
+        str(ids["ash"]): {
+            "family": "communicate",
+            "character_id": str(ids["ash"]),
+            "snapshot_id": str(snapshot),
+            "target_character_id": str(ids["wren"]),
+            "topic": "dusk patrol",
+        }
+    }
+    retry = _advance(client, ids["world"], 1, ash_question, _player(ids["ash"]))
+    assert retry.status_code == 200, retry.text
+    assert retry.json()["duplicate"] is False
+
+    async def _verify_retry() -> None:
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                retry_snapshot = UUID(retry.json()["snapshot_id"])
+                ash_intent = await uow.scenes.get_intent(
+                    derive_intent_id(ids["world"], retry_snapshot, ids["ash"])
+                )
+                assert ash_intent.action.family.value == "communicate"
+                wren_intent = await uow.scenes.get_intent(
+                    derive_intent_id(ids["world"], retry_snapshot, ids["wren"])
+                )
+                assert wren_intent.action.family.value == "wait"
+                calls = await uow.traces.list_for_phase_run(UUID(retry.json()["run_id"]))
+                assert not [
+                    call
+                    for call in calls
+                    if call.role == "character_decision" and call.actor_id == ids["ash"]
+                ]
+        finally:
+            await engine.dispose()
+
+    asyncio.run(_verify_retry())
+
+
+def test_open_run_freezes_grant_for_fresh_resume(
+    api: tuple[ApiClient, FakeGateway, dict[str, UUID]],
+) -> None:
+    """An admitted-but-unfinished run refuses role changes and resumes frozen.
+
+    Each HTTP request builds a new Stage1Orchestrator, so the completing
+    advance is a fresh orchestrator resuming the open run: Wren stays
+    protected by the grant admission captured, with no persisted ownership
+    field, because selection is refused while the run is open.
+    """
+    from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
+    from worldsim.domain.errors import DomainError
+    from worldsim.domain.phases import PhaseRun
+
+    client, gateway, _ = api
+    ids = asyncio.run(_seed_two())
+    snapshots = {1: derive_snapshot_id(derive_run_id(ids["world"], 1))}
+    base_route = _route_for(ids, snapshots)
+
+    def _guarded_route(request: CompletionRequest) -> Any:
+        if "You decide" in (request.system or "") and "Wren" in request.prompt:
+            raise AssertionError("controlled Wren must not reach model decision")
+        return base_route(request)
+
+    gateway.route = _guarded_route
+
+    selected = client.post(
+        "/api/v1/stage2/roles/select",
+        json={
+            "world_id": str(ids["world"]),
+            "role": "player",
+            "character_id": str(ids["wren"]),
+        },
+        headers=_watcher(),
+    )
+    assert selected.status_code == 200, selected.text
+
+    run_id = str(derive_run_id(ids["world"], 1))
+    engine = create_engine(Settings())
+    try:
+        from uuid import UUID as _UUID
+
+        async def _admit_bare() -> None:
+            async with create_unit_of_work(engine) as uow:
+                await uow.phases.create_run(
+                    PhaseRun(id=_UUID(run_id), world_id=ids["world"], absolute_index=1)
+                )
+                await uow.commit()
+
+        asyncio.run(_admit_bare())
+    finally:
+        asyncio.run(engine.dispose())
+
+    refused = client.post(
+        "/api/v1/stage2/roles/select",
+        json={
+            "world_id": str(ids["world"]),
+            "role": "player",
+            "character_id": str(ids["ash"]),
+        },
+        headers=_watcher(),
+    )
+    assert refused.status_code == 409, refused.text
+    refused_watcher = client.post(
+        "/api/v1/stage2/roles/select",
+        json={"world_id": str(ids["world"]), "role": "watcher"},
+        headers=_watcher(),
+    )
+    assert refused_watcher.status_code == 409, refused_watcher.text
+
+    report = _advance(client, ids["world"], 1)
+    assert report.status_code == 200, report.text
+    assert report.json()["duplicate"] is False
+
+    async def _verify() -> None:
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                snapshot = UUID(report.json()["snapshot_id"])
+                try:
+                    await uow.scenes.get_intent(
+                        derive_intent_id(ids["world"], snapshot, ids["wren"])
+                    )
+                    wren_protected = False
+                except DomainError:
+                    wren_protected = True
+                assert wren_protected, "resumed run must keep Wren free of model intents"
+                calls = await uow.traces.list_for_phase_run(UUID(report.json()["run_id"]))
+                assert not [
+                    call
+                    for call in calls
+                    if call.role in ("character_decision", "reaction")
+                    and call.actor_id == ids["wren"]
+                ]
+        finally:
+            await engine.dispose()
+
+    asyncio.run(_verify())
+
+    reopened = client.post(
+        "/api/v1/stage2/roles/select",
+        json={"world_id": str(ids["world"]), "role": "watcher"},
+        headers=_watcher(),
+    )
+    assert reopened.status_code == 200, reopened.text

@@ -334,7 +334,11 @@ async def advance(body: api.Stage1AdvanceRequest, request: Request) -> api.Stage
         # complete only once their scenes commit.
         await tick_conditions(factory, body.world_id, body.absolute_index)
         return await orchestrator.advance_phase(
-            body.world_id, body.absolute_index, player_intents, drain_queue=True
+            body.world_id,
+            body.absolute_index,
+            player_intents,
+            drain_queue=True,
+            submitter_id=viewer,
         )
 
     factory = state.uow_factory()
