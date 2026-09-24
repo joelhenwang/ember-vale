@@ -25,6 +25,11 @@ export interface DraftModeSelection {
   controlledKey?: string
 }
 
+export interface DraftAiPin {
+  profileId: string
+  profileRevision: number
+}
+
 export interface NewStorySelections {
   world: DraftWorldSelection
   cast: DraftCastSelection[]
@@ -32,6 +37,8 @@ export interface NewStorySelections {
   title: string
   tone?: string
   artSource?: string
+  /** Pinned provider profile; absent means the environment default. */
+  aiPin?: DraftAiPin
 }
 
 export type DraftPayloadJson = Record<string, unknown>
@@ -61,7 +68,15 @@ export function buildDraftPayload(selections: NewStorySelections): DraftPayloadJ
       title: selections.title,
       ...(selections.tone ? { tone: selections.tone } : {})
     },
-    ai: { art_source: selections.artSource ?? 'curated' }
+    ai: {
+      art_source: selections.artSource ?? 'curated',
+      ...(selections.aiPin
+        ? {
+            profile_id: selections.aiPin.profileId,
+            profile_revision: selections.aiPin.profileRevision
+          }
+        : {})
+    }
   }
 }
 

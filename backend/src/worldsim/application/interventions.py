@@ -19,7 +19,11 @@ from worldsim.application.commands.activities import start_activity
 from worldsim.application.commands.deity import apply_override
 from worldsim.application.commands.director import accept_decision
 from worldsim.application.orchestration.service import derive_run_id
-from worldsim.application.ports.model_gateway import CompletionRequest, ModelGateway
+from worldsim.application.ports.model_gateway import (
+    CompletionRequest,
+    ModelGateway,
+    ModelGatewayError,
+)
 from worldsim.application.transactions.canonical import canonical_input_hash
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.commands import ActionIntent
@@ -140,6 +144,11 @@ async def interpret(
             CompletionRequest(prompt=prompt, system=_SYSTEM, json_mode=True, max_tokens=1024)
         )
         interpretation = _INTERPRETATION_ADAPTER.validate_json(result.text)
+    except ModelGatewayError:
+        # A provider failure is an interpretation failure, never ambiguity:
+        # it propagates (audited as a failed call) instead of asking the
+        # operator to rephrase a request the model never saw.
+        raise
     except Exception:
         return InterpretOutcome(
             InterventionStatus.NEEDS_CLARIFICATION,

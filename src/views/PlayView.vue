@@ -143,6 +143,45 @@ async function advance(): Promise<void> {
   if (seat.value) await queueCtl.refresh()
 }
 
+// Player action: the controlled character speaks to one castmate. The
+// attempt files with the next committed beat — reactions, resolution and
+// narration follow — never alone. Co-located castmates sort first.
+const NIL_SNAPSHOT = '00000000-0000-0000-0000-000000000000'
+const askTarget = ref('')
+const askText = ref('')
+const askTargets = computed(() => {
+  const mine = controlledId.value
+  const others = cast.value.filter((c) => c.id !== mine)
+  if (!mine) return others
+  const here = new Set(cast.value.find((c) => c.id === mine)?.places ?? [])
+  const shared = others.filter((c) => c.places.some((p) => here.has(p)))
+  return [...shared, ...others.filter((c) => !shared.includes(c))]
+})
+
+watch(
+  askTargets,
+  (rows) => {
+    if (!rows.some((c) => c.id === askTarget.value)) askTarget.value = rows[0]?.id ?? ''
+  },
+  { immediate: true }
+)
+
+async function askQuestion(): Promise<void> {
+  const actor = controlledId.value
+  const topic = askText.value.trim()
+  if (!actor || !askTarget.value || !topic) return
+  const ok = await story.advance({
+    [actor]: {
+      family: 'communicate',
+      character_id: actor,
+      snapshot_id: NIL_SNAPSHOT,
+      target_character_id: askTarget.value,
+      topic
+    }
+  })
+  if (ok) askText.value = ''
+}
+
 async function travel(): Promise<void> {
   if (!travelChar.value || !travelTo.value) return
   await story.travel(travelChar.value, travelTo.value)
@@ -263,6 +302,43 @@ onUnmounted(() => {
             @click="advance()">
             {{ story.advancing.value ? 'Committing beat…' : `Commit beat ${nextIndex}` }}
           </MenuButton>
+          <p v-if="story.effectiveRole.value !== 'player'" class="play__empty">
+            Watching: beats advance the world without your actions. Player mode is chosen when the
+            story is created.
+          </p>
+        </section>
+        <section
+          v-if="story.effectiveRole.value === 'player' && controlledId"
+          class="play__card"
+          aria-label="Speak as your character">
+          <h2>Speak as {{ controlledName }}</h2>
+          <p class="play__empty">
+            Your words file with the next committed beat — the cast's reactions, the resolution and
+            the narration follow.
+          </p>
+          <div class="play__travel">
+            <label>
+              To
+              <select v-model="askTarget" :disabled="!askTargets.length">
+                <option v-for="member in askTargets" :key="member.id" :value="member.id">
+                  {{ member.name }} — {{ member.places.join(', ') }}
+                </option>
+              </select>
+            </label>
+            <label>
+              Say
+              <input
+                v-model="askText"
+                type="text"
+                maxlength="256"
+                placeholder="Ask something in your own words." />
+            </label>
+            <MenuButton
+              :disabled="!askText.trim() || !askTarget || story.advancing.value"
+              @click="askQuestion()">
+              {{ story.advancing.value ? 'Committing beat…' : 'Ask with the next beat' }}
+            </MenuButton>
+          </div>
         </section>
         <section class="play__card" aria-label="Story so far">
           <h2>Story so far</h2>

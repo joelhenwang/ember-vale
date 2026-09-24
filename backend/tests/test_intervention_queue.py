@@ -18,6 +18,7 @@ import pytest
 
 from worldsim.application import interventions as service
 from worldsim.application.interventions import Scope
+from worldsim.application.ports.model_gateway import ModelGatewayError
 from worldsim.domain.activities import TravelRoute
 from worldsim.domain.characters import Character
 from worldsim.domain.enums import UserRole
@@ -312,6 +313,75 @@ def test_unmappable_text_needs_clarification(migrated_db: None) -> None:
         assert item.failure_reason != ""
         async with factory() as uow:
             assert await uow.interventions.list_steps(item.id) == []
+
+    _run(_inner())
+
+
+def test_provider_error_propagates_instead_of_clarifying(migrated_db: None) -> None:
+    """A provider failure is an interpretation failure, never ambiguity.
+
+    The gateway error propagates (the route audits it as a failed call)
+    instead of filing a needs-clarification item for a request the model
+    never saw, and no queue row is persisted.
+    """
+
+    async def _inner() -> None:
+        ids = await _seed_travel_world()
+        gateway = FakeGateway(profile=DIRECTOR_FAKE_PROFILE)
+        gateway.enqueue_error(ModelGatewayError("provider down"))
+        factory = _factory()
+        with pytest.raises(ModelGatewayError):
+            await service.submit(
+                factory,
+                gateway,
+                ids["world"],
+                UserRole.DIRECTOR,
+                InterventionMode.INFLUENCE,
+                "Send Wren to Market",
+                Scope(),
+                "e6-provider-1",
+            )
+        async with factory() as uow:
+            assert (
+                await uow.interventions.find_by_client_key(ids["world"], "e6-provider-1")
+                is None
+            )
+
+    _run(_inner())
+
+
+def test_clarification_stays_listed_and_unclaimed(migrated_db: None) -> None:
+    """Items needing clarification stay visible but never execute.
+
+    The operator queue keeps them after the submit response is gone
+    (a reload re-reads this list), while the claim boundary only picks
+    QUEUED rows.
+    """
+
+    async def _inner() -> None:
+        ids = await _seed_travel_world()
+        gateway = FakeGateway(profile=DIRECTOR_FAKE_PROFILE)
+        gateway.enqueue_text("not a plan at all")
+        factory = _factory()
+        item = await service.submit(
+            factory,
+            gateway,
+            ids["world"],
+            UserRole.DIRECTOR,
+            InterventionMode.INFLUENCE,
+            "Do something vague",
+            Scope(),
+            "e6-clarify-list-1",
+        )
+        assert item.status == InterventionStatus.NEEDS_CLARIFICATION
+        async with factory() as uow:
+            queued = await uow.interventions.list_queued_for_world(ids["world"])
+            assert [entry.id for entry in queued] == [item.id]
+            assert await uow.interventions.list_open_for_world(ids["world"]) == []
+        assert await service.claim_for_boundary(factory, ids["world"], "e6-test") == []
+        async with factory() as uow:
+            reread = await uow.interventions.get_intervention(item.id)
+            assert reread.status == InterventionStatus.NEEDS_CLARIFICATION
 
     _run(_inner())
 

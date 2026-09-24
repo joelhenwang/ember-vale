@@ -1,0 +1,149 @@
+{
+  "story_id": "ee2a5b6d-485a-4513-9839-edb9dfca971b",
+  "question": "Ash, what news from the mill?",
+  "model_calls": [
+    {
+      "role": "reaction",
+      "profile": "openrouter@pin-8e42574d-r2",
+      "requested_model": "deepseek/deepseek-v4-flash-0731",
+      "requested_pin": "8e42574d",
+      "requested_pin_revision": "2",
+      "executed_model": "deepseek/deepseek-v4-flash-0731",
+      "status": "failed",
+      "error": "malformed"
+    },
+    {
+      "role": "narrator",
+      "profile": "openrouter@pin-8e42574d-r2",
+      "requested_model": "deepseek/deepseek-v4-flash-0731",
+      "requested_pin": "8e42574d",
+      "requested_pin_revision": "2",
+      "executed_model": "deepseek/deepseek-v4-flash-0731",
+      "status": "failed",
+      "error": "malformed"
+    },
+    {
+      "role": "resolver",
+      "profile": "openrouter@pin-8e42574d-r2",
+      "requested_model": "deepseek/deepseek-v4-flash-0731",
+      "requested_pin": "8e42574d",
+      "requested_pin_revision": "2",
+      "executed_model": "deepseek/deepseek-v4-flash-0731",
+      "status": "failed",
+      "error": "malformed"
+    },
+    {
+      "role": "character_decision",
+      "profile": "openrouter@pin-8e42574d-r2",
+      "requested_model": "deepseek/deepseek-v4-flash-0731",
+      "requested_pin": "8e42574d",
+      "requested_pin_revision": "2",
+      "executed_model": "deepseek/deepseek-v4-flash-0731",
+      "status": "failed",
+      "error": "malformed"
+    },
+    {
+      "role": "reaction",
+      "profile": "openrouter@pin-8e42574d-r2",
+      "requested_model": "deepseek/deepseek-v4-flash-0731",
+      "requested_pin": "8e42574d",
+      "requested_pin_revision": "2",
+      "executed_model": "deepseek/deepseek-v4-flash-0731",
+      "status": "failed",
+      "error": "malformed"
+    },
+    {
+      "role": "director",
+      "profile": "openrouter@pin-8e42574d-r2",
+      "requested_model": "deepseek/deepseek-v4-flash-0731",
+      "requested_pin": "8e42574d",
+      "requested_pin_revision": "2",
+      "executed_model": "deepseek/deepseek-v4-flash-0731",
+      "status": "failed",
+      "error": "malformed"
+    }
+  ],
+  "scenes": [
+    {
+      "scene": "80412ae8-3dfa-5de6-b536-f4e7971f5126",
+      "status": "committed",
+      "intents": [
+        {
+          "author": "8d62d831-2ed2-410c-9925-5c473ec8f409",
+          "family": "communicate",
+          "topic": null,
+          "status": "validated"
+        },
+        {
+          "author": "afffdf31-ad2d-4160-9546-5348ed8287f9",
+          "family": "wait",
+          "topic": null,
+          "status": "validated"
+        }
+      ],
+      "phase_run": "f8521fd0-0fce-57c9-aa47-d39ef32cb3e2",
+      "attempts": [
+        {
+          "actor": "afffdf31-ad2d-4160-9546-5348ed8287f9",
+          "status": "committed",
+          "summary": "Ash waits"
+        },
+        {
+          "actor": "8d62d831-2ed2-410c-9925-5c473ec8f409",
+          "status": "committed",
+          "summary": "Wren says to Ash: Ash, what news from the mill?"
+        }
+      ],
+      "reactions": [],
+      "resolutions": [
+        {
+          "outcome": "success",
+          "resolver": "deterministic",
+          "rationale": "fallback: provider failed (ModelMalformedError)"
+        }
+      ],
+      "narrations": [
+        "attempt:wait: Ash waits",
+        "attempt:communicate: Wren says to Ash: Ash, what news from the mill?",
+        "attempt:wait: Ash waits",
+        "attempt:communicate: Wren says to Ash: Ash, what news from the mill?"
+      ]
+    }
+  ],
+  "setup_art": {
+    "model": null,
+    "art_source": "curated",
+    "profile_id": "8e42574d-fd31-4816-97b9-bcff37a941ec",
+    "profile_revision": 2,
+    "style_pack_revision": null
+  },
+  "timeline": {
+    "world_id": "ee2a5b6d-485a-4513-9839-edb9dfca971b",
+    "entries": [
+      {
+        "sequence": 1,
+        "event_id": "cce51d0b-d5f7-469d-a2d5-c81811c778d0",
+        "event_type": "world_seeded",
+        "absolute_index": 0,
+        "snippet": null
+      },
+      {
+        "sequence": 2,
+        "event_id": "cb0f4eaf-770e-4bdf-a6a4-4dc05a51d3b4",
+        "event_type": "world_ticked",
+        "absolute_index": 1,
+        "snippet": null
+      },
+      {
+        "sequence": 3,
+        "event_id": "a8b05530-fc63-40a3-97ca-657d5976f1a8",
+        "event_type": "action_resolved",
+        "absolute_index": 1,
+        "snippet": "attempt:wait: Ash waits attempt:communicate: Wren says to Ash: Ash, what news from the mill? attempt:wait: Ash waits attempt:communicate: Wren says to Ash: Ash,"
+      }
+    ],
+    "total": 3,
+    "next_after": 3,
+    "has_more": false
+  }
+}

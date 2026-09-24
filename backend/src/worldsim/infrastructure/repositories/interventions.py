@@ -108,12 +108,23 @@ class SqlAlchemyInterventionRepository:
         return self._to_intervention(row)
 
     async def list_queued_for_world(self, world_id: UUID) -> list[Intervention]:
+        """Operator-visible queue: queued work plus items awaiting
+
+        clarification. The latter stay discoverable and actionable until
+        they are resubmitted, cancelled, or claimed — the claim boundary
+        still only picks QUEUED rows for execution.
+        """
         rows = (
             await self._session.execute(
                 select(InterventionRow)
                 .where(
                     InterventionRow.world_id == world_id,
-                    InterventionRow.status == InterventionStatus.QUEUED.value,
+                    InterventionRow.status.in_(
+                        [
+                            InterventionStatus.QUEUED.value,
+                            InterventionStatus.NEEDS_CLARIFICATION.value,
+                        ]
+                    ),
                 )
                 .order_by(InterventionRow.id)
             )

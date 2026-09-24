@@ -288,6 +288,24 @@ describe('useStory room', () => {
     expect(advance?.body as Record<string, unknown>).not.toHaveProperty('player_intents')
   })
 
+  it('files a player attempt with the beat when one is given', async () => {
+    installFetch()
+    const story = useStory('A', 'watcher')
+    await story.load()
+    const intents = {
+      'char-wren': {
+        family: 'communicate',
+        character_id: 'char-wren',
+        snapshot_id: '00000000-0000-0000-0000-000000000000',
+        target_character_id: 'char-ash',
+        topic: 'What news from the mill?'
+      }
+    }
+    await story.advance(intents)
+    const advance = seen.find((s) => s.path === '/api/v1/stage1/advance')
+    expect((advance?.body as Record<string, unknown>)['player_intents']).toEqual(intents)
+  })
+
   it('records the room open exactly once without advancing gameplay', async () => {
     installFetch()
     const story = useStory('A', 'watcher')

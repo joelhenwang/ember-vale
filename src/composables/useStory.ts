@@ -62,6 +62,8 @@ interface AdvanceOp {
   worldId: string
   index: number
   header: OpHeader
+  /** Player attempt filed with this beat; omitted beats carry none. */
+  intents?: Parameters<typeof advanceStory>[2]
   generation: number
 }
 
@@ -305,7 +307,7 @@ export function useStory(
     }
   }
 
-  async function advance(): Promise<boolean> {
+  async function advance(intents?: Parameters<typeof advanceStory>[2]): Promise<boolean> {
     if (!detail.value || advancing.value) return false
     advancing.value = true
     notice.value = null
@@ -319,11 +321,12 @@ export function useStory(
         characterId: unref(characterId),
         signal: controller?.signal
       },
+      intents,
       generation: cycle
     }
     const alive = (): boolean => op.generation === cycle
     const attempt = async (): Promise<void> => {
-      const result = await advanceStory(op.worldId, op.index, undefined, op.header)
+      const result = await advanceStory(op.worldId, op.index, op.intents, op.header)
       if (alive() && result.duplicate) {
         notice.value = { kind: 'info', text: 'That beat already committed — showing it.' }
       }

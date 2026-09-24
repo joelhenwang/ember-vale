@@ -39,6 +39,8 @@ import {
 import { filterCast, type CastFilter } from '../game/filters'
 import { persistStepSlug, stepFromSlug } from '../game/wizardSteps'
 import type { CharacterDef } from '../game/model'
+import { listProfiles, listProviders } from '../api/worldsim'
+import type { ProviderConnectionView, ProviderProfileView } from '../../content/clients/worldsim'
 
 const route = useRoute()
 const router = useRouter()
@@ -126,7 +128,11 @@ const sel = reactive({
   role: 'watcher' as 'watcher' | 'player',
   controlledKey: undefined as string | undefined,
   title: '',
-  tone: 'hopeful mystery'
+  tone: 'hopeful mystery',
+  /** Pinned storyteller provider; empty profile id means the environment default. */
+  aiProviderId: '',
+  aiProfileId: '',
+  aiProfileRevision: 1
 })
 
 const WORLD_BY_ID = computed(() => new Map(presets.worlds.value.map((w) => [w.id, w])))
@@ -182,8 +188,114 @@ const selections = computed<NewStorySelections>(() => ({
       ? { role: 'player', controlledKey: sel.controlledKey }
       : { role: 'watcher' },
   title: sel.title,
-  tone: sel.tone || undefined
+  tone: sel.tone || undefined,
+  ...(sel.aiProfileId
+    ? { aiPin: { profileId: sel.aiProfileId, profileRevision: sel.aiProfileRevision } }
+    : {})
 }))
+
+// Storyteller pin (wizard step 5): an existing provider profile revision,
+// persisted through the draft's `ai` section and executed by every beat.
+// Absent means the environment default — never a silent substitution.
+const providerPins = ref<ProviderConnectionView[]>([])
+const profilePins = ref<ProviderProfileView[]>([])
+const pinsLoading = ref(false)
+const pinsError = ref<string | null>(null)
+const pinsLoaded = ref(false)
+let profilesFor: string | null = null
+
+async function retryPinLoad(): Promise<void> {
+  pinsLoaded.value = false
+  await ensurePinLists()
+}
+
+async function loadProviderPins(): Promise<void> {
+  if (pinsLoaded.value || pinsLoading.value) return
+  pinsLoading.value = true
+  pinsError.value = null
+  try {
+    providerPins.value = await listProviders()
+    pinsLoaded.value = true
+  } catch (err) {
+    pinsError.value = err instanceof Error ? err.message : 'could not load providers'
+  } finally {
+    pinsLoading.value = false
+  }
+}
+
+async function loadProfilePins(connectionId: string): Promise<void> {
+  if (!connectionId || profilesFor === connectionId) return
+  profilesFor = connectionId
+  pinsLoading.value = true
+  pinsError.value = null
+  try {
+    profilePins.value = await listProfiles(connectionId)
+  } catch (err) {
+    profilesFor = null
+    profilePins.value = []
+    pinsError.value = err instanceof Error ? err.message : 'could not load profiles'
+  } finally {
+    pinsLoading.value = false
+  }
+}
+
+/** Newest revision first; the pin executes an exact revision, never head. */
+const profileOptions = computed(() =>
+  [...profilePins.value].sort((a, b) => b.revision - a.revision)
+)
+
+function chooseProvider(connectionId: string): void {
+  sel.aiProviderId = connectionId
+  sel.aiProfileId = ''
+  profilePins.value = []
+  profilesFor = null
+  if (connectionId)
+    void loadProfilePins(connectionId).then(() => {
+      // Default to the newest revision; the choice stays explicit and editable.
+      const newest = profileOptions.value[0]
+      if (newest && !sel.aiProfileId) {
+        sel.aiProfileId = newest.id
+        sel.aiProfileRevision = newest.revision
+      }
+    })
+}
+
+function chooseProfile(profileId: string): void {
+  const found = profilePins.value.find((p) => p.id === profileId)
+  sel.aiProfileId = profileId
+  if (found) sel.aiProfileRevision = found.revision
+}
+
+const pinSummary = computed(() => {
+  if (!sel.aiProfileId) return 'Environment default'
+  const connection = providerPins.value.find((c) => c.id === sel.aiProviderId)
+  const profile = profilePins.value.find((p) => p.id === sel.aiProfileId)
+  const model = profile?.model_id ?? 'unknown model'
+  const rev = profile?.revision ?? sel.aiProfileRevision
+  const where = connection?.name ?? (sel.aiProviderId || 'unknown provider')
+  return `${where} · ${model} · rev ${rev}`
+})
+
+/** Reopened drafts persist the profile, not its connection: locate the
+ * owning connection so Review can name it and the revision select works. */
+async function ensurePinLists(): Promise<void> {
+  await loadProviderPins()
+  if (!sel.aiProfileId) return
+  if (!sel.aiProviderId) {
+    for (const connection of providerPins.value) {
+      const profiles = await listProfiles(connection.id).catch(() => [])
+      if (profiles.some((p) => p.id === sel.aiProfileId)) {
+        sel.aiProviderId = connection.id
+        break
+      }
+    }
+  }
+  if (sel.aiProviderId) await loadProfilePins(sel.aiProviderId)
+}
+
+watch(step, (next) => {
+  if (next >= 5) void ensurePinLists()
+})
 
 const localIssues = computed(() => localDraftIssues(selections.value))
 const canContinue = computed(() => {
@@ -326,6 +438,14 @@ function hydrate(payload: Record<string, unknown>): void {
   const story = (payload['story'] ?? {}) as Record<string, unknown>
   if (typeof story['title'] === 'string') sel.title = story['title']
   if (typeof story['tone'] === 'string') sel.tone = story['tone']
+  const ai = (payload['ai'] ?? {}) as Record<string, unknown>
+  if (typeof ai['profile_id'] === 'string' && ai['profile_id']) {
+    sel.aiProfileId = ai['profile_id']
+    sel.aiProfileRevision = typeof ai['profile_revision'] === 'number' ? ai['profile_revision'] : 1
+  } else {
+    sel.aiProviderId = ''
+    sel.aiProfileId = ''
+  }
 }
 
 const dirty = computed(
@@ -401,6 +521,8 @@ async function prefillQuickStart(): Promise<void> {
     }))
   sel.role = 'watcher'
   sel.controlledKey = undefined
+  sel.aiProviderId = ''
+  sel.aiProfileId = ''
   sel.title = 'A Morning in Ember Vale'
   // Quick Start lands on Review with everything filled in — and persists.
   // The result is checked: a failed save must not claim durability.
@@ -1132,6 +1254,42 @@ onMounted(() => {
         <p v-else class="nsv__notice" role="status">
           Model profile unknown — beats will say what they used.
         </p>
+        <h3 class="nsv__h">Storyteller model</h3>
+        <p class="nsv__body">
+          Pin the provider profile revision every beat executes. The pin saves with this draft and
+          shows on Review; without one, beats use the environment default.
+        </p>
+        <p v-if="pinsLoading && !providerPins.length" class="nsv__notice" role="status">
+          Loading providers…
+        </p>
+        <p v-if="pinsError" class="nsv__notice" role="alert">
+          {{ pinsError }} —
+          <button type="button" class="nsv__link" @click="retryPinLoad()">retry</button>
+        </p>
+        <label v-if="providerPins.length" class="nsv__field">
+          Provider
+          <select
+            :value="sel.aiProviderId"
+            @change="chooseProvider(($event.target as HTMLSelectElement).value)">
+            <option value="">Environment default</option>
+            <option v-for="connection in providerPins" :key="connection.id" :value="connection.id">
+              {{ connection.name }} ({{ connection.adapter }})
+            </option>
+          </select>
+        </label>
+        <label v-if="sel.aiProviderId" class="nsv__field">
+          Profile revision
+          <select
+            :value="sel.aiProfileId"
+            :disabled="!profileOptions.length"
+            @change="chooseProfile(($event.target as HTMLSelectElement).value)">
+            <option v-if="!profileOptions.length" value="">No profiles yet</option>
+            <option v-for="profile in profileOptions" :key="profile.id" :value="profile.id">
+              {{ profile.model_id }} · rev {{ profile.revision }}
+            </option>
+          </select>
+        </label>
+        <p class="nsv__notice" role="status">Selected: {{ pinSummary }}</p>
       </section>
 
       <section v-if="step === 6" class="nsv__panel" aria-label="Review and create">
@@ -1159,6 +1317,10 @@ onMounted(() => {
           <div>
             <dt>Title</dt>
             <dd>{{ sel.title || 'Untitled' }}</dd>
+          </div>
+          <div>
+            <dt>Storyteller</dt>
+            <dd>{{ pinSummary }}</dd>
           </div>
         </dl>
         <ul v-if="localIssues.length" class="nsv__issues" role="alert">
@@ -1433,6 +1595,15 @@ onMounted(() => {
   margin-top: 12px;
   font-size: 13px;
   color: #6b5d43;
+}
+.nsv__link {
+  font: inherit;
+  color: #1f4d3f;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
 }
 .nsv__review {
   display: grid;

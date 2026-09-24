@@ -29,6 +29,18 @@ describe('draft payload', () => {
     expect(payload['ai']).toEqual({ art_source: 'curated' })
   })
 
+  it('carries the provider pin only when one is chosen', () => {
+    const pinned = buildDraftPayload({
+      ...BASE,
+      aiPin: { profileId: 'profile-uuid', profileRevision: 3 }
+    })
+    expect(pinned['ai']).toEqual({
+      art_source: 'curated',
+      profile_id: 'profile-uuid',
+      profile_revision: 3
+    })
+  })
+
   it('carries the controlled key only for player mode', () => {
     const payload = buildDraftPayload({
       ...BASE,

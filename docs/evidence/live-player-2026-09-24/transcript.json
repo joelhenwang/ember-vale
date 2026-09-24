@@ -1,0 +1,47 @@
+[
+  {
+    "step": "wren and ash start together",
+    "ok": true,
+    "detail": "Hearth"
+  },
+  {
+    "step": "ui pin selection",
+    "ok": true,
+    "detail": "Selected: Live Deepseek · deepseek/deepseek-v4-flash-0731 · rev 2"
+  },
+  {
+    "step": "review shows the storyteller pin",
+    "ok": true,
+    "detail": "World Ember Vale (rev 2) Cast Wren (rev 1), Ash (rev 1) Mode Player as Wren Title Wren asks about the mill mueumd1v Storyteller Live Deepseek · deepseek/deepseek-v4-flash-0731 · rev 2"
+  },
+  {
+    "step": "begin navigates to the room",
+    "ok": true,
+    "detail": "story ee2a5b6d…"
+  },
+  {
+    "step": "player badge follows the grant",
+    "ok": true,
+    "detail": "Player"
+  },
+  {
+    "step": "ask target defaults to a castmate",
+    "ok": true,
+    "detail": "Ash — Hearth"
+  },
+  {
+    "step": "question beat commits",
+    "ok": true,
+    "detail": "beat 1 with player intent"
+  },
+  {
+    "step": "feed shows committed events",
+    "ok": true,
+    "detail": "WORLD TICKED\nWORLD SEEDED"
+  },
+  {
+    "step": "grant and feed survive reload",
+    "ok": true,
+    "detail": "Player / 2 entries"
+  }
+]

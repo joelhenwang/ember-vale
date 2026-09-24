@@ -25,6 +25,8 @@ import type {
   PresetDetail,
   PresetPublishView,
   PresetSummary,
+  ProviderConnectionView,
+  ProviderProfileView,
   RoleGrantView,
   RoleSelectRequest,
   Stage1AdvanceRequest,
@@ -353,6 +355,24 @@ export function selectSeat(
   // server rejects mid-run switches with PRECONDITION_FAILED.
   const body: RoleSelectRequest = { world_id: worldId, role }
   return apiFetch<RoleGrantView>('/stage2/roles/select', { ...opts, method: 'POST', body })
+}
+
+/* Provider profiles (storyteller pins) -------------------------------------- */
+
+export function listProviders(opts: CallOptions = {}): Promise<ProviderConnectionView[]> {
+  // Reads never return secrets: connections expose a write-only
+  // credential reference plus a boolean.
+  return apiFetch<ProviderConnectionView[]>('/settings/providers', { ...opts, method: 'GET' })
+}
+
+export function listProfiles(
+  connectionId: string,
+  opts: CallOptions = {}
+): Promise<ProviderProfileView[]> {
+  return apiFetch<ProviderProfileView[]>(`/settings/providers/${connectionId}/profiles`, {
+    ...opts,
+    method: 'GET'
+  })
 }
 
 /* Director/God interventions ---------------------------------------------- */
