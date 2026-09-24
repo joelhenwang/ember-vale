@@ -1988,6 +1988,10 @@ class Stage1Orchestrator:
                 "event_location_id": str(sealed.locations.get(attempt.actor_character_id)),
                 "participant_ids": participant_ids,
                 "known_character_ids": [str(c) for c in sealed.locations],
+                "known_characters": [
+                    {"id": str(c), "name": names.get(c, c.hex[:8])}
+                    for c in sealed.locations
+                ],
                 "location_ids": [str(loc.id) for loc in locations],
                 "beats_remaining": scene.beat_budget,
                 "attempt_id": str(attempt.id),

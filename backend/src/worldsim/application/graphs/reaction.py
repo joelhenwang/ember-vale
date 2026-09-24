@@ -55,6 +55,7 @@ class ReactionState(GraphState, total=False):
     event_location_id: str | None
     participant_ids: list[str]
     known_character_ids: list[str]
+    known_characters: list[dict[str, str]]
     location_ids: list[str]
     beats_remaining: int
     attempt_id: str
@@ -96,11 +97,45 @@ def render_system_prompt(template: str) -> str:
     return template.replace("{{RESPONSE_SCHEMA}}", schema_json)
 
 
-def render_user_prompt(reactor_context: str, observable_summary: str) -> str:
-    """Reactor perspective plus the observable attempt (never hidden rationale)."""
+def _roster_of(raw: Any) -> list[dict[str, str]]:
+    """Sanitize the known-characters roster from graph state."""
+    if not isinstance(raw, list):
+        return []
+    roster: list[dict[str, str]] = []
+    for entry in raw:
+        if not isinstance(entry, dict):
+            continue
+        char_id, name = entry.get("id"), entry.get("name")
+        if isinstance(char_id, str) and char_id and isinstance(name, str) and name:
+            roster.append({"id": char_id, "name": name})
+    return roster
+
+
+def render_user_prompt(
+    reactor_context: str,
+    observable_summary: str,
+    known_characters: list[dict[str, str]] | None = None,
+) -> str:
+    """Reactor perspective plus the observable attempt (never hidden rationale).
+
+    The roster names the valid reaction-target IDs: the response schema
+    demands UUID references, so the prompt must supply them.
+    """
+    roster = "\n".join(
+        f"- {entry.get('name')} (id: {entry.get('id')})"
+        for entry in known_characters or []
+        if entry.get("id") and entry.get("name")
+    )
+    known = (
+        "Known characters (use these exact ids when your reaction targets "
+        f"someone):\n{roster}\n\n"
+        if roster
+        else ""
+    )
     return (
         f"{reactor_context}\n\n"
         f"Observable attempt: {observable_summary}\n\n"
+        f"{known}"
         "React from your own perspective to exactly what you perceived. "
         "Output exactly one JSON object matching the response schema."
     )
@@ -171,7 +206,11 @@ def build_reaction_graph(deps: ReactionGraphDeps) -> Any:
         assert isinstance(summary, str) and summary
         return {
             "system_prompt": render_system_prompt(deps.system_template),
-            "user_prompt": render_user_prompt(context, summary),
+            "user_prompt": render_user_prompt(
+                context,
+                summary,
+                _roster_of(state.get("known_characters")),
+            ),
         }
 
     async def decide(state: ReactionState) -> dict[str, Any]:

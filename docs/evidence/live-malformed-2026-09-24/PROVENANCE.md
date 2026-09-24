@@ -1,16 +1,26 @@
 # Malformed-provider diagnosis — live round 3, 2026-09-24 (UTC)
 
-## Claim
+## Claim (corrected)
 
-The recurring `malformed` failures are **content-extraction failures at the
+The `audit.json` in this directory contains **12 model calls: 10 succeeded,
+2 failed** — beat 1 went 7/7, beat 2 went 3/5. An earlier report of 4/6 for
+beat 2 was an arithmetic error; no audit row is missing. Beat attribution
+below is positional (first 7 rows beat 1, remaining 5 beat 2): the export
+carries no call IDs or phase/run associations. Future exports must include
+call id, phase_run_id, task_run_id, actor_id, and created_at per row so beat
+attribution is explicit instead of positional.
+
+The confirmed cause below covers **these two failed calls** (beat-2
+`reaction`, initial + repair): a **content-extraction failure at the
 provider boundary**, not JSON-parsing, schema-validation, or game-rule
-failures: on HTTP 200 with a well-formed envelope, `choices[0].message.content`
-is `null` while the model Chairman spent the whole completion budget on
-chain-of-thought (`finish_reason: "length"`, `reasoning_tokens` ≈ budget).
-The graphs never see these responses — the adapter raises before returning —
-so no repair-attempt JSON is ever validated and the existing deterministic
-fallbacks engage. JSON parsing, schema validation, and game-rule validation
-are never reached for these calls.
+failure. On HTTP 200 with a well-formed envelope,
+`choices[0].message.content` is `null` while the model spent the whole
+completion budget on chain-of-thought (`finish_reason: "length"`,
+`reasoning_tokens` ≈ budget). The graphs never see these responses — the
+adapter raises before returning — so no repair-attempt JSON is ever
+validated and the existing deterministic fallbacks engage. Earlier
+`malformed` responses (previous rounds) predate the persisted detail and
+their layer is not established by this evidence.
 
 A sanitized regression pins the exact shape
 (`backend/tests/test_model_diag.py::test_reasoning_only_response_names_the_shape`),
@@ -19,9 +29,11 @@ and the adapter now names it: message
 `reasoning_only: true` in the call detail. Taxonomy unchanged
 (`ModelMalformedError`, no retry, same fallbacks); E3/E6/recovery untouched.
 
-Sustained NPC conversation remains unproven: beat 1 chose WAIT for Ash by
-model decision, beat 2's reaction calls (initial + repair) both burned out
-as above, and the narrator honestly reported "No answer is given yet".
+Sustained NPC conversation remains unproven for two distinct reasons:
+(1) beat 1's reaction answer was lost to the placeholder-target rejection
+traced below (plus Ash's decision intent was WAIT); (2) beat 2's reaction
+calls (initial + repair) both burned out as reasoning-only responses. The
+narrator honestly reported "No answer is given yet".
 
 ## Provenance
 
@@ -54,9 +66,9 @@ as above, and the narrator honestly reported "No answer is given yet".
 ## Results, by stage
 
 - Provider success: beat 1 — 7/7 calls succeeded (director ×2, decision,
-  reaction ×2, resolver, narrator). Beat 2 — 4/6: both `reaction` calls
+  reaction ×2, resolver, narrator). Beat 2 — 3/5: both `reaction` calls
   (initial + repair) failed `malformed`; decision, resolver, narrator
-  succeeded.
+  succeeded. 10 of 12 overall.
 - Failed-layer evidence (both beat-2 rows, persisted in `audit.json`
   detail): `http_status` 200, `choices_count` 1, `content_type` NoneType,
   `finish_reason` length, `reasoning_only` true, usage
@@ -71,6 +83,39 @@ as above, and the narrator honestly reported "No answer is given yet".
   is given yet; Ash remains waiting."
 - Browser display: `room-after-followup.png` shows the follow-up
   ACTION RESOLVED text in Story-so-far with zero page errors.
+
+## Beat-1 trace: the lost communication response
+
+Beat 1 produced a schema-valid `communicate` reaction output
+(`topic: "Market happenings"`, `target_character_id:
+00000000-0000-0000-0000-000000000001`) that was never persisted: the only
+committed reaction is Wren's own WAIT.
+
+- Actor: Ash's reaction slot (reacting to Wren's committed question), by
+  call order (reactors run per attempt in order: Ash reacts to Wren's
+  attempt first, Wren to Ash's second) and topic fit. Attribution is
+  circumstantial — the export carries no actor_id; see the Claim note.
+- Prompt context: Ash's perspective (names only, no UUIDs) + observable
+  summary "Wren says to Ash: …" + the JSON schema demanding a UUID target.
+  No valid target ID was ever shown to the model.
+- Validation: schema PASS (no repair call exists — beat 1 holds exactly 2
+  reaction rows). Repair skipped: the repair budget covers schema
+  `ValidationError` only.
+- Exact rejection: `precheck_action` denied the output —
+  `precheck rejected the reaction (unknown target:
+  00000000-0000-0000-0000-000000000001)` — and the graph returned
+  `no_reaction` with nothing persisted. The reason lived only in transient
+  graph state.
+- Root defect: the prompt demanded UUID references it never supplied, so a
+  compliant answer was impossible and the model's placeholder was correctly
+  rejected. Fix (working tree, uncommitted): the reaction prompt now
+  renders a `known_characters` name→id roster covering exactly the validated
+  set, wired from the orchestrator's existing `names` map. Identity and
+  game-rule validation are unchanged — placeholder targets are still
+  rejected with the exact reason above. Regressions:
+  `test_prompt_lists_known_character_ids_for_targets` (fails before the
+  fix) and `test_placeholder_target_rejected_with_exact_reason` (pins the
+  intact rejection, one call, nothing persisted).
 
 ## Files
 

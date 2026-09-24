@@ -77,6 +77,75 @@ def _observe_json(reactor: uuid.UUID, snapshot: uuid.UUID) -> str:
     )
 
 
+def _communicate_json(
+    reactor: uuid.UUID, snapshot: uuid.UUID, target: object, topic: str = "Market happenings"
+) -> str:
+    return json.dumps(
+        {
+            "family": "communicate",
+            "character_id": str(reactor),
+            "snapshot_id": str(snapshot),
+            "target_character_id": str(target),
+            "topic": topic,
+        }
+    )
+
+
+def test_prompt_lists_known_character_ids_for_targets() -> None:
+    """Live round 3: the reaction schema demands UUID targets, so the prompt
+    must supply the valid IDs. Ash's communicate output carried a placeholder
+    target because no real ID was ever shown to the model."""
+    reactor, initiator, attempt = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    snapshot = uuid.uuid4()
+    gateway = FakeGateway(profile=REACTION_FAKE_PROFILE)
+    gateway.enqueue_text(_communicate_json(reactor, snapshot, initiator))
+    result = asyncio.run(
+        invoke(
+            build_reaction_graph(_deps(gateway)),
+            _invocation(
+                reactor,
+                initiator,
+                attempt,
+                known_character_ids=[str(initiator)],
+                known_characters=[{"id": str(initiator), "name": "Wren"}],
+            ),
+        )
+    )
+
+    assert result["status"] == "reacted"
+    assert result["proposal"]["reacted"] is True
+    assert result["proposal"]["reaction"]["action"]["target_character_id"] == str(initiator)
+    request = gateway.sent_requests[0]
+    assert str(initiator) in request.prompt
+    assert "Wren" in request.prompt
+
+
+def test_placeholder_target_rejected_with_exact_reason() -> None:
+    """Live round-3 shape: schema-valid communicate with a placeholder target
+    is dropped by identity validation (kept intact) with no repair call."""
+    reactor, initiator, attempt = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    snapshot = uuid.uuid4()
+    gateway = FakeGateway(profile=REACTION_FAKE_PROFILE)
+    gateway.enqueue_text(
+        _communicate_json(reactor, snapshot, "00000000-0000-0000-0000-000000000001")
+    )
+    result = asyncio.run(
+        invoke(
+            build_reaction_graph(_deps(gateway)),
+            _invocation(
+                reactor, initiator, attempt, known_character_ids=[str(initiator)]
+            ),
+        )
+    )
+
+    assert result["status"] == "no_reaction"
+    assert result["proposal"]["reacted"] is False
+    assert result["proposal"]["reason"] == (
+        "precheck rejected the reaction (unknown target: 00000000-0000-0000-0000-000000000001)"
+    )
+    assert len(gateway.sent_requests) == 1
+
+
 def test_eligible_target_reacts_from_own_perspective() -> None:
     reactor, initiator, attempt = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
     snapshot = uuid.uuid4()
