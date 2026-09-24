@@ -22,9 +22,18 @@ answer → answer-dependent follow-up → second quoted answer → reload.
   committed beats exactly (beat 2: 3 beats; beat 3: 5 beats).
 
 Record narrowly: **quoted NPC answers committed as DIALOGUE beats with the
-speaker ID, displayed through the feed path, and identical on reload.**
-The follow-up is genuinely answer-dependent (pies ← pie seller), so this
-round establishes remembered conversation, not just topical relevance.
+speaker ID, retrieved through the feed path, and identical on reload.**
+The follow-up is answer-dependent in form (pies ← pie seller), but it
+explicitly re-supplies "the pie seller", so the model could answer without
+retrieving the earlier answer: this proves a coherent answer-dependent
+exchange, not remembered conversation.
+
+## Milestone
+
+> Live quoted NPC dialogue persisted with speaker attribution and source
+> citations, including narrator-outage fallback. A coherent follow-up
+> exchange was demonstrated through the API. Browser verification of quoted
+> dialogue and conversation-memory verification remain pending.
 
 ## Provenance
 
@@ -73,10 +82,18 @@ round establishes remembered conversation, not just topical relevance.
 - Wren's beat-2 reaction failure and the beat-3 narrator outage show the
   provider still exhausts budgets mid-run; attribution survived both via
   commit-then-voice ordering and the fallback, respectively.
-- Feed proof is API-level (`scenes`/`narration` endpoints), not a browser
-  screenshot: the seed world has no UI story, and round 6 already showed
-  the UI's speaker-prefixed rendering. The duplicate "Ash: Ash speaks"
-  prefix remains cosmetic.
+- Feed proof is API-level (`scenes`/`narration` endpoint reads) on an
+  unpinned seed world with a locally overridden token budget: it establishes
+  persisted dialogue retrieval — not a new browser demonstration, and not
+  verification of normal pinned-story configuration. The seed world has no
+  UI story, and round 6 already showed the UI's speaker-prefixed rendering.
+  The duplicate "Ash: Ash speaks" prefix remains cosmetic.
+- This round's `audit.json` omits per-call IDs, phase/task/actor
+  associations, and raw result payloads (the scratch databases were dropped
+  before the export was extended), so the failure-cause claims above rest
+  on throwaway diagnostics and are less independently checkable than the
+  round-5/6 exports. Future live exports must retain call IDs,
+  actor/task associations, and diagnostic detail.
 - Beat 1's 512-budget collapse is a harness-setting observation, not a
   product claim: production stories run under pin budgets.
 
