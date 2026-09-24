@@ -154,6 +154,20 @@ export function useStorytellerPin(api: PinApi = { listProviders, listProfiles })
       : undefined
   )
 
+  /**
+   * Creation gate. A deliberately selected provider must resolve to an
+   * exact profile before the story is created; an explicit Environment
+   * default and an exact restored pin (id plus revision, even when
+   * provider metadata is temporarily unavailable) are both valid.
+   */
+  const pinValid = computed(() => !providerId.value || !!profileId.value)
+
+  const pinIssue = computed<string | null>(() =>
+    pinValid.value
+      ? null
+      : 'Storyteller provider has no resolved profile — retry loading profiles or choose Environment default.'
+  )
+
   const summary = computed(() => {
     // Only a clean default reads as default: anything selected or
     // restored but unresolved says so explicitly, on the AI step and
@@ -179,6 +193,8 @@ export function useStorytellerPin(api: PinApi = { listProviders, listProfiles })
     profileId,
     summary,
     pin,
+    pinValid,
+    pinIssue,
     loading,
     error,
     ensure,

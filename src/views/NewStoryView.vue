@@ -203,6 +203,9 @@ const canContinue = computed(() => {
   if (step.value === 2) return sel.cast.length > 0
   if (step.value === 3) return sel.role === 'watcher' || !!sel.controlledKey
   if (step.value === 4) return sel.title.trim().length > 0
+  // A selected provider must resolve to an exact profile before leaving
+  // the AI step: otherwise Begin would silently create an unpinned story.
+  if (step.value === 5) return pinCtl.pinValid.value
   return true
 })
 
@@ -798,6 +801,12 @@ async function back(): Promise<void> {
 async function create(): Promise<void> {
   const targetId = draftCtl.draft.value?.id
   if (!targetId || draftCtl.creating.value) return
+  // Backstop for the disabled Begin button: never create while a
+  // deliberately selected provider has no resolved profile.
+  if (!pinCtl.pinValid.value) {
+    draftCtl.notice.value = pinCtl.pinIssue.value ?? 'Storyteller selection is not ready yet.'
+    return
+  }
   // The workflow is owned by the draft mounted here: a late completion
   // after a draft switch or after leaving the wizard navigates nowhere and
   // touches no other draft.
@@ -1293,7 +1302,8 @@ onMounted(() => {
             draftCtl.busy.value ||
             localIssues.length > 0 ||
             locationIssues.length > 0 ||
-            !!pinned.worldError.value
+            !!pinned.worldError.value ||
+            !pinCtl.pinValid.value
           "
           @click="create()">
           {{ draftCtl.creating.value ? 'Creating…' : 'Begin the story' }}

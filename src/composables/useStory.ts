@@ -340,10 +340,14 @@ export function useStory(
       generation: cycle
     }
     const alive = (): boolean => op.generation === cycle
+    // A 409 proves a beat is executing, never that these words belong
+    // to it: another tab may be advancing without them. Claim nothing
+    // about acceptance — the question stays in the composer, and asking
+    // again files it explicitly into a later beat. Never resubmit here.
     const committingText =
       op.intents === undefined
-        ? 'That beat is still committing — its result will appear when it finishes.'
-        : 'That beat is still committing — your words are already filed with it.'
+        ? 'That beat is already committing — its result is not in yet.'
+        : 'That beat is already committing — acceptance is unconfirmed, so your question is kept. If it does not appear, ask again with the next beat.'
     // True only when this call applied a fresh (non-duplicate) report.
     // A conflict refresh or duplicate reconciliation carries no proof
     // that an intent filed with this beat committed, so neither counts

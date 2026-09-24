@@ -481,7 +481,7 @@ describe('useStory room', () => {
     expect(advancePosts()).toHaveLength(2)
     expect(story.notice.value).toEqual({
       kind: 'info',
-      text: 'That beat is still committing — its result will appear when it finishes.'
+      text: 'That beat is already committing — its result is not in yet.'
     })
   })
 
@@ -510,8 +510,9 @@ describe('useStory room', () => {
     await expect(pending).resolves.toBe(false)
     expect(story.notice.value).toEqual({
       kind: 'info',
-      text: 'That beat is still committing — your words are already filed with it.'
+      text: 'That beat is already committing — acceptance is unconfirmed, so your question is kept. If it does not appear, ask again with the next beat.'
     })
+    expect(story.notice.value?.text ?? '').not.toContain('already filed')
   })
 
   it('a duplicate reconciliation is not a fresh commit', async () => {

@@ -119,6 +119,51 @@ describe('useStorytellerPin', () => {
     expect(pin.summary.value).toBe('A · model-a · rev 3')
   })
 
+  it('creation validity follows resolution, not intent', async () => {
+    const profilesA = deferred<ProviderProfileView[]>()
+    const api: PinApi = {
+      listProviders: async () => [connection('a', 'A')],
+      listProfiles: async () => profilesA.promise
+    }
+    const pin = useStorytellerPin(api)
+    await pin.ensure()
+    // Explicit default is valid.
+    expect(pin.pinValid.value).toBe(true)
+    expect(pin.pinIssue.value).toBeNull()
+    // A selected provider with profiles still pending is not.
+    pin.selectProvider('a')
+    await flush()
+    expect(pin.pinValid.value).toBe(false)
+    expect(pin.pinIssue.value).toContain('no resolved profile')
+    // Resolution unblocks.
+    profilesA.resolve([profile('a', 'pa', 'model-a', 2)])
+    await flush()
+    await flush()
+    expect(pin.pinValid.value).toBe(true)
+    expect(pin.pinIssue.value).toBeNull()
+    // Explicit default again is valid.
+    pin.selectProvider('')
+    expect(pin.pinValid.value).toBe(true)
+  })
+
+  it('an exact restored pin stays submittable through metadata failure', async () => {
+    const api: PinApi = {
+      listProviders: async () => {
+        throw new Error('library unreachable')
+      },
+      listProfiles: async () => []
+    }
+    const pin = useStorytellerPin(api)
+    pin.restorePin('saved-profile', 4)
+    await pin.ensure()
+    // No provider could be named, but the exact pin survived.
+    expect(pin.providerId.value).toBe('')
+    expect(pin.pin.value).toEqual({ profileId: 'saved-profile', profileRevision: 4 })
+    expect(pin.pinValid.value).toBe(true)
+    expect(pin.summary.value).toContain('unknown provider')
+    expect(pin.summary.value).not.toBe('Environment default')
+  })
+
   it('an explicit profile choice survives and clears cleanly', async () => {
     const api: PinApi = {
       listProviders: async () => [connection('a', 'A')],
