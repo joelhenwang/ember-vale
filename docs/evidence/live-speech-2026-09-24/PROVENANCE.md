@@ -27,12 +27,16 @@ feed names the speaker.
   Wren about …"), and the feed is identical across a fresh page load.
 
 Continuity note: the thread Q1 → A1 ("Market") → Q2 (stalls in "the Market
-he mentioned") → A2 ("Market stalls") is a genuine answer-dependent
-exchange, though terse — the model rationed words while burning budget on
-reasoning (all 5 failures `reasoning_only`). Record narrowly as before:
-**attributed communication persisted; its text displayed and survived
-reload**. Sustained multi-turn substance remains provider-limited, not
-pipeline-limited.
+he mentioned") → A2 ("Market stalls") is answer-dependent in form, but A2
+repeats A1's topic, so topical relevance alone does not prove remembered
+conversation. No committed `DIALOGUE` beats were produced in this round —
+all attributed speech evidence is narration-kind summaries — and at the
+time of this run the reaction-generation prompt did not document the
+quotation convention, so this run cannot say whether terseness is
+provider- or pipeline-caused. Both narrator model calls returned
+`malformed`; every voiced beat shown is deterministic fallback narration,
+not model narration. Record narrowly: **attributed communication summaries
+displayed and survived reload**.
 
 ## Provenance
 

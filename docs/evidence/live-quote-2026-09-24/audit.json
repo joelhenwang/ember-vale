@@ -1,0 +1,366 @@
+{
+  "world_id": "10000000-0000-4000-8000-000000000001",
+  "characters": {
+    "10000000-0000-4000-8000-000000000102": "Ash",
+    "10000000-0000-4000-8000-000000000101": "Wren"
+  },
+  "model": "deepseek/deepseek-v4-flash-0731",
+  "sampling_note": "seed path builds SamplingParams() with max_tokens=512; the harness overrode the default to 4096 per call to match the story pin budget used in prior live rounds (no repo change)",
+  "beats": [
+    {
+      "absolute_index": 1,
+      "player_intent": "What does the Market hold today?",
+      "run_state": "completed",
+      "calls": [
+        {
+          "role": "director",
+          "status": "succeeded",
+          "error": null,
+          "profile": "openrouter",
+          "model": "deepseek/deepseek-v4-flash-0731",
+          "tokens": [
+            258,
+            32
+          ]
+        },
+        {
+          "role": "character_decision",
+          "status": "failed",
+          "error": "malformed",
+          "profile": "openrouter"
+        },
+        {
+          "role": "reaction",
+          "status": "failed",
+          "error": "malformed",
+          "profile": "openrouter"
+        },
+        {
+          "role": "reaction",
+          "status": "failed",
+          "error": "malformed",
+          "profile": "openrouter"
+        },
+        {
+          "role": "resolver",
+          "status": "failed",
+          "error": "malformed",
+          "profile": "openrouter"
+        },
+        {
+          "role": "narrator",
+          "status": "failed",
+          "error": "malformed",
+          "profile": "openrouter"
+        }
+      ],
+      "scenes": [
+        {
+          "scene_id": "99415d1e-e7a6-5351-9298-86cf5aa242b0",
+          "event_id": "511463ee-6396-4e47-806a-2e720c506334",
+          "reactions": [],
+          "narration": [
+            {
+              "kind": "narration",
+              "speaker_id": null,
+              "text": "attempt:wait: Ash waits",
+              "cited_fact_keys": [
+                "attempt:wait"
+              ]
+            },
+            {
+              "kind": "narration",
+              "speaker_id": null,
+              "text": "attempt:communicate: Wren says to Ash: What does the Market hold today?",
+              "cited_fact_keys": [
+                "attempt:communicate"
+              ]
+            },
+            {
+              "kind": "narration",
+              "speaker_id": null,
+              "text": "attempt:wait: Ash waits",
+              "cited_fact_keys": [
+                "attempt:wait"
+              ]
+            },
+            {
+              "kind": "narration",
+              "speaker_id": null,
+              "text": "attempt:communicate: Wren says to Ash: What does the Market hold today?",
+              "cited_fact_keys": [
+                "attempt:communicate"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "absolute_index": 2,
+      "player_intent": "What does the Market hold today?",
+      "run_state": "completed",
+      "calls": [
+        {
+          "role": "character_decision",
+          "status": "succeeded",
+          "error": null,
+          "profile": "openrouter",
+          "model": "deepseek/deepseek-v4-flash-0731",
+          "tokens": [
+            2803,
+            1011
+          ]
+        },
+        {
+          "role": "reaction",
+          "status": "succeeded",
+          "error": null,
+          "profile": "openrouter",
+          "model": "deepseek/deepseek-v4-flash-0731",
+          "tokens": [
+            2937,
+            943
+          ]
+        },
+        {
+          "role": "reaction",
+          "status": "failed",
+          "error": "malformed",
+          "profile": "openrouter"
+        },
+        {
+          "role": "resolver",
+          "status": "succeeded",
+          "error": null,
+          "profile": "openrouter",
+          "model": "deepseek/deepseek-v4-flash-0731",
+          "tokens": [
+            3581,
+            2798
+          ]
+        },
+        {
+          "role": "narrator",
+          "status": "succeeded",
+          "error": null,
+          "profile": "openrouter",
+          "model": "deepseek/deepseek-v4-flash-0731",
+          "tokens": [
+            1031,
+            5978
+          ]
+        }
+      ],
+      "scenes": [
+        {
+          "scene_id": "63dc6324-2d36-53fd-be26-7cde1e705a84",
+          "event_id": "d4393a36-5958-427d-a5f7-9c48975dbfbb",
+          "reactions": [
+            {
+              "id": "4aae6590-c874-5e4d-8b5f-7f5c72a9018d",
+              "world_id": "10000000-0000-4000-8000-000000000001",
+              "attempt_id": "ac75ef79-4874-5353-93aa-aad65b59630a",
+              "scene_id": "63dc6324-2d36-53fd-be26-7cde1e705a84",
+              "reactor_character_id": "10000000-0000-4000-8000-000000000102",
+              "action": {
+                "character_id": "10000000-0000-4000-8000-000000000102",
+                "snapshot_id": "00000000-0000-4000-8000-000000000000",
+                "family": "communicate",
+                "target_character_id": "10000000-0000-4000-8000-000000000101",
+                "topic": "\"Today the Market holds more gossip than silver, but the pie seller is still doing fine.\""
+              },
+              "status": "committed",
+              "created_at": "2026-09-24T16:55:19.959577Z"
+            }
+          ],
+          "narration": [
+            {
+              "kind": "narration",
+              "speaker_id": null,
+              "text": "Wren asks Ash what the Market holds today.",
+              "cited_fact_keys": [
+                "attempt:communicate"
+              ]
+            },
+            {
+              "kind": "narration",
+              "speaker_id": null,
+              "text": "Ash waits.",
+              "cited_fact_keys": [
+                "attempt:wait"
+              ]
+            },
+            {
+              "kind": "dialogue",
+              "speaker_id": "10000000-0000-4000-8000-000000000102",
+              "text": "Today the Market holds more gossip than silver, but the pie seller is still doing fine.",
+              "cited_fact_keys": [
+                "reaction:4aae6590-c874-5e4d-8b5f-7f5c72a9018d"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "absolute_index": 3,
+      "player_intent": "You mentioned the pie seller - which pies does he sell today?",
+      "run_state": "completed",
+      "calls": [
+        {
+          "role": "character_decision",
+          "status": "succeeded",
+          "error": null,
+          "profile": "openrouter",
+          "model": "deepseek/deepseek-v4-flash-0731",
+          "tokens": [
+            2804,
+            206
+          ]
+        },
+        {
+          "role": "character_decision",
+          "status": "succeeded",
+          "error": null,
+          "profile": "openrouter",
+          "model": "deepseek/deepseek-v4-flash-0731",
+          "tokens": [
+            2908,
+            921
+          ]
+        },
+        {
+          "role": "reaction",
+          "status": "succeeded",
+          "error": null,
+          "profile": "openrouter",
+          "model": "deepseek/deepseek-v4-flash-0731",
+          "tokens": [
+            3066,
+            1719
+          ]
+        },
+        {
+          "role": "reaction",
+          "status": "succeeded",
+          "error": null,
+          "profile": "openrouter",
+          "model": "deepseek/deepseek-v4-flash-0731",
+          "tokens": [
+            2922,
+            164
+          ]
+        },
+        {
+          "role": "reaction",
+          "status": "succeeded",
+          "error": null,
+          "profile": "openrouter",
+          "model": "deepseek/deepseek-v4-flash-0731",
+          "tokens": [
+            3048,
+            1109
+          ]
+        },
+        {
+          "role": "resolver",
+          "status": "succeeded",
+          "error": null,
+          "profile": "openrouter",
+          "model": "deepseek/deepseek-v4-flash-0731",
+          "tokens": [
+            3510,
+            2190
+          ]
+        },
+        {
+          "role": "narrator",
+          "status": "failed",
+          "error": "malformed",
+          "profile": "openrouter"
+        }
+      ],
+      "scenes": [
+        {
+          "scene_id": "3b9329e0-5a95-58c4-a62b-7f9db9e892b4",
+          "event_id": "0dc90a27-25a1-4ea8-8e3a-0764195a5b09",
+          "reactions": [
+            {
+              "id": "655e45e4-5656-54d0-a5e6-58abd2e24f31",
+              "world_id": "10000000-0000-4000-8000-000000000001",
+              "attempt_id": "2fe8b3bc-da22-5826-ae9e-9cc6dd38ac7d",
+              "scene_id": "3b9329e0-5a95-58c4-a62b-7f9db9e892b4",
+              "reactor_character_id": "10000000-0000-4000-8000-000000000101",
+              "action": {
+                "character_id": "10000000-0000-4000-8000-000000000101",
+                "snapshot_id": "00000000-0000-4000-8000-000000000000",
+                "family": "wait"
+              },
+              "status": "committed",
+              "created_at": "2026-09-24T17:00:01.723147Z"
+            },
+            {
+              "id": "72a28712-9da4-55c8-9a75-36c9e7132cae",
+              "world_id": "10000000-0000-4000-8000-000000000001",
+              "attempt_id": "570961cc-bc35-5e80-8175-39e172b732eb",
+              "scene_id": "3b9329e0-5a95-58c4-a62b-7f9db9e892b4",
+              "reactor_character_id": "10000000-0000-4000-8000-000000000102",
+              "action": {
+                "character_id": "10000000-0000-4000-8000-000000000102",
+                "snapshot_id": "00000000-0000-0000-0000-000000000000",
+                "family": "communicate",
+                "target_character_id": "10000000-0000-4000-8000-000000000101",
+                "topic": "\"Apple and mutton \u2014 though the mutton's mostly gristle and hope today.\""
+              },
+              "status": "committed",
+              "created_at": "2026-09-24T17:00:01.723147Z"
+            }
+          ],
+          "narration": [
+            {
+              "kind": "dialogue",
+              "speaker_id": "10000000-0000-4000-8000-000000000102",
+              "text": "Apple and mutton \u2014 though the mutton's mostly gristle and hope today.",
+              "cited_fact_keys": [
+                "reaction:72a28712-9da4-55c8-9a75-36c9e7132cae"
+              ]
+            },
+            {
+              "kind": "narration",
+              "speaker_id": null,
+              "text": "attempt:wait: Ash waits",
+              "cited_fact_keys": [
+                "attempt:wait"
+              ]
+            },
+            {
+              "kind": "narration",
+              "speaker_id": null,
+              "text": "attempt:communicate: Wren says to Ash: You mentioned the pie seller - which pies does he sell today?",
+              "cited_fact_keys": [
+                "attempt:communicate"
+              ]
+            },
+            {
+              "kind": "narration",
+              "speaker_id": null,
+              "text": "attempt:wait: Ash waits",
+              "cited_fact_keys": [
+                "attempt:wait"
+              ]
+            },
+            {
+              "kind": "narration",
+              "speaker_id": null,
+              "text": "attempt:communicate: Wren says to Ash: You mentioned the pie seller - which pies does he sell today?",
+              "cited_fact_keys": [
+                "attempt:communicate"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

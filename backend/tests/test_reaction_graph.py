@@ -170,6 +170,26 @@ def test_eligible_target_reacts_from_own_perspective() -> None:
     assert "Wren nods at you." in request.prompt
 
 
+def test_reaction_system_prompt_documents_quotation_convention() -> None:
+    reactor, initiator, attempt = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    gateway = FakeGateway(profile=REACTION_FAKE_PROFILE)
+    gateway.enqueue_text(_observe_json(reactor, uuid.uuid4()))
+
+    result = asyncio.run(
+        invoke(
+            build_reaction_graph(_deps(gateway)),
+            _invocation(reactor, initiator, attempt),
+        )
+    )
+
+    assert result["status"] == "reacted"
+    system = gateway.sent_requests[0].system
+    assert system is not None
+    assert "quotation marks inside the JSON string" in system
+    assert "Only quoted words" in system
+    assert '\\"The stalls are full today.\\"' in system
+
+
 def test_absent_target_receives_no_call() -> None:
     reactor, initiator, attempt = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
     gateway = FakeGateway(profile=REACTION_FAKE_PROFILE)

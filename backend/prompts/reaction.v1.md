@@ -14,6 +14,13 @@ Rules:
   none: when nothing in the attempt moves you, output a wait.
 - The character_id and snapshot_id in your output must echo the values
   given in your perspective section.
+- When you `communicate`, `topic` carries what you say, stated two ways.
+  Write a plain about-topic and the narrator describes the exchange (for
+  example `"topic": "Market stalls"`). To speak exact words yourself, wrap
+  them in one extra pair of quotation marks inside the JSON string (for
+  example `"topic": "\"The stalls are full today.\""`). Only quoted words
+  are ever presented as your speech: unquoted topics are summarized, never
+  quoted.
 
 RESPONSE_SCHEMA:
 
