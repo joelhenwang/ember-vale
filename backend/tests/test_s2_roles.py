@@ -34,8 +34,6 @@ async def _seed_realm() -> dict[str, UUID]:
     engine = create_engine(Settings())
     try:
         async with create_unit_of_work(engine) as uow:
-            from worldsim.domain.ids import new_phase_run_id
-
             wid = new_world_id()
             home = new_location_id()
             wren = new_character_id()
@@ -54,11 +52,23 @@ async def _seed_realm() -> dict[str, UUID]:
                 )
             )
             await uow.versions.ensure(wren, wid, "character")
-            await uow.phases.create_run(
-                PhaseRun(id=new_phase_run_id(), world_id=wid, absolute_index=1)
-            )
             await uow.commit()
             return {"world": wid, "wren": wren, "home": home}
+    finally:
+        await engine.dispose()
+
+
+async def _open_run(ids: dict[str, UUID]) -> None:
+    """Admit a bare run row: role selection is refused from here on."""
+    from worldsim.domain.ids import new_phase_run_id
+
+    engine = create_engine(Settings())
+    try:
+        async with create_unit_of_work(engine) as uow:
+            await uow.phases.create_run(
+                PhaseRun(id=new_phase_run_id(), world_id=ids["world"], absolute_index=1)
+            )
+            await uow.commit()
     finally:
         await engine.dispose()
 
@@ -102,6 +112,13 @@ def test_role_select_enforces_boundary_and_binding(client: ApiClient) -> None:
         headers=headers,
     )
     assert current.json()["character_id"] == str(ids["wren"])
+    _run(_open_run(ids))
+    created = client.post(
+        "/api/v1/stage2/roles/select",
+        json={"world_id": str(ids["world"]), "role": "watcher"},
+        headers=headers,
+    )
+    assert created.status_code == 409, created.text
 
     async def _start_run() -> None:
         engine = create_engine(Settings())
@@ -179,6 +196,7 @@ def test_deity_override_applies_with_audit(client: ApiClient) -> None:
         headers=watcher,
     )
     assert granted.status_code == 200, granted.text
+    _run(_open_run(ids))
     deity = {"X-Worldsim-Role": "deity"}
     applied = client.post(
         "/api/v1/stage2/deity/overrides",
@@ -232,6 +250,7 @@ def test_grant_governs_all_callers(client: ApiClient) -> None:
     )
     # The active grant governs every caller: a player header neither
     # escalates nor restricts while deity is selected.
+    _run(_open_run(ids))
     player = {"X-Worldsim-Role": "player", "X-Worldsim-Character": str(ids["wren"])}
     applied = client.post(
         "/api/v1/stage2/deity/overrides",
@@ -239,3 +258,15 @@ def test_grant_governs_all_callers(client: ApiClient) -> None:
         headers=player,
     )
     assert applied.status_code == 200, applied.text
+
+
+def test_role_select_refuses_open_created_run(client: ApiClient) -> None:
+    headers = {"X-Worldsim-Role": "watcher"}
+    ids = _run(_seed_realm())
+    _run(_open_run(ids))
+    refused = client.post(
+        "/api/v1/stage2/roles/select",
+        json={"world_id": str(ids["world"]), "role": "watcher"},
+        headers=headers,
+    )
+    assert refused.status_code == 409, refused.text

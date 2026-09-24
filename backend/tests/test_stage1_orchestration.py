@@ -856,3 +856,114 @@ def test_observer_grant_restores_automatic_behavior(migrated_db: None) -> None:
             await engine.dispose()
 
     asyncio.run(_inner())
+
+
+def test_admitted_ownership_follows_grant_changed_during_preflight(
+    migrated_db: None,
+) -> None:
+    """Admission captures the grant it runs under, not the one at advance start.
+
+    The advance holds at provider preflight while the grant moves Wren to
+    Ash; the admitted run must protect Ash and treat Wren as automatic.
+    No player intent is filed, so both characters can only act by model
+    decision: ownership alone decides who the model may move.
+    """
+    import threading
+
+    from worldsim.application.orchestration.stage1 import Stage1PhaseReport
+
+    async def _setup() -> dict[str, UUID]:
+        ids = await _seed()
+        await _set_grant(ids, "player", ids["wren"])
+        return ids
+
+    ids = asyncio.run(_setup())
+    arrived = threading.Event()
+    release = threading.Event()
+    outcomes: dict[str, object] = {}
+
+    def _hook(point: str) -> None:
+        if point == "before_probe":
+            arrived.set()
+            assert release.wait(timeout=120)
+
+    def _advance() -> None:
+        async def _run() -> None:
+            orch = _orchestrator(_role_gateways(ids), hook=_hook)
+            try:
+                outcomes["report"] = await orch.advance_phase(ids["world"], 1)
+            except Exception as exc:  # recorded for the verdict
+                outcomes["report"] = exc
+
+        asyncio.run(_run())
+
+    thread = threading.Thread(target=_advance)
+    thread.start()
+    assert arrived.wait(timeout=120)
+    asyncio.run(_set_grant(ids, "player", ids["ash"]))
+    release.set()
+    thread.join(timeout=300)
+
+    async def _verify() -> None:
+        report = outcomes["report"]
+        assert isinstance(report, Stage1PhaseReport)
+        assert not report.duplicate
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                run = await uow.phases.get_run(report.run_id)
+                assert run.state.value == "completed"
+                intent = await uow.scenes.get_intent(
+                    derive_intent_id(ids["world"], report.snapshot_id, ids["wren"])
+                )
+                assert intent.action.family.value == "wait"
+                calls = await uow.traces.list_for_phase_run(report.run_id)
+                assert [
+                    c
+                    for c in calls
+                    if c.role == "character_decision" and c.actor_id == ids["wren"]
+                ]
+                assert not [
+                    c
+                    for c in calls
+                    if c.role in ("character_decision", "reaction")
+                    and c.actor_id == ids["ash"]
+                ]
+                try:
+                    await uow.scenes.get_intent(
+                        derive_intent_id(ids["world"], report.snapshot_id, ids["ash"])
+                    )
+                except DomainError:
+                    pass
+                else:
+                    raise AssertionError("newly controlled Ash must have no model intent")
+        finally:
+            await engine.dispose()
+
+    asyncio.run(_verify())
+
+
+def test_retry_after_grant_change_keeps_admitted_ownership(migrated_db: None) -> None:
+    """A duplicate re-advance after a grant change adds no canon for the old run."""
+    async def _inner() -> None:
+        ids = await _seed()
+        await _set_grant(ids, "player", ids["wren"])
+        first = await _orchestrator(_agency_gateways(ids)).advance_phase(
+            ids["world"], 1, _wren_ask(ids)
+        )
+        assert not first.duplicate
+        await _set_grant(ids, "player", ids["ash"])
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                before_events = await uow.events.count_events(ids["world"])
+                before_calls = len(await uow.traces.list_for_phase_run(first.run_id))
+            replay = await _orchestrator(_agency_gateways(ids)).advance_phase(ids["world"], 1)
+            assert replay.duplicate
+            async with create_unit_of_work(engine) as uow:
+                assert await uow.events.count_events(ids["world"]) == before_events
+                assert len(await uow.traces.list_for_phase_run(first.run_id)) == before_calls
+        finally:
+            await engine.dispose()
+
+    asyncio.run(_inner())

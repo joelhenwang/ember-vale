@@ -10,7 +10,7 @@ from worldsim.application.commands.deity import apply_override
 from worldsim.application.commands.director import accept_decision
 from worldsim.application.stories.guards import require_unarchived
 from worldsim.domain.director import DirectorProposal, validate_proposal
-from worldsim.domain.enums import LifeStatus, PhaseRunState, UserRole
+from worldsim.domain.enums import LifeStatus, UserRole
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.ids import new_arc_id, new_hook_id, new_role_grant_id
 from worldsim.domain.roles import RoleGrant
@@ -52,14 +52,16 @@ async def select_role(body: api.RoleSelectRequest, request: Request) -> api.Role
         raise DomainError(ErrorCode.VALIDATION_FAILED, "only players bind a character")
     state = request.app.state.app_state
     async with state.uow_factory()() as uow:
-        world = await uow.worlds.get(body.world_id)
+        # Same world lock as run admission: selection serializes against it,
+        # and any admitted run freezes ownership until it closes.
+        world = await uow.worlds.lock(body.world_id)
         if role == UserRole.PLAYER:
             assert body.character_id is not None
             character = await uow.characters.get(body.character_id)
             if character.world_id != body.world_id:
                 raise DomainError(ErrorCode.NOT_FOUND, "character is not in this world")
         open_run = await uow.phases.find_open_run(body.world_id)
-        if open_run is not None and open_run.state != PhaseRunState.CREATED:
+        if open_run is not None:
             raise DomainError(
                 ErrorCode.PRECONDITION_FAILED,
                 "roles change between phases, not mid-run",

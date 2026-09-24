@@ -25,7 +25,7 @@ import hashlib
 import json
 import random
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import timedelta
 from typing import Any, Protocol, cast
 from uuid import UUID, uuid4
@@ -383,7 +383,6 @@ class Stage1Orchestrator:
         """Resolve sampling plus gateway selection once per phase run."""
         async with self._factory() as uow:
             pin = await resolve_pin(uow, world_id)
-            controlled_character_id = await resolve_controlled_character(uow, world_id)
         sampling = sampling_from_pin(pin) if pin is not None else SamplingParams()
         gateways: dict[str, ModelGateway] = {}
         profiles: dict[str, ModelProfile] = {}
@@ -392,11 +391,7 @@ class Stage1Orchestrator:
                 gateways[role] = self._gateways(role)
                 profiles[role] = cast(ModelProfile, profile)
             return PhaseRuntime(
-                sampling=sampling,
-                gateways=gateways,
-                profiles=profiles,
-                pin=None,
-                controlled_character_id=controlled_character_id,
+                sampling=sampling, gateways=gateways, profiles=profiles, pin=None
             )
         if self._pin_gateways is None:
             raise DomainError(
@@ -409,11 +404,7 @@ class Stage1Orchestrator:
             gateways[role] = gateway
             profiles[role] = gateway.profile
         return PhaseRuntime(
-            sampling=sampling,
-            gateways=gateways,
-            profiles=profiles,
-            pin=pin,
-            controlled_character_id=controlled_character_id,
+            sampling=sampling, gateways=gateways, profiles=profiles, pin=pin
         )
 
     async def advance_phase(
@@ -442,8 +433,10 @@ class Stage1Orchestrator:
         # raises before any run row exists, so a rejected fresh advance
         # leaves no orphan open run and the same index can retry.
         runtime = await self._runtime(world_id)
+        self._fire("before_probe")
         await self._probe_gate(runtime)
-        run = await self._admit_run(world_id, index)
+        run, admitted_owner = await self._admit_run(world_id, index)
+        runtime = replace(runtime, controlled_character_id=admitted_owner)
         if run.state.value == PhaseRunState.COMPLETED.value:
             return await self._duplicate_report(world_id, run_id)
         await self._tick(world_id, run_id, index)
@@ -573,15 +566,22 @@ class Stage1Orchestrator:
                     f"provider unavailable for {role}: {probe.detail}",
                 )
 
-    async def _admit_run(self, world_id: UUID, index: int) -> PhaseRun:
+    async def _admit_run(
+        self, world_id: UUID, index: int
+    ) -> tuple[PhaseRun, UUID | None]:
         """Create-or-resume one phase run under a per-world admission lock.
 
         One transaction holds the world row locked while it validates
         the clock and the previous run, refuses a different open run,
-        and creates this index run. Same-run replay resumes via a
-        pre-read under the lock; only a twin commit of this exact run
-        is tolerated, verified by identity-matching re-read, and every
-        other integrity failure raises. No model calls happen inside.
+        and creates this index run. The active player grant is captured
+        inside the same transaction, after provider preflight, so a
+        grant change racing preflight cannot leak stale ownership into
+        the beat; the admitted owner is frozen for the run. Same-run
+        replay resumes via a pre-read under the lock (role changes are
+        refused while any run is open, so the re-read is stable); only
+        a twin commit of this exact run is tolerated, verified by
+        identity-matching re-read, and every other integrity failure
+        raises. No model calls happen inside.
         """
         run_id = derive_run_id(world_id, index)
         self._fire("before_admission")
@@ -608,12 +608,15 @@ class Stage1Orchestrator:
                 except DomainError:
                     existing = None
                 if existing is not None:
-                    return existing
+                    owner = await resolve_controlled_character(uow, world_id)
+                    return existing, owner
                 await uow.phases.create_run(
                     PhaseRun(id=run_id, world_id=world_id, absolute_index=index)
                 )
                 await uow.commit()
-                return await uow.phases.get_run(run_id)
+                admitted = await uow.phases.get_run(run_id)
+                owner = await resolve_controlled_character(uow, world_id)
+                return admitted, owner
         except IntegrityError as exc:
             # Only a twin insert of this exact run can reach here: the
             # pre-read above runs under the same world lock, so any
@@ -625,7 +628,9 @@ class Stage1Orchestrator:
                     raise exc from None
                 if twin.world_id != world_id or twin.absolute_index != index:
                     raise exc from None
-                return twin
+                await uow.worlds.lock(world_id)
+                owner = await resolve_controlled_character(uow, world_id)
+                return twin, owner
 
 
     async def _require_previous_complete_in(
