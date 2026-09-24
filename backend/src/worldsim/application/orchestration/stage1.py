@@ -91,6 +91,7 @@ from worldsim.application.ports.model_gateway import ModelGateway, ModelProfile
 from worldsim.application.settings.resolution import (
     PinnedRuntime,
     SamplingParams,
+    resolve_controlled_character,
     resolve_pin,
     sampling_from_pin,
 )
@@ -251,6 +252,7 @@ class PhaseRuntime:
     gateways: dict[str, ModelGateway]
     profiles: dict[str, ModelProfile]
     pin: PinnedRuntime | None
+    controlled_character_id: UUID | None = None
 
     @property
     def pin_id(self) -> str | None:
@@ -381,6 +383,7 @@ class Stage1Orchestrator:
         """Resolve sampling plus gateway selection once per phase run."""
         async with self._factory() as uow:
             pin = await resolve_pin(uow, world_id)
+            controlled_character_id = await resolve_controlled_character(uow, world_id)
         sampling = sampling_from_pin(pin) if pin is not None else SamplingParams()
         gateways: dict[str, ModelGateway] = {}
         profiles: dict[str, ModelProfile] = {}
@@ -389,7 +392,11 @@ class Stage1Orchestrator:
                 gateways[role] = self._gateways(role)
                 profiles[role] = cast(ModelProfile, profile)
             return PhaseRuntime(
-                sampling=sampling, gateways=gateways, profiles=profiles, pin=None
+                sampling=sampling,
+                gateways=gateways,
+                profiles=profiles,
+                pin=None,
+                controlled_character_id=controlled_character_id,
             )
         if self._pin_gateways is None:
             raise DomainError(
@@ -402,7 +409,11 @@ class Stage1Orchestrator:
             gateways[role] = gateway
             profiles[role] = gateway.profile
         return PhaseRuntime(
-            sampling=sampling, gateways=gateways, profiles=profiles, pin=pin
+            sampling=sampling,
+            gateways=gateways,
+            profiles=profiles,
+            pin=pin,
+            controlled_character_id=controlled_character_id,
         )
 
     async def advance_phase(
@@ -1388,7 +1399,7 @@ class Stage1Orchestrator:
             locations = await uow.locations.list_for_world(world_id)
         known = [str(c.id) for c in characters]
         place_ids = [str(loc.id) for loc in locations]
-        decisions = await asyncio.gather(
+        proposals = await asyncio.gather(
             *(
                 self._decide_one(
                     world_id,
@@ -1404,7 +1415,7 @@ class Stage1Orchestrator:
                 for character in sorted(characters, key=lambda c: c.id.hex)
             )
         )
-        return list(decisions)
+        return [intent for intent in proposals if intent is not None]
 
     async def _decide_one(
         self,
@@ -1417,7 +1428,15 @@ class Stage1Orchestrator:
         player_intents: Mapping[UUID, ActionIntent],
         directed: Mapping[UUID, tuple[ActionIntent, str]],
         runtime: PhaseRuntime,
-    ) -> Intent:
+    ) -> Intent | None:
+        if (
+            player_intents.get(character.id) is None
+            and (directed or {}).get(character.id) is None
+            and character.id == runtime.controlled_character_id
+        ):
+            # Player agency: no model-authored decision for the controlled
+            # character. Submitted intents and directed consequences apply below.
+            return None
         task_run_id = derive_task_id(run_id, "character", character.id)
         owner = f"s1char:{run_id.hex[:8]}"
         await self._track_task(world_id, task_run_id, owner)
@@ -1916,6 +1935,10 @@ class Stage1Orchestrator:
             for participant in scene.participants:
                 reactor_id = participant.character_id
                 if reactor_id == attempt.actor_character_id:
+                    continue
+                if reactor_id == runtime.controlled_character_id:
+                    # Player agency: the controlled character reacts only
+                    # through submitted player intents, never model prose.
                     continue
                 reaction = await self._react_one(
                     world_id,

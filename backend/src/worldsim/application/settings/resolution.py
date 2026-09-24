@@ -72,6 +72,35 @@ async def resolve_profile(uow: UnitOfWork, world_id: UUID) -> ProviderProfileRev
         ) from None
 
 
+async def resolve_controlled_character(
+    uow: UnitOfWork, world_id: UUID
+) -> UUID | None:
+    """The persisted player grant's controlled character, if any.
+
+    Reads the story setup snapshot once per phase run: only an explicit
+    player-mode grant yields an owner. Missing setups, non-player modes,
+    and unparsable references all resolve to None, preserving automatic
+    behavior exactly as before.
+    """
+    try:
+        setup = await uow.stories.get_setup(world_id)
+    except DomainError:
+        return None
+    payload = setup.payload
+    if not isinstance(payload, dict):
+        return None
+    mode = payload.get("mode")
+    if not isinstance(mode, dict) or mode.get("role") != "player":
+        return None
+    raw = mode.get("controlled_character_id")
+    if not raw:
+        return None
+    try:
+        return UUID(str(raw))
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+
 def sampling_from_pin(pin: PinnedRuntime) -> SamplingParams:
     """Sampling values for one pinned revision."""
     profile = pin.profile
