@@ -1,0 +1,418 @@
+{
+ "world_id": "3a74f93f-3d94-4678-b935-12224cfd0d69",
+ "characters": {
+  "wren": "905f2078-4317-4928-8a9f-4e7e3291785e",
+  "ash": "588734ed-2a0e-48d4-b6b2-ec45e81f2279"
+ },
+ "model_calls": [
+  {
+   "call_id": "043692b6-574f-4502-b6fa-89246205d318",
+   "role": "director",
+   "profile": "openrouter@pin-122f5f25-r2",
+   "status": "succeeded",
+   "error": null,
+   "tokens": [
+    337,
+    2872
+   ],
+   "latency_ms": 72135,
+   "phase_run_id": "34805f60-082e-54a6-8553-8c5940f20b17",
+   "task_run_id": "a53cb4e9-74a2-57ce-8052-6b5cab7c209a",
+   "actor_id": "3a74f93f-3d94-4678-b935-12224cfd0d69",
+   "created_at": "2026-09-24T10:47:25.800084+00:00",
+   "detail": {
+    "text": "{\n  \"action\": \"propose_hook\",\n  \"title\": \"Odd Delivery Notice\",\n  \"purpose\": \"A notice at the Market offers a reward for a simple delivery to Hearth, but the instructions are oddly specific and slightly suspicious.\",\n  \"requested_powers\": [],\n  \"participant_ids\": []\n}",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "attempts": [],
+    "response_id": "gen-1790246845-U4FpFA1VobkbGX85PcDn",
+    "finish_reason": "stop",
+    "profile_version": "pin-122f5f25-r2",
+    "reasoning_tokens": 2802
+   }
+  },
+  {
+   "call_id": "44bd9c6e-eb18-4523-973e-0458c8e618af",
+   "role": "character_decision",
+   "profile": "openrouter@pin-122f5f25-r2",
+   "status": "succeeded",
+   "error": null,
+   "tokens": [
+    2659,
+    1190
+   ],
+   "latency_ms": 25945,
+   "phase_run_id": "34805f60-082e-54a6-8553-8c5940f20b17",
+   "task_run_id": "6db43f99-089f-5476-ae88-7f653f6ff285",
+   "actor_id": "588734ed-2a0e-48d4-b6b2-ec45e81f2279",
+   "created_at": "2026-09-24T10:48:38.228809+00:00",
+   "detail": {
+    "text": "{\n  \"family\": \"wait\",\n  \"character_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"snapshot_id\": \"00000000-0000-0000-0000-000000000000\"\n}",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "attempts": [],
+    "response_id": "gen-1790246918-CzGzOtq6dIVNknXbO5YW",
+    "finish_reason": "stop",
+    "profile_version": "pin-122f5f25-r2",
+    "reasoning_tokens": 1285
+   }
+  },
+  {
+   "call_id": "4b884dab-2b13-4ba1-8fb6-28429f6d7a4d",
+   "role": "reaction",
+   "profile": "openrouter@pin-122f5f25-r2",
+   "status": "failed",
+   "error": "malformed",
+   "tokens": [
+    0,
+    0
+   ],
+   "latency_ms": 80061,
+   "phase_run_id": "34805f60-082e-54a6-8553-8c5940f20b17",
+   "task_run_id": "d565e117-2fff-5be7-b97d-775f3bfad4e8",
+   "actor_id": "905f2078-4317-4928-8a9f-4e7e3291785e",
+   "created_at": "2026-09-24T10:49:04.344744+00:00",
+   "detail": {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "usage": {
+     "prompt_tokens": 2766,
+     "reasoning_tokens": 4096,
+     "completion_tokens": 4096
+    },
+    "http_status": 200,
+    "response_id": "gen-1790246944-v74GYjxbC9sHH3BLhJmT",
+    "content_type": "NoneType",
+    "choices_count": 1,
+    "finish_reason": "length",
+    "content_length": null,
+    "reasoning_only": true
+   }
+  },
+  {
+   "call_id": "25fce4e1-1ef6-49d2-aa2a-ee44beb82e23",
+   "role": "reaction",
+   "profile": "openrouter@pin-122f5f25-r2",
+   "status": "failed",
+   "error": "malformed",
+   "tokens": [
+    0,
+    0
+   ],
+   "latency_ms": 67491,
+   "phase_run_id": "34805f60-082e-54a6-8553-8c5940f20b17",
+   "task_run_id": "c309ac25-92d4-50c3-a23c-bef8d65dd23b",
+   "actor_id": "588734ed-2a0e-48d4-b6b2-ec45e81f2279",
+   "created_at": "2026-09-24T10:50:24.504870+00:00",
+   "detail": {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "usage": {
+     "prompt_tokens": 2753,
+     "reasoning_tokens": 4097,
+     "completion_tokens": 4096
+    },
+    "http_status": 200,
+    "response_id": "gen-1790247024-bTwZUmhbMar7Fmncg6te",
+    "content_type": "NoneType",
+    "choices_count": 1,
+    "finish_reason": "length",
+    "content_length": null,
+    "reasoning_only": true
+   }
+  },
+  {
+   "call_id": "beb2c541-1ad9-4831-879d-eb8e98eaa037",
+   "role": "resolver",
+   "profile": "openrouter@pin-122f5f25-r2",
+   "status": "succeeded",
+   "error": null,
+   "tokens": [
+    3591,
+    1420
+   ],
+   "latency_ms": 30758,
+   "phase_run_id": "34805f60-082e-54a6-8553-8c5940f20b17",
+   "task_run_id": "7538e98a-3ee5-502f-af9f-8f4fb2ffc0e6",
+   "actor_id": null,
+   "created_at": "2026-09-24T10:51:32.113150+00:00",
+   "detail": {
+    "text": "{\"outcome\": \"success\", \"rationale\": \"The waiting intent is passive and compatible with the communication intent, so both characters can fulfill their intents without conflicting changes. No additional world-altering effects are required.\", \"effects\": []}",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "attempts": [],
+    "response_id": "gen-1790247092-2mzgtFj22gsrb0rfE1TJ",
+    "finish_reason": "stop",
+    "profile_version": "pin-122f5f25-r2",
+    "reasoning_tokens": 1368
+   }
+  },
+  {
+   "call_id": "57cec76d-0de0-4196-baf0-fc51f5f0a64e",
+   "role": "narrator",
+   "profile": "openrouter@pin-122f5f25-r2",
+   "status": "failed",
+   "error": "malformed",
+   "tokens": [
+    0,
+    0
+   ],
+   "latency_ms": 73965,
+   "phase_run_id": "34805f60-082e-54a6-8553-8c5940f20b17",
+   "task_run_id": "456b9548-ab0f-5a06-98ab-289e70701c78",
+   "actor_id": null,
+   "created_at": "2026-09-24T10:52:03.145981+00:00",
+   "detail": {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "usage": {
+     "prompt_tokens": 853,
+     "reasoning_tokens": 4111,
+     "completion_tokens": 4096
+    },
+    "http_status": 200,
+    "response_id": "gen-1790247123-ZDLnFJvbFBIx5eqqc1yy",
+    "content_type": "NoneType",
+    "choices_count": 1,
+    "finish_reason": "length",
+    "content_length": null,
+    "reasoning_only": true
+   }
+  },
+  {
+   "call_id": "6bd414d7-d073-479e-9b66-c4384f7d46f2",
+   "role": "character_decision",
+   "profile": "openrouter@pin-122f5f25-r2",
+   "status": "succeeded",
+   "error": null,
+   "tokens": [
+    2818,
+    1734
+   ],
+   "latency_ms": 33206,
+   "phase_run_id": "decc46c9-5a93-5918-98e3-c8559706715c",
+   "task_run_id": "52209051-e2ea-5415-902e-da8613974af3",
+   "actor_id": "588734ed-2a0e-48d4-b6b2-ec45e81f2279",
+   "created_at": "2026-09-24T11:01:18.726129+00:00",
+   "detail": {
+    "text": "{\"family\":\"wait\",\"character_id\":\"00000000-0000-0000-0000-000000000000\",\"snapshot_id\":\"00000000-0000-0000-0000-000000000000\"}",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "attempts": [],
+    "response_id": "gen-1790247678-8JYwF39wmNorF706jXmz",
+    "finish_reason": "stop",
+    "profile_version": "pin-122f5f25-r2",
+    "reasoning_tokens": 1684
+   }
+  },
+  {
+   "call_id": "b684e818-b0fd-488f-8959-d713f8e1cae0",
+   "role": "reaction",
+   "profile": "openrouter@pin-122f5f25-r2",
+   "status": "succeeded",
+   "error": null,
+   "tokens": [
+    2841,
+    3407
+   ],
+   "latency_ms": 62842,
+   "phase_run_id": "decc46c9-5a93-5918-98e3-c8559706715c",
+   "task_run_id": "10696dfb-7985-5f50-8148-1f8f4c55ba91",
+   "actor_id": "588734ed-2a0e-48d4-b6b2-ec45e81f2279",
+   "created_at": "2026-09-24T11:01:52.144647+00:00",
+   "detail": {
+    "text": "{\n  \"family\": \"communicate\",\n  \"character_id\": \"588734ed-2a0e-48d4-b6b2-ec45e81f2279\",\n  \"snapshot_id\": \"dfd8d1ec-b584-4bef-b2ab-af03dafcef00\",\n  \"target_character_id\": \"905f2078-4317-4928-8a9f-4e7e3291785e\",\n  \"topic\": \"The Market holds stalls, wind, and trade; tell me what you're after and I'll point you true.\"\n}",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "attempts": [],
+    "response_id": "gen-1790247712-JqeIiPOE8Av9U5MyPlwN",
+    "finish_reason": "stop",
+    "profile_version": "pin-122f5f25-r2",
+    "reasoning_tokens": 3273
+   }
+  },
+  {
+   "call_id": "c47c13d4-ed34-4e8c-a9cf-9d9191426d8e",
+   "role": "reaction",
+   "profile": "openrouter@pin-122f5f25-r2",
+   "status": "succeeded",
+   "error": null,
+   "tokens": [
+    2836,
+    1455
+   ],
+   "latency_ms": 39024,
+   "phase_run_id": "decc46c9-5a93-5918-98e3-c8559706715c",
+   "task_run_id": "067967dc-e2a3-5354-af83-38e3a02e6fe9",
+   "actor_id": "905f2078-4317-4928-8a9f-4e7e3291785e",
+   "created_at": "2026-09-24T11:02:55.089190+00:00",
+   "detail": {
+    "text": "{\n  \"character_id\": \"905f2078-4317-4928-8a9f-4e7e3291785e\",\n  \"snapshot_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"family\": \"wait\"\n}",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "attempts": [],
+    "response_id": "gen-1790247775-iT3Ahhf11PctkxINtVd9",
+    "finish_reason": "stop",
+    "profile_version": "pin-122f5f25-r2",
+    "reasoning_tokens": 1388
+   }
+  },
+  {
+   "call_id": "05c9953a-7ce6-4ad1-b806-2a7df0e26200",
+   "role": "resolver",
+   "profile": "openrouter@pin-122f5f25-r2",
+   "status": "succeeded",
+   "error": null,
+   "tokens": [
+    3514,
+    379
+   ],
+   "latency_ms": 3121,
+   "phase_run_id": "decc46c9-5a93-5918-98e3-c8559706715c",
+   "task_run_id": "ed14c5d0-88d9-533a-8144-524899f6f680",
+   "actor_id": null,
+   "created_at": "2026-09-24T11:03:34.198127+00:00",
+   "detail": {
+    "text": "{\n  \"outcome\": \"success\",\n  \"rationale\": \"The communicator can deliver a message while the waiter remains present, so both intents are satisfiable without conflict.\",\n  \"effects\": []\n}",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "attempts": [],
+    "response_id": "gen-1790247814-xH2DeiIBu4bU0aAdVvqd",
+    "finish_reason": "stop",
+    "profile_version": "pin-122f5f25-r2",
+    "reasoning_tokens": 410
+   }
+  },
+  {
+   "call_id": "b3128f65-ce95-4d0c-bfeb-66c8d9694737",
+   "role": "narrator",
+   "profile": "openrouter@pin-122f5f25-r2",
+   "status": "succeeded",
+   "error": null,
+   "tokens": [
+    794,
+    1905
+   ],
+   "latency_ms": 40096,
+   "phase_run_id": "decc46c9-5a93-5918-98e3-c8559706715c",
+   "task_run_id": "460a6360-16a6-593c-9dc9-feae4a40ed1c",
+   "actor_id": null,
+   "created_at": "2026-09-24T11:03:37.530480+00:00",
+   "detail": {
+    "text": "[\n  {\n    \"text\": \"Wren asks Ash what the Market holds.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null\n  },\n  {\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null\n  },\n  {\n    \"text\": \"Wren asks again what the Market holds.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null\n  },\n  {\n    \"text\": \"Ash waits again.\",\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null\n  }\n]",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "attempts": [],
+    "response_id": "gen-1790247817-jENip36OJd3AfDER5Ufb",
+    "finish_reason": "stop",
+    "profile_version": "pin-122f5f25-r2",
+    "reasoning_tokens": 1799
+   }
+  }
+ ],
+ "intents": [
+  {
+   "author_character_id": "588734ed-2a0e-48d4-b6b2-ec45e81f2279",
+   "family": "wait",
+   "status": "validated",
+   "intent": "{\"id\": \"13305b9f-5429-58c6-98ce-f7f04a1b86e2\", \"action\": {\"family\": \"wait\", \"snapshot_id\": \"00000000-0000-0000-0000-000000000000\", \"character_id\": \"00000000-0000-0000-0000-000000000000\"}, \"status\": \"validated\", \"world_id\": \"3a74f93f-3d94-4678-b935-12224cfd0d69\", \"created_at\": \"2026-09-24T10:49:04.197973Z\", \"snapshot_id\": \"a6ad22bd-3d8e-5443-9a8f-1a94d2ac7720\", \"phase_run_id\": \"34805f60-082e-54a6-8553-8c5940f20b17\", \"desired_effects\": [], \"idempotency_key\": \"character:6db43f99-089f-5476-ae88-7f653f6ff285\", \"author_character_id\": \"588734ed-2a0e-48d4-b6b2-ec45e81f2279\"}"
+  },
+  {
+   "author_character_id": "905f2078-4317-4928-8a9f-4e7e3291785e",
+   "family": "communicate",
+   "status": "validated",
+   "intent": "{\"id\": \"d40cb20b-a081-5be4-82e1-0fd9158f7d59\", \"action\": {\"topic\": \"Ask Ash what the Market holds today.\", \"family\": \"communicate\", \"snapshot_id\": \"00000000-0000-0000-0000-000000000000\", \"character_id\": \"905f2078-4317-4928-8a9f-4e7e3291785e\", \"target_character_id\": \"588734ed-2a0e-48d4-b6b2-ec45e81f2279\"}, \"status\": \"validated\", \"world_id\": \"3a74f93f-3d94-4678-b935-12224cfd0d69\", \"created_at\": \"2026-09-24T10:48:38.175877Z\", \"snapshot_id\": \"a6ad22bd-3d8e-5443-9a8f-1a94d2ac7720\", \"phase_run_id\": \"34805f60-082e-54a6-8553-8c5940f20b17\", \"desired_effects\": [], \"idempotency_key\": \"player:56bdcd2e-e955-5f9f-a9eb-b8fef0bdc792\", \"author_character_id\": \"905f2078-4317-4928-8a9f-4e7e3291785e\"}"
+  },
+  {
+   "author_character_id": "588734ed-2a0e-48d4-b6b2-ec45e81f2279",
+   "family": "wait",
+   "status": "validated",
+   "intent": "{\"id\": \"fea663d2-b1e9-5b58-9b9b-5f879fb25d8f\", \"action\": {\"family\": \"wait\", \"snapshot_id\": \"00000000-0000-0000-0000-000000000000\", \"character_id\": \"00000000-0000-0000-0000-000000000000\"}, \"status\": \"validated\", \"world_id\": \"3a74f93f-3d94-4678-b935-12224cfd0d69\", \"created_at\": \"2026-09-24T11:01:51.988246Z\", \"snapshot_id\": \"6e95997c-ff9e-5c49-a9b7-ec5305a12dba\", \"phase_run_id\": \"decc46c9-5a93-5918-98e3-c8559706715c\", \"desired_effects\": [], \"idempotency_key\": \"character:52209051-e2ea-5415-902e-da8613974af3\", \"author_character_id\": \"588734ed-2a0e-48d4-b6b2-ec45e81f2279\"}"
+  },
+  {
+   "author_character_id": "905f2078-4317-4928-8a9f-4e7e3291785e",
+   "family": "communicate",
+   "status": "validated",
+   "intent": "{\"id\": \"2a08403b-216d-540c-93b9-8bf5df3fad91\", \"action\": {\"topic\": \"Follow up: ask Ash again what the Market holds, since no answer came.\", \"family\": \"communicate\", \"snapshot_id\": \"00000000-0000-0000-0000-000000000000\", \"character_id\": \"905f2078-4317-4928-8a9f-4e7e3291785e\", \"target_character_id\": \"588734ed-2a0e-48d4-b6b2-ec45e81f2279\"}, \"status\": \"validated\", \"world_id\": \"3a74f93f-3d94-4678-b935-12224cfd0d69\", \"created_at\": \"2026-09-24T11:01:18.652697Z\", \"snapshot_id\": \"6e95997c-ff9e-5c49-a9b7-ec5305a12dba\", \"phase_run_id\": \"decc46c9-5a93-5918-98e3-c8559706715c\", \"desired_effects\": [], \"idempotency_key\": \"player:fd282a6d-3d6f-5c79-8bd9-f12fc11c3231\", \"author_character_id\": \"905f2078-4317-4928-8a9f-4e7e3291785e\"}"
+  }
+ ],
+ "attempts": [
+  {
+   "actor_character_id": "588734ed-2a0e-48d4-b6b2-ec45e81f2279",
+   "status": "committed",
+   "observable_summary": "Ash waits"
+  },
+  {
+   "actor_character_id": "905f2078-4317-4928-8a9f-4e7e3291785e",
+   "status": "committed",
+   "observable_summary": "Wren says to Ash: Ask Ash what the Market holds today."
+  },
+  {
+   "actor_character_id": "905f2078-4317-4928-8a9f-4e7e3291785e",
+   "status": "committed",
+   "observable_summary": "Wren says to Ash: Follow up: ask Ash again what the Market holds, since no answer came."
+  },
+  {
+   "actor_character_id": "588734ed-2a0e-48d4-b6b2-ec45e81f2279",
+   "status": "committed",
+   "observable_summary": "Ash waits"
+  }
+ ],
+ "reactions": [
+  {
+   "reactor_character_id": "588734ed-2a0e-48d4-b6b2-ec45e81f2279",
+   "status": "committed",
+   "reaction": "{\"topic\": \"The Market holds stalls, wind, and trade; tell me what you're after and I'll point you true.\", \"family\": \"communicate\", \"snapshot_id\": \"dfd8d1ec-b584-4bef-b2ab-af03dafcef00\", \"character_id\": \"588734ed-2a0e-48d4-b6b2-ec45e81f2279\", \"target_character_id\": \"905f2078-4317-4928-8a9f-4e7e3291785e\"}"
+  },
+  {
+   "reactor_character_id": "905f2078-4317-4928-8a9f-4e7e3291785e",
+   "status": "committed",
+   "reaction": "{\"family\": \"wait\", \"snapshot_id\": \"00000000-0000-0000-0000-000000000000\", \"character_id\": \"905f2078-4317-4928-8a9f-4e7e3291785e\"}"
+  }
+ ],
+ "resolutions": [
+  {
+   "outcome": "success",
+   "resolver": "model",
+   "profile_version": "pin-122f5f25-r2",
+   "rationale": "The waiting intent is passive and compatible with the communication intent, so both characters can fulfill their intents without conflicting changes. No additional world-altering effects are required."
+  },
+  {
+   "outcome": "success",
+   "resolver": "model",
+   "profile_version": "pin-122f5f25-r2",
+   "rationale": "The communicator can deliver a message while the waiter remains present, so both intents are satisfiable without conflict."
+  }
+ ],
+ "narration": [
+  {
+   "kind": "narration",
+   "speaker_character_id": null,
+   "text": "attempt:wait: Ash waits"
+  },
+  {
+   "kind": "narration",
+   "speaker_character_id": null,
+   "text": "attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today."
+  },
+  {
+   "kind": "narration",
+   "speaker_character_id": null,
+   "text": "attempt:wait: Ash waits"
+  },
+  {
+   "kind": "narration",
+   "speaker_character_id": null,
+   "text": "attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today."
+  },
+  {
+   "kind": "narration",
+   "speaker_character_id": null,
+   "text": "Wren asks Ash what the Market holds."
+  },
+  {
+   "kind": "narration",
+   "speaker_character_id": null,
+   "text": "Ash waits."
+  },
+  {
+   "kind": "narration",
+   "speaker_character_id": null,
+   "text": "Wren asks again what the Market holds."
+  },
+  {
+   "kind": "narration",
+   "speaker_character_id": null,
+   "text": "Ash waits again."
+  }
+ ]
+}

@@ -10,8 +10,8 @@ carries no call IDs or phase/run associations. Future exports must include
 call id, phase_run_id, task_run_id, actor_id, and created_at per row so beat
 attribution is explicit instead of positional.
 
-The confirmed cause below covers **these two failed calls** (beat-2
-`reaction`, initial + repair): a **content-extraction failure at the
+The confirmed cause below covers **these two failed `reaction` calls**:
+a **content-extraction failure at the
 provider boundary**, not JSON-parsing, schema-validation, or game-rule
 failure. On HTTP 200 with a well-formed envelope,
 `choices[0].message.content` is `null` while the model spent the whole
@@ -32,7 +32,7 @@ and the adapter now names it: message
 Sustained NPC conversation remains unproven for two distinct reasons:
 (1) beat 1's reaction answer was lost to the placeholder-target rejection
 traced below (plus Ash's decision intent was WAIT); (2) beat 2's reaction
-calls (initial + repair) both burned out as reasoning-only responses. The
+calls both burned out as reasoning-only responses. The
 narrator honestly reported "No answer is given yet".
 
 ## Provenance
@@ -67,7 +67,7 @@ narrator honestly reported "No answer is given yet".
 
 - Provider success: beat 1 — 7/7 calls succeeded (director ×2, decision,
   reaction ×2, resolver, narrator). Beat 2 — 3/5: both `reaction` calls
-  (initial + repair) failed `malformed`; decision, resolver, narrator
+  failed `malformed`; decision, resolver, narrator
   succeeded. 10 of 12 overall.
 - Failed-layer evidence (both beat-2 rows, persisted in `audit.json`
   detail): `http_status` 200, `choices_count` 1, `content_type` NoneType,
@@ -108,13 +108,15 @@ committed reaction is Wren's own WAIT.
   graph state.
 - Root defect: the prompt demanded UUID references it never supplied, so a
   compliant answer was impossible and the model's placeholder was correctly
-  rejected. Fix (working tree, uncommitted): the reaction prompt now
-  renders a `known_characters` name→id roster covering exactly the validated
-  set, wired from the orchestrator's existing `names` map. Identity and
-  game-rule validation are unchanged — placeholder targets are still
-  rejected with the exact reason above. Regressions:
-  `test_prompt_lists_known_character_ids_for_targets` (fails before the
-  fix) and `test_placeholder_target_rejected_with_exact_reason` (pins the
+  rejected. Fix: the reaction prompt now renders a `known_characters`
+  name→id roster covering exactly the validated set, wired from the
+  orchestrator's existing `names` map. Identity and game-rule validation
+  are unchanged — placeholder targets are still rejected with the exact
+  reason above. Regressions:
+  `test_prompt_lists_known_character_ids_for_targets` (roster supplied and
+  target accepted at the proposal level — it asserts the graph proposal,
+  not durable persistence; persistence to be verified in a live run) and
+  `test_placeholder_target_rejected_with_exact_reason` (pins the
   intact rejection, one call, nothing persisted).
 
 ## Files
