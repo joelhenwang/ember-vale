@@ -63,9 +63,11 @@ conversation memory remains unverified (as before).
   beat-3 reaction. Failed attempts preserved in `audit.json` with call
   IDs, phase/task/actor associations, and raw result detail.
 - Beat 2: intents Ash-wait + Wren-communicate; both attempts committed; 2
-  reaction calls succeeded but only Ash's answer committed (the other
-  elected no reaction); resolver ok; narrator failed → fallback `dialogue`
-  (Ash, cited `reaction:6b30d3ce-…`).
+  reaction calls succeeded but only Ash's answer committed: Wren's attempt
+  at a reaction returned schema-invalid text (`{": ": ", "}`) and its repair
+  call then burned the full budget reasoning — a validation/provider
+  failure, not a character choice; resolver ok; narrator failed →
+  fallback `dialogue` (Ash, cited `reaction:6b30d3ce-…`).
 - Beat 3: intents Ash-observe + Wren-communicate; Wren's quoted reaction to
   Ash's observe committed ("See anything good?"); Ash's reaction failed;
   resolver ok; narrator failed → fallback `dialogue` (Wren, cited
@@ -76,6 +78,13 @@ conversation memory remains unverified (as before).
 - The room banner still claims "beats are deterministic stand-ins" while a
   live pin is active — the banner describes the environment default, not
   the pinned story. Product nit, left untouched per scope.
+
+## Milestone
+
+> Quoted NPC dialogue delivered through an ordinary UI-created, pinned
+> story, with speaker attribution, source citations, and browser reload
+> persistence. Sustained conversation and conversation memory remain
+> unverified.
 
 ## Stop-condition verdict
 
