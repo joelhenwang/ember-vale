@@ -35,6 +35,15 @@ def _body_capture_enabled() -> bool:
     return os.environ.get("WORLDSIM_MODEL_DIAG_BODY") == "1"
 
 
+def _has_reasoning(message: dict[str, Any]) -> bool:
+    """Whether the provider returned chain-of-thought but no message text."""
+    reasoning = message.get("reasoning")
+    if isinstance(reasoning, str) and reasoning:
+        return True
+    details = message.get("reasoning_details")
+    return isinstance(details, list) and bool(details)
+
+
 def _retry_after_s(response: httpx.Response) -> float | None:
     value = response.headers.get("retry-after")
     if value is None:
@@ -241,11 +250,16 @@ class OpenRouterGateway:
         message = cast("dict[str, Any]", message_raw)
         text = message.get("content")
         if not isinstance(text, str) or not text:
+            detail = self._diag(response, payload, text, self._captured_body(response))
+            detail["reasoning_only"] = _has_reasoning(message)
+            if detail["reasoning_only"]:
+                raise ModelMalformedError(
+                    "openrouter response carried reasoning but no message text",
+                    detail=detail,
+                )
             raise ModelMalformedError(
                 "openrouter response has no message text",
-                detail=self._diag(
-                    response, payload, text, self._captured_body(response)
-                ),
+                detail=detail,
             )
         usage = self._usage_of(payload)
         model_raw = payload.get("model")

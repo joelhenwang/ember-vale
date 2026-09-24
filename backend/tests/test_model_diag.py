@@ -282,3 +282,40 @@ def test_non_string_content_keeps_type() -> None:
     assert caught.value.detail is not None
     assert caught.value.detail["content_type"] == "list"
     assert caught.value.detail["content_length"] is None
+
+
+def test_reasoning_only_response_names_the_shape() -> None:
+    """Live 2026-09-24 probe shape: HTTP 200 with content null, a reasoning
+    field present, finish length, and the whole budget spent as reasoning
+    tokens. The failing layer is content extraction — JSON parsing, schema
+    validation, and game rules are never reached."""
+    gateway = _gateway(
+        {
+            "id": "gen-reasoning-only",
+            "model": "deepseek/deepseek-v4-flash-0731",
+            "choices": [
+                {
+                    "finish_reason": "length",
+                    "message": {
+                        "role": "assistant",
+                        "content": None,
+                        "reasoning": "synthetic chain-of-thought marker",
+                    },
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 5417,
+                "completion_tokens": 512,
+                "completion_tokens_details": {"reasoning_tokens": 512},
+            },
+        }
+    )
+    with pytest.raises(ModelMalformedError) as caught:
+        asyncio.run(gateway.complete(_request()))
+    assert "reasoning" in str(caught.value).lower()
+    detail = caught.value.detail
+    assert detail is not None
+    assert detail["reasoning_only"] is True
+    assert detail["finish_reason"] == "length"
+    assert detail["content_type"] == "NoneType"
+    assert detail["usage"]["reasoning_tokens"] == 512
