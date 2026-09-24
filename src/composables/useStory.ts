@@ -45,10 +45,24 @@ export interface StoryNotice {
 const MAX_PAGES = 25
 const PAGE_LIMIT = 50
 
+/**
+ * Beat budget: live-provider beats run minutes (several model calls plus
+ * deterministic fallbacks). The 30s default would time out every slow
+ * beat, and the blind same-index retry would land mid-execution as a
+ * 409 — a raw error banner over a beat that is actually committing.
+ */
+const ADVANCE_TIMEOUT_MS = 600000
+
 interface OpHeader {
   role: Role
   characterId?: string
   signal?: AbortSignal
+  timeoutMs?: number
+}
+
+/** True when the server refused because this beat is already executing. */
+function isAlreadyExecuting(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 409 && /already executing/.test(err.message)
 }
 
 /**
@@ -319,16 +333,28 @@ export function useStory(
       header: {
         role: unref(role),
         characterId: unref(characterId),
-        signal: controller?.signal
+        signal: controller?.signal,
+        timeoutMs: ADVANCE_TIMEOUT_MS
       },
       intents,
       generation: cycle
     }
     const alive = (): boolean => op.generation === cycle
+    const committingText =
+      op.intents === undefined
+        ? 'That beat is still committing — its result will appear when it finishes.'
+        : 'That beat is still committing — your words are already filed with it.'
+    // True only when this call applied a fresh (non-duplicate) report.
+    // A conflict refresh or duplicate reconciliation carries no proof
+    // that an intent filed with this beat committed, so neither counts
+    // as confirmation for the caller.
+    let appliedFresh = false
     const attempt = async (): Promise<void> => {
       const result = await advanceStory(op.worldId, op.index, op.intents, op.header)
       if (alive() && result.duplicate) {
         notice.value = { kind: 'info', text: 'That beat already committed — showing it.' }
+      } else if (alive()) {
+        appliedFresh = true
       }
     }
     try {
@@ -342,13 +368,25 @@ export function useStory(
           await attempt()
         } catch (retryErr) {
           if (alive()) {
-            notice.value = {
-              kind: 'error',
-              text: retryErr instanceof Error ? retryErr.message : 'advance timed out'
+            if (isAlreadyExecuting(retryErr)) {
+              // The first request is still committing this beat (with any
+              // filed intent aboard): say so plainly instead of surfacing
+              // the raw precondition string as an error.
+              notice.value = { kind: 'info', text: committingText }
+            } else {
+              notice.value = {
+                kind: 'error',
+                text: retryErr instanceof Error ? retryErr.message : 'advance timed out'
+              }
             }
           }
           return false
         }
+      } else if (isAlreadyExecuting(err)) {
+        if (alive()) {
+          notice.value = { kind: 'info', text: committingText }
+        }
+        return false
       } else if (err instanceof ApiError && err.code === 'VERSION_CONFLICT') {
         if (alive()) notice.value = { kind: 'info', text: 'Newer state arrived — refreshed.' }
       } else {
@@ -371,7 +409,7 @@ export function useStory(
       }
       advancing.value = false
     }
-    return alive()
+    return alive() && appliedFresh
   }
 
   function matchActivity(

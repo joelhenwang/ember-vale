@@ -33,6 +33,8 @@ let heldActivityLists: Array<() => void> = []
 /** When true, new advance POSTs / activity-list GETs are held. */
 let advanceHold = false
 let activityListHold = false
+/** When true, advance POSTs report an already-committed beat. */
+let advanceDuplicate = false
 type TimelineMode = 'small' | 'big' | 'empty-advance' | 'stuck'
 let timelineMode: TimelineMode = 'small'
 
@@ -132,6 +134,7 @@ function installFetch(): void {
   timelineMode = 'small'
   advanceHold = false
   activityListHold = false
+  advanceDuplicate = false
   vi.stubGlobal(
     'fetch',
     vi.fn(async (rawUrl: string, init: RequestInit = {}) => {
@@ -182,7 +185,11 @@ function installFetch(): void {
         if (typeof target === 'number' && typeof wid === 'string') {
           indexByStory.set(wid, target)
         }
-        return json({ world_id: id, absolute_index: target ?? 2, duplicate: false })
+        return json({
+          world_id: id,
+          absolute_index: target ?? 2,
+          duplicate: advanceDuplicate
+        })
       }
       if (method === 'POST' && url.pathname === '/api/v1/stage2/activities') {
         return json({ id: 'act-1', status: 'active' })
@@ -454,6 +461,79 @@ describe('useStory room', () => {
       expect(post.headers['X-Worldsim-Role']).toBe('player')
       expect(post.headers['X-Worldsim-Character']).toBe('char-wren')
     }
+  })
+
+  it('a retry landing mid-execution reports committing, not a raw 409', async () => {
+    installFetch()
+    const story = useStory('A', 'watcher')
+    await story.load()
+    advanceHold = true
+    const pending = story.advance()
+    await vi.waitFor(() => expect(heldAdvances).toHaveLength(1))
+    advanceHold = false
+    failures.set('POST /api/v1/stage1/advance', {
+      status: 409,
+      code: 'PRECONDITION_FAILED',
+      message: 'phase:2 is already executing'
+    })
+    heldAdvances[0].reject(new Error('REQUEST_TIMEOUT'))
+    await expect(pending).resolves.toBe(false)
+    expect(advancePosts()).toHaveLength(2)
+    expect(story.notice.value).toEqual({
+      kind: 'info',
+      text: 'That beat is still committing — its result will appear when it finishes.'
+    })
+  })
+
+  it('a retry with words landing mid-execution names the filed attempt', async () => {
+    installFetch()
+    const story = useStory('A', 'watcher')
+    await story.load()
+    advanceHold = true
+    const pending = story.advance({
+      'char-wren': {
+        family: 'communicate',
+        character_id: 'char-wren',
+        snapshot_id: '00000000-0000-0000-0000-000000000000',
+        target_character_id: 'char-ash',
+        topic: 'What news from the mill?'
+      }
+    })
+    await vi.waitFor(() => expect(heldAdvances).toHaveLength(1))
+    advanceHold = false
+    failures.set('POST /api/v1/stage1/advance', {
+      status: 409,
+      code: 'PRECONDITION_FAILED',
+      message: 'phase:2 is already executing'
+    })
+    heldAdvances[0].reject(new Error('REQUEST_TIMEOUT'))
+    await expect(pending).resolves.toBe(false)
+    expect(story.notice.value).toEqual({
+      kind: 'info',
+      text: 'That beat is still committing — your words are already filed with it.'
+    })
+  })
+
+  it('a duplicate reconciliation is not a fresh commit', async () => {
+    installFetch()
+    advanceDuplicate = true
+    const story = useStory('A', 'watcher')
+    await story.load()
+    await expect(story.advance()).resolves.toBe(false)
+    expect(story.notice.value?.kind).toBe('info')
+  })
+
+  it('a version conflict refreshes without a fresh commit', async () => {
+    installFetch()
+    failures.set('POST /api/v1/stage1/advance', {
+      status: 409,
+      code: 'VERSION_CONFLICT',
+      message: 'world changed underfoot'
+    })
+    const story = useStory('A', 'watcher')
+    await story.load()
+    await expect(story.advance()).resolves.toBe(false)
+    expect(story.notice.value?.kind).toBe('info')
   })
 
   it('travel reconciliation after navigation reads A, never B', async () => {

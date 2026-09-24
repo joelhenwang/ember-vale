@@ -1,42 +1,32 @@
 {
-  "story_id": "e1137d7b-6738-49af-b93e-ae1665b8f23c",
+  "story_id": "ee2a5b6d-485a-4513-9839-edb9dfca971b",
   "question": "Ash, what news from the mill?",
   "model_calls": [
     {
-      "role": "resolver",
-      "profile": "openrouter@pin-83163eb1-r2",
+      "role": "reaction",
+      "profile": "openrouter@pin-8e42574d-r2",
       "requested_model": "deepseek/deepseek-v4-flash-0731",
-      "requested_pin": "83163eb1",
+      "requested_pin": "8e42574d",
       "requested_pin_revision": "2",
       "executed_model": "deepseek/deepseek-v4-flash-0731",
-      "status": "succeeded",
-      "error": ""
+      "status": "failed",
+      "error": "malformed"
     },
     {
       "role": "narrator",
-      "profile": "openrouter@pin-83163eb1-r2",
+      "profile": "openrouter@pin-8e42574d-r2",
       "requested_model": "deepseek/deepseek-v4-flash-0731",
-      "requested_pin": "83163eb1",
+      "requested_pin": "8e42574d",
       "requested_pin_revision": "2",
       "executed_model": "deepseek/deepseek-v4-flash-0731",
-      "status": "succeeded",
-      "error": ""
+      "status": "failed",
+      "error": "malformed"
     },
     {
       "role": "resolver",
-      "profile": "openrouter@pin-83163eb1-r2",
+      "profile": "openrouter@pin-8e42574d-r2",
       "requested_model": "deepseek/deepseek-v4-flash-0731",
-      "requested_pin": "83163eb1",
-      "requested_pin_revision": "2",
-      "executed_model": "deepseek/deepseek-v4-flash-0731",
-      "status": "succeeded",
-      "error": ""
-    },
-    {
-      "role": "narrator",
-      "profile": "openrouter@pin-83163eb1-r2",
-      "requested_model": "deepseek/deepseek-v4-flash-0731",
-      "requested_pin": "83163eb1",
+      "requested_pin": "8e42574d",
       "requested_pin_revision": "2",
       "executed_model": "deepseek/deepseek-v4-flash-0731",
       "status": "failed",
@@ -44,9 +34,9 @@
     },
     {
       "role": "character_decision",
-      "profile": "openrouter@pin-83163eb1-r2",
+      "profile": "openrouter@pin-8e42574d-r2",
       "requested_model": "deepseek/deepseek-v4-flash-0731",
-      "requested_pin": "83163eb1",
+      "requested_pin": "8e42574d",
       "requested_pin_revision": "2",
       "executed_model": "deepseek/deepseek-v4-flash-0731",
       "status": "failed",
@@ -54,19 +44,9 @@
     },
     {
       "role": "reaction",
-      "profile": "openrouter@pin-83163eb1-r2",
+      "profile": "openrouter@pin-8e42574d-r2",
       "requested_model": "deepseek/deepseek-v4-flash-0731",
-      "requested_pin": "83163eb1",
-      "requested_pin_revision": "2",
-      "executed_model": "deepseek/deepseek-v4-flash-0731",
-      "status": "succeeded",
-      "error": ""
-    },
-    {
-      "role": "reaction",
-      "profile": "openrouter@pin-83163eb1-r2",
-      "requested_model": "deepseek/deepseek-v4-flash-0731",
-      "requested_pin": "83163eb1",
+      "requested_pin": "8e42574d",
       "requested_pin_revision": "2",
       "executed_model": "deepseek/deepseek-v4-flash-0731",
       "status": "failed",
@@ -74,9 +54,9 @@
     },
     {
       "role": "director",
-      "profile": "openrouter@pin-83163eb1-r2",
+      "profile": "openrouter@pin-8e42574d-r2",
       "requested_model": "deepseek/deepseek-v4-flash-0731",
-      "requested_pin": "83163eb1",
+      "requested_pin": "8e42574d",
       "requested_pin_revision": "2",
       "executed_model": "deepseek/deepseek-v4-flash-0731",
       "status": "failed",
@@ -85,31 +65,31 @@
   ],
   "scenes": [
     {
-      "scene": "40c0f7e6-3bae-517f-8dff-fc3cb16eda83",
+      "scene": "80412ae8-3dfa-5de6-b536-f4e7971f5126",
       "status": "committed",
       "intents": [
         {
-          "author": "73ee8339-5b87-449e-b796-2dac1c55072f",
+          "author": "8d62d831-2ed2-410c-9925-5c473ec8f409",
           "family": "communicate",
           "topic": null,
           "status": "validated"
         },
         {
-          "author": "ba93a08b-6ad5-419d-86dd-dadd28d9e655",
+          "author": "afffdf31-ad2d-4160-9546-5348ed8287f9",
           "family": "wait",
           "topic": null,
           "status": "validated"
         }
       ],
-      "phase_run": "eb247edf-7713-5b60-9dc2-f3dcc9a56eaf",
+      "phase_run": "f8521fd0-0fce-57c9-aa47-d39ef32cb3e2",
       "attempts": [
         {
-          "actor": "ba93a08b-6ad5-419d-86dd-dadd28d9e655",
+          "actor": "afffdf31-ad2d-4160-9546-5348ed8287f9",
           "status": "committed",
           "summary": "Ash waits"
         },
         {
-          "actor": "73ee8339-5b87-449e-b796-2dac1c55072f",
+          "actor": "8d62d831-2ed2-410c-9925-5c473ec8f409",
           "status": "committed",
           "summary": "Wren says to Ash: Ash, what news from the mill?"
         }
@@ -119,7 +99,7 @@
         {
           "outcome": "success",
           "resolver": "deterministic",
-          "rationale": "fallback: unrepairable resolver output (2 attempts)"
+          "rationale": "fallback: provider failed (ModelMalformedError)"
         }
       ],
       "narrations": [
@@ -133,30 +113,30 @@
   "setup_art": {
     "model": null,
     "art_source": "curated",
-    "profile_id": "83163eb1-9f33-4e18-996b-9c76dfd44c3f",
+    "profile_id": "8e42574d-fd31-4816-97b9-bcff37a941ec",
     "profile_revision": 2,
     "style_pack_revision": null
   },
   "timeline": {
-    "world_id": "e1137d7b-6738-49af-b93e-ae1665b8f23c",
+    "world_id": "ee2a5b6d-485a-4513-9839-edb9dfca971b",
     "entries": [
       {
         "sequence": 1,
-        "event_id": "4cc124d7-7cfe-4ff0-9c3f-bb4686f2e67c",
+        "event_id": "cce51d0b-d5f7-469d-a2d5-c81811c778d0",
         "event_type": "world_seeded",
         "absolute_index": 0,
         "snippet": null
       },
       {
         "sequence": 2,
-        "event_id": "6bd148d2-77b4-4d7b-b2e8-50db59d977cf",
+        "event_id": "cb0f4eaf-770e-4bdf-a6a4-4dc05a51d3b4",
         "event_type": "world_ticked",
         "absolute_index": 1,
         "snippet": null
       },
       {
         "sequence": 3,
-        "event_id": "4451e536-b3b4-47a6-9b5a-e7a29f43e1f6",
+        "event_id": "a8b05530-fc63-40a3-97ca-657d5976f1a8",
         "event_type": "action_resolved",
         "absolute_index": 1,
         "snippet": "attempt:wait: Ash waits attempt:communicate: Wren says to Ash: Ash, what news from the mill? attempt:wait: Ash waits attempt:communicate: Wren says to Ash: Ash,"

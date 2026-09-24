@@ -24,6 +24,7 @@ from worldsim.application.ports.model_gateway import (
     ModelGateway,
     ModelGatewayError,
 )
+from worldsim.application.settings.resolution import SamplingParams
 from worldsim.application.transactions.canonical import canonical_input_hash
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.commands import ActionIntent
@@ -95,8 +96,15 @@ async def interpret(
     text: str,
     scope: Scope,
     viewer: UUID | None = None,
+    sampling: SamplingParams | None = None,
 ) -> InterpretOutcome:
-    """Resolve scope, ask the model for a typed plan, validate it."""
+    """Resolve scope, ask the model for a typed plan, validate it.
+
+    Sampling comes from the story pin (`sampling_from_pin`); unpinned
+    interpretation uses the request default below (1024-cap, unset
+    temperature). There is no separate interpretation budget: a pin's
+    temperature and cap govern this call exactly as they govern beats.
+    """
     characters = await uow.characters.list_for_world(world_id)
     locations = await uow.locations.list_for_world(world_id)
     by_id = {c.id: c for c in characters}
@@ -141,7 +149,15 @@ async def interpret(
     )
     try:
         result = await gateway.complete(
-            CompletionRequest(prompt=prompt, system=_SYSTEM, json_mode=True, max_tokens=1024)
+            CompletionRequest(
+                prompt=prompt,
+                system=_SYSTEM,
+                json_mode=True,
+                max_tokens=sampling.max_tokens if sampling is not None else 1024,
+                temperature=sampling.temperature if sampling is not None else None,
+                top_p=sampling.top_p if sampling is not None else None,
+                top_k=sampling.top_k if sampling is not None else None,
+            )
         )
         interpretation = _INTERPRETATION_ADAPTER.validate_json(result.text)
     except ModelGatewayError:
@@ -263,6 +279,7 @@ async def submit(
     client_request_id: str,
     watermark: int = 0,
     viewer: UUID | None = None,
+    sampling: SamplingParams | None = None,
 ) -> Intervention:
     """Interpret and persist a queue item; same key replays the same item."""
     if (role == UserRole.DIRECTOR and mode != InterventionMode.INFLUENCE) or (
@@ -282,7 +299,17 @@ async def submit(
         existing = await uow.interventions.find_by_client_key(world_id, client_request_id)
         if existing is not None:
             return existing
-        outcome = await interpret(uow, gateway, world_id, role, mode, text, scope, viewer)
+        outcome = await interpret(
+            uow,
+            gateway,
+            world_id,
+            role,
+            mode,
+            text,
+            scope,
+            viewer,
+            sampling=sampling,
+        )
         if (
             outcome.status == InterventionStatus.QUEUED
             and (not outcome.interpretation or not outcome.interpretation.steps)
@@ -903,6 +930,7 @@ async def edit_text(
     text: str,
     scope: Scope,
     viewer: UUID | None = None,
+    sampling: SamplingParams | None = None,
 ) -> Intervention:
     """Reinterpret before claim; history restarts from the new text."""
     async with factory() as uow:
@@ -923,6 +951,7 @@ async def edit_text(
             text,
             scope,
             viewer,
+            sampling=sampling,
         )
         if (
             outcome.status == InterventionStatus.QUEUED

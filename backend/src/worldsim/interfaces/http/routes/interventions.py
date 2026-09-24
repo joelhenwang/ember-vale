@@ -12,7 +12,12 @@ from worldsim.application import interventions as service
 from worldsim.application.capabilities import parse_role
 from worldsim.application.interventions import INTERPRET_PROMPT_VERSION, Scope
 from worldsim.application.ports.model_gateway import ModelGateway
-from worldsim.application.settings.resolution import PinnedRuntime, resolve_pin
+from worldsim.application.settings.resolution import (
+    PinnedRuntime,
+    SamplingParams,
+    resolve_pin,
+    sampling_from_pin,
+)
 from worldsim.application.stories.guards import require_unarchived
 from worldsim.application.tracing.gateway import TracedGateway
 from worldsim.application.tracing.service import ManifestSpec
@@ -44,6 +49,7 @@ class InterpretRuntime:
 
     gateway: ModelGateway
     pin: PinnedRuntime | None
+    sampling: SamplingParams | None
 
 
 async def _interpret_runtime(request: Request, world_id: UUID) -> InterpretRuntime:
@@ -64,10 +70,11 @@ async def _interpret_runtime(request: Request, world_id: UUID) -> InterpretRunti
     else:
         env = state.gateway_factory()
     if pin is None:
-        return InterpretRuntime(env, None)
+        return InterpretRuntime(env, None, None)
     return InterpretRuntime(
         gateway_for_pin("director", pin.profile, pin.connection, env_gateway=env),
         pin,
+        sampling_from_pin(pin),
     )
 
 
@@ -157,6 +164,7 @@ async def submit_intervention(
         ),
         body.client_request_id,
         viewer=viewer,
+        sampling=runtime.sampling,
     )
     return await _detail(request, intervention.id)
 
@@ -206,6 +214,7 @@ async def edit_intervention(
             location_ids=list(body.scope.location_ids),
         ),
         viewer=viewer,
+        sampling=runtime.sampling,
     )
     return await _detail(request, updated.id)
 

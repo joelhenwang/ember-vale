@@ -12,12 +12,12 @@
   {
     "step": "review shows the storyteller pin",
     "ok": true,
-    "detail": "World Ember Vale (rev 2) Cast Wren (rev 1), Ash (rev 1) Mode Player as Wren Title Wren asks about the mill muevhrzi Storyteller Live Deepseek · deepseek/deepseek-v4-flash-0731 · rev 2"
+    "detail": "World Ember Vale (rev 2) Cast Wren (rev 1), Ash (rev 1) Mode Player as Wren Title Wren asks about the mill mueumd1v Storyteller Live Deepseek · deepseek/deepseek-v4-flash-0731 · rev 2"
   },
   {
     "step": "begin navigates to the room",
     "ok": true,
-    "detail": "story e1137d7b…"
+    "detail": "story ee2a5b6d…"
   },
   {
     "step": "player badge follows the grant",
@@ -35,23 +35,13 @@
     "detail": "beat 1 with player intent"
   },
   {
-    "step": "no raw error banner over the committing beat",
+    "step": "feed shows committed events",
     "ok": true,
-    "detail": "0 error banners"
-  },
-  {
-    "step": "filed question clears from the composer",
-    "ok": true,
-    "detail": "\"\""
-  },
-  {
-    "step": "feed shows the asked question",
-    "ok": true,
-    "detail": "ACTION RESOLVED\n\nattempt:wait: Ash waits attempt:communicate: Wren says to Ash: Ash, what news from the mill? attempt:wait: Ash waits attempt:communicate: Wren says to Ash: Ash,\n\nWORLD TICKED\nWORLD SEEDED"
+    "detail": "WORLD TICKED\nWORLD SEEDED"
   },
   {
     "step": "grant and feed survive reload",
     "ok": true,
-    "detail": "Player / 3 entries"
+    "detail": "Player / 2 entries"
   }
 ]

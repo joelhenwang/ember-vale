@@ -9,6 +9,7 @@ import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
 import IconArrowRight from '../components/icons/IconArrowRight.vue'
 import { useBackend } from '../composables/useBackend'
 import { useInterventions, type DirectMode } from '../composables/useInterventions'
+import { usePlayerAsk } from '../composables/usePlayerAsk'
 import { useStory } from '../composables/useStory'
 import { selectSeat } from '../api/worldsim'
 import type { Role } from '../api/http'
@@ -166,20 +167,21 @@ watch(
   { immediate: true }
 )
 
+const submitAsk = usePlayerAsk((intents) => story.advance(intents), askText)
+
 async function askQuestion(): Promise<void> {
   const actor = controlledId.value
-  const topic = askText.value.trim()
-  if (!actor || !askTarget.value || !topic) return
-  const ok = await story.advance({
+  const target = askTarget.value
+  if (!actor || !target) return
+  await submitAsk((topic) => ({
     [actor]: {
       family: 'communicate',
       character_id: actor,
       snapshot_id: NIL_SNAPSHOT,
-      target_character_id: askTarget.value,
+      target_character_id: target,
       topic
     }
-  })
-  if (ok) askText.value = ''
+  }))
 }
 
 async function travel(): Promise<void> {

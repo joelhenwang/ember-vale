@@ -112,7 +112,7 @@ def test_pinned_interpretation_uses_pin_and_audits(
     assert connection.status_code == 200, connection.text
     profile = client.post(
         f"/api/v1/settings/providers/{connection.json()['id']}/profiles",
-        json={"model_id": "fake-travel-pin", "temperature": 0.3},
+        json={"model_id": "fake-travel-pin", "temperature": 0.2, "max_tokens": 4096},
         headers={},
     )
     assert profile.status_code == 200, profile.text
@@ -142,6 +142,55 @@ def test_pinned_interpretation_uses_pin_and_audits(
     assert sampling["pin_profile_revision"] == pin["revision"]
     assert rows[0].result["model"] == "fake-travel-pin"
     assert rows[0].profile_version.startswith("pin-")
+
+    # The pin's sampling governs the outgoing interpretation request —
+    # audit identity alone is not enough.
+    interpret_requests = [
+        request for request in _gateway.sent_requests if request.json_mode
+    ]
+    assert interpret_requests, "expected a recorded interpretation request"
+    outgoing = interpret_requests[0]
+    assert outgoing.temperature == 0.2
+    assert outgoing.max_tokens == 4096
+
+
+def test_committed_beat_event_visible_to_player(
+    interpret_app: tuple[TestClient, FakeGateway],
+) -> None:
+    """A player sees their own beat in the room feed.
+
+    Committed scene events carry the public default with no participant
+    gate, so the timeline must include them for a bound-character viewer.
+    """
+    client, _gateway = interpret_app
+    ids = asyncio.run(_seed_market_world())
+    world = ids["world"]
+
+    filed = client.post(
+        "/api/v1/interventions",
+        headers=_deity(),
+        json={
+            "world_id": str(world),
+            "client_request_id": "interpret-visibility-1",
+            "text": "Send Wren to Market",
+            "mode": "force",
+        },
+    )
+    assert filed.status_code == 200, filed.text
+    first = client.post(
+        "/api/v1/stage1/advance",
+        headers=_deity(),
+        json={"world_id": str(world), "absolute_index": 1},
+    )
+    assert first.status_code == 200, first.text
+
+    player = {"X-Worldsim-Role": "player", "X-Worldsim-Character": str(ids["wren"])}
+    listed = client.get(
+        "/api/v1/stage2/timeline", params={"world_id": str(world)}, headers=player
+    )
+    assert listed.status_code == 200, listed.text
+    kinds = [entry["event_type"] for entry in listed.json()["entries"]]
+    assert "action_resolved" in kinds, kinds
 
 
 def test_unpinned_clarification_stays_queued_across_reload(
@@ -174,3 +223,11 @@ def test_unpinned_clarification_stays_queued_across_reload(
     rows = asyncio.run(_calls_for(world))
     assert rows, "expected an audited interpretation call"
     assert "pin_profile_id" not in rows[0].request["sampling"]
+
+    # Unpinned interpretation keeps the documented request default.
+    interpret_requests = [
+        request for request in _gateway.sent_requests if request.json_mode
+    ]
+    assert interpret_requests, "expected a recorded interpretation request"
+    assert interpret_requests[0].max_tokens == 1024
+    assert interpret_requests[0].temperature is None
