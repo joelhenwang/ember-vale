@@ -365,7 +365,7 @@ def test_communication_fact_carries_unique_citation_and_speaker() -> None:
     from worldsim.application.graphs.narrate import communication_facts
 
     ash, wren, outsider = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
-    spoken = _communicate_reaction(ash, wren)
+    spoken = _communicate_reaction(ash, wren, topic='"Market news."')
     facts = communication_facts(
         [spoken],
         {ash: "Ash", wren: "Wren"},
@@ -376,8 +376,9 @@ def test_communication_fact_carries_unique_citation_and_speaker() -> None:
     fact = facts[0]
     assert fact["key"] == f"reaction:{spoken.id}"
     assert fact["speaker"] == str(ash)
-    assert fact["utterance"] == "The Market holds stalls, wind, and trade."
-    assert "Ash says to Wren" in fact["value"]
+    assert fact["speaker_name"] == "Ash"
+    assert fact["utterance"] == "Market news."
+    assert fact["value"] == 'Ash says to Wren: "Market news."'
     # Pending rows, non-speech families, and out-of-audience targets stay out.
     from worldsim.domain.commands import WaitAction
     from worldsim.domain.scenes import Reaction as ReactionRow
@@ -452,3 +453,76 @@ def test_fallback_renders_attributed_dialogue() -> None:
     assert beats[0].speaker_id == ash
     assert beats[0].cited_fact_keys == ["reaction:abc"]
     assert beats[0].text == "Market news."
+
+
+def test_instruction_topic_becomes_attributed_summary() -> None:
+    from worldsim.application.graphs.narrate import communication_facts
+
+    ash, wren = uuid.uuid4(), uuid.uuid4()
+    instructed = _communicate_reaction(ash, wren, topic="Tell Wren about the mill")
+    facts = communication_facts(
+        [instructed],
+        {ash: "Ash", wren: "Wren"},
+        [str(ash), str(wren)],
+    )
+
+    assert len(facts) == 1
+    fact = facts[0]
+    assert fact["key"] == f"reaction:{instructed.id}"
+    assert fact["speaker"] == str(ash)
+    assert "utterance" not in fact
+    assert fact["value"] == 'Ash speaks to Wren about "Tell Wren about the mill"'
+
+
+def test_narrator_prompt_associates_key_name_and_speaker_id() -> None:
+    from worldsim.application.graphs.narrate import (
+        _fact_view,
+        communication_facts,
+        render_user_prompt,
+    )
+
+    ash, wren = uuid.uuid4(), uuid.uuid4()
+    spoken = _communicate_reaction(ash, wren, topic='"Market news."')
+    facts = communication_facts(
+        [spoken],
+        {ash: "Ash", wren: "Wren"},
+        [str(ash), str(wren)],
+    )
+    prompt = render_user_prompt(
+        [str(ash), str(wren)],
+        [_fact_view(f) for f in facts],
+        f"reaction:{spoken.id}",
+        None,
+        8,
+    )
+
+    assert f"reaction:{spoken.id}" in prompt
+    assert "Ash" in prompt
+    assert str(ash) in prompt
+
+
+def test_fallback_summarizes_instruction_topic() -> None:
+    from worldsim.application.graphs.narrate import fallback_beats
+
+    ash = uuid.uuid4()
+    event_id, world_id = uuid.uuid4(), uuid.uuid4()
+    beats = fallback_beats(
+        world_id=world_id,
+        scene_id=None,
+        event_id=event_id,
+        visible_facts=[
+            {
+                "key": "reaction:abc",
+                "value": 'Ash speaks to Wren about "Tell Wren about the mill"',
+                "speaker": str(ash),
+            }
+        ],
+        beats_budget=8,
+    )
+
+    assert len(beats) == 1
+    assert beats[0].kind == "narration"
+    assert beats[0].speaker_id == ash
+    assert beats[0].cited_fact_keys == ["reaction:abc"]
+    assert "Tell Wren about the mill" in beats[0].text
+    assert beats[0].text != "Tell Wren about the mill"

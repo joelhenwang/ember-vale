@@ -15,6 +15,7 @@ from fastapi import APIRouter, Query, Request
 from worldsim.application.capabilities import is_omniscient, parse_role
 from worldsim.domain.enums import Visibility
 from worldsim.domain.errors import DomainError, ErrorCode
+from worldsim.domain.narration import NarrationBeat
 from worldsim.interfaces.http import schemas as api
 from worldsim.interfaces.http.routes.activities import activity_view
 from worldsim.interfaces.http.routes.roles import effective_role, require_role
@@ -24,6 +25,14 @@ router = APIRouter(tags=["stage2"])
 
 async def _role_of(request: Request, world_id: UUID) -> tuple[str, UUID | None]:
     return await effective_role(request, world_id)
+
+
+def _voiced_beat_text(beat: NarrationBeat, names: dict[UUID, str]) -> str:
+    """Feed text for one beat: spoken beats carry their speaker name."""
+    if beat.speaker_id is None:
+        return beat.text
+    name = names.get(beat.speaker_id, beat.speaker_id.hex[:8])
+    return f"{name}: {beat.text}"
 
 
 @router.get("/stage2/timeline", response_model=api.TimelineResponse)
@@ -42,6 +51,8 @@ async def timeline(
     omniscient = is_omniscient(parse_role(role))
     state = request.app.state.app_state
     async with state.uow_factory()() as uow:
+        characters = await uow.characters.list_for_world(world_id)
+        names = {c.id: c.name for c in characters}
         events = await uow.events.list_range(world_id, after, limit)
         entries: list[api.TimelineEntry] = []
         for event in events:
@@ -57,7 +68,8 @@ async def timeline(
                     event_id=event.id,
                     event_type=event.event_type.value,
                     absolute_index=event.absolute_index,
-                    snippet=" ".join(b.text for b in beats)[:160] or None,
+                    snippet=" ".join(_voiced_beat_text(b, names) for b in beats)[:160]
+                    or None,
                 )
             )
         total = await uow.events.count_events(world_id)

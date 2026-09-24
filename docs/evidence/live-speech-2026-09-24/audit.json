@@ -1,0 +1,480 @@
+{
+ "world_id": "fa766cb1-7cf9-415a-96c1-6b64cd60a5dc",
+ "characters": {
+  "wren": "515a461d-483c-4ad1-b1a8-e60f70317de6",
+  "ash": "09a286b3-d726-48a3-b770-0fda93b6543f"
+ },
+ "model_calls": [
+  {
+   "call_id": "74c37646-a85b-4843-9020-b0b416b839ac",
+   "role": "director",
+   "profile": "openrouter@pin-42a60754-r2",
+   "status": "succeeded",
+   "error": null,
+   "tokens": [
+    337,
+    2297
+   ],
+   "latency_ms": 37807,
+   "phase_run_id": "570de821-26b7-56dc-a81e-8303d5ad1022",
+   "task_run_id": "520c10c3-a8ba-547f-9774-8b8849d28856",
+   "actor_id": "fa766cb1-7cf9-415a-96c1-6b64cd60a5dc",
+   "created_at": "2026-09-24T14:35:23.025038+00:00",
+   "detail": {
+    "text": "{\"action\":\"propose_hook\",\"title\":\"The Unopened Letter\",\"purpose\":\"At the Market, a quiet traveling merchant offers a sealed letter meant for Ash or Wren, opening a thread about its sender without deciding their response.\",\"requested_powers\":[\"spawn_npc\"],\"participant_ids\":[\"Ash\",\"Wren\"]}",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "attempts": [],
+    "response_id": "gen-1790260523-yCjkC2S2qCAe2lXynYN5",
+    "finish_reason": "stop",
+    "profile_version": "pin-42a60754-r2",
+    "reasoning_tokens": 2222
+   }
+  },
+  {
+   "call_id": "fec248c7-a082-4bf1-b273-3766c0f1708b",
+   "role": "director",
+   "profile": "openrouter@pin-42a60754-r2",
+   "status": "failed",
+   "error": "malformed",
+   "tokens": [
+    0,
+    0
+   ],
+   "latency_ms": 50496,
+   "phase_run_id": "570de821-26b7-56dc-a81e-8303d5ad1022",
+   "task_run_id": "520c10c3-a8ba-547f-9774-8b8849d28856",
+   "actor_id": "fa766cb1-7cf9-415a-96c1-6b64cd60a5dc",
+   "created_at": "2026-09-24T14:36:00.892370+00:00",
+   "detail": {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "usage": {
+     "prompt_tokens": 362,
+     "reasoning_tokens": 4095,
+     "completion_tokens": 4096
+    },
+    "http_status": 200,
+    "response_id": "gen-1790260560-kSd2AnUocraJlskx0n0k",
+    "content_type": "NoneType",
+    "choices_count": 1,
+    "finish_reason": "length",
+    "content_length": null,
+    "reasoning_only": true
+   }
+  },
+  {
+   "call_id": "0d3d7b85-ce50-4156-a6b8-c2ad79b452b2",
+   "role": "character_decision",
+   "profile": "openrouter@pin-42a60754-r2",
+   "status": "failed",
+   "error": "malformed",
+   "tokens": [
+    0,
+    0
+   ],
+   "latency_ms": 79541,
+   "phase_run_id": "570de821-26b7-56dc-a81e-8303d5ad1022",
+   "task_run_id": "1ccb1451-259c-50e9-9c26-43226ff86119",
+   "actor_id": "09a286b3-d726-48a3-b770-0fda93b6543f",
+   "created_at": "2026-09-24T14:36:51.645314+00:00",
+   "detail": {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "usage": {
+     "prompt_tokens": 2663,
+     "reasoning_tokens": 4269,
+     "completion_tokens": 4096
+    },
+    "http_status": 200,
+    "response_id": "gen-1790260611-8WYNROfITDSCeOSQpGWR",
+    "content_type": "NoneType",
+    "choices_count": 1,
+    "finish_reason": "length",
+    "content_length": null,
+    "reasoning_only": true
+   }
+  },
+  {
+   "call_id": "e2d96520-3662-4dda-bb77-d8bf474429a4",
+   "role": "reaction",
+   "profile": "openrouter@pin-42a60754-r2",
+   "status": "succeeded",
+   "error": null,
+   "tokens": [
+    2665,
+    2908
+   ],
+   "latency_ms": 59726,
+   "phase_run_id": "570de821-26b7-56dc-a81e-8303d5ad1022",
+   "task_run_id": "ff6f1110-7993-515b-a449-a3379b0fbcd3",
+   "actor_id": "515a461d-483c-4ad1-b1a8-e60f70317de6",
+   "created_at": "2026-09-24T14:38:11.370036+00:00",
+   "detail": {
+    "text": "{\"family\": \"communicate\", \"character_id\": \"515a461d-483c-4ad1-b1a8-e60f70317de6\", \"snapshot_id\": \"515a461d-483c-4ad1-b1a8-e60f70317de6\", \"target_character_id\": \"09a286b3-d726-48a3-b770-0fda93b6543f\", \"topic\": \"What are you waiting for?\"}",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "attempts": [],
+    "response_id": "gen-1790260691-Tc6RbYMLW1UZFlN42brn",
+    "finish_reason": "stop",
+    "profile_version": "pin-42a60754-r2",
+    "reasoning_tokens": 3039
+   }
+  },
+  {
+   "call_id": "499bc510-c694-4e80-a302-65a4734e61d9",
+   "role": "reaction",
+   "profile": "openrouter@pin-42a60754-r2",
+   "status": "succeeded",
+   "error": null,
+   "tokens": [
+    2774,
+    2114
+   ],
+   "latency_ms": 12299,
+   "phase_run_id": "570de821-26b7-56dc-a81e-8303d5ad1022",
+   "task_run_id": "4b2cd220-1304-5b43-a4cd-d051b062f5fa",
+   "actor_id": "09a286b3-d726-48a3-b770-0fda93b6543f",
+   "created_at": "2026-09-24T14:39:11.196648+00:00",
+   "detail": {
+    "text": "{\n\"family\": \"communicate\",\n\"character_id\": \"09a286b3-d726-48a3-b770-0fda93b6543f\",\n\"snapshot_id\": \"52c249b5-3e2e-4b7b-ad4c-c05ffd5ed072\",\n\"target_character_id\": \"515a461d-483c-4ad1-b1a8-e60f70317de6\",\n\"topic\": \"Market\"\n}",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "attempts": [],
+    "response_id": "gen-1790260751-hqm3BHcEr3xjeFcJrbxf",
+    "finish_reason": "stop",
+    "profile_version": "pin-42a60754-r2",
+    "reasoning_tokens": 2007
+   }
+  },
+  {
+   "call_id": "11b3003d-088a-46a0-b0fd-408baf92ac41",
+   "role": "resolver",
+   "profile": "openrouter@pin-42a60754-r2",
+   "status": "succeeded",
+   "error": null,
+   "tokens": [
+    3577,
+    1309
+   ],
+   "latency_ms": 65071,
+   "phase_run_id": "570de821-26b7-56dc-a81e-8303d5ad1022",
+   "task_run_id": "e7e43c1a-da18-5268-8ac5-1093668de8c4",
+   "actor_id": null,
+   "created_at": "2026-09-24T14:39:23.575604+00:00",
+   "detail": {
+    "text": "{\"outcome\": \"success\", \"rationale\": \"The waiting character is available, so the communicating character can deliver the intended communication without obstruction.\", \"effects\": []}",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "attempts": [],
+    "response_id": "gen-1790260763-xKB4gCq4PROqmZGn9ZEp",
+    "finish_reason": "stop",
+    "profile_version": "pin-42a60754-r2",
+    "reasoning_tokens": 1275
+   }
+  },
+  {
+   "call_id": "66159431-823b-43c8-bc4a-f025ca04a4d6",
+   "role": "narrator",
+   "profile": "openrouter@pin-42a60754-r2",
+   "status": "failed",
+   "error": "malformed",
+   "tokens": [
+    0,
+    0
+   ],
+   "latency_ms": 62234,
+   "phase_run_id": "570de821-26b7-56dc-a81e-8303d5ad1022",
+   "task_run_id": "1ea398dd-be14-5ada-8d41-5743d8a7b4a7",
+   "actor_id": null,
+   "created_at": "2026-09-24T14:40:28.873157+00:00",
+   "detail": {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "usage": {
+     "prompt_tokens": 1157,
+     "reasoning_tokens": 4097,
+     "completion_tokens": 4096
+    },
+    "http_status": 200,
+    "response_id": "gen-1790260828-Te1jk6uV5WaxUXo0qd66",
+    "content_type": "NoneType",
+    "choices_count": 1,
+    "finish_reason": "length",
+    "content_length": null,
+    "reasoning_only": true
+   }
+  },
+  {
+   "call_id": "2a08a44b-71fa-4462-927a-b7f8dbc27af7",
+   "role": "character_decision",
+   "profile": "openrouter@pin-42a60754-r2",
+   "status": "succeeded",
+   "error": null,
+   "tokens": [
+    2743,
+    2651
+   ],
+   "latency_ms": 28115,
+   "phase_run_id": "9fb96b60-71e7-5cbf-a8f3-2bb03527a795",
+   "task_run_id": "2580c2f5-a8a4-58f2-bf7a-20593a5190eb",
+   "actor_id": "09a286b3-d726-48a3-b770-0fda93b6543f",
+   "created_at": "2026-09-24T14:45:19.872975+00:00",
+   "detail": {
+    "text": "{\n  \"character_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"snapshot_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"family\": \"wait\"\n}",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "attempts": [],
+    "response_id": "gen-1790261120-rI2AGVJyHCeOzEin3FHi",
+    "finish_reason": "stop",
+    "profile_version": "pin-42a60754-r2",
+    "reasoning_tokens": 2592
+   }
+  },
+  {
+   "call_id": "821a850a-1e9c-4b06-ac2e-8dc3e330f496",
+   "role": "reaction",
+   "profile": "openrouter@pin-42a60754-r2",
+   "status": "succeeded",
+   "error": null,
+   "tokens": [
+    2837,
+    1686
+   ],
+   "latency_ms": 29013,
+   "phase_run_id": "9fb96b60-71e7-5cbf-a8f3-2bb03527a795",
+   "task_run_id": "9e9c0c2f-4ec5-54d0-810d-4a5eeb8cb031",
+   "actor_id": "09a286b3-d726-48a3-b770-0fda93b6543f",
+   "created_at": "2026-09-24T14:45:48.142937+00:00",
+   "detail": {
+    "text": "{\"family\":\"communicate\",\"character_id\":\"09a286b3-d726-48a3-b770-0fda93b6543f\",\"snapshot_id\":\"00000000-0000-0000-0000-000000000000\",\"target_character_id\":\"515a461d-483c-4ad1-b1a8-e60f70317de6\",\"topic\":\"Market stalls\"}",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "attempts": [],
+    "response_id": "gen-1790261148-rRfyCSWg1KVxlj9IduNp",
+    "finish_reason": "stop",
+    "profile_version": "pin-42a60754-r2",
+    "reasoning_tokens": 1597
+   }
+  },
+  {
+   "call_id": "f2f4e336-209a-4f75-a060-56096c0e703f",
+   "role": "reaction",
+   "profile": "openrouter@pin-42a60754-r2",
+   "status": "succeeded",
+   "error": null,
+   "tokens": [
+    2836,
+    743
+   ],
+   "latency_ms": 14048,
+   "phase_run_id": "9fb96b60-71e7-5cbf-a8f3-2bb03527a795",
+   "task_run_id": "cdf3824b-688a-5e50-a88d-2b9c2be0580b",
+   "actor_id": "515a461d-483c-4ad1-b1a8-e60f70317de6",
+   "created_at": "2026-09-24T14:46:17.261362+00:00",
+   "detail": {
+    "text": "{\"family\":\"wait\",\"character_id\":\"515a461d-483c-4ad1-b1a8-e60f70317de6\",\"snapshot_id\":\"00000000-0000-0000-0000-000000000000\"}",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "attempts": [],
+    "response_id": "gen-1790261177-0pyKoioVkdlxL1a3mqaT",
+    "finish_reason": "stop",
+    "profile_version": "pin-42a60754-r2",
+    "reasoning_tokens": 688
+   }
+  },
+  {
+   "call_id": "91d2535e-2940-4e02-9f01-e23977744897",
+   "role": "resolver",
+   "profile": "openrouter@pin-42a60754-r2",
+   "status": "failed",
+   "error": "malformed",
+   "tokens": [
+    0,
+    0
+   ],
+   "latency_ms": 57969,
+   "phase_run_id": "9fb96b60-71e7-5cbf-a8f3-2bb03527a795",
+   "task_run_id": "2740b12b-9929-5bf0-a22b-83c9bf77e789",
+   "actor_id": null,
+   "created_at": "2026-09-24T14:46:31.379827+00:00",
+   "detail": {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "usage": {
+     "prompt_tokens": 3575,
+     "reasoning_tokens": 4095,
+     "completion_tokens": 4096
+    },
+    "http_status": 200,
+    "response_id": "gen-1790261191-Cd4NZ4IKomDVGqHycqfW",
+    "content_type": "NoneType",
+    "choices_count": 1,
+    "finish_reason": "length",
+    "content_length": null,
+    "reasoning_only": true
+   }
+  },
+  {
+   "call_id": "bd10ade0-4382-4b39-b68f-927ca3799fd3",
+   "role": "narrator",
+   "profile": "openrouter@pin-42a60754-r2",
+   "status": "failed",
+   "error": "malformed",
+   "tokens": [
+    0,
+    0
+   ],
+   "latency_ms": 53326,
+   "phase_run_id": "9fb96b60-71e7-5cbf-a8f3-2bb03527a795",
+   "task_run_id": "194c1ca2-1416-5047-95a6-702c9a00282c",
+   "actor_id": null,
+   "created_at": "2026-09-24T14:47:29.530450+00:00",
+   "detail": {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "usage": {
+     "prompt_tokens": 1093,
+     "reasoning_tokens": 4096,
+     "completion_tokens": 4096
+    },
+    "http_status": 200,
+    "response_id": "gen-1790261249-wGeoviJdQRh20sOClbb5",
+    "content_type": "NoneType",
+    "choices_count": 1,
+    "finish_reason": "length",
+    "content_length": null,
+    "reasoning_only": true
+   }
+  }
+ ],
+ "intents": [
+  {
+   "author_character_id": "09a286b3-d726-48a3-b770-0fda93b6543f",
+   "family": "wait",
+   "status": "validated",
+   "intent": "{\"id\": \"24abf51a-7383-57de-8ff0-a32b18fd4057\", \"action\": {\"family\": \"wait\", \"snapshot_id\": \"5ce809e5-0368-5157-9d1b-7435ffbed570\", \"character_id\": \"09a286b3-d726-48a3-b770-0fda93b6543f\"}, \"status\": \"validated\", \"world_id\": \"fa766cb1-7cf9-415a-96c1-6b64cd60a5dc\", \"created_at\": \"2026-09-24T14:38:11.229066Z\", \"snapshot_id\": \"5ce809e5-0368-5157-9d1b-7435ffbed570\", \"phase_run_id\": \"570de821-26b7-56dc-a81e-8303d5ad1022\", \"desired_effects\": [], \"idempotency_key\": \"character:1ccb1451-259c-50e9-9c26-43226ff86119\", \"author_character_id\": \"09a286b3-d726-48a3-b770-0fda93b6543f\"}"
+  },
+  {
+   "author_character_id": "515a461d-483c-4ad1-b1a8-e60f70317de6",
+   "family": "communicate",
+   "status": "validated",
+   "intent": "{\"id\": \"e559e8a8-2f46-51d8-b1fb-9dc41d19eae3\", \"action\": {\"topic\": \"Ask Ash what the Market holds today.\", \"family\": \"communicate\", \"snapshot_id\": \"00000000-0000-0000-0000-000000000000\", \"character_id\": \"515a461d-483c-4ad1-b1a8-e60f70317de6\", \"target_character_id\": \"09a286b3-d726-48a3-b770-0fda93b6543f\"}, \"status\": \"validated\", \"world_id\": \"fa766cb1-7cf9-415a-96c1-6b64cd60a5dc\", \"created_at\": \"2026-09-24T14:36:51.606238Z\", \"snapshot_id\": \"5ce809e5-0368-5157-9d1b-7435ffbed570\", \"phase_run_id\": \"570de821-26b7-56dc-a81e-8303d5ad1022\", \"desired_effects\": [], \"idempotency_key\": \"player:e3967a1a-ba3b-592e-89fa-908fc413351d\", \"author_character_id\": \"515a461d-483c-4ad1-b1a8-e60f70317de6\"}"
+  },
+  {
+   "author_character_id": "09a286b3-d726-48a3-b770-0fda93b6543f",
+   "family": "wait",
+   "status": "validated",
+   "intent": "{\"id\": \"43d4d78b-3dbe-53ee-9aa2-7100d77953ec\", \"action\": {\"family\": \"wait\", \"snapshot_id\": \"00000000-0000-0000-0000-000000000000\", \"character_id\": \"00000000-0000-0000-0000-000000000000\"}, \"status\": \"validated\", \"world_id\": \"fa766cb1-7cf9-415a-96c1-6b64cd60a5dc\", \"created_at\": \"2026-09-24T14:45:48.018003Z\", \"snapshot_id\": \"95cc3dee-bd49-52cc-9351-977c3f45722d\", \"phase_run_id\": \"9fb96b60-71e7-5cbf-a8f3-2bb03527a795\", \"desired_effects\": [], \"idempotency_key\": \"character:2580c2f5-a8a4-58f2-bf7a-20593a5190eb\", \"author_character_id\": \"09a286b3-d726-48a3-b770-0fda93b6543f\"}"
+  },
+  {
+   "author_character_id": "515a461d-483c-4ad1-b1a8-e60f70317de6",
+   "family": "communicate",
+   "status": "validated",
+   "intent": "{\"id\": \"084b71ec-ba67-59c7-b932-50d10e2746d9\", \"action\": {\"topic\": \"Ask Ash to name the stalls in the Market he mentioned.\", \"family\": \"communicate\", \"snapshot_id\": \"00000000-0000-0000-0000-000000000000\", \"character_id\": \"515a461d-483c-4ad1-b1a8-e60f70317de6\", \"target_character_id\": \"09a286b3-d726-48a3-b770-0fda93b6543f\"}, \"status\": \"validated\", \"world_id\": \"fa766cb1-7cf9-415a-96c1-6b64cd60a5dc\", \"created_at\": \"2026-09-24T14:45:19.826275Z\", \"snapshot_id\": \"95cc3dee-bd49-52cc-9351-977c3f45722d\", \"phase_run_id\": \"9fb96b60-71e7-5cbf-a8f3-2bb03527a795\", \"desired_effects\": [], \"idempotency_key\": \"player:91284bee-cd13-59fa-a87b-6ccb8467d640\", \"author_character_id\": \"515a461d-483c-4ad1-b1a8-e60f70317de6\"}"
+  }
+ ],
+ "attempts": [
+  {
+   "actor_character_id": "09a286b3-d726-48a3-b770-0fda93b6543f",
+   "status": "committed",
+   "observable_summary": "Ash waits"
+  },
+  {
+   "actor_character_id": "515a461d-483c-4ad1-b1a8-e60f70317de6",
+   "status": "committed",
+   "observable_summary": "Wren says to Ash: Ask Ash what the Market holds today."
+  },
+  {
+   "actor_character_id": "515a461d-483c-4ad1-b1a8-e60f70317de6",
+   "status": "committed",
+   "observable_summary": "Wren says to Ash: Ask Ash to name the stalls in the Market he mentioned."
+  },
+  {
+   "actor_character_id": "09a286b3-d726-48a3-b770-0fda93b6543f",
+   "status": "committed",
+   "observable_summary": "Ash waits"
+  }
+ ],
+ "reactions": [
+  {
+   "reactor_character_id": "515a461d-483c-4ad1-b1a8-e60f70317de6",
+   "status": "committed",
+   "reaction": "{\"topic\": \"What are you waiting for?\", \"family\": \"communicate\", \"snapshot_id\": \"515a461d-483c-4ad1-b1a8-e60f70317de6\", \"character_id\": \"515a461d-483c-4ad1-b1a8-e60f70317de6\", \"target_character_id\": \"09a286b3-d726-48a3-b770-0fda93b6543f\"}"
+  },
+  {
+   "reactor_character_id": "09a286b3-d726-48a3-b770-0fda93b6543f",
+   "status": "committed",
+   "reaction": "{\"topic\": \"Market\", \"family\": \"communicate\", \"snapshot_id\": \"52c249b5-3e2e-4b7b-ad4c-c05ffd5ed072\", \"character_id\": \"09a286b3-d726-48a3-b770-0fda93b6543f\", \"target_character_id\": \"515a461d-483c-4ad1-b1a8-e60f70317de6\"}"
+  },
+  {
+   "reactor_character_id": "09a286b3-d726-48a3-b770-0fda93b6543f",
+   "status": "committed",
+   "reaction": "{\"topic\": \"Market stalls\", \"family\": \"communicate\", \"snapshot_id\": \"00000000-0000-0000-0000-000000000000\", \"character_id\": \"09a286b3-d726-48a3-b770-0fda93b6543f\", \"target_character_id\": \"515a461d-483c-4ad1-b1a8-e60f70317de6\"}"
+  },
+  {
+   "reactor_character_id": "515a461d-483c-4ad1-b1a8-e60f70317de6",
+   "status": "committed",
+   "reaction": "{\"family\": \"wait\", \"snapshot_id\": \"00000000-0000-0000-0000-000000000000\", \"character_id\": \"515a461d-483c-4ad1-b1a8-e60f70317de6\"}"
+  }
+ ],
+ "resolutions": [
+  {
+   "outcome": "success",
+   "resolver": "model",
+   "profile_version": "pin-42a60754-r2",
+   "rationale": "The waiting character is available, so the communicating character can deliver the intended communication without obstruction."
+  },
+  {
+   "outcome": "impossible",
+   "resolver": "deterministic",
+   "profile_version": "",
+   "rationale": "fallback: provider failed (ModelMalformedError)"
+  }
+ ],
+ "narration": [
+  {
+   "kind": "narration",
+   "speaker_character_id": "09a286b3-d726-48a3-b770-0fda93b6543f",
+   "text": "Ash speaks to Wren about \"Market\""
+  },
+  {
+   "kind": "narration",
+   "speaker_character_id": "515a461d-483c-4ad1-b1a8-e60f70317de6",
+   "text": "Wren speaks to Ash about \"What are you waiting for?\""
+  },
+  {
+   "kind": "narration",
+   "speaker_character_id": null,
+   "text": "attempt:wait: Ash waits"
+  },
+  {
+   "kind": "narration",
+   "speaker_character_id": null,
+   "text": "attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today."
+  },
+  {
+   "kind": "narration",
+   "speaker_character_id": null,
+   "text": "attempt:wait: Ash waits"
+  },
+  {
+   "kind": "narration",
+   "speaker_character_id": null,
+   "text": "attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today."
+  },
+  {
+   "kind": "narration",
+   "speaker_character_id": "09a286b3-d726-48a3-b770-0fda93b6543f",
+   "text": "Ash speaks to Wren about \"Market stalls\""
+  },
+  {
+   "kind": "narration",
+   "speaker_character_id": null,
+   "text": "attempt:communicate: Wren says to Ash: Ask Ash to name the stalls in the Market he mentioned."
+  },
+  {
+   "kind": "narration",
+   "speaker_character_id": null,
+   "text": "attempt:wait: Ash waits"
+  },
+  {
+   "kind": "narration",
+   "speaker_character_id": null,
+   "text": "attempt:communicate: Wren says to Ash: Ask Ash to name the stalls in the Market he mentioned."
+  },
+  {
+   "kind": "narration",
+   "speaker_character_id": null,
+   "text": "attempt:wait: Ash waits"
+  }
+ ]
+}

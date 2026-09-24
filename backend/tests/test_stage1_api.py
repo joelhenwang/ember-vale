@@ -450,7 +450,7 @@ def _speech_route(ids: dict[str, UUID], snapshots: dict[int, UUID], narrator: st
                         "character_id": str(ids["ash"]),
                         "snapshot_id": str(snapshot),
                         "target_character_id": str(ids["wren"]),
-                        "topic": MARKET_ANSWER,
+                        "topic": f'"{MARKET_ANSWER}"',
                     }
                 )
             return json.dumps(
@@ -530,6 +530,17 @@ def test_committed_communication_narrated_with_attribution(
     ]
     assert len(narrator_reqs) == 1
     assert expected_key in narrator_reqs[0].prompt
+    assert "Ash" in narrator_reqs[0].prompt
+    assert str(ids["ash"]) in narrator_reqs[0].prompt
+
+    feed = client.get(
+        "/api/v1/stage2/timeline",
+        params={"world_id": str(ids["world"]), "after": 0, "limit": 20},
+        headers=_watcher(),
+    )
+    assert feed.status_code == 200, feed.text
+    snippets = [e["snippet"] for e in feed.json()["entries"] if e["snippet"]]
+    assert any("Ash:" in s and MARKET_ANSWER in s for s in snippets)
     reaction_reqs = [r for r in gateway.sent_requests if "Known characters" in r.prompt]
     assert reaction_reqs, "roster missing from reaction prompt"
     assert str(ids["wren"]) in reaction_reqs[0].prompt

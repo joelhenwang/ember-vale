@@ -120,7 +120,29 @@ def _fact_view(raw: Any) -> dict[str, str]:
     utterance = raw.get("utterance")
     if utterance:
         view["utterance"] = str(utterance)
+    speaker_name = raw.get("speaker_name")
+    if speaker_name:
+        view["speaker_name"] = str(speaker_name)
     return view
+
+
+def _speaker_roster(visible_facts: list[dict[str, str]]) -> list[str]:
+    """Authoritative speaker name-to-ID mapping lines for the narrator.
+
+    The validator checks speaker_id against the same source; without the
+    mapping rendered, the model cannot comply.
+    """
+    seen: set[str] = set()
+    entries: list[str] = []
+    for fact in visible_facts:
+        speaker = fact.get("speaker")
+        name = fact.get("speaker_name")
+        if speaker and name and speaker not in seen:
+            seen.add(speaker)
+            entries.append(f"- {name} (id: {speaker})")
+    if not entries:
+        return []
+    return ["Speakers (use these exact ids when setting speaker_id):", *entries]
 
 
 def render_user_prompt(
@@ -137,6 +159,7 @@ def render_user_prompt(
         f"Audience: {', '.join(audience_ids) or 'none'}.",
         "Visible facts:",
         *[f'- key "{fact["key"]}": {fact["value"]}' for fact in visible_facts],
+        *_speaker_roster(visible_facts),
         f"Beat budget: {beats_budget}.",
     ]
     if dnd_context:
@@ -144,18 +167,35 @@ def render_user_prompt(
     return "\n".join(lines)
 
 
+def _identify_utterance(topic: str) -> str | None:
+    """Explicitly identified spoken words from a communication topic.
+
+    Data contract: a communication ``topic`` is an about-topic unless the
+    model marks direct speech explicitly by wrapping it in matching
+    quotation marks. Only a quoted topic counts as an identified utterance;
+    everything else is paraphrased by attributed narrative summaries, never
+    quoted as spoken words.
+    """
+    text = topic.strip()
+    if len(text) >= 2 and text[0] == text[-1] and text[0] in ("'", '"'):
+        inner = text[1:-1].strip()
+        return inner or None
+    return None
+
+
 def communication_facts(
     reactions: list[Reaction],
     names: Mapping[UUID, str],
     audience_ids: list[str] | frozenset[str],
 ) -> list[dict[str, str]]:
-    """Visible facts for committed spoken communications.
+    """Visible facts for committed communications (speech or summary).
 
     One fact per committed ``communicate`` reaction whose speaker and
     target are both in the audience. The citation key derives from the
     stable reaction ID, so concurrent speakers never collide. Rejected
     proposals never reach this input: only committed rows are read, and
-    the reaction carries no hidden rationale.
+    the reaction carries no hidden rationale. A topic counts as quoted
+    utterance only when explicitly identified; see _identify_utterance.
     """
     audience = frozenset(str(a) for a in audience_ids)
     facts: list[dict[str, str]] = []
@@ -170,16 +210,22 @@ def communication_facts(
         if str(speaker) not in audience or str(target) not in audience:
             continue
         topic = action.topic.strip()
+        utterance = _identify_utterance(topic)
         if not topic:
             continue
         speaker_name = names.get(speaker, speaker.hex[:8])
         target_name = names.get(target, target.hex[:8])
+        if utterance is not None:
+            value = f'{speaker_name} says to {target_name}: "{utterance}"'
+        else:
+            value = f'{speaker_name} speaks to {target_name} about "{topic}"'
         facts.append(
             {
                 "key": f"reaction:{reaction.id}",
-                "value": f'{speaker_name} says to {target_name}: "{topic}"',
+                "value": value,
                 "speaker": str(speaker),
-                "utterance": topic,
+                "speaker_name": speaker_name,
+                **({"utterance": utterance} if utterance is not None else {}),
             }
         )
     return facts
@@ -225,17 +271,21 @@ def beats_valid(
 def _normalize_fallback_fact(fact: dict[str, Any]) -> dict[str, Any]:
     """Deterministic attributed fallback shape for one visible fact.
 
-    Spoken-communication facts (speaker plus utterance) become DIALOGUE
+    Identified utterances (speaker plus utterance) become DIALOGUE
     beats voiced by their speaker through the same persisted feed path;
-    everything else keeps the legacy key: value narrator rendering.
+    instruction-like topics keep an attributed narrative summary instead of
+    purported spoken words. Everything else keeps the legacy key: value
+    narrator rendering.
     """
     speaker = fact.get("speaker")
+    utterance = fact.get("utterance")
+    is_speech = bool(speaker and utterance)
     if speaker:
         return {
             "key": fact["key"],
-            "kind": NarrationKind.DIALOGUE,
+            "kind": NarrationKind.DIALOGUE if is_speech else NarrationKind.NARRATION,
             "speaker": UUID(str(speaker)),
-            "text": str(fact.get("utterance") or fact["value"]),
+            "text": str(utterance) if is_speech else str(fact["value"]),
         }
     return {
         "key": fact["key"],
