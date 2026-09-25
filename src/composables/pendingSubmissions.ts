@@ -55,11 +55,13 @@ export interface SubmissionStorage {
   keys(prefix: string): string[]
   /**
    * Where writes land. Memory-backed stores report `session`: their
-   * writes succeed locally but do not survive reload. Stores that
-   * predate the flag (including the specs' shared fixtures, which model
-   * one localStorage shared across tabs) are treated as `durable`.
+   * writes succeed locally but do not survive reload. `inaccessible`
+   * marks a fallback taken because persistent storage itself could not
+   * be reached — its saved filings are not confirmed absent. Stores
+   * that predate the flag (including the specs' shared fixtures, which
+   * model one localStorage shared across tabs) are treated as `durable`.
    */
-  persistence?: 'durable' | 'session'
+  persistence?: 'durable' | 'session' | 'inaccessible'
 }
 
 const STORAGE_PREFIX = 'ember-vale.pending-submission.v1.'
@@ -91,7 +93,7 @@ export function filingKey(worldId: string, filingId: string): string {
  */
 const volatileStores = new WeakSet<object>()
 
-function memoryStore(persistence: 'durable' | 'session'): SubmissionStorage {
+function memoryStore(persistence: 'durable' | 'session' | 'inaccessible'): SubmissionStorage {
   const memory = new Map<string, string>()
   const store: SubmissionStorage = {
     getItem: (key) => memory.get(key) ?? null,
@@ -147,7 +149,9 @@ export function defaultSubmissionStorage(): SubmissionStorage {
       }
     }
   } catch {
-    /* unreachable storage: fall through to the session-only fallback */
+    /* localStorage itself is unreachable: the fallback must not pose as
+    confirmed absence — saved filings may exist behind the failure. */
+    return memoryStore('inaccessible')
   }
   return memoryStore('session')
 }
@@ -167,37 +171,38 @@ function randomHex(bytes: number): string | null {
   return null
 }
 
-/** Cross-context randomness for filing identity, when the platform has any. */
-function hasStrongRandom(): boolean {
-  try {
-    if (typeof crypto === 'undefined') return false
-    return typeof crypto.randomUUID === 'function' || typeof crypto.getRandomValues === 'function'
-  } catch {
-    return false
-  }
-}
-
-/** Unique filing identity for one send. Test seeds override it explicitly. */
-export function newFilingId(): string {
+/**
+ * Cross-context identity from the generation operation itself: shareable
+ * only after randomness actually succeeds. Presence of the API proves
+ * nothing — either function may throw — so availability is never
+ * inferred. `null` unless fresh entropy was produced.
+ */
+function strongId(): string | null {
   try {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
       return crypto.randomUUID()
     }
   } catch {
-    /* non-secure context: fall through below */
+    /* fall through to getRandomValues below */
   }
-  return randomHex(16) ?? `filing-${Date.now().toString(36)}-${(filingCounter += 1)}`
+  return randomHex(16)
+}
+
+/** Unique filing identity for one send. Test seeds override it explicitly. */
+export function newFilingId(): string {
+  return strongId() ?? `filing-${Date.now().toString(36)}-${(filingCounter += 1)}`
 }
 
 /**
  * Mint an identity and say whether it is safe to share: the counter
  * fallback restarts at 1 in every fresh tab, so two tabs filing in the
- * same millisecond without platform randomness would share a key. Weak
- * identities stay memory-only — never written to shared storage.
+ * same millisecond without successful randomness would share a key.
+ * Weak identities stay memory-only — never written to shared storage.
  */
 function mintFilingId(seed?: string): { id: string; shareable: boolean } {
   if (seed !== undefined) return { id: seed, shareable: true }
-  if (hasStrongRandom()) return { id: newFilingId(), shareable: true }
+  const id = strongId()
+  if (id !== null) return { id, shareable: true }
   return { id: newFilingId(), shareable: false }
 }
 
@@ -292,6 +297,10 @@ export interface FilingsInspection {
  * report `unavailable`, never `absent`.
  */
 export function inspectFilings(store: SubmissionStorage, worldId: string): FilingsInspection {
+  // A fallback taken for unreachable persistent storage reports
+  // unavailable even though its own map is readable: saved filings may
+  // exist behind the failure, so absence is never confirmed.
+  if (store.persistence === 'inaccessible') return { status: 'unavailable', filings: [] }
   let keyList: string[]
   let primaryRaw: string | null
   let contendersRaw: string | null
@@ -439,7 +448,7 @@ export function filePendingSubmission(
   }
   if (!minted.shareable) return { record, persisted: false }
   const written = writeJson(store, filingKey(draft.worldId, record.id), record)
-  const persisted = written && store.persistence !== 'session'
+  const persisted = written && (store.persistence ?? 'durable') === 'durable'
   return { record: { ...record, durable: persisted }, persisted }
 }
 

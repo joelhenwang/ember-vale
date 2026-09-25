@@ -63,6 +63,18 @@ memory-only, since per-tab counters would collide. The banner no
 longer presents the elected filing as the proven original when other
 unsent drafts exist.
 
+## 2026-09-25 failure branches (`results-2026-09-25-branches.json`)
+
+Two remaining branches closed without touching discovery or the
+unique-key design. A factory fallback taken because localStorage
+itself is unreachable is flagged `inaccessible`, so its empty map
+reports `unavailable` instead of confirmed absence — Resume then
+refuses the bare replay with zero advance POSTs. Filing identity is
+shareable only after randomness succeeds: both random functions
+throwing keeps filings memory-only with zero shared writes, while a
+failing `randomUUID()` still falls through to a working
+`getRandomValues()`.
+
 ## What this record does not claim
 
 - The earlier live-Edge browser walkthrough left no preserved

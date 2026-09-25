@@ -1053,6 +1053,34 @@ describe('useStory room', () => {
     await expect(filingA).resolves.toBe(false)
   })
 
+  it('blocks resume as unavailable when persistent storage is inaccessible', async () => {
+    installFetch()
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new Error('denied')
+      }
+    })
+    try {
+      // The controller is built through the default factory, which hides
+      // the failure behind a fallback: Resume must still refuse the bare replay.
+      statusByStory.set('A', { id: 'run-9', index: 2, state: 'scenes_assembled' })
+      const story = useStory('A', 'watcher')
+      await story.load()
+      expect(story.recoveryState.value).toBe('open')
+      await expect(story.resumeBeat()).resolves.toBe(false)
+      expect(story.notice.value?.text).toContain('unavailable')
+      expect(advancePosts()).toHaveLength(0)
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(globalThis, 'localStorage', descriptor)
+      } else {
+        delete (globalThis as Record<string, unknown>)['localStorage']
+      }
+    }
+  })
+
   it('unreadable storage is reported as unavailable, never absent', async () => {
     installFetch()
     // A filing exists, but this controller cannot read it.

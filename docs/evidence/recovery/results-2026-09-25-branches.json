@@ -1,0 +1,55 @@
+{
+  "slice": "recovery failure-branch correction: inaccessible factory state and proven randomness",
+  "commit": "5a63b68",
+  "dirty": true,
+  "diffSha256": "4263b44f193949c2dbc88dad482620fbc8c80f3e89e3ab47113d52d8c71465b7",
+  "untracked": ["docs/evidence/recovery/results-2026-09-25-branches.json"],
+  "at": "2026-09-25T17:10:00Z",
+  "gateway": "deterministic only: vitest fetch mocks (frontend)",
+  "modelSpend": "none",
+  "runs": [
+    {
+      "command": "npx vitest run",
+      "ok": true,
+      "testFiles": 28,
+      "tests": 295,
+      "failures": 0
+    },
+    {
+      "command": "npx vue-tsc --noEmit",
+      "ok": true
+    },
+    {
+      "command": "npx eslint <3 touched frontend files>",
+      "ok": true
+    },
+    {
+      "command": "npx prettier --check <3 touched frontend files>",
+      "ok": true
+    }
+  ],
+  "results": [
+    {
+      "case": "inaccessible localStorage blocks resume through the default factory",
+      "ok": true,
+      "requests": [
+        "localStorage property getter throws; controller built via defaultSubmissionStorage",
+        "GET /api/v1/simulation/status exposes open run 2",
+        "resumeBeat() with zero advance POSTs"
+      ],
+      "outcomes": [
+        "factory fallback reports persistence inaccessible, not an empty absent map",
+        "inspectFilings reports unavailable; resume returns false with an unavailable notice",
+        "no POST /api/v1/stage1/advance is sent"
+      ]
+    },
+    {
+      "case": "shareable only after randomness succeeds",
+      "ok": true,
+      "outcomes": [
+        "two independent module contexts, frozen clock, both random functions throwing: identical weak ids, both session-only, zero shared writes",
+        "randomUUID failing with getRandomValues succeeding: both filings durable with distinct ids and two stored keys"
+      ]
+    }
+  ]
+}

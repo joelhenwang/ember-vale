@@ -357,6 +357,31 @@ describe('pendingSubmissions', () => {
     expect(filed.record.durable).toBe(false)
   })
 
+  it('preserves inaccessible persistent storage instead of an empty absent map', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new Error('denied')
+      }
+    })
+    try {
+      const store = defaultSubmissionStorage()
+      expect(store.persistence).toBe('inaccessible')
+      const seen = inspectFilings(store, 'A')
+      expect(seen.status).toBe('unavailable')
+      expect(seen.filings).toEqual([])
+      const filed = filePendingSubmission(store, Q1, { id: 'q1' })
+      expect(filed.persisted).toBe(false)
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(globalThis, 'localStorage', descriptor)
+      } else {
+        delete (globalThis as Record<string, unknown>)['localStorage']
+      }
+    }
+  })
+
   it('refuses shared writes without cross-context randomness', async () => {
     vi.stubGlobal('crypto', undefined)
     const now = vi.spyOn(Date, 'now').mockReturnValue(1727740000000)
@@ -377,6 +402,62 @@ describe('pendingSubmissions', () => {
       expect(store.keys('ember-vale.pending-submission.v1.')).toEqual([])
     } finally {
       now.mockRestore()
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('refuses shared writes when platform randomness fails', async () => {
+    vi.stubGlobal('crypto', {
+      randomUUID: () => {
+        throw new Error('no entropy')
+      },
+      getRandomValues: () => {
+        throw new Error('no entropy')
+      }
+    })
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1727740000000)
+    try {
+      // Availability said yes; both calls say no — nothing is shared.
+      vi.resetModules()
+      const modA = await import('./pendingSubmissions')
+      vi.resetModules()
+      const modB = await import('./pendingSubmissions')
+      const store = memStore()
+      const a = modA.filePendingSubmission(store, Q1)
+      const b = modB.filePendingSubmission(store, Q2)
+      expect(a.record.id).toBe(b.record.id)
+      expect(a.persisted).toBe(false)
+      expect(b.persisted).toBe(false)
+      expect(store.keys('ember-vale.pending-submission.v1.')).toEqual([])
+    } finally {
+      now.mockRestore()
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('falls through to getRandomValues when randomUUID fails', async () => {
+    let n = 0
+    vi.stubGlobal('crypto', {
+      randomUUID: () => {
+        throw new Error('denied')
+      },
+      getRandomValues: (buf: Uint8Array) => {
+        buf.fill(n)
+        n += 1
+        return buf
+      }
+    })
+    try {
+      vi.resetModules()
+      const mod = await import('./pendingSubmissions')
+      const store = memStore()
+      const a = mod.filePendingSubmission(store, Q1)
+      const b = mod.filePendingSubmission(store, Q2)
+      expect(a.persisted).toBe(true)
+      expect(b.persisted).toBe(true)
+      expect(a.record.id).not.toBe(b.record.id)
+      expect(store.keys('ember-vale.pending-submission.v1.')).toHaveLength(2)
+    } finally {
       vi.unstubAllGlobals()
     }
   })
