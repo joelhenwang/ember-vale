@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { useStory } from './useStory'
-import { loadPendingSubmission, type SubmissionStorage } from './pendingSubmissions'
+import {
+  inspectPrimarySubmission,
+  loadPendingSubmission,
+  pendingKey,
+  type SubmissionStorage
+} from './pendingSubmissions'
 import type { Role } from '../api/http'
 
 function memStore(): SubmissionStorage {
@@ -798,7 +803,15 @@ describe('useStory room', () => {
     const store = memStore()
     const story = useStory('A', 'watcher', undefined, store)
     await story.load()
-    const intents = { 'char-wren': { topic: 'What news from the mill?' } }
+    const intents = {
+      'char-wren': {
+        family: 'communicate',
+        character_id: 'char-wren',
+        snapshot_id: '00000000-0000-0000-0000-000000000000',
+        target_character_id: 'char-ash',
+        topic: 'What news from the mill?'
+      }
+    }
     await expect(story.advance(intents)).resolves.toBe(false)
     expect(loadPendingSubmission(store, 'A')?.intents).toEqual(intents)
   })
@@ -835,5 +848,162 @@ describe('useStory room', () => {
     expect(advancePosts()).toHaveLength(1)
     expect(story.notice.value?.kind).toBe('error')
     expect(story.notice.value?.text).toContain('resume before advancing')
+  })
+
+  function question(topic: string): Record<string, Record<string, unknown>> {
+    return {
+      'char-wren': {
+        family: 'communicate',
+        character_id: 'char-wren',
+        snapshot_id: '00000000-0000-0000-0000-000000000000',
+        target_character_id: 'char-ash',
+        topic
+      }
+    }
+  }
+
+  it('a refused contender never displaces the original filing across reload', async () => {
+    installFetch()
+    // Two controllers, one shared store: two tabs on the same beat.
+    const store = memStore()
+    const original = question('What news from the mill?')
+    const rival = question('What news from the market?')
+
+    // Tab A files Q1; the send stays in flight.
+    const first = useStory('A', 'watcher', undefined, store)
+    await first.load()
+    advanceHold = true
+    const filingA = first.advance(original)
+    await vi.waitFor(() => expect(heldAdvances).toHaveLength(1))
+
+    // Tab B files Q2 for the same beat and is refused before admission.
+    const second = useStory('A', 'watcher', undefined, store)
+    await second.load()
+    const filingB = second.advance(rival)
+    await vi.waitFor(() => expect(heldAdvances).toHaveLength(2))
+    heldAdvances[1].resolve(
+      new Response(
+        JSON.stringify({
+          error: { code: 'PRECONDITION_FAILED', message: 'phase:2 is already executing' }
+        }),
+        { status: 409 }
+      )
+    )
+    await expect(filingB).resolves.toBe(false)
+    expect(second.notice.value?.text).toContain('acceptance is unconfirmed')
+    expect(second.notice.value?.text ?? '').not.toContain('session only')
+
+    // Tab A's send is interrupted before any commit.
+    failures.set('POST /api/v1/stage1/advance', {
+      status: 500,
+      code: 'INTERNAL',
+      message: 'died mid-beat'
+    })
+    advanceHold = false
+    heldAdvances[0].reject(new Error('REQUEST_TIMEOUT'))
+    await expect(filingA).resolves.toBe(false)
+
+    // A fresh page sees the stranded beat, recovers exactly Q1, and keeps
+    // Q2 listed separately — never as the replay candidate.
+    statusByStory.set('A', { id: 'run-9', index: 2, state: 'scenes_assembled' })
+    const third = useStory('A', 'watcher', undefined, store)
+    await third.load()
+    expect(third.recoveryState.value).toBe('open')
+    expect(third.preservedSubmission.value?.intents).toEqual(original)
+    expect(third.preservedSubmission.value?.durable).toBe(true)
+    expect(third.contenderSubmissions.value).toHaveLength(1)
+    expect(third.contenderSubmissions.value[0]?.intents).toEqual(rival)
+
+    const resumed = third.resumeBeat()
+    statusByStory.delete('A')
+    await expect(resumed).resolves.toBe(true)
+    const posts = advancePosts()
+    const last = posts.at(-1) as Seen
+    expect(advanceBody(last)['absolute_index']).toBe(2)
+    expect(advanceBody(last)['player_intents']).toEqual(original)
+    // The committed original retires; the refused contender survives it.
+    expect(loadPendingSubmission(store, 'A')).toBeNull()
+    expect(inspectPrimarySubmission(store, 'A').status).toBe('absent')
+  })
+
+  it('a failed recovery write degrades to session-only without reload claims', async () => {
+    installFetch()
+    const backing = new Map<string, string>()
+    const throwing: SubmissionStorage = {
+      getItem: (key) => backing.get(key) ?? null,
+      setItem: () => {
+        throw new Error('quota exceeded')
+      },
+      removeItem: (key) => {
+        backing.delete(key)
+      }
+    }
+    const original = question('What news from the mill?')
+    const story = useStory('A', 'watcher', undefined, throwing)
+    await story.load()
+    // The send stays in flight with nowhere durable to freeze it.
+    advanceHold = true
+    const filing = story.advance(original)
+    await vi.waitFor(() => expect(heldAdvances).toHaveLength(1))
+    statusByStory.set('A', { id: 'run-9', index: 2, state: 'scenes_assembled' })
+    await story.refreshStatus()
+    // This session still offers the question — flagged honestly.
+    expect(story.preservedSubmission.value?.intents).toEqual(original)
+    expect(story.preservedSubmission.value?.durable).toBe(false)
+    advanceHold = false
+    heldAdvances[0].resolve(
+      new Response(JSON.stringify({ error: { code: 'INTERNAL', message: 'died mid-beat' } }), {
+        status: 500
+      })
+    )
+    await expect(filing).resolves.toBe(false)
+
+    // A fresh controller finds no record: absent, not corrupt, no claims.
+    const reloaded = useStory('A', 'watcher', undefined, throwing)
+    await reloaded.load()
+    expect(reloaded.recoveryState.value).toBe('open')
+    expect(reloaded.preservedSubmission.value).toBeNull()
+    expect(inspectPrimarySubmission(throwing, 'A').status).toBe('absent')
+    const resumed = reloaded.resumeBeat()
+    statusByStory.delete('A')
+    await expect(resumed).resolves.toBe(true)
+    const posts = advancePosts()
+    const last = posts.at(-1) as Seen
+    expect(advanceBody(last)['absolute_index']).toBe(2)
+    expect(advanceBody(last)).not.toHaveProperty('player_intents')
+  })
+
+  it('a refused filing on a throwing store is reported as session-only', async () => {
+    installFetch()
+    const throwing: SubmissionStorage = {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error('quota exceeded')
+      },
+      removeItem: () => undefined
+    }
+    failures.set('POST /api/v1/stage1/advance', {
+      status: 409,
+      code: 'PRECONDITION_FAILED',
+      message: 'phase:2 is already executing'
+    })
+    const story = useStory('A', 'watcher', undefined, throwing)
+    await story.load()
+    await expect(story.advance(question('What news from the mill?'))).resolves.toBe(false)
+    expect(story.notice.value?.text).toContain('session only')
+  })
+
+  it('a corrupt recovery record is reported, never mistaken for absent', async () => {
+    installFetch()
+    const store = memStore()
+    store.setItem(pendingKey('A'), '{not json')
+    const story = useStory('A', 'watcher', undefined, store)
+    await story.load()
+    expect(story.preservedSubmission.value).toBeNull()
+    expect(story.notice.value?.text).toContain('unreadable')
+    // A world with no record stays silent.
+    const clean = useStory('B', 'watcher', undefined, store)
+    await clean.load()
+    expect(clean.notice.value).toBeNull()
   })
 })

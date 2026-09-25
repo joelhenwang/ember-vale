@@ -304,7 +304,20 @@ onUnmounted(() => {
           }}) — the connection may have dropped mid-beat. Nothing commits twice: check whether it
           landed, or resume it.
           <template v-if="story.preservedSubmission.value">
-            Resume refiles your preserved question; newer drafts stay in the box for the next beat.
+            <template v-if="story.preservedSubmission.value.durable">
+              Resume refiles your preserved question; newer drafts stay in the box for the next
+              beat.
+            </template>
+            <template v-else>
+              Resume refiles your question from this session only — recovery storage failed, so a
+              reload would lose it; newer drafts stay in the box for the next beat.
+            </template>
+            <template v-if="story.contenderSubmissions.value.length === 1">
+              One other draft is kept separately.
+            </template>
+            <template v-else-if="story.contenderSubmissions.value.length > 1">
+              {{ story.contenderSubmissions.value.length }} other drafts are kept separately.
+            </template>
           </template>
           <template v-else> Your draft stays in the box. </template>
         </p>

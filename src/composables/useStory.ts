@@ -38,10 +38,13 @@ import {
 } from '../api/worldsim'
 import { beatFallbackNotice } from './useStoryProvider'
 import {
-  clearPendingSubmission,
   defaultSubmissionStorage,
-  loadPendingSubmission,
-  savePendingSubmission,
+  filePendingSubmission,
+  inspectContenderSubmissions,
+  inspectPrimarySubmission,
+  isSupportedIntents,
+  markSubmissionRefused,
+  retireSubmission,
   type PendingSubmission,
   type SubmissionStorage
 } from './pendingSubmissions'
@@ -83,6 +86,10 @@ const PAGE_LIMIT = 50
  * 409 — a raw error banner over a beat that is actually committing.
  */
 const ADVANCE_TIMEOUT_MS = 600000
+
+/** Corrupt-record report, re-evaluated on every load instead of sticking. */
+const UNREADABLE_RECORD_TEXT =
+  'The saved recovery record for this story was unreadable, so resume starts without your words.'
 
 interface OpHeader {
   role: Role
@@ -146,9 +153,14 @@ export function useStory(
   const recoveryState = ref<RecoveryState>('loading')
   /**
    * Frozen submissions by world, write-through to durable storage: the
-   * in-memory map keeps the banner reactive, the store survives reload.
+   * in-memory maps keep the banner reactive, the store survives reload.
+   * Primaries own their (world, index) slot; contenders are later filings
+   * kept separately so a refused second attempt never overwrites the
+   * original. Records flagged memory-only (`durable: false`) never claim
+   * reload-safe preservation.
    */
   const pendings = reactive(new Map<string, PendingSubmission>())
+  const contenderMap = reactive(new Map<string, PendingSubmission[]>())
 
   let cycle = 0
   let controller: AbortController | null = null
@@ -184,14 +196,45 @@ export function useStory(
 
   /**
    * The frozen submission for the stranded beat, if one was filed with
-   * it: resume refiles exactly this, whatever the composer holds now.
+   * it: resume refiles exactly this, whatever the composer holds now. A
+   * refused filing is never a candidate; without a primary the earliest
+   * unrefused contender for the stranded index steps in. Shape-invalid
+   * records are candidates for nothing — invalid data is not absence,
+   * and neither replays.
    */
   const preservedSubmission = computed<PendingSubmission | null>(() => {
     const stranded = openRun.value
     if (!stranded || recoveryState.value !== 'open') return null
     const held = pendings.get(stranded.worldId)
-    if (!held || held.index !== stranded.index) return null
-    return held
+    if (
+      held &&
+      held.index === stranded.index &&
+      held.refused !== true &&
+      isSupportedIntents(held.intents)
+    ) {
+      return held
+    }
+    const alts = (contenderMap.get(stranded.worldId) ?? [])
+      .filter(
+        (candidate) =>
+          candidate.index === stranded.index &&
+          candidate.refused !== true &&
+          isSupportedIntents(candidate.intents)
+      )
+      .sort((a, b) => (a.savedAt < b.savedAt ? -1 : a.savedAt > b.savedAt ? 1 : 0))
+    return alts[0] ?? null
+  })
+
+  /**
+   * Other filings for the stranded beat, kept separately: refused
+   * contenders stay listed here after recovery replays the original.
+   */
+  const contenderSubmissions = computed<PendingSubmission[]>(() => {
+    const stranded = openRun.value
+    if (!stranded || recoveryState.value !== 'open') return []
+    return (contenderMap.get(stranded.worldId) ?? []).filter(
+      (candidate) => candidate.index === stranded.index
+    )
   })
 
   const occupantsByPlace = computed(() => {
@@ -280,10 +323,26 @@ export function useStory(
     grantLoaded.value = false
     // Frozen for this load: a route change mid-load must not retarget reads.
     const worldId = id()
-    // Rehydrate any submission frozen before a reload: resume must find
-    // the original words even though the composer starts empty.
-    const stored = loadPendingSubmission(storage, worldId)
-    if (stored) pendings.set(worldId, stored)
+    // A previous load's corrupt-record report is re-evaluated, not sticky.
+    if (notice.value?.text === UNREADABLE_RECORD_TEXT) notice.value = null
+    // Rehydrate filings frozen before a reload: resume must find the
+    // original words even though the composer starts empty. Corrupt data
+    // is reported as corrupt — never mistaken for a clean absent slot.
+    const primary = inspectPrimarySubmission(storage, worldId)
+    if (primary.status === 'valid' && primary.submission) {
+      pendings.set(worldId, primary.submission)
+    } else {
+      pendings.delete(worldId)
+      if (primary.status === 'invalid') {
+        notice.value = { kind: 'error', text: UNREADABLE_RECORD_TEXT }
+      }
+    }
+    const rivals = inspectContenderSubmissions(storage, worldId)
+    if (rivals.status === 'valid') {
+      contenderMap.set(worldId, rivals.list)
+    } else {
+      contenderMap.delete(worldId)
+    }
     try {
       const [story, initialSetup, activeGrant, worldMap] = await Promise.all([
         getStory(worldId, opts()),
@@ -394,13 +453,48 @@ export function useStory(
     }
   }
 
-  /** Retire records a fresh commit supersedes: same beat confirmed, or a
-   * later beat made refiling impossible. Duplicates retire nothing. */
-  function retirePendings(worldId: string, throughIndex: number): void {
+  /**
+   * Retire exactly the filing a fresh commit proves landed, in memory
+   * and in storage. Other filings — contenders for any beat — are never
+   * retired by another filing's commit.
+   */
+  function retireFiling(worldId: string, filingId: string): void {
+    retireSubmission(storage, worldId, filingId)
+    if (pendings.get(worldId)?.id === filingId) pendings.delete(worldId)
+    const rivals = contenderMap.get(worldId)
+    if (rivals?.some((candidate) => candidate.id === filingId)) {
+      contenderMap.set(
+        worldId,
+        rivals.filter((candidate) => candidate.id !== filingId)
+      )
+    }
+  }
+
+  /**
+   * Record the server's refusal of one filing: it stays listed (kept
+   * separately) but can never become the replay candidate. A refused
+   * primary steps aside so the original — not the rejected contender —
+   * remains recoverable.
+   */
+  function markRefused(worldId: string, filingId: string): void {
+    markSubmissionRefused(storage, worldId, filingId)
     const held = pendings.get(worldId)
-    if (held && held.index <= throughIndex) {
+    if (held?.id === filingId) {
       pendings.delete(worldId)
-      clearPendingSubmission(storage, worldId)
+      const rivals = contenderMap.get(worldId) ?? []
+      if (!rivals.some((candidate) => candidate.id === filingId)) {
+        contenderMap.set(worldId, [...rivals, { ...held, refused: true }])
+      }
+      return
+    }
+    const rivals = contenderMap.get(worldId)
+    if (rivals?.some((candidate) => candidate.id === filingId)) {
+      contenderMap.set(
+        worldId,
+        rivals.map((candidate) =>
+          candidate.id === filingId ? { ...candidate, refused: true } : candidate
+        )
+      )
     }
   }
 
@@ -427,6 +521,20 @@ export function useStory(
     intents?: Parameters<typeof advanceStory>[2],
     indexOverride?: number
   ): Promise<boolean> {
+    return advanceInner(intents, indexOverride, undefined)
+  }
+
+  /**
+   * Shared send path. A fresh filing freezes before the first byte (an
+   * interruption ahead of server persistence must still leave the exact
+   * words recoverable); a resume replays the selected filing by id and
+   * files nothing new, so the replay can never duplicate or displace it.
+   */
+  async function advanceInner(
+    intents?: Parameters<typeof advanceStory>[2],
+    indexOverride?: number,
+    replay?: { id: string; durable: boolean }
+  ): Promise<boolean> {
     if (!detail.value || advancing.value) return false
     advancing.value = true
     notice.value = null
@@ -445,28 +553,39 @@ export function useStory(
       intents,
       generation: cycle
     }
-    // Freeze the filed submission before the first byte: an interruption
-    // ahead of server persistence must still leave the exact words
-    // recoverable, independent of later composer edits or a reload.
+    let filingId: string | undefined
+    let filingDurable = true
     if (op.intents !== undefined) {
-      const frozen: PendingSubmission = {
-        worldId: op.worldId,
-        index: op.index,
-        intents: op.intents,
-        savedAt: new Date().toISOString()
+      if (replay) {
+        filingId = replay.id
+        filingDurable = replay.durable
+      } else {
+        const filed = filePendingSubmission(storage, {
+          worldId: op.worldId,
+          index: op.index,
+          intents: op.intents
+        })
+        filingId = filed.record.id
+        filingDurable = filed.persisted
+        if (filed.role === 'primary') {
+          pendings.set(op.worldId, filed.record)
+        } else {
+          contenderMap.set(op.worldId, [...(contenderMap.get(op.worldId) ?? []), filed.record])
+        }
       }
-      pendings.set(op.worldId, frozen)
-      savePendingSubmission(storage, frozen)
     }
     const alive = (): boolean => op.generation === cycle
     // A 409 proves a beat is executing, never that these words belong
     // to it: another tab may be advancing without them. Claim nothing
     // about acceptance — the question stays in the composer, and asking
     // again files it explicitly into a later beat. Never resubmit here.
+    // A memory-only filing says so plainly: it cannot promise reload.
     const committingText =
       op.intents === undefined
         ? 'That beat is already committing — its result is not in yet.'
-        : 'That beat is already committing — acceptance is unconfirmed, so your question is kept. If it does not appear, ask again with the next beat.'
+        : filingDurable
+          ? 'That beat is already committing — acceptance is unconfirmed, so your question is kept. If it does not appear, ask again with the next beat.'
+          : 'That beat is already committing — acceptance is unconfirmed, so your question is kept for this session only (recovery storage failed) — a reload would lose it. If it does not appear, ask again with the next beat.'
     // True only when this call applied a fresh (non-duplicate) report.
     // A conflict refresh or duplicate reconciliation carries no proof
     // that an intent filed with this beat committed, so neither counts
@@ -478,8 +597,9 @@ export function useStory(
         notice.value = { kind: 'info', text: 'That beat already committed — showing it.' }
       } else if (alive()) {
         appliedFresh = true
-        // A fresh commit is the only proof the frozen words landed.
-        retirePendings(op.worldId, op.index)
+        // A fresh commit is the only proof the filed words landed: retire
+        // exactly this filing, never a world or index range.
+        if (filingId) retireFiling(op.worldId, filingId)
         // Beat-scoped fallback: narration that fell back says so on the
         // beat, never as a story-wide provider claim.
         const fallback = beatFallbackNotice(op.index, result.scenes)
@@ -513,6 +633,12 @@ export function useStory(
         }
       } else if (isAlreadyExecuting(err)) {
         if (alive()) {
+          // Our request was refused before admission, so our fresh filing
+          // is definitely not aboard: mark it refused (kept separately,
+          // never replayed). A replay is never demoted — its filing may
+          // already be aboard the still-executing run. A retry-409 below
+          // is likewise not a refusal: the first attempt may hold the run.
+          if (filingId && !replay) markRefused(op.worldId, filingId)
           notice.value = { kind: 'info', text: committingText }
         }
         return false
@@ -565,10 +691,11 @@ export function useStory(
 
   /**
    * Resume the stranded beat at its own index: the server replays the same
-   * run instead of starting another beat. Refiles the exact submission
-   * frozen when the beat was first sent — never the live composer, which
-   * may hold newer drafts or have been cleared by a reload. Without a
-   * frozen record the beat replays bare; the composer stays untouched
+   * run instead of starting another beat. Replays the exact selected
+   * filing by id — never the live composer, which may hold newer drafts
+   * or have been cleared by a reload — and files nothing new, so the
+   * replay can neither duplicate the record nor displace it. Without a
+   * selected record the beat replays bare; the composer stays untouched
    * either way, so newer drafts remain separate for the next beat.
    */
   async function resumeBeat(): Promise<boolean> {
@@ -577,9 +704,13 @@ export function useStory(
       return false
     }
     if (stranded.worldId !== id()) return false
-    const held = pendings.get(stranded.worldId)
-    const intents = held && held.index === stranded.index ? held.intents : undefined
-    return advance(intents, stranded.index)
+    const held = preservedSubmission.value
+    const intents = held ? held.intents : undefined
+    return advanceInner(
+      intents,
+      stranded.index,
+      held ? { id: held.id, durable: held.durable } : undefined
+    )
   }
 
   function matchActivity(
@@ -690,6 +821,7 @@ export function useStory(
     openRun,
     recoveryState,
     preservedSubmission,
+    contenderSubmissions,
     load,
     cancel,
     advance,

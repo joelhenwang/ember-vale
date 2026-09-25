@@ -1,0 +1,90 @@
+{
+  "slice": "timed-out-run recovery with preserved player input (storage boundaries)",
+  "commit": "12aee70",
+  "dirty": true,
+  "diffSha256": "bc2cd73775dfe989e23e6b36900b252d93ccc4ad5d2ce27fe5e72b97ab4d55d2",
+  "untracked": [
+    "docs/evidence/recovery/PROVENANCE.md",
+    "docs/evidence/recovery/results-2026-09-25.json"
+  ],
+  "at": "2026-09-25T15:45:00Z",
+  "gateway": "deterministic only: vitest fetch mocks (frontend), FakeGateway (backend, not rerun here)",
+  "modelSpend": "none",
+  "runs": [
+    {
+      "command": "npx vitest run",
+      "ok": true,
+      "testFiles": 28,
+      "tests": 287,
+      "failures": 0
+    },
+    {
+      "command": "npx vue-tsc --noEmit",
+      "ok": true
+    },
+    {
+      "command": "npx eslint <5 touched frontend files>",
+      "ok": true
+    },
+    {
+      "command": "npx prettier --check <5 touched frontend files>",
+      "ok": true
+    },
+    {
+      "command": "backend/.venv/Scripts/python.exe -m pytest backend/tests/test_timeout_recovery.py -q",
+      "ok": false,
+      "status": "not runnable in this environment: psycopg connection timeout to localhost:5432, no local Postgres service or binaries present",
+      "backendTouched": false
+    }
+  ],
+  "results": [
+    {
+      "case": "two-controller/shared-store: Q1 accepted, Q2 refused, interruption, reload, exact Q1 recovery",
+      "ok": true,
+      "requests": [
+        "POST /api/v1/stage1/advance {world_id: A, absolute_index: 2, player_intents: Q1} (held, then timed out)",
+        "POST /api/v1/stage1/advance {world_id: A, absolute_index: 2, player_intents: Q2} -> 409 already executing",
+        "POST /api/v1/stage1/advance {world_id: A, absolute_index: 2, player_intents: Q1} (resume after reload)"
+      ],
+      "outcomes": [
+        "Q2 stored as contender, primary still Q1; Q2 marked refused, never the replay candidate",
+        "fresh controller preservedSubmission intents == Q1 verbatim, durable == true",
+        "fresh controller contenderSubmissions == [Q2]",
+        "resume replay posts absolute_index 2 with player_intents == Q1",
+        "post-commit primary slot absent; Q2 contender retained"
+      ]
+    },
+    {
+      "case": "throwing setItem degrades to session-only with no reload-safe claim",
+      "ok": true,
+      "requests": [
+        "POST /api/v1/stage1/advance {world_id: A, absolute_index: 2, player_intents: Q1} (held, in-flight, storage failing)",
+        "POST /api/v1/stage1/advance {world_id: A, absolute_index: 2} (bare replay after reload)"
+      ],
+      "outcomes": [
+        "in-flight filing flagged durable == false and still offered this session",
+        "409 notice on failing storage contains 'session only'",
+        "fresh controller: primary status absent (not invalid), preservedSubmission null",
+        "resume replay carries no player_intents property"
+      ]
+    },
+    {
+      "case": "corrupt recovery record is reported, never mistaken for absent",
+      "ok": true,
+      "outcomes": [
+        "inspectPrimarySubmission status invalid for corrupt bytes, absent for a missing key",
+        "room notice contains 'unreadable'; preservedSubmission null",
+        "a world with no record stays silent"
+      ]
+    },
+    {
+      "case": "strict intent shape validation before replay",
+      "ok": true,
+      "outcomes": [
+        "arrays (top level and entries), empty maps, unknown families, and entries missing character_id/snapshot_id are invalid",
+        "wait/move/communicate shapes with actor and snapshot identity are valid",
+        "shape-invalid records are never replay candidates"
+      ]
+    }
+  ]
+}
