@@ -2,8 +2,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { useStory } from './useStory'
 import {
-  inspectPrimarySubmission,
-  loadPendingSubmission,
+  filePendingSubmission,
+  inspectFilings,
+  loadFilings,
   pendingKey,
   type SubmissionStorage
 } from './pendingSubmissions'
@@ -18,7 +19,8 @@ function memStore(): SubmissionStorage {
     },
     removeItem: (key) => {
       memory.delete(key)
-    }
+    },
+    keys: (prefix) => [...memory.keys()].filter((key) => key.startsWith(prefix))
   }
 }
 
@@ -520,7 +522,7 @@ describe('useStory room', () => {
 
   it('a retry with words landing mid-execution names the filed attempt', async () => {
     installFetch()
-    const story = useStory('A', 'watcher')
+    const story = useStory('A', 'watcher', undefined, memStore())
     await story.load()
     advanceHold = true
     const pending = story.advance({
@@ -760,7 +762,8 @@ describe('useStory room', () => {
     )
     await expect(filing).resolves.toBe(false)
     expect(advanceBody(advancePosts()[0])['player_intents']).toEqual(original)
-    expect(loadPendingSubmission(store, 'A')?.intents).toEqual(original)
+    expect(loadFilings(store, 'A')).toHaveLength(1)
+    expect(loadFilings(store, 'A')[0]?.intents).toEqual(original)
 
     // A reload-equivalent fresh controller sees the stranded beat and the
     // frozen words, even though its composer starts empty.
@@ -793,7 +796,7 @@ describe('useStory room', () => {
       expect(advanceBody(post)['player_intents']).not.toEqual(newer)
     }
     // The confirmed filing retires the frozen record.
-    expect(loadPendingSubmission(store, 'A')).toBeNull()
+    expect(loadFilings(store, 'A')).toEqual([])
     expect(second.openRun.value).toBeNull()
   })
 
@@ -813,7 +816,8 @@ describe('useStory room', () => {
       }
     }
     await expect(story.advance(intents)).resolves.toBe(false)
-    expect(loadPendingSubmission(store, 'A')?.intents).toEqual(intents)
+    expect(loadFilings(store, 'A')).toHaveLength(1)
+    expect(loadFilings(store, 'A')[0]?.intents).toEqual(intents)
   })
 
   it('a still-open refusal names the stranded beat instead of a raw 412', async () => {
@@ -881,6 +885,8 @@ describe('useStory room', () => {
     await second.load()
     const filingB = second.advance(rival)
     await vi.waitFor(() => expect(heldAdvances).toHaveLength(2))
+    // Both tabs in flight at once: both claims coexist, neither overwrote.
+    expect(loadFilings(store, 'A')).toHaveLength(2)
     heldAdvances[1].resolve(
       new Response(
         JSON.stringify({
@@ -922,8 +928,11 @@ describe('useStory room', () => {
     expect(advanceBody(last)['absolute_index']).toBe(2)
     expect(advanceBody(last)['player_intents']).toEqual(original)
     // The committed original retires; the refused contender survives it.
-    expect(loadPendingSubmission(store, 'A')).toBeNull()
-    expect(inspectPrimarySubmission(store, 'A').status).toBe('absent')
+    const remaining = loadFilings(store, 'A')
+    expect(remaining).toHaveLength(1)
+    expect(remaining[0]?.intents).toEqual(rival)
+    expect(remaining[0]?.refused).toBe(true)
+    expect(inspectFilings(store, 'A').status).toBe('valid')
   })
 
   it('a failed recovery write degrades to session-only without reload claims', async () => {
@@ -936,7 +945,8 @@ describe('useStory room', () => {
       },
       removeItem: (key) => {
         backing.delete(key)
-      }
+      },
+      keys: (prefix) => [...backing.keys()].filter((key) => key.startsWith(prefix))
     }
     const original = question('What news from the mill?')
     const story = useStory('A', 'watcher', undefined, throwing)
@@ -963,7 +973,7 @@ describe('useStory room', () => {
     await reloaded.load()
     expect(reloaded.recoveryState.value).toBe('open')
     expect(reloaded.preservedSubmission.value).toBeNull()
-    expect(inspectPrimarySubmission(throwing, 'A').status).toBe('absent')
+    expect(inspectFilings(throwing, 'A').status).toBe('absent')
     const resumed = reloaded.resumeBeat()
     statusByStory.delete('A')
     await expect(resumed).resolves.toBe(true)
@@ -980,7 +990,8 @@ describe('useStory room', () => {
       setItem: () => {
         throw new Error('quota exceeded')
       },
-      removeItem: () => undefined
+      removeItem: () => undefined,
+      keys: () => []
     }
     failures.set('POST /api/v1/stage1/advance', {
       status: 409,
@@ -1005,5 +1016,34 @@ describe('useStory room', () => {
     const clean = useStory('B', 'watcher', undefined, store)
     await clean.load()
     expect(clean.notice.value).toBeNull()
+  })
+
+  it('unreadable storage is reported as unavailable, never absent', async () => {
+    installFetch()
+    // A filing exists, but this controller cannot read it.
+    const existing = memStore()
+    filePendingSubmission(
+      existing,
+      { worldId: 'A', index: 2, intents: question('What news from the mill?') },
+      { id: 'q1' }
+    )
+    const unreadable: SubmissionStorage = {
+      getItem: () => {
+        throw new Error('denied')
+      },
+      setItem: (key, value) => {
+        existing.setItem(key, value)
+      },
+      removeItem: (key) => {
+        existing.removeItem(key)
+      },
+      keys: (prefix) => existing.keys(prefix)
+    }
+    statusByStory.set('A', { id: 'run-9', index: 2, state: 'scenes_assembled' })
+    const story = useStory('A', 'watcher', undefined, unreadable)
+    await story.load()
+    expect(story.recoveryState.value).toBe('open')
+    expect(story.preservedSubmission.value).toBeNull()
+    expect(story.notice.value?.text).toContain('unavailable')
   })
 })

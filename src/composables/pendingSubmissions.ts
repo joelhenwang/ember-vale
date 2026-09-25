@@ -4,26 +4,30 @@
  * The server never persists a filed player action before it commits: an
  * interruption ahead of `_decide_all` leaves no record of the words. So
  * the room freezes every filed submission (filing id, world, index, actor
- * payloads) into durable storage at send time. Resume replays exactly the
+ * payloads) into durable storage at send time. Resume replays the
  * selected record — never the live composer, which the player may have
  * edited or which a reload has cleared.
  *
- * Two tabs share one storage. Every filing step below runs synchronously
- * with no awaits, so for a synchronous store (localStorage) each step is
- * indivisible across tabs: no second tab can interleave between the read
- * and the write. On that basis the first filing for a (world, index)
- * owns the primary slot; a later contender for an occupied slot is kept
- * separately under the contenders key and never overwrites the original.
- * A filing the server explicitly refuses for its index (409
- * already-executing) is marked refused and demoted out of the primary
- * slot, so recovery never replays words the server rejected. Retirement
- * removes only the exact filing that committed fresh — never a whole
- * world or index range, so one filing's commit cannot retire another's.
+ * Two tabs share one storage, and a localStorage read-modify-write is
+ * NOT atomic across tabs: the platform offers no locking, so a shared
+ * primary slot can be claimed twice and the original lost. This module
+ * therefore shares no mutable slot. Every filing writes only its own
+ * unique key, which no other tab ever writes: same-value collisions are
+ * impossible and removals are idempotent. Ownership is decided at read
+ * time — the earliest unrefused filing for the stranded index wins — so
+ * write order across tabs cannot displace the original. A filing the
+ * server explicitly refuses for its index (409 already-executing) is
+ * marked refused on its own key by its owning tab and can never become
+ * the replay candidate. Retirement removes exactly the committed filing's
+ * key, never another filing's. Pre-identity legacy records are adopted
+ * read-only (never rewritten), so no migration write can race either.
  *
- * Persistence is reported, not assumed: filing returns whether the write
- * succeeded. A failed write still files into composable memory for this
- * session, flagged memory-only, and the room must never claim
- * reload-safe preservation for it.
+ * Durability is explicit, not assumed. Memory-backed storage reports
+ * session-only preservation: its writes succeed locally but vanish with
+ * the context, so `persisted` is false and the room must never claim
+ * reload-safe preservation for it. Unreadable storage reports
+ * `unavailable` — never `absent` — so inaccessible recovery data is not
+ * mistaken for no recovery data.
  */
 
 import type { Stage1AdvanceRequest } from '../../content/clients/worldsim'
@@ -37,7 +41,7 @@ export interface PendingSubmission {
   index: number
   intents: PlayerIntents
   savedAt: string
-  /** True once the record survived a storage write (reload-safe). */
+  /** True only when the record survived a write to persistent storage. */
   durable: boolean
   /** True after the server refused this filing for its index. Never replayed. */
   refused?: boolean
@@ -47,10 +51,21 @@ export interface SubmissionStorage {
   getItem(key: string): string | null
   setItem(key: string, value: string): void
   removeItem(key: string): void
+  /** Keys starting with the prefix; used to discover filings without a shared slot. */
+  keys(prefix: string): string[]
+  /**
+   * Where writes land. Memory-backed stores report `session`: their
+   * writes succeed locally but do not survive reload. Stores that
+   * predate the flag (including the specs' shared fixtures, which model
+   * one localStorage shared across tabs) are treated as `durable`.
+   */
+  persistence?: 'durable' | 'session'
 }
 
 const STORAGE_PREFIX = 'ember-vale.pending-submission.v1.'
 const CONTENDERS_SUFFIX = '.contenders'
+const FILING_INFIX = '.filing.'
+const PROBE_KEY = `${STORAGE_PREFIX}probe`
 
 export function pendingKey(worldId: string): string {
   return `${STORAGE_PREFIX}${worldId}`
@@ -60,13 +75,15 @@ export function contendersKey(worldId: string): string {
   return `${STORAGE_PREFIX}${worldId}${CONTENDERS_SUFFIX}`
 }
 
-/** Browser storage when available, otherwise a private in-memory fallback. */
-export function defaultSubmissionStorage(): SubmissionStorage {
-  try {
-    if (typeof localStorage !== 'undefined') return localStorage
-  } catch {
-    /* private mode or no DOM: fall through to memory */
-  }
+function filingPrefix(worldId: string): string {
+  return `${STORAGE_PREFIX}${worldId}${FILING_INFIX}`
+}
+
+export function filingKey(worldId: string, filingId: string): string {
+  return `${filingPrefix(worldId)}${filingId}`
+}
+
+function memoryStore(persistence: 'durable' | 'session'): SubmissionStorage {
   const memory = new Map<string, string>()
   return {
     getItem: (key) => memory.get(key) ?? null,
@@ -75,8 +92,47 @@ export function defaultSubmissionStorage(): SubmissionStorage {
     },
     removeItem: (key) => {
       memory.delete(key)
-    }
+    },
+    keys: (prefix) => [...memory.keys()].filter((key) => key.startsWith(prefix)),
+    persistence
   }
+}
+
+/**
+ * Browser storage when available and provably writable, otherwise a
+ * private in-memory fallback explicitly flagged session-only: a fresh
+ * context receives a new empty map, so its writes must never be reported
+ * as reload-safe.
+ */
+export function defaultSubmissionStorage(): SubmissionStorage {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(PROBE_KEY, '1')
+      localStorage.removeItem(PROBE_KEY)
+      const backend = localStorage
+      return {
+        getItem: (key) => backend.getItem(key),
+        setItem: (key, value) => {
+          backend.setItem(key, value)
+        },
+        removeItem: (key) => {
+          backend.removeItem(key)
+        },
+        keys: (prefix) => {
+          const out: string[] = []
+          for (let i = 0; i < backend.length; i += 1) {
+            const key = backend.key(i)
+            if (key !== null && key.startsWith(prefix)) out.push(key)
+          }
+          return out
+        },
+        persistence: 'durable'
+      }
+    }
+  } catch {
+    /* inaccessible storage: fall through to the session-only fallback */
+  }
+  return memoryStore('session')
 }
 
 let filingCounter = 0
@@ -147,22 +203,12 @@ function parseSubmissionRecord(worldId: string, parsed: unknown): PendingSubmiss
   if (typeof record['index'] !== 'number' || !Number.isInteger(record['index'])) return null
   if (!isSupportedIntents(record['intents'])) return null
   const id = typeof record['id'] === 'string' && record['id'].length > 0 ? record['id'] : null
-  if (!id) {
-    // Pre-identity record: adopt rather than strand an in-flight filing.
-    return {
-      id: newFilingId(),
-      worldId,
-      index: record['index'] as number,
-      intents: record['intents'],
-      savedAt: typeof record['savedAt'] === 'string' ? record['savedAt'] : '',
-      durable: true
-    }
-  }
   if (typeof record['refused'] !== 'undefined' && typeof record['refused'] !== 'boolean') {
     return null
   }
   return {
-    id,
+    // Pre-identity record: adopt rather than strand an in-flight filing.
+    id: id ?? newFilingId(),
     worldId,
     index: record['index'] as number,
     intents: record['intents'],
@@ -172,88 +218,115 @@ function parseSubmissionRecord(worldId: string, parsed: unknown): PendingSubmiss
   }
 }
 
-function parseStoredRecord(worldId: string, raw: string | null): PendingSubmission | null {
-  if (!raw) return null
-  let parsed: unknown
+function parseJson(raw: string): { ok: true; value: unknown } | { ok: false } {
   try {
-    parsed = JSON.parse(raw)
+    return { ok: true, value: JSON.parse(raw) }
   } catch {
-    return null
+    return { ok: false }
   }
-  return parseSubmissionRecord(worldId, parsed)
 }
 
-export type StoredStatus = 'absent' | 'invalid' | 'valid'
+export type FilingsStatus = 'absent' | 'invalid' | 'valid' | 'unavailable'
 
-/** Primary-slot read that distinguishes corrupt data from no data. */
-export function inspectPrimarySubmission(
-  store: SubmissionStorage,
-  worldId: string
-): { status: StoredStatus; submission: PendingSubmission | null } {
-  let raw: string | null
-  try {
-    raw = store.getItem(pendingKey(worldId))
-  } catch {
-    return { status: 'absent', submission: null }
-  }
-  if (!raw) return { status: 'absent', submission: null }
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
-    return { status: 'invalid', submission: null }
-  }
-  const submission = parseSubmissionRecord(worldId, parsed)
-  if (!submission) return { status: 'invalid', submission: null }
-  return { status: 'valid', submission }
+export interface FilingsInspection {
+  status: FilingsStatus
+  /** Readable filings, oldest first; empty unless storage was readable. */
+  filings: PendingSubmission[]
 }
 
-export function loadPendingSubmission(
-  store: SubmissionStorage,
-  worldId: string
+/**
+ * Every filing for a world: unique filing keys plus read-only adoption
+ * of pre-identity legacy records. Corrupt bytes are reported as
+ * `invalid` while readable filings are still returned; thrown reads
+ * report `unavailable`, never `absent`.
+ */
+export function inspectFilings(store: SubmissionStorage, worldId: string): FilingsInspection {
+  let keyList: string[]
+  let primaryRaw: string | null
+  let contendersRaw: string | null
+  try {
+    keyList = store.keys(filingPrefix(worldId))
+    primaryRaw = store.getItem(pendingKey(worldId))
+    contendersRaw = store.getItem(contendersKey(worldId))
+  } catch {
+    return { status: 'unavailable', filings: [] }
+  }
+  const filings: PendingSubmission[] = []
+  const seen = new Set<string>()
+  let corrupt = 0
+  // A session-only store's bytes never survived a reload, so records read
+  // through it are session-only too — never laundered as durable.
+  const sessionOnly = store.persistence === 'session'
+  const takeRaw = (raw: string | null): void => {
+    if (!raw) return
+    const parsed = parseJson(raw)
+    if (!parsed.ok) {
+      corrupt += 1
+      return
+    }
+    const record = parseSubmissionRecord(worldId, parsed.value)
+    if (!record || seen.has(record.id)) {
+      // Unparseable shapes count; duplicate ids are harmless re-reads.
+      if (!record) corrupt += 1
+      return
+    }
+    seen.add(record.id)
+    filings.push(sessionOnly ? { ...record, durable: false } : record)
+  }
+  for (const key of keyList) {
+    let raw: string | null
+    try {
+      raw = store.getItem(key)
+    } catch {
+      return { status: 'unavailable', filings: [] }
+    }
+    takeRaw(raw)
+  }
+  // Legacy adoption: the single primary record, then the contender list.
+  takeRaw(primaryRaw)
+  if (contendersRaw) {
+    const parsed = parseJson(contendersRaw)
+    if (!parsed.ok || !Array.isArray(parsed.value)) {
+      corrupt += 1
+    } else {
+      for (const entry of parsed.value) {
+        if (typeof entry === 'undefined') {
+          corrupt += 1
+        } else {
+          takeRaw(JSON.stringify(entry))
+        }
+      }
+    }
+  }
+  filings.sort((a, b) =>
+    a.savedAt < b.savedAt ? -1 : a.savedAt > b.savedAt ? 1 : a.id < b.id ? -1 : 1
+  )
+  if (filings.length === 0 && corrupt === 0) return { status: 'absent', filings }
+  if (corrupt > 0) return { status: 'invalid', filings }
+  return { status: 'valid', filings }
+}
+
+export function loadFilings(store: SubmissionStorage, worldId: string): PendingSubmission[] {
+  return inspectFilings(store, worldId).filings
+}
+
+/**
+ * The replay candidate for a stranded index: the earliest unrefused,
+ * well-formed filing. Refused and shape-invalid filings are never
+ * candidates; ties break on filing id, so election is deterministic
+ * regardless of the order tabs wrote in.
+ */
+export function selectRecoveryCandidate(
+  filings: PendingSubmission[],
+  index: number
 ): PendingSubmission | null {
-  return inspectPrimarySubmission(store, worldId).submission
-}
-
-function parseContenders(worldId: string, raw: string | null): PendingSubmission[] | null {
-  if (!raw) return []
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
-    return null
-  }
-  if (!Array.isArray(parsed)) return null
-  const out: PendingSubmission[] = []
-  for (const entry of parsed) {
-    const record = parseSubmissionRecord(worldId, entry)
-    if (record && !out.some((kept) => kept.id === record.id)) out.push(record)
-  }
-  return out
-}
-
-/** Contender-list read; individually corrupt entries are skipped. */
-export function inspectContenderSubmissions(
-  store: SubmissionStorage,
-  worldId: string
-): { status: StoredStatus; list: PendingSubmission[] } {
-  let raw: string | null
-  try {
-    raw = store.getItem(contendersKey(worldId))
-  } catch {
-    return { status: 'absent', list: [] }
-  }
-  if (!raw) return { status: 'absent', list: [] }
-  const list = parseContenders(worldId, raw)
-  if (!list) return { status: 'invalid', list: [] }
-  return { status: 'valid', list }
-}
-
-export function loadContenderSubmissions(
-  store: SubmissionStorage,
-  worldId: string
-): PendingSubmission[] {
-  return inspectContenderSubmissions(store, worldId).list
+  const eligible = filings
+    .filter(
+      (filing) =>
+        filing.index === index && filing.refused !== true && isSupportedIntents(filing.intents)
+    )
+    .sort((a, b) => (a.savedAt < b.savedAt ? -1 : a.savedAt > b.savedAt ? 1 : a.id < b.id ? -1 : 1))
+  return eligible[0] ?? null
 }
 
 function writeJson(store: SubmissionStorage, key: string, value: unknown): boolean {
@@ -282,17 +355,18 @@ export interface FilingDraft {
 
 export interface FilingResult {
   record: PendingSubmission
-  /** `primary` owns the slot; `contender` is kept separately, never overwriting. */
-  role: 'primary' | 'contender'
-  /** False when no write survived: the record is session memory only. */
+  /**
+   * True only when the record survived a write to persistent storage.
+   * Memory-backed writes report false: session-only, never reload-safe.
+   */
   persisted: boolean
 }
 
 /**
- * File one submission synchronously: first filing for a free slot owns
- * the primary; anything else becomes a contender. A refused primary is
- * moved aside to the contender list before the newcomer claims the slot,
- * so no filing is silently lost. Returns persistence explicitly.
+ * File one submission under its own unique key: no shared slot is read,
+ * so overlapping claims across tabs cannot overwrite each other — both
+ * records survive and read-time election picks the earliest. Returns
+ * persistence explicitly.
  */
 export function filePendingSubmission(
   store: SubmissionStorage,
@@ -307,85 +381,75 @@ export function filePendingSubmission(
     savedAt: seed?.savedAt ?? new Date().toISOString(),
     durable: false
   }
-  const key = pendingKey(draft.worldId)
-  let existing: PendingSubmission | null = null
-  try {
-    existing = parseStoredRecord(draft.worldId, store.getItem(key))
-  } catch {
-    existing = null
-  }
-  if (!existing) {
-    const persisted = writeJson(store, key, record)
-    return { record: { ...record, durable: persisted }, role: 'primary', persisted }
-  }
-  // The slot is taken: keep the original, stash this filing separately.
-  // A refused occupant steps aside first so its slot frees without loss.
-  let carried: PendingSubmission[] = []
-  if (existing.refused === true) {
-    carried = [existing]
-    removeKey(store, key)
-  }
-  const stored = parseContenders(draft.worldId, readRaw(store, contendersKey(draft.worldId)))
-  const list = [...carried, ...(stored ?? [])]
-  if (!list.some((kept) => kept.id === record.id)) list.push(record)
-  const persisted = writeJson(store, contendersKey(draft.worldId), list)
-  return { record: { ...record, durable: persisted }, role: 'contender', persisted }
-}
-
-function readRaw(store: SubmissionStorage, key: string): string | null {
-  try {
-    return store.getItem(key)
-  } catch {
-    return null
-  }
+  const written = writeJson(store, filingKey(draft.worldId, record.id), record)
+  const persisted = written && store.persistence !== 'session'
+  return { record: { ...record, durable: persisted }, persisted }
 }
 
 /**
  * Mark one filing refused after the server rejects it for its index.
- * A refused primary is demoted to the contender list (slot freed);
- * a refused contender stays listed but is never a replay candidate.
+ * Only the owning tab marks its own filing, on its own key: no shared
+ * state is read or removed. A refused filing stays listed but is never
+ * a replay candidate.
  */
 export function markSubmissionRefused(
   store: SubmissionStorage,
   worldId: string,
   filingId: string
 ): boolean {
-  const key = pendingKey(worldId)
-  const primary = parseStoredRecord(worldId, readRaw(store, key))
-  if (primary && primary.id === filingId) {
-    const demoted: PendingSubmission = { ...primary, refused: true }
-    const stored = parseContenders(worldId, readRaw(store, contendersKey(worldId))) ?? []
-    const list = stored.some((kept) => kept.id === filingId)
-      ? stored.map((kept) => (kept.id === filingId ? demoted : kept))
-      : [...stored, demoted]
-    const kept = writeJson(store, contendersKey(worldId), list)
-    const cleared = removeKey(store, key)
-    return kept && cleared
+  const key = filingKey(worldId, filingId)
+  let raw: string | null
+  try {
+    raw = store.getItem(key)
+  } catch {
+    return false
   }
-  const stored = parseContenders(worldId, readRaw(store, contendersKey(worldId)))
-  if (!stored || !stored.some((kept) => kept.id === filingId)) return false
-  const list = stored.map((kept) => (kept.id === filingId ? { ...kept, refused: true } : kept))
-  return writeJson(store, contendersKey(worldId), list)
+  if (!raw) return false
+  const parsed = parseJson(raw)
+  if (!parsed.ok) return false
+  const record = parseSubmissionRecord(worldId, parsed.value)
+  if (!record) return false
+  return writeJson(store, key, { ...record, refused: true })
 }
 
 /**
  * Retire exactly one filing by id — the commit it belonged to is the only
- * proof its words landed. Other filings for any index are untouched.
+ * proof its words landed. Removal targets the filing's own key (plus any
+ * legacy copy), so concurrent retirements are idempotent and other
+ * filings are untouched.
  */
 export function retireSubmission(
   store: SubmissionStorage,
   worldId: string,
   filingId: string
 ): void {
-  const key = pendingKey(worldId)
-  const primary = parseStoredRecord(worldId, readRaw(store, key))
-  if (primary && primary.id === filingId) removeKey(store, key)
-  const stored = parseContenders(worldId, readRaw(store, contendersKey(worldId)))
-  if (stored && stored.some((kept) => kept.id === filingId)) {
-    writeJson(
-      store,
-      contendersKey(worldId),
-      stored.filter((kept) => kept.id !== filingId)
-    )
+  removeKey(store, filingKey(worldId, filingId))
+  // Legacy copies, if any: same idempotent removal, best-effort rewrite.
+  let primaryRaw: string | null = null
+  let contendersRaw: string | null = null
+  try {
+    primaryRaw = store.getItem(pendingKey(worldId))
+    contendersRaw = store.getItem(contendersKey(worldId))
+  } catch {
+    return
+  }
+  if (primaryRaw) {
+    const parsed = parseJson(primaryRaw)
+    if (parsed.ok) {
+      const record = parseSubmissionRecord(worldId, parsed.value)
+      if (record?.id === filingId) removeKey(store, pendingKey(worldId))
+    }
+  }
+  if (contendersRaw) {
+    const parsed = parseJson(contendersRaw)
+    if (parsed.ok && Array.isArray(parsed.value)) {
+      const kept = parsed.value.filter((entry) => {
+        const record = parseSubmissionRecord(worldId, entry)
+        return !record || record.id !== filingId
+      })
+      if (kept.length !== parsed.value.length) {
+        writeJson(store, contendersKey(worldId), kept)
+      }
+    }
   }
 }

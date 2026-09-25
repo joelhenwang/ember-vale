@@ -34,6 +34,21 @@ and request/outcome assertions for the two storage boundaries:
 4. Strict replay gating: arrays, empty maps, unknown families, and
    entries without actor/snapshot identity never replay.
 
+## 2026-09-25 correction (`results-2026-09-25-correction.json`)
+
+Follow-up review showed the prior design's atomicity claim was wrong:
+synchronous execution does not make a localStorage read-modify-write
+atomic across tabs, and the shared primary slot permitted an
+overlapping-claim sequence that destroyed the original. The slot is
+removed. Each filing writes only its own unique key (no shared mutable
+state, so overlapping claims coexist by construction); ownership is
+elected at read time (earliest unrefused, well-formed filing for the
+stranded index); refusal and retirement touch only the filing's own key
+(idempotent). The same correction makes durability explicit:
+`defaultSubmissionStorage()` probes writability and flags an
+inaccessible-localStorage fallback as session-only, and thrown reads
+report `unavailable` instead of `absent`.
+
 ## What this record does not claim
 
 - The earlier live-Edge browser walkthrough left no preserved

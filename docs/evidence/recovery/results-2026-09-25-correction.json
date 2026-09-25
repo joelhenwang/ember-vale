@@ -1,0 +1,77 @@
+{
+  "slice": "recovery storage correction: cross-tab claims and explicit durability",
+  "commit": "60855ce",
+  "dirty": true,
+  "diffSha256": "b57875354a5ea85a366c45a4a2c9f1389658c9becca4a5b66b159101e6df27d1",
+  "untracked": ["docs/evidence/recovery/results-2026-09-25-correction.json"],
+  "at": "2026-09-25T16:45:00Z",
+  "gateway": "deterministic only: vitest fetch mocks (frontend)",
+  "modelSpend": "none",
+  "correction": "the prior slice claimed synchronous read-modify-write is atomic across tabs; it is not (no platform locking). The shared primary slot is removed: filings own unique keys and ownership is elected at read time.",
+  "runs": [
+    {
+      "command": "npx vitest run",
+      "ok": true,
+      "testFiles": 28,
+      "tests": 288,
+      "failures": 0
+    },
+    {
+      "command": "npx vue-tsc --noEmit",
+      "ok": true
+    },
+    {
+      "command": "npx eslint <4 touched frontend files>",
+      "ok": true
+    },
+    {
+      "command": "npx prettier --check <4 touched frontend files>",
+      "ok": true
+    }
+  ],
+  "results": [
+    {
+      "case": "overlapping claims coexist; election picks the earliest regardless of write order",
+      "ok": true,
+      "requests": [
+        "file Q1 (savedAt t1), file Q2 (savedAt t2) in either write order, same shared store"
+      ],
+      "outcomes": [
+        "both unique filing keys survive; no shared slot is overwritten",
+        "selectRecoveryCandidate returns Q1 in both write orders",
+        "same-tick filings: both present, deterministic id tiebreak"
+      ]
+    },
+    {
+      "case": "two tabs in flight at once on one shared store",
+      "ok": true,
+      "requests": [
+        "POST /api/v1/stage1/advance {world_id: A, absolute_index: 2, player_intents: Q1} (held)",
+        "POST /api/v1/stage1/advance {world_id: A, absolute_index: 2, player_intents: Q2} -> 409 already executing",
+        "POST /api/v1/stage1/advance {world_id: A, absolute_index: 2, player_intents: Q1} (resume after reload)"
+      ],
+      "outcomes": [
+        "both filings present while both sends are in flight",
+        "Q2 refused on its own key; fresh controller elects Q1, lists Q2 separately",
+        "post-commit store holds only the refused Q2 filing"
+      ]
+    },
+    {
+      "case": "inaccessible localStorage fallback is session-only across fresh controllers",
+      "ok": true,
+      "outcomes": [
+        "defaultSubmissionStorage probes writability; denied access yields persistence session",
+        "session-backed filing reports persisted false and durable false",
+        "a fresh fallback instance reads absent, never durable"
+      ]
+    },
+    {
+      "case": "read failure over an existing filing reports unavailable, never absent",
+      "ok": true,
+      "outcomes": [
+        "inspectFilings status unavailable with empty filings on thrown reads",
+        "room notice contains unavailable; preservedSubmission null; no absent claim"
+      ]
+    }
+  ]
+}
