@@ -32,6 +32,56 @@ def _max_tokens_of(row: ModelCallRow) -> int | None:
     return max_tokens if isinstance(max_tokens, int) else None
 
 
+def _result_of(row: ModelCallRow) -> dict[str, Any]:
+    result = row.result if isinstance(row.result, dict) else {}
+    return result
+
+
+def _usage_of_result(result: dict[str, Any]) -> dict[str, Any]:
+    usage = result.get("usage")
+    return dict(usage) if isinstance(usage, dict) else {}
+
+
+def _failure_layer_of(row: ModelCallRow) -> dict[str, Any]:
+    """Provider-boundary facts distinguishing truncation from reasoning-only.
+
+    Success rows carry the stored completion metadata; failure rows carry
+    the gateway error detail (finish_reason, content type/length,
+    reasoning_only). Only lengths and codes are surfaced, never bodies.
+    """
+    result = _result_of(row)
+    if row.status == "succeeded":
+        content = result.get("text")
+        return {
+            "finish_reason": result.get("finish_reason")
+            if isinstance(result.get("finish_reason"), str)
+            else None,
+            "reasoning_tokens": result.get("reasoning_tokens")
+            if isinstance(result.get("reasoning_tokens"), int)
+            else 0,
+            "content_type": "text" if isinstance(content, str) else None,
+            "content_length": len(content) if isinstance(content, str) else None,
+            "reasoning_only": False,
+        }
+    usage = _usage_of_result(result)
+    reasoning = usage.get("reasoning_tokens")
+    content_length = result.get("content_length")
+    only = result.get("reasoning_only")
+    return {
+        "finish_reason": result.get("finish_reason")
+        if isinstance(result.get("finish_reason"), str)
+        else None,
+        "reasoning_tokens": reasoning if isinstance(reasoning, int) and reasoning > 0 else 0,
+        "content_type": result.get("content_type")
+        if isinstance(result.get("content_type"), str)
+        else None,
+        "content_length": content_length
+        if isinstance(content_length, int) and content_length >= 0
+        else None,
+        "reasoning_only": only if isinstance(only, bool) else None,
+    }
+
+
 def _to_call(row: ModelCallRow) -> ModelCall:
     sampling = _sampling_of(row)
     pin_id = sampling.get("pin_profile_id")
@@ -54,6 +104,7 @@ def _to_call(row: ModelCallRow) -> ModelCall:
         max_tokens=_max_tokens_of(row),
         pin_profile_id=str(pin_id) if isinstance(pin_id, str) else None,
         pin_profile_revision=pin_revision if isinstance(pin_revision, int) else None,
+        **_failure_layer_of(row),
     )
 
 

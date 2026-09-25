@@ -162,7 +162,7 @@ def test_advance_reports_timing_headers(api: tuple[ApiClient, FakeGateway]) -> N
     gateway.route = _route_for(ids, snapshots)
     report = _advance(client, ids["world"], 1)
     assert report.status_code == 200, report.text
-    assert int(report.headers["x-worldsim-admission-ms"]) >= 0
+    assert int(report.headers["x-worldsim-slot-claim-ms"]) >= 0
     assert int(report.headers["x-worldsim-execution-ms"]) >= 0
 
 
@@ -196,5 +196,66 @@ def test_model_runs_carry_baseline_attribution(api: tuple[ApiClient, FakeGateway
         assert isinstance(view["attempts"], list)
         assert isinstance(view["budgets"], dict)
         assert view["max_tokens"] is not None
+        assert isinstance(view["reasoning_tokens"], int)
+        assert "finish_reason" in view
+        assert "content_type" in view
+        assert "content_length" in view
+        assert "reasoning_only" in view
         if view["status"] == "succeeded":
             assert view["error_code"] is None
+            assert view["reasoning_only"] is False
+
+
+def test_failed_character_call_exports_failure_layer(api: tuple[ApiClient, FakeGateway]) -> None:
+    """A reasoning-exhausted provider failure exports its exact layer.
+
+    finish_reason 'length' plus reasoning_only True distinguishes
+    reasoning exhaustion from truncated JSON reaching validation; usage
+    tokens (including reasoning) are preserved on the failed call. The
+    phase still commits through fallback decisions.
+    """
+    client, gateway = api
+    ids = asyncio.run(_seed_two())
+    from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
+
+    snapshots = {1: derive_snapshot_id(derive_run_id(ids["world"], 1))}
+    base = _route_for(ids, snapshots)
+
+    def _route(request):  # type: ignore[no-untyped-def]
+        if "You decide" in (request.system or "") and "Wren" in request.prompt:
+            raise ModelUnavailableError(
+                "reasoning exhausted",
+                detail={
+                    "http_status": 200,
+                    "finish_reason": "length",
+                    "content_type": "NoneType",
+                    "content_length": None,
+                    "reasoning_only": True,
+                    "usage": {
+                        "prompt_tokens": 2805,
+                        "reasoning_tokens": 512,
+                        "completion_tokens": 512,
+                    },
+                },
+            )
+        return base(request)
+
+    gateway.route = _route
+    report = _advance(client, ids["world"], 1)
+    assert report.status_code == 200, report.text
+    run_id = report.json()["run_id"]
+    runs = client.get(
+        "/api/v1/stage1/model-runs", params={"phase_run_id": run_id}, headers=_watcher()
+    )
+    assert runs.status_code == 200
+    decisions = [view for view in runs.json() if view["role"] == "character_decision"]
+    assert len(decisions) >= 1
+    failed = next(view for view in decisions if view["status"] == "failed")
+    assert failed["error_code"] == "unavailable"
+    assert failed["finish_reason"] == "length"
+    assert failed["reasoning_only"] is True
+    assert failed["reasoning_tokens"] == 512
+    assert failed["prompt_tokens"] == 2805
+    assert failed["completion_tokens"] == 512
+    assert failed["content_type"] == "NoneType"
+    assert failed["content_length"] is None

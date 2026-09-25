@@ -288,6 +288,11 @@ class ModelRunView(BaseModel):
     completion_tokens: int = 0
     latency_ms: int = 0
     error_code: str | None = None
+    finish_reason: str | None = None
+    reasoning_tokens: int = 0
+    content_type: str | None = None
+    content_length: int | None = None
+    reasoning_only: bool | None = None
     max_tokens: int | None = None
     pin_profile_id: str | None = None
     pin_profile_revision: int | None = None

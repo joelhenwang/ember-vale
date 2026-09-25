@@ -1,0 +1,1210 @@
+{
+  "tool": "reliability-baseline",
+  "schema": 2,
+  "mode": "fake",
+  "title": "Reliability baseline",
+  "run": "mugq6qil",
+  "complete": true,
+  "fatal": null,
+  "started_at": "2026-09-25T08:55:23.326Z",
+  "finished_at": "2026-09-25T08:55:31.739Z",
+  "api": "http://localhost:8101/api/v1",
+  "story_id": "5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e",
+  "world_id": "5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e",
+  "pin": null,
+  "config_frozen": {
+    "note": "prompts, models, budgets, and retry behavior unchanged during collection"
+  },
+  "beats": [
+    {
+      "kind": "travel",
+      "absolute_index": 1,
+      "story_id": "5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e",
+      "world_id": "5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e",
+      "run_id": "7135c26e-01f6-51a4-9262-4068e0f803be",
+      "duplicate": false,
+      "client_wall_ms": 371,
+      "slot_claim_ms": 17,
+      "execution_ms": 339,
+      "http_status": 200,
+      "scenes": [
+        {
+          "scene_id": "301b008e-6e17-57e0-8f20-350331825e5d",
+          "event_id": "8e694d66-5639-4f3a-b062-1c14ab9dccc0",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        },
+        {
+          "scene_id": "2518e2d7-6888-5584-a100-a24b9224d1c3",
+          "event_id": "3ec14ae8-2a3e-4ee1-a181-1291f85cd565",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        }
+      ],
+      "provider": {
+        "pin_state": "ok",
+        "pin_revision": 1,
+        "effective_source": "pin",
+        "effective_adapter": "fake",
+        "effective_model_id": "fake-echo",
+        "effective_revision": 1
+      },
+      "modelRuns": [
+        {
+          "call_id": "08cb2016-89da-4a78-acca-d8ec287b1c63",
+          "role": "director",
+          "profile": "director@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e",
+          "task_run_id": "a3c6edcb-a8c7-5760-8bbd-434a7a6c7ad8",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "35872ae3-4a38-4494-b448-e000bc81d447",
+          "role": "director",
+          "profile": "director@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e",
+          "task_run_id": "a3c6edcb-a8c7-5760-8bbd-434a7a6c7ad8",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "02d75c9c-1096-4fb5-8d9c-4b63f1dd9282",
+          "role": "character_decision",
+          "profile": "character@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b",
+          "task_run_id": "82c9ef84-c28f-53f0-9347-828af4a542c8",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "64db468e-9aa6-4481-a55d-9e28b505ab67",
+          "role": "character_decision",
+          "profile": "character@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "f7cd8d03-81e7-496a-b438-c6e3ffdbab75",
+          "task_run_id": "16db2c10-38cd-5ea7-b193-cd5e7535ffef",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "ca5dde60-4dc8-433b-ba2b-2bc5d33e30a3",
+          "role": "character_decision",
+          "profile": "character@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b",
+          "task_run_id": "82c9ef84-c28f-53f0-9347-828af4a542c8",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "126855b0-4798-4ea2-a998-3c576d02bbce",
+          "role": "character_decision",
+          "profile": "character@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "f7cd8d03-81e7-496a-b438-c6e3ffdbab75",
+          "task_run_id": "16db2c10-38cd-5ea7-b193-cd5e7535ffef",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        }
+      ],
+      "modelRunsError": null,
+      "callSummary": {
+        "byRole": {
+          "director": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          },
+          "character_decision": {
+            "calls": 4,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          }
+        },
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "reasoning_tokens": 0,
+        "attempts": 0,
+        "reasoning_only_failures": 0,
+        "error_codes": {}
+      },
+      "timelineEntries": 5,
+      "timelineWallMs": 15,
+      "narrationBeats": 4,
+      "narrationReadMs": 24,
+      "committed_sources": [
+        {
+          "scene_id": "2518e2d7-6888-5584-a100-a24b9224d1c3",
+          "event_id": "3ec14ae8-2a3e-4ee1-a181-1291f85cd565",
+          "status": "committed",
+          "resolution": {
+            "outcome": "success",
+            "resolver": "deterministic",
+            "rationale": "automatic: every intent determined"
+          },
+          "participants": [
+            "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b"
+          ],
+          "intents": [
+            {
+              "author_character_id": "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b",
+              "family": "wait",
+              "topic": null
+            }
+          ]
+        },
+        {
+          "scene_id": "301b008e-6e17-57e0-8f20-350331825e5d",
+          "event_id": "8e694d66-5639-4f3a-b062-1c14ab9dccc0",
+          "status": "committed",
+          "resolution": {
+            "outcome": "success",
+            "resolver": "deterministic",
+            "rationale": "automatic: every intent determined"
+          },
+          "participants": [
+            "f7cd8d03-81e7-496a-b438-c6e3ffdbab75"
+          ],
+          "intents": [
+            {
+              "author_character_id": "f7cd8d03-81e7-496a-b438-c6e3ffdbab75",
+              "family": "wait",
+              "topic": null
+            }
+          ]
+        }
+      ],
+      "classification": {
+        "layers": {
+          "provider": "ok",
+          "validation": "accepted",
+          "committed": "yes",
+          "narration": "fallback",
+          "display": "yes"
+        },
+        "reasons": [],
+        "advancement": {
+          "committed": true,
+          "retrieval_complete": true,
+          "narration": "fallback"
+        },
+        "answer_usefulness": "unevaluated",
+        "kind": "travel"
+      }
+    },
+    {
+      "kind": "question",
+      "absolute_index": 2,
+      "story_id": "5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e",
+      "world_id": "5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e",
+      "run_id": "ee7477b5-ec8f-535c-8bf1-18febec097d0",
+      "duplicate": false,
+      "client_wall_ms": 360,
+      "slot_claim_ms": 16,
+      "execution_ms": 331,
+      "http_status": 200,
+      "scenes": [
+        {
+          "scene_id": "e1e71078-2aa9-5f2e-8d6d-6b67d8247067",
+          "event_id": "56e2439f-487c-4660-9c55-1700def51389",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        }
+      ],
+      "provider": {
+        "pin_state": "ok",
+        "pin_revision": 1,
+        "effective_source": "pin",
+        "effective_adapter": "fake",
+        "effective_model_id": "fake-echo",
+        "effective_revision": 1
+      },
+      "modelRuns": [
+        {
+          "call_id": "9be36829-67de-482d-b39d-e4038f4555fb",
+          "role": "character_decision",
+          "profile": "character@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b",
+          "task_run_id": "46b3b296-78d7-5c7d-978b-383ae9185448",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "b61f654d-5860-4a27-a34d-17538d24e8ea",
+          "role": "character_decision",
+          "profile": "character@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b",
+          "task_run_id": "46b3b296-78d7-5c7d-978b-383ae9185448",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "6f10ba5b-f421-4a8e-a3c4-a682968ce52e",
+          "role": "reaction",
+          "profile": "reaction@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b",
+          "task_run_id": "11433285-3495-5eea-b99b-e984bd8e0176",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "d5b6b9b1-d38e-4147-ad2b-7a415da90ce3",
+          "role": "reaction",
+          "profile": "reaction@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b",
+          "task_run_id": "11433285-3495-5eea-b99b-e984bd8e0176",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "63f8f140-4bdc-4c18-a185-8f41f4e03544",
+          "role": "resolver",
+          "profile": "resolver@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": null,
+          "task_run_id": "57c5c560-1f82-5f36-807b-0aee49fa8d88",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "c50115ca-1a06-4f51-b02c-23dacc6e6cda",
+          "role": "resolver",
+          "profile": "resolver@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": null,
+          "task_run_id": "57c5c560-1f82-5f36-807b-0aee49fa8d88",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "19f4969e-9891-461e-80c2-c0f3decfccf1",
+          "role": "narrator",
+          "profile": "narrator@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": null,
+          "task_run_id": "6a670a5c-97ac-5b79-8b7e-9a15852d2c40",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "b80b8cf2-a42d-447f-bcd2-18e8d8e2adc9",
+          "role": "narrator",
+          "profile": "narrator@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": null,
+          "task_run_id": "6a670a5c-97ac-5b79-8b7e-9a15852d2c40",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        }
+      ],
+      "modelRunsError": null,
+      "callSummary": {
+        "byRole": {
+          "character_decision": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          },
+          "reaction": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          },
+          "resolver": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          },
+          "narrator": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          }
+        },
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "reasoning_tokens": 0,
+        "attempts": 0,
+        "reasoning_only_failures": 0,
+        "error_codes": {}
+      },
+      "timelineEntries": 7,
+      "timelineWallMs": 29,
+      "narrationBeats": 4,
+      "narrationReadMs": 13,
+      "committed_sources": [
+        {
+          "scene_id": "e1e71078-2aa9-5f2e-8d6d-6b67d8247067",
+          "event_id": "56e2439f-487c-4660-9c55-1700def51389",
+          "status": "committed",
+          "resolution": {
+            "outcome": "success",
+            "resolver": "deterministic",
+            "rationale": "fallback: unrepairable resolver output (2 attempts)"
+          },
+          "participants": [
+            "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b",
+            "f7cd8d03-81e7-496a-b438-c6e3ffdbab75"
+          ],
+          "intents": [
+            {
+              "author_character_id": "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b",
+              "family": "wait",
+              "topic": null
+            },
+            {
+              "author_character_id": "f7cd8d03-81e7-496a-b438-c6e3ffdbab75",
+              "family": "communicate",
+              "topic": "What did the market bell mean at dawn?"
+            }
+          ]
+        }
+      ],
+      "classification": {
+        "layers": {
+          "provider": "ok",
+          "validation": "accepted",
+          "committed": "yes",
+          "narration": "fallback",
+          "display": "yes"
+        },
+        "reasons": [],
+        "advancement": {
+          "committed": true,
+          "retrieval_complete": true,
+          "narration": "fallback"
+        },
+        "answer_usefulness": "unevaluated",
+        "kind": "question"
+      },
+      "npc_answer": {
+        "responder": "Ash",
+        "committed": false,
+        "answers": []
+      }
+    },
+    {
+      "kind": "follow-up",
+      "absolute_index": 3,
+      "story_id": "5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e",
+      "world_id": "5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e",
+      "run_id": "014a3690-dca7-539b-8d52-4cb8ad3ac089",
+      "duplicate": false,
+      "client_wall_ms": 313,
+      "slot_claim_ms": 6,
+      "execution_ms": 293,
+      "http_status": 200,
+      "scenes": [
+        {
+          "scene_id": "87dd5d5f-0805-56c3-a48d-3e1e76ea61de",
+          "event_id": "ee07303e-b69f-42b2-920a-359458222602",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        }
+      ],
+      "provider": {
+        "pin_state": "ok",
+        "pin_revision": 1,
+        "effective_source": "pin",
+        "effective_adapter": "fake",
+        "effective_model_id": "fake-echo",
+        "effective_revision": 1
+      },
+      "modelRuns": [
+        {
+          "call_id": "53da265b-dbf1-4df1-8f93-f2f02d040b77",
+          "role": "character_decision",
+          "profile": "character@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b",
+          "task_run_id": "b27a987f-59fa-50dc-9c34-aa08528c948f",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "4ebdcf25-851d-4edf-ad57-2697ff5b2c46",
+          "role": "character_decision",
+          "profile": "character@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b",
+          "task_run_id": "b27a987f-59fa-50dc-9c34-aa08528c948f",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "dc4c195a-3d57-4ce7-b651-216087af4e10",
+          "role": "reaction",
+          "profile": "reaction@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b",
+          "task_run_id": "c8e27045-7903-5aff-9fab-4dab24220bc0",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "a7f2a1d1-1dcd-4f17-935a-aa1c89502656",
+          "role": "reaction",
+          "profile": "reaction@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b",
+          "task_run_id": "c8e27045-7903-5aff-9fab-4dab24220bc0",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "e71b5615-4641-46f2-9525-e78ffe07e467",
+          "role": "resolver",
+          "profile": "resolver@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": null,
+          "task_run_id": "d00d3617-e15b-5f12-bae5-37fb2c325234",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "152f4873-3255-4222-ac68-369c18d0d7c1",
+          "role": "resolver",
+          "profile": "resolver@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": null,
+          "task_run_id": "d00d3617-e15b-5f12-bae5-37fb2c325234",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "0ae9d3bb-c04a-487e-9d6c-584f1c288a24",
+          "role": "narrator",
+          "profile": "narrator@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": null,
+          "task_run_id": "94928e73-ab0e-54d0-9746-a85a999449b3",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "4b659c02-ef74-476a-9bfe-5568c55a4d8e",
+          "role": "narrator",
+          "profile": "narrator@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": null,
+          "task_run_id": "94928e73-ab0e-54d0-9746-a85a999449b3",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        }
+      ],
+      "modelRunsError": null,
+      "callSummary": {
+        "byRole": {
+          "character_decision": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          },
+          "reaction": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          },
+          "resolver": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          },
+          "narrator": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          }
+        },
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "reasoning_tokens": 0,
+        "attempts": 0,
+        "reasoning_only_failures": 0,
+        "error_codes": {}
+      },
+      "timelineEntries": 9,
+      "timelineWallMs": 30,
+      "narrationBeats": 4,
+      "narrationReadMs": 30,
+      "committed_sources": [
+        {
+          "scene_id": "87dd5d5f-0805-56c3-a48d-3e1e76ea61de",
+          "event_id": "ee07303e-b69f-42b2-920a-359458222602",
+          "status": "committed",
+          "resolution": {
+            "outcome": "success",
+            "resolver": "deterministic",
+            "rationale": "fallback: unrepairable resolver output (2 attempts)"
+          },
+          "participants": [
+            "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b",
+            "f7cd8d03-81e7-496a-b438-c6e3ffdbab75"
+          ],
+          "intents": [
+            {
+              "author_character_id": "f7cd8d03-81e7-496a-b438-c6e3ffdbab75",
+              "family": "communicate",
+              "topic": "And what does the open north road mean for us?"
+            },
+            {
+              "author_character_id": "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b",
+              "family": "wait",
+              "topic": null
+            }
+          ]
+        }
+      ],
+      "classification": {
+        "layers": {
+          "provider": "ok",
+          "validation": "accepted",
+          "committed": "yes",
+          "narration": "fallback",
+          "display": "yes"
+        },
+        "reasons": [],
+        "advancement": {
+          "committed": true,
+          "retrieval_complete": true,
+          "narration": "fallback"
+        },
+        "answer_usefulness": "unevaluated",
+        "kind": "follow-up"
+      },
+      "npc_answer": {
+        "responder": "Ash",
+        "committed": false,
+        "answers": []
+      }
+    },
+    {
+      "kind": "ordinary-advance",
+      "absolute_index": 4,
+      "story_id": "5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e",
+      "world_id": "5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e",
+      "run_id": "823aaa35-a25b-5e9b-bafc-41f2b321cdcc",
+      "duplicate": false,
+      "client_wall_ms": 347,
+      "slot_claim_ms": 10,
+      "execution_ms": 320,
+      "http_status": 200,
+      "scenes": [
+        {
+          "scene_id": "3fcd72a2-9423-538e-b7a6-d977eba77d35",
+          "event_id": "1c21ad62-0e55-43e7-ac53-10d757e1dcc7",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        },
+        {
+          "scene_id": "d2f09f4c-7fb4-57d0-87d5-abbf70637c5c",
+          "event_id": "d4f2f3be-481e-428c-a603-65704c9da5c8",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        }
+      ],
+      "provider": {
+        "pin_state": "ok",
+        "pin_revision": 1,
+        "effective_source": "pin",
+        "effective_adapter": "fake",
+        "effective_model_id": "fake-echo",
+        "effective_revision": 1
+      },
+      "modelRuns": [
+        {
+          "call_id": "c044ccf0-9337-4eda-b69d-7552fe77c685",
+          "role": "director",
+          "profile": "director@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e",
+          "task_run_id": "f00157fd-58d3-5cee-b23a-bbcc7b090bda",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "5aaf7f6b-23d9-4b25-8361-7189ab2502b0",
+          "role": "director",
+          "profile": "director@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e",
+          "task_run_id": "f00157fd-58d3-5cee-b23a-bbcc7b090bda",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "3ad6174a-3a47-462e-ba10-113b45bab19c",
+          "role": "character_decision",
+          "profile": "character@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "f7cd8d03-81e7-496a-b438-c6e3ffdbab75",
+          "task_run_id": "a4b8a476-5216-5f9f-be93-00b246b7ee5f",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "44b23c52-b82f-41e2-9edd-2fed9e20f118",
+          "role": "character_decision",
+          "profile": "character@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b",
+          "task_run_id": "25e696c1-2b28-5f65-ad65-415a39da44af",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "6504beaf-7b87-49ac-b4e1-da36955319f9",
+          "role": "character_decision",
+          "profile": "character@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "f7cd8d03-81e7-496a-b438-c6e3ffdbab75",
+          "task_run_id": "a4b8a476-5216-5f9f-be93-00b246b7ee5f",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "1cb41b7b-9a1d-4214-95f6-79cdd1cfece9",
+          "role": "character_decision",
+          "profile": "character@pin-b1599a8b-r1",
+          "status": "succeeded",
+          "actor_id": "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b",
+          "task_run_id": "25e696c1-2b28-5f65-ad65-415a39da44af",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "finish_reason": null,
+          "reasoning_tokens": 0,
+          "content_type": "text",
+          "content_length": 60,
+          "reasoning_only": false,
+          "max_tokens": 512,
+          "pin_profile_id": "b1599a8b-7f25-40c4-9903-64e3490b6d83",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        }
+      ],
+      "modelRunsError": null,
+      "callSummary": {
+        "byRole": {
+          "director": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          },
+          "character_decision": {
+            "calls": 4,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          }
+        },
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "reasoning_tokens": 0,
+        "attempts": 0,
+        "reasoning_only_failures": 0,
+        "error_codes": {}
+      },
+      "timelineEntries": 12,
+      "timelineWallMs": 30,
+      "narrationBeats": 4,
+      "narrationReadMs": 38,
+      "committed_sources": [
+        {
+          "scene_id": "3fcd72a2-9423-538e-b7a6-d977eba77d35",
+          "event_id": "1c21ad62-0e55-43e7-ac53-10d757e1dcc7",
+          "status": "committed",
+          "resolution": {
+            "outcome": "success",
+            "resolver": "deterministic",
+            "rationale": "automatic: every intent determined"
+          },
+          "participants": [
+            "f7cd8d03-81e7-496a-b438-c6e3ffdbab75"
+          ],
+          "intents": [
+            {
+              "author_character_id": "f7cd8d03-81e7-496a-b438-c6e3ffdbab75",
+              "family": "wait",
+              "topic": null
+            }
+          ]
+        },
+        {
+          "scene_id": "d2f09f4c-7fb4-57d0-87d5-abbf70637c5c",
+          "event_id": "d4f2f3be-481e-428c-a603-65704c9da5c8",
+          "status": "committed",
+          "resolution": {
+            "outcome": "success",
+            "resolver": "deterministic",
+            "rationale": "automatic: every intent determined"
+          },
+          "participants": [
+            "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b"
+          ],
+          "intents": [
+            {
+              "author_character_id": "3e4d14b2-d0b3-45b1-8ecc-3cb8b5b5970b",
+              "family": "wait",
+              "topic": null
+            }
+          ]
+        }
+      ],
+      "classification": {
+        "layers": {
+          "provider": "ok",
+          "validation": "accepted",
+          "committed": "yes",
+          "narration": "fallback",
+          "display": "yes"
+        },
+        "reasons": [],
+        "advancement": {
+          "committed": true,
+          "retrieval_complete": true,
+          "narration": "fallback"
+        },
+        "answer_usefulness": "unevaluated",
+        "kind": "ordinary-advance"
+      }
+    },
+    {
+      "kind": "reload",
+      "story_id": "5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e",
+      "world_id": "5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e",
+      "client_wall_ms": 175,
+      "detailWallMs": 26,
+      "timelineWallMs": 21,
+      "narrationReadMs": 126,
+      "timelineEntries": 12,
+      "narrationBeats": 16,
+      "missingEvents": [],
+      "provider": {
+        "pin_state": "ok",
+        "pin_revision": 1,
+        "effective_source": "pin",
+        "effective_adapter": "fake",
+        "effective_model_id": "fake-echo",
+        "effective_revision": 1
+      },
+      "classification": {
+        "layers": {
+          "provider": "not-applicable",
+          "validation": "accepted",
+          "committed": "not-applicable",
+          "narration": "not-applicable",
+          "display": "yes"
+        },
+        "reasons": [],
+        "answer_usefulness": "unevaluated"
+      }
+    }
+  ],
+  "display": {
+    "story_id": "5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e",
+    "world_id": "5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e",
+    "status": "measured",
+    "steps": [
+      {
+        "name": "room-render",
+        "wall_ms": 1769
+      },
+      {
+        "name": "room-reload-render",
+        "wall_ms": 908
+      }
+    ]
+  },
+  "notes": [
+    "deterministic run pinned to fake profile b1599a8b-7f25-40c4-9903-64e3490b6d83@rev1",
+    "story 5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e world 5e739d41-0ed5-4bc1-b33f-c5be7b0fe81e",
+    "seat: player as f7cd8d03",
+    "seat: watcher",
+    "question: Ash committed answer: false",
+    "follow-up: Ash committed answer: false"
+  ],
+  "summary": {
+    "advances": 4,
+    "advances_committed": 4,
+    "retrieval_complete": 4,
+    "provider_ok_advances": 4,
+    "narration": {
+      "narrated": 0,
+      "fallback": 4,
+      "failed": 0
+    },
+    "browser_display": "measured",
+    "answer_usefulness": "unevaluated",
+    "client_wall_ms": {
+      "n": 4,
+      "min": 313,
+      "max": 371
+    },
+    "slot_claim_ms": {
+      "n": 4,
+      "min": 6,
+      "max": 17
+    },
+    "execution_ms": {
+      "n": 4,
+      "min": 293,
+      "max": 339
+    },
+    "timeline_read_ms": {
+      "n": 5,
+      "min": 15,
+      "max": 30
+    },
+    "narration_read_ms": {
+      "n": 5,
+      "min": 13,
+      "max": 126
+    }
+  }
+}

@@ -3224,6 +3224,28 @@
             "title": "Completion Tokens",
             "type": "integer"
           },
+          "content_length": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Length"
+          },
+          "content_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Type"
+          },
           "error_code": {
             "anyOf": [
               {
@@ -3234,6 +3256,17 @@
               }
             ],
             "title": "Error Code"
+          },
+          "finish_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finish Reason"
           },
           "latency_ms": {
             "default": 0,
@@ -3292,6 +3325,22 @@
           "prompt_tokens": {
             "default": 0,
             "title": "Prompt Tokens",
+            "type": "integer"
+          },
+          "reasoning_only": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Only"
+          },
+          "reasoning_tokens": {
+            "default": 0,
+            "title": "Reasoning Tokens",
             "type": "integer"
           },
           "rendered_hash": {

@@ -3,100 +3,129 @@
 Fixed small scenario, normal configuration, frozen prompts/models/budgets/retries.
 Question: how often does a player receive a useful response, and how long do they wait?
 
-## Method
+## Corrected reading (schema 2)
 
-- Harness: `scripts/reliability-baseline.mjs` (`--mode fake|live`, capped at four
-  committed advances plus reads; timeouts and failures retained, never retried).
-- Scenario per run: travel beat (Wren Hearth -> Market) -> question beat (Wren asks
-  Ash, player seat) -> follow-up beat (Ash answers, player seat) -> ordinary watcher
-  advance -> reload (fresh detail + timeline + narration reads).
-- Fake mode pins the story to a throwaway `fake-echo` provider profile (deterministic).
-  Live mode uses the environment default untouched: `openrouter / deepseek-v4-flash-0731`.
-- New read-only observability (no behavior change): per-call latency, error code,
-  task id, retry attempts, manifest budgets, transmitted `max_tokens`, and pin
-  revision on the watcher-only model-runs view; failed-call token usage preserved;
-  `X-Worldsim-Admission-Ms` / `X-Worldsim-Execution-Ms` headers on advance.
-- Sample is small (4 advances + reload per mode). Individual beat timings and
-  min/max ranges below; no tail percentiles implied.
+The schema-1 headline "5/5 useful" overstated what was measured and is withdrawn.
+The supported findings are reported on separate lines:
 
-## Outcome layers (provider ok is not game success)
+- Four advances committed (4/4 fake, 4/4 live).
+- API retrieval checks passed: every committed event re-readable from the
+  timeline with non-empty narration text (all-events requirement, not merely one).
+- Narration used fallback in all 8 committed advances, fake and live.
+- Live browser display was **not measured successfully** (dev server down during
+  the live run; retained as an error row). Read-only room rendering was measured
+  on a fake story: 1769ms initial render, 908ms reload render — combined display
+  cost, not isolated rendering time.
+- Answer usefulness remains **unevaluated**: HTTP 200 is reported as validation
+  'accepted', never as gameplay success; nothing here establishes an answered
+  question or accepted model output.
 
-| beat | fake layers | live layers |
-|---|---|---|
-| travel | provider ok / committed yes / narration fallback / display yes | provider **degraded** (director + 2x character malformed) / committed yes / narration fallback / display yes |
-| question | ok / yes / fallback / yes | degraded (character+reaction+resolver+narrator malformed) / yes / fallback / yes |
-| follow-up | ok / yes / fallback / yes | degraded (reaction+resolver+narrator malformed) / yes / fallback / yes |
-| ordinary | ok / yes / fallback / yes | degraded (2x character malformed) / yes / fallback / yes |
-| reload | display yes, 0 committed events missing | display yes, 0 committed events missing |
+Schema-1 files below are kept as evidence and labeled legacy: the follow-up beat
+was player-as-Ash authoring the answer itself (a second player-authored
+communication, not an NPC response), the browser pass committed an extra beat
+outside the stated cap, `useful` counted reload as a fifth beat and display
+rested on a some-events check, and `admission_ms` measured the execution-slot
+claim. Schema-2 files use the corrected scenario (Wren stays controlled and asks
+twice; Ash's committed answer is traced, never authored) and corrected labels.
 
-Useful (committed + displayable + narration not failed): **5/5 in fake, 5/5 in live.**
-Provider-ok advances: 4/4 fake, **0/4 live**. Every live beat landed entirely through
-fallback paths; zero model-authored beats. Canon still commits (`success` resolutions,
-timeline grows 5 -> 12 entries) and reload renders everything.
+## Failure layer (exported, not inferred)
+
+The stored live failures carry `finish_reason: "length"` with
+`reasoning_only: true`, `content_type: "NoneType"`, and reasoning-token usage up
+to 558 against the 512-token cap: the model spent the whole budget on reasoning
+and returned no content. This is reasoning exhaustion rejected at extraction —
+not truncated JSON reaching validation. The model-runs view now exports
+`finish_reason`, `reasoning_tokens`, content type/length, and `reasoning_only`
+per call so the distinction is measurable (covered in
+`backend/tests/test_reliability_audit.py`).
+
+Narrowed provider claim: three live calls did succeed (director x1,
+character_decision x2 in the follow-up/ordinary beats). Committed-source tracing
+shows the committed intents were Wren's player-authored `communicate` attempts
+plus fallback `wait` decisions; narration was fallback in every scene. So the
+accurate statement is: no live beat carries model-authored narration, and the
+succeeded provider calls are not traced to accepted NPC content — not that the
+provider contributed nothing anywhere.
+
+## Method (schema 2)
+
+- Harness: `scripts/reliability-baseline.mjs` (schema 2). Capped at exactly four
+  advances plus reads; the read-only browser pass never commits, so the live cap
+  holds exactly. Every beat checkpoints to disk immediately; the final report is
+  written in a `finally` block. Transport failures distinguish timeout,
+  connection, and other transport errors.
+- Scenario: travel (Wren Hearth -> Market) -> question (Wren asks Ash) ->
+  follow-up (Wren asks again; Ash's answer traced via committed scene intents) ->
+  ordinary watcher advance -> reload reads (not counted, never 'useful').
+- Fake mode pins to a throwaway `fake-echo` profile (deterministic: identical
+  layer outcomes across runs). Live mode uses the environment default untouched:
+  `openrouter / deepseek-v4-flash-0731`. `--pin-profile/--pin-revision` pins
+  either mode to an explicit revision for a future pinned-budget comparison
+  with sampling otherwise unchanged.
+- Read-only observability only: per-call latency, error code, finish reason,
+  reasoning tokens, content type/length, reasoning-only flag, retry attempts,
+  manifest budgets, transmitted `max_tokens`, pin revision;
+  `X-Worldsim-Slot-Claim-Ms` (execution-slot wait, not run admission) plus
+  `X-Worldsim-Execution-Ms` on advance.
+- Small sample: individual beat timings and min/max ranges; no tail percentiles.
 
 ## Timings (ms, individual beats)
 
-Fake advances (wall / admission / execution): 554/20/506, 592/15/551, 594/14/565,
-558/22/516. Range: wall 554-594, admission 14-22, execution 506-565.
-Live advances: 17937/10/17914, 51341/10/51321, 41594/9/41576, 17127/9/17105.
-Range: wall 17127-51341, admission 9-10, execution 17105-51321.
+Schema-2 fake advances (wall / slot-claim / execution):
+536/23/502, 441/14/407, 433/9/415, 363/11/336 (second run: 382/11/348,
+339/24/304, 405/11/379, 386/19/359).
+Schema-1 live advances (unchanged raw data, relabeled): 17937/10/17914,
+51341/10/51321, 41594/9/41576, 17127/9/17105.
 
-Reads stay flat in both modes: timeline 15-44, narration reads 13-146, reload 132-212.
-Browser (fake story, Edge headless): room render 13020 (first-hit Vite compile
-included), in-page commit 1446 vs server execution 501 (**display overhead ~945**),
-reload render 889. Live browser pass failed on a dead dev server and was not
-retried against the live story, so no extra live generation was spent; the live
-report retains that error row.
+Reads stay flat in both modes (timeline 15-44, narration 13-150, reload
+124-212). Slot-claim (~10-24ms), reads (<150ms), and display (~0.9-1.8s) are
+noise next to live generation (17-51s).
 
-Generation by role, live (each traced call includes its retries; summed durations
-double-count the concurrent character calls, so wall and sum are reported apart):
+Generation by role, live (each traced call includes its retries; summed
+durations double-count concurrent character calls, so wall and sum are apart):
 
-| beat | roles (calls x latency) | token prompt+completion | retries |
+| beat | roles (calls x latency) | tokens prompt+completion(+reasoning) | retries |
 |---|---|---|---|
 | travel (17.9s) | director 1x3718 failed, character 2x19541 failed | 5675+1536 | 0 |
-| question (51.3s) | character 1x11485, reaction 1x12765, resolver 1x16161, narrator 1x9904, all failed | 10381+2048 | 0 |
-| follow-up (41.6s) | character 2x2809 ok, reaction/resolver/narrator failed ~10-15s each | 13427+1578 | 0 |
+| question (51.3s) | character/reaction/resolver/narrator 1x each failed (~10-16s) | 10381+2048 | 0 |
+| follow-up (41.6s) | character 2x2809 ok, reaction/resolver/narrator failed ~10-15s | 13427+1578 | 0 |
 | ordinary (17.1s) | director 1x3015 ok, character 2x16947 failed | 6174+1371 | 0 |
 
-Roles execute sequentially behind barriers, so generation sums to the wall
-(question: 11.5+12.8+16.2+9.9 = 50.3s of 51.3s). Admission (~10ms), reads (<150ms),
-and display overhead (~0.9s) are noise next to generation.
+Roles run sequentially behind barriers, so generation sums to the wall. All
+failures are `malformed` at the gateway with `finish_reason: length` and
+`reasoning_only: true` (see Failure layer).
 
-## Attribution
+## Bottleneck and one proposed experiment
 
-Every call carries story/run/call ids, actor, task id, profile, transmitted
-`max_tokens`, pin revision, budgets, outcome, error code, and per-attempt records;
-failed calls keep their reported usage (e.g. `character_decision failed malformed
-lat=13278 tok=2758/512`). Validation-failure repairs appear as paired traced calls
-under one task id (fake mode: 2 calls per task); gateway failures skip repair and
-appear once (live mode). One `started` leftover row is surfaced, not hidden
-(covered in `backend/tests/test_reliability_audit.py`).
+**Bottleneck: model generation, specifically reasoning-budget exhaustion.**
+Live calls burn the full 512-token budget on reasoning, return no content, fail
+`malformed` (never retried by policy), and every role falls back. The wait
+(17-51s/beat) buys no model-authored narration; the three succeeded calls are
+not traced to accepted NPC content.
 
-## Bottleneck and one proposed improvement
-
-**Bottleneck: model generation, specifically truncation.** Every failed live call
-reports `completion_tokens` exactly equal to the transmitted budget (512) — the
-completions hit the cap, arrive truncated, fail schema validation (`malformed`,
-never retried by policy), and every role falls back. The player waits 17-51s per
-beat for content the provider never authors. Admission, commit overhead, reads,
-and display are all two orders of magnitude smaller.
-
-**Proposal (one): raise the live chat profile's transmitted `max_tokens` budget
-until completions fit, then re-run this baseline unchanged and confirm the
-malformed rate drops.** No prompt, model, budget-structure, or retry-policy change
-beyond the single cap value; the baseline decides whether it worked.
+**Proposed experiment (not an established fix): compare explicit pinned budgets
+512 versus 4096** with the same model, prompts, sampling, scenario, and bounded
+call count (`--pin-profile/--pin-revision` support is in the harness). Earlier
+4096-token runs still showed reasoning exhaustion, so raising the cap may only
+buy latency and tokens. Measure whether accepted NPC answers (Ash's committed
+`communicate` intents answering Wren, narrated beats) improve enough to justify
+the cost.
 
 ## Files
 
-- `baseline-fake-mugcjgeb.json`, `baseline-fake-mugcjo6c.json`: determinism pair
-  (identical layer outcomes; timings vary). `baseline-fake-mugcisle.json` is a
-  superseded setup probe (pre-seat-fix 403s, retained).
-- `baseline-fake-mugcprbi.json`: fake run with the browser display pass.
-- `baseline-live-mugclwxu.json`: capped live sample (4 advances + reads).
-- `browser-room-fake.png`: room render during the display pass.
+- Schema 2 (corrected): `baseline-fake-mugq5pe2.json`, `baseline-fake-mugq68rx.json`
+  (determinism pair, browser skipped), `baseline-fake-mugq6qil.json` (read-only
+  browser pass measured: room-render 1769, reload 908; still exactly 4 advances).
+- Schema 1 (legacy, superseded semantics but retained): `baseline-fake-mugcisle.json`
+  (setup probe with seat 403s), `baseline-fake-mugcjgeb.json`,
+  `baseline-fake-mugcjo6c.json` (determinism pair, Ash-seat follow-up),
+  `baseline-fake-mugcprbi.json` (committing browser pass),
+  `baseline-live-mugclwxu.json` (capped live sample, 4 advances + reads; browser
+  error retained; follow-up was Ash-authored).
+- `browser-room-fake.png`: room render during a display pass.
 - Harness: `scripts/reliability-baseline.mjs`. Maintained tests:
-  `backend/tests/test_reliability_audit.py` (5 passed; neighboring suites green,
-  242/242 vitest, typecheck clean).
-- Tree note: the baseline ran with the read-only observability patch applied
-  (headers + model-runs fields, rebuilt into the compose API); prompts, models,
-  budgets, and retry behavior unchanged.
+  `backend/tests/test_reliability_audit.py` (6 passed; neighbors green, 242/242
+  vitest, typecheck clean).
+- Tree note: baselines ran with the read-only observability patch applied
+  (slot-claim headers + model-runs attribution fields, rebuilt into the compose
+  API); prompts, models, budgets, and retry behavior unchanged.

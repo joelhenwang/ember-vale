@@ -94,11 +94,12 @@ async def guarded_timed[T](
 ) -> tuple[T, int, int]:
     """Admit one scope, run the work, and report admission/execution splits.
 
-    Returns ``(result, admission_ms, execution_ms)``: admission covers the
-    slot claim (queue wait under contention); execution covers the admitted
-    work. Release and error semantics match :func:`guarded` exactly.
+    Returns ``(result, slot_claim_ms, execution_ms)``: slot-claim covers
+    the execution-slot claim (queue wait under contention), not run
+    admission; execution covers the admitted work. Release and error
+    semantics match :func:`guarded` exactly.
     """
-    admitted_at = perf_counter()
+    claim_started_at = perf_counter()
     slot = await admit(factory, world_id, scope, owner, run_id)
     execution_at = perf_counter()
     try:
@@ -121,7 +122,7 @@ async def guarded_timed[T](
     finished_at = perf_counter()
     return (
         result,
-        max(0, int((execution_at - admitted_at) * 1000)),
+        max(0, int((execution_at - claim_started_at) * 1000)),
         max(0, int((finished_at - execution_at) * 1000)),
     )
 

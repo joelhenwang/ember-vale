@@ -297,6 +297,11 @@ async def list_model_runs(request: Request, phase_run_id: UUID) -> list[api.Mode
                     completion_tokens=call.completion_tokens,
                     latency_ms=call.latency_ms,
                     error_code=call.error_code,
+                    finish_reason=call.finish_reason,
+                    reasoning_tokens=call.reasoning_tokens,
+                    content_type=call.content_type,
+                    content_length=call.content_length,
+                    reasoning_only=call.reasoning_only,
                     max_tokens=call.max_tokens,
                     pin_profile_id=call.pin_profile_id,
                     pin_profile_revision=call.pin_profile_revision,
@@ -354,7 +359,7 @@ async def advance(
         )
 
     factory = state.uow_factory()
-    report, admission_ms, execution_ms = await guarded_timed(
+    report, slot_claim_ms, execution_ms = await guarded_timed(
         factory,
         body.world_id,
         phase_scope(body.absolute_index),
@@ -362,9 +367,10 @@ async def advance(
         phase_run_id(body.world_id, body.absolute_index),
         _run,
     )
-    # Baseline timing only: admission is the slot-claim wait, execution is
-    # the admitted beat. Headers keep the response contract unchanged.
-    response.headers["X-Worldsim-Admission-Ms"] = str(admission_ms)
+    # Baseline timing only: slot-claim is the execution-slot wait (not run
+    # admission), execution is the admitted beat. Headers keep the response
+    # contract unchanged.
+    response.headers["X-Worldsim-Slot-Claim-Ms"] = str(slot_claim_ms)
     response.headers["X-Worldsim-Execution-Ms"] = str(execution_ms)
     return api.Stage1AdvanceResponse(
         run_id=report.run_id,

@@ -86,7 +86,10 @@ export interface ModelRunView {
   budgets?: Record<string, number>;
   call_id: string;
   completion_tokens?: number;
+  content_length?: number | null;
+  content_type?: string | null;
   error_code?: string | null;
+  finish_reason?: string | null;
   latency_ms?: number;
   manifest_id?: string | null;
   max_tokens?: number | null;
@@ -94,6 +97,8 @@ export interface ModelRunView {
   pin_profile_revision?: number | null;
   profile: string;
   prompt_tokens?: number;
+  reasoning_only?: boolean | null;
+  reasoning_tokens?: number;
   rendered_hash?: string | null;
   role: string;
   status: string;
