@@ -128,6 +128,8 @@ the cost.
 - Schema 4 with blocked-steps persisted before finalization and skeleton-first
   reload (`onBlocked`, per-read reload errors): `baseline-fake-mugt5wp3.json`
   (4/4 committed, 0 blocked).
+- Schema 4 with single-append blocked steps (`onBlocked` is the only append
+  path): `baseline-fake-mugtr3xj.json` (4/4 committed, 0 blocked).
 - Schema 1 (legacy, superseded semantics but retained): `baseline-fake-mugcisle.json`
   (setup probe with seat 403s), `baseline-fake-mugcjgeb.json`,
   `baseline-fake-mugcjo6c.json` (determinism pair, Ash-seat follow-up),

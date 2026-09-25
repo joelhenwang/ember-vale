@@ -499,11 +499,11 @@ async function runScenario() {
     finalize: () => finalizeReads(cast),
     note
   }
+  // Blocked steps already persist through onBlocked (with checkpoint) before
+  // finalization; appending the returned steps again would double-count them.
   const { blockedSteps: blocked } = await runPlannedScenario(steps, ops)
-  blockedSteps.push(...blocked)
   if (blocked.length > 0) {
     note(`blocked steps preserved: ${blocked.map((b) => b.kind).join(', ')}`)
-    checkpoint()
   }
 }
 

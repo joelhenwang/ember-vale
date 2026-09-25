@@ -649,6 +649,11 @@ describe('runPlannedScenario finalizes after a halt', () => {
       'follow-up'
     ])
 
+    // Shared report state (mirroring the CLI): onBlocked is the single
+    // append path, so one blocked step is exactly one entry.
+    expect(persisted).toHaveLength(1)
+    expect(persisted[0]).toMatchObject({ kind: 'ordinary-advance', status: 'blocked' })
+
     const report = buildReport({
       beats: finalized,
       notes: [],
@@ -669,6 +674,7 @@ describe('runPlannedScenario finalizes after a halt', () => {
       }
     })
     expect(report.summary.advances_committed).toBe(1)
+    expect(report.summary.blocked).toBe(1)
     const q = report.beats.find((b) => b.kind === 'question')
     expect(q.npc_answer.status).toBe('answered')
     expect(q.npc_answer.answers[0].narration_citations).toEqual(['b1'])
@@ -680,6 +686,7 @@ describe('runPlannedScenario finalizes after a halt', () => {
 
   it('still returns blocked steps when finalization itself throws', async () => {
     const noted = []
+    const shared = []
     const ops = {
       setSeat: async () => ({ ok: true }),
       advance: async () => ({
@@ -688,7 +695,9 @@ describe('runPlannedScenario finalizes after a halt', () => {
         resolution: 'unresolved',
         classification: { layers: {}, reasons: [] }
       }),
-      onBlocked: () => {},
+      onBlocked: (blocked) => {
+        shared.push(...blocked)
+      },
       finalize: async () => {
         throw new Error('finalize store unavailable')
       },
@@ -710,6 +719,30 @@ describe('runPlannedScenario finalizes after a halt', () => {
       }
     ])
     expect(noted.join(' ')).toMatch(/finalize/)
+    // Shared report state sees exactly one entry even though finalization
+    // failed after persisting it.
+    expect(shared).toHaveLength(1)
+    const report = buildReport({
+      beats: attempted,
+      notes: [],
+      display: { status: 'skipped', steps: [] },
+      complete: true,
+      fatal: null,
+      blockedSteps: shared,
+      meta: {
+        mode: 'live',
+        title: 't',
+        run: 'r1',
+        startedAt: 's',
+        finishedAt: 'f',
+        api: 'a',
+        storyId: 'st',
+        worldId: 'w',
+        pin: null
+      }
+    })
+    expect(report.blocked_steps).toHaveLength(1)
+    expect(report.summary.blocked).toBe(1)
   })
 })
 
