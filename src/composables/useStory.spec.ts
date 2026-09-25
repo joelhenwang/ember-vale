@@ -1,7 +1,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { useStory } from './useStory'
+import { loadPendingSubmission, type SubmissionStorage } from './pendingSubmissions'
 import type { Role } from '../api/http'
+
+function memStore(): SubmissionStorage {
+  const memory = new Map<string, string>()
+  return {
+    getItem: (key) => memory.get(key) ?? null,
+    setItem: (key, value) => {
+      memory.set(key, value)
+    },
+    removeItem: (key) => {
+      memory.delete(key)
+    }
+  }
+}
 
 interface Seen {
   method: string
@@ -21,8 +35,8 @@ let failures = new Map<string, { status: number; code: string; message: string }
 let rejections = new Map<string, Error>()
 /** Activity members returned per story. */
 let membersByStory = new Map<string, unknown[]>()
-/** Stranded open runs reported per story. */
-let statusByStory = new Map<string, { id: string; index: number; state: string }>()
+/** Stranded open runs reported per story; an entry without an index mimics an older API. */
+let statusByStory = new Map<string, { id: string; index?: number; state: string }>()
 /** Committed beat index per story (advance commits move it). */
 let indexByStory = new Map<string, number>()
 /** Held advance POSTs, released manually with a chosen outcome. */
@@ -237,17 +251,14 @@ function installFetch(): void {
       if (method === 'GET' && url.pathname === '/api/v1/stage2/map') return json(mapOf(id))
       if (method === 'GET' && url.pathname === '/api/v1/simulation/status') {
         const open = statusByStory.get(id)
-        return json(
-          open
-            ? {
-                world_id: id,
-                absolute_index: 2,
-                open_run_id: open.id,
-                open_run_index: open.index,
-                open_run_state: open.state
-              }
-            : { world_id: id, absolute_index: 2 }
-        )
+        if (!open) return json({ world_id: id, absolute_index: 2 })
+        return json({
+          world_id: id,
+          absolute_index: 2,
+          open_run_id: open.id,
+          ...(open.index === undefined ? {} : { open_run_index: open.index }),
+          open_run_state: open.state
+        })
       }
       if (method === 'GET' && url.pathname.endsWith('/setup')) return json(setupOf(id))
       if (method === 'GET' && url.pathname === '/api/v1/stage2/roles') return json(grantOf(id))
@@ -656,9 +667,40 @@ describe('useStory room', () => {
     statusByStory.set('A', { id: 'run-9', index: 2, state: 'scenes_assembled' })
     const story = useStory('A', 'watcher')
     await story.load()
-    expect(story.openRun.value).toEqual({ id: 'run-9', index: 2, state: 'scenes_assembled' })
+    expect(story.recoveryState.value).toBe('open')
+    expect(story.openRun.value).toEqual({
+      id: 'run-9',
+      worldId: 'A',
+      index: 2,
+      state: 'scenes_assembled'
+    })
     // Read-only: learning the state starts no beat.
     expect(seen.filter((s) => s.path === '/api/v1/stage1/advance')).toHaveLength(0)
+  })
+
+  it('a failed status read is unresolved, never clear', async () => {
+    installFetch()
+    failures.set('GET /api/v1/simulation/status', {
+      status: 500,
+      code: 'INTERNAL',
+      message: 'status unavailable'
+    })
+    const story = useStory('A', 'watcher')
+    await story.load()
+    expect(story.recoveryState.value).toBe('unknown')
+    expect(story.openRun.value).toBeNull()
+    // The room still loads: an unknown room is usable for reads, not beats.
+    expect(story.loadError.value).toBeNull()
+    expect(story.entries.value).toHaveLength(2)
+  })
+
+  it('an open run without an index stays unresolved', async () => {
+    installFetch()
+    statusByStory.set('A', { id: 'run-9', state: 'scenes_assembled' })
+    const story = useStory('A', 'watcher')
+    await story.load()
+    expect(story.recoveryState.value).toBe('unknown')
+    expect(story.openRun.value).toBeNull()
   })
 
   it('resumeBeat without a stranded beat starts nothing', async () => {
@@ -674,7 +716,8 @@ describe('useStory room', () => {
     installFetch()
     indexByStory.set('A', 3)
     statusByStory.set('A', { id: 'run-9', index: 2, state: 'scenes_assembled' })
-    const story = useStory('A', 'watcher')
+    const store = memStore()
+    const story = useStory('A', 'watcher', undefined, store)
     await story.load()
     // The beat lands while resuming: the stranded state clears.
     const pending = story.resumeBeat()
@@ -684,6 +727,80 @@ describe('useStory room', () => {
     expect(posts).toHaveLength(1)
     expect(advanceBody(posts[0])['absolute_index']).toBe(2)
     expect(story.openRun.value).toBeNull()
+  })
+
+  it('an interrupted filing survives a fresh controller and resumes verbatim', async () => {
+    installFetch()
+    const store = memStore()
+    const original = {
+      'char-wren': {
+        family: 'communicate',
+        character_id: 'char-wren',
+        snapshot_id: '00000000-0000-0000-0000-000000000000',
+        target_character_id: 'char-ash',
+        topic: 'What news from the mill?'
+      }
+    }
+    // First controller: the filing fails before the server persists it.
+    const first = useStory('A', 'watcher', undefined, store)
+    await first.load()
+    advanceHold = true
+    const filing = first.advance(original)
+    await vi.waitFor(() => expect(heldAdvances).toHaveLength(1))
+    advanceHold = false
+    heldAdvances[0].resolve(
+      new Response(JSON.stringify({ error: { code: 'INTERNAL', message: 'died mid-beat' } }), {
+        status: 500
+      })
+    )
+    await expect(filing).resolves.toBe(false)
+    expect(advanceBody(advancePosts()[0])['player_intents']).toEqual(original)
+    expect(loadPendingSubmission(store, 'A')?.intents).toEqual(original)
+
+    // A reload-equivalent fresh controller sees the stranded beat and the
+    // frozen words, even though its composer starts empty.
+    statusByStory.set('A', { id: 'run-9', index: 2, state: 'scenes_assembled' })
+    const second = useStory('A', 'watcher', undefined, store)
+    await second.load()
+    expect(second.recoveryState.value).toBe('open')
+    expect(second.preservedSubmission.value?.intents).toEqual(original)
+
+    // Newer composer drafts never leak into the resume: the request
+    // carries the frozen original, and the newer words are never posted.
+    const newer = {
+      'char-wren': {
+        family: 'communicate',
+        character_id: 'char-wren',
+        snapshot_id: '00000000-0000-0000-0000-000000000000',
+        target_character_id: 'char-ash',
+        topic: 'Actually, what news from the market?'
+      }
+    }
+    const resumed = second.resumeBeat()
+    statusByStory.delete('A')
+    await expect(resumed).resolves.toBe(true)
+    const posts = advancePosts()
+    expect(posts).toHaveLength(2)
+    const last = posts.at(-1) as Seen
+    expect(advanceBody(last)['absolute_index']).toBe(2)
+    expect(advanceBody(last)['player_intents']).toEqual(original)
+    for (const post of posts) {
+      expect(advanceBody(post)['player_intents']).not.toEqual(newer)
+    }
+    // The confirmed filing retires the frozen record.
+    expect(loadPendingSubmission(store, 'A')).toBeNull()
+    expect(second.openRun.value).toBeNull()
+  })
+
+  it('a duplicate reconciliation retires no frozen submission', async () => {
+    installFetch()
+    advanceDuplicate = true
+    const store = memStore()
+    const story = useStory('A', 'watcher', undefined, store)
+    await story.load()
+    const intents = { 'char-wren': { topic: 'What news from the mill?' } }
+    await expect(story.advance(intents)).resolves.toBe(false)
+    expect(loadPendingSubmission(store, 'A')?.intents).toEqual(intents)
   })
 
   it('a still-open refusal names the stranded beat instead of a raw 412', async () => {

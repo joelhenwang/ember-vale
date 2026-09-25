@@ -138,6 +138,19 @@ const destinations = computed(() => {
 })
 const nextIndex = computed(() => (detail.value?.absolute_index ?? 0) + 1)
 
+// A new beat is safe only when the room positively knows none is open: an
+// unknown recovery status is not a clear room.
+const beatReady = computed(
+  () => story.grantLoaded.value && !story.advancing.value && story.recoveryState.value === 'clear'
+)
+const beatBlockedTitle = computed(() => {
+  if (story.advancing.value || !story.grantLoaded.value) return undefined
+  if (story.recoveryState.value === 'open') {
+    return 'A beat is still open — check again or resume it above.'
+  }
+  return 'The latest beat state is not confirmed yet — check again above.'
+})
+
 async function advance(): Promise<void> {
   await story.advance()
   // The pin cannot change mid-story, but the environment default can: keep
@@ -281,12 +294,19 @@ onUnmounted(() => {
         role="status">
         {{ story.notice.value.text }}
       </p>
-      <div v-if="story.openRun.value" class="play__notice" role="status">
+      <div
+        v-if="story.recoveryState.value === 'open' && story.openRun.value"
+        class="play__notice"
+        role="status">
         <p>
           Beat {{ story.openRun.value.index }} hasn't finished ({{
             story.openRun.value.state.replace(/_/g, ' ')
           }}) — the connection may have dropped mid-beat. Nothing commits twice: check whether it
-          landed, or resume it. Your draft stays in the box.
+          landed, or resume it.
+          <template v-if="story.preservedSubmission.value">
+            Resume refiles your preserved question; newer drafts stay in the box for the next beat.
+          </template>
+          <template v-else> Your draft stays in the box. </template>
         </p>
         <div class="play__travel">
           <MenuButton variant="outline" :disabled="story.advancing.value" @click="checkAgain()">
@@ -297,6 +317,19 @@ onUnmounted(() => {
             :disabled="story.advancing.value || !story.grantLoaded.value"
             @click="resume()">
             {{ story.advancing.value ? 'Resuming…' : `Resume beat ${story.openRun.value.index}` }}
+          </MenuButton>
+        </div>
+      </div>
+      <div v-else-if="story.recoveryState.value === 'unknown'" class="play__notice" role="status">
+        <p>
+          The room couldn't confirm whether the latest beat finished
+          <template v-if="story.openRun.value">
+            (last seen open at beat {{ story.openRun.value.index }}) </template
+          >— so no new beat starts until the state is known. This is not a clear room.
+        </p>
+        <div class="play__travel">
+          <MenuButton variant="outline" :disabled="story.advancing.value" @click="checkAgain()">
+            {{ story.advancing.value ? 'Checking…' : 'Check again' }}
           </MenuButton>
         </div>
       </div>
@@ -339,12 +372,8 @@ onUnmounted(() => {
           <h3>Advance the story</h3>
           <MenuButton
             :icon="IconArrowRight"
-            :disabled="story.advancing.value || !story.grantLoaded.value || !!story.openRun.value"
-            :title="
-              story.openRun.value
-                ? 'A beat is still open — check again or resume it above.'
-                : undefined
-            "
+            :disabled="!beatReady"
+            :title="beatBlockedTitle"
             @click="advance()">
             {{ story.advancing.value ? 'Committing beat…' : `Commit beat ${nextIndex}` }}
           </MenuButton>
@@ -380,9 +409,7 @@ onUnmounted(() => {
                 placeholder="Ask something in your own words." />
             </label>
             <MenuButton
-              :disabled="
-                !askText.trim() || !askTarget || story.advancing.value || !!story.openRun.value
-              "
+              :disabled="!askText.trim() || !askTarget || !beatReady"
               @click="askQuestion()">
               {{ story.advancing.value ? 'Committing beat…' : 'Ask with the next beat' }}
             </MenuButton>

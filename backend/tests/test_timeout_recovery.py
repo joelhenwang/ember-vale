@@ -1,16 +1,28 @@
 """Timed-out-run diagnosis and ordinary-user recovery (owned by REL-REC-001).
 
-A dropped client connection is not a failed beat: cancelling mid-flight
-leaves the run open with partial progress, and resubmitting the same index
-resumes it without duplicating events, effects, or player submissions.
-Server interruption after partial commit behaves the same way. Budgets,
-models, prompts, and retry policy are untouched; these tests pin the
-recovery contract only.
+Cancelling a beat's task mid-flight is not a failed beat: the run stays
+open with partial progress, and resubmitting the same index resumes it
+without duplicating events, effects, or player submissions. Server
+interruption after partial commit behaves the same way.
+
+Scope of the claims below: the cancellation here is delivered to an
+in-process task (asyncio cancel, including over ASGI transport). That
+exercises task-cancellation handling — it is not evidence that an
+ordinary browser disconnect necessarily cancels the deployed server's
+endpoint task. The busy-lease step uses a controlled clock, not a
+five-minute wait, and the production lease constant is untouched. The
+historical stuck run's triggering cause is unconfirmed (no server
+evidence ties its interruption to cancellation); it later completed on
+its own, which is consistent with lease-expiry recovery but proves only
+that the stranded state did not wedge the world. Budgets, models,
+prompts, and retry policy are untouched; these tests pin the recovery
+contract only.
 """
 
 from __future__ import annotations
 
 import asyncio
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -28,6 +40,8 @@ from test_stage1_orchestration import (
 )
 
 import worldsim.application.execution as execution
+import worldsim.application.tasks.service as task_service
+import worldsim.infrastructure.repositories.tasks as task_repo
 from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
 from worldsim.application.ports.model_gateway import CompletionRequest, ProbeResult
 from worldsim.domain.commands import CommunicateAction
@@ -67,8 +81,10 @@ class _GatedGateway:
         self._inner = inner
         self.entered = asyncio.Event()
         self.release = asyncio.Event()
+        self.calls = 0
 
     async def complete(self, request: CompletionRequest) -> Any:
+        self.calls += 1
         self.entered.set()
         await self.release.wait()
         return await self._inner.complete(request)
@@ -118,10 +134,12 @@ async def _event_count(ids: dict[str, UUID]) -> int:
 
 
 def test_client_disconnect_leaves_resumable_run(migrated_db: None) -> None:
-    """Cancelling mid-flight (dropped connection) keeps a resumable run.
+    """Cancelling the beat task mid-flight keeps a resumable run.
 
     The run stays open with partial progress; resubmitting the same index
-    with the same player submission completes exactly one beat.
+    with the same player submission completes exactly one beat. The
+    cancellation is delivered in-process, so this models task-cancellation
+    handling rather than a literal network disconnect.
     """
 
     async def _inner() -> None:
@@ -219,20 +237,31 @@ def _advance_body(ids: dict[str, UUID], snapshot: UUID) -> dict[str, object]:
 
 
 def test_room_recovers_timed_out_beat(migrated_db: None, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Disconnect strands the beat; status names it; resume completes it once.
+    """Stranded beat, busy lease, expiry, then one completion — over HTTP.
 
-    The room's own calls over HTTP: the beat starts server-side, then the
-    connection drops. A reload-equivalent status read names the stranded
-    open run (with its index); resubmitting the same index with the
-    preserved player submission completes exactly one beat, and a fresh
-    timeline read shows the committed content. The execution-slot lease
-    (which a disconnected owner cannot release) is compressed to zero so
-    the test does not wait out the production window; the takeover
-    mechanism is unchanged.
+    The room's own calls: the beat starts server-side, then the awaiting
+    client task is cancelled. That cancellation is delivered in-process
+    (ASGI transport), so it models task-cancellation handling — not proof
+    that a browser disconnect cancels the deployed endpoint task. A
+    reload-equivalent status read names the stranded open run (with its
+    index). Resubmitting the same index while the dead owner's slot lease
+    is live gets an explicit busy refusal (HTTP 409, no second executor
+    starts). Past lease expiry — via a controlled clock jump, not a
+    five-minute wait — the same resubmission completes exactly one beat,
+    and a fresh timeline read shows the committed content. The production
+    lease constant is untouched.
     """
 
     async def _inner() -> None:
-        monkeypatch.setattr(execution, "LEASE_SECONDS", 0)
+        base = datetime.now(UTC)
+        jumped = {"seconds": 0}
+
+        def _controlled_now() -> datetime:
+            return base + timedelta(seconds=jumped["seconds"])
+
+        monkeypatch.setattr(execution, "utcnow", _controlled_now)
+        monkeypatch.setattr(task_service, "_utcnow", _controlled_now)
+        monkeypatch.setattr(task_repo, "_utcnow", _controlled_now)
         ids = await _seed_two()
         snapshot = derive_snapshot_id(derive_run_id(ids["world"], 1))
         inner = FakeGateway(profile=FAKE_TEST_PROFILE)
@@ -268,7 +297,22 @@ def test_room_recovers_timed_out_beat(migrated_db: None, monkeypatch: pytest.Mon
             assert stranded["open_run_index"] == 1
             assert stranded["open_run_state"] != "completed"
 
+            # Busy: the dead owner's lease is still live, so admission
+            # refuses without starting a second executor.
+            busy = await client.post("/api/v1/stage1/advance", json=body, headers=headers)
+            assert busy.status_code == 409, busy.text
+            assert busy.json()["error"]["code"] == "VERSION_CONFLICT"
+            assert gateway.calls == 1
+            still = await client.get(
+                "/api/v1/simulation/status",
+                params={"world_id": str(ids["world"])},
+                headers=headers,
+            )
+            assert still.json()["open_run_id"] == str(derive_run_id(ids["world"], 1))
+
+            # Past expiry the same resubmission takes over and completes once.
             gateway.release.set()
+            jumped["seconds"] = 301
             resumed = await client.post("/api/v1/stage1/advance", json=body, headers=headers)
             assert resumed.status_code == 200, resumed.text
             report = resumed.json()

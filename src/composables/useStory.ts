@@ -14,7 +14,7 @@
  * continues explicitly from the stored cursor via loadMore().
  */
 
-import { computed, ref, unref, type Ref } from 'vue'
+import { computed, reactive, ref, unref, type Ref } from 'vue'
 import type {
   ActivityView,
   MapResponse,
@@ -37,6 +37,14 @@ import {
   startTravel
 } from '../api/worldsim'
 import { beatFallbackNotice } from './useStoryProvider'
+import {
+  clearPendingSubmission,
+  defaultSubmissionStorage,
+  loadPendingSubmission,
+  savePendingSubmission,
+  type PendingSubmission,
+  type SubmissionStorage
+} from './pendingSubmissions'
 
 export interface StoryNotice {
   kind: 'error' | 'info'
@@ -50,9 +58,19 @@ export interface StoryNotice {
  */
 export interface OpenRun {
   id: string
+  worldId: string
   index: number
   state: string
 }
+
+/**
+ * What the room knows about recovery: `loading` while the first status
+ * read is in flight, `clear` only on an explicit no-open-run answer,
+ * `open` for a named stranded beat, and `unknown` whenever the read
+ * fails or names a run without its index. Only `clear` advertises a
+ * safe new beat — `unknown` is not evidence that none is open.
+ */
+export type RecoveryState = 'loading' | 'clear' | 'open' | 'unknown'
 
 /** Bounded history fetch: 25 pages of 50 source events per continuation. */
 const MAX_PAGES = 25
@@ -105,7 +123,8 @@ interface TravelOp {
 export function useStory(
   storyId: string | Ref<string>,
   role: Role | Ref<Role>,
-  characterId?: string | Ref<string | undefined>
+  characterId?: string | Ref<string | undefined>,
+  storage: SubmissionStorage = defaultSubmissionStorage()
 ) {
   const detail = ref<StoryDetail | null>(null)
   const setup = ref<StorySetupView | null>(null)
@@ -124,6 +143,12 @@ export function useStory(
   const notice = ref<StoryNotice | null>(null)
   const openedFor = ref<string | null>(null)
   const openRun = ref<OpenRun | null>(null)
+  const recoveryState = ref<RecoveryState>('loading')
+  /**
+   * Frozen submissions by world, write-through to durable storage: the
+   * in-memory map keeps the banner reactive, the store survives reload.
+   */
+  const pendings = reactive(new Map<string, PendingSubmission>())
 
   let cycle = 0
   let controller: AbortController | null = null
@@ -155,6 +180,18 @@ export function useStory(
       return grant.value.role as Role
     }
     return detail.value?.mode === 'player' ? 'player' : 'watcher'
+  })
+
+  /**
+   * The frozen submission for the stranded beat, if one was filed with
+   * it: resume refiles exactly this, whatever the composer holds now.
+   */
+  const preservedSubmission = computed<PendingSubmission | null>(() => {
+    const stranded = openRun.value
+    if (!stranded || recoveryState.value !== 'open') return null
+    const held = pendings.get(stranded.worldId)
+    if (!held || held.index !== stranded.index) return null
+    return held
   })
 
   const occupantsByPlace = computed(() => {
@@ -233,6 +270,7 @@ export function useStory(
     traveling.value = false
     loadingMore.value = false
     openRun.value = null
+    recoveryState.value = 'loading'
     loading.value = true
     loadError.value = null
     entries.value = []
@@ -242,6 +280,10 @@ export function useStory(
     grantLoaded.value = false
     // Frozen for this load: a route change mid-load must not retarget reads.
     const worldId = id()
+    // Rehydrate any submission frozen before a reload: resume must find
+    // the original words even though the composer starts empty.
+    const stored = loadPendingSubmission(storage, worldId)
+    if (stored) pendings.set(worldId, stored)
     try {
       const [story, initialSetup, activeGrant, worldMap] = await Promise.all([
         getStory(worldId, opts()),
@@ -322,30 +364,43 @@ export function useStory(
 
   /**
    * Read-only run reconciliation: names the stranded beat (if any) without
-   * starting work. A failed read leaves the previous value alone — status
-   * is advisory and must never invent or clear beat state on its own.
+   * starting work. `clear` is set only on an explicit no-open-run answer;
+   * a failed read — or a run named without its index — marks the state
+   * `unknown` and keeps any last-known open run. Unknown is not clear.
    */
   async function refreshStatus(worldId: string = id(), generation: number = cycle): Promise<void> {
     try {
       const header: OpHeader = { role: unref(role), characterId: unref(characterId) }
       const status = await getSimulationStatus(worldId, header)
       if (generation !== cycle) return
-      if (
-        status.open_run_id !== undefined &&
-        status.open_run_id !== null &&
-        status.open_run_index !== undefined &&
-        status.open_run_index !== null
-      ) {
+      if (status.open_run_id === undefined || status.open_run_id === null) {
+        openRun.value = null
+        recoveryState.value = 'clear'
+      } else if (status.open_run_index === undefined || status.open_run_index === null) {
+        // Names the run but not its beat: unresolved, never clear.
+        recoveryState.value = 'unknown'
+      } else {
         openRun.value = {
           id: status.open_run_id,
+          worldId,
           index: status.open_run_index,
           state: status.open_run_state ?? 'open'
         }
-      } else {
-        openRun.value = null
+        recoveryState.value = 'open'
       }
     } catch {
-      /* advisory only */
+      if (generation !== cycle) return
+      recoveryState.value = 'unknown'
+    }
+  }
+
+  /** Retire records a fresh commit supersedes: same beat confirmed, or a
+   * later beat made refiling impossible. Duplicates retire nothing. */
+  function retirePendings(worldId: string, throughIndex: number): void {
+    const held = pendings.get(worldId)
+    if (held && held.index <= throughIndex) {
+      pendings.delete(worldId)
+      clearPendingSubmission(storage, worldId)
     }
   }
 
@@ -390,6 +445,19 @@ export function useStory(
       intents,
       generation: cycle
     }
+    // Freeze the filed submission before the first byte: an interruption
+    // ahead of server persistence must still leave the exact words
+    // recoverable, independent of later composer edits or a reload.
+    if (op.intents !== undefined) {
+      const frozen: PendingSubmission = {
+        worldId: op.worldId,
+        index: op.index,
+        intents: op.intents,
+        savedAt: new Date().toISOString()
+      }
+      pendings.set(op.worldId, frozen)
+      savePendingSubmission(storage, frozen)
+    }
     const alive = (): boolean => op.generation === cycle
     // A 409 proves a beat is executing, never that these words belong
     // to it: another tab may be advancing without them. Claim nothing
@@ -410,6 +478,8 @@ export function useStory(
         notice.value = { kind: 'info', text: 'That beat already committed — showing it.' }
       } else if (alive()) {
         appliedFresh = true
+        // A fresh commit is the only proof the frozen words landed.
+        retirePendings(op.worldId, op.index)
         // Beat-scoped fallback: narration that fell back says so on the
         // beat, never as a story-wide provider claim.
         const fallback = beatFallbackNotice(op.index, result.scenes)
@@ -495,12 +565,20 @@ export function useStory(
 
   /**
    * Resume the stranded beat at its own index: the server replays the same
-   * run instead of starting another beat. Files no new intents unless the
-   * caller passes them; the composer's preserved draft stays untouched.
+   * run instead of starting another beat. Refiles the exact submission
+   * frozen when the beat was first sent — never the live composer, which
+   * may hold newer drafts or have been cleared by a reload. Without a
+   * frozen record the beat replays bare; the composer stays untouched
+   * either way, so newer drafts remain separate for the next beat.
    */
-  async function resumeBeat(intents?: Parameters<typeof advanceStory>[2]): Promise<boolean> {
+  async function resumeBeat(): Promise<boolean> {
     const stranded = openRun.value
-    if (!stranded || !detail.value || advancing.value) return false
+    if (!stranded || recoveryState.value !== 'open' || !detail.value || advancing.value) {
+      return false
+    }
+    if (stranded.worldId !== id()) return false
+    const held = pendings.get(stranded.worldId)
+    const intents = held && held.index === stranded.index ? held.intents : undefined
     return advance(intents, stranded.index)
   }
 
@@ -610,6 +688,8 @@ export function useStory(
     loadingMore,
     notice,
     openRun,
+    recoveryState,
+    preservedSubmission,
     load,
     cancel,
     advance,
