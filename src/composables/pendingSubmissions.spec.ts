@@ -32,20 +32,10 @@ function memStore(): SubmissionStorage {
   }
 }
 
-/** Private per-context memory: writes succeed locally, die with the page. */
+/** Private per-context memory via the real factory: writes succeed locally, die with the page. */
 function sessionStore(): SubmissionStorage {
-  const memory = new Map<string, string>()
-  return {
-    getItem: (key) => memory.get(key) ?? null,
-    setItem: (key, value) => {
-      memory.set(key, value)
-    },
-    removeItem: (key) => {
-      memory.delete(key)
-    },
-    keys: (prefix) => [...memory.keys()].filter((key) => key.startsWith(prefix)),
-    persistence: 'session'
-  }
+  vi.stubGlobal('localStorage', undefined)
+  return defaultSubmissionStorage()
 }
 
 function throwingStore(): SubmissionStorage {
@@ -335,5 +325,59 @@ describe('pendingSubmissions', () => {
   it('mints unique filing identities', () => {
     expect(newFilingId()).toBeTruthy()
     expect(newFilingId()).not.toBe(newFilingId())
+  })
+
+  it('keeps readable durable records when the probe write fails', () => {
+    const backing = new Map<string, string>()
+    const seeded = memStore()
+    const { record } = filePendingSubmission(seeded, Q1, { id: 'q1' })
+    backing.set(filingKey('A', 'q1'), JSON.stringify({ ...record, durable: true }))
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => backing.get(key) ?? null,
+      setItem: () => {
+        throw new Error('full')
+      },
+      removeItem: (key: string) => {
+        backing.delete(key)
+      },
+      get length() {
+        return backing.size
+      },
+      key: (index: number) => [...backing.keys()][index] ?? null
+    })
+    // Read availability survives the failed probe; only writes are session-flagged.
+    const store = defaultSubmissionStorage()
+    expect(store.persistence).toBe('session')
+    const found = loadFilings(store, 'A')
+    expect(found).toHaveLength(1)
+    expect(found[0]?.durable).toBe(true)
+    expect(found[0]?.intents).toEqual(Q1.intents)
+    const filed = filePendingSubmission(store, Q2, { id: 'q2' })
+    expect(filed.persisted).toBe(false)
+    expect(filed.record.durable).toBe(false)
+  })
+
+  it('refuses shared writes without cross-context randomness', async () => {
+    vi.stubGlobal('crypto', undefined)
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1727740000000)
+    try {
+      // Two independent module contexts, same clock, fresh counters.
+      vi.resetModules()
+      const modA = await import('./pendingSubmissions')
+      const fileA = modA.filePendingSubmission
+      vi.resetModules()
+      const modB = await import('./pendingSubmissions')
+      const store = memStore()
+      const a = fileA(store, Q1)
+      const b = modB.filePendingSubmission(store, Q2)
+      // Both contexts mint the same weak identity — so neither writes it.
+      expect(a.record.id).toBe(b.record.id)
+      expect(a.persisted).toBe(false)
+      expect(b.persisted).toBe(false)
+      expect(store.keys('ember-vale.pending-submission.v1.')).toEqual([])
+    } finally {
+      now.mockRestore()
+      vi.unstubAllGlobals()
+    }
   })
 })

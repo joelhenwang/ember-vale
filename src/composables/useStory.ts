@@ -44,6 +44,7 @@ import {
   markSubmissionRefused,
   retireSubmission,
   selectRecoveryCandidate,
+  type FilingsStatus,
   type PendingSubmission,
   type SubmissionStorage
 } from './pendingSubmissions'
@@ -316,15 +317,11 @@ export function useStory(
     // original words even though the composer starts empty. Corrupt data
     // is reported as corrupt and unreadable storage as unavailable —
     // neither is mistaken for a clean absent slot.
-    const stored = inspectFilings(storage, worldId)
-    if (stored.status === 'unavailable') {
-      filingsByWorld.delete(worldId)
+    const usability = reloadFilings(worldId)
+    if (usability === 'unavailable') {
       notice.value = { kind: 'error', text: UNAVAILABLE_STORAGE_TEXT }
-    } else {
-      filingsByWorld.set(worldId, stored.filings)
-      if (stored.status === 'invalid') {
-        notice.value = { kind: 'error', text: UNREADABLE_RECORD_TEXT }
-      }
+    } else if (usability === 'invalid') {
+      notice.value = { kind: 'error', text: UNREADABLE_RECORD_TEXT }
     }
     try {
       const [story, initialSetup, activeGrant, worldMap] = await Promise.all([
@@ -409,8 +406,11 @@ export function useStory(
    * starting work. `clear` is set only on an explicit no-open-run answer;
    * a failed read — or a run named without its index — marks the state
    * `unknown` and keeps any last-known open run. Unknown is not clear.
+   * Filings are re-read first, so a tab that discovers another tab's
+   * stranded beat already holds its preserved words.
    */
   async function refreshStatus(worldId: string = id(), generation: number = cycle): Promise<void> {
+    reloadFilings(worldId)
     try {
       const header: OpHeader = { role: unref(role), characterId: unref(characterId) }
       const status = await getSimulationStatus(worldId, header)
@@ -434,6 +434,30 @@ export function useStory(
       if (generation !== cycle) return
       recoveryState.value = 'unknown'
     }
+  }
+
+  /**
+   * Re-read a world's filings from storage, merging this controller's
+   * session-only records (which storage may not hold) and preserving its
+   * refusal marks (which storage may not have received). The cache is
+   * never fresher than the last successful read: an unreadable store
+   * leaves it untouched and reports `unavailable`.
+   */
+  function reloadFilings(worldId: string): FilingsStatus {
+    const seen = inspectFilings(storage, worldId)
+    if (seen.status === 'unavailable') return 'unavailable'
+    const current = filingsByWorld.get(worldId) ?? []
+    const refusedIds = new Set(
+      current.filter((filing) => filing.refused === true).map((filing) => filing.id)
+    )
+    const storedIds = new Set(seen.filings.map((filing) => filing.id))
+    filingsByWorld.set(worldId, [
+      ...seen.filings.map((filing) =>
+        refusedIds.has(filing.id) ? { ...filing, refused: true } : filing
+      ),
+      ...current.filter((filing) => !filing.durable && !storedIds.has(filing.id))
+    ])
+    return seen.status
   }
 
   /**
@@ -665,12 +689,15 @@ export function useStory(
 
   /**
    * Resume the stranded beat at its own index: the server replays the same
-   * run instead of starting another beat. Replays the exact selected
-   * filing by id — never the live composer, which may hold newer drafts
-   * or have been cleared by a reload — and files nothing new, so the
-   * replay can neither duplicate the record nor displace it. Without a
-   * selected record the beat replays bare; the composer stays untouched
-   * either way, so newer drafts remain separate for the next beat.
+   * run instead of starting another beat. Filings are re-read first, so a
+   * tab that never saw the original send still replays it. Replays the
+   * exact selected filing by id — never the live composer, which may hold
+   * newer drafts or have been cleared by a reload — and files nothing
+   * new, so the replay can neither duplicate the record nor displace it.
+   * Without a selected record the beat replays bare, except when storage
+   * itself is unreadable: an unavailable store never becomes an automatic
+   * bare replay. The composer stays untouched either way, so newer drafts
+   * remain separate for the next beat.
    */
   async function resumeBeat(): Promise<boolean> {
     const stranded = openRun.value
@@ -678,6 +705,14 @@ export function useStory(
       return false
     }
     if (stranded.worldId !== id()) return false
+    const usability = reloadFilings(stranded.worldId)
+    if (usability === 'unavailable') {
+      notice.value = { kind: 'error', text: UNAVAILABLE_STORAGE_TEXT }
+      return false
+    }
+    if (usability === 'invalid') {
+      notice.value = { kind: 'error', text: UNREADABLE_RECORD_TEXT }
+    }
     const held = preservedSubmission.value
     const intents = held ? held.intents : undefined
     return advanceInner(

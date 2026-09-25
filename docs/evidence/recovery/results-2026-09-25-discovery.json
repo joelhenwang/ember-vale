@@ -1,0 +1,72 @@
+{
+  "slice": "recovery discovery correction: fresh reads, split capabilities, safe fallback identity",
+  "commit": "79465f3",
+  "dirty": true,
+  "diffSha256": "c4373c8a0badb0248826e7cd99ab7ae7fb717a63ed76a3b1a7c19c3263fa0c53",
+  "untracked": ["docs/evidence/recovery/results-2026-09-25-discovery.json"],
+  "at": "2026-09-25T17:00:00Z",
+  "gateway": "deterministic only: vitest fetch mocks (frontend)",
+  "modelSpend": "none",
+  "runs": [
+    {
+      "command": "npx vitest run",
+      "ok": true,
+      "testFiles": 28,
+      "tests": 291,
+      "failures": 0
+    },
+    {
+      "command": "npx vue-tsc --noEmit",
+      "ok": true
+    },
+    {
+      "command": "npx eslint <5 touched frontend files>",
+      "ok": true
+    },
+    {
+      "command": "npx prettier --check <5 touched frontend files>",
+      "ok": true
+    }
+  ],
+  "results": [
+    {
+      "case": "a tab that never saw the send resumes another tab's filing after discovery",
+      "ok": true,
+      "requests": [
+        "controller A and B load with no filings",
+        "POST /api/v1/stage1/advance {world_id: A, absolute_index: 2, player_intents: Q1} (A, held)",
+        "GET /api/v1/simulation/status (B discovers open run 2)",
+        "POST /api/v1/stage1/advance {world_id: A, absolute_index: 2, player_intents: Q1} (B resumes, no page reload)"
+      ],
+      "outcomes": [
+        "B's status check re-reads filings and elects Q1",
+        "B's resume posts absolute_index 2 with player_intents == Q1 verbatim",
+        "an unreadable store blocks resume instead of sending a bare replay"
+      ]
+    },
+    {
+      "case": "readable durable records survive a failed probe write via the default factory",
+      "ok": true,
+      "outcomes": [
+        "factory wrapper reports persistence session but keeps reads",
+        "pre-existing Q1 loads with durable true",
+        "new filing on the same wrapper reports persisted false"
+      ]
+    },
+    {
+      "case": "weak fallback identities never reach shared storage",
+      "ok": true,
+      "outcomes": [
+        "two independent module contexts, same clock, no platform randomness mint the same id",
+        "both filings report persisted false and write zero keys"
+      ]
+    },
+    {
+      "case": "several unsent drafts are not described as the proven original",
+      "ok": true,
+      "outcomes": [
+        "banner refiles the earliest saved question and states admission is unproven when other drafts exist"
+      ]
+    }
+  ]
+}

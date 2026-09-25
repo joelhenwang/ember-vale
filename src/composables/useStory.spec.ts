@@ -1018,6 +1018,41 @@ describe('useStory room', () => {
     expect(clean.notice.value).toBeNull()
   })
 
+  it('a tab that never saw the send resumes another tab\u2019s filing after discovery', async () => {
+    installFetch()
+    const store = memStore()
+    const original = question('What news from the mill?')
+    const a = useStory('A', 'watcher', undefined, store)
+    const b = useStory('A', 'watcher', undefined, store)
+    await a.load()
+    await b.load()
+    // Tab A files Q1 after both controllers loaded; the send strands.
+    advanceHold = true
+    const filingA = a.advance(original)
+    await vi.waitFor(() => expect(heldAdvances).toHaveLength(1))
+    statusByStory.set('A', { id: 'run-9', index: 2, state: 'scenes_assembled' })
+    // Tab B discovers the stranded run without reloading and already holds Q1.
+    await b.refreshStatus()
+    expect(b.recoveryState.value).toBe('open')
+    expect(b.preservedSubmission.value?.intents).toEqual(original)
+    advanceHold = false
+    const resumed = b.resumeBeat()
+    statusByStory.delete('A')
+    await expect(resumed).resolves.toBe(true)
+    const posts = advancePosts()
+    expect(posts).toHaveLength(2)
+    expect(advanceBody(posts[1])['absolute_index']).toBe(2)
+    expect(advanceBody(posts[1])['player_intents']).toEqual(original)
+    // Settle Tab A's interrupted send behind the completed resume.
+    failures.set('POST /api/v1/stage1/advance', {
+      status: 500,
+      code: 'INTERNAL',
+      message: 'died mid-beat'
+    })
+    heldAdvances[0].reject(new Error('REQUEST_TIMEOUT'))
+    await expect(filingA).resolves.toBe(false)
+  })
+
   it('unreadable storage is reported as unavailable, never absent', async () => {
     installFetch()
     // A filing exists, but this controller cannot read it.

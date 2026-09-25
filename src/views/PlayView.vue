@@ -305,8 +305,15 @@ onUnmounted(() => {
           landed, or resume it.
           <template v-if="story.preservedSubmission.value">
             <template v-if="story.preservedSubmission.value.durable">
-              Resume refiles your preserved question; newer drafts stay in the box for the next
-              beat.
+              <template v-if="story.contenderSubmissions.value.length === 0">
+                Resume refiles your preserved question; newer drafts stay in the box for the next
+                beat.
+              </template>
+              <template v-else>
+                Resume refiles the earliest saved question — with several unsent drafts, the room
+                cannot prove which one the server admitted; check the timeline first if it matters.
+                Newer drafts stay in the box for the next beat.
+              </template>
             </template>
             <template v-else>
               Resume refiles your question from this session only — recovery storage failed, so a

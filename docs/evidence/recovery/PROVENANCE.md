@@ -49,6 +49,20 @@ stranded index); refusal and retirement touch only the filing's own key
 inaccessible-localStorage fallback as session-only, and thrown reads
 report `unavailable` instead of `absent`.
 
+## 2026-09-25 discovery correction (`results-2026-09-25-discovery.json`)
+
+A further round closed three gaps on top of the unique-key design,
+which is unchanged: filings are re-read on status refresh and before
+every resume (merging session-only records and preserving refusal
+marks), so a tab that never saw the send still replays it — and an
+unreadable store blocks resume instead of sending a bare replay. The
+default factory separates read availability from write capability: a
+failed probe write flags session-only but keeps readable durable
+records. Fallback identities without platform randomness stay
+memory-only, since per-tab counters would collide. The banner no
+longer presents the elected filing as the proven original when other
+unsent drafts exist.
+
 ## What this record does not claim
 
 - The earlier live-Edge browser walkthrough left no preserved

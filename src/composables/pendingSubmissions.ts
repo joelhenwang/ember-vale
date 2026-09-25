@@ -83,9 +83,17 @@ export function filingKey(worldId: string, filingId: string): string {
   return `${filingPrefix(worldId)}${filingId}`
 }
 
+/**
+ * Private per-context maps: their bytes die with the context, so records
+ * read through them are session-only even when the bytes look durable.
+ * A localStorage wrapper whose probe write fails is NOT listed here —
+ * its readable bytes genuinely survive reload.
+ */
+const volatileStores = new WeakSet<object>()
+
 function memoryStore(persistence: 'durable' | 'session'): SubmissionStorage {
   const memory = new Map<string, string>()
-  return {
+  const store: SubmissionStorage = {
     getItem: (key) => memory.get(key) ?? null,
     setItem: (key, value) => {
       memory.set(key, value)
@@ -96,20 +104,29 @@ function memoryStore(persistence: 'durable' | 'session'): SubmissionStorage {
     keys: (prefix) => [...memory.keys()].filter((key) => key.startsWith(prefix)),
     persistence
   }
+  if (persistence === 'session') volatileStores.add(store)
+  return store
 }
 
 /**
- * Browser storage when available and provably writable, otherwise a
- * private in-memory fallback explicitly flagged session-only: a fresh
- * context receives a new empty map, so its writes must never be reported
- * as reload-safe.
+ * Browser storage when reachable. Read availability and write capability
+ * are separated: a failed probe write flags the wrapper session-only but
+ * keeps every readable durable record accessible — full storage must not
+ * hide existing recovery data. Only a wholly unreachable localStorage
+ * falls back to a private in-memory map, which is session-only and
+ * starts empty for each fresh context.
  */
 export function defaultSubmissionStorage(): SubmissionStorage {
   try {
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(PROBE_KEY, '1')
-      localStorage.removeItem(PROBE_KEY)
       const backend = localStorage
+      let writable = true
+      try {
+        backend.setItem(PROBE_KEY, '1')
+        backend.removeItem(PROBE_KEY)
+      } catch {
+        writable = false
+      }
       return {
         getItem: (key) => backend.getItem(key),
         setItem: (key, value) => {
@@ -126,16 +143,39 @@ export function defaultSubmissionStorage(): SubmissionStorage {
           }
           return out
         },
-        persistence: 'durable'
+        persistence: writable ? 'durable' : 'session'
       }
     }
   } catch {
-    /* inaccessible storage: fall through to the session-only fallback */
+    /* unreachable storage: fall through to the session-only fallback */
   }
   return memoryStore('session')
 }
 
 let filingCounter = 0
+
+function randomHex(bytes: number): string | null {
+  try {
+    if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+      const buf = new Uint8Array(bytes)
+      crypto.getRandomValues(buf)
+      return [...buf].map((b) => b.toString(16).padStart(2, '0')).join('')
+    }
+  } catch {
+    /* no platform randomness: fall through to the weak fallback */
+  }
+  return null
+}
+
+/** Cross-context randomness for filing identity, when the platform has any. */
+function hasStrongRandom(): boolean {
+  try {
+    if (typeof crypto === 'undefined') return false
+    return typeof crypto.randomUUID === 'function' || typeof crypto.getRandomValues === 'function'
+  } catch {
+    return false
+  }
+}
 
 /** Unique filing identity for one send. Test seeds override it explicitly. */
 export function newFilingId(): string {
@@ -144,10 +184,21 @@ export function newFilingId(): string {
       return crypto.randomUUID()
     }
   } catch {
-    /* non-secure context: fall through to the counter fallback */
+    /* non-secure context: fall through below */
   }
-  filingCounter += 1
-  return `filing-${Date.now().toString(36)}-${filingCounter}`
+  return randomHex(16) ?? `filing-${Date.now().toString(36)}-${(filingCounter += 1)}`
+}
+
+/**
+ * Mint an identity and say whether it is safe to share: the counter
+ * fallback restarts at 1 in every fresh tab, so two tabs filing in the
+ * same millisecond without platform randomness would share a key. Weak
+ * identities stay memory-only — never written to shared storage.
+ */
+function mintFilingId(seed?: string): { id: string; shareable: boolean } {
+  if (seed !== undefined) return { id: seed, shareable: true }
+  if (hasStrongRandom()) return { id: newFilingId(), shareable: true }
+  return { id: newFilingId(), shareable: false }
 }
 
 /** Families the stage-1 advance route can validate (ActionIntent union). */
@@ -254,9 +305,11 @@ export function inspectFilings(store: SubmissionStorage, worldId: string): Filin
   const filings: PendingSubmission[] = []
   const seen = new Set<string>()
   let corrupt = 0
-  // A session-only store's bytes never survived a reload, so records read
-  // through it are session-only too — never laundered as durable.
-  const sessionOnly = store.persistence === 'session'
+  // Private per-context maps never survive reload, so records read
+  // through them are session-only — never laundered as durable. A
+  // localStorage wrapper with failing writes keeps its readable records
+  // durable: those bytes genuinely survive.
+  const sessionOnly = volatileStores.has(store)
   const takeRaw = (raw: string | null): void => {
     if (!raw) return
     const parsed = parseJson(raw)
@@ -365,22 +418,26 @@ export interface FilingResult {
 /**
  * File one submission under its own unique key: no shared slot is read,
  * so overlapping claims across tabs cannot overwrite each other — both
- * records survive and read-time election picks the earliest. Returns
- * persistence explicitly.
+ * records survive and read-time election picks the earliest. Without
+ * cross-context randomness the identity is unsafe to share, so the
+ * filing stays memory-only rather than risking a key collision.
+ * Returns persistence explicitly.
  */
 export function filePendingSubmission(
   store: SubmissionStorage,
   draft: FilingDraft,
   seed?: { id?: string; savedAt?: string }
 ): FilingResult {
+  const minted = mintFilingId(seed?.id)
   const record: PendingSubmission = {
-    id: seed?.id ?? newFilingId(),
+    id: minted.id,
     worldId: draft.worldId,
     index: draft.index,
     intents: draft.intents,
     savedAt: seed?.savedAt ?? new Date().toISOString(),
     durable: false
   }
+  if (!minted.shareable) return { record, persisted: false }
   const written = writeJson(store, filingKey(draft.worldId, record.id), record)
   const persisted = written && store.persistence !== 'session'
   return { record: { ...record, durable: persisted }, persisted }
