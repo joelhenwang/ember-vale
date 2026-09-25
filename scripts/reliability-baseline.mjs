@@ -492,6 +492,10 @@ async function runScenario() {
         step.playerIntents,
         step.roleHeaders
       ),
+    onBlocked: (blocked) => {
+      blockedSteps.push(...blocked)
+      checkpoint()
+    },
     finalize: () => finalizeReads(cast),
     note
   }
@@ -556,40 +560,85 @@ async function finalizeReads(cast) {
 
   // Beat 5: reload — fresh reads only, proving committed beats retrieve.
   // Not counted among advances and never 'useful': it measures retrieval.
+  // The skeleton is recorded before the reads, and each read failure is
+  // preserved on the record without discarding the successful reads.
   const reloadStarted = performance.now()
-  const detail = await call('GET', `/stories/${worldId}`)
-  const timeline = await readTimeline(worldId)
-  const sceneIds = beats.flatMap((b) => (b.scenes ?? []).map((s) => s.scene_id).filter(Boolean))
-  const narrations = await readNarrations([...new Set(sceneIds)], {})
-  const reloadWallMs = Math.round(performance.now() - reloadStarted)
-  const committedEvents = beats.flatMap((b) => (b.scenes ?? []).map((s) => s.event_id))
-  const visibleIds = new Set((timeline.entries ?? []).map((e) => e.event_id))
-  const missing = committedEvents.filter((id) => id && !visibleIds.has(id))
-  beats.push({
+  const reload = {
     kind: 'reload',
     story_id: storyId,
     world_id: worldId,
-    client_wall_ms: reloadWallMs,
-    detailWallMs: detail.wallMs,
-    timelineWallMs: timeline.wallMs ?? null,
-    narrationReadMs: narrations.wallMs,
-    timelineEntries: (timeline.entries ?? []).length,
-    narrationBeats: narrations.beats.length,
-    missingEvents: missing,
-    provider: await providerSnapshot(worldId),
-    classification: {
-      layers: {
-        provider: 'not-applicable',
-        validation: detail.ok ? 'accepted' : 'rejected',
-        committed: 'not-applicable',
-        narration: 'not-applicable',
-        display: missing.length === 0 && detail.ok ? 'yes' : 'no'
-      },
-      reasons:
-        missing.length === 0 ? [] : [`${missing.length} committed events absent after reload`],
-      answer_usefulness: 'unevaluated'
-    }
-  })
+    client_wall_ms: null,
+    detailWallMs: null,
+    timelineWallMs: null,
+    narrationReadMs: null,
+    timelineEntries: 0,
+    narrationBeats: 0,
+    missingEvents: [],
+    provider: null,
+    readErrors: [],
+    classification: null
+  }
+  beats.push(reload)
+  checkpoint()
+  const fail = (name, err) => {
+    const entry = `${name}: ${transportKind(err)}: ${String(err).slice(0, 200)}`
+    reload.readErrors.push(entry)
+    note(`reload ${entry} (retained)`)
+  }
+  let detail = null
+  try {
+    detail = await call('GET', `/stories/${worldId}`)
+    reload.detailWallMs = detail.wallMs
+    if (!detail.ok) reload.readErrors.push(`detail: HTTP ${detail.status} ${detail.errorBody}`)
+  } catch (err) {
+    fail('detail', err)
+  }
+  let timelineEntries = []
+  try {
+    const timeline = await readTimeline(worldId)
+    timelineEntries = timeline.entries ?? []
+    reload.timelineEntries = timelineEntries.length
+    reload.timelineWallMs = timeline.wallMs ?? null
+  } catch (err) {
+    reload.timelineError = `${transportKind(err)}: ${String(err).slice(0, 200)}`
+    fail('timeline', err)
+  }
+  let narrationBeats = []
+  try {
+    const sceneIds = beats.flatMap((b) => (b.scenes ?? []).map((s) => s.scene_id).filter(Boolean))
+    const narrations = await readNarrations([...new Set(sceneIds)], {})
+    narrationBeats = narrations.beats ?? []
+    reload.narrationBeats = narrationBeats.length
+    reload.narrationReadMs = narrations.wallMs ?? null
+  } catch (err) {
+    reload.narrationError = `${transportKind(err)}: ${String(err).slice(0, 200)}`
+    fail('narrations', err)
+  }
+  try {
+    reload.provider = await providerSnapshot(worldId)
+  } catch (err) {
+    reload.providerError = `${transportKind(err)}: ${String(err).slice(0, 200)}`
+    fail('provider', err)
+  }
+  reload.client_wall_ms = Math.round(performance.now() - reloadStarted)
+  const committedEvents = beats.flatMap((b) => (b.scenes ?? []).map((s) => s.event_id))
+  const visibleIds = new Set(timelineEntries.map((e) => e.event_id))
+  const missing = committedEvents.filter((id) => id && !visibleIds.has(id))
+  reload.missingEvents = missing
+  if (missing.length > 0)
+    reload.readErrors.push(`${missing.length} committed events absent after reload`)
+  const validated = detail && detail.ok
+  reload.classification = {
+    layers: {
+      provider: 'not-applicable',
+      validation: detail ? (detail.ok ? 'accepted' : 'rejected') : 'unknown',
+      committed: 'not-applicable',
+      narration: 'not-applicable',
+      display: validated && missing.length === 0 && reload.readErrors.length === 0 ? 'yes' : 'no'
+    },
+    reasons: [...reload.readErrors],
+    answer_usefulness: 'unevaluated'
+  }
   checkpoint()
 }
 

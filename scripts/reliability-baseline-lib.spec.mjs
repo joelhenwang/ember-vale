@@ -542,6 +542,175 @@ describe('runPlannedScenario finalizes after a halt', () => {
     expect(report.summary.advances_committed).toBe(2)
     expect(report.summary.blocked).toBe(1)
   })
+
+  it('keeps blocked steps and the answer when a finalization read fails', async () => {
+    const calls = []
+    const attempted = []
+    const noted = []
+    const timeout = {
+      kind: 'follow-up',
+      world_id: 'w',
+      absolute_index: 9,
+      run_id: null,
+      client_wall_ms: 180001,
+      transport_error: 'timeout',
+      resolution: 'unresolved',
+      classification: { layers: {}, reasons: ['timeout'] }
+    }
+    const question = {
+      kind: 'question',
+      world_id: 'w',
+      absolute_index: 8,
+      run_id: 'r2',
+      client_wall_ms: 500,
+      transport_error: null,
+      classification: {
+        layers: { provider: 'degraded', narration: 'fallback' },
+        advancement: { committed: true, retrieval_complete: true, narration: 'fallback' },
+        answer_usefulness: 'unevaluated'
+      }
+    }
+    const persisted = []
+    const ops = {
+      setSeat: async () => ({ ok: true }),
+      advance: async (step) => {
+        calls.push(['advance', step.kind])
+        const rec = step.kind === 'follow-up' ? timeout : question
+        attempted.push(rec)
+        return rec
+      },
+      onBlocked: (blocked) => {
+        calls.push(['blocked'])
+        persisted.push(...blocked)
+      },
+      finalize: async (records) => {
+        calls.push(['finalize'])
+        // The answer was already traced before the reload read failed.
+        const q = records.find((r) => r.kind === 'question')
+        q.npc_answer = {
+          asker: 'Wren',
+          responder: 'Ash',
+          status: 'answered',
+          narration_retrieval: 'complete',
+          answers: [
+            {
+              source: 'reaction',
+              scene_id: 's1',
+              source_id: 'r-ash',
+              topic: 'The bell meant dawn.',
+              narration_citations: ['b1'],
+              speaker_beats: ['b1']
+            }
+          ]
+        }
+        // The reload timeline read fails after the answer is preserved.
+        records.push({
+          kind: 'reload',
+          world_id: 'w',
+          client_wall_ms: 150,
+          timelineEntries: 0,
+          timelineError: 'connection: fetch failed',
+          readErrors: ['timeline: connection: fetch failed'],
+          classification: {
+            layers: {
+              provider: 'not-applicable',
+              validation: 'unknown',
+              committed: 'not-applicable',
+              narration: 'not-applicable',
+              display: 'no'
+            },
+            reasons: ['timeline: connection: fetch failed'],
+            answer_usefulness: 'unevaluated'
+          }
+        })
+      },
+      note: (msg) => noted.push(msg)
+    }
+    const steps = [
+      { kind: 'question', seat: { role: 'player' } },
+      { kind: 'follow-up', seat: null },
+      { kind: 'ordinary-advance', seat: { role: 'watcher' } }
+    ]
+    const { blockedSteps, attempted: finalized } = await runPlannedScenario(steps, ops)
+
+    // Blocked steps were persisted before finalization ran.
+    const order = calls.map((c) => c[0])
+    expect(order.indexOf('blocked')).toBeLessThan(order.indexOf('finalize'))
+    expect(blockedSteps).toEqual([
+      {
+        kind: 'ordinary-advance',
+        status: 'blocked',
+        reason: expect.stringMatching(/follow-up timeout/)
+      }
+    ])
+    expect(persisted).toEqual(blockedSteps)
+    expect(calls.filter((c) => c[0] === 'advance').map((c) => c[1])).toEqual([
+      'question',
+      'follow-up'
+    ])
+
+    const report = buildReport({
+      beats: finalized,
+      notes: [],
+      display: { status: 'skipped', steps: [] },
+      complete: true,
+      fatal: null,
+      blockedSteps,
+      meta: {
+        mode: 'live',
+        title: 't',
+        run: 'r1',
+        startedAt: 's',
+        finishedAt: 'f',
+        api: 'a',
+        storyId: 'st',
+        worldId: 'w',
+        pin: null
+      }
+    })
+    expect(report.summary.advances_committed).toBe(1)
+    const q = report.beats.find((b) => b.kind === 'question')
+    expect(q.npc_answer.status).toBe('answered')
+    expect(q.npc_answer.answers[0].narration_citations).toEqual(['b1'])
+    const reload = report.beats.find((b) => b.kind === 'reload')
+    expect(reload.readErrors.join(' ')).toMatch(/timeline/)
+    expect(reload.classification.layers.display).toBe('no')
+    expect(noted.join(' ').length).toBeGreaterThan(0)
+  })
+
+  it('still returns blocked steps when finalization itself throws', async () => {
+    const noted = []
+    const ops = {
+      setSeat: async () => ({ ok: true }),
+      advance: async () => ({
+        kind: 'follow-up',
+        transport_error: 'timeout',
+        resolution: 'unresolved',
+        classification: { layers: {}, reasons: [] }
+      }),
+      onBlocked: () => {},
+      finalize: async () => {
+        throw new Error('finalize store unavailable')
+      },
+      note: (msg) => noted.push(msg)
+    }
+    const { blockedSteps, attempted } = await runPlannedScenario(
+      [
+        { kind: 'follow-up', seat: null },
+        { kind: 'ordinary-advance', seat: null }
+      ],
+      ops
+    )
+    expect(attempted).toHaveLength(1)
+    expect(blockedSteps).toEqual([
+      {
+        kind: 'ordinary-advance',
+        status: 'blocked',
+        reason: expect.stringMatching(/follow-up timeout/)
+      }
+    ])
+    expect(noted.join(' ')).toMatch(/finalize/)
+  })
 })
 
 describe('unresolved timeouts halt mutation', () => {

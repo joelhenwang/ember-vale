@@ -217,9 +217,11 @@ export function markBlocked(kinds, reason) {
  *
  * Seat changes and advances stop at the first record for which
  * shouldHaltScenario holds; the remaining steps are returned as blocked
- * (never attempted). finalize ALWAYS runs afterwards for the acknowledged
- * attempts: it is read-only (source tracing, reload reads) and must not
- * change seats or advance. Returns { blockedSteps, attempted }.
+ * (never attempted). Blocked steps persist through ops.onBlocked BEFORE
+ * finalization, so a failing finalizer cannot lose them. finalize ALWAYS
+ * runs afterwards for the acknowledged attempts: it is read-only (source
+ * tracing, reload reads) and must not change seats or advance. A throwing
+ * finalizer is noted, never propagated. Returns { blockedSteps, attempted }.
  */
 export async function runPlannedScenario(steps, ops) {
   const blockedSteps = []
@@ -240,7 +242,14 @@ export async function runPlannedScenario(steps, ops) {
       ops.note?.(`${record.kind}: ${halted}; no further seat change or advance`)
     }
   }
-  await ops.finalize(attempted)
+  if (blockedSteps.length > 0) await ops.onBlocked?.(blockedSteps)
+  try {
+    await ops.finalize(attempted)
+  } catch (err) {
+    ops.note?.(
+      `finalization failed (attempts and blocked steps retained): ${String(err).slice(0, 200)}`
+    )
+  }
   return { blockedSteps, attempted }
 }
 
