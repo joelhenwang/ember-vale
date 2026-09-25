@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 from datetime import timedelta
+from time import perf_counter
 from uuid import UUID, uuid4
 
 from worldsim.application.orchestration.service import derive_run_id
@@ -60,6 +61,7 @@ async def admit(
         )
     return claimed
 
+
 async def release(factory: Callable[[], UnitOfWork], task: TaskRun, owner: str, ok: bool) -> None:
     """Release a held slot: success closes it, failure requeues it."""
     service = TaskService(factory)
@@ -78,7 +80,27 @@ async def guarded[T](
     work: Callable[[], Awaitable[T]],
 ) -> T:
     """Admit one scope, run the work, and release the slot either way."""
+    result, _, _ = await guarded_timed(factory, world_id, scope, owner, run_id, work)
+    return result
+
+
+async def guarded_timed[T](
+    factory: Callable[[], UnitOfWork],
+    world_id: UUID,
+    scope: str,
+    owner: str,
+    run_id: UUID | None,
+    work: Callable[[], Awaitable[T]],
+) -> tuple[T, int, int]:
+    """Admit one scope, run the work, and report admission/execution splits.
+
+    Returns ``(result, admission_ms, execution_ms)``: admission covers the
+    slot claim (queue wait under contention); execution covers the admitted
+    work. Release and error semantics match :func:`guarded` exactly.
+    """
+    admitted_at = perf_counter()
     slot = await admit(factory, world_id, scope, owner, run_id)
+    execution_at = perf_counter()
     try:
         result = await work()
     except DomainError as error:
@@ -96,7 +118,12 @@ async def guarded[T](
         await release(factory, slot, owner, False)
         raise
     await release(factory, slot, owner, True)
-    return result
+    finished_at = perf_counter()
+    return (
+        result,
+        max(0, int((execution_at - admitted_at) * 1000)),
+        max(0, int((finished_at - execution_at) * 1000)),
+    )
 
 
 def phase_scope(index: int) -> str:

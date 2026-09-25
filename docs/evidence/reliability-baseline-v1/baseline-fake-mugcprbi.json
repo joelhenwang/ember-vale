@@ -1,0 +1,881 @@
+{
+  "tool": "reliability-baseline",
+  "mode": "fake",
+  "title": "Reliability baseline",
+  "run": "mugcprbi",
+  "started_at": "2026-09-25T02:38:16.206Z",
+  "finished_at": "2026-09-25T02:38:38.520Z",
+  "api": "http://localhost:8101/api/v1",
+  "story_id": "e96f53ce-c2f3-411a-acac-70b3dc92d7cc",
+  "world_id": "e96f53ce-c2f3-411a-acac-70b3dc92d7cc",
+  "config_frozen": {
+    "note": "prompts, models, budgets, and retry behavior unchanged during collection"
+  },
+  "beats": [
+    {
+      "kind": "travel",
+      "absolute_index": 1,
+      "story_id": "e96f53ce-c2f3-411a-acac-70b3dc92d7cc",
+      "world_id": "e96f53ce-c2f3-411a-acac-70b3dc92d7cc",
+      "run_id": "46e27fb7-42f6-56a9-8c14-bcb0ed2b72ec",
+      "duplicate": false,
+      "client_wall_ms": 554,
+      "admission_ms": 20,
+      "execution_ms": 506,
+      "http_status": 200,
+      "scenes": [
+        {
+          "scene_id": "be2bbd46-c666-5bad-bf20-c9c3d4fb42b5",
+          "event_id": "659b8b2b-33ec-4caa-9324-a02db353ba2c",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        },
+        {
+          "scene_id": "d0ac3b07-9f78-5fbe-b665-b01562caa986",
+          "event_id": "c06c7399-c2ff-4e85-bc26-6149df302583",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        }
+      ],
+      "provider": {
+        "pin_state": "ok",
+        "pin_revision": 1,
+        "effective_source": "pin",
+        "effective_adapter": "fake",
+        "effective_model_id": "fake-echo",
+        "effective_revision": 1
+      },
+      "modelRuns": [
+        {
+          "call_id": "9e9993ce-e945-4c4f-b5dd-ae495167af3f",
+          "role": "director",
+          "profile": "director@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "e96f53ce-c2f3-411a-acac-70b3dc92d7cc",
+          "task_run_id": "ebf9dd60-8b1f-52f5-be20-91893a7e62cf",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "6566971a-0b34-4f18-b70d-223beb23781f",
+          "role": "director",
+          "profile": "director@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "e96f53ce-c2f3-411a-acac-70b3dc92d7cc",
+          "task_run_id": "ebf9dd60-8b1f-52f5-be20-91893a7e62cf",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "3dd36730-563d-4297-a93e-18ab1e9a7727",
+          "role": "character_decision",
+          "profile": "character@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "52c5df70-0690-49c7-baab-6e2666e71a70",
+          "task_run_id": "0cd052b1-e612-523b-9211-789e3db50c7c",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "54336ca9-6c9f-46c4-9a34-06eeda6323f6",
+          "role": "character_decision",
+          "profile": "character@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "62286d13-17c1-40d3-8acc-f204242d7db5",
+          "task_run_id": "b34bc451-4ec1-53e2-ab15-88be11c79e6e",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "9fe16fd3-9f6c-4026-ba36-8fc9306025fc",
+          "role": "character_decision",
+          "profile": "character@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "52c5df70-0690-49c7-baab-6e2666e71a70",
+          "task_run_id": "0cd052b1-e612-523b-9211-789e3db50c7c",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "e580a46b-dee5-472d-945c-2c28ce8189d5",
+          "role": "character_decision",
+          "profile": "character@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "62286d13-17c1-40d3-8acc-f204242d7db5",
+          "task_run_id": "b34bc451-4ec1-53e2-ab15-88be11c79e6e",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        }
+      ],
+      "modelRunsError": null,
+      "callSummary": {
+        "byRole": {
+          "director": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          },
+          "character_decision": {
+            "calls": 4,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          }
+        },
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "attempts": 0
+      },
+      "timelineEntries": 5,
+      "timelineWallMs": 15,
+      "narrationBeats": 4,
+      "narrationReadMs": 47,
+      "classification": {
+        "layers": {
+          "provider": "ok",
+          "validation": "pass",
+          "committed": "yes",
+          "narration": "fallback",
+          "display": "yes"
+        },
+        "reasons": [],
+        "useful": true,
+        "kind": "travel"
+      }
+    },
+    {
+      "kind": "question",
+      "absolute_index": 2,
+      "story_id": "e96f53ce-c2f3-411a-acac-70b3dc92d7cc",
+      "world_id": "e96f53ce-c2f3-411a-acac-70b3dc92d7cc",
+      "run_id": "8792d20f-c5ba-5a98-862b-2c7b8cd3bee2",
+      "duplicate": false,
+      "client_wall_ms": 592,
+      "admission_ms": 15,
+      "execution_ms": 551,
+      "http_status": 200,
+      "scenes": [
+        {
+          "scene_id": "4319a92b-dbf2-59ce-8f9a-c489bc520982",
+          "event_id": "e5ffe734-2377-4f6f-8142-b238b9d04bee",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        }
+      ],
+      "provider": {
+        "pin_state": "ok",
+        "pin_revision": 1,
+        "effective_source": "pin",
+        "effective_adapter": "fake",
+        "effective_model_id": "fake-echo",
+        "effective_revision": 1
+      },
+      "modelRuns": [
+        {
+          "call_id": "d82d10e3-b06b-42b3-acad-8147abdb6af3",
+          "role": "character_decision",
+          "profile": "character@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "62286d13-17c1-40d3-8acc-f204242d7db5",
+          "task_run_id": "c3105dc1-ee12-56c9-8a01-b339b3aa5f59",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "895ec119-07fe-43f6-902d-dc50d2214fdf",
+          "role": "character_decision",
+          "profile": "character@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "62286d13-17c1-40d3-8acc-f204242d7db5",
+          "task_run_id": "c3105dc1-ee12-56c9-8a01-b339b3aa5f59",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "83814588-cece-4cb4-88ba-f1656fa5e709",
+          "role": "reaction",
+          "profile": "reaction@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "62286d13-17c1-40d3-8acc-f204242d7db5",
+          "task_run_id": "c46a5b25-7b32-5394-be65-28aa1dec7703",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "425aa781-a7a5-4fcc-91da-7e33ef7b12a7",
+          "role": "reaction",
+          "profile": "reaction@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "62286d13-17c1-40d3-8acc-f204242d7db5",
+          "task_run_id": "c46a5b25-7b32-5394-be65-28aa1dec7703",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "e7cd3e7d-47f6-40db-b531-cff37ac288f8",
+          "role": "resolver",
+          "profile": "resolver@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": null,
+          "task_run_id": "99f7faea-3611-5f4f-bcdf-1eb91b8bc2e5",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "24256a4c-76df-4ec7-b798-cf967ee4a72d",
+          "role": "resolver",
+          "profile": "resolver@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": null,
+          "task_run_id": "99f7faea-3611-5f4f-bcdf-1eb91b8bc2e5",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "40dc3d2a-1719-4f53-9bb5-7aae71a7c896",
+          "role": "narrator",
+          "profile": "narrator@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": null,
+          "task_run_id": "fd95c9cf-e8c2-5ab8-9cd7-9f2c9b909274",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "0842d19b-114c-4eb6-a088-78e6837560f1",
+          "role": "narrator",
+          "profile": "narrator@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": null,
+          "task_run_id": "fd95c9cf-e8c2-5ab8-9cd7-9f2c9b909274",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        }
+      ],
+      "modelRunsError": null,
+      "callSummary": {
+        "byRole": {
+          "character_decision": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          },
+          "reaction": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          },
+          "resolver": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          },
+          "narrator": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          }
+        },
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "attempts": 0
+      },
+      "timelineEntries": 7,
+      "timelineWallMs": 30,
+      "narrationBeats": 4,
+      "narrationReadMs": 30,
+      "classification": {
+        "layers": {
+          "provider": "ok",
+          "validation": "pass",
+          "committed": "yes",
+          "narration": "fallback",
+          "display": "yes"
+        },
+        "reasons": [],
+        "useful": true,
+        "kind": "question"
+      }
+    },
+    {
+      "kind": "follow-up",
+      "absolute_index": 3,
+      "story_id": "e96f53ce-c2f3-411a-acac-70b3dc92d7cc",
+      "world_id": "e96f53ce-c2f3-411a-acac-70b3dc92d7cc",
+      "run_id": "d8cf25ee-73f7-5c4c-8518-c0d7d8edcdc3",
+      "duplicate": false,
+      "client_wall_ms": 594,
+      "admission_ms": 14,
+      "execution_ms": 565,
+      "http_status": 200,
+      "scenes": [
+        {
+          "scene_id": "3144e394-4d42-59ca-a0f4-ea449d2c5e07",
+          "event_id": "1cdaa303-2dd1-4707-aad0-6a9a458b2edb",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        }
+      ],
+      "provider": {
+        "pin_state": "ok",
+        "pin_revision": 1,
+        "effective_source": "pin",
+        "effective_adapter": "fake",
+        "effective_model_id": "fake-echo",
+        "effective_revision": 1
+      },
+      "modelRuns": [
+        {
+          "call_id": "9a4ae7b3-8a49-49ac-afd2-c1d71129e201",
+          "role": "character_decision",
+          "profile": "character@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "52c5df70-0690-49c7-baab-6e2666e71a70",
+          "task_run_id": "f4a4bce0-35eb-5f2e-aa87-1e2066bc83f1",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "469fda70-d3ec-46ee-9d01-2f4fc7644e83",
+          "role": "character_decision",
+          "profile": "character@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "52c5df70-0690-49c7-baab-6e2666e71a70",
+          "task_run_id": "f4a4bce0-35eb-5f2e-aa87-1e2066bc83f1",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "88bce61b-1f85-4eac-9306-afbfd3845a8d",
+          "role": "reaction",
+          "profile": "reaction@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "52c5df70-0690-49c7-baab-6e2666e71a70",
+          "task_run_id": "49a4fbe8-b504-5a8b-af59-f4454044c197",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "98ed4c3b-a097-4874-86e1-edd44295867d",
+          "role": "reaction",
+          "profile": "reaction@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "52c5df70-0690-49c7-baab-6e2666e71a70",
+          "task_run_id": "49a4fbe8-b504-5a8b-af59-f4454044c197",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "10370e3c-f377-4441-9bce-7a16316540f3",
+          "role": "resolver",
+          "profile": "resolver@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": null,
+          "task_run_id": "09d72606-9c0f-5caa-b6d8-e882e19655c7",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "5a7336ab-b831-43cc-97cf-25d69a77f50f",
+          "role": "resolver",
+          "profile": "resolver@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": null,
+          "task_run_id": "09d72606-9c0f-5caa-b6d8-e882e19655c7",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "e4359c9b-5e8d-4464-bcd2-08678507fd4c",
+          "role": "narrator",
+          "profile": "narrator@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": null,
+          "task_run_id": "5bdc1048-6793-520a-86d6-556bbe476b03",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "eb29ea33-05d6-4534-b5b7-77e29f7527a8",
+          "role": "narrator",
+          "profile": "narrator@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": null,
+          "task_run_id": "5bdc1048-6793-520a-86d6-556bbe476b03",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        }
+      ],
+      "modelRunsError": null,
+      "callSummary": {
+        "byRole": {
+          "character_decision": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          },
+          "reaction": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          },
+          "resolver": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          },
+          "narrator": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          }
+        },
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "attempts": 0
+      },
+      "timelineEntries": 9,
+      "timelineWallMs": 38,
+      "narrationBeats": 4,
+      "narrationReadMs": 25,
+      "classification": {
+        "layers": {
+          "provider": "ok",
+          "validation": "pass",
+          "committed": "yes",
+          "narration": "fallback",
+          "display": "yes"
+        },
+        "reasons": [],
+        "useful": true,
+        "kind": "follow-up"
+      }
+    },
+    {
+      "kind": "ordinary-advance",
+      "absolute_index": 4,
+      "story_id": "e96f53ce-c2f3-411a-acac-70b3dc92d7cc",
+      "world_id": "e96f53ce-c2f3-411a-acac-70b3dc92d7cc",
+      "run_id": "fcccc215-cc41-5410-8da9-5de0ec4e8997",
+      "duplicate": false,
+      "client_wall_ms": 558,
+      "admission_ms": 22,
+      "execution_ms": 516,
+      "http_status": 200,
+      "scenes": [
+        {
+          "scene_id": "c2a92ea7-2cc2-59ef-a662-9f9ddb635b01",
+          "event_id": "bd34b480-af25-451c-b040-59ba6f6e67b8",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        },
+        {
+          "scene_id": "f27135f5-322d-514a-8bc4-844bf4adda60",
+          "event_id": "a8fd48b5-1a91-435a-b16e-8453a6ce98cd",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        }
+      ],
+      "provider": {
+        "pin_state": "ok",
+        "pin_revision": 1,
+        "effective_source": "pin",
+        "effective_adapter": "fake",
+        "effective_model_id": "fake-echo",
+        "effective_revision": 1
+      },
+      "modelRuns": [
+        {
+          "call_id": "2a9d4cf4-1f0b-4a43-a56c-de376aa4bcce",
+          "role": "director",
+          "profile": "director@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "e96f53ce-c2f3-411a-acac-70b3dc92d7cc",
+          "task_run_id": "5fc18be8-0487-5ff2-945c-854e00e09b9c",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "ae251d9a-7e5d-438e-84ca-b9b2abaf8fe6",
+          "role": "director",
+          "profile": "director@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "e96f53ce-c2f3-411a-acac-70b3dc92d7cc",
+          "task_run_id": "5fc18be8-0487-5ff2-945c-854e00e09b9c",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "a9a82d27-e1b7-487a-a888-ea117aa3f8a5",
+          "role": "character_decision",
+          "profile": "character@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "52c5df70-0690-49c7-baab-6e2666e71a70",
+          "task_run_id": "5a1f6f0f-622c-5fb4-a624-d80647c0ea1a",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "13e32911-7a31-4404-ba22-ec06a4bc8388",
+          "role": "character_decision",
+          "profile": "character@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "62286d13-17c1-40d3-8acc-f204242d7db5",
+          "task_run_id": "7ed3170e-f904-5b4d-a2a3-d6a28e6b0348",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "662d928c-c8f2-4473-ab38-949b69409bf0",
+          "role": "character_decision",
+          "profile": "character@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "52c5df70-0690-49c7-baab-6e2666e71a70",
+          "task_run_id": "5a1f6f0f-622c-5fb4-a624-d80647c0ea1a",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "7d349369-7bcb-473d-9c80-3e3b57a536e8",
+          "role": "character_decision",
+          "profile": "character@pin-4ce34787-r1",
+          "status": "succeeded",
+          "actor_id": "62286d13-17c1-40d3-8acc-f204242d7db5",
+          "task_run_id": "7ed3170e-f904-5b4d-a2a3-d6a28e6b0348",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "4ce34787-c6d6-406a-b848-76ff314fabc5",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        }
+      ],
+      "modelRunsError": null,
+      "callSummary": {
+        "byRole": {
+          "director": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          },
+          "character_decision": {
+            "calls": 4,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          }
+        },
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "attempts": 0
+      },
+      "timelineEntries": 12,
+      "timelineWallMs": 24,
+      "narrationBeats": 4,
+      "narrationReadMs": 57,
+      "classification": {
+        "layers": {
+          "provider": "ok",
+          "validation": "pass",
+          "committed": "yes",
+          "narration": "fallback",
+          "display": "yes"
+        },
+        "reasons": [],
+        "useful": true,
+        "kind": "ordinary-advance"
+      }
+    },
+    {
+      "kind": "reload",
+      "story_id": "e96f53ce-c2f3-411a-acac-70b3dc92d7cc",
+      "world_id": "e96f53ce-c2f3-411a-acac-70b3dc92d7cc",
+      "client_wall_ms": 212,
+      "detailWallMs": 18,
+      "timelineWallMs": 44,
+      "narrationReadMs": 146,
+      "timelineEntries": 12,
+      "narrationBeats": 16,
+      "missingEvents": [],
+      "provider": {
+        "pin_state": "ok",
+        "pin_revision": 1,
+        "effective_source": "pin",
+        "effective_adapter": "fake",
+        "effective_model_id": "fake-echo",
+        "effective_revision": 1
+      },
+      "classification": {
+        "layers": {
+          "provider": "not-applicable",
+          "validation": "pass",
+          "committed": "not-applicable",
+          "narration": "not-applicable",
+          "display": "yes"
+        },
+        "reasons": [],
+        "useful": true
+      }
+    }
+  ],
+  "display": {
+    "story_id": "e96f53ce-c2f3-411a-acac-70b3dc92d7cc",
+    "world_id": "e96f53ce-c2f3-411a-acac-70b3dc92d7cc",
+    "steps": [
+      {
+        "name": "room-render",
+        "wall_ms": 13020
+      },
+      {
+        "name": "browser-commit",
+        "wall_ms": 1446,
+        "server_admission_ms": 17,
+        "server_execution_ms": 501,
+        "display_overhead_ms": 945,
+        "advance_http_status": 200
+      },
+      {
+        "name": "room-reload-render",
+        "wall_ms": 889
+      }
+    ]
+  },
+  "notes": [
+    "deterministic run pinned to fake profile 4ce34787-c6d6-406a-b848-76ff314fabc5@rev1",
+    "story e96f53ce-c2f3-411a-acac-70b3dc92d7cc world e96f53ce-c2f3-411a-acac-70b3dc92d7cc",
+    "seat: player as Wren",
+    "seat: player as Ash",
+    "seat: watcher"
+  ],
+  "summary": {
+    "beats": 5,
+    "useful_beats": 5,
+    "client_wall_ms": {
+      "n": 5,
+      "min": 212,
+      "max": 594
+    },
+    "admission_ms": {
+      "n": 4,
+      "min": 14,
+      "max": 22
+    },
+    "execution_ms": {
+      "n": 4,
+      "min": 506,
+      "max": 565
+    },
+    "timeline_read_ms": {
+      "n": 5,
+      "min": 15,
+      "max": 44
+    },
+    "narration_read_ms": {
+      "n": 5,
+      "min": 25,
+      "max": 146
+    }
+  }
+}

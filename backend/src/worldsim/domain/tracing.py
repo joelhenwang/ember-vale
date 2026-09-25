@@ -66,3 +66,6 @@ class ModelCall(BaseModel):
     completion_tokens: int = Field(default=0, ge=0)
     latency_ms: int = Field(default=0, ge=0)
     error_code: str | None = Field(default=None, max_length=64)
+    max_tokens: int | None = Field(default=None, ge=1)
+    pin_profile_id: str | None = Field(default=None, max_length=128)
+    pin_profile_revision: int | None = Field(default=None, ge=1)

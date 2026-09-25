@@ -1,0 +1,485 @@
+{
+  "tool": "reliability-baseline",
+  "mode": "fake",
+  "title": "Reliability baseline",
+  "run": "mugcisle",
+  "started_at": "2026-09-25T02:32:51.267Z",
+  "finished_at": "2026-09-25T02:32:53.450Z",
+  "api": "http://localhost:8101/api/v1",
+  "story_id": "acced51c-c7c4-4d04-9f6a-4162ec3175ef",
+  "world_id": "acced51c-c7c4-4d04-9f6a-4162ec3175ef",
+  "config_frozen": {
+    "note": "prompts, models, budgets, and retry behavior unchanged during collection"
+  },
+  "beats": [
+    {
+      "kind": "travel",
+      "absolute_index": 1,
+      "story_id": "acced51c-c7c4-4d04-9f6a-4162ec3175ef",
+      "world_id": "acced51c-c7c4-4d04-9f6a-4162ec3175ef",
+      "run_id": "34f22f7b-2ef8-505b-819a-3035bd2469cf",
+      "duplicate": false,
+      "client_wall_ms": 758,
+      "admission_ms": 18,
+      "execution_ms": 722,
+      "http_status": 200,
+      "scenes": [
+        {
+          "scene_id": "84710888-314a-5495-92f7-8e6a5cc7b56e",
+          "event_id": "8312016e-2ab9-4a83-ab12-9a67cd263068",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        },
+        {
+          "scene_id": "fcfa2fbd-74a8-5021-9a3e-6b06556f7f68",
+          "event_id": "729ea56e-ca14-44c5-b3ee-ff02755c2f13",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        }
+      ],
+      "provider": {
+        "pin_state": "ok",
+        "pin_revision": 1,
+        "effective_source": "pin",
+        "effective_adapter": "fake",
+        "effective_model_id": "fake-echo",
+        "effective_revision": 1
+      },
+      "modelRuns": [
+        {
+          "call_id": "3f32dccc-9eeb-4e3e-89fa-3eb421074d05",
+          "role": "director",
+          "profile": "director@pin-8f62c952-r1",
+          "status": "succeeded",
+          "actor_id": "acced51c-c7c4-4d04-9f6a-4162ec3175ef",
+          "task_run_id": "26d97fbb-825d-551e-8dc8-503ea4839b84",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "8f62c952-128b-4551-90b5-d95445257dd6",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "72909fd9-0474-45db-bca2-b9bd1e6c4d73",
+          "role": "director",
+          "profile": "director@pin-8f62c952-r1",
+          "status": "succeeded",
+          "actor_id": "acced51c-c7c4-4d04-9f6a-4162ec3175ef",
+          "task_run_id": "26d97fbb-825d-551e-8dc8-503ea4839b84",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "8f62c952-128b-4551-90b5-d95445257dd6",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "54c9a9eb-271c-4019-9cdd-96c51d439750",
+          "role": "character_decision",
+          "profile": "character@pin-8f62c952-r1",
+          "status": "succeeded",
+          "actor_id": "bc81b654-2286-4121-b720-de325c2109d2",
+          "task_run_id": "9b762d7d-5de7-5a82-afc4-00d87fefe1c7",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "8f62c952-128b-4551-90b5-d95445257dd6",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "82ecd6c5-3a04-4846-b1f1-0fa2945896af",
+          "role": "character_decision",
+          "profile": "character@pin-8f62c952-r1",
+          "status": "succeeded",
+          "actor_id": "71a66955-05a3-41b2-b575-d1a109f380ab",
+          "task_run_id": "a4217bd8-fe43-5393-90ce-5ef64d6cc77b",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "8f62c952-128b-4551-90b5-d95445257dd6",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "cecf9a95-ed3d-42f5-96b4-04c246561622",
+          "role": "character_decision",
+          "profile": "character@pin-8f62c952-r1",
+          "status": "succeeded",
+          "actor_id": "bc81b654-2286-4121-b720-de325c2109d2",
+          "task_run_id": "9b762d7d-5de7-5a82-afc4-00d87fefe1c7",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "8f62c952-128b-4551-90b5-d95445257dd6",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "3d706f99-dc4c-444b-920f-2fa8de511f06",
+          "role": "character_decision",
+          "profile": "character@pin-8f62c952-r1",
+          "status": "succeeded",
+          "actor_id": "71a66955-05a3-41b2-b575-d1a109f380ab",
+          "task_run_id": "a4217bd8-fe43-5393-90ce-5ef64d6cc77b",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "8f62c952-128b-4551-90b5-d95445257dd6",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        }
+      ],
+      "modelRunsError": null,
+      "callSummary": {
+        "byRole": {
+          "director": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          },
+          "character_decision": {
+            "calls": 4,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          }
+        },
+        "promptTokens": 0,
+        "completionTokens": 0,
+        "attempts": 0
+      },
+      "timelineEntries": 5,
+      "timelineWallMs": 41,
+      "narrationBeats": 4,
+      "narrationReadMs": 69,
+      "classification": {
+        "layers": {
+          "provider": "ok",
+          "validation": "pass",
+          "committed": "yes",
+          "narration": "fallback",
+          "display": "yes"
+        },
+        "reasons": [],
+        "useful": true,
+        "kind": "travel"
+      }
+    },
+    {
+      "kind": "question",
+      "absolute_index": 2,
+      "story_id": "acced51c-c7c4-4d04-9f6a-4162ec3175ef",
+      "world_id": "acced51c-c7c4-4d04-9f6a-4162ec3175ef",
+      "run_id": null,
+      "duplicate": null,
+      "client_wall_ms": 23,
+      "admission_ms": null,
+      "execution_ms": null,
+      "http_status": 403,
+      "scenes": [],
+      "provider": {
+        "pin_state": "ok",
+        "pin_revision": 1,
+        "effective_source": "pin",
+        "effective_adapter": "fake",
+        "effective_model_id": "fake-echo",
+        "effective_revision": 1
+      },
+      "modelRuns": [],
+      "modelRunsError": "no run_id",
+      "callSummary": {
+        "byRole": {},
+        "promptTokens": 0,
+        "completionTokens": 0,
+        "attempts": 0
+      },
+      "timelineEntries": 5,
+      "timelineWallMs": 26,
+      "narrationBeats": 0,
+      "narrationReadMs": 0,
+      "classification": {
+        "layers": {
+          "provider": "not-applicable",
+          "validation": "rejected",
+          "committed": "no",
+          "narration": "not-applicable",
+          "display": "no"
+        },
+        "reasons": [
+          "advance rejected: HTTP 403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"watch mode advances the world but files no attempts; switch to Player or queue a direction\",\"request_id\":\"req-8473e97f1d6b\",\"details\":{}}}"
+        ],
+        "useful": false
+      },
+      "rejection": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"watch mode advances the world but files no attempts; switch to Player or queue a direction\",\"request_id\":\"req-8473e97f1d6b\",\"details\":{}}}"
+    },
+    {
+      "kind": "follow-up",
+      "absolute_index": 2,
+      "story_id": "acced51c-c7c4-4d04-9f6a-4162ec3175ef",
+      "world_id": "acced51c-c7c4-4d04-9f6a-4162ec3175ef",
+      "run_id": null,
+      "duplicate": null,
+      "client_wall_ms": 19,
+      "admission_ms": null,
+      "execution_ms": null,
+      "http_status": 403,
+      "scenes": [],
+      "provider": {
+        "pin_state": "ok",
+        "pin_revision": 1,
+        "effective_source": "pin",
+        "effective_adapter": "fake",
+        "effective_model_id": "fake-echo",
+        "effective_revision": 1
+      },
+      "modelRuns": [],
+      "modelRunsError": "no run_id",
+      "callSummary": {
+        "byRole": {},
+        "promptTokens": 0,
+        "completionTokens": 0,
+        "attempts": 0
+      },
+      "timelineEntries": 5,
+      "timelineWallMs": 15,
+      "narrationBeats": 0,
+      "narrationReadMs": 0,
+      "classification": {
+        "layers": {
+          "provider": "not-applicable",
+          "validation": "rejected",
+          "committed": "no",
+          "narration": "not-applicable",
+          "display": "no"
+        },
+        "reasons": [
+          "advance rejected: HTTP 403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"watch mode advances the world but files no attempts; switch to Player or queue a direction\",\"request_id\":\"req-57df9a566c05\",\"details\":{}}}"
+        ],
+        "useful": false
+      },
+      "rejection": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"watch mode advances the world but files no attempts; switch to Player or queue a direction\",\"request_id\":\"req-57df9a566c05\",\"details\":{}}}"
+    },
+    {
+      "kind": "ordinary-advance",
+      "absolute_index": 2,
+      "story_id": "acced51c-c7c4-4d04-9f6a-4162ec3175ef",
+      "world_id": "acced51c-c7c4-4d04-9f6a-4162ec3175ef",
+      "run_id": "aa8f76a3-3849-5869-98ad-a59b5ee4e007",
+      "duplicate": false,
+      "client_wall_ms": 383,
+      "admission_ms": 17,
+      "execution_ms": 346,
+      "http_status": 200,
+      "scenes": [
+        {
+          "scene_id": "d227f915-b65f-5e1d-b1b1-6dd988d6bd0c",
+          "event_id": "0baa48c7-3d67-4839-992d-80e80fbd15c3",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        },
+        {
+          "scene_id": "e6d1b217-c98a-5366-b246-313a4c8292c6",
+          "event_id": "a843d953-9109-4bd9-bb30-e2012c4bc116",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        }
+      ],
+      "provider": {
+        "pin_state": "ok",
+        "pin_revision": 1,
+        "effective_source": "pin",
+        "effective_adapter": "fake",
+        "effective_model_id": "fake-echo",
+        "effective_revision": 1
+      },
+      "modelRuns": [
+        {
+          "call_id": "61b10766-5ca2-40e6-95e1-dd781f4f708f",
+          "role": "character_decision",
+          "profile": "character@pin-8f62c952-r1",
+          "status": "succeeded",
+          "actor_id": "71a66955-05a3-41b2-b575-d1a109f380ab",
+          "task_run_id": "88801a36-7c50-5594-b4bf-eb1bc7eb6b36",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "8f62c952-128b-4551-90b5-d95445257dd6",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "558a039c-530f-4d95-aabc-f79ae10e8276",
+          "role": "character_decision",
+          "profile": "character@pin-8f62c952-r1",
+          "status": "succeeded",
+          "actor_id": "bc81b654-2286-4121-b720-de325c2109d2",
+          "task_run_id": "2ad92072-4fdb-51e4-97cd-c667e1a62d34",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "8f62c952-128b-4551-90b5-d95445257dd6",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "031897d6-93e7-41cf-b464-b3e49d89680b",
+          "role": "character_decision",
+          "profile": "character@pin-8f62c952-r1",
+          "status": "succeeded",
+          "actor_id": "bc81b654-2286-4121-b720-de325c2109d2",
+          "task_run_id": "2ad92072-4fdb-51e4-97cd-c667e1a62d34",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "8f62c952-128b-4551-90b5-d95445257dd6",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "ab755701-892c-4e67-bc12-f77c57ce4842",
+          "role": "character_decision",
+          "profile": "character@pin-8f62c952-r1",
+          "status": "succeeded",
+          "actor_id": "71a66955-05a3-41b2-b575-d1a109f380ab",
+          "task_run_id": "88801a36-7c50-5594-b4bf-eb1bc7eb6b36",
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "latency_ms": 0,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": "8f62c952-128b-4551-90b5-d95445257dd6",
+          "pin_profile_revision": 1,
+          "budgets": {},
+          "attempts": []
+        }
+      ],
+      "modelRunsError": null,
+      "callSummary": {
+        "byRole": {
+          "character_decision": {
+            "calls": 4,
+            "failed": 0,
+            "latency_ms": 0,
+            "attempts": 0
+          }
+        },
+        "promptTokens": 0,
+        "completionTokens": 0,
+        "attempts": 0
+      },
+      "timelineEntries": 8,
+      "timelineWallMs": 21,
+      "narrationBeats": 4,
+      "narrationReadMs": 57,
+      "classification": {
+        "layers": {
+          "provider": "ok",
+          "validation": "pass",
+          "committed": "yes",
+          "narration": "fallback",
+          "display": "yes"
+        },
+        "reasons": [],
+        "useful": true,
+        "kind": "ordinary-advance"
+      }
+    },
+    {
+      "kind": "reload",
+      "story_id": "acced51c-c7c4-4d04-9f6a-4162ec3175ef",
+      "world_id": "acced51c-c7c4-4d04-9f6a-4162ec3175ef",
+      "client_wall_ms": 117,
+      "detailWallMs": 18,
+      "timelineWallMs": 19,
+      "narrationReadMs": 78,
+      "timelineEntries": 8,
+      "narrationBeats": 8,
+      "missingEvents": [],
+      "provider": {
+        "pin_state": "ok",
+        "pin_revision": 1,
+        "effective_source": "pin",
+        "effective_adapter": "fake",
+        "effective_model_id": "fake-echo",
+        "effective_revision": 1
+      },
+      "classification": {
+        "layers": {
+          "provider": "not-applicable",
+          "validation": "pass",
+          "committed": "not-applicable",
+          "narration": "not-applicable",
+          "display": "yes"
+        },
+        "reasons": [],
+        "useful": true
+      }
+    }
+  ],
+  "display": {
+    "skipped": true
+  },
+  "notes": [
+    "deterministic run pinned to fake profile 8f62c952-128b-4551-90b5-d95445257dd6@rev1",
+    "story acced51c-c7c4-4d04-9f6a-4162ec3175ef world acced51c-c7c4-4d04-9f6a-4162ec3175ef"
+  ],
+  "summary": {
+    "beats": 5,
+    "useful_beats": 3,
+    "client_wall_ms": {
+      "n": 5,
+      "min": 19,
+      "max": 758
+    },
+    "admission_ms": {
+      "n": 2,
+      "min": 17,
+      "max": 18
+    },
+    "execution_ms": {
+      "n": 2,
+      "min": 346,
+      "max": 722
+    },
+    "timeline_read_ms": {
+      "n": 5,
+      "min": 15,
+      "max": 41
+    },
+    "narration_read_ms": {
+      "n": 5,
+      "min": 0,
+      "max": 78
+    }
+  }
+}

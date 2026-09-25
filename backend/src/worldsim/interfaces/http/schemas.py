@@ -281,10 +281,18 @@ class ModelRunView(BaseModel):
     profile: str
     status: str
     actor_id: UUID | None = None
+    task_run_id: UUID | None = None
     manifest_id: UUID | None = None
     rendered_hash: str | None = None
     prompt_tokens: int = 0
     completion_tokens: int = 0
+    latency_ms: int = 0
+    error_code: str | None = None
+    max_tokens: int | None = None
+    pin_profile_id: str | None = None
+    pin_profile_revision: int | None = None
+    budgets: dict[str, int] = Field(default_factory=dict)
+    attempts: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class Stage1AdvanceRequest(BaseModel):

@@ -41,12 +41,21 @@ class TraceRepository(Protocol):
     async def finish_call(self, call_id: UUID, completion: StoredCompletion) -> None: ...
 
     async def fail_call(
-        self, call_id: UUID, error_code: str, latency_ms: int, detail: dict[str, Any] | None = None
+        self,
+        call_id: UUID,
+        error_code: str,
+        latency_ms: int,
+        detail: dict[str, Any] | None = None,
+        *,
+        prompt_tokens: int = 0,
+        completion_tokens: int = 0,
     ) -> None: ...
 
     async def save_manifest(self, manifest: ContextManifest) -> None: ...
 
     async def get_call(self, call_id: UUID) -> ModelCall: ...
+
+    async def get_call_attempts(self, call_id: UUID) -> list[dict[str, Any]]: ...
 
     async def get_manifest(self, call_id: UUID) -> ContextManifest: ...
 

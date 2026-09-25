@@ -1,0 +1,657 @@
+{
+  "tool": "reliability-baseline",
+  "mode": "live",
+  "title": "Reliability baseline",
+  "run": "mugclwxu",
+  "started_at": "2026-09-25T02:35:16.866Z",
+  "finished_at": "2026-09-25T02:37:28.304Z",
+  "api": "http://localhost:8101/api/v1",
+  "story_id": "07464326-f5e2-46ee-b378-7ad1c742ef14",
+  "world_id": "07464326-f5e2-46ee-b378-7ad1c742ef14",
+  "config_frozen": {
+    "note": "prompts, models, budgets, and retry behavior unchanged during collection"
+  },
+  "beats": [
+    {
+      "kind": "travel",
+      "absolute_index": 1,
+      "story_id": "07464326-f5e2-46ee-b378-7ad1c742ef14",
+      "world_id": "07464326-f5e2-46ee-b378-7ad1c742ef14",
+      "run_id": "dfb637dc-70be-5c8c-af63-3e3db13751df",
+      "duplicate": false,
+      "client_wall_ms": 17937,
+      "admission_ms": 10,
+      "execution_ms": 17914,
+      "http_status": 200,
+      "scenes": [
+        {
+          "scene_id": "05bd0b65-8774-58c1-ad6c-9a6fd9e79d3d",
+          "event_id": "cb48972f-e298-47b7-908b-b1b232375012",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        },
+        {
+          "scene_id": "bbca68a6-0263-5766-9e9d-32e26a02cdcd",
+          "event_id": "00fd655c-ff9b-45ca-ac06-8f64dc6dd622",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        }
+      ],
+      "provider": {
+        "pin_state": "none",
+        "pin_revision": null,
+        "effective_source": "environment",
+        "effective_adapter": "openrouter",
+        "effective_model_id": "deepseek/deepseek-v4-flash-0731",
+        "effective_revision": null
+      },
+      "modelRuns": [
+        {
+          "call_id": "c1ff8870-6d35-47b3-8836-96895250ff11",
+          "role": "director",
+          "profile": "openrouter@chat-v1",
+          "status": "failed",
+          "actor_id": "07464326-f5e2-46ee-b378-7ad1c742ef14",
+          "task_run_id": "8a3df309-8542-5157-889f-96ab2944851d",
+          "prompt_tokens": 258,
+          "completion_tokens": 512,
+          "latency_ms": 3718,
+          "error_code": "malformed",
+          "max_tokens": 512,
+          "pin_profile_id": null,
+          "pin_profile_revision": null,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "2eab697c-b574-4291-a247-505bb90bfd45",
+          "role": "character_decision",
+          "profile": "openrouter@chat-v1",
+          "status": "failed",
+          "actor_id": "0febd687-f00e-46e9-8df5-b8c3867dd2bb",
+          "task_run_id": "9574f04e-aaf4-5e2a-8280-28e21f4d2b76",
+          "prompt_tokens": 2758,
+          "completion_tokens": 512,
+          "latency_ms": 13278,
+          "error_code": "malformed",
+          "max_tokens": 512,
+          "pin_profile_id": null,
+          "pin_profile_revision": null,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "74711cd2-4f56-4aa8-8efd-7f9f36f3bd48",
+          "role": "character_decision",
+          "profile": "openrouter@chat-v1",
+          "status": "failed",
+          "actor_id": "bce24faa-5410-4a58-860b-d22d7bfc03d0",
+          "task_run_id": "b7b65e5e-2ca2-5b71-8570-543c09a0305f",
+          "prompt_tokens": 2659,
+          "completion_tokens": 512,
+          "latency_ms": 6263,
+          "error_code": "malformed",
+          "max_tokens": 512,
+          "pin_profile_id": null,
+          "pin_profile_revision": null,
+          "budgets": {},
+          "attempts": []
+        }
+      ],
+      "modelRunsError": null,
+      "callSummary": {
+        "byRole": {
+          "director": {
+            "calls": 1,
+            "failed": 1,
+            "latency_ms": 3718,
+            "attempts": 0
+          },
+          "character_decision": {
+            "calls": 2,
+            "failed": 2,
+            "latency_ms": 19541,
+            "attempts": 0
+          }
+        },
+        "prompt_tokens": 5675,
+        "completion_tokens": 1536,
+        "attempts": 0
+      },
+      "timelineEntries": 5,
+      "timelineWallMs": 28,
+      "narrationBeats": 4,
+      "narrationReadMs": 42,
+      "classification": {
+        "layers": {
+          "provider": "degraded",
+          "validation": "pass",
+          "committed": "yes",
+          "narration": "fallback",
+          "display": "yes"
+        },
+        "reasons": [
+          "provider degraded: director:malformed, character_decision:malformed, character_decision:malformed"
+        ],
+        "useful": true,
+        "kind": "travel"
+      }
+    },
+    {
+      "kind": "question",
+      "absolute_index": 2,
+      "story_id": "07464326-f5e2-46ee-b378-7ad1c742ef14",
+      "world_id": "07464326-f5e2-46ee-b378-7ad1c742ef14",
+      "run_id": "84a20236-8770-5151-abf7-71d6ba2d9273",
+      "duplicate": false,
+      "client_wall_ms": 51341,
+      "admission_ms": 10,
+      "execution_ms": 51321,
+      "http_status": 200,
+      "scenes": [
+        {
+          "scene_id": "3a37da3f-4ab9-51a8-a6af-b0d21ea0cb40",
+          "event_id": "a33ddf0e-89ad-4544-af2a-c3fad367a4a6",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        }
+      ],
+      "provider": {
+        "pin_state": "none",
+        "pin_revision": null,
+        "effective_source": "environment",
+        "effective_adapter": "openrouter",
+        "effective_model_id": "deepseek/deepseek-v4-flash-0731",
+        "effective_revision": null
+      },
+      "modelRuns": [
+        {
+          "call_id": "14628f6f-a3db-4cd0-8f22-2808f21863af",
+          "role": "character_decision",
+          "profile": "openrouter@chat-v1",
+          "status": "failed",
+          "actor_id": "0febd687-f00e-46e9-8df5-b8c3867dd2bb",
+          "task_run_id": "457f9791-90bc-5846-8c71-5b8492d08edc",
+          "prompt_tokens": 2805,
+          "completion_tokens": 512,
+          "latency_ms": 11485,
+          "error_code": "malformed",
+          "max_tokens": 512,
+          "pin_profile_id": null,
+          "pin_profile_revision": null,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "1531ad49-62a0-468c-93ed-1bb266ad4364",
+          "role": "reaction",
+          "profile": "openrouter@chat-v1",
+          "status": "failed",
+          "actor_id": "0febd687-f00e-46e9-8df5-b8c3867dd2bb",
+          "task_run_id": "5f1f4860-890a-5472-b39f-95c03872996e",
+          "prompt_tokens": 2954,
+          "completion_tokens": 512,
+          "latency_ms": 12765,
+          "error_code": "malformed",
+          "max_tokens": 512,
+          "pin_profile_id": null,
+          "pin_profile_revision": null,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "c5a47321-f8ea-4a71-83fd-3397ebf7d808",
+          "role": "resolver",
+          "profile": "openrouter@chat-v1",
+          "status": "failed",
+          "actor_id": null,
+          "task_run_id": "ff1acabe-344e-5f99-8db8-1ed8efc919ce",
+          "prompt_tokens": 3607,
+          "completion_tokens": 512,
+          "latency_ms": 16161,
+          "error_code": "malformed",
+          "max_tokens": 512,
+          "pin_profile_id": null,
+          "pin_profile_revision": null,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "b8d5c3b5-22b0-45d4-986f-594541cce24c",
+          "role": "narrator",
+          "profile": "openrouter@chat-v1",
+          "status": "failed",
+          "actor_id": null,
+          "task_run_id": "5eeeb26a-a5f8-5172-bdef-996ad413b576",
+          "prompt_tokens": 1015,
+          "completion_tokens": 512,
+          "latency_ms": 9904,
+          "error_code": "malformed",
+          "max_tokens": 512,
+          "pin_profile_id": null,
+          "pin_profile_revision": null,
+          "budgets": {},
+          "attempts": []
+        }
+      ],
+      "modelRunsError": null,
+      "callSummary": {
+        "byRole": {
+          "character_decision": {
+            "calls": 1,
+            "failed": 1,
+            "latency_ms": 11485,
+            "attempts": 0
+          },
+          "reaction": {
+            "calls": 1,
+            "failed": 1,
+            "latency_ms": 12765,
+            "attempts": 0
+          },
+          "resolver": {
+            "calls": 1,
+            "failed": 1,
+            "latency_ms": 16161,
+            "attempts": 0
+          },
+          "narrator": {
+            "calls": 1,
+            "failed": 1,
+            "latency_ms": 9904,
+            "attempts": 0
+          }
+        },
+        "prompt_tokens": 10381,
+        "completion_tokens": 2048,
+        "attempts": 0
+      },
+      "timelineEntries": 7,
+      "timelineWallMs": 17,
+      "narrationBeats": 4,
+      "narrationReadMs": 16,
+      "classification": {
+        "layers": {
+          "provider": "degraded",
+          "validation": "pass",
+          "committed": "yes",
+          "narration": "fallback",
+          "display": "yes"
+        },
+        "reasons": [
+          "provider degraded: character_decision:malformed, reaction:malformed, resolver:malformed, narrator:malformed"
+        ],
+        "useful": true,
+        "kind": "question"
+      }
+    },
+    {
+      "kind": "follow-up",
+      "absolute_index": 3,
+      "story_id": "07464326-f5e2-46ee-b378-7ad1c742ef14",
+      "world_id": "07464326-f5e2-46ee-b378-7ad1c742ef14",
+      "run_id": "93997e92-a8cf-5dd0-8a90-318cbea3f11a",
+      "duplicate": false,
+      "client_wall_ms": 41594,
+      "admission_ms": 9,
+      "execution_ms": 41576,
+      "http_status": 200,
+      "scenes": [
+        {
+          "scene_id": "314a81d8-d20a-591f-b861-b9e95d4edd47",
+          "event_id": "292cb6e0-8942-4da6-baa7-e555193d9a57",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        }
+      ],
+      "provider": {
+        "pin_state": "none",
+        "pin_revision": null,
+        "effective_source": "environment",
+        "effective_adapter": "openrouter",
+        "effective_model_id": "deepseek/deepseek-v4-flash-0731",
+        "effective_revision": null
+      },
+      "modelRuns": [
+        {
+          "call_id": "42041a42-24b8-4e1b-9658-ed8d228e64be",
+          "role": "character_decision",
+          "profile": "openrouter@chat-v1",
+          "status": "succeeded",
+          "actor_id": "bce24faa-5410-4a58-860b-d22d7bfc03d0",
+          "task_run_id": "dabb3290-5373-5333-be54-e5069f2ca275",
+          "prompt_tokens": 2826,
+          "completion_tokens": 30,
+          "latency_ms": 1106,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": null,
+          "pin_profile_revision": null,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "ed5ad6ee-3237-41b5-9bf8-a7b1168e714b",
+          "role": "character_decision",
+          "profile": "openrouter@chat-v1",
+          "status": "succeeded",
+          "actor_id": "bce24faa-5410-4a58-860b-d22d7bfc03d0",
+          "task_run_id": "dabb3290-5373-5333-be54-e5069f2ca275",
+          "prompt_tokens": 2930,
+          "completion_tokens": 12,
+          "latency_ms": 1703,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": null,
+          "pin_profile_revision": null,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "aa902dea-25fc-44b0-929c-b95030fb1f36",
+          "role": "reaction",
+          "profile": "openrouter@chat-v1",
+          "status": "failed",
+          "actor_id": "bce24faa-5410-4a58-860b-d22d7bfc03d0",
+          "task_run_id": "45c7e058-94c7-5d30-a1a7-06c548eac3e0",
+          "prompt_tokens": 3054,
+          "completion_tokens": 512,
+          "latency_ms": 11807,
+          "error_code": "malformed",
+          "max_tokens": 512,
+          "pin_profile_id": null,
+          "pin_profile_revision": null,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "462436a1-ebd8-4e93-b2b6-c08e778523e8",
+          "role": "resolver",
+          "profile": "openrouter@chat-v1",
+          "status": "failed",
+          "actor_id": null,
+          "task_run_id": "cb9635ef-a9c7-5b02-9071-b1bd72b12361",
+          "prompt_tokens": 3604,
+          "completion_tokens": 512,
+          "latency_ms": 15360,
+          "error_code": "malformed",
+          "max_tokens": 512,
+          "pin_profile_id": null,
+          "pin_profile_revision": null,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "9c9a21b7-e797-4c78-9d5d-9ddb6252796c",
+          "role": "narrator",
+          "profile": "openrouter@chat-v1",
+          "status": "failed",
+          "actor_id": null,
+          "task_run_id": "bcce9961-e6ce-5606-bf42-646eecf6a5c4",
+          "prompt_tokens": 1013,
+          "completion_tokens": 512,
+          "latency_ms": 10399,
+          "error_code": "malformed",
+          "max_tokens": 512,
+          "pin_profile_id": null,
+          "pin_profile_revision": null,
+          "budgets": {},
+          "attempts": []
+        }
+      ],
+      "modelRunsError": null,
+      "callSummary": {
+        "byRole": {
+          "character_decision": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 2809,
+            "attempts": 0
+          },
+          "reaction": {
+            "calls": 1,
+            "failed": 1,
+            "latency_ms": 11807,
+            "attempts": 0
+          },
+          "resolver": {
+            "calls": 1,
+            "failed": 1,
+            "latency_ms": 15360,
+            "attempts": 0
+          },
+          "narrator": {
+            "calls": 1,
+            "failed": 1,
+            "latency_ms": 10399,
+            "attempts": 0
+          }
+        },
+        "prompt_tokens": 13427,
+        "completion_tokens": 1578,
+        "attempts": 0
+      },
+      "timelineEntries": 9,
+      "timelineWallMs": 31,
+      "narrationBeats": 4,
+      "narrationReadMs": 26,
+      "classification": {
+        "layers": {
+          "provider": "degraded",
+          "validation": "pass",
+          "committed": "yes",
+          "narration": "fallback",
+          "display": "yes"
+        },
+        "reasons": [
+          "provider degraded: reaction:malformed, resolver:malformed, narrator:malformed"
+        ],
+        "useful": true,
+        "kind": "follow-up"
+      }
+    },
+    {
+      "kind": "ordinary-advance",
+      "absolute_index": 4,
+      "story_id": "07464326-f5e2-46ee-b378-7ad1c742ef14",
+      "world_id": "07464326-f5e2-46ee-b378-7ad1c742ef14",
+      "run_id": "bfdc49bf-e73f-5bf0-a7d6-bbad0bbee59e",
+      "duplicate": false,
+      "client_wall_ms": 17127,
+      "admission_ms": 9,
+      "execution_ms": 17105,
+      "http_status": 200,
+      "scenes": [
+        {
+          "scene_id": "b7a71e4a-ba2e-5535-b82d-71bdbdc39065",
+          "event_id": "5361e549-6779-4ae1-8d2b-134f1b4bae83",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        },
+        {
+          "scene_id": "b123c5ff-42ab-5c3a-8420-200de0128c21",
+          "event_id": "8b44b1c5-2cde-46ee-881a-cf7e95db0044",
+          "resolution_outcome": "success",
+          "narration": "fallback"
+        }
+      ],
+      "provider": {
+        "pin_state": "none",
+        "pin_revision": null,
+        "effective_source": "environment",
+        "effective_adapter": "openrouter",
+        "effective_model_id": "deepseek/deepseek-v4-flash-0731",
+        "effective_revision": null
+      },
+      "modelRuns": [
+        {
+          "call_id": "84324591-4845-4a19-8da1-eaaa6d23630d",
+          "role": "director",
+          "profile": "openrouter@chat-v1",
+          "status": "succeeded",
+          "actor_id": "07464326-f5e2-46ee-b378-7ad1c742ef14",
+          "task_run_id": "e3e832f3-1ff2-56a1-b7d7-5ab487d42add",
+          "prompt_tokens": 258,
+          "completion_tokens": 347,
+          "latency_ms": 3015,
+          "error_code": null,
+          "max_tokens": 512,
+          "pin_profile_id": null,
+          "pin_profile_revision": null,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "5cb9361d-d07b-4000-ac26-0f68f4d1c272",
+          "role": "character_decision",
+          "profile": "openrouter@chat-v1",
+          "status": "failed",
+          "actor_id": "0febd687-f00e-46e9-8df5-b8c3867dd2bb",
+          "task_run_id": "74fffe7e-2e70-51f5-aca2-aaac391d16d8",
+          "prompt_tokens": 3005,
+          "completion_tokens": 512,
+          "latency_ms": 13046,
+          "error_code": "malformed",
+          "max_tokens": 512,
+          "pin_profile_id": null,
+          "pin_profile_revision": null,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "d895db0d-d942-4ed6-ba52-126ffec35709",
+          "role": "character_decision",
+          "profile": "openrouter@chat-v1",
+          "status": "failed",
+          "actor_id": "bce24faa-5410-4a58-860b-d22d7bfc03d0",
+          "task_run_id": "d37a5284-32a5-5607-9e14-c0b0f0bc3070",
+          "prompt_tokens": 2911,
+          "completion_tokens": 512,
+          "latency_ms": 3901,
+          "error_code": "malformed",
+          "max_tokens": 512,
+          "pin_profile_id": null,
+          "pin_profile_revision": null,
+          "budgets": {},
+          "attempts": []
+        }
+      ],
+      "modelRunsError": null,
+      "callSummary": {
+        "byRole": {
+          "director": {
+            "calls": 1,
+            "failed": 0,
+            "latency_ms": 3015,
+            "attempts": 0
+          },
+          "character_decision": {
+            "calls": 2,
+            "failed": 2,
+            "latency_ms": 16947,
+            "attempts": 0
+          }
+        },
+        "prompt_tokens": 6174,
+        "completion_tokens": 1371,
+        "attempts": 0
+      },
+      "timelineEntries": 12,
+      "timelineWallMs": 24,
+      "narrationBeats": 4,
+      "narrationReadMs": 42,
+      "classification": {
+        "layers": {
+          "provider": "degraded",
+          "validation": "pass",
+          "committed": "yes",
+          "narration": "fallback",
+          "display": "yes"
+        },
+        "reasons": [
+          "provider degraded: character_decision:malformed, character_decision:malformed"
+        ],
+        "useful": true,
+        "kind": "ordinary-advance"
+      }
+    },
+    {
+      "kind": "reload",
+      "story_id": "07464326-f5e2-46ee-b378-7ad1c742ef14",
+      "world_id": "07464326-f5e2-46ee-b378-7ad1c742ef14",
+      "client_wall_ms": 178,
+      "detailWallMs": 19,
+      "timelineWallMs": 23,
+      "narrationReadMs": 134,
+      "timelineEntries": 12,
+      "narrationBeats": 16,
+      "missingEvents": [],
+      "provider": {
+        "pin_state": "none",
+        "pin_revision": null,
+        "effective_source": "environment",
+        "effective_adapter": "openrouter",
+        "effective_model_id": "deepseek/deepseek-v4-flash-0731",
+        "effective_revision": null
+      },
+      "classification": {
+        "layers": {
+          "provider": "not-applicable",
+          "validation": "pass",
+          "committed": "not-applicable",
+          "narration": "not-applicable",
+          "display": "yes"
+        },
+        "reasons": [],
+        "useful": true
+      }
+    }
+  ],
+  "display": {
+    "story_id": "07464326-f5e2-46ee-b378-7ad1c742ef14",
+    "world_id": "07464326-f5e2-46ee-b378-7ad1c742ef14",
+    "steps": [
+      {
+        "name": "browser-error",
+        "error": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5173/stories/07464326-f5e2-46ee-b378-7ad1c742ef14/play\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:5173/stories/07464326-f5e2-46ee-b378-7ad1c742ef14/play\", waiting until \"networkidle\"\u001b[22m\n"
+      }
+    ]
+  },
+  "notes": [
+    "live run uses the normal environment default (no pin)",
+    "story 07464326-f5e2-46ee-b378-7ad1c742ef14 world 07464326-f5e2-46ee-b378-7ad1c742ef14",
+    "seat: player as Wren",
+    "seat: player as Ash",
+    "seat: watcher",
+    "browser pass failed (retained): Error: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5173/stories/07464326-f5e2-46ee-b378-7ad1c742ef14/play\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:5173/stories/07464326-f5e2-46"
+  ],
+  "summary": {
+    "beats": 5,
+    "useful_beats": 5,
+    "client_wall_ms": {
+      "n": 5,
+      "min": 178,
+      "max": 51341
+    },
+    "admission_ms": {
+      "n": 4,
+      "min": 9,
+      "max": 10
+    },
+    "execution_ms": {
+      "n": 4,
+      "min": 17105,
+      "max": 51321
+    },
+    "timeline_read_ms": {
+      "n": 5,
+      "min": 17,
+      "max": 31
+    },
+    "narration_read_ms": {
+      "n": 5,
+      "min": 16,
+      "max": 134
+    }
+  }
+}

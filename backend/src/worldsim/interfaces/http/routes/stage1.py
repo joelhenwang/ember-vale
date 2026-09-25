@@ -11,13 +11,13 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Response
 from pydantic import TypeAdapter
 
 from worldsim.application.capabilities import Capability, parse_role, require_capability
 from worldsim.application.commands.party import begin_adventure, create_character, link_member
 from worldsim.application.conditions import tick_conditions
-from worldsim.application.execution import guarded, new_owner, phase_run_id, phase_scope
+from worldsim.application.execution import guarded_timed, new_owner, phase_run_id, phase_scope
 from worldsim.application.orchestration.stage1 import Stage1Orchestrator, Stage1PhaseReport
 from worldsim.application.queries.suggestions import suggestions_for
 from worldsim.application.stories.guards import require_unarchived
@@ -279,8 +279,10 @@ async def list_model_runs(request: Request, phase_run_id: UUID) -> list[api.Mode
                 manifest = await uow.traces.get_manifest(call.id)
                 manifest_id: UUID | None = manifest.id
                 rendered: str | None = manifest.rendered_hash
+                budgets: dict[str, int] = dict(manifest.budgets)
             except DomainError:
-                manifest_id, rendered = None, None
+                manifest_id, rendered, budgets = None, None, {}
+            attempts = await uow.traces.get_call_attempts(call.id)
             views.append(
                 api.ModelRunView(
                     call_id=call.id,
@@ -288,17 +290,27 @@ async def list_model_runs(request: Request, phase_run_id: UUID) -> list[api.Mode
                     profile=f"{call.profile_name}@{call.profile_version}",
                     status=call.status.value,
                     actor_id=call.actor_id,
+                    task_run_id=call.task_run_id,
                     manifest_id=manifest_id,
                     rendered_hash=rendered,
                     prompt_tokens=call.prompt_tokens,
                     completion_tokens=call.completion_tokens,
+                    latency_ms=call.latency_ms,
+                    error_code=call.error_code,
+                    max_tokens=call.max_tokens,
+                    pin_profile_id=call.pin_profile_id,
+                    pin_profile_revision=call.pin_profile_revision,
+                    budgets=budgets,
+                    attempts=attempts,
                 )
             )
     return views
 
 
 @router.post("/stage1/advance", response_model=api.Stage1AdvanceResponse)
-async def advance(body: api.Stage1AdvanceRequest, request: Request) -> api.Stage1AdvanceResponse:
+async def advance(
+    body: api.Stage1AdvanceRequest, request: Request, response: Response
+) -> api.Stage1AdvanceResponse:
     role, viewer = await _perspective(request, body.world_id)
     require_capability(parse_role(role), Capability.ADVANCE)
     if role == "watcher" and body.player_intents:
@@ -342,7 +354,7 @@ async def advance(body: api.Stage1AdvanceRequest, request: Request) -> api.Stage
         )
 
     factory = state.uow_factory()
-    report = await guarded(
+    report, admission_ms, execution_ms = await guarded_timed(
         factory,
         body.world_id,
         phase_scope(body.absolute_index),
@@ -350,6 +362,10 @@ async def advance(body: api.Stage1AdvanceRequest, request: Request) -> api.Stage
         phase_run_id(body.world_id, body.absolute_index),
         _run,
     )
+    # Baseline timing only: admission is the slot-claim wait, execution is
+    # the admitted beat. Headers keep the response contract unchanged.
+    response.headers["X-Worldsim-Admission-Ms"] = str(admission_ms)
+    response.headers["X-Worldsim-Execution-Ms"] = str(execution_ms)
     return api.Stage1AdvanceResponse(
         run_id=report.run_id,
         world_id=report.world_id,

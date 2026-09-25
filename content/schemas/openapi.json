@@ -3199,6 +3199,21 @@
             ],
             "title": "Actor Id"
           },
+          "attempts": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Attempts",
+            "type": "array"
+          },
+          "budgets": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Budgets",
+            "type": "object"
+          },
           "call_id": {
             "format": "uuid",
             "title": "Call Id",
@@ -3207,6 +3222,22 @@
           "completion_tokens": {
             "default": 0,
             "title": "Completion Tokens",
+            "type": "integer"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "latency_ms": {
+            "default": 0,
+            "title": "Latency Ms",
             "type": "integer"
           },
           "manifest_id": {
@@ -3220,6 +3251,39 @@
               }
             ],
             "title": "Manifest Id"
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens"
+          },
+          "pin_profile_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pin Profile Id"
+          },
+          "pin_profile_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pin Profile Revision"
           },
           "profile": {
             "title": "Profile",
@@ -3248,6 +3312,18 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "task_run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Run Id"
           }
         },
         "required": [

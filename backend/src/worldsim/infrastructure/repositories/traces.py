@@ -20,7 +20,22 @@ from worldsim.infrastructure.models.calls import (
 from worldsim.infrastructure.repositories._common import missing
 
 
+def _sampling_of(row: ModelCallRow) -> dict[str, Any]:
+    request = row.request if isinstance(row.request, dict) else {}
+    sampling = request.get("sampling")
+    return dict(sampling) if isinstance(sampling, dict) else {}
+
+
+def _max_tokens_of(row: ModelCallRow) -> int | None:
+    request = row.request if isinstance(row.request, dict) else {}
+    max_tokens = request.get("max_tokens")
+    return max_tokens if isinstance(max_tokens, int) else None
+
+
 def _to_call(row: ModelCallRow) -> ModelCall:
+    sampling = _sampling_of(row)
+    pin_id = sampling.get("pin_profile_id")
+    pin_revision = sampling.get("pin_profile_revision")
     return ModelCall(
         id=row.id,
         world_id=row.world_id,
@@ -36,6 +51,9 @@ def _to_call(row: ModelCallRow) -> ModelCall:
         completion_tokens=row.completion_tokens,
         latency_ms=row.latency_ms,
         error_code=row.error_code,
+        max_tokens=_max_tokens_of(row),
+        pin_profile_id=str(pin_id) if isinstance(pin_id, str) else None,
+        pin_profile_revision=pin_revision if isinstance(pin_revision, int) else None,
     )
 
 
@@ -142,14 +160,31 @@ class SqlAlchemyTraceRepository:
         await self._session.flush()
 
     async def fail_call(
-        self, call_id: UUID, error_code: str, latency_ms: int, detail: dict[str, Any] | None = None
+        self,
+        call_id: UUID,
+        error_code: str,
+        latency_ms: int,
+        detail: dict[str, Any] | None = None,
+        *,
+        prompt_tokens: int = 0,
+        completion_tokens: int = 0,
     ) -> None:
         row = await self._require_row(call_id)
         row.status = "failed"
         row.error_code = error_code
         row.latency_ms = latency_ms
+        row.prompt_tokens = max(0, prompt_tokens)
+        row.completion_tokens = max(0, completion_tokens)
         row.result = dict(detail) if detail is not None else {}
         await self._session.flush()
+
+    async def get_call_attempts(self, call_id: UUID) -> list[dict[str, Any]]:
+        row = await self._require_row(call_id)
+        result = row.result if isinstance(row.result, dict) else {}
+        attempts = result.get("attempts")
+        if not isinstance(attempts, list):
+            return []
+        return [dict(entry) for entry in attempts if isinstance(entry, dict)]
 
     async def save_manifest(self, manifest: ContextManifest) -> None:
         self._session.add(

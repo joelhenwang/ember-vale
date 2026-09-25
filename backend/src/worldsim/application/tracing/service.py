@@ -75,6 +75,21 @@ def rendered_hash_for(prompt: str, profile: ModelProfile, prompt_version: str) -
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def _usage_of(detail: object) -> tuple[int, int]:
+    """Provider-reported token usage on a failed call, when available."""
+    if not isinstance(detail, dict):
+        return (0, 0)
+    usage = detail.get("usage")
+    if not isinstance(usage, dict):
+        return (0, 0)
+    prompt = usage.get("prompt_tokens")
+    completion = usage.get("completion_tokens")
+    return (
+        prompt if isinstance(prompt, int) and prompt > 0 else 0,
+        completion if isinstance(completion, int) and completion > 0 else 0,
+    )
+
+
 def _error_code(exc: ModelGatewayError) -> str:
     if isinstance(exc, ModelTimeoutError):
         return "timeout"
@@ -197,11 +212,14 @@ class TraceService:
         except ModelGatewayError as exc:
             latency_ms = int((time.perf_counter() - started) * 1000)
             detail = getattr(exc, "detail", None)
+            failed_usage = _usage_of(detail)
             failed = call.model_copy(
                 update={
                     "status": CallStatus.FAILED,
                     "latency_ms": latency_ms,
                     "error_code": _error_code(exc),
+                    "prompt_tokens": failed_usage[0],
+                    "completion_tokens": failed_usage[1],
                 }
             )
             async with self._factory() as uow:
@@ -210,6 +228,8 @@ class TraceService:
                     _error_code(exc),
                     latency_ms,
                     detail if isinstance(detail, dict) else None,
+                    prompt_tokens=failed_usage[0],
+                    completion_tokens=failed_usage[1],
                 )
                 await uow.commit()
             export = await self._exporter.export(failed, manifest, None)

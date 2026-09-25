@@ -82,14 +82,22 @@ export interface BeatView {
 
 export interface ModelRunView {
   actor_id?: string | null;
+  attempts?: Record<string, unknown>[];
+  budgets?: Record<string, number>;
   call_id: string;
   completion_tokens?: number;
+  error_code?: string | null;
+  latency_ms?: number;
   manifest_id?: string | null;
+  max_tokens?: number | null;
+  pin_profile_id?: string | null;
+  pin_profile_revision?: number | null;
   profile: string;
   prompt_tokens?: number;
   rendered_hash?: string | null;
   role: string;
   status: string;
+  task_run_id?: string | null;
 }
 
 export interface Stage1AdvanceRequest {
