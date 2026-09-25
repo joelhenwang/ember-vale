@@ -7,10 +7,10 @@ import PageIntro from '../components/ui/PageIntro.vue'
 import MenuButton from '../components/MenuButton.vue'
 import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
 import IconArrowRight from '../components/icons/IconArrowRight.vue'
-import { useBackend } from '../composables/useBackend'
 import { useInterventions, type DirectMode } from '../composables/useInterventions'
 import { usePlayerAsk } from '../composables/usePlayerAsk'
 import { useStory } from '../composables/useStory'
+import { useStoryProvider } from '../composables/useStoryProvider'
 import { selectSeat } from '../api/worldsim'
 import type { Role } from '../api/http'
 import { phaseLabel } from '../game/format'
@@ -18,7 +18,7 @@ import { phaseLabel } from '../game/format'
 const route = useRoute()
 const router = useRouter()
 const storyId = computed(() => String(route.params.storyId ?? ''))
-const backend = useBackend()
+const provider = useStoryProvider(storyId)
 
 // Identity is authoritative, never inferred from display names: the room
 // sends the persisted grant's role and controlled runtime id (matched
@@ -140,6 +140,9 @@ const nextIndex = computed(() => (detail.value?.absolute_index ?? 0) + 1)
 
 async function advance(): Promise<void> {
   await story.advance()
+  // The pin cannot change mid-story, but the environment default can: keep
+  // the provider banner honest after every beat.
+  void provider.load()
   // Queued directions drain during the beat: re-read their states afterward.
   if (seat.value) await queueCtl.refresh()
 }
@@ -210,7 +213,7 @@ onMounted(() => {
   void story.load().then(() => {
     if (seat.value) void queueCtl.refresh()
   })
-  void backend.refresh()
+  void provider.load()
 })
 onUnmounted(() => {
   story.cancel()
@@ -250,9 +253,12 @@ onUnmounted(() => {
       <p v-if="controlledMissing" class="play__notice play__notice--error" role="alert">
         The controlled character is not on the map — travel is unavailable until they appear.
       </p>
-      <p v-if="backend.status.value.modelProfile" class="play__notice" role="status">
-        Development model active ({{ backend.status.value.modelProfile }}) — beats are deterministic
-        stand-ins, not live provider prose.
+      <p
+        v-if="provider.banner.value"
+        class="play__notice"
+        :class="provider.banner.value.tone === 'error' ? 'play__notice--error' : ''"
+        :role="provider.banner.value.tone === 'error' ? 'alert' : 'status'">
+        {{ provider.banner.value.text }}
       </p>
       <p
         v-if="story.notice.value"

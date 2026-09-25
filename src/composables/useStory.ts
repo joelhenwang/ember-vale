@@ -35,6 +35,7 @@ import {
   openStory,
   startTravel
 } from '../api/worldsim'
+import { beatFallbackNotice } from './useStoryProvider'
 
 export interface StoryNotice {
   kind: 'error' | 'info'
@@ -359,6 +360,10 @@ export function useStory(
         notice.value = { kind: 'info', text: 'That beat already committed — showing it.' }
       } else if (alive()) {
         appliedFresh = true
+        // Beat-scoped fallback: narration that fell back says so on the
+        // beat, never as a story-wide provider claim.
+        const fallback = beatFallbackNotice(op.index, result.scenes)
+        if (fallback) notice.value = { kind: 'info', text: fallback }
       }
     }
     try {

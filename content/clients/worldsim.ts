@@ -993,6 +993,33 @@ export interface ProviderTestView {
   text_ready?: string;
 }
 
+export interface StoryProviderPinView {
+  adapter: string;
+  connection_name: string;
+  model_id: string;
+  profile_id: string;
+  revision: number;
+}
+
+export interface StoryProviderEnvironmentView {
+  active_profile: string;
+  adapter: string;
+  model_id?: string | null;
+}
+
+export interface StoryProviderView {
+  effective_adapter: string;
+  effective_model_id?: string | null;
+  effective_revision?: number | null;
+  effective_source: string;
+  environment: StoryProviderEnvironmentView;
+  pin?: StoryProviderPinView | null;
+  pin_error?: string | null;
+  pin_state: string;
+  story_id: string;
+  world_id: string;
+}
+
 export interface CacheScopeView {
   description: string;
   files: number;
@@ -1071,6 +1098,7 @@ export const ROUTES = {
   renameStory: "PATCH /api/v1/stories/{story_id}",
   readStorySetup: "GET /api/v1/stories/{story_id}/setup",
   exportStorySetup: "GET /api/v1/stories/{story_id}/setup/export",
+  readStoryProvider: "GET /api/v1/stories/{story_id}/provider",
   openStory: "POST /api/v1/stories/{story_id}/open",
   archiveStory: "POST /api/v1/stories/{story_id}/archive",
   unarchiveStory: "POST /api/v1/stories/{story_id}/unarchive",

@@ -5586,6 +5586,163 @@
         "title": "StoryPatchRequest",
         "type": "object"
       },
+      "StoryProviderEnvironmentView": {
+        "additionalProperties": false,
+        "properties": {
+          "active_profile": {
+            "title": "Active Profile",
+            "type": "string"
+          },
+          "adapter": {
+            "title": "Adapter",
+            "type": "string"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          }
+        },
+        "required": [
+          "active_profile",
+          "adapter"
+        ],
+        "title": "StoryProviderEnvironmentView",
+        "type": "object"
+      },
+      "StoryProviderPinView": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter": {
+            "title": "Adapter",
+            "type": "string"
+          },
+          "connection_name": {
+            "title": "Connection Name",
+            "type": "string"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "profile_id": {
+            "format": "uuid",
+            "title": "Profile Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "profile_id",
+          "revision",
+          "model_id",
+          "adapter",
+          "connection_name"
+        ],
+        "title": "StoryProviderPinView",
+        "type": "object"
+      },
+      "StoryProviderView": {
+        "additionalProperties": false,
+        "properties": {
+          "effective_adapter": {
+            "title": "Effective Adapter",
+            "type": "string"
+          },
+          "effective_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Model Id"
+          },
+          "effective_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Revision"
+          },
+          "effective_source": {
+            "enum": [
+              "pin",
+              "environment"
+            ],
+            "title": "Effective Source",
+            "type": "string"
+          },
+          "environment": {
+            "$ref": "#/components/schemas/StoryProviderEnvironmentView"
+          },
+          "pin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StoryProviderPinView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pin_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pin Error"
+          },
+          "pin_state": {
+            "enum": [
+              "none",
+              "ok",
+              "broken"
+            ],
+            "title": "Pin State",
+            "type": "string"
+          },
+          "story_id": {
+            "format": "uuid",
+            "title": "Story Id",
+            "type": "string"
+          },
+          "world_id": {
+            "format": "uuid",
+            "title": "World Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "story_id",
+          "world_id",
+          "pin_state",
+          "environment",
+          "effective_source",
+          "effective_adapter"
+        ],
+        "title": "StoryProviderView",
+        "type": "object"
+      },
       "StorySetupView": {
         "additionalProperties": false,
         "properties": {
@@ -10755,6 +10912,50 @@
           }
         },
         "summary": "Open Story",
+        "tags": [
+          "stories"
+        ]
+      }
+    },
+    "/api/v1/stories/{story_id}/provider": {
+      "get": {
+        "description": "Story-effective provider: resolved pin or environment default.\n\nA broken pin is reported as data (pin_state \"broken\"), never silently\nreplaced: execution still fails closed at admission. The effective\nsection names exactly what beats run, so the room banner never has\nto guess from environment health alone.",
+        "operationId": "read_story_provider_api_v1_stories__story_id__provider_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "story_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Story Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoryProviderView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Story Provider",
         "tags": [
           "stories"
         ]

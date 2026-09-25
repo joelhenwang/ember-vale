@@ -145,6 +145,9 @@ WANTED = (
     "ProviderCapabilitiesView",
     "ProviderTestRequest",
     "ProviderTestView",
+    "StoryProviderPinView",
+    "StoryProviderEnvironmentView",
+    "StoryProviderView",
     "CacheScopeView",
     "CacheClearRequest",
 )
@@ -209,6 +212,7 @@ ROUTES = (
     ("patch", "/api/v1/stories/{story_id}", "renameStory"),
     ("get", "/api/v1/stories/{story_id}/setup", "readStorySetup"),
     ("get", "/api/v1/stories/{story_id}/setup/export", "exportStorySetup"),
+    ("get", "/api/v1/stories/{story_id}/provider", "readStoryProvider"),
     ("post", "/api/v1/stories/{story_id}/open", "openStory"),
     ("post", "/api/v1/stories/{story_id}/archive", "archiveStory"),
     ("post", "/api/v1/stories/{story_id}/unarchive", "unarchiveStory"),

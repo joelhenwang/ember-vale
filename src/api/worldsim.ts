@@ -37,6 +37,7 @@ import type {
   StoryDraftPatchRequest,
   StoryDraftView,
   StoryListResponse,
+  StoryProviderView,
   StorySetupView,
   TimelineResponse
 } from '../../content/clients/worldsim'
@@ -234,6 +235,10 @@ export function getStory(id: string, opts: CallOptions = {}): Promise<StoryDetai
 
 export function getSetup(id: string, opts: CallOptions = {}): Promise<StorySetupView> {
   return apiFetch<StorySetupView>(`/stories/${id}/setup`, { ...opts, method: 'GET' })
+}
+
+export function getStoryProvider(id: string, opts: CallOptions = {}): Promise<StoryProviderView> {
+  return apiFetch<StoryProviderView>(`/stories/${id}/provider`, { ...opts, method: 'GET' })
 }
 
 export function openStory(id: string, opts: CallOptions = {}): Promise<StoryDetail> {

@@ -40,6 +40,7 @@ import { filterCast, type CastFilter } from '../game/filters'
 import { persistStepSlug, stepFromSlug } from '../game/wizardSteps'
 import type { CharacterDef } from '../game/model'
 import { useStorytellerPin } from '../composables/useStorytellerPin'
+import { describeEnvironment } from '../composables/useStoryProvider'
 
 const route = useRoute()
 const router = useRouter()
@@ -192,6 +193,12 @@ const selections = computed<NewStorySelections>(() => ({
 // Request ownership lives in the composable: a late profile response can
 // never stamp another provider's pin onto the current selection.
 const pinCtl = useStorytellerPin()
+
+// Environment honesty on the AI step: deterministic stand-ins are claimed
+// only for an actually fake active profile; a live default says live.
+const envNotice = computed(
+  () => describeEnvironment(backend.status.value.modelProfile)?.text ?? null
+)
 
 watch(step, (next) => {
   if (next >= 5) void pinCtl.ensure()
@@ -1156,9 +1163,8 @@ onMounted(() => {
         <p class="nsv__body">
           Stories open with curated starter art. Image generation arrives in a later milestone.
         </p>
-        <p v-if="backend.status.value.modelProfile" class="nsv__notice" role="status">
-          Development model active ({{ backend.status.value.modelProfile }}) — beats are
-          deterministic stand-ins, not live provider prose.
+        <p v-if="envNotice" class="nsv__notice" role="status">
+          {{ envNotice }}
         </p>
         <p v-else class="nsv__notice" role="status">
           Model profile unknown — beats will say what they used.

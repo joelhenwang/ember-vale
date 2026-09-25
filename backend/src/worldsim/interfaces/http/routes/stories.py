@@ -11,6 +11,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Header, Request
 
+from worldsim.application.settings.resolution import resolve_pin
 from worldsim.application.stories.validation import validate_draft as validate_draft_payload
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.ids import new_story_draft_id
@@ -130,6 +131,68 @@ async def read_story(story_id: UUID, request: Request) -> api.StoryDetail:
         archived_at=entry.archived_at,
         status=summary.status,
         metadata_version=entry.metadata_version,
+    )
+
+
+@router.get("/stories/{story_id}/provider", response_model=api.StoryProviderView)
+async def read_story_provider(story_id: UUID, request: Request) -> api.StoryProviderView:
+    """Story-effective provider: resolved pin or environment default.
+
+    A broken pin is reported as data (pin_state "broken"), never silently
+    replaced: execution still fails closed at admission. The effective
+    section names exactly what beats run, so the room banner never has
+    to guess from environment health alone.
+    """
+    state = request.app.state.app_state
+    async with state.uow_factory()() as uow:
+        await uow.stories.get_catalog(story_id)
+        try:
+            pinned = await resolve_pin(uow, story_id)
+        except DomainError as exc:
+            pinned = None
+            pin_error: str | None = str(exc)
+        else:
+            pin_error = None
+    provider = state.settings.provider
+    if provider.active_profile == "openrouter":
+        environment = api.StoryProviderEnvironmentView(
+            active_profile=str(provider.active_profile),
+            adapter="openrouter",
+            model_id=provider.openrouter_model,
+        )
+    else:
+        environment = api.StoryProviderEnvironmentView(
+            active_profile=str(provider.active_profile),
+            adapter="fake",
+        )
+    if pinned is not None:
+        pin = api.StoryProviderPinView(
+            profile_id=pinned.profile.id,
+            revision=pinned.profile.revision,
+            model_id=pinned.profile.model_id,
+            adapter=pinned.connection.adapter.value,
+            connection_name=pinned.connection.name,
+        )
+        return api.StoryProviderView(
+            story_id=story_id,
+            world_id=story_id,
+            pin_state="ok",
+            pin=pin,
+            environment=environment,
+            effective_source="pin",
+            effective_adapter=pin.adapter,
+            effective_model_id=pin.model_id,
+            effective_revision=pin.revision,
+        )
+    return api.StoryProviderView(
+        story_id=story_id,
+        world_id=story_id,
+        pin_state="broken" if pin_error is not None else "none",
+        pin_error=pin_error,
+        environment=environment,
+        effective_source="environment",
+        effective_adapter=environment.adapter,
+        effective_model_id=environment.model_id,
     )
 
 

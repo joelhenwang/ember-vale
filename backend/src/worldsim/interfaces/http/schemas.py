@@ -1437,6 +1437,39 @@ class ProviderTestView(BaseModel):
     tested_config_revision: int = 0
 
 
+class StoryProviderPinView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    profile_id: UUID
+    revision: int
+    model_id: str
+    adapter: str
+    connection_name: str
+
+
+class StoryProviderEnvironmentView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    active_profile: str
+    adapter: str
+    model_id: str | None = None
+
+
+class StoryProviderView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    story_id: UUID
+    world_id: UUID
+    pin_state: Literal["none", "ok", "broken"]
+    pin: StoryProviderPinView | None = None
+    pin_error: str | None = None
+    environment: StoryProviderEnvironmentView
+    effective_source: Literal["pin", "environment"]
+    effective_adapter: str
+    effective_model_id: str | None = None
+    effective_revision: int | None = None
+
+
 class CacheScopeView(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
