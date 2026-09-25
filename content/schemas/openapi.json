@@ -5132,6 +5132,17 @@
             ],
             "title": "Open Run Id"
           },
+          "open_run_index": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Open Run Index"
+          },
           "open_run_state": {
             "anyOf": [
               {

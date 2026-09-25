@@ -29,6 +29,7 @@ import {
   getMap,
   getRole,
   getSetup,
+  getSimulationStatus,
   getStory,
   getTimeline,
   listActivities,
@@ -40,6 +41,17 @@ import { beatFallbackNotice } from './useStoryProvider'
 export interface StoryNotice {
   kind: 'error' | 'info'
   text: string
+}
+
+/**
+ * A beat the server still holds open: committed to its index but never
+ * finished, usually because the connection dropped mid-beat. The room
+ * explains it and offers check-again / resume — never a silent new beat.
+ */
+export interface OpenRun {
+  id: string
+  index: number
+  state: string
 }
 
 /** Bounded history fetch: 25 pages of 50 source events per continuation. */
@@ -111,6 +123,7 @@ export function useStory(
   const loadingMore = ref(false)
   const notice = ref<StoryNotice | null>(null)
   const openedFor = ref<string | null>(null)
+  const openRun = ref<OpenRun | null>(null)
 
   let cycle = 0
   let controller: AbortController | null = null
@@ -219,6 +232,7 @@ export function useStory(
     advancing.value = false
     traveling.value = false
     loadingMore.value = false
+    openRun.value = null
     loading.value = true
     loadError.value = null
     entries.value = []
@@ -241,6 +255,9 @@ export function useStory(
       grant.value = activeGrant
       grantLoaded.value = true
       map.value = worldMap
+      // A reload after a timeout lands here: learn whether the last beat
+      // is still open before the room offers any next action.
+      await refreshStatus(worldId, seen)
       await pageThrough(worldId, seen, opts(), 0)
       if (seen !== cycle) return
       // Record the room open (updates last_played_at) without advancing
@@ -303,6 +320,35 @@ export function useStory(
     }
   }
 
+  /**
+   * Read-only run reconciliation: names the stranded beat (if any) without
+   * starting work. A failed read leaves the previous value alone — status
+   * is advisory and must never invent or clear beat state on its own.
+   */
+  async function refreshStatus(worldId: string = id(), generation: number = cycle): Promise<void> {
+    try {
+      const header: OpHeader = { role: unref(role), characterId: unref(characterId) }
+      const status = await getSimulationStatus(worldId, header)
+      if (generation !== cycle) return
+      if (
+        status.open_run_id !== undefined &&
+        status.open_run_id !== null &&
+        status.open_run_index !== undefined &&
+        status.open_run_index !== null
+      ) {
+        openRun.value = {
+          id: status.open_run_id,
+          index: status.open_run_index,
+          state: status.open_run_state ?? 'open'
+        }
+      } else {
+        openRun.value = null
+      }
+    } catch {
+      /* advisory only */
+    }
+  }
+
   /** Explicit history continuation from the stored cursor. */
   async function loadMore(): Promise<void> {
     if (!detail.value || loadingMore.value || !hasMore.value) return
@@ -322,15 +368,19 @@ export function useStory(
     }
   }
 
-  async function advance(intents?: Parameters<typeof advanceStory>[2]): Promise<boolean> {
+  async function advance(
+    intents?: Parameters<typeof advanceStory>[2],
+    indexOverride?: number
+  ): Promise<boolean> {
     if (!detail.value || advancing.value) return false
     advancing.value = true
     notice.value = null
     // Frozen operation context: every attempt below targets this world,
-    // index, role and actor even if the route changes mid-request.
+    // index, role and actor even if the route changes mid-request. An
+    // explicit index replays that beat's run; the default starts the next.
     const op: AdvanceOp = {
       worldId: id(),
-      index: detail.value.absolute_index + 1,
+      index: indexOverride ?? detail.value.absolute_index + 1,
       header: {
         role: unref(role),
         characterId: unref(characterId),
@@ -396,6 +446,25 @@ export function useStory(
           notice.value = { kind: 'info', text: committingText }
         }
         return false
+      } else if (err instanceof ApiError && err.status === 412 && alive()) {
+        // The clock moved past a stranded beat (or the run is blocked):
+        // explain which beat needs attention instead of surfacing the raw
+        // precondition string, and never start another beat implicitly.
+        await refreshStatus(op.worldId, op.generation)
+        if (alive()) {
+          const stranded = openRun.value
+          if (stranded && /still open/.test(err.message)) {
+            notice.value = {
+              kind: 'info',
+              text:
+                `Beat ${stranded.index} is still open (${stranded.state.replace(/_/g, ' ')}) — ` +
+                'resume it instead of starting a new beat.'
+            }
+          } else {
+            notice.value = { kind: 'error', text: err.message || 'that beat needs a resume' }
+          }
+        }
+        return false
       } else if (err instanceof ApiError && err.code === 'VERSION_CONFLICT') {
         if (alive()) notice.value = { kind: 'info', text: 'Newer state arrived — refreshed.' }
       } else {
@@ -415,10 +484,24 @@ export function useStory(
       // must not stick mid-advance after cancellation.
       if (alive()) {
         await refreshTimeline(false, op.worldId)
+        // A landed beat clears the stranded banner; a still-open one keeps
+        // it honest without starting anything.
+        await refreshStatus(op.worldId, op.generation)
       }
       advancing.value = false
     }
     return alive() && appliedFresh
+  }
+
+  /**
+   * Resume the stranded beat at its own index: the server replays the same
+   * run instead of starting another beat. Files no new intents unless the
+   * caller passes them; the composer's preserved draft stays untouched.
+   */
+  async function resumeBeat(intents?: Parameters<typeof advanceStory>[2]): Promise<boolean> {
+    const stranded = openRun.value
+    if (!stranded || !detail.value || advancing.value) return false
+    return advance(intents, stranded.index)
   }
 
   function matchActivity(
@@ -526,11 +609,14 @@ export function useStory(
     traveling,
     loadingMore,
     notice,
+    openRun,
     load,
     cancel,
     advance,
+    resumeBeat,
     travel,
     refreshTimeline,
+    refreshStatus,
     loadMore
   }
 }

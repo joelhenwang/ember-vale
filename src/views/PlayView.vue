@@ -147,6 +147,20 @@ async function advance(): Promise<void> {
   if (seat.value) await queueCtl.refresh()
 }
 
+// A stranded beat from a dropped connection: look for its result first
+// (read-only), or replay the same beat explicitly. Neither starts a new
+// beat, and the composer's preserved draft stays untouched.
+async function checkAgain(): Promise<void> {
+  await story.refreshTimeline()
+  await story.refreshStatus()
+}
+
+async function resume(): Promise<void> {
+  await story.resumeBeat()
+  void provider.load()
+  if (seat.value) await queueCtl.refresh()
+}
+
 // Player action: the controlled character speaks to one castmate. The
 // attempt files with the next committed beat — reactions, resolution and
 // narration follow — never alone. Co-located castmates sort first.
@@ -267,6 +281,25 @@ onUnmounted(() => {
         role="status">
         {{ story.notice.value.text }}
       </p>
+      <div v-if="story.openRun.value" class="play__notice" role="status">
+        <p>
+          Beat {{ story.openRun.value.index }} hasn't finished ({{
+            story.openRun.value.state.replace(/_/g, ' ')
+          }}) — the connection may have dropped mid-beat. Nothing commits twice: check whether it
+          landed, or resume it. Your draft stays in the box.
+        </p>
+        <div class="play__travel">
+          <MenuButton variant="outline" :disabled="story.advancing.value" @click="checkAgain()">
+            {{ story.advancing.value ? 'Checking…' : 'Check again' }}
+          </MenuButton>
+          <MenuButton
+            :icon="IconArrowRight"
+            :disabled="story.advancing.value || !story.grantLoaded.value"
+            @click="resume()">
+            {{ story.advancing.value ? 'Resuming…' : `Resume beat ${story.openRun.value.index}` }}
+          </MenuButton>
+        </div>
+      </div>
       <div class="play__grid">
         <section class="play__card" aria-label="Cast and places">
           <h2>Cast &amp; places</h2>
@@ -306,7 +339,12 @@ onUnmounted(() => {
           <h3>Advance the story</h3>
           <MenuButton
             :icon="IconArrowRight"
-            :disabled="story.advancing.value || !story.grantLoaded.value"
+            :disabled="story.advancing.value || !story.grantLoaded.value || !!story.openRun.value"
+            :title="
+              story.openRun.value
+                ? 'A beat is still open — check again or resume it above.'
+                : undefined
+            "
             @click="advance()">
             {{ story.advancing.value ? 'Committing beat…' : `Commit beat ${nextIndex}` }}
           </MenuButton>
@@ -342,7 +380,9 @@ onUnmounted(() => {
                 placeholder="Ask something in your own words." />
             </label>
             <MenuButton
-              :disabled="!askText.trim() || !askTarget || story.advancing.value"
+              :disabled="
+                !askText.trim() || !askTarget || story.advancing.value || !!story.openRun.value
+              "
               @click="askQuestion()">
               {{ story.advancing.value ? 'Committing beat…' : 'Ask with the next beat' }}
             </MenuButton>

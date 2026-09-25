@@ -29,6 +29,7 @@ import type {
   ProviderProfileView,
   RoleGrantView,
   RoleSelectRequest,
+  SimulationStatus,
   Stage1AdvanceRequest,
   Stage1AdvanceResponse,
   StoryCreateResponse,
@@ -331,6 +332,16 @@ export function advanceStory(
       ? { world_id: worldId, absolute_index: absoluteIndex }
       : { world_id: worldId, absolute_index: absoluteIndex, player_intents: intents }
   return apiFetch<Stage1AdvanceResponse>('/stage1/advance', { ...opts, method: 'POST', body })
+}
+
+export function getSimulationStatus(
+  worldId: string,
+  opts: CallOptions = {}
+): Promise<SimulationStatus> {
+  return apiFetch<SimulationStatus>(`/simulation/status?world_id=${worldId}`, {
+    ...opts,
+    method: 'GET'
+  })
 }
 
 export function getTimeline(

@@ -597,6 +597,7 @@ export interface SimulationStatus {
   latest_run_id?: string | null;
   latest_run_state?: string | null;
   open_run_id?: string | null;
+  open_run_index?: number | null;
   open_run_state?: string | null;
   world_id: string;
 }

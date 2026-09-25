@@ -418,6 +418,7 @@ async def simulation_status(world_id: UUID, request: Request) -> api.SimulationS
         world_id=world_id,
         absolute_index=absolute_index(world.day, world.phase),
         open_run_id=open_run.id if open_run is not None else None,
+        open_run_index=open_run.absolute_index if open_run is not None else None,
         open_run_state=open_run.state.value if open_run is not None else None,
         latest_run_id=latest.id if latest is not None else None,
         latest_run_state=latest.state.value if latest is not None else None,

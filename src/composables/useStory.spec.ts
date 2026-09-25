@@ -21,6 +21,8 @@ let failures = new Map<string, { status: number; code: string; message: string }
 let rejections = new Map<string, Error>()
 /** Activity members returned per story. */
 let membersByStory = new Map<string, unknown[]>()
+/** Stranded open runs reported per story. */
+let statusByStory = new Map<string, { id: string; index: number; state: string }>()
 /** Committed beat index per story (advance commits move it). */
 let indexByStory = new Map<string, number>()
 /** Held advance POSTs, released manually with a chosen outcome. */
@@ -128,6 +130,7 @@ function installFetch(): void {
   failures = new Map()
   rejections = new Map()
   membersByStory = new Map()
+  statusByStory = new Map()
   indexByStory = new Map()
   heldAdvances = []
   heldActivityLists = []
@@ -232,6 +235,20 @@ function installFetch(): void {
         return json(timelinePage(id, [E2], 9, false))
       }
       if (method === 'GET' && url.pathname === '/api/v1/stage2/map') return json(mapOf(id))
+      if (method === 'GET' && url.pathname === '/api/v1/simulation/status') {
+        const open = statusByStory.get(id)
+        return json(
+          open
+            ? {
+                world_id: id,
+                absolute_index: 2,
+                open_run_id: open.id,
+                open_run_index: open.index,
+                open_run_state: open.state
+              }
+            : { world_id: id, absolute_index: 2 }
+        )
+      }
       if (method === 'GET' && url.pathname.endsWith('/setup')) return json(setupOf(id))
       if (method === 'GET' && url.pathname === '/api/v1/stage2/roles') return json(grantOf(id))
       if (method === 'GET' && url.pathname.startsWith('/api/v1/stories/')) {
@@ -632,5 +649,74 @@ describe('useStory room', () => {
     expect(calls).toHaveLength(2)
     expect(story.entries.value).toHaveLength(0)
     expect(story.hasMore.value).toBe(true)
+  })
+
+  it('names a stranded beat from the simulation status on load', async () => {
+    installFetch()
+    statusByStory.set('A', { id: 'run-9', index: 2, state: 'scenes_assembled' })
+    const story = useStory('A', 'watcher')
+    await story.load()
+    expect(story.openRun.value).toEqual({ id: 'run-9', index: 2, state: 'scenes_assembled' })
+    // Read-only: learning the state starts no beat.
+    expect(seen.filter((s) => s.path === '/api/v1/stage1/advance')).toHaveLength(0)
+  })
+
+  it('resumeBeat without a stranded beat starts nothing', async () => {
+    installFetch()
+    const story = useStory('A', 'watcher')
+    await story.load()
+    expect(story.openRun.value).toBeNull()
+    await expect(story.resumeBeat()).resolves.toBe(false)
+    expect(seen.filter((s) => s.path === '/api/v1/stage1/advance')).toHaveLength(0)
+  })
+
+  it('resumeBeat replays the stranded index, never clock-plus-one', async () => {
+    installFetch()
+    indexByStory.set('A', 3)
+    statusByStory.set('A', { id: 'run-9', index: 2, state: 'scenes_assembled' })
+    const story = useStory('A', 'watcher')
+    await story.load()
+    // The beat lands while resuming: the stranded state clears.
+    const pending = story.resumeBeat()
+    statusByStory.delete('A')
+    await expect(pending).resolves.toBe(true)
+    const posts = advancePosts()
+    expect(posts).toHaveLength(1)
+    expect(advanceBody(posts[0])['absolute_index']).toBe(2)
+    expect(story.openRun.value).toBeNull()
+  })
+
+  it('a still-open refusal names the stranded beat instead of a raw 412', async () => {
+    installFetch()
+    statusByStory.set('A', { id: 'run-9', index: 2, state: 'world_ticked' })
+    failures.set('POST /api/v1/stage1/advance', {
+      status: 412,
+      code: 'PRECONDITION_FAILED',
+      message:
+        'phase run run-9 is still open; reconcile or resume it before advancing another index'
+    })
+    const story = useStory('A', 'watcher')
+    await story.load()
+    await expect(story.advance()).resolves.toBe(false)
+    expect(advancePosts()).toHaveLength(1)
+    expect(story.notice.value).toEqual({
+      kind: 'info',
+      text: 'Beat 2 is still open (world ticked) — resume it instead of starting a new beat.'
+    })
+  })
+
+  it('a blocked run refusal explains without starting another beat', async () => {
+    installFetch()
+    failures.set('POST /api/v1/stage1/advance', {
+      status: 412,
+      code: 'PRECONDITION_FAILED',
+      message: 'phase run is terminal_failed; resume before advancing'
+    })
+    const story = useStory('A', 'watcher')
+    await story.load()
+    await expect(story.advance()).resolves.toBe(false)
+    expect(advancePosts()).toHaveLength(1)
+    expect(story.notice.value?.kind).toBe('error')
+    expect(story.notice.value?.text).toContain('resume before advancing')
   })
 })

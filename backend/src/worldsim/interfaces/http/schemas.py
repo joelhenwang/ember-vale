@@ -1028,6 +1028,7 @@ class SimulationStatus(BaseModel):
     world_id: UUID
     absolute_index: int
     open_run_id: UUID | None = None
+    open_run_index: int | None = None
     open_run_state: str | None = None
     latest_run_id: UUID | None = None
     latest_run_state: str | None = None
