@@ -35,9 +35,8 @@ import { chromium } from 'playwright-core'
 import {
   buildReport,
   findNpcAnswers,
-  markBlocked,
   recordAdvance,
-  shouldHaltScenario,
+  runPlannedScenario,
   transportKind
 } from './reliability-baseline-lib.mjs'
 
@@ -450,61 +449,70 @@ async function runScenario() {
   })
   if (!travel.ok) note(`travel activity rejected: HTTP ${travel.status} ${travel.errorBody}`)
 
-  // Advances run in order, but any transport error halts further mutation:
-  // the outcome is unresolved, so no seat change or advance may follow.
-  // Remaining planned advances are preserved as blocked, never attempted.
-  const halt = (record, remaining) => {
-    if (!shouldHaltScenario(record)) return false
-    const reason = `halted: ${record.kind} ${record.transport_error}, resolution ${record.resolution}`
-    blockedSteps.push(...markBlocked(remaining, reason))
-    note(`${record.kind}: ${reason}; skipping ${remaining.join(', ')}`)
-    checkpoint()
-    return true
+  // Advances run in order through the shared driver: any transport error
+  // halts further mutation (no seat change or advance may follow) while
+  // read-only finalization still runs for the acknowledged attempts.
+  // Beat 1 travel (watcher grant from creation, no seat change); beat 2
+  // question (player seat — headers alone lose to the grant); beat 3 neutral
+  // follow-up with Wren still controlled; beat 4 ordinary watcher advance.
+  // Ash's answer, if any, must be Ash's own committed communicate intent or
+  // reaction addressed to Wren — traced in finalization, never authored here.
+  const steps = [
+    { kind: 'travel', seat: null, playerIntents: undefined, roleHeaders: {} },
+    {
+      kind: 'question',
+      seat: { role: 'player', characterId: cast.wrenId },
+      playerIntents: communicate(cast.wrenId, cast.ashId, 'What did the market bell mean at dawn?'),
+      roleHeaders: playerHeaders(cast.wrenId)
+    },
+    {
+      kind: 'follow-up',
+      seat: null,
+      playerIntents: communicate(
+        cast.wrenId,
+        cast.ashId,
+        'What should we watch for on the road ahead?'
+      ),
+      roleHeaders: playerHeaders(cast.wrenId)
+    },
+    {
+      kind: 'ordinary-advance',
+      seat: { role: 'watcher' },
+      playerIntents: undefined,
+      roleHeaders: {}
+    }
+  ]
+  const ops = {
+    setSeat: (seat) => setSeat(worldId, seat.role, seat.characterId),
+    advance: async (step) =>
+      measuredAdvance(
+        step.kind,
+        worldId,
+        (await currentIndex(worldId)) + 1,
+        step.playerIntents,
+        step.roleHeaders
+      ),
+    finalize: () => finalizeReads(cast),
+    note
   }
+  const { blockedSteps: blocked } = await runPlannedScenario(steps, ops)
+  blockedSteps.push(...blocked)
+  if (blocked.length > 0) {
+    note(`blocked steps preserved: ${blocked.map((b) => b.kind).join(', ')}`)
+    checkpoint()
+  }
+}
 
-  const travelRec = await measuredAdvance(
-    'travel',
-    worldId,
-    (await currentIndex(worldId)) + 1,
-    undefined,
-    {}
-  )
-  if (halt(travelRec, ['question', 'follow-up', 'ordinary-advance'])) return
-
-  // Beat 2: question (Wren asks Ash; player seat, headers alone lose to the grant).
-  await setSeat(worldId, 'player', cast.wrenId)
-  const questionRec = await measuredAdvance(
-    'question',
-    worldId,
-    (await currentIndex(worldId)) + 1,
-    communicate(cast.wrenId, cast.ashId, 'What did the market bell mean at dawn?'),
-    playerHeaders(cast.wrenId)
-  )
-  if (halt(questionRec, ['follow-up', 'ordinary-advance'])) return
-
-  // Beat 3: neutral follow-up, Wren still controlled. Ash's answer, if any,
-  // must be Ash's own committed communicate intent or reaction addressed to
-  // Wren — traced below, never authored by this harness.
-  const followupRec = await measuredAdvance(
-    'follow-up',
-    worldId,
-    (await currentIndex(worldId)) + 1,
-    communicate(cast.wrenId, cast.ashId, 'What should we watch for on the road ahead?'),
-    playerHeaders(cast.wrenId)
-  )
-  if (halt(followupRec, ['ordinary-advance'])) return
-
-  // Beat 4: ordinary advance, no intents.
-  await setSeat(worldId, 'watcher')
-  await measuredAdvance(
-    'ordinary-advance',
-    worldId,
-    (await currentIndex(worldId)) + 1,
-    undefined,
-    {}
-  )
-
-  // Post-hoc source tracing under the watcher seat: committed intents and
+/**
+ * Read-only finalization for previously acknowledged runs: post-hoc source
+ * tracing (committed intents, reactions, narration citations per scene, plus
+ * whether Ash produced a committed answer) and reload reads. Never changes
+ * seats: if the current grant prevents retrieval, that is reported
+ * explicitly as source-retrieval-failed.
+ */
+async function finalizeReads(cast) {
+  note('finalizing reads with the current grant; seats are never changed to obtain evidence')
+  // Post-hoc source tracing: committed intents and
   // reactions per scene, plus whether Ash produced a committed answer.
   // A failed source read is 'source-retrieval-failed', never 'no answer'.
   for (const beat of beats) {

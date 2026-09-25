@@ -17,7 +17,7 @@ not an established remedy.
 | Narration | fallback x4 | fallback x2 (of committed) |
 | NPC answers (Ash) | no-answer x2 | **answered x1** (question), follow-up unjudged (timeout) |
 | Answer usefulness | unevaluated | unevaluated |
-| Beat walls | 29.2s, 52.4s, 66.5s, 35.3s | 45.9s, 112.5s, >180s timeout (unresolved), no 4th attempt (blocked) |
+| Beat walls | 29.2s, 52.4s, 66.5s, 35.3s | 45.9s, 112.5s, >180s timeout (unresolved), 4th attempted → 409 rejected |
 | Tokens prompt+completion(+reasoning) | 8577+1583(1536); 10361+1991(1951); 13980+2560(2686); 6184+3095(2990) | 6120+4794(4560); 10368+8471(8177); timeout; n/a |
 
 ## Provider outcomes (exported failure layer, not inferred)
@@ -36,9 +36,12 @@ not an established remedy.
   timeout with phase 3 left open (`scenes_assembled`, read-only status
   confirmed); the timeout alone does not establish a permanently wedged story
   or its cause — the open phase warrants investigation, and ordinary-user
-  recovery is the next question, not another budget increase. Under corrected
-  harness semantics the follow-up would halt the scenario with the fourth
-  advance preserved as blocked instead of attempted into 409s.
+  recovery is the next question, not another budget increase. What a future
+  run would do differently: the corrected driver halts all mutation after an
+  unresolved timeout, so the fourth advance would be preserved as blocked and
+  the earlier question's traced reaction would still reach the final report
+  through read-only finalization (covered deterministically in
+  `reliability-baseline-lib.spec.mjs`).
 
 ## Committed NPC answer (4096 question beat)
 

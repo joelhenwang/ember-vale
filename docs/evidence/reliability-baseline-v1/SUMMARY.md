@@ -121,6 +121,10 @@ the cost.
   steps, narration-failure-proof source tracing, `reaction:{id}` citation
   matching): `baseline-fake-mugse6ih.json` (4/4 committed, 0 blocked, answers
   no-answer with narration retrieval complete).
+- Schema 4 with the shared halt-then-finalize driver (`runPlannedScenario`,
+  covered by the travel/question/timeout scenario test):
+  `baseline-fake-mugsswpd.json` (4/4 committed, 0 blocked; finalization runs
+  even on the happy path).
 - Schema 1 (legacy, superseded semantics but retained): `baseline-fake-mugcisle.json`
   (setup probe with seat 403s), `baseline-fake-mugcjgeb.json`,
   `baseline-fake-mugcjo6c.json` (determinism pair, Ash-seat follow-up),

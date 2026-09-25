@@ -209,6 +209,41 @@ export function markBlocked(kinds, reason) {
   return kinds.map((kind) => ({ kind, status: 'blocked', reason }))
 }
 
+/**
+ * Execute planned advance steps with halt-then-finalize semantics.
+ *
+ * steps: [{ kind, seat: { role, characterId } | null, ...stepFields }]
+ * ops: { setSeat(seat), advance(step), finalize(attempted), note(msg) }
+ *
+ * Seat changes and advances stop at the first record for which
+ * shouldHaltScenario holds; the remaining steps are returned as blocked
+ * (never attempted). finalize ALWAYS runs afterwards for the acknowledged
+ * attempts: it is read-only (source tracing, reload reads) and must not
+ * change seats or advance. Returns { blockedSteps, attempted }.
+ */
+export async function runPlannedScenario(steps, ops) {
+  const blockedSteps = []
+  const attempted = []
+  let halted = null
+  for (const step of steps) {
+    if (halted) {
+      blockedSteps.push(...markBlocked([step.kind], halted))
+      continue
+    }
+    if (step.seat) await ops.setSeat(step.seat)
+    const record = await ops.advance(step)
+    attempted.push(record)
+    if (shouldHaltScenario(record)) {
+      halted =
+        `halted: ${record.kind} ${record.transport_error}, ` +
+        `resolution ${record.resolution ?? 'unknown'}`
+      ops.note?.(`${record.kind}: ${halted}; no further seat change or advance`)
+    }
+  }
+  await ops.finalize(attempted)
+  return { blockedSteps, attempted }
+}
+
 export function range(values) {
   const xs = values.filter((v) => typeof v === 'number' && Number.isFinite(v))
   if (xs.length === 0) return null

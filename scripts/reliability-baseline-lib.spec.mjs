@@ -10,6 +10,7 @@ import {
   findNpcAnswers,
   markBlocked,
   recordAdvance,
+  runPlannedScenario,
   shouldHaltScenario,
   transportKind
 } from './reliability-baseline-lib.mjs'
@@ -386,6 +387,160 @@ describe('buildReport', () => {
     })
     expect(report.summary.blocked).toBe(2)
     expect(report.summary.advances).toBe(0)
+  })
+})
+
+describe('runPlannedScenario finalizes after a halt', () => {
+  const travelRec = {
+    kind: 'travel',
+    world_id: 'w',
+    absolute_index: 7,
+    run_id: 'r1',
+    client_wall_ms: 400,
+    transport_error: null,
+    classification: {
+      layers: { provider: 'ok', narration: 'fallback' },
+      advancement: { committed: true, retrieval_complete: true, narration: 'fallback' },
+      answer_usefulness: 'unevaluated'
+    }
+  }
+  const questionRec = {
+    kind: 'question',
+    world_id: 'w',
+    absolute_index: 8,
+    run_id: 'r2',
+    client_wall_ms: 500,
+    transport_error: null,
+    classification: {
+      layers: { provider: 'degraded', narration: 'fallback' },
+      advancement: { committed: true, retrieval_complete: true, narration: 'fallback' },
+      answer_usefulness: 'unevaluated'
+    }
+  }
+  const timeoutRec = {
+    kind: 'follow-up',
+    world_id: 'w',
+    absolute_index: 9,
+    run_id: null,
+    client_wall_ms: 180001,
+    transport_error: 'timeout',
+    resolution: 'unresolved',
+    post_error_clock: 9,
+    commit_ambiguous: false,
+    classification: { layers: {}, reasons: ['timeout'] }
+  }
+
+  it('travel ok, question answered, follow-up timeout: blocks ordinary, keeps the answer', async () => {
+    const calls = []
+    const attempted = []
+    const ops = {
+      setSeat: async (seat) => {
+        calls.push(['seat', seat.role])
+        return { ok: true }
+      },
+      advance: async (step) => {
+        calls.push(['advance', step.kind])
+        const rec =
+          step.kind === 'travel' ? travelRec : step.kind === 'question' ? questionRec : timeoutRec
+        attempted.push(rec)
+        return rec
+      },
+      finalize: async (records) => {
+        calls.push(['finalize'])
+        // Read-only finalization for the acknowledged question run.
+        const q = records.find((r) => r.kind === 'question')
+        q.committed_sources = [
+          {
+            scene_id: 's1',
+            intents: [
+              {
+                id: 'i-wren',
+                author_character_id: 'wren',
+                family: 'communicate',
+                target_character_id: 'ash',
+                topic: 'Q?'
+              }
+            ],
+            reactions: [
+              {
+                id: 'r-ash',
+                reactor_character_id: 'ash',
+                family: 'communicate',
+                target_character_id: 'wren',
+                topic: 'The bell meant dawn.'
+              }
+            ],
+            narrations: [{ id: 'b1', speaker_id: 'ash', cited_fact_keys: ['reaction:r-ash'] }]
+          }
+        ]
+        const found = findNpcAnswers(q.committed_sources, 'wren', 'ash')
+        q.npc_answer = {
+          asker: 'Wren',
+          responder: 'Ash',
+          status: found.committed ? 'answered' : 'no-answer',
+          narration_retrieval: 'complete',
+          answers: found.answers
+        }
+        records.push({ kind: 'reload', client_wall_ms: 150 })
+      },
+      note: () => {}
+    }
+    const steps = [
+      { kind: 'travel', seat: null },
+      { kind: 'question', seat: { role: 'player' } },
+      { kind: 'follow-up', seat: null },
+      { kind: 'ordinary-advance', seat: { role: 'watcher' } }
+    ]
+    const { blockedSteps } = await runPlannedScenario(steps, ops)
+
+    // No seat change or advance after the unresolved timeout.
+    expect(calls.filter((c) => c[0] === 'advance').map((c) => c[1])).toEqual([
+      'travel',
+      'question',
+      'follow-up'
+    ])
+    expect(calls.filter((c) => c[0] === 'seat').map((c) => c[1])).toEqual(['player'])
+    expect(blockedSteps).toEqual([
+      {
+        kind: 'ordinary-advance',
+        status: 'blocked',
+        reason: expect.stringMatching(/follow-up timeout/)
+      }
+    ])
+    // Read-only finalization still ran for the acknowledged runs.
+    expect(calls).toContainEqual(['finalize'])
+
+    // The question's answer and citations survive in the final report.
+    const report = buildReport({
+      beats: attempted,
+      notes: [],
+      display: { status: 'skipped', steps: [] },
+      complete: true,
+      fatal: null,
+      blockedSteps,
+      meta: {
+        mode: 'live',
+        title: 't',
+        run: 'r1',
+        startedAt: 's',
+        finishedAt: 'f',
+        api: 'a',
+        storyId: 'st',
+        worldId: 'w',
+        pin: null
+      }
+    })
+    const q = report.beats.find((b) => b.kind === 'question')
+    expect(q.npc_answer.status).toBe('answered')
+    expect(q.npc_answer.answers).toHaveLength(1)
+    expect(q.npc_answer.answers[0]).toMatchObject({
+      source: 'reaction',
+      source_id: 'r-ash',
+      narration_citations: ['b1']
+    })
+    expect(report.summary.advances).toBe(3)
+    expect(report.summary.advances_committed).toBe(2)
+    expect(report.summary.blocked).toBe(1)
   })
 })
 
