@@ -167,16 +167,28 @@ try {
     await page.getByText('Observer', { exact: false }).first().waitFor({ timeout: 15000 })
     const badge = await page.locator('.play__badge').innerText()
     record(S, 'observer badge is read-only grant state', badge.includes('Observer'), badge)
-    // The room fetches backend readiness asynchronously on mount; wait for
+    // The room fetches provider status asynchronously on mount; wait for
     // the banner instead of asserting on first paint (cold stacks flake).
-    await page.getByText('live provider configured', { exact: false }).waitFor({ timeout: 15000 })
+    // Expectations derive from the story-provider response so the check
+    // accepts a correctly reported fake default as well as a live one.
+    const provRes = await page.request.get(`${BASE}/api/v1/stories/${storyId}/provider`)
+    const prov = await provRes.json()
+    const expectFake = prov.effective_adapter === 'fake'
+    await page
+      .getByText(expectFake ? 'deterministic stand-ins' : 'live provider configured', {
+        exact: false
+      })
+      .waitFor({ timeout: 15000 })
     const banner = await page.locator('.play__notice').first().innerText()
     record(
       S,
       'room shows the truthful provider status',
       banner.includes('Storyteller environment default') &&
-        banner.includes('live provider configured') &&
-        !banner.includes('deterministic stand-ins'),
+        (expectFake
+          ? banner.includes('deterministic stand-ins') &&
+            !banner.includes('live provider configured')
+          : banner.includes('live provider configured') &&
+            !banner.includes('deterministic stand-ins')),
       banner.slice(0, 160)
     )
 

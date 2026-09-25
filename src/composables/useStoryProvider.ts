@@ -28,25 +28,27 @@ export function describeStoryProvider(
       ? { tone: 'info', text: 'Storyteller status unknown — beats will say what they used.' }
       : null
   }
+  let current: ProviderBanner
   if (view.pin_state === 'broken') {
     const why = view.pin_error ?? 'the pinned profile could not be resolved'
-    return {
+    current = {
       tone: 'error',
       text: `Storyteller unavailable — ${why}. Beats cannot run until the pin is fixed.`
     }
+  } else {
+    const fake = view.effective_adapter === 'fake'
+    const model = view.effective_model_id ?? 'development model'
+    const tail = fake
+      ? 'deterministic stand-ins, not live provider prose.'
+      : 'live provider configured.'
+    current =
+      view.effective_source === 'pin' && view.pin
+        ? {
+            tone: 'info',
+            text: `Storyteller ${model} · rev ${view.effective_revision ?? view.pin.revision} (pinned) — ${tail}`
+          }
+        : { tone: 'info', text: `Storyteller environment default (${model}) — ${tail}` }
   }
-  const fake = view.effective_adapter === 'fake'
-  const model = view.effective_model_id ?? 'development model'
-  const tail = fake
-    ? 'deterministic stand-ins, not live provider prose.'
-    : 'live provider configured.'
-  const current: ProviderBanner =
-    view.effective_source === 'pin' && view.pin
-      ? {
-          tone: 'info',
-          text: `Storyteller ${model} · rev ${view.effective_revision ?? view.pin.revision} (pinned) — ${tail}`
-        }
-      : { tone: 'info', text: `Storyteller environment default (${model}) — ${tail}` }
   if (loadFailed) {
     return {
       tone: 'info',

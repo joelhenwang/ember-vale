@@ -109,6 +109,17 @@ describe('describeStoryProvider', () => {
     expect(stale?.text).toContain('environment default')
     expect(stale?.text).toContain('could not be refreshed')
   })
+
+  it('labels a retained broken view last-known after a failed refresh', () => {
+    const broken = view({ pin_state: 'broken', pin_error: 'story pins unknown provider profile' })
+    const fresh = describeStoryProvider(broken, false)
+    expect(fresh?.tone).toBe('error')
+    expect(fresh?.text).not.toContain('Last known')
+    const stale = describeStoryProvider(broken, true)
+    expect(stale?.text).toContain('Last known')
+    expect(stale?.text).toContain('unavailable')
+    expect(stale?.text).toContain('could not be refreshed')
+  })
 })
 
 describe('describeEnvironment', () => {
@@ -184,6 +195,31 @@ describe('useStoryProvider', () => {
     await provider.load()
     expect(provider.failed.value).toBe(false)
     expect(provider.banner.value?.text).toContain('environment default')
+  })
+
+  it('broken, then failure, then recovery keeps the error labeled until refresh', async () => {
+    const broken = view({
+      pin_state: 'broken',
+      pin_error: 'story pins unknown provider profile'
+    })
+    let mode: 'ok' | 'down' = 'ok'
+    const client = {
+      readStoryProvider(): Promise<StoryProviderView> {
+        return mode === 'ok' ? Promise.resolve(broken) : Promise.reject(new Error('down'))
+      }
+    }
+    const provider = useStoryProvider('story-a', client)
+    await provider.load()
+    expect(provider.banner.value?.tone).toBe('error')
+    expect(provider.banner.value?.text).not.toContain('Last known')
+    mode = 'down'
+    await provider.load()
+    expect(provider.banner.value?.text).toContain('Last known')
+    expect(provider.banner.value?.text).toContain('unavailable')
+    mode = 'ok'
+    await provider.load()
+    expect(provider.banner.value?.tone).toBe('error')
+    expect(provider.banner.value?.text).not.toContain('Last known')
   })
 
   it('success, then failure, then recovery labels staleness in between', async () => {
