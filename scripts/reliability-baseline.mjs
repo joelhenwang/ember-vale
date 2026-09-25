@@ -1,38 +1,25 @@
 #!/usr/bin/env node
 /**
- * Reliability and beat-latency baseline (REL-BASE-001, corrected semantics).
+ * Reliability and beat-latency baseline (REL-BASE-001, schema 3).
  *
  * Fixed small scenario against the real API, no prompt/model/budget/retry
  * changes: story setup -> travel beat -> question beat (Wren asks Ash) ->
- * follow-up beat (Wren asks again; Ash's committed answer is traced, never
- * authored by the harness) -> ordinary watcher advance -> reload reads.
- * An optional read-only browser pass measures room rendering only and never
- * commits a beat, so the four-advance live cap holds exactly.
+ * follow-up beat (Wren asks a neutral follow-up; Ash's committed answer is
+ * traced through intents AND reactions, never authored here) -> ordinary
+ * watcher advance -> reload reads. A read-only browser pass measures room
+ * rendering only and never commits, so the four-advance live cap holds.
  *
- * What each layer establishes — and what it does not:
- * - validation 'accepted' means HTTP 200 with a well-formed envelope. It is
- *   not a gameplay-success measurement.
- * - committed means the advance response carries event ids (not a duplicate).
- * - retrieval means EVERY committed event of the beat is re-readable from
- *   the timeline (all of them, not merely one) with non-empty narration text.
- * - narration reports the server status per scene (narrated/fallback/failed).
- * - browser display is 'measured' only when the read-only browser pass
- *   renders the room; otherwise 'failed' (retained) or 'skipped'.
- * - answer usefulness is always 'unevaluated': nothing here establishes an
- *   answered question or accepted model output.
+ * Attempt records persist first: the skeleton is stored and checkpointed
+ * before the POST, the transport outcome carries actual elapsed time, and
+ * each enrichment read failure is retained on the record instead of losing
+ * the attempt. A transport error after a POST leaves commit ambiguity, which
+ * is probed via the clock and recorded — never silently skipped.
  *
- * Timing splits per beat: client wall (submit -> response), server
- * slot-claim vs execution (X-Worldsim-Slot-Claim-Ms /
- * X-Worldsim-Execution-Ms headers; slot-claim is the execution-slot wait,
- * not run admission), per-role generation from the model-runs audit (each
- * traced call already includes its retries), and read-only browser render.
- * End-to-end wall is recorded separately from summed call durations; summed
- * durations double-count concurrent calls, so both are reported.
- *
- * Failure handling: every beat checkpoints to disk immediately; the final
- * report is written in a `finally` block, so timeouts and seat-change
- * failures leave a partial report behind. Transport failures distinguish
- * timeouts from connection errors and other transport errors.
+ * Layer semantics: validation 'accepted' is HTTP 200, not gameplay success;
+ * display requires EVERY committed event retrievable; answer usefulness is
+ * always 'unevaluated'; browser display is 'measured' only by the read-only
+ * pass. Core semantics live in reliability-baseline-lib.mjs with vitest
+ * coverage; this file wires real dependencies.
  *
  * Usage:
  *   EMBER_VALE_API_KEY=<operator key> node scripts/reliability-baseline.mjs \
@@ -40,17 +27,17 @@
  *     [--out docs/evidence/reliability-baseline-v1] [--title "Baseline"] \
  *     [--no-browser] [--base http://127.0.0.1:5173] \
  *     [--pin-profile <id> --pin-revision <n>]
- *
- * --mode fake pins the story to a throwaway fake-echo provider profile, so
- * the run is deterministic. --mode live uses the normal environment default
- * (capped at exactly four committed advances plus reads). --pin-profile with
- * --pin-revision pins either mode to an explicit profile revision (e.g. for
- * a future pinned-budget comparison with sampling otherwise unchanged).
  */
 
 import fs from 'node:fs'
 import path from 'node:path'
 import { chromium } from 'playwright-core'
+import {
+  buildReport,
+  findNpcAnswers,
+  recordAdvance,
+  transportKind
+} from './reliability-baseline-lib.mjs'
 
 const args = process.argv.slice(2)
 const opt = (name, fallback) => {
@@ -119,116 +106,43 @@ const beats = []
 const notes = []
 let storyId = null
 let worldId = null
+let startedAt = ''
 const note = (text) => {
   notes.push(text)
   console.log(`note: ${text}`)
 }
 
-function transportKind(err) {
-  const message = String(err)
-  if (err instanceof Error && err.name === 'TimeoutError') return 'timeout'
-  if (/fetch failed|ECONNREFUSED|ENOTFOUND|EHOSTUNREACH/i.test(message)) return 'connection'
-  return 'transport'
-}
-
-/**
- * Classify one beat into outcome layers. HTTP 200 is reported as
- * validation 'accepted' — never as gameplay success. Display requires
- * every committed event to be retrievable, not merely one. Answer
- * usefulness is always 'unevaluated'.
- */
-function classify(kind, advanceRes, modelRuns, timelineEntries, narrationBeats) {
-  const layers = {
-    provider: 'unknown',
-    validation: 'unknown',
-    committed: 'unknown',
-    narration: 'unknown',
-    display: 'unknown'
-  }
-  const reasons = []
-  if (!advanceRes) return { layers, reasons: ['no advance response recorded'] }
-  if (advanceRes.transport_error) {
-    return {
-      layers,
-      reasons: [
-        `advance ${advanceRes.transport_error} after ~${advanceRes.wallMs ?? '?'}ms: ` +
-          `${(advanceRes.message ?? '').slice(0, 200)} (retained, not retried)`
-      ]
-    }
-  }
-  if (!advanceRes.ok) {
-    layers.validation = 'rejected'
-    layers.committed = 'no'
-    layers.provider = 'not-applicable'
-    layers.narration = 'not-applicable'
-    layers.display = 'no'
-    reasons.push(`advance rejected: HTTP ${advanceRes.status} ${advanceRes.errorBody}`)
-    return { layers, reasons, answer_usefulness: 'unevaluated' }
-  }
-  const body = advanceRes.json ?? {}
-  layers.validation = 'accepted'
-  if (body.duplicate === true) reasons.push('duplicate replay (no new canon)')
-
-  const failed = (modelRuns ?? []).filter((c) => c.status === 'failed')
-  const unfinished = (modelRuns ?? []).filter(
-    (c) => c.status !== 'succeeded' && c.status !== 'failed'
-  )
-  if ((modelRuns ?? []).length === 0) {
-    layers.provider = 'no-calls'
-    reasons.push('no traced model calls for this phase')
-  } else if (failed.length === 0 && unfinished.length === 0) {
-    layers.provider = 'ok'
-  } else if (failed.length > 0) {
-    layers.provider = 'degraded'
-    reasons.push(`provider degraded: ${failed.map((c) => `${c.role}:${c.error_code}`).join(', ')}`)
-  } else {
-    layers.provider = 'failed'
-    reasons.push('no provider call reached a terminal state with success')
-  }
-  for (const c of unfinished) reasons.push(`call ${c.call_id} (${c.role}) left ${c.status}`)
-
-  const scenes = body.scenes ?? []
-  const committedEvents = scenes.map((s) => s.event_id).filter(Boolean)
-  const committed = committedEvents.length > 0 && body.duplicate !== true
-  layers.committed = committed ? 'yes' : 'no'
-  if (!committed) reasons.push('no committed events in the advance response')
-
-  const kinds = new Set(scenes.map((s) => s.narration))
-  if (kinds.size === 0) {
-    layers.narration = 'none'
-  } else if (kinds.has('failed')) {
-    layers.narration = 'failed'
-    reasons.push('at least one scene narration failed')
-  } else if ([...kinds].every((k) => k === 'fallback' || k === 'skipped')) {
-    layers.narration = 'fallback'
-  } else {
-    layers.narration = 'narrated'
-  }
-
-  const visibleIds = new Set((timelineEntries ?? []).map((e) => e.event_id))
-  const missing = committedEvents.filter((id) => !visibleIds.has(id))
-  const beatTexts = (narrationBeats ?? []).filter((b) => (b.text ?? '').trim().length > 0)
-  const retrievalComplete = committed && missing.length === 0 && beatTexts.length > 0
-  layers.display = retrievalComplete ? 'yes' : 'no'
-  if (!retrievalComplete)
-    reasons.push(
-      `retrieval: ${committedEvents.length - missing.length}/${committedEvents.length} ` +
-        `committed events in timeline, ${beatTexts.length} non-empty beats read back` +
-        (missing.length > 0 ? `; missing ${missing.join(',')}` : '')
+function checkpoint() {
+  fs.writeFileSync(
+    PARTIAL_PATH,
+    JSON.stringify(
+      buildReport({
+        beats,
+        notes,
+        display: null,
+        complete: false,
+        fatal: null,
+        meta: {
+          mode: MODE,
+          title: TITLE,
+          run: RUN,
+          startedAt,
+          finishedAt: new Date().toISOString(),
+          api: API,
+          storyId,
+          worldId,
+          pin: PIN_PROFILE ? { profile_id: PIN_PROFILE, revision: Number(PIN_REVISION) } : null
+        }
+      }),
+      null,
+      2
     )
-
-  return {
-    layers,
-    reasons,
-    advancement: { committed, retrieval_complete: retrievalComplete, narration: layers.narration },
-    answer_usefulness: 'unevaluated',
-    kind
-  }
+  )
 }
 
 async function providerSnapshot(story) {
   const res = await call('GET', `/stories/${story}/provider`)
-  if (!res.ok) return { error: `HTTP ${res.status}: ${res.errorBody}` }
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.errorBody}`)
   const p = res.json
   return {
     pin_state: p.pin_state,
@@ -242,7 +156,7 @@ async function providerSnapshot(story) {
 
 async function modelRunsFor(run) {
   const res = await call('GET', `/stage1/model-runs?phase_run_id=${run}`)
-  if (!res.ok) return { error: `HTTP ${res.status}: ${res.errorBody}`, calls: [] }
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.errorBody}`)
   const calls = (res.json ?? []).map((c) => ({
     call_id: c.call_id,
     role: c.role,
@@ -268,40 +182,6 @@ async function modelRunsFor(run) {
   return { calls }
 }
 
-function summarizeCalls(calls) {
-  const byRole = {}
-  let prompt_tokens = 0
-  let completion_tokens = 0
-  let reasoning_tokens = 0
-  let attempts = 0
-  let reasoning_only_failures = 0
-  const error_codes = {}
-  for (const c of calls) {
-    byRole[c.role] = byRole[c.role] ?? { calls: 0, failed: 0, latency_ms: 0, attempts: 0 }
-    byRole[c.role].calls += 1
-    if (c.status === 'failed') {
-      byRole[c.role].failed += 1
-      if (c.error_code) error_codes[c.error_code] = (error_codes[c.error_code] ?? 0) + 1
-      if (c.reasoning_only === true) reasoning_only_failures += 1
-    }
-    byRole[c.role].latency_ms += c.latency_ms ?? 0
-    byRole[c.role].attempts += (c.attempts ?? []).length
-    prompt_tokens += c.prompt_tokens ?? 0
-    completion_tokens += c.completion_tokens ?? 0
-    reasoning_tokens += c.reasoning_tokens ?? 0
-    attempts += (c.attempts ?? []).length
-  }
-  return {
-    byRole,
-    prompt_tokens,
-    completion_tokens,
-    reasoning_tokens,
-    attempts,
-    reasoning_only_failures,
-    error_codes
-  }
-}
-
 async function currentIndex(world) {
   const res = await call('GET', `/stories/${world}`)
   if (!res.ok) throw new Error(`story detail -> ${res.status}: ${res.errorBody}`)
@@ -310,7 +190,7 @@ async function currentIndex(world) {
 
 async function readTimeline(world) {
   const res = await call('GET', `/stage2/timeline?world_id=${world}&after=0&limit=100`)
-  if (!res.ok) return { error: res.errorBody, entries: [] }
+  if (!res.ok) throw new Error(res.errorBody || `timeline -> ${res.status}`)
   return { entries: res.json.entries ?? [], wallMs: res.wallMs }
 }
 
@@ -320,106 +200,104 @@ async function readNarrations(sceneIds, roleHeaders) {
   for (const sceneId of sceneIds) {
     const res = await call('GET', `/stage1/scenes/${sceneId}/narration`, undefined, roleHeaders)
     wallMs += res.wallMs
-    if (res.ok) for (const b of res.json ?? []) beatList.push(b)
+    if (!res.ok) throw new Error(res.errorBody || `narration ${sceneId} -> ${res.status}`)
+    for (const b of res.json ?? []) beatList.push({ ...b, scene_id: sceneId })
   }
   return { beats: beatList, wallMs }
 }
 
-/** Committed scenes with their intents: traces decisions to their sources. */
+/** Committed scenes with intents, reactions, and narration citations. */
 async function readCommittedSources(run, roleHeaders) {
   const list = await call('GET', `/stage1/scenes?phase_run_id=${run}`, undefined, roleHeaders)
-  if (!list.ok) return { error: list.errorBody, scenes: [] }
+  if (!list.ok) throw new Error(list.errorBody || `scenes -> ${list.status}`)
   const scenes = []
   for (const summary of list.json ?? []) {
-    const detail = await call('GET', `/stage1/scenes/${summary.id}`, undefined, roleHeaders)
-    if (!detail.ok) {
-      scenes.push({ scene_id: summary.id, error: detail.errorBody })
-      continue
+    try {
+      const detail = await call('GET', `/stage1/scenes/${summary.id}`, undefined, roleHeaders)
+      if (!detail.ok) throw new Error(detail.errorBody || `scene ${summary.id} -> ${detail.status}`)
+      const d = detail.json
+      let narrations = []
+      try {
+        const beats = await readNarrations([summary.id], roleHeaders)
+        narrations = beats.beats.map((b) => ({
+          id: b.id,
+          speaker_id: b.speaker_id,
+          snippet: (b.text ?? '').slice(0, 160)
+        }))
+      } catch (err) {
+        narrations = []
+        scenes.push({ scene_id: summary.id, narrationError: String(err).slice(0, 200) })
+        continue
+      }
+      scenes.push({
+        scene_id: summary.id,
+        event_id: d.event_id ?? summary.event_id ?? null,
+        status: d.status,
+        resolution: d.resolution ?? null,
+        participants: (d.participants ?? []).map((p) => p.character_id),
+        intents: (d.intents ?? []).map((i) => ({
+          id: i.id,
+          author_character_id: i.author_character_id,
+          family: i.family,
+          target_character_id: i.detail?.target_character_id ?? null,
+          topic: i.detail?.topic ?? null
+        })),
+        reactions: (d.reactions ?? []).map((r) => ({
+          id: r.id,
+          reactor_character_id: r.reactor_character_id,
+          family: r.family,
+          target_character_id: r.detail?.target_character_id ?? null,
+          topic: r.detail?.topic ?? null
+        })),
+        narrations
+      })
+    } catch (err) {
+      scenes.push({ scene_id: summary.id, error: String(err).slice(0, 300) })
     }
-    const d = detail.json
-    scenes.push({
-      scene_id: summary.id,
-      event_id: d.event_id ?? summary.event_id ?? null,
-      status: d.status,
-      resolution: d.resolution ?? null,
-      participants: (d.participants ?? []).map((p) => p.character_id),
-      intents: (d.intents ?? []).map((i) => ({
-        author_character_id: i.author_character_id,
-        family: i.family,
-        topic: i.detail?.topic ?? null
-      }))
-    })
   }
   return { scenes }
 }
 
-/** One measured advance. Failures and timeouts are recorded, never thrown. */
+/**
+ * One measured advance, persistence-first via recordAdvance. On a transport
+ * error the clock is re-read: if it advanced past the attempted index the
+ * beat may have committed server-side, recorded as commit ambiguity rather
+ * than silently skipped.
+ */
 async function measuredAdvance(kind, world, absoluteIndex, playerIntents, roleHeaders) {
-  let res
-  try {
-    const body = { world_id: world, absolute_index: absoluteIndex }
-    if (playerIntents !== undefined) body.player_intents = playerIntents
-    res = await call('POST', '/stage1/advance', body, roleHeaders)
-  } catch (err) {
-    const failure = transportKind(err)
-    return {
-      kind,
-      advance: {
-        transport_error: failure,
-        wallMs: BEAT_TIMEOUT_MS,
-        message: String(err)
-      },
-      modelRuns: [],
-      callSummary: summarizeCalls([]),
-      timelineEntries: 0,
-      narrationBeats: 0,
-      committed_sources: [],
-      classification: classify(kind, {
-        transport_error: failure,
-        wallMs: BEAT_TIMEOUT_MS,
-        message: String(err)
-      })
-    }
+  const deps = {
+    postAdvance: (body, hdrs) => call('POST', '/stage1/advance', body, hdrs),
+    getRuns: (run) => modelRunsFor(run),
+    getTimeline: (w) => readTimeline(w),
+    getNarrations: (ids, hdrs) => readNarrations(ids, hdrs),
+    getProvider: (w) => providerSnapshot(w),
+    now: () => performance.now()
   }
-  const run = res.json?.run_id ?? null
-  const modelRuns = run ? await modelRunsFor(run) : { error: 'no run_id', calls: [] }
-  const timeline = await readTimeline(world)
-  const narrations = await readNarrations(
-    (res.json?.scenes ?? []).map((s) => s.scene_id).filter(Boolean),
-    roleHeaders
-  )
-  const record = {
+  const store = { beats, checkpoint }
+  const record = await recordAdvance(deps, store, {
     kind,
-    absolute_index: absoluteIndex,
-    story_id: storyId,
-    world_id: world,
-    run_id: run,
-    duplicate: res.json?.duplicate ?? null,
-    client_wall_ms: res.wallMs,
-    slot_claim_ms: Number.isFinite(res.slotClaimMs) ? res.slotClaimMs : null,
-    execution_ms: Number.isFinite(res.executionMs) ? res.executionMs : null,
-    http_status: res.status,
-    scenes: (res.json?.scenes ?? []).map((s) => ({
-      scene_id: s.scene_id,
-      event_id: s.event_id,
-      resolution_outcome: s.resolution_outcome,
-      narration: s.narration
-    })),
-    provider: await providerSnapshot(world),
-    modelRuns: modelRuns.calls ?? [],
-    modelRunsError: modelRuns.error ?? null,
-    callSummary: summarizeCalls(modelRuns.calls ?? []),
-    timelineEntries: (timeline.entries ?? []).length,
-    timelineWallMs: timeline.wallMs ?? null,
-    narrationBeats: narrations.beats.length,
-    narrationReadMs: narrations.wallMs,
-    committed_sources: [],
-    classification: null
+    world,
+    storyId,
+    absoluteIndex,
+    playerIntents,
+    roleHeaders
+  })
+  if (record.transport_error) {
+    try {
+      record.post_error_clock = await currentIndex(world)
+      record.commit_ambiguous = record.post_error_clock > absoluteIndex
+      if (record.commit_ambiguous)
+        note(
+          `${kind}: clock advanced past attempted index ${absoluteIndex} ` +
+            `(now ${record.post_error_clock}); commit ambiguous, not re-submitted blindly`
+        )
+    } catch (err) {
+      record.post_error_clock = null
+      record.commit_ambiguous = null
+      note(`${kind}: post-error clock read failed (retained): ${String(err).slice(0, 200)}`)
+    }
+    checkpoint()
   }
-  record.classification = classify(kind, res, record.modelRuns, timeline.entries, narrations.beats)
-  if (!res.ok) record.rejection = res.errorBody
-  beats.push(record)
-  checkpoint()
   return record
 }
 
@@ -438,9 +316,8 @@ async function setSeat(world, role, characterId) {
     note(`seat: ${role}${characterId ? ` as ${characterId.slice(0, 8)}` : ''}`)
     return { ok: true }
   } catch (err) {
-    const failure = transportKind(err)
-    note(`seat ${role} failed (${failure}, retained): ${String(err).slice(0, 200)}`)
-    return { ok: false, kind: failure, message: String(err).slice(0, 300) }
+    note(`seat ${role} failed (${transportKind(err)}, retained): ${String(err).slice(0, 200)}`)
+    return { ok: false, kind: transportKind(err), message: String(err).slice(0, 300) }
   }
 }
 
@@ -566,14 +443,14 @@ async function runScenario() {
     playerHeaders(cast.wrenId)
   )
 
-  // Beat 3: follow-up (Wren stays controlled and asks again). Ash's answer,
-  // if any, must be Ash's own committed communicate intent — traced below,
-  // never authored by this harness.
+  // Beat 3: neutral follow-up, Wren still controlled. Ash's answer, if any,
+  // must be Ash's own committed communicate intent or reaction addressed to
+  // Wren — traced below, never authored by this harness.
   await measuredAdvance(
     'follow-up',
     worldId,
     (await currentIndex(worldId)) + 1,
-    communicate(cast.wrenId, cast.ashId, 'And what does the open north road mean for us?'),
+    communicate(cast.wrenId, cast.ashId, 'What should we watch for on the road ahead?'),
     playerHeaders(cast.wrenId)
   )
 
@@ -587,25 +464,37 @@ async function runScenario() {
     {}
   )
 
-  // Post-hoc source tracing under the watcher seat: committed intents per
-  // scene plus whether Ash produced a committed answer to Wren's questions.
+  // Post-hoc source tracing under the watcher seat: committed intents and
+  // reactions per scene, plus whether Ash produced a committed answer.
+  // A failed source read is 'source-retrieval-failed', never 'no answer'.
   for (const beat of beats) {
     if (!beat.run_id) continue
-    const sources = await readCommittedSources(beat.run_id, {})
-    beat.committed_sources = sources.scenes ?? []
-    if (sources.error) note(`${beat.kind} scene read failed (retained): ${sources.error}`)
+    try {
+      const sources = await readCommittedSources(beat.run_id, {})
+      beat.committed_sources = sources.scenes ?? []
+    } catch (err) {
+      beat.committed_sources = []
+      beat.sourcesError = `${transportKind(err)}: ${String(err).slice(0, 300)}`
+      note(`${beat.kind} scene read failed (retained): ${beat.sourcesError}`)
+    }
     if (beat.kind === 'question' || beat.kind === 'follow-up') {
-      const answers = (beat.committed_sources ?? []).flatMap((s) =>
-        (s.intents ?? [])
-          .filter((i) => i.author_character_id === cast.ashId && i.family === 'communicate')
-          .map((i) => ({ scene_id: s.scene_id, topic: i.topic }))
-      )
-      beat.npc_answer = {
-        responder: 'Ash',
-        committed: answers.length > 0,
-        answers
+      if (beat.sourcesError || beat.committed_sources.some((s) => s.error)) {
+        beat.npc_answer = {
+          asker: 'Wren',
+          responder: 'Ash',
+          status: 'source-retrieval-failed',
+          answers: []
+        }
+      } else {
+        const found = findNpcAnswers(beat.committed_sources, cast.wrenId, cast.ashId)
+        beat.npc_answer = {
+          asker: 'Wren',
+          responder: 'Ash',
+          status: found.committed ? 'answered' : 'no-answer',
+          answers: found.answers
+        }
       }
-      note(`${beat.kind}: Ash committed answer: ${answers.length > 0}`)
+      note(`${beat.kind}: Ash answer status: ${beat.npc_answer.status}`)
     }
     checkpoint()
   }
@@ -691,66 +580,6 @@ async function runBrowser() {
   return display
 }
 
-function range(values) {
-  const xs = values.filter((v) => typeof v === 'number' && Number.isFinite(v))
-  if (xs.length === 0) return null
-  return { n: xs.length, min: Math.min(...xs), max: Math.max(...xs) }
-}
-
-function buildReport(display, complete, fatal) {
-  const advances = beats.filter((b) => b.kind !== 'reload')
-  const committed = advances.filter((b) => b.classification?.advancement?.committed)
-  return {
-    tool: 'reliability-baseline',
-    schema: 2,
-    mode: MODE,
-    title: TITLE,
-    run: RUN,
-    complete,
-    fatal: fatal ?? null,
-    started_at: startedAt,
-    finished_at: new Date().toISOString(),
-    api: API,
-    story_id: storyId,
-    world_id: worldId,
-    pin: PIN_PROFILE ? { profile_id: PIN_PROFILE, revision: Number(PIN_REVISION) } : null,
-    config_frozen: {
-      note: 'prompts, models, budgets, and retry behavior unchanged during collection'
-    },
-    beats,
-    display: display ?? { status: 'skipped', steps: [] },
-    notes,
-    summary: {
-      advances: advances.length,
-      advances_committed: committed.length,
-      retrieval_complete: committed.filter((b) => b.classification?.advancement?.retrieval_complete)
-        .length,
-      provider_ok_advances: advances.filter((b) => b.classification?.layers?.provider === 'ok')
-        .length,
-      narration: {
-        narrated: committed.filter((b) => b.classification?.layers?.narration === 'narrated')
-          .length,
-        fallback: committed.filter((b) => b.classification?.layers?.narration === 'fallback')
-          .length,
-        failed: committed.filter((b) => b.classification?.layers?.narration === 'failed').length
-      },
-      browser_display: display?.status ?? 'skipped',
-      answer_usefulness: 'unevaluated',
-      client_wall_ms: range(advances.map((b) => b.client_wall_ms)),
-      slot_claim_ms: range(advances.map((b) => b.slot_claim_ms)),
-      execution_ms: range(advances.map((b) => b.execution_ms)),
-      timeline_read_ms: range(beats.map((b) => b.timelineWallMs)),
-      narration_read_ms: range(beats.map((b) => b.narrationReadMs))
-    }
-  }
-}
-
-function checkpoint() {
-  fs.writeFileSync(PARTIAL_PATH, JSON.stringify(buildReport(null, false, null), null, 2))
-}
-
-let startedAt = ''
-
 async function main() {
   startedAt = new Date().toISOString()
   let display = null
@@ -764,7 +593,31 @@ async function main() {
     note(`scenario aborted (partial report retained): ${fatal}`)
   } finally {
     const complete = fatal === null
-    fs.writeFileSync(FINAL_PATH, JSON.stringify(buildReport(display, complete, fatal), null, 2))
+    fs.writeFileSync(
+      FINAL_PATH,
+      JSON.stringify(
+        buildReport({
+          beats,
+          notes,
+          display,
+          complete,
+          fatal,
+          meta: {
+            mode: MODE,
+            title: TITLE,
+            run: RUN,
+            startedAt,
+            finishedAt: new Date().toISOString(),
+            api: API,
+            storyId,
+            worldId,
+            pin: PIN_PROFILE ? { profile_id: PIN_PROFILE, revision: Number(PIN_REVISION) } : null
+          }
+        }),
+        null,
+        2
+      )
+    )
   }
   for (const b of beats) {
     const c = b.classification
@@ -776,12 +629,15 @@ async function main() {
       continue
     }
     console.log(
-      `[${b.kind}] wall=${b.client_wall_ms}ms slot-claim=${b.slot_claim_ms ?? '-'} ` +
+      `[${b.kind}] wall=${b.client_wall_ms ?? '?'}ms slot-claim=${b.slot_claim_ms ?? '-'} ` +
         `exec=${b.execution_ms ?? '-'} committed=${c?.advancement?.committed ?? '?'} ` +
         `retrieval=${c?.advancement?.retrieval_complete ?? '?'} ` +
         `narration=${c?.layers?.narration} provider=${c?.layers?.provider} ` +
-        `answer=${c?.answer_usefulness}` +
-        `${(c?.reasons ?? []).length ? ` :: ${(c.reasons ?? []).join('; ')}` : ''}`
+        `answer=${b.npc_answer?.status ?? c?.answer_usefulness}` +
+        `${b.transport_error ? ` transport=${b.transport_error}` : ''}` +
+        `${b.commit_ambiguous ? ' AMBIGUOUS-COMMIT' : ''}` +
+        `${(c?.reasons ?? []).length ? ` :: ${(c.reasons ?? []).join('; ')}` : ''}` +
+        `${(b.readErrors ?? []).length ? ` reads: ${b.readErrors.join('; ')}` : ''}`
     )
   }
   const final = JSON.parse(fs.readFileSync(FINAL_PATH, 'utf8'))
