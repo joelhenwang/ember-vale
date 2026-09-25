@@ -73,6 +73,7 @@ export interface SceneSummary {
 }
 
 export interface BeatView {
+  cited_fact_keys?: string[];
   id: string;
   kind: string;
   source_event_id: string;

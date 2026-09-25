@@ -8,7 +8,9 @@ import {
   buildReport,
   classify,
   findNpcAnswers,
+  markBlocked,
   recordAdvance,
+  shouldHaltScenario,
   transportKind
 } from './reliability-baseline-lib.mjs'
 
@@ -186,8 +188,8 @@ describe('findNpcAnswers', () => {
         }
       ],
       narrations: [
-        { id: 'b1', speaker_id: 'ash' },
-        { id: 'b2', speaker_id: 'wren' }
+        { id: 'b1', speaker_id: 'ash', cited_fact_keys: ['reaction:r-ash'] },
+        { id: 'b2', speaker_id: 'wren', cited_fact_keys: [] }
       ]
     }
   ]
@@ -198,6 +200,79 @@ describe('findNpcAnswers', () => {
     expect(out.answers).toHaveLength(1)
     expect(out.answers[0]).toMatchObject({ source: 'reaction', source_id: 'r-ash' })
     expect(out.answers[0].narration_citations).toEqual(['b1'])
+    expect(out.answers[0].speaker_beats).toEqual(['b1'])
+  })
+
+  it('keeps a committed answer when narration retrieval failed', () => {
+    const noNarrations = [
+      {
+        scene_id: 's1',
+        narrationError: 'timeout: narration read failed',
+        intents: [
+          {
+            id: 'i-ash',
+            author_character_id: 'ash',
+            family: 'wait',
+            target_character_id: null,
+            topic: null
+          }
+        ],
+        reactions: [
+          {
+            id: 'r-ash',
+            reactor_character_id: 'ash',
+            family: 'communicate',
+            target_character_id: 'wren',
+            topic: 'The bell meant dawn.'
+          }
+        ],
+        narrations: []
+      }
+    ]
+    const out = findNpcAnswers(noNarrations, 'wren', 'ash')
+    expect(out.committed).toBe(true)
+    expect(out.answers[0]).toMatchObject({ source: 'reaction', source_id: 'r-ash' })
+    expect(out.answers[0].narration_citations).toEqual([])
+    expect(out.answers[0].speaker_beats).toEqual([])
+  })
+
+  it('matches citations per reaction, not per speaker', () => {
+    const two = [
+      {
+        scene_id: 's1',
+        intents: [],
+        reactions: [
+          {
+            id: 'r1',
+            reactor_character_id: 'ash',
+            family: 'communicate',
+            target_character_id: 'wren',
+            topic: 'First.'
+          },
+          {
+            id: 'r2',
+            reactor_character_id: 'ash',
+            family: 'communicate',
+            target_character_id: 'wren',
+            topic: 'Second.'
+          }
+        ],
+        narrations: [
+          { id: 'b1', speaker_id: 'ash', cited_fact_keys: ['reaction:r1'] },
+          { id: 'b2', speaker_id: 'ash', cited_fact_keys: ['reaction:r2'] },
+          { id: 'b3', speaker_id: 'ash', cited_fact_keys: ['attempt:wait'] }
+        ]
+      }
+    ]
+    const out = findNpcAnswers(two, 'wren', 'ash')
+    expect(out.committed).toBe(true)
+    expect(out.answers).toHaveLength(2)
+    const [first, second] = out.answers
+    expect(first.source_id).toBe('r1')
+    expect(first.narration_citations).toEqual(['b1'])
+    expect(second.source_id).toBe('r2')
+    expect(second.narration_citations).toEqual(['b2'])
+    expect(first.speaker_beats).toEqual(['b1', 'b2', 'b3'])
   })
 
   it('still traces a targeted communicate intent', () => {
@@ -281,5 +356,74 @@ describe('buildReport', () => {
     expect(report.summary.advances_committed).toBe(1)
     expect(report.beats[0].transport_error).toBe('connection')
     expect(report.beats[1].run_id).toBe('run-9')
+  })
+
+  it('carries blocked steps separately from attempted advances', () => {
+    const report = buildReport({
+      beats: [],
+      notes: [],
+      display: { status: 'skipped', steps: [] },
+      complete: true,
+      fatal: null,
+      blockedSteps: markBlocked(['follow-up', 'ordinary-advance'], 'halted: unresolved timeout'),
+      meta: {
+        mode: 'live',
+        title: 't',
+        run: 'r1',
+        startedAt: 's',
+        finishedAt: 'f',
+        api: 'a',
+        storyId: 'st',
+        worldId: 'w',
+        pin: null
+      }
+    })
+    expect(report.blocked_steps).toHaveLength(2)
+    expect(report.blocked_steps[0]).toEqual({
+      kind: 'follow-up',
+      status: 'blocked',
+      reason: 'halted: unresolved timeout'
+    })
+    expect(report.summary.blocked).toBe(2)
+    expect(report.summary.advances).toBe(0)
+  })
+})
+
+describe('unresolved timeouts halt mutation', () => {
+  it('marks a timeout unresolved even when the clock did not advance', async () => {
+    const s = store()
+    const deps = okDeps()
+    deps.postAdvance = async () => {
+      await new Promise((r) => setTimeout(r, 30))
+      const err = new Error('The operation was aborted')
+      err.name = 'TimeoutError'
+      throw err
+    }
+    const record = await recordAdvance(deps, s, spec)
+    expect(record.transport_error).toBe('timeout')
+    expect(record.resolution).toBe('unresolved')
+    // Clock equality proves nothing: halt anyway, with no seat change or
+    // further advance issued by this record alone.
+    expect(shouldHaltScenario(record)).toBe(true)
+    expect(markBlocked(['ordinary-advance'], 'halted after unresolved follow-up')).toEqual([
+      { kind: 'ordinary-advance', status: 'blocked', reason: 'halted after unresolved follow-up' }
+    ])
+  })
+
+  it('does not halt on a known rejection', async () => {
+    const s = store()
+    const deps = okDeps()
+    deps.postAdvance = async () => ({
+      ok: false,
+      status: 409,
+      json: null,
+      errorBody: 'previous phase is scenes_assembled',
+      wallMs: 40
+    })
+    const record = await recordAdvance(deps, s, spec)
+    expect(record.transport_error).toBeNull()
+    expect(record.resolution).toBeNull()
+    expect(record.classification.layers.validation).toBe('rejected')
+    expect(shouldHaltScenario(record)).toBe(false)
   })
 })

@@ -421,6 +421,13 @@
       "BeatView": {
         "additionalProperties": false,
         "properties": {
+          "cited_fact_keys": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Cited Fact Keys",
+            "type": "array"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",

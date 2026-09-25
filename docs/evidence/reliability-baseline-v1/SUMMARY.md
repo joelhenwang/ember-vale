@@ -116,6 +116,11 @@ the cost.
 - Schema 2 (corrected): `baseline-fake-mugq5pe2.json`, `baseline-fake-mugq68rx.json`
   (determinism pair, browser skipped), `baseline-fake-mugq6qil.json` (read-only
   browser pass measured: room-render 1769, reload 908; still exactly 4 advances).
+- Schema 3 (persistence-first attempts, reaction tracing): `baseline-fake-mugqv4hh.json`.
+- Schema 4 (schema 3 plus: unresolved-transport resolution with halt/blocked
+  steps, narration-failure-proof source tracing, `reaction:{id}` citation
+  matching): `baseline-fake-mugse6ih.json` (4/4 committed, 0 blocked, answers
+  no-answer with narration retrieval complete).
 - Schema 1 (legacy, superseded semantics but retained): `baseline-fake-mugcisle.json`
   (setup probe with seat 403s), `baseline-fake-mugcjgeb.json`,
   `baseline-fake-mugcjo6c.json` (determinism pair, Ash-seat follow-up),

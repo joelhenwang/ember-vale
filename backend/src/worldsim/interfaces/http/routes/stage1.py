@@ -260,6 +260,7 @@ async def get_narration(scene_id: UUID, request: Request) -> list[api.BeatView]:
             kind=b.kind.value,
             text=b.text,
             source_event_id=b.source_event_id,
+            cited_fact_keys=list(b.cited_fact_keys),
         )
         for b in beats
     ]

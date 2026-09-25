@@ -269,6 +269,7 @@ class BeatView(BaseModel):
     kind: str
     text: str
     source_event_id: UUID
+    cited_fact_keys: list[str] = Field(default_factory=list)
 
 
 class ModelRunView(BaseModel):

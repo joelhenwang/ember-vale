@@ -35,7 +35,9 @@ import { chromium } from 'playwright-core'
 import {
   buildReport,
   findNpcAnswers,
+  markBlocked,
   recordAdvance,
+  shouldHaltScenario,
   transportKind
 } from './reliability-baseline-lib.mjs'
 
@@ -104,6 +106,7 @@ async function call(method, reqPath, body, extraHeaders = {}, timeoutMs = BEAT_T
 
 const beats = []
 const notes = []
+const blockedSteps = []
 let storyId = null
 let worldId = null
 let startedAt = ''
@@ -122,6 +125,7 @@ function checkpoint() {
         display: null,
         complete: false,
         fatal: null,
+        blockedSteps,
         meta: {
           mode: MODE,
           title: TITLE,
@@ -216,18 +220,22 @@ async function readCommittedSources(run, roleHeaders) {
       const detail = await call('GET', `/stage1/scenes/${summary.id}`, undefined, roleHeaders)
       if (!detail.ok) throw new Error(detail.errorBody || `scene ${summary.id} -> ${detail.status}`)
       const d = detail.json
+      // A narration read failure must not erase the already-read intents
+      // and reactions: the answer stays detectable, narration retrieval is
+      // reported separately.
       let narrations = []
+      let narrationError = null
       try {
         const beats = await readNarrations([summary.id], roleHeaders)
         narrations = beats.beats.map((b) => ({
           id: b.id,
           speaker_id: b.speaker_id,
+          cited_fact_keys: b.cited_fact_keys ?? [],
           snippet: (b.text ?? '').slice(0, 160)
         }))
       } catch (err) {
         narrations = []
-        scenes.push({ scene_id: summary.id, narrationError: String(err).slice(0, 200) })
-        continue
+        narrationError = String(err).slice(0, 200)
       }
       scenes.push({
         scene_id: summary.id,
@@ -249,7 +257,9 @@ async function readCommittedSources(run, roleHeaders) {
           target_character_id: r.detail?.target_character_id ?? null,
           topic: r.detail?.topic ?? null
         })),
-        narrations
+        narrations,
+        narration_status: narrationError ? 'failed' : 'complete',
+        narrationError
       })
     } catch (err) {
       scenes.push({ scene_id: summary.id, error: String(err).slice(0, 300) })
@@ -260,9 +270,10 @@ async function readCommittedSources(run, roleHeaders) {
 
 /**
  * One measured advance, persistence-first via recordAdvance. On a transport
- * error the clock is re-read: if it advanced past the attempted index the
- * beat may have committed server-side, recorded as commit ambiguity rather
- * than silently skipped.
+ * error the clock is re-read for context, but the outcome stays unresolved
+ * either way: clock equality proves nothing (work may be pending, partial,
+ * or finished without a delivered response), and even an advanced clock
+ * leaves the response unconfirmed.
  */
 async function measuredAdvance(kind, world, absoluteIndex, playerIntents, roleHeaders) {
   const deps = {
@@ -285,12 +296,19 @@ async function measuredAdvance(kind, world, absoluteIndex, playerIntents, roleHe
   if (record.transport_error) {
     try {
       record.post_error_clock = await currentIndex(world)
-      record.commit_ambiguous = record.post_error_clock > absoluteIndex
-      if (record.commit_ambiguous)
-        note(
-          `${kind}: clock advanced past attempted index ${absoluteIndex} ` +
-            `(now ${record.post_error_clock}); commit ambiguous, not re-submitted blindly`
-        )
+      if (record.post_error_clock > absoluteIndex) {
+        record.resolution = 'committed-unconfirmed'
+        record.resolution_reason =
+          `clock advanced past attempted index ${absoluteIndex} ` +
+          `(now ${record.post_error_clock}) but no response arrived; content unconfirmed`
+        record.commit_ambiguous = true
+      } else {
+        record.commit_ambiguous = false
+      }
+      note(
+        `${kind}: transport ${record.transport_error}, resolution ${record.resolution} ` +
+          `(clock ${record.post_error_clock} vs attempted ${absoluteIndex})`
+      )
     } catch (err) {
       record.post_error_clock = null
       record.commit_ambiguous = null
@@ -431,28 +449,50 @@ async function runScenario() {
     to_location_id: cast.market.id
   })
   if (!travel.ok) note(`travel activity rejected: HTTP ${travel.status} ${travel.errorBody}`)
-  await measuredAdvance('travel', worldId, (await currentIndex(worldId)) + 1, undefined, {})
+
+  // Advances run in order, but any transport error halts further mutation:
+  // the outcome is unresolved, so no seat change or advance may follow.
+  // Remaining planned advances are preserved as blocked, never attempted.
+  const halt = (record, remaining) => {
+    if (!shouldHaltScenario(record)) return false
+    const reason = `halted: ${record.kind} ${record.transport_error}, resolution ${record.resolution}`
+    blockedSteps.push(...markBlocked(remaining, reason))
+    note(`${record.kind}: ${reason}; skipping ${remaining.join(', ')}`)
+    checkpoint()
+    return true
+  }
+
+  const travelRec = await measuredAdvance(
+    'travel',
+    worldId,
+    (await currentIndex(worldId)) + 1,
+    undefined,
+    {}
+  )
+  if (halt(travelRec, ['question', 'follow-up', 'ordinary-advance'])) return
 
   // Beat 2: question (Wren asks Ash; player seat, headers alone lose to the grant).
   await setSeat(worldId, 'player', cast.wrenId)
-  await measuredAdvance(
+  const questionRec = await measuredAdvance(
     'question',
     worldId,
     (await currentIndex(worldId)) + 1,
     communicate(cast.wrenId, cast.ashId, 'What did the market bell mean at dawn?'),
     playerHeaders(cast.wrenId)
   )
+  if (halt(questionRec, ['follow-up', 'ordinary-advance'])) return
 
   // Beat 3: neutral follow-up, Wren still controlled. Ash's answer, if any,
   // must be Ash's own committed communicate intent or reaction addressed to
   // Wren — traced below, never authored by this harness.
-  await measuredAdvance(
+  const followupRec = await measuredAdvance(
     'follow-up',
     worldId,
     (await currentIndex(worldId)) + 1,
     communicate(cast.wrenId, cast.ashId, 'What should we watch for on the road ahead?'),
     playerHeaders(cast.wrenId)
   )
+  if (halt(followupRec, ['ordinary-advance'])) return
 
   // Beat 4: ordinary advance, no intents.
   await setSeat(worldId, 'watcher')
@@ -483,6 +523,7 @@ async function runScenario() {
           asker: 'Wren',
           responder: 'Ash',
           status: 'source-retrieval-failed',
+          narration_retrieval: 'unknown',
           answers: []
         }
       } else {
@@ -491,10 +532,16 @@ async function runScenario() {
           asker: 'Wren',
           responder: 'Ash',
           status: found.committed ? 'answered' : 'no-answer',
+          narration_retrieval: beat.committed_sources.some((s) => s.narrationError)
+            ? 'failed'
+            : 'complete',
           answers: found.answers
         }
       }
-      note(`${beat.kind}: Ash answer status: ${beat.npc_answer.status}`)
+      note(
+        `${beat.kind}: Ash answer status: ${beat.npc_answer.status} ` +
+          `(narration retrieval ${beat.npc_answer.narration_retrieval})`
+      )
     }
     checkpoint()
   }
@@ -602,6 +649,7 @@ async function main() {
           display,
           complete,
           fatal,
+          blockedSteps,
           meta: {
             mode: MODE,
             title: TITLE,
@@ -634,16 +682,20 @@ async function main() {
         `retrieval=${c?.advancement?.retrieval_complete ?? '?'} ` +
         `narration=${c?.layers?.narration} provider=${c?.layers?.provider} ` +
         `answer=${b.npc_answer?.status ?? c?.answer_usefulness}` +
-        `${b.transport_error ? ` transport=${b.transport_error}` : ''}` +
+        `${b.transport_error ? ` transport=${b.transport_error} resolution=${b.resolution ?? '?'}` : ''}` +
         `${b.commit_ambiguous ? ' AMBIGUOUS-COMMIT' : ''}` +
         `${(c?.reasons ?? []).length ? ` :: ${(c.reasons ?? []).join('; ')}` : ''}` +
         `${(b.readErrors ?? []).length ? ` reads: ${b.readErrors.join('; ')}` : ''}`
     )
   }
+  for (const blocked of blockedSteps) {
+    console.log(`BLOCKED [${blocked.kind}] :: ${blocked.reason}`)
+  }
   const final = JSON.parse(fs.readFileSync(FINAL_PATH, 'utf8'))
   console.log(
     `wrote ${FINAL_PATH} complete=${final.complete} ` +
       `committed=${final.summary.advances_committed}/${final.summary.advances} ` +
+      `blocked=${final.summary.blocked} ` +
       `browser=${final.summary.browser_display} answers=${final.summary.answer_usefulness}`
   )
   if (fatal !== null) process.exitCode = 1

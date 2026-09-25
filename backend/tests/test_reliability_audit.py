@@ -206,6 +206,30 @@ def test_model_runs_carry_baseline_attribution(api: tuple[ApiClient, FakeGateway
             assert view["reasoning_only"] is False
 
 
+def test_narration_view_exports_cited_fact_keys(api: tuple[ApiClient, FakeGateway]) -> None:
+    """BeatView carries actual citations so answers trace to reactions.
+
+    Fallback beats cite the visible fact keys (reaction:{id} for voiced
+    reactions); the view must not drop them.
+    """
+    client, gateway = api
+    ids = asyncio.run(_seed_two())
+    from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
+
+    snapshots = {1: derive_snapshot_id(derive_run_id(ids["world"], 1))}
+    gateway.route = _route_for(ids, snapshots)
+    report = _advance(client, ids["world"], 1)
+    assert report.status_code == 200, report.text
+    scene_id = report.json()["scenes"][0]["scene_id"]
+    beats = client.get(f"/api/v1/stage1/scenes/{scene_id}/narration", headers=_watcher())
+    assert beats.status_code == 200
+    views = beats.json()
+    assert len(views) >= 1
+    for view in views:
+        assert isinstance(view["cited_fact_keys"], list)
+    assert any(len(view["cited_fact_keys"]) > 0 for view in views)
+
+
 def test_failed_character_call_exports_failure_layer(api: tuple[ApiClient, FakeGateway]) -> None:
     """A reasoning-exhausted provider failure exports its exact layer.
 

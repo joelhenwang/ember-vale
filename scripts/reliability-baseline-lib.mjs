@@ -144,13 +144,18 @@ export function summarizeCalls(calls) {
 /**
  * NPC-answer detection over committed scene sources. Checks communicate
  * intents AND communicate reactions authored by the responder and addressed
- * to the asker (target match required). Returns answers with source
- * identity; narration citations attach where the scene provides them.
+ * to the asker (target match required). Reaction answers cite actual
+ * narration citations: beats whose cited_fact_keys contain
+ * `reaction:{reaction_id}`. Beats merely voiced by the responder are kept
+ * separately as speaker_beats (association, not citation); intents have no
+ * established citation key, so they carry speaker_beats only.
  */
 export function findNpcAnswers(scenes, askerId, responderId) {
   const answers = []
   for (const s of scenes ?? []) {
     if (!s || s.error) continue
+    const beats = s.narrations ?? []
+    const speakerBeats = beats.filter((b) => b.speaker_id === responderId).map((b) => b.id)
     for (const i of s.intents ?? []) {
       if (
         i.author_character_id === responderId &&
@@ -161,7 +166,9 @@ export function findNpcAnswers(scenes, askerId, responderId) {
           source: 'intent',
           scene_id: s.scene_id,
           source_id: i.id ?? null,
-          topic: i.topic ?? null
+          topic: i.topic ?? null,
+          narration_citations: [],
+          speaker_beats: speakerBeats
         })
       }
     }
@@ -171,19 +178,35 @@ export function findNpcAnswers(scenes, askerId, responderId) {
         r.family === 'communicate' &&
         r.target_character_id === askerId
       ) {
+        const key = `reaction:${r.id}`
         answers.push({
           source: 'reaction',
           scene_id: s.scene_id,
           source_id: r.id ?? null,
           topic: r.topic ?? null,
-          narration_citations: (s.narrations ?? [])
-            .filter((b) => b.speaker_id === responderId)
-            .map((b) => b.id)
+          narration_citations: beats
+            .filter((b) => (b.cited_fact_keys ?? []).includes(key))
+            .map((b) => b.id),
+          speaker_beats: speakerBeats
         })
       }
     }
   }
   return { committed: answers.length > 0, answers }
+}
+
+/**
+ * Whether the scenario must stop mutating after this record. Any transport
+ * error leaves the outcome unresolved (a delivered response is unconfirmed
+ * and clock equality proves nothing), so no further seat change or advance
+ * may follow. Rejections are known outcomes and do not halt reads.
+ */
+export function shouldHaltScenario(record) {
+  return !!record?.transport_error
+}
+
+export function markBlocked(kinds, reason) {
+  return kinds.map((kind) => ({ kind, status: 'blocked', reason }))
 }
 
 export function range(values) {
@@ -220,6 +243,8 @@ export async function recordAdvance(deps, store, spec) {
     http_status: null,
     transport_error: null,
     transport_message: null,
+    resolution: null,
+    resolution_reason: null,
     scenes: [],
     provider: null,
     providerError: null,
@@ -248,6 +273,12 @@ export async function recordAdvance(deps, store, spec) {
     record.transport_error = transportKind(err)
     record.transport_message = String(err).slice(0, 300)
     record.client_wall_ms = Math.max(0, Math.round(deps.now() - t0))
+    // Unresolved until run/event inspection establishes otherwise: the POST
+    // may have committed server-side without delivering a response, and no
+    // clock reading taken here can settle that.
+    record.resolution = 'unresolved'
+    record.resolution_reason =
+      'transport failed before a response arrived; commit state unknown until inspected'
     record.classification = classify(spec.kind, {
       transport_error: record.transport_error,
       wallMs: record.client_wall_ms,
@@ -334,12 +365,13 @@ export async function recordAdvance(deps, store, spec) {
   return record
 }
 
-export function buildReport({ beats, notes, display, complete, fatal, meta }) {
+export function buildReport({ beats, notes, display, complete, fatal, meta, blockedSteps }) {
   const advances = beats.filter((b) => b.kind !== 'reload')
   const committed = advances.filter((b) => b.classification?.advancement?.committed)
+  const blocked = blockedSteps ?? []
   return {
     tool: 'reliability-baseline',
-    schema: 3,
+    schema: 4,
     mode: meta.mode,
     title: meta.title,
     run: meta.run,
@@ -355,11 +387,13 @@ export function buildReport({ beats, notes, display, complete, fatal, meta }) {
       note: 'prompts, models, budgets, and retry behavior unchanged during collection'
     },
     beats,
+    blocked_steps: blocked,
     display: display ?? { status: 'skipped', steps: [] },
     notes,
     summary: {
       advances: advances.length,
       advances_committed: committed.length,
+      blocked: blocked.length,
       retrieval_complete: committed.filter((b) => b.classification?.advancement?.retrieval_complete)
         .length,
       provider_ok_advances: advances.filter((b) => b.classification?.layers?.provider === 'ok')
