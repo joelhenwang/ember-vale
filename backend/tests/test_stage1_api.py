@@ -596,12 +596,12 @@ def test_narrator_outage_keeps_attributed_answer(
 def test_stale_player_submission_rejected_at_admission(
     api: tuple[ApiClient, FakeGateway, dict[str, UUID]],
 ) -> None:
-    """A grant change during preflight rejects the stale submission.
+    """Stale submissions lose to whatever grant admission finds.
 
     Wren files a question, provider preflight holds, the grant moves to
     Ash, then preflight releases: admission must reject the Wren action
     with 403, commit nothing for Wren, and leave no orphan run behind,
-    so the same index stays retryable for Ash.
+    Ash retry proves no orphan; a second round covers Player-Wren to Watcher.
     """
     import threading
 
@@ -758,6 +758,112 @@ def test_stale_player_submission_rejected_at_admission(
             await engine.dispose()
 
     asyncio.run(_verify_retry())
+
+    # Second round: the same stale Wren submission racing a switch to Watcher.
+    # An active non-player grant admits no player action at all.
+    reselected = client.post(
+        "/api/v1/stage2/roles/select",
+        json={
+            "world_id": str(ids["world"]),
+            "role": "player",
+            "character_id": str(ids["wren"]),
+        },
+        headers=_watcher(),
+    )
+    assert reselected.status_code == 200, reselected.text
+
+    snapshot2 = derive_snapshot_id(derive_run_id(ids["world"], 2))
+    wren_second = {
+        str(ids["wren"]): {
+            "family": "communicate",
+            "character_id": str(ids["wren"]),
+            "snapshot_id": str(snapshot2),
+            "target_character_id": str(ids["ash"]),
+            "topic": "night patrol",
+        }
+    }
+
+    arrived2 = threading.Event()
+    release2 = threading.Event()
+    probe_calls2 = {"count": 0}
+
+    async def _held_probe2() -> ProbeResult:
+        probe_calls2["count"] += 1
+        if probe_calls2["count"] == 1:
+            arrived2.set()
+            await asyncio.to_thread(release2.wait, 120)
+
+        return await real_probe()
+
+    gateway.probe = _held_probe2  # type: ignore[method-assign]
+    outcomes2: dict[str, Any] = {}
+
+    def _advance_second_in_thread() -> None:
+        try:
+            outcomes2["response"] = _advance(
+                client, ids["world"], 2, wren_second, _player(ids["wren"])
+            )
+        except Exception as exc:  # recorded for the verdict
+            outcomes2["error"] = exc
+
+    second = threading.Thread(target=_advance_second_in_thread)
+    try:
+        second.start()
+        assert arrived2.wait(timeout=120), "second advance never reached preflight"
+        watching = client.post(
+            "/api/v1/stage2/roles/select",
+            json={"world_id": str(ids["world"]), "role": "watcher"},
+            headers=_watcher(),
+        )
+        assert watching.status_code == 200, watching.text
+        release2.set()
+        second.join(timeout=300)
+        assert not second.is_alive(), "stale watcher advance hung"
+    finally:
+        release2.set()
+        gateway.probe = real_probe  # type: ignore[method-assign]
+
+    assert "error" not in outcomes2, outcomes2.get("error")
+    refused = outcomes2["response"]
+    assert refused.status_code == 403, refused.text
+    assert refused.json()["error"]["code"] == "FORBIDDEN"
+    assert "forbidden" in refused.json()["error"]["message"].lower()
+
+    run_id2 = derive_run_id(ids["world"], 2)
+
+    async def _inspect_second() -> dict[str, Any]:
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                open_run = await uow.phases.find_open_run(ids["world"])
+                try:
+                    await uow.phases.get_run(run_id2)
+                    run_missing = False
+                except DomainError:
+                    run_missing = True
+                try:
+                    await uow.scenes.get_intent(
+                        derive_intent_id(ids["world"], snapshot2, ids["wren"])
+                    )
+                    intent_missing = False
+                except DomainError:
+                    intent_missing = True
+                return {
+                    "open_run": open_run,
+                    "run_missing": run_missing,
+                    "intent_missing": intent_missing,
+                }
+        finally:
+            await engine.dispose()
+
+    state2 = asyncio.run(_inspect_second())
+    assert state2["open_run"] is None
+    assert state2["run_missing"] is True
+    assert state2["intent_missing"] is True
+
+    ordinary = _advance(client, ids["world"], 2)
+    assert ordinary.status_code == 200, ordinary.text
+    assert ordinary.json()["duplicate"] is False
 
 
 def test_open_run_freezes_grant_for_fresh_resume(
