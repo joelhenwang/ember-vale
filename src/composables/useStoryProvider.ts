@@ -14,9 +14,10 @@ export interface ProviderBanner {
  *
  * Names exactly what beats run: the resolved pin (model plus revision) or
  * the environment default stated as such. "Deterministic stand-ins" is
- * reserved for an actually fake effective adapter — a live-provider
- * failure never re-labels the whole story. A null view means the status
- * is still loading (no banner); a failed load is an honest unknown.
+ * reserved for an actually fake effective adapter, and "live provider
+ * configured" describes configuration only — never output. A null view
+ * means the status is still loading (no banner); a failed load is an
+ * honest unknown, or an explicit last-known label over a retained view.
  */
 export function describeStoryProvider(
   view: StoryProviderView | null,
@@ -36,12 +37,23 @@ export function describeStoryProvider(
   }
   const fake = view.effective_adapter === 'fake'
   const model = view.effective_model_id ?? 'development model'
-  const tail = fake ? 'deterministic stand-ins, not live provider prose.' : 'live provider prose.'
-  if (view.effective_source === 'pin' && view.pin) {
-    const rev = view.effective_revision ?? view.pin.revision
-    return { tone: 'info', text: `Storyteller ${model} · rev ${rev} (pinned) — ${tail}` }
+  const tail = fake
+    ? 'deterministic stand-ins, not live provider prose.'
+    : 'live provider configured.'
+  const current: ProviderBanner =
+    view.effective_source === 'pin' && view.pin
+      ? {
+          tone: 'info',
+          text: `Storyteller ${model} · rev ${view.effective_revision ?? view.pin.revision} (pinned) — ${tail}`
+        }
+      : { tone: 'info', text: `Storyteller environment default (${model}) — ${tail}` }
+  if (loadFailed) {
+    return {
+      tone: 'info',
+      text: `Last known — ${current.text} Status could not be refreshed.`
+    }
   }
-  return { tone: 'info', text: `Storyteller environment default (${model}) — ${tail}` }
+  return current
 }
 
 /**
@@ -53,11 +65,11 @@ export function describeEnvironment(modelProfile: string | null): { text: string
   if (!modelProfile) return null
   if (modelProfile === 'active:fake') {
     return {
-      text: `Development model active (${modelProfile}) — beats are deterministic stand-ins, not live provider prose.`
+      text: `Environment default (${modelProfile}) — beats are deterministic stand-ins, not live provider prose.`
     }
   }
   return {
-    text: `Live model active (${modelProfile}) — beats are live provider prose.`
+    text: `Environment default (${modelProfile}) — live provider configured.`
   }
 }
 

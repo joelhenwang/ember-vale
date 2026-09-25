@@ -138,10 +138,10 @@ async def read_story(story_id: UUID, request: Request) -> api.StoryDetail:
 async def read_story_provider(story_id: UUID, request: Request) -> api.StoryProviderView:
     """Story-effective provider: resolved pin or environment default.
 
-    A broken pin is reported as data (pin_state "broken"), never silently
-    replaced: execution still fails closed at admission. The effective
-    section names exactly what beats run, so the room banner never has
-    to guess from environment health alone.
+    A broken pin is reported as data (pin_state "broken") with an
+    unavailable effective section and no adapter/model: execution fails
+    closed, so the API must not imply the environment default runs
+    instead. The environment block stays as diagnostic context only.
     """
     state = request.app.state.app_state
     async with state.uow_factory()() as uow:
@@ -184,11 +184,19 @@ async def read_story_provider(story_id: UUID, request: Request) -> api.StoryProv
             effective_model_id=pin.model_id,
             effective_revision=pin.revision,
         )
+    if pin_error is not None:
+        return api.StoryProviderView(
+            story_id=story_id,
+            world_id=story_id,
+            pin_state="broken",
+            pin_error=pin_error,
+            environment=environment,
+            effective_source="unavailable",
+        )
     return api.StoryProviderView(
         story_id=story_id,
         world_id=story_id,
-        pin_state="broken" if pin_error is not None else "none",
-        pin_error=pin_error,
+        pin_state="none",
         environment=environment,
         effective_source="environment",
         effective_adapter=environment.adapter,

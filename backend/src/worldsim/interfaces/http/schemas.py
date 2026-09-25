@@ -1464,8 +1464,8 @@ class StoryProviderView(BaseModel):
     pin: StoryProviderPinView | None = None
     pin_error: str | None = None
     environment: StoryProviderEnvironmentView
-    effective_source: Literal["pin", "environment"]
-    effective_adapter: str
+    effective_source: Literal["pin", "environment", "unavailable"]
+    effective_adapter: str | None = None
     effective_model_id: str | None = None
     effective_revision: int | None = None
 

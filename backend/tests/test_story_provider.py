@@ -174,4 +174,9 @@ def test_broken_pin_reports_unavailable(migrated_db: None) -> None:
     assert body["pin_state"] == "broken"
     assert body["pin"] is None
     assert body["pin_error"], "a broken pin must say what failed"
-    assert body["effective_source"] == "environment"
+    # Execution fails closed: no effective provider may be implied, while the
+    # environment block stays as diagnostic context only.
+    assert body["effective_source"] == "unavailable"
+    assert body["effective_adapter"] is None
+    assert body["effective_model_id"] is None
+    assert body["environment"]["adapter"] == "fake"

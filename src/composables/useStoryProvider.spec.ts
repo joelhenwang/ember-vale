@@ -42,7 +42,7 @@ describe('describeStoryProvider', () => {
     expect(banner?.text).toContain('live-model')
     expect(banner?.text).toContain('rev 3')
     expect(banner?.text).toContain('pinned')
-    expect(banner?.text).toContain('live provider prose')
+    expect(banner?.text).toContain('live provider configured')
     expect(banner?.text).not.toContain('stand-in')
   })
 
@@ -78,7 +78,7 @@ describe('describeStoryProvider', () => {
       false
     )
     expect(live?.text).toContain('environment default')
-    expect(live?.text).toContain('live provider prose')
+    expect(live?.text).toContain('live provider configured')
 
     const fake = describeStoryProvider(view({}), false)
     expect(fake?.text).toContain('environment default')
@@ -100,13 +100,25 @@ describe('describeStoryProvider', () => {
     const unknown = describeStoryProvider(null, true)
     expect(unknown?.text).toContain('unknown')
   })
+
+  it('labels a retained view last-known after a failed refresh', () => {
+    const fresh = describeStoryProvider(view({}), false)
+    expect(fresh?.text).not.toContain('Last known')
+    const stale = describeStoryProvider(view({}), true)
+    expect(stale?.text).toContain('Last known')
+    expect(stale?.text).toContain('environment default')
+    expect(stale?.text).toContain('could not be refreshed')
+  })
 })
 
 describe('describeEnvironment', () => {
   it('claims stand-ins only for the fake profile', () => {
-    expect(describeEnvironment('active:fake')?.text).toContain('deterministic stand-ins')
+    const fake = describeEnvironment('active:fake')
+    expect(fake?.text).toContain('Environment default')
+    expect(fake?.text).toContain('deterministic stand-ins')
     const live = describeEnvironment('active:openrouter')
-    expect(live?.text).toContain('live provider prose')
+    expect(live?.text).toContain('Environment default')
+    expect(live?.text).toContain('live provider configured')
     expect(live?.text).not.toContain('stand-in')
     expect(describeEnvironment(null)).toBeNull()
   })
@@ -172,5 +184,27 @@ describe('useStoryProvider', () => {
     await provider.load()
     expect(provider.failed.value).toBe(false)
     expect(provider.banner.value?.text).toContain('environment default')
+  })
+
+  it('success, then failure, then recovery labels staleness in between', async () => {
+    let mode: 'ok' | 'down' = 'ok'
+    const client = {
+      readStoryProvider(): Promise<StoryProviderView> {
+        return mode === 'ok' ? Promise.resolve(view({})) : Promise.reject(new Error('down'))
+      }
+    }
+    const provider = useStoryProvider('story-a', client)
+    await provider.load()
+    expect(provider.banner.value?.text).toContain('environment default')
+    expect(provider.banner.value?.text).not.toContain('Last known')
+    mode = 'down'
+    await provider.load()
+    expect(provider.failed.value).toBe(true)
+    expect(provider.banner.value?.text).toContain('Last known')
+    expect(provider.banner.value?.text).toContain('could not be refreshed')
+    mode = 'ok'
+    await provider.load()
+    expect(provider.failed.value).toBe(false)
+    expect(provider.banner.value?.text).not.toContain('Last known')
   })
 })

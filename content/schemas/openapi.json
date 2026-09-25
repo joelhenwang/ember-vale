@@ -5655,8 +5655,15 @@
         "additionalProperties": false,
         "properties": {
           "effective_adapter": {
-            "title": "Effective Adapter",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Adapter"
           },
           "effective_model_id": {
             "anyOf": [
@@ -5683,7 +5690,8 @@
           "effective_source": {
             "enum": [
               "pin",
-              "environment"
+              "environment",
+              "unavailable"
             ],
             "title": "Effective Source",
             "type": "string"
@@ -5737,8 +5745,7 @@
           "world_id",
           "pin_state",
           "environment",
-          "effective_source",
-          "effective_adapter"
+          "effective_source"
         ],
         "title": "StoryProviderView",
         "type": "object"
@@ -10919,7 +10926,7 @@
     },
     "/api/v1/stories/{story_id}/provider": {
       "get": {
-        "description": "Story-effective provider: resolved pin or environment default.\n\nA broken pin is reported as data (pin_state \"broken\"), never silently\nreplaced: execution still fails closed at admission. The effective\nsection names exactly what beats run, so the room banner never has\nto guess from environment health alone.",
+        "description": "Story-effective provider: resolved pin or environment default.\n\nA broken pin is reported as data (pin_state \"broken\") with an\nunavailable effective section and no adapter/model: execution fails\nclosed, so the API must not imply the environment default runs\ninstead. The environment block stays as diagnostic context only.",
         "operationId": "read_story_provider_api_v1_stories__story_id__provider_get",
         "parameters": [
           {

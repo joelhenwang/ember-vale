@@ -1008,7 +1008,7 @@ export interface StoryProviderEnvironmentView {
 }
 
 export interface StoryProviderView {
-  effective_adapter: string;
+  effective_adapter?: string | null;
   effective_model_id?: string | null;
   effective_revision?: number | null;
   effective_source: string;

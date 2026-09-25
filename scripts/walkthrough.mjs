@@ -169,13 +169,13 @@ try {
     record(S, 'observer badge is read-only grant state', badge.includes('Observer'), badge)
     // The room fetches backend readiness asynchronously on mount; wait for
     // the banner instead of asserting on first paint (cold stacks flake).
-    await page.getByText('live provider prose', { exact: false }).waitFor({ timeout: 15000 })
+    await page.getByText('live provider configured', { exact: false }).waitFor({ timeout: 15000 })
     const banner = await page.locator('.play__notice').first().innerText()
     record(
       S,
       'room shows the truthful provider status',
       banner.includes('Storyteller environment default') &&
-        banner.includes('live provider prose') &&
+        banner.includes('live provider configured') &&
         !banner.includes('deterministic stand-ins'),
       banner.slice(0, 160)
     )
