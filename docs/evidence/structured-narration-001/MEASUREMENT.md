@@ -35,12 +35,18 @@ Date: 2026-09-28. No paid calls made; no live run yet (needs spend confirmation)
   `fallback_rate` counts only `"fallback"`.
 - Recruit/combat accounting: the structured path skips
   `_recruit_from_narration()` and `_resolve_combat_tags()`, identical to the
-  existing quiet/over-budget and failure paths. Additionally, party scenes
-  (roster present) always take the model path, so the mode is bounded to
-  roster-free scenarios such as the starter scenario. No general gameplay
-  equivalence claimed.
-- Harness `classify()` reports an all-`structured` beat as
-  `layers.narration = 'structured'` (previously would have read `narrated`).
+  existing quiet/over-budget and failure paths. Additionally, structured
+  mode applies only to roster-free scenes; scenes with a roster proceed to
+  the model path. The earlier over-budget skip still applies to any scene
+  regardless of roster (behavior preserved, not widened). The mode is
+  therefore bounded to roster-free scenarios such as the starter scenario.
+  No general gameplay equivalence claimed.
+- Harness `classify()` preserves per-scene statuses in
+  `layers.narration_kinds` and labels the beat explicitly: uniform known
+  statuses pass through (`structured`, `fallback`, `skipped`, `narrated`),
+  any mix reads `mixed`, failure keeps precedence. All-`skipped` reads
+  `skipped` (source unknown), never `fallback`; nothing falls through to
+  `narrated` by elimination.
 
 ## Controlled measurement (deterministic, zero provider spend)
 
@@ -52,6 +58,9 @@ Fake narrator sleeps 1.0s before answering; identical fixtures both runs:
 - upstream constant: same scene count, same resolution outcomes, same event
   volume; committed Ash answer persisted as cited DIALOGUE in structured run;
   duplicate replay adds no canon and re-reads identically.
+- The maintained regression asserts the deterministic sleep-accounted
+  narrator time plus zero narrator calls, not a wall-clock comparison of
+  two database-backed runs; the observed walls above stand as evidence.
 
 Tests: 6 new in `backend/tests/test_stage1_orchestration.py` (zero calls,
 dialogue persistence, reload/replay, default path, status distinction,

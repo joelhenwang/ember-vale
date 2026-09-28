@@ -172,6 +172,73 @@ describe('classify retrieval', () => {
     expect(out.layers.committed).toBe('yes')
     expect(out.layers.display).toBe('yes')
   })
+
+  it.each([
+    ['fallback', ['fallback', 'structured']],
+    ['skipped', ['skipped', 'structured']],
+    ['narrated', ['narrated', 'structured']]
+  ])('never labels structured+%s mixes as narrated', (other, kinds) => {
+    const res = {
+      ok: true,
+      status: 200,
+      json: {
+        duplicate: false,
+        scenes: kinds.map((narration, i) => ({
+          scene_id: `s${i}`,
+          event_id: `e${i}`,
+          narration
+        }))
+      }
+    }
+    const out = classify(
+      'question',
+      res,
+      [],
+      kinds.map((_, i) => ({ event_id: `e${i}` })),
+      kinds.map(() => ({ text: 'Words.' }))
+    )
+    expect(out.layers.narration).toBe('mixed')
+    expect(out.layers.narration_kinds).toEqual([...kinds].sort())
+    expect(out.advancement.narration).toBe('mixed')
+    expect(out.layers.committed).toBe('yes')
+  })
+
+  it('keeps failure precedence over structured scenes', () => {
+    const res = {
+      ok: true,
+      status: 200,
+      json: {
+        duplicate: false,
+        scenes: [
+          { scene_id: 's1', event_id: 'e1', narration: 'structured' },
+          { scene_id: 's2', event_id: 'e2', narration: 'failed' }
+        ]
+      }
+    }
+    const out = classify(
+      'question',
+      res,
+      [],
+      [{ event_id: 'e1' }, { event_id: 'e2' }],
+      [{ text: 'Words.' }, { text: 'More words.' }]
+    )
+    expect(out.layers.narration).toBe('failed')
+    expect(out.layers.narration_kinds).toEqual(['failed', 'structured'])
+  })
+
+  it('distinguishes all-skipped scenes from fallback', () => {
+    const res = {
+      ok: true,
+      status: 200,
+      json: {
+        duplicate: false,
+        scenes: [{ scene_id: 's1', event_id: 'e1', narration: 'skipped' }]
+      }
+    }
+    const out = classify('travel', res, [], [{ event_id: 'e1' }], [{ text: 'Dawn.' }])
+    expect(out.layers.narration).toBe('skipped')
+    expect(out.layers.narration_kinds).toEqual(['skipped'])
+  })
 })
 
 describe('findNpcAnswers', () => {

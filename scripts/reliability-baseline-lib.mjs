@@ -75,17 +75,26 @@ export function classify(kind, advanceRes, modelRuns, timelineEntries, narration
   if (!committed) reasons.push('no committed events in the advance response')
 
   const kinds = new Set(scenes.map((s) => s.narration))
+  // Per-scene statuses are preserved verbatim: the single label below never
+  // infers model narration from a combination that merely failed narrower
+  // checks. A skipped scene's original source is unknown, so it is not
+  // folded into fallback.
+  const narrationKinds = [...kinds].sort()
+  layers.narration_kinds = narrationKinds
+  const KNOWN_NARRATION = new Set(['fallback', 'skipped', 'structured', 'narrated'])
   if (kinds.size === 0) {
     layers.narration = 'none'
   } else if (kinds.has('failed')) {
     layers.narration = 'failed'
     reasons.push('at least one scene narration failed')
-  } else if ([...kinds].every((k) => k === 'fallback' || k === 'skipped')) {
-    layers.narration = 'fallback'
-  } else if ([...kinds].every((k) => k === 'structured')) {
-    layers.narration = 'structured'
+  } else if (kinds.size === 1 && KNOWN_NARRATION.has(narrationKinds[0])) {
+    layers.narration = narrationKinds[0]
+  } else if (kinds.size === 1) {
+    layers.narration = 'unknown'
+    reasons.push(`unrecognized scene narration: ${narrationKinds[0]}`)
   } else {
-    layers.narration = 'narrated'
+    layers.narration = 'mixed'
+    reasons.push(`mixed scene narration: ${narrationKinds.join('+')}`)
   }
 
   const visibleIds = new Set((timelineEntries ?? []).map((e) => e.event_id))

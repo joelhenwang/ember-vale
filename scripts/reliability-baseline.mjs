@@ -26,7 +26,13 @@
  *     [--api http://localhost:8101/api/v1] [--mode fake|live] \
  *     [--out docs/evidence/reliability-baseline-v1] [--title "Baseline"] \
  *     [--no-browser] [--base http://127.0.0.1:5173] \
- *     [--pin-profile <id> --pin-revision <n>]
+ *     [--pin-profile <id> --pin-revision <n>] \
+ *     [--setup-only] [--world <storyId>]
+ *
+ * --setup-only creates the story (draft + publish) and exits before any
+ * advance, so operator-side setup (e.g. an experiment config flag) can run
+ * between setup and the beats. --world reuses that story for the scenario
+ * run instead of creating a new one. Neither flag changes measurement.
  */
 
 import fs from 'node:fs'
@@ -54,6 +60,8 @@ const BASE = opt('--base', 'http://127.0.0.1:5173')
 const WITH_BROWSER = !args.includes('--no-browser')
 const PIN_PROFILE = opt('--pin-profile', '')
 const PIN_REVISION = opt('--pin-revision', '')
+const REUSE_WORLD = opt('--world', '')
+const SETUP_ONLY = args.includes('--setup-only')
 const KEY = process.env.EMBER_VALE_API_KEY || ''
 if (!KEY) throw new Error('set EMBER_VALE_API_KEY (the compose operator key)')
 if (!['fake', 'live'].includes(MODE)) throw new Error(`--mode must be fake|live (got ${MODE})`)
@@ -436,8 +444,20 @@ const communicate = (actor, target, topic) => ({
   }
 })
 
+async function storyWorld(story) {
+  const res = await call('GET', `/stories/${story}`)
+  if (!res.ok) throw new Error(`story detail -> ${res.status}: ${res.errorBody}`)
+  return res.json.world_id
+}
+
 async function runScenario() {
-  await setupStory()
+  if (REUSE_WORLD) {
+    storyId = REUSE_WORLD
+    worldId = await storyWorld(REUSE_WORLD)
+    note(`reusing story ${storyId} world ${worldId} (setup skipped)`)
+  } else {
+    await setupStory()
+  }
   const cast = await runtimeCast(worldId)
 
   // Beat 1: travel (Wren Hearth -> Market), committed by a watcher advance.
@@ -686,6 +706,12 @@ async function runBrowser() {
 
 async function main() {
   startedAt = new Date().toISOString()
+  if (SETUP_ONLY && REUSE_WORLD) throw new Error('--setup-only and --world are exclusive')
+  if (SETUP_ONLY) {
+    await setupStory()
+    console.log(`setup-only story=${storyId} world=${worldId}`)
+    return
+  }
   let display = null
   let fatal = null
   try {

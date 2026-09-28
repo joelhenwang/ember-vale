@@ -2326,13 +2326,15 @@ class Stage1Orchestrator:
         tags live in model-authored beats.
 
         Structured narration mode (world config ``narration.mode`` set
-        to ``"structured"``) takes the same fallback-beat path without
-        issuing a narrator call and reports ``"structured"`` instead of
-        a provider outcome. Like the quiet/over-budget and failure
-        paths it skips recruit-from-narration and combat-tag
-        resolution, and like the quiet path it never applies when a
-        party roster is present: party scenes always take the model
-        path, so the mode is bounded to roster-free scenarios.
+        to ``"structured"``) applies only to roster-free scenes: with
+        no party roster present it takes the same fallback-beat path
+        without issuing a narrator call and reports ``"structured"``
+        instead of a provider outcome. Like the quiet/over-budget and
+        failure paths it skips recruit-from-narration and combat-tag
+        resolution. Scenes with a roster proceed to the model path;
+        the earlier over-budget skip still applies to any scene
+        regardless of roster (that behavior is preserved, not widened
+        here). The mode is therefore bounded to roster-free scenarios.
         """
         async with self._factory() as uow:
             existing = await uow.scenes.narrations_for_event(event_id)

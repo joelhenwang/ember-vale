@@ -1,0 +1,165 @@
+{
+  "tool": "reliability-baseline",
+  "schema": 4,
+  "mode": "live",
+  "title": "Structured narration live",
+  "run": "mule9hqa",
+  "complete": true,
+  "fatal": null,
+  "started_at": "2026-09-28T15:20:27.394Z",
+  "finished_at": "2026-09-28T15:23:27.686Z",
+  "api": "http://127.0.0.1:8101/api/v1",
+  "story_id": "002208e2-1cb1-4abb-9bdf-55363143b147",
+  "world_id": "002208e2-1cb1-4abb-9bdf-55363143b147",
+  "pin": {
+    "profile_id": "0e02a2fb-4e8c-4ac2-8c4e-b2db3c0dd80c",
+    "revision": 10
+  },
+  "config_frozen": {
+    "note": "prompts, models, budgets, and retry behavior unchanged during collection"
+  },
+  "beats": [
+    {
+      "kind": "travel",
+      "absolute_index": 1,
+      "story_id": "002208e2-1cb1-4abb-9bdf-55363143b147",
+      "world_id": "002208e2-1cb1-4abb-9bdf-55363143b147",
+      "run_id": null,
+      "duplicate": null,
+      "client_wall_ms": 180006,
+      "slot_claim_ms": null,
+      "execution_ms": null,
+      "http_status": null,
+      "transport_error": "timeout",
+      "transport_message": "TimeoutError: The operation was aborted due to timeout",
+      "resolution": "unresolved",
+      "resolution_reason": "transport failed before a response arrived; commit state unknown until inspected",
+      "scenes": [],
+      "provider": null,
+      "providerError": null,
+      "modelRuns": [],
+      "modelRunsError": null,
+      "callSummary": {
+        "byRole": {},
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "reasoning_tokens": 0,
+        "attempts": 0,
+        "reasoning_only_failures": 0,
+        "error_codes": {}
+      },
+      "timelineEntries": 0,
+      "timelineWallMs": null,
+      "timelineError": null,
+      "narrationBeats": 0,
+      "narrationReadMs": null,
+      "narrationError": null,
+      "committed_sources": [],
+      "classification": {
+        "layers": {
+          "provider": "unknown",
+          "validation": "unknown",
+          "committed": "unknown",
+          "narration": "unknown",
+          "display": "unknown"
+        },
+        "reasons": [
+          "advance timeout after ~180006ms: TimeoutError: The operation was aborted due to timeout (retained, not retried)"
+        ]
+      },
+      "post_error_clock": 1,
+      "commit_ambiguous": false
+    },
+    {
+      "kind": "reload",
+      "story_id": "002208e2-1cb1-4abb-9bdf-55363143b147",
+      "world_id": "002208e2-1cb1-4abb-9bdf-55363143b147",
+      "client_wall_ms": 99,
+      "detailWallMs": 15,
+      "timelineWallMs": 36,
+      "narrationReadMs": 0,
+      "timelineEntries": 3,
+      "narrationBeats": 0,
+      "missingEvents": [],
+      "provider": {
+        "pin_state": "ok",
+        "pin_revision": 10,
+        "effective_source": "pin",
+        "effective_adapter": "openrouter",
+        "effective_model_id": "deepseek/deepseek-v4-flash-0731",
+        "effective_revision": 10
+      },
+      "readErrors": [],
+      "classification": {
+        "layers": {
+          "provider": "not-applicable",
+          "validation": "accepted",
+          "committed": "not-applicable",
+          "narration": "not-applicable",
+          "display": "yes"
+        },
+        "reasons": [],
+        "answer_usefulness": "unevaluated"
+      }
+    }
+  ],
+  "blocked_steps": [
+    {
+      "kind": "question",
+      "status": "blocked",
+      "reason": "halted: travel timeout, resolution unresolved"
+    },
+    {
+      "kind": "follow-up",
+      "status": "blocked",
+      "reason": "halted: travel timeout, resolution unresolved"
+    },
+    {
+      "kind": "ordinary-advance",
+      "status": "blocked",
+      "reason": "halted: travel timeout, resolution unresolved"
+    }
+  ],
+  "display": {
+    "status": "skipped",
+    "steps": []
+  },
+  "notes": [
+    "reusing story 002208e2-1cb1-4abb-9bdf-55363143b147 world 002208e2-1cb1-4abb-9bdf-55363143b147 (setup skipped)",
+    "travel: transport timeout, resolution unresolved (clock 1 vs attempted 1)",
+    "travel: halted: travel timeout, resolution unresolved; no further seat change or advance",
+    "finalizing reads with the current grant; seats are never changed to obtain evidence",
+    "blocked steps preserved: question, follow-up, ordinary-advance"
+  ],
+  "summary": {
+    "advances": 1,
+    "advances_committed": 0,
+    "blocked": 3,
+    "retrieval_complete": 0,
+    "provider_ok_advances": 0,
+    "narration": {
+      "narrated": 0,
+      "fallback": 0,
+      "failed": 0
+    },
+    "browser_display": "skipped",
+    "answer_usefulness": "unevaluated",
+    "client_wall_ms": {
+      "n": 1,
+      "min": 180006,
+      "max": 180006
+    },
+    "slot_claim_ms": null,
+    "execution_ms": null,
+    "timeline_read_ms": {
+      "n": 1,
+      "min": 36,
+      "max": 36
+    },
+    "narration_read_ms": {
+      "n": 1,
+      "min": 0,
+      "max": 0
+    }
+  }
+}

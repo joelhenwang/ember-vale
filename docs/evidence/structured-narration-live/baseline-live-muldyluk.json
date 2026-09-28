@@ -1,0 +1,427 @@
+{
+  "tool": "reliability-baseline",
+  "schema": 4,
+  "mode": "live",
+  "title": "Structured narration live",
+  "run": "muldyluk",
+  "complete": true,
+  "fatal": null,
+  "started_at": "2026-09-28T15:11:59.516Z",
+  "finished_at": "2026-09-28T15:15:47.270Z",
+  "api": "http://127.0.0.1:8101/api/v1",
+  "story_id": "4287abb1-49f7-4eb5-a9a6-ef471e78b32b",
+  "world_id": "4287abb1-49f7-4eb5-a9a6-ef471e78b32b",
+  "pin": {
+    "profile_id": "0e02a2fb-4e8c-4ac2-8c4e-b2db3c0dd80c",
+    "revision": 10
+  },
+  "config_frozen": {
+    "note": "prompts, models, budgets, and retry behavior unchanged during collection"
+  },
+  "beats": [
+    {
+      "kind": "travel",
+      "absolute_index": 1,
+      "story_id": "4287abb1-49f7-4eb5-a9a6-ef471e78b32b",
+      "world_id": "4287abb1-49f7-4eb5-a9a6-ef471e78b32b",
+      "run_id": "e4eb49a6-b205-5611-8f60-a2cd3464c6e9",
+      "duplicate": false,
+      "client_wall_ms": 47179,
+      "slot_claim_ms": 12,
+      "execution_ms": 47153,
+      "http_status": 200,
+      "transport_error": null,
+      "transport_message": null,
+      "resolution": null,
+      "resolution_reason": null,
+      "scenes": [
+        {
+          "scene_id": "6369ea56-4528-5416-b7ed-033ddc8e1e54",
+          "event_id": "cc40ff18-5bf1-40dc-8795-ccfd010bae99",
+          "resolution_outcome": "impossible",
+          "narration": "fallback"
+        },
+        {
+          "scene_id": "817aa5be-b574-5609-8d76-427d54bfe637",
+          "event_id": "8216c7c6-76c3-47db-b88a-bc939c668190",
+          "resolution_outcome": "impossible",
+          "narration": "fallback"
+        }
+      ],
+      "provider": {
+        "pin_state": "ok",
+        "pin_revision": 10,
+        "effective_source": "pin",
+        "effective_adapter": "openrouter",
+        "effective_model_id": "deepseek/deepseek-v4-flash-0731",
+        "effective_revision": 10
+      },
+      "providerError": null,
+      "modelRuns": [
+        {
+          "call_id": "c44a18cd-fd59-41b7-bee3-9a8e5dc55761",
+          "role": "director",
+          "profile": "openrouter@pin-0e02a2fb-r10",
+          "status": "succeeded",
+          "actor_id": "4287abb1-49f7-4eb5-a9a6-ef471e78b32b",
+          "task_run_id": "90119746-bc36-5346-9170-cf4bb7553b1e",
+          "prompt_tokens": 258,
+          "completion_tokens": 979,
+          "latency_ms": 18540,
+          "error_code": null,
+          "finish_reason": "stop",
+          "reasoning_tokens": 979,
+          "content_type": "text",
+          "content_length": 262,
+          "reasoning_only": false,
+          "max_tokens": 4096,
+          "pin_profile_id": "0e02a2fb-4e8c-4ac2-8c4e-b2db3c0dd80c",
+          "pin_profile_revision": 10,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "838d569c-6683-4766-96d1-69468f9a7097",
+          "role": "director",
+          "profile": "openrouter@pin-0e02a2fb-r10",
+          "status": "succeeded",
+          "actor_id": "4287abb1-49f7-4eb5-a9a6-ef471e78b32b",
+          "task_run_id": "90119746-bc36-5346-9170-cf4bb7553b1e",
+          "prompt_tokens": 283,
+          "completion_tokens": 155,
+          "latency_ms": 2612,
+          "error_code": null,
+          "finish_reason": "stop",
+          "reasoning_tokens": 81,
+          "content_type": "text",
+          "content_length": 260,
+          "reasoning_only": false,
+          "max_tokens": 4096,
+          "pin_profile_id": "0e02a2fb-4e8c-4ac2-8c4e-b2db3c0dd80c",
+          "pin_profile_revision": 10,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "a19be743-3e95-4d55-b092-ecad164f6824",
+          "role": "character_decision",
+          "profile": "openrouter@pin-0e02a2fb-r10",
+          "status": "succeeded",
+          "actor_id": "e518fada-0157-46d8-b9db-df12f6f8f75d",
+          "task_run_id": "da9dd14c-82fc-5b9b-aa97-75aac6b90f44",
+          "prompt_tokens": 2738,
+          "completion_tokens": 457,
+          "latency_ms": 5683,
+          "error_code": null,
+          "finish_reason": "stop",
+          "reasoning_tokens": 462,
+          "content_type": "text",
+          "content_length": 124,
+          "reasoning_only": false,
+          "max_tokens": 4096,
+          "pin_profile_id": "0e02a2fb-4e8c-4ac2-8c4e-b2db3c0dd80c",
+          "pin_profile_revision": 10,
+          "budgets": {},
+          "attempts": []
+        },
+        {
+          "call_id": "624f285d-1291-4e96-b78f-7315d7be1b44",
+          "role": "character_decision",
+          "profile": "openrouter@pin-0e02a2fb-r10",
+          "status": "succeeded",
+          "actor_id": "3a81116a-1e56-4e17-8c5d-02cae78f3deb",
+          "task_run_id": "4aa73eb8-0c29-5162-9bb6-9c86888abe2f",
+          "prompt_tokens": 2740,
+          "completion_tokens": 1122,
+          "latency_ms": 24951,
+          "error_code": null,
+          "finish_reason": "stop",
+          "reasoning_tokens": 1059,
+          "content_type": "text",
+          "content_length": 137,
+          "reasoning_only": false,
+          "max_tokens": 4096,
+          "pin_profile_id": "0e02a2fb-4e8c-4ac2-8c4e-b2db3c0dd80c",
+          "pin_profile_revision": 10,
+          "budgets": {},
+          "attempts": []
+        }
+      ],
+      "modelRunsError": null,
+      "callSummary": {
+        "byRole": {
+          "director": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 21152,
+            "attempts": 0
+          },
+          "character_decision": {
+            "calls": 2,
+            "failed": 0,
+            "latency_ms": 30634,
+            "attempts": 0
+          }
+        },
+        "prompt_tokens": 6019,
+        "completion_tokens": 2713,
+        "reasoning_tokens": 2581,
+        "attempts": 0,
+        "reasoning_only_failures": 0,
+        "error_codes": {}
+      },
+      "timelineEntries": 5,
+      "timelineWallMs": 15,
+      "timelineError": null,
+      "narrationBeats": 4,
+      "narrationReadMs": 37,
+      "narrationError": null,
+      "committed_sources": [
+        {
+          "scene_id": "6369ea56-4528-5416-b7ed-033ddc8e1e54",
+          "event_id": "cc40ff18-5bf1-40dc-8795-ccfd010bae99",
+          "status": "committed",
+          "resolution": {
+            "outcome": "impossible",
+            "resolver": "deterministic",
+            "rationale": "automatic: every intent determined"
+          },
+          "participants": [
+            "e518fada-0157-46d8-b9db-df12f6f8f75d"
+          ],
+          "intents": [
+            {
+              "id": "0cefa988-e345-5e15-8cf3-4bcb2b98d803",
+              "author_character_id": "e518fada-0157-46d8-b9db-df12f6f8f75d",
+              "family": "wait",
+              "target_character_id": null,
+              "topic": null
+            }
+          ],
+          "reactions": [],
+          "narrations": [
+            {
+              "id": "1d20b341-ed5f-4793-b41a-6cbc16ae6382",
+              "speaker_id": null,
+              "cited_fact_keys": [],
+              "snippet": "attempt:wait: Ash waits"
+            },
+            {
+              "id": "d40add8c-164c-47c9-9a65-b86b7d210f19",
+              "speaker_id": null,
+              "cited_fact_keys": [],
+              "snippet": "attempt:wait: Ash waits"
+            }
+          ],
+          "narration_status": "complete",
+          "narrationError": null
+        },
+        {
+          "scene_id": "817aa5be-b574-5609-8d76-427d54bfe637",
+          "event_id": "8216c7c6-76c3-47db-b88a-bc939c668190",
+          "status": "committed",
+          "resolution": {
+            "outcome": "impossible",
+            "resolver": "deterministic",
+            "rationale": "automatic: every intent determined"
+          },
+          "participants": [
+            "3a81116a-1e56-4e17-8c5d-02cae78f3deb"
+          ],
+          "intents": [
+            {
+              "id": "5b8ca0f0-1f36-51ff-8aed-7e0bff440796",
+              "author_character_id": "3a81116a-1e56-4e17-8c5d-02cae78f3deb",
+              "family": "wait",
+              "target_character_id": null,
+              "topic": null
+            }
+          ],
+          "reactions": [],
+          "narrations": [
+            {
+              "id": "8a8895ea-df85-40ad-ae76-762b2368c01c",
+              "speaker_id": null,
+              "cited_fact_keys": [],
+              "snippet": "attempt:wait: Wren waits"
+            },
+            {
+              "id": "d5a031f0-8a7c-4169-aa64-9a0604b34d9f",
+              "speaker_id": null,
+              "cited_fact_keys": [],
+              "snippet": "attempt:wait: Wren waits"
+            }
+          ],
+          "narration_status": "complete",
+          "narrationError": null
+        }
+      ],
+      "classification": {
+        "layers": {
+          "provider": "ok",
+          "validation": "accepted",
+          "committed": "yes",
+          "narration": "fallback",
+          "display": "yes",
+          "narration_kinds": [
+            "fallback"
+          ]
+        },
+        "reasons": [],
+        "advancement": {
+          "committed": true,
+          "retrieval_complete": true,
+          "narration": "fallback"
+        },
+        "answer_usefulness": "unevaluated",
+        "kind": "travel"
+      }
+    },
+    {
+      "kind": "question",
+      "absolute_index": 2,
+      "story_id": "4287abb1-49f7-4eb5-a9a6-ef471e78b32b",
+      "world_id": "4287abb1-49f7-4eb5-a9a6-ef471e78b32b",
+      "run_id": null,
+      "duplicate": null,
+      "client_wall_ms": 180004,
+      "slot_claim_ms": null,
+      "execution_ms": null,
+      "http_status": null,
+      "transport_error": "timeout",
+      "transport_message": "TimeoutError: The operation was aborted due to timeout",
+      "resolution": "unresolved",
+      "resolution_reason": "transport failed before a response arrived; commit state unknown until inspected",
+      "scenes": [],
+      "provider": null,
+      "providerError": null,
+      "modelRuns": [],
+      "modelRunsError": null,
+      "callSummary": {
+        "byRole": {},
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "reasoning_tokens": 0,
+        "attempts": 0,
+        "reasoning_only_failures": 0,
+        "error_codes": {}
+      },
+      "timelineEntries": 0,
+      "timelineWallMs": null,
+      "timelineError": null,
+      "narrationBeats": 0,
+      "narrationReadMs": null,
+      "narrationError": null,
+      "committed_sources": [],
+      "classification": {
+        "layers": {
+          "provider": "unknown",
+          "validation": "unknown",
+          "committed": "unknown",
+          "narration": "unknown",
+          "display": "unknown"
+        },
+        "reasons": [
+          "advance timeout after ~180004ms: TimeoutError: The operation was aborted due to timeout (retained, not retried)"
+        ]
+      },
+      "post_error_clock": 2,
+      "commit_ambiguous": false
+    },
+    {
+      "kind": "reload",
+      "story_id": "4287abb1-49f7-4eb5-a9a6-ef471e78b32b",
+      "world_id": "4287abb1-49f7-4eb5-a9a6-ef471e78b32b",
+      "client_wall_ms": 112,
+      "detailWallMs": 34,
+      "timelineWallMs": 27,
+      "narrationReadMs": 30,
+      "timelineEntries": 7,
+      "narrationBeats": 4,
+      "missingEvents": [],
+      "provider": {
+        "pin_state": "ok",
+        "pin_revision": 10,
+        "effective_source": "pin",
+        "effective_adapter": "openrouter",
+        "effective_model_id": "deepseek/deepseek-v4-flash-0731",
+        "effective_revision": 10
+      },
+      "readErrors": [],
+      "classification": {
+        "layers": {
+          "provider": "not-applicable",
+          "validation": "accepted",
+          "committed": "not-applicable",
+          "narration": "not-applicable",
+          "display": "yes"
+        },
+        "reasons": [],
+        "answer_usefulness": "unevaluated"
+      }
+    }
+  ],
+  "blocked_steps": [
+    {
+      "kind": "follow-up",
+      "status": "blocked",
+      "reason": "halted: question timeout, resolution unresolved"
+    },
+    {
+      "kind": "ordinary-advance",
+      "status": "blocked",
+      "reason": "halted: question timeout, resolution unresolved"
+    }
+  ],
+  "display": {
+    "status": "skipped",
+    "steps": []
+  },
+  "notes": [
+    "reusing story 4287abb1-49f7-4eb5-a9a6-ef471e78b32b world 4287abb1-49f7-4eb5-a9a6-ef471e78b32b (setup skipped)",
+    "seat: player as 3a81116a",
+    "question: transport timeout, resolution unresolved (clock 2 vs attempted 2)",
+    "question: halted: question timeout, resolution unresolved; no further seat change or advance",
+    "finalizing reads with the current grant; seats are never changed to obtain evidence",
+    "blocked steps preserved: follow-up, ordinary-advance"
+  ],
+  "summary": {
+    "advances": 2,
+    "advances_committed": 1,
+    "blocked": 2,
+    "retrieval_complete": 1,
+    "provider_ok_advances": 1,
+    "narration": {
+      "narrated": 0,
+      "fallback": 1,
+      "failed": 0
+    },
+    "browser_display": "skipped",
+    "answer_usefulness": "unevaluated",
+    "client_wall_ms": {
+      "n": 2,
+      "min": 47179,
+      "max": 180004
+    },
+    "slot_claim_ms": {
+      "n": 1,
+      "min": 12,
+      "max": 12
+    },
+    "execution_ms": {
+      "n": 1,
+      "min": 47153,
+      "max": 47153
+    },
+    "timeline_read_ms": {
+      "n": 2,
+      "min": 15,
+      "max": 27
+    },
+    "narration_read_ms": {
+      "n": 2,
+      "min": 30,
+      "max": 37
+    }
+  }
+}
