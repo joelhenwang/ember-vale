@@ -60,6 +60,8 @@ let activityListHold = false
 let advanceDuplicate = false
 /** Narration marker on the mocked committing response (`narrated` or `fallback`). */
 let advanceNarration = 'narrated'
+/** Late-committed beat served once the server finishes behind a timeout. */
+let lateEntry: Record<string, unknown> | null = null
 /** When true, the committing response carries a second scene on the same event. */
 let advanceSecondScene = false
 type TimelineMode = 'small' | 'big' | 'empty-advance' | 'stuck'
@@ -164,6 +166,7 @@ function installFetch(): void {
   activityListHold = false
   advanceDuplicate = false
   advanceNarration = 'narrated'
+  lateEntry = null
   advanceSecondScene = false
   vi.stubGlobal(
     'fetch',
@@ -306,7 +309,8 @@ function installFetch(): void {
           if (after < 5) return json(timelinePage(id, [E1], 5, true))
         }
         if (after === 0) return json(timelinePage(id, [E1], 5, true))
-        return json(timelinePage(id, [E2], 9, false))
+        const rest = lateEntry ? [E2, lateEntry] : [E2]
+        return json(timelinePage(id, rest, 9, false))
       }
       if (method === 'GET' && url.pathname === '/api/v1/stage2/map') return json(mapOf(id))
       if (method === 'GET' && url.pathname === '/api/v1/simulation/status') {
@@ -683,6 +687,52 @@ describe('useStory room', () => {
     const last = posts.at(-1) as Seen
     expect(advanceBody(last)['world_id']).toBe('A')
     expect(advanceBody(last)['absolute_index']).toBe(3)
+  })
+
+  it('check-again after a timeout lands the late beat without another advance', async () => {
+    installFetch()
+    const story = useStory('A', 'watcher', undefined, memStore())
+    await story.load()
+    advanceHold = true
+    const pending = story.advance({
+      'char-wren': {
+        family: 'communicate',
+        character_id: 'char-wren',
+        snapshot_id: '00000000-0000-0000-0000-000000000000',
+        target_character_id: 'char-ash',
+        topic: 'What news from the mill?'
+      }
+    })
+    await vi.waitFor(() => expect(heldAdvances).toHaveLength(1))
+    // The server is still executing beat 2 behind the client timeout.
+    statusByStory.set('A', { id: 'run-9', index: 2, state: 'open' })
+    heldAdvances[0].reject(new Error('REQUEST_TIMEOUT'))
+    await vi.waitFor(() => expect(heldAdvances).toHaveLength(2))
+    heldAdvances[1].reject(new Error('REQUEST_TIMEOUT'))
+    await expect(pending).resolves.toBe(false)
+    advanceHold = false
+    // Timeout aftermath: stranded banner, committed beat not yet in feed.
+    expect(story.recoveryState.value).toBe('open')
+    expect(story.openRun.value?.index).toBe(2)
+    expect(story.entries.value.map((e) => e.event_id)).not.toContain('e3')
+    expect(advancePosts()).toHaveLength(2)
+    // The server commits beat 2 after both client attempts gave up.
+    indexByStory.set('A', 2)
+    statusByStory.delete('A')
+    lateEntry = { sequence: 3, event_id: 'e3', event_type: 'action_resolved', absolute_index: 2 }
+    // Check again, in PlayView.checkAgain order: feed first, then status.
+    await story.refreshTimeline()
+    await story.refreshStatus()
+    // The committed feed refreshes with the late beat.
+    expect(story.entries.value.map((e) => e.event_id)).toContain('e3')
+    // The unfinished-beat state clears.
+    expect(story.openRun.value).toBeNull()
+    expect(story.recoveryState.value).toBe('clear')
+    // The correct next beat is enabled: clock advanced, nothing pending.
+    expect(story.detail.value?.absolute_index).toBe(2)
+    expect(story.advancing.value).toBe(false)
+    // Check-again submits nothing itself.
+    expect(advancePosts()).toHaveLength(2)
   })
 
   it('reaches events beyond the page cap through Load more', async () => {

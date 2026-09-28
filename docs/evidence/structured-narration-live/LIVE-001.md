@@ -102,6 +102,11 @@ NULL rows replay as `unknown`. Backend regressions added (stored
 structured/model/fallback replay verbatim; legacy replays `unknown` with
 beats intact; post-commit interruption resumes with the exact source and no
 extra beats or narrator calls; failed-to-success resume replaces the record).
+Qualification: the interruption test injects at `after_scenes_committed`,
+after the former separate status write would also have finished, so it
+proves resume preserves the source but does not itself distinguish the old
+non-atomic implementation from the new atomic one; the transaction placement
+in the source establishes the fix.
 
 Live proof on the fixed build, both runs, normal path, no row edits:
 
