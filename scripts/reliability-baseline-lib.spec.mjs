@@ -150,6 +150,28 @@ describe('classify retrieval', () => {
     expect(out.reasons.join(' ')).toMatch(/e2/)
     expect(out.advancement.retrieval_complete).toBe(false)
   })
+
+  it('reports configured structured narration as its own layer', () => {
+    const res = {
+      ok: true,
+      status: 200,
+      json: {
+        duplicate: false,
+        scenes: [{ scene_id: 's1', event_id: 'e1', narration: 'structured' }]
+      }
+    }
+    const out = classify(
+      'question',
+      res,
+      [],
+      [{ event_id: 'e1' }],
+      [{ text: 'Ash: "Dawn patrol passed at first light."' }]
+    )
+    expect(out.layers.narration).toBe('structured')
+    expect(out.advancement.narration).toBe('structured')
+    expect(out.layers.committed).toBe('yes')
+    expect(out.layers.display).toBe('yes')
+  })
 })
 
 describe('findNpcAnswers', () => {

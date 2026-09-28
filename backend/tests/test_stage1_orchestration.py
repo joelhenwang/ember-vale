@@ -6,6 +6,8 @@ import asyncio
 import json
 import uuid
 from collections.abc import Callable
+from pathlib import Path
+from time import perf_counter
 from typing import Any
 from uuid import UUID
 
@@ -19,7 +21,7 @@ from worldsim.application.tracing.service import TraceService
 from worldsim.application.transactions.canonical import CanonicalTransaction
 from worldsim.domain.characters import Character, CharacterCard
 from worldsim.domain.commands import CommunicateAction
-from worldsim.domain.enums import UserRole
+from worldsim.domain.enums import NarrationKind, UserRole
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.ids import (
     derive_intent_id,
@@ -29,6 +31,7 @@ from worldsim.domain.ids import (
     new_role_grant_id,
     new_world_id,
 )
+from worldsim.domain.narration import NarrationBeat
 from worldsim.domain.phases import PhaseRun
 from worldsim.domain.roles import RoleGrant
 from worldsim.domain.stories import StoryInitialSetup
@@ -968,5 +971,248 @@ def test_retry_after_grant_change_keeps_admitted_ownership(migrated_db: None) ->
                 assert len(await uow.traces.list_for_phase_run(first.run_id)) == before_calls
         finally:
             await engine.dispose()
+
+    asyncio.run(_inner())
+
+
+async def _set_narration_mode(ids: dict[str, UUID], mode: str) -> None:
+    engine = create_engine(Settings())
+    try:
+        async with create_unit_of_work(engine) as uow:
+            await uow.worlds.put_config(ids["world"], "narration.mode", mode)
+            await uow.commit()
+    finally:
+        await engine.dispose()
+
+
+async def _beats_for_report(report: Any) -> list[NarrationBeat]:
+    engine = create_engine(Settings())
+    try:
+        async with create_unit_of_work(engine) as uow:
+            beats: list[NarrationBeat] = []
+            for outcome in report.scenes:
+                beats.extend(await uow.scenes.narrations_for_event(outcome.event_id))
+            return beats
+    finally:
+        await engine.dispose()
+
+
+def test_structured_narration_skips_narrator_and_keeps_dialogue(
+    migrated_db: None,
+) -> None:
+    """Structured mode issues no narrator call yet persists cited dialogue."""
+    async def _inner() -> None:
+        ids = await _seed()
+        await _set_grant(ids, "player", ids["wren"])
+        await _set_narration_mode(ids, "structured")
+        gateways = _agency_gateways(ids)
+        report = await _orchestrator(gateways).advance_phase(
+            ids["world"], 1, _wren_ask(ids)
+        )
+        assert not report.duplicate
+        assert report.scenes
+        assert all(s.narration == "structured" for s in report.scenes)
+        assert gateways["narrator"].calls == []
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                calls = await uow.traces.list_for_phase_run(report.run_id)
+                assert not [c for c in calls if c.role == "narrator"]
+        finally:
+            await engine.dispose()
+        beats = await _beats_for_report(report)
+        assert beats
+        dialogue = [b for b in beats if b.kind == NarrationKind.DIALOGUE]
+        assert len(dialogue) == 1
+        assert dialogue[0].speaker_id == ids["ash"]
+        assert "Dawn patrol" in dialogue[0].text
+        assert dialogue[0].cited_fact_keys
+
+    asyncio.run(_inner())
+
+
+def test_structured_dialogue_survives_reload_and_replay(migrated_db: None) -> None:
+    """Structured beats reload identically and duplicate replay adds no canon."""
+    async def _read_texts(report: Any) -> list[tuple[str, str]]:
+        return [(b.kind.value, b.text) for b in await _beats_for_report(report)]
+
+    async def _inner() -> None:
+        ids = await _seed()
+        await _set_grant(ids, "player", ids["wren"])
+        await _set_narration_mode(ids, "structured")
+        gateways = _agency_gateways(ids)
+        first = await _orchestrator(gateways).advance_phase(
+            ids["world"], 1, _wren_ask(ids)
+        )
+        assert not first.duplicate
+        before = await _read_texts(first)
+        assert before
+        assert any(kind == NarrationKind.DIALOGUE.value for kind, _text in before)
+        replay = await _orchestrator(gateways).advance_phase(ids["world"], 1)
+        assert replay.duplicate
+        assert await _read_texts(first) == before
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                calls = await uow.traces.list_for_phase_run(first.run_id)
+                assert not [c for c in calls if c.role == "narrator"]
+        finally:
+            await engine.dispose()
+
+    asyncio.run(_inner())
+
+
+def test_default_narration_mode_still_calls_narrator(migrated_db: None) -> None:
+    """Without the opt-in flag the narrator gateway is invoked as before."""
+    async def _inner() -> None:
+        ids = await _seed()
+        await _set_grant(ids, "player", ids["wren"])
+        gateways = _agency_gateways(ids)
+        report = await _orchestrator(gateways).advance_phase(
+            ids["world"], 1, _wren_ask(ids)
+        )
+        assert not report.duplicate
+        assert gateways["narrator"].calls != []
+        assert all(s.narration in ("narrated", "fallback") for s in report.scenes)
+        assert all(s.narration != "structured" for s in report.scenes)
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                calls = await uow.traces.list_for_phase_run(report.run_id)
+                assert [c for c in calls if c.role == "narrator"]
+        finally:
+            await engine.dispose()
+
+    asyncio.run(_inner())
+
+
+def test_structured_status_distinct_from_generation_failure(
+    migrated_db: None,
+) -> None:
+    """Configured skips report "structured"; failed attempts never do."""
+    from worldsim.application.ports.model_gateway import ModelUnavailableError
+
+    async def _inner() -> None:
+        ids = await _seed()
+        await _set_grant(ids, "player", ids["wren"])
+        await _set_narration_mode(ids, "structured")
+        gateways = _agency_gateways(ids)
+        gateways["narrator"].enqueue_error(ModelUnavailableError("provider down"))
+        gateways["narrator"].enqueue_error(ModelUnavailableError("provider down"))
+        report = await _orchestrator(gateways).advance_phase(
+            ids["world"], 1, _wren_ask(ids)
+        )
+        assert not report.duplicate
+        assert all(s.narration == "structured" for s in report.scenes)
+        assert gateways["narrator"].calls == []
+
+        broken_ids = await _seed()
+        await _set_grant(broken_ids, "player", broken_ids["wren"])
+        broken_gateways = _agency_gateways(broken_ids)
+        broken_gateways["narrator"].enqueue_error(ModelUnavailableError("down"))
+        broken_gateways["narrator"].enqueue_error(ModelUnavailableError("down"))
+        broken_gateways["narrator"].default_text = None
+        broken = await _orchestrator(broken_gateways).advance_phase(
+            broken_ids["world"], 1, _wren_ask(broken_ids)
+        )
+        assert not broken.duplicate
+        assert broken_gateways["narrator"].calls != []
+        assert all(s.narration != "structured" for s in broken.scenes)
+
+    asyncio.run(_inner())
+
+
+def test_structured_narration_defers_to_model_for_party_roster(
+    migrated_db: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Party scenes always take the model path, even in structured mode."""
+    from worldsim.application.commands.party import recruit_companion
+    from worldsim.domain.rules.dnd import load_data
+
+    root = Path(__file__).resolve().parent.parent.parent
+    # Party narration loads the vendored SRD tables from the repo-root
+    # content dir (as in production); run that beat from the repo root.
+    monkeypatch.chdir(root)
+
+    async def _inner() -> None:
+        ids = await _seed()
+        await _set_grant(ids, "player", ids["wren"])
+        await _set_narration_mode(ids, "structured")
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                data = load_data(root / "content" / "dnd")
+                await recruit_companion(
+                    uow, data, ids["world"], "Lyra", "elf ranger, level 3"
+                )
+        finally:
+            await engine.dispose()
+        gateways = _agency_gateways(ids)
+        report = await _orchestrator(gateways).advance_phase(
+            ids["world"], 1, _wren_ask(ids)
+        )
+        assert not report.duplicate
+        assert gateways["narrator"].calls != []
+        assert all(s.narration != "structured" for s in report.scenes)
+
+    asyncio.run(_inner())
+
+
+def test_structured_mode_saves_delayed_narrator_time(migrated_db: None) -> None:
+    """Controlled delayed narrator, upstream constant: time saved, canon kept.
+
+    The model narrator sleeps before answering; structured mode must save
+    about that delay while committing the same scenes, outcomes, and events,
+    with the committed answer voiced as attributed dialogue.
+    """
+    delay = 1.0
+
+    async def _run_world(structured: bool) -> tuple[Any, Any, Any, float, float]:
+        ids = await _seed()
+        await _set_grant(ids, "player", ids["wren"])
+        if structured:
+            await _set_narration_mode(ids, "structured")
+        gateways = _agency_gateways(ids)
+        narrator = gateways["narrator"]
+        spent = {"seconds": 0.0}
+        original = narrator.complete
+
+        async def _delayed(request: CompletionRequest) -> Any:
+            start = perf_counter()
+            try:
+                await asyncio.sleep(delay)
+                return await original(request)
+            finally:
+                spent["seconds"] += perf_counter() - start
+
+        narrator.complete = _delayed  # type: ignore[method-assign]
+        start = perf_counter()
+        report = await _orchestrator(gateways).advance_phase(
+            ids["world"], 1, _wren_ask(ids)
+        )
+        return ids, gateways, report, perf_counter() - start, spent["seconds"]
+
+    async def _inner() -> None:
+        _ids_a, _gates_a, rep_a, wall_a, spent_a = await _run_world(False)
+        ids_b, gates_b, rep_b, wall_b, spent_b = await _run_world(True)
+        assert spent_a >= delay
+        assert gates_b["narrator"].calls == []
+        assert spent_b == 0.0
+        assert (wall_a - wall_b) >= 0.5
+        assert [s.resolution_outcome for s in rep_a.scenes] == [
+            s.resolution_outcome for s in rep_b.scenes
+        ]
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                assert await uow.events.count_events(rep_a.world_id) == (
+                    await uow.events.count_events(rep_b.world_id)
+                )
+        finally:
+            await engine.dispose()
+        beats = await _beats_for_report(rep_b)
+        dialogue = [b for b in beats if b.kind == NarrationKind.DIALOGUE]
+        assert len(dialogue) == 1
+        assert dialogue[0].speaker_id == ids_b["ash"]
 
     asyncio.run(_inner())

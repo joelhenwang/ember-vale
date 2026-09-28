@@ -82,6 +82,8 @@ export function classify(kind, advanceRes, modelRuns, timelineEntries, narration
     reasons.push('at least one scene narration failed')
   } else if ([...kinds].every((k) => k === 'fallback' || k === 'skipped')) {
     layers.narration = 'fallback'
+  } else if ([...kinds].every((k) => k === 'structured')) {
+    layers.narration = 'structured'
   } else {
     layers.narration = 'narrated'
   }

@@ -226,6 +226,14 @@ DND_DATA_DIR = "content/dnd"
 #: Run states that refuse advancement (same bucket as Stage 0).
 _BLOCKED_RUN_STATES = frozenset({"paused", "terminal_failed", "cancelled"})
 
+#: World-config key opting a world into structured narration: committed
+#: facts are voiced through deterministic fallback beats with no narrator
+#: model call. Absent or any other value keeps model narration.
+NARRATION_MODE_KEY = "narration.mode"
+
+#: Config value selecting structured narration (see NARRATION_MODE_KEY).
+NARRATION_MODE_STRUCTURED = "structured"
+
 
 class GatewayFactory(Protocol):
     """Role (character/reaction/resolver/narrator) to gateway."""
@@ -2316,6 +2324,15 @@ class Stage1Orchestrator:
         and store structured fallback beats directly: same canon, no
         call. Party scenes always narrate because combat and recruit
         tags live in model-authored beats.
+
+        Structured narration mode (world config ``narration.mode`` set
+        to ``"structured"``) takes the same fallback-beat path without
+        issuing a narrator call and reports ``"structured"`` instead of
+        a provider outcome. Like the quiet/over-budget and failure
+        paths it skips recruit-from-narration and combat-tag
+        resolution, and like the quiet path it never applies when a
+        party roster is present: party scenes always take the model
+        path, so the mode is bounded to roster-free scenarios.
         """
         async with self._factory() as uow:
             existing = await uow.scenes.narrations_for_event(event_id)
@@ -2326,8 +2343,10 @@ class Stage1Orchestrator:
                 str(p.character_id) for p in (await uow.scenes.get_scene(scene.id)).participants
             ]
             roster = await uow.party.list_for_world(world_id)
+            config = await uow.worlds.get_config(world_id)
         if existing:
             return "skipped"
+        structured = config.get(NARRATION_MODE_KEY) == NARRATION_MODE_STRUCTURED
         facts = [
             {"key": fact.key, "value": fact.value} for obs in observations for fact in obs.facts
         ]
@@ -2393,17 +2412,14 @@ class Stage1Orchestrator:
         )
         roster_pre = await self._roster_present(world_id)
         if over_budget or (quiet and not roster_pre):
-            async with self._factory() as uow:
-                for beat in fallback_beats(
-                    world_id=world_id,
-                    scene_id=scene.id,
-                    event_id=event_id,
-                    visible_facts=facts,
-                    beats_budget=scene.beat_budget,
-                ):
-                    await uow.scenes.save_narration(beat)
-                await uow.commit()
+            await self._save_fallback_beats(world_id, scene, event_id, facts)
             return "fallback"
+        if structured and not roster_pre:
+            # Configured structured narration, not a provider outcome:
+            # same beats as the quiet path, no narrator call issued and
+            # no model-call row traced.
+            await self._save_fallback_beats(world_id, scene, event_id, facts)
+            return "structured"
         try:
             sampling = runtime.sampling
             graph = build_narration_graph(
@@ -2430,6 +2446,25 @@ class Stage1Orchestrator:
         await self._recruit_from_narration(world_id, "\n".join(beat_texts))
         await self._resolve_combat_tags(world_id, run_id, scene, event_id, beat_texts)
         return "narrated" if not result["proposal"]["fallback"] else "fallback"
+
+    async def _save_fallback_beats(
+        self,
+        world_id: UUID,
+        scene: Scene,
+        event_id: UUID,
+        facts: list[dict[str, str]],
+    ) -> None:
+        """Persist deterministic committed-fact beats (every non-model path)."""
+        async with self._factory() as uow:
+            for beat in fallback_beats(
+                world_id=world_id,
+                scene_id=scene.id,
+                event_id=event_id,
+                visible_facts=facts,
+                beats_budget=scene.beat_budget,
+            ):
+                await uow.scenes.save_narration(beat)
+            await uow.commit()
 
     async def _recruit_from_narration(self, world_id: UUID, text: str) -> list[str]:
         """Resolve RECRUIT tags from narration; replays for members are no-ops."""
