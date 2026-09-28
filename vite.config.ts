@@ -23,7 +23,8 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       proxy: {
         '/api': {
-          target: 'http://localhost:8101',
+          // Scratch stacks override the backend without touching this file.
+          target: env.EMBER_VALE_API_TARGET || 'http://localhost:8101',
           changeOrigin: true,
           headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined
         }

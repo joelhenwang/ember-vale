@@ -75,6 +75,27 @@ throwing keeps filings memory-only with zero shared writes, while a
 failing `randomUUID()` still falls through to a working
 `getRandomValues()`.
 
+## Maintained browser run (`results-recovery-browser.json`, screenshots)
+
+`scripts/recovery-browser.mjs` drives the real Play room in headless
+Edge against a scratch stack only: scratch vite on 5174 (with an
+env-overridable API target in `vite.config.ts`) → fake-profile API on
+8102 → isolated `embervale_recovery` database. The live compose stack
+was never touched and no model call was made. The run API-seeds a
+Player-as-Wren story, asks Q1, SIGKills the API mid-beat, restarts it,
+and reloads: the banner names stranded beat 1 with its Resume control.
+An immediate resume is correctly refused on the orphaned 300s
+DB-backed execution lease (409 committing notice, nothing filed);
+after the lease expires, Resume replays Q1 verbatim — all 3 sends at
+index 1 carry Q1, exactly one fresh 200 commit (`duplicate: false`),
+clock at Beat 1, no timeline entries beyond it, the Q1 filing retired,
+Q2 never posted and still in the composer. Results, request/response
+bodies, and screenshots (`recovery-banner.png`,
+`recovery-composer-q2.png`, `recovery-resumed.png`) are preserved
+alongside; the run's own `at`/`commit`/`diffSha256` fields carry its
+identity. Scratch processes were stopped afterwards; only the
+throwaway scratch database rows remain.
+
 ## What this record does not claim
 
 - The earlier live-Edge browser walkthrough left no preserved

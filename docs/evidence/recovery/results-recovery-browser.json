@@ -1,0 +1,111 @@
+{
+  "slice": "browser recovery: Q1 interrupted, reload, Q2 typed, Q1 resumed exactly once",
+  "commit": "54e2848",
+  "dirty": true,
+  "diffSha256": "0968456d4781672622a4db3eced8224ed0497e837ba785c463ebc9a1ad7e0a6f",
+  "at": "2026-09-25T17:52:52.961Z",
+  "gateway": "fake profile on scratch API (no model spend)",
+  "modelSpend": "none",
+  "requests": [
+    {
+      "absolute_index": 1,
+      "topics": ["What news from the mill, Ash?"]
+    },
+    {
+      "absolute_index": 1,
+      "topics": ["What news from the mill, Ash?"]
+    },
+    {
+      "absolute_index": 1,
+      "topics": ["What news from the mill, Ash?"]
+    }
+  ],
+  "responses": [
+    {
+      "status": 500,
+      "duplicate": "<unparseable>"
+    },
+    {
+      "status": 409
+    },
+    {
+      "status": 200,
+      "duplicate": false,
+      "absolute_index": 1
+    }
+  ],
+  "results": [
+    {
+      "scenario": "recovery",
+      "step": "player story seeded on scratch API",
+      "ok": true,
+      "detail": "world b5402401"
+    },
+    {
+      "scenario": "recovery",
+      "step": "room grants Player as Wren",
+      "ok": true,
+      "detail": "Player"
+    },
+    {
+      "scenario": "recovery",
+      "step": "Q1 interrupted into a stranded open beat",
+      "ok": true,
+      "detail": "beat 1"
+    },
+    {
+      "scenario": "recovery",
+      "step": "resume refused while the crashed lease is held",
+      "ok": true,
+      "detail": "409 committing notice, no new beat"
+    },
+    {
+      "scenario": "recovery",
+      "step": "every send at the stranded index carries Q1 verbatim",
+      "ok": true,
+      "detail": "3 advance posts at index 1"
+    },
+    {
+      "scenario": "recovery",
+      "step": "Q2 never posted",
+      "ok": true,
+      "detail": "3 advance posts total"
+    },
+    {
+      "scenario": "recovery",
+      "step": "Q2 absent from the feed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "recovery",
+      "step": "Q2 retained in the composer",
+      "ok": true,
+      "detail": "What news from the market, Ash?"
+    },
+    {
+      "scenario": "recovery",
+      "step": "room clock shows exactly the resumed beat",
+      "ok": true,
+      "detail": "Player\nPlaying as Wren\nBeat 1\nInitial configuration\nMode set by the story grant"
+    },
+    {
+      "scenario": "recovery",
+      "step": "timeline holds committed entries at the stranded index and none beyond",
+      "ok": true,
+      "detail": "at=2 beyond=0"
+    },
+    {
+      "scenario": "recovery",
+      "step": "resume committed fresh, never as a duplicate",
+      "ok": true,
+      "detail": "[{\"status\":200,\"duplicate\":false,\"absolute_index\":1}]"
+    },
+    {
+      "scenario": "recovery",
+      "step": "Q1 filing retired and Q2 never stored",
+      "ok": true,
+      "detail": "no filings"
+    }
+  ]
+}
