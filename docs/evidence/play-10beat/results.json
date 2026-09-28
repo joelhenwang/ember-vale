@@ -1,0 +1,180 @@
+{
+  "slice": "ordinary 10-beat Player session: pinned story, travel, questions, choice, reload",
+  "commit": "f8bacc6",
+  "at": "2026-09-28T12:14:11.993Z",
+  "results": [
+    {
+      "step": "wizard pins deepseek rev10",
+      "ok": true,
+      "detail": "deepseek/deepseek-v4-flash-0731 · rev 10 | deepseek/deepseek-v4-flash-0731 · rev 9 | deepseek/deepseek-v4-flash-0731 · rev 8 | deepseek/deepseek-v4-flash-0731 · rev 7 | deepseek/deepseek-v4-flash-0731"
+    },
+    {
+      "step": "pin summary names the model",
+      "ok": true,
+      "detail": "Selected: Live deepseek low-temp mudy7am9 · deepseek/deepseek-v4-flash-0731 · rev 10"
+    },
+    {
+      "step": "room grants Player as Wren",
+      "ok": true,
+      "detail": "Player"
+    },
+    {
+      "step": "beat 1 commits (travel)",
+      "ok": true,
+      "detail": "85s"
+    },
+    {
+      "step": "beat 2 commits (question)",
+      "ok": true,
+      "detail": "226s speakers=none fallback=false"
+    },
+    {
+      "step": "beat 3 commits (question)",
+      "ok": true,
+      "detail": "195s speakers=none fallback=false"
+    },
+    {
+      "step": "beat 4 commits (question)",
+      "ok": true,
+      "detail": "316s speakers=none fallback=false"
+    },
+    {
+      "step": "beat 5 commits (choice question)",
+      "ok": true,
+      "detail": "170s"
+    },
+    {
+      "step": "beat 6 commits (choice travel)",
+      "ok": true,
+      "detail": "25s to Hearth"
+    },
+    {
+      "step": "reload restores the clock",
+      "ok": true,
+      "detail": "beat 6"
+    },
+    {
+      "step": "reload keeps structured beat cards",
+      "ok": false,
+      "detail": "0 spoken lines"
+    },
+    {
+      "step": "beat 7 commits (question)",
+      "ok": true,
+      "detail": "231s speakers=none fallback=false"
+    },
+    {
+      "step": "beat 8 commits (question)",
+      "ok": true,
+      "detail": "240s speakers=none fallback=false"
+    },
+    {
+      "step": "beat 9 commits (question)",
+      "ok": true,
+      "detail": "416s speakers=none fallback=false"
+    },
+    {
+      "step": "beat 10 commits (question)",
+      "ok": true,
+      "detail": "296s speakers=none fallback=false"
+    },
+    {
+      "step": "ten beats committed",
+      "ok": true,
+      "detail": "clock at beat 10"
+    }
+  ],
+  "friction": [
+    "provider banner: Storyteller deepseek/deepseek-v4-flash-0731 · rev 10 (pinned) — live provider configured.",
+    "story d5104e8a-c73e-48c7-9842-dfd87c70786f",
+    "waiting state shown mid-beat: Beat 2 is still running — 0s so far. The beat runs on the server: leaving the page does not stop it. If the connection drops, reload and use",
+    "choice: travel to Hearth (default first offer)"
+  ],
+  "beats": [
+    {
+      "beat": 1,
+      "kind": "travel",
+      "wallMs": 85211,
+      "waited": 85156
+    },
+    {
+      "beat": 2,
+      "kind": "question",
+      "topic": "What news from the mill, Ash?",
+      "speakers": [],
+      "fallback": 0,
+      "wallMs": 225571,
+      "waited": 225455
+    },
+    {
+      "beat": 3,
+      "kind": "question",
+      "topic": "Who rang the dawn bell today?",
+      "speakers": [],
+      "fallback": 0,
+      "wallMs": 195384,
+      "waited": 195384
+    },
+    {
+      "beat": 4,
+      "kind": "question",
+      "topic": "Have traders come far for the market?",
+      "speakers": [],
+      "fallback": 0,
+      "wallMs": 315732,
+      "waited": 315732
+    },
+    {
+      "beat": 5,
+      "kind": "choice-question",
+      "speakers": [],
+      "wallMs": 170369,
+      "waited": 170369
+    },
+    {
+      "beat": 6,
+      "kind": "choice-travel",
+      "dest": "Hearth",
+      "reason": "default first offer",
+      "wallMs": 25101,
+      "waited": 25064
+    },
+    {
+      "beat": 7,
+      "kind": "question",
+      "topic": "What do the millers grind this season?",
+      "speakers": [],
+      "fallback": 0,
+      "wallMs": 230511,
+      "waited": 230511
+    },
+    {
+      "beat": 8,
+      "kind": "question",
+      "topic": "Is the old bridge safe to cross?",
+      "speakers": [],
+      "fallback": 0,
+      "wallMs": 240479,
+      "waited": 240479
+    },
+    {
+      "beat": 9,
+      "kind": "question",
+      "topic": "Who keeps the lighthouse at night?",
+      "speakers": [],
+      "fallback": 0,
+      "wallMs": 415892,
+      "waited": 415892
+    },
+    {
+      "beat": 10,
+      "kind": "question",
+      "topic": "What will the weather do by evening?",
+      "speakers": [],
+      "fallback": 0,
+      "wallMs": 295649,
+      "waited": 295649
+    }
+  ],
+  "storyId": "d5104e8a-c73e-48c7-9842-dfd87c70786f"
+}

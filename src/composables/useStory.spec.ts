@@ -58,6 +58,8 @@ let advanceHold = false
 let activityListHold = false
 /** When true, advance POSTs report an already-committed beat. */
 let advanceDuplicate = false
+/** Narration marker on the mocked committing response (`narrated` or `fallback`). */
+let advanceNarration = 'narrated'
 type TimelineMode = 'small' | 'big' | 'empty-advance' | 'stuck'
 let timelineMode: TimelineMode = 'small'
 
@@ -159,6 +161,7 @@ function installFetch(): void {
   advanceHold = false
   activityListHold = false
   advanceDuplicate = false
+  advanceNarration = 'narrated'
   vi.stubGlobal(
     'fetch',
     vi.fn(async (rawUrl: string, init: RequestInit = {}) => {
@@ -212,7 +215,43 @@ function installFetch(): void {
         return json({
           world_id: id,
           absolute_index: target ?? 2,
-          duplicate: advanceDuplicate
+          duplicate: advanceDuplicate,
+          run_id: 'run-1',
+          scenes: [
+            {
+              scene_id: 'scene-1',
+              event_id: 'e2',
+              resolution_outcome: 'success',
+              narration: advanceNarration
+            }
+          ]
+        })
+      }
+      if (method === 'GET' && url.pathname.endsWith('/narration')) {
+        return json([
+          {
+            id: 'beat-1',
+            speaker_id: 'char-ash',
+            kind: 'dialogue',
+            text: 'Rain on the market stones.',
+            source_event_id: 'e2',
+            cited_fact_keys: []
+          }
+        ])
+      }
+      if (method === 'GET' && url.pathname.startsWith('/api/v1/stage1/scenes/')) {
+        return json({
+          id: 'scene-1',
+          world_id: id,
+          phase_run_id: 'run-1',
+          status: 'committed',
+          beat_budget: 1,
+          event_id: 'e2',
+          participants: [],
+          intents: [],
+          attempts: [],
+          reactions: [],
+          resolution: null
         })
       }
       if (method === 'POST' && url.pathname === '/api/v1/stage2/activities') {
@@ -1108,5 +1147,88 @@ describe('useStory room', () => {
     expect(story.recoveryState.value).toBe('open')
     expect(story.preservedSubmission.value).toBeNull()
     expect(story.notice.value?.text).toContain('unavailable')
+  })
+
+  it('exposes the beat wait start and clears it when the beat lands', async () => {
+    installFetch()
+    advanceHold = true
+    const story = useStory('A', 'watcher')
+    await story.load()
+    expect(story.advanceStartedAt.value).toBeNull()
+    const pending = story.advance()
+    await vi.waitFor(() => expect(heldAdvances).toHaveLength(1))
+    expect(story.advancing.value).toBe(true)
+    expect(story.advanceStartedAt.value).toEqual(expect.any(Number))
+    heldAdvances[0].resolve(
+      json({
+        world_id: 'A',
+        absolute_index: 2,
+        duplicate: false,
+        run_id: 'run-1',
+        scenes: [
+          {
+            scene_id: 'scene-1',
+            event_id: 'e2',
+            resolution_outcome: 'success',
+            narration: 'narrated'
+          }
+        ]
+      })
+    )
+    await expect(pending).resolves.toBe(true)
+    expect(story.advancing.value).toBe(false)
+    expect(story.advanceStartedAt.value).toBeNull()
+  })
+
+  it('records structured beat pointers on a fresh commit and loads them on demand', async () => {
+    installFetch()
+    const story = useStory('A', 'watcher')
+    await story.load()
+    await story.advance()
+    expect(story.beatScenes.value['e2']).toMatchObject({
+      runId: 'run-1',
+      sceneIds: ['scene-1'],
+      fallback: false
+    })
+    await story.loadBeatDetail('e2')
+    const loaded = story.beatDetails.value['e2']
+    expect(loaded?.pending).toBe(false)
+    expect(loaded?.failed).toBe(false)
+    expect(loaded?.scenes).toHaveLength(1)
+    expect(loaded?.scenes[0].narration[0].text).toBe('Rain on the market stones.')
+    expect(seen.filter((s) => s.path === '/api/v1/stage1/scenes/scene-1')).toHaveLength(1)
+    expect(seen.filter((s) => s.path === '/api/v1/stage1/scenes/scene-1/narration')).toHaveLength(1)
+  })
+
+  it('marks fallback beats from the committing response', async () => {
+    installFetch()
+    advanceNarration = 'fallback'
+    const story = useStory('A', 'watcher')
+    await story.load()
+    await story.advance()
+    expect(story.beatScenes.value['e2']?.fallback).toBe(true)
+  })
+
+  it('records no beat pointers for a duplicate reconciliation', async () => {
+    installFetch()
+    advanceDuplicate = true
+    const story = useStory('A', 'watcher')
+    await story.load()
+    await story.advance()
+    expect(story.beatScenes.value).toEqual({})
+  })
+
+  it('restores beat pointers from storage on reload', async () => {
+    installFetch()
+    const shared = memStore()
+    const first = useStory('A', 'watcher', undefined, shared)
+    await first.load()
+    await first.advance()
+    expect(first.beatScenes.value['e2']).toBeDefined()
+    const second = useStory('A', 'watcher', undefined, shared)
+    await second.load()
+    expect(second.beatScenes.value['e2']).toMatchObject({ runId: 'run-1', sceneIds: ['scene-1'] })
+    await second.loadBeatDetail('e2')
+    expect(second.beatDetails.value['e2']?.scenes).toHaveLength(1)
   })
 })

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import BeatEntry from '../components/story/BeatEntry.vue'
 import SetupDialog from '../components/story/SetupDialog.vue'
 import MountainRidge from '../components/decor/MountainRidge.vue'
 import PageIntro from '../components/ui/PageIntro.vue'
@@ -9,7 +10,8 @@ import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
 import IconArrowRight from '../components/icons/IconArrowRight.vue'
 import { useInterventions, type DirectMode } from '../composables/useInterventions'
 import { usePlayerAsk } from '../composables/usePlayerAsk'
-import { useStory } from '../composables/useStory'
+import { useStory, type BeatDetailState } from '../composables/useStory'
+import type { TimelineEntry } from '../../content/clients/worldsim'
 import { useStoryProvider } from '../composables/useStoryProvider'
 import { selectSeat } from '../api/worldsim'
 import type { Role } from '../api/http'
@@ -245,7 +247,76 @@ onMounted(() => {
 onUnmounted(() => {
   story.cancel()
   queueCtl.dispose()
+  if (elapsedTimer !== undefined) clearInterval(elapsedTimer)
 })
+
+// Honest waiting state: elapsed seconds since the beat started, no
+// invented progress. The beat executes on the server whether or not this
+// page stays open.
+const elapsedS = ref(0)
+let elapsedTimer: ReturnType<typeof setInterval> | undefined
+watch(
+  () => story.advancing.value,
+  (running) => {
+    if (elapsedTimer !== undefined) {
+      clearInterval(elapsedTimer)
+      elapsedTimer = undefined
+    }
+    if (!running) {
+      elapsedS.value = 0
+      return
+    }
+    const tick = (): void => {
+      const started = story.advanceStartedAt.value
+      elapsedS.value = started ? Math.max(0, Math.round((Date.now() - started) / 1000)) : 0
+    }
+    tick()
+    elapsedTimer = setInterval(tick, 500)
+  }
+)
+const waitingIndex = computed(() => story.openRun.value?.index ?? nextIndex.value)
+
+// One card per beat (newest first), joining feed entries that share an
+// absolute index. A beat committed this session carries structured scene
+// pointers; older beats render their plain snippets, unchanged.
+interface FeedBeat {
+  index: number
+  entries: TimelineEntry[]
+}
+const feedBeats = computed<FeedBeat[]>(() => {
+  const groups = new Map<number, TimelineEntry[]>()
+  for (const entry of story.entries.value) {
+    const list = groups.get(entry.absolute_index) ?? []
+    list.push(entry)
+    groups.set(entry.absolute_index, list)
+  }
+  return [...groups.entries()]
+    .map(([index, beatEntries]) => ({ index, entries: beatEntries }))
+    .sort((a, b) => b.index - a.index)
+})
+
+const nameById = computed(() => new Map(cast.value.map((c) => [c.id, c.name])))
+function nameOf(id: string): string {
+  return nameById.value.get(id) ?? 'Someone'
+}
+
+function beatReading(beat: FeedBeat): {
+  ref?: { fallback: boolean }
+  loaded?: BeatDetailState
+  eventId?: string
+} {
+  for (const entry of beat.entries) {
+    const pointer = story.beatScenes.value[entry.event_id]
+    if (pointer) {
+      return {
+        ref: pointer,
+        loaded: story.beatDetails.value[entry.event_id],
+        eventId: entry.event_id
+      }
+    }
+  }
+  return {}
+}
 </script>
 
 <template>
@@ -293,6 +364,11 @@ onUnmounted(() => {
         :class="`play__notice--${story.notice.value.kind}`"
         role="status">
         {{ story.notice.value.text }}
+      </p>
+      <p v-if="story.advancing.value" class="play__notice" role="status">
+        Beat {{ waitingIndex }} is still running — {{ elapsedS }}s so far. The beat runs on the
+        server: leaving the page does not stop it. If the connection drops, reload and use check
+        again or resume below.
       </p>
       <div
         v-if="story.recoveryState.value === 'open' && story.openRun.value"
@@ -441,9 +517,16 @@ onUnmounted(() => {
             Nothing has happened yet — commit the first beat.
           </p>
           <ol v-else class="play__feed">
-            <li v-for="entry in [...story.entries.value].reverse()" :key="entry.event_id">
-              <span class="play__kind">{{ entry.event_type.replace(/_/g, ' ') }}</span>
-              <p v-if="entry.snippet">{{ entry.snippet }}</p>
+            <li v-for="beat in feedBeats" :key="beat.index">
+              <BeatEntry
+                :index="beat.index"
+                :entries="beat.entries"
+                :beat-ref="beatReading(beat).ref"
+                :detail-event-id="beatReading(beat).eventId"
+                :loaded="beatReading(beat).loaded"
+                :name-of="nameOf"
+                :you-id="controlledId"
+                @request-detail="story.loadBeatDetail($event)" />
             </li>
           </ol>
           <p class="play__empty" role="status">

@@ -17,8 +17,10 @@
 import { computed, reactive, ref, unref, type Ref } from 'vue'
 import type {
   ActivityView,
+  BeatView,
   MapResponse,
   RoleGrantView,
+  SceneDetail,
   StoryDetail,
   StorySetupView,
   TimelineEntry
@@ -28,6 +30,8 @@ import {
   advanceStory,
   getMap,
   getRole,
+  getSceneDetail,
+  getSceneNarration,
   getSetup,
   getSimulationStatus,
   getStory,
@@ -131,6 +135,32 @@ interface TravelOp {
   generation: number
 }
 
+/**
+ * Structured content pointers for one committed beat, captured from the
+ * advance response that committed it. Keyed by timeline event_id so the
+ * room can join feed entries to scene reads. Beats committed before this
+ * session (or while the map was unavailable) have no pointers, and their
+ * entries keep the plain snippet rendering — never a fabricated detail.
+ */
+interface BeatSceneRef {
+  index: number
+  runId: string
+  sceneIds: string[]
+  /** True when the committing response marked narration fallback. */
+  fallback: boolean
+}
+
+export interface LoadedScene {
+  detail: SceneDetail
+  narration: BeatView[]
+}
+
+export interface BeatDetailState {
+  pending: boolean
+  failed: boolean
+  scenes: LoadedScene[]
+}
+
 export function useStory(
   storyId: string | Ref<string>,
   role: Role | Ref<Role>,
@@ -151,6 +181,9 @@ export function useStory(
   const advancing = ref(false)
   const traveling = ref(false)
   const loadingMore = ref(false)
+  const advanceStartedAt = ref<number | null>(null)
+  const beatScenes = ref<Record<string, BeatSceneRef>>({})
+  const beatDetails = ref<Record<string, BeatDetailState>>({})
   const notice = ref<StoryNotice | null>(null)
   const openedFor = ref<string | null>(null)
   const openRun = ref<OpenRun | null>(null)
@@ -297,8 +330,10 @@ export function useStory(
     // A new lifecycle owns all mutation state: nothing stays pending from
     // a cancelled operation on a reused instance.
     advancing.value = false
+    advanceStartedAt.value = null
     traveling.value = false
     loadingMore.value = false
+    beatDetails.value = {}
     openRun.value = null
     recoveryState.value = 'loading'
     loading.value = true
@@ -310,6 +345,9 @@ export function useStory(
     grantLoaded.value = false
     // Frozen for this load: a route change mid-load must not retarget reads.
     const worldId = id()
+    // Reading pointers for beats committed in an earlier session survive
+    // a reload; without them those entries keep snippet rendering.
+    restoreBeatScenes(worldId)
     // Previous loads' storage reports are re-evaluated, not sticky.
     if (notice.value?.text === UNREADABLE_RECORD_TEXT) notice.value = null
     if (notice.value?.text === UNAVAILABLE_STORAGE_TEXT) notice.value = null
@@ -368,6 +406,7 @@ export function useStory(
     controller?.abort()
     controller = null
     advancing.value = false
+    advanceStartedAt.value = null
     traveling.value = false
     loadingMore.value = false
   }
@@ -520,6 +559,97 @@ export function useStory(
     return advanceInner(intents, indexOverride, undefined)
   }
 
+  function beatSceneKey(worldId: string): string {
+    return `ember-vale.beat-scenes.${worldId}`
+  }
+
+  function persistBeatScenes(worldId: string): void {
+    try {
+      storage.setItem(beatSceneKey(worldId), JSON.stringify(beatScenes.value))
+    } catch {
+      /* the map is a reading aid: without it entries keep snippets */
+    }
+  }
+
+  function restoreBeatScenes(worldId: string): void {
+    beatScenes.value = {}
+    let raw: string | null = null
+    try {
+      raw = storage.getItem(beatSceneKey(worldId))
+    } catch {
+      return
+    }
+    if (!raw) return
+    try {
+      const parsed: unknown = JSON.parse(raw)
+      if (parsed && typeof parsed === 'object') {
+        beatScenes.value = parsed as Record<string, BeatSceneRef>
+      }
+    } catch {
+      /* a corrupt map is not beat content: entries keep snippets */
+    }
+  }
+
+  function recordBeatScenes(
+    index: number,
+    runId: string | undefined,
+    scenes: Array<{ event_id: string; scene_id: string; narration?: string }> | undefined,
+    worldId: string
+  ): void {
+    if (!runId || !scenes?.length) return
+    const next = { ...beatScenes.value }
+    for (const scene of scenes) {
+      if (!scene?.event_id || !scene?.scene_id) continue
+      const prior = next[scene.event_id]
+      const sceneIds = prior && prior.runId === runId ? [...prior.sceneIds] : []
+      if (!sceneIds.includes(scene.scene_id)) sceneIds.push(scene.scene_id)
+      next[scene.event_id] = {
+        index,
+        runId,
+        sceneIds,
+        fallback: (prior?.fallback ?? false) || scene.narration === 'fallback'
+      }
+    }
+    beatScenes.value = next
+    persistBeatScenes(worldId)
+  }
+
+  /**
+   * Best-effort structured content for one feed entry. No pointer (older
+   * beat) or a failed read leaves the entry on snippet rendering — the
+   * room never invents dialogue, speakers, or fallback claims.
+   */
+  async function loadBeatDetail(eventId: string): Promise<void> {
+    const pointer = beatScenes.value[eventId]
+    if (!pointer || beatDetails.value[eventId]) return
+    const seen = cycle
+    beatDetails.value = {
+      ...beatDetails.value,
+      [eventId]: { pending: true, failed: false, scenes: [] }
+    }
+    try {
+      const scenes: LoadedScene[] = []
+      for (const sceneId of pointer.sceneIds) {
+        const [detail, narration] = await Promise.all([
+          getSceneDetail(sceneId, opts()),
+          getSceneNarration(sceneId, opts())
+        ])
+        scenes.push({ detail, narration })
+      }
+      if (seen !== cycle) return
+      beatDetails.value = {
+        ...beatDetails.value,
+        [eventId]: { pending: false, failed: false, scenes }
+      }
+    } catch {
+      if (seen !== cycle) return
+      beatDetails.value = {
+        ...beatDetails.value,
+        [eventId]: { pending: false, failed: true, scenes: [] }
+      }
+    }
+  }
+
   /**
    * Shared send path. A fresh filing freezes before the first byte (an
    * interruption ahead of server persistence must still leave the exact
@@ -533,6 +663,7 @@ export function useStory(
   ): Promise<boolean> {
     if (!detail.value || advancing.value) return false
     advancing.value = true
+    advanceStartedAt.value = Date.now()
     notice.value = null
     // Frozen operation context: every attempt below targets this world,
     // index, role and actor even if the route changes mid-request. An
@@ -602,6 +733,9 @@ export function useStory(
         // beat, never as a story-wide provider claim.
         const fallback = beatFallbackNotice(op.index, result.scenes)
         if (fallback) notice.value = { kind: 'info', text: fallback }
+        // Structured reading pointers for this beat's feed entries; a
+        // duplicate carries no fresh proof, so only fresh commits record.
+        recordBeatScenes(op.index, result.run_id, result.scenes, op.worldId)
       }
     }
     try {
@@ -683,6 +817,7 @@ export function useStory(
         await refreshStatus(op.worldId, op.generation)
       }
       advancing.value = false
+      advanceStartedAt.value = null
     }
     return alive() && appliedFresh
   }
@@ -824,6 +959,7 @@ export function useStory(
     loading,
     loadError,
     advancing,
+    advanceStartedAt,
     traveling,
     loadingMore,
     notice,
@@ -831,6 +967,9 @@ export function useStory(
     recoveryState,
     preservedSubmission,
     contenderSubmissions,
+    beatScenes,
+    beatDetails,
+    loadBeatDetail,
     load,
     cancel,
     advance,

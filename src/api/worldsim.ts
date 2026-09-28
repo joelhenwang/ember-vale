@@ -11,6 +11,7 @@
 import type {
   ActivityListResponse,
   ActivityView,
+  BeatView,
   DraftValidationView,
   EditorDraftCompleteRequest,
   EditorDraftOpenRequest,
@@ -29,6 +30,7 @@ import type {
   ProviderProfileView,
   RoleGrantView,
   RoleSelectRequest,
+  SceneDetail,
   SimulationStatus,
   Stage1AdvanceRequest,
   Stage1AdvanceResponse,
@@ -358,6 +360,21 @@ export function getTimeline(
 
 export function getMap(worldId: string, opts: CallOptions = {}): Promise<MapResponse> {
   return apiFetch<MapResponse>(`/stage2/map?world_id=${worldId}`, { ...opts, method: 'GET' })
+}
+
+/* Beat reading ------------------------------------------------------------ */
+
+export function getSceneDetail(sceneId: string, opts: CallOptions = {}): Promise<SceneDetail> {
+  // Structured beat content (intents, attempts, reactions, resolution) for
+  // the room's reading view. Perspective-scoped like every other read: pass
+  // the caller's role headers.
+  return apiFetch<SceneDetail>(`/stage1/scenes/${sceneId}`, { ...opts, method: 'GET' })
+}
+
+export function getSceneNarration(sceneId: string, opts: CallOptions = {}): Promise<BeatView[]> {
+  // Narration beats with speaker and kind (dialogue vs narration), backing
+  // the same reading view.
+  return apiFetch<BeatView[]>(`/stage1/scenes/${sceneId}/narration`, { ...opts, method: 'GET' })
 }
 
 /* Operating seats -------------------------------------------------------- */

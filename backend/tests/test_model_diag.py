@@ -319,3 +319,38 @@ def test_reasoning_only_response_names_the_shape() -> None:
     assert detail["finish_reason"] == "length"
     assert detail["content_type"] == "NoneType"
     assert detail["usage"]["reasoning_tokens"] == 512
+def test_reasoning_content_counts_as_reasoning_only() -> None:
+    """Live 2026-09-29 Venice probe shape: HTTP 200 with empty-string content,
+    chain-of-thought in `reasoning_content` (DeepSeek-R1/Venice convention),
+    finish length, and the whole budget spent. Without the convention, the
+    failure layer reports reasoning_only False with zero reasoning tokens for
+    what is plainly reasoning exhaustion."""
+    gateway = _gateway(
+        {
+            "id": "gen-venice-thinking",
+            "model": "olafangensan-glm-4.7-flash-heretic",
+            "choices": [
+                {
+                    "finish_reason": "length",
+                    "message": {
+                        "role": "assistant",
+                        "content": "",
+                        "reasoning_content": "1. Analyze the request: ...",
+                    },
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 1665,
+                "completion_tokens": 64,
+            },
+        }
+    )
+    with pytest.raises(ModelMalformedError) as caught:
+        asyncio.run(gateway.complete(_request()))
+    assert "reasoning" in str(caught.value).lower()
+    detail = caught.value.detail
+    assert detail is not None
+    assert detail["reasoning_only"] is True
+    assert detail["finish_reason"] == "length"
+    assert detail["content_type"] == "str"
+    assert detail["content_length"] == 0

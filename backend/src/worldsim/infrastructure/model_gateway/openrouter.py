@@ -36,10 +36,17 @@ def _body_capture_enabled() -> bool:
 
 
 def _has_reasoning(message: dict[str, Any]) -> bool:
-    """Whether the provider returned chain-of-thought but no message text."""
-    reasoning = message.get("reasoning")
-    if isinstance(reasoning, str) and reasoning:
-        return True
+    """Whether the provider returned chain-of-thought but no message text.
+
+    Covers the OpenRouter `reasoning`/`reasoning_details` fields and the
+    DeepSeek-R1/Venice `reasoning_content` convention: thinking that fills
+    the whole completion budget with empty content is reasoning exhaustion,
+    not an empty reply.
+    """
+    for key in ("reasoning", "reasoning_content"):
+        value = message.get(key)
+        if isinstance(value, str) and value:
+            return True
     details = message.get("reasoning_details")
     return isinstance(details, list) and bool(details)
 

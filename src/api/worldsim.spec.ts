@@ -3,6 +3,8 @@ import {
   advanceStory,
   createDraft,
   getRole,
+  getSceneDetail,
+  getSceneNarration,
   listActivities,
   publishEditorDraft,
   type CallOptions
@@ -114,5 +116,18 @@ describe('worldsim adapter bodies', () => {
     }
     responder = () => grant
     await expect(getRole('world-1', opts)).resolves.toEqual(grant)
+  })
+
+  it('reads scene detail and narration from the scene routes', async () => {
+    installFetch()
+    responder = (url) =>
+      url.endsWith('/narration')
+        ? [{ id: 'b1', kind: 'dialogue', text: 'Rain.', source_event_id: 'e1' }]
+        : { id: 'scene-1', status: 'committed' }
+    await expect(getSceneDetail('scene-1', opts)).resolves.toMatchObject({ id: 'scene-1' })
+    await expect(getSceneNarration('scene-1', opts)).resolves.toHaveLength(1)
+    expect(seen[0].url).toContain('/stage1/scenes/scene-1')
+    expect(seen[0].method).toBe('GET')
+    expect(seen[1].url).toContain('/stage1/scenes/scene-1/narration')
   })
 })
