@@ -32,8 +32,10 @@
  * local scratch instance the harness itself starts (an occupied scratch
  * port is refused), the fake provider is proven before any mutation, the
  * browser proxy is proven to reach that same instance, only verified
- * scratch processes are terminated, and owned servers are stopped in
- * `finally`. Exit non-zero on any failed step; results are still written.
+ * scratch processes are terminated, and the whole owned-process
+ * lifecycle — from `startApi()` through browser cleanup — runs under one
+ * outer try/finally. Exit non-zero on any failed step; results are still
+ * written.
  */
 
 import { execSync, spawn } from 'node:child_process'
@@ -51,6 +53,10 @@ const opt = (name, fallback) => {
 const BASE = opt('--base', 'http://127.0.0.1:5174')
 const API = opt('--api', 'http://127.0.0.1:8102')
 const OUT = opt('--out', 'docs/evidence/recovery')
+// Self-test hook only: `--fail-at proxy` throws right after API startup
+// (at proxy verification) to prove the owned-process lifecycle still
+// stops the API and retains the failure report. Never used for real runs.
+const FAIL_AT = opt('--fail-at', '')
 const KEY = process.env.RECOVERY_API_KEY || ''
 const ROOT = opt('--root', process.cwd())
 const PYTHON = path.join(ROOT, 'backend', '.venv', 'Scripts', 'python.exe')
@@ -377,22 +383,24 @@ async function readRunIntents(runId) {
   return out
 }
 
-async function main() {
-  // The harness starts and owns its API: validate isolation first, refuse
-  // an occupied scratch port, then prove the fake provider — all before
-  // any mutation. No pre-existing process is ever adopted or killed.
-  requireScratchDbUrl(loadDotEnv().WORLDSIM_DATABASE__URL)
-  if (findApiPid()) throw new Error('refusing: scratch port 8102 already occupied')
-  killPid = startApi()
+async function runScenario() {
+  // Everything the owned API serves runs here, under main()'s outer
+  // try/finally: readiness, fake-profile proof, seeding, proxy proof,
+  // browser startup, and browser cleanup. Any throw below still stops
+  // the owned process. No pre-existing process is ever adopted or killed.
   await waitHealthy()
   await requireFakeProfile()
   const worldId = await seedPlayerStory()
   record('player story seeded on scratch API', true, `world ${worldId.slice(0, 8)}`)
   await requireProxySameInstance(worldId)
   record('browser proxy reaches the same scratch instance', true, `world ${worldId.slice(0, 8)}`)
+  if (FAIL_AT === 'proxy') {
+    throw new Error('injected proxy-verification failure (--fail-at=proxy)')
+  }
 
-  const browser = await chromium.launch({ executablePath: EDGE, headless: true })
+  let browser
   try {
+    browser = await chromium.launch({ executablePath: EDGE, headless: true })
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
     const page = await ctx.newPage()
     watchAdvances(page)
@@ -640,7 +648,29 @@ async function main() {
     await ctx.close()
     writeResults({ committedIntents: committedSources })
   } finally {
-    await browser.close()
+    // Browser cleanup must never skip API cleanup: stop the browser if
+    // it started, then the owned API — with main()'s outer finally as
+    // the second net if browser cleanup itself throws.
+    try {
+      if (browser) await browser.close()
+    } finally {
+      stopOwnedApi()
+    }
+  }
+}
+
+async function main() {
+  // Own the scratch API for the whole run: validate isolation first,
+  // refuse an occupied scratch port, then start the single owned
+  // instance. Everything after — including browser startup and browser
+  // cleanup — runs under one outer try/finally, so the owned process is
+  // always stopped, even on early failure.
+  requireScratchDbUrl(loadDotEnv().WORLDSIM_DATABASE__URL)
+  if (findApiPid()) throw new Error('refusing: scratch port 8102 already occupied')
+  killPid = startApi()
+  try {
+    await runScenario()
+  } finally {
     stopOwnedApi()
   }
 }
