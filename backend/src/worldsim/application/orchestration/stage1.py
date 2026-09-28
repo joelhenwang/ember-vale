@@ -1884,6 +1884,13 @@ class Stage1Orchestrator:
         narration = await self._narrate_scene(
             world_id, run_id, scene, result.event_id, quiet, over_budget, runtime=runtime
         )
+        if narration != "skipped":
+            # "skipped" means beats already existed, so the original
+            # source is unknown: never downgrade a stored status to it.
+            # First-write-wins in save_narration_status guards resumes.
+            async with self._factory() as uow:
+                await uow.scenes.save_narration_status(scene.id, narration)
+                await uow.commit()
         if resolution.outcome == ResolutionOutcome.SUCCESS:
             await self._settle_scene_verbs(world_id, run_id, index, scene, members, result.event_id)
         return SceneOutcome(
@@ -2646,12 +2653,19 @@ class Stage1Orchestrator:
                 assert stored.event_id is not None
                 resolution = await uow.scenes.get_resolution(scene.id)
                 beats = await uow.scenes.narrations_for_event(stored.event_id)
+                if not beats:
+                    narration = "missing"
+                elif stored.narration_status is not None:
+                    narration = stored.narration_status
+                else:
+                    # Legacy rows predate the record: source unknown.
+                    narration = "unknown"
                 outcomes.append(
                     SceneOutcome(
                         scene_id=scene.id,
                         event_id=stored.event_id,
                         resolution_outcome=resolution.outcome.value,
-                        narration="narrated" if beats else "missing",
+                        narration=narration,
                     )
                 )
         return Stage1PhaseReport(

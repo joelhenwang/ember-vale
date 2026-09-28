@@ -5,72 +5,118 @@ Pin: deepseek `deepseek-v4-flash-0731` rev10 (profile
 validation-story session. Harness: `scripts/reliability-baseline.mjs`
 (4-advance scenario + reload reads, `--no-browser`), extended with reusable
 `--setup-only` / `--world` flags (measurement untouched). Stop-on-unresolved
-held in both runs.
+held in both runs. Deployed build for run B: image
+`sha256:e65cb63952ac3da9e7209eae788e201d83a20ed2b6df78facd3eb08a0f19dcec`
+(code import-checked in-container; alembic head `0039` on the live DB).
 
-## Run A — stale code (story 4287abb1, invalid as experiment, kept as control)
+## Reconciliation (read-only row evidence, supersedes earlier clock reads)
 
-The API container was running a 3-day-old image without the structured-mode
-change (uncommitted working tree, no source mount). The verified
-`narration.mode=structured` flag was therefore ignored. Findings still valid
-as main-line behavior on this pin:
+`phase_run.state` and `task_run.state` are authoritative. The story
+`absolute_index` clock ticks at the *next* advance's start, so it lags one
+beat behind completion by design — clock readings do not establish commit
+state. Corrected record:
 
-- Beat 1 travel: 47s wall, committed, retrieval complete. Calls: director
-  18.5s + 2.6s, character 5.7s + 25.0s, all succeeded. Narration `fallback`
-  via the quiet path (no narrator call either way).
-- Beat 2 question: client transport timeout at 180s (character 112.5s +
-  reaction 27.3s + resolver 28.3s + narrator 16.6s ≈ 184s+). Halt rule fired
-  correctly: follow-up + ordinary advance blocked, no retry, resolution
-  recorded `unresolved`.
-- Server-side post-timeout: the beat ran to completion — Ash answered
-  ("Dawn bell means the market's waking..."), scene committed to the
-  timeline, narrator call failed `malformed` (reasoning 4096/4096,
-  `finish=length`) in 16.6s, fallback beats persisted. Story clock stayed at
-  index 2, so the run's final phase state is unconfirmed from the client
-  side; the committed scene event itself is in the timeline.
-- Provider variance note: this narrator failure took 16.6s vs 62–137s for
-  the same signature in the validation session.
+- Run A (story 4287abb1, idx1 + idx2): **both runs `completed`**,
+  execution tasks `succeeded`, owners released. No open rows. The "two open
+  run rows" statement in the prior draft was wrong.
+- Run B (story 002208e2, idx1): **run `completed`** 236s after creation,
+  execution task `succeeded`. The "stalled worker" was a misread: the
+  deterministic `impossible` resolution needs no resolver call, so no
+  missing trace implies no missing invocation — the precise stopping point
+  was phase completion all along.
+- Committed scenes vs completed phases: run A idx1: 2 scenes committed
+  (resolutions `impossible`); run A idx2: 1 scene committed (resolution
+  `success`, Ash reaction committed, Ash DIALOGUE beat with citation
+  persisted); run B idx1: 1 scene committed (resolution `impossible`,
+  4 fallback beats persisted, **zero narrator calls traced** — with the
+  flag set, no roster, non-quiet intents (wait+observe), and no over-budget
+  state, the structured branch is the only no-call path: it executed live).
+- DB waits/locks: connections idle, zero ungranted locks. No checkpointer
+  tables exist (graphs persist task checkpoints as `model_call` started/
+  succeeded rows plus `task_run` rows, all present and terminal).
+- Client timeout, task cancellation, and worker death are separate cases:
+  there is no evidence of cancellation or death — completions at 185s and
+  236s prove the workers stayed alive through both 180s client timeouts.
+  The demonstrated gap is client cap (180s) vs server reality (185–236s):
+  slow beats read `unresolved` client-side while committing server-side.
 
-## Run B — structured code live (story 002208e2, flag verified)
+## Run A — EXCLUDED stale-build run, not a baseline
 
-Rebuilt the API image from the working tree, restarted, verified
-`NARRATION_MODE_KEY` imports in the live container. Fresh story, flag
-verified `narration.mode='structured'` via read-back.
+The API ran a 3-day-old image without the experiment code, so the verified
+flag was ignored. Observations preserved below; none of them feed any
+calculation of the intervention's effect (that rests solely on the
+deterministic controlled measurement):
 
-- Beat 1 travel: client transport timeout at 180s; halt rule blocked the
-  remaining three beats. Traced so far: director 10.8s + 23.6s, character
-  26.4s + 41.6s (all succeeded), reaction 65.0s FAILED (`malformed`,
-  reasoning 4097/4096) then reaction retry SUCCEEDED after 95.2s
-  (comp 3298, reasoning 3234).
-- Zero narrator calls traced (the beat never reached narration). No
-  conclusion on narrator latency yet — the blocker is upstream.
-- The beat then stalled: no new traced row for 10+ minutes after the
-  successful reaction (no resolver invocation began), clock still at 1, no
-  error or traceback in container logs, API reads healthy. Indistinguishable
-  from outside whether the worker is hung or awaiting an untraced step.
+- Beat 1 travel: 47s wall, committed, retrieval complete (director 18.5s +
+  2.6s, character 5.7s + 25.0s, all succeeded; quiet-path fallback).
+- Beat 2 question: client timeout at 180s; server completed at ~185s (scene
+  committed, Ash answered, narrator failed `malformed` in 16.6s, fallback
+  beats persisted). Halt rule fired correctly; no retry.
+- Narrator failure latency varies by run (16.6s here vs 62–137s in the
+  validation session) — provider variance observation only.
 
-## Outcome
+## Run B — structured code live
 
-The core question — a live structured-mode beat completing with status
-`structured` and zero narrator calls — is unanswered. After the reaction
-retry succeeded, no new traced row appeared for 20+ minutes (no resolver
-invocation began), clock stayed at 1, no error or traceback in container
-logs, API reads healthy throughout. The worker is stuck or dead without a
-trace; the run row for index 1 remains open.
+- Beat 1 travel: client timeout at 180s; server completed at ~236s
+  (directors 10.8s + 23.6s, characters 26.4s + 41.6s overlapping via the
+  existing gather fan-out, reaction 65.0s failed + 95.2s retry succeeded
+  with 3234 reasoning tokens, deterministic `impossible` resolution, scene
+  committed, 4 beats persisted, zero narrator calls). Halt rule blocked the
+  remaining three beats; no retry launched.
+- With the flag verified set and the structured branch the only applicable
+  no-call path, the live datum is positive on attribution mechanics
+  (committed facts voiced, zero narrator time) but the beat still took
+  236s: structured mode removes only the narrator call at the end of the
+  chain, and nothing upstream changed.
 
-Contributors, owned and observed:
+## Spend accounting (recorded, not "beats worth")
 
-1. Stale-image error (owned): the first run executed pre-experiment code.
-   Fixed by rebuild + restart + in-container import check.
-2. Provider degradation upstream of narration (observed): 65–95s reaction
-   calls with 3200–4100 reasoning tokens on deepseek rev10 today, vs 4–74s
-   in earlier arms. Structured mode cannot shorten any of this — it only
-   removes the narrator call at the end of the chain.
-3. Silent stall post-reaction (observed, unexplained): no resolver row, no
-   error. Needs diagnosis before any retry, not more spend.
+Per-call USD from `model_cost` (`pricing s3-prov-v1`, all `estimated=true`;
+reasoning-token billing treatment unknown; failed calls have no cost rows):
 
-No further advances launched under the halt; a retry now would face the
-open index-1 run row plus degraded provider conditions. Recommendation:
-diagnose the post-reaction stall (candidate: worker fate after client
-disconnect; resolver-graph invocation tracing) on the deterministic suite
-first, then re-attempt the live run when the provider is responsive.
-Usability milestone remains open.
+| Run | Calls with costs | Prompt+completion USD |
+|---|---|---|
+| A idx1 | director x2, character x2 | 0.0142 |
+| A idx2 | character, reaction, resolver (narrator failed: unrecorded) | 0.0289 |
+| B idx1 | director x2, character x2, reaction retry (first reaction failed: unrecorded) | 0.0302 |
+| Recorded total | | **≈ $0.073** |
+
+Failed-call usage is known in tokens from traces (A narrator: 1113 prompt /
+4096 completion; B reaction: 2856 / 4096) but has no USD rows; at the
+inferred estimated rates ($1.00/1M prompt, $3.00/1M completion, derived from
+the recorded rows — not billed rates) that is ≈ $0.013 + $0.015 ≈ $0.028
+additional estimated, ≈ $0.10 all-in estimated. Billed cost and remaining
+allowance are unknown (no billing access).
+
+## Recovery proof (fixed build, zero spend)
+
+Diagnosis found a reporting defect in the recovery path itself:
+`_duplicate_report` labeled any scene with beats as `narrated`, mislabeling
+structured/fallback replays as model narration. Fixed by persisting the
+`_narrate_scene` outcome on the scene row (migration
+`0039_scene_narration_status`, nullable; first-write-wins so resumes never
+downgrade to `skipped`) and replaying the stored status; legacy NULL rows
+replay as `unknown`. Backend regressions added (stored structured/model/
+fallback replay verbatim; legacy replays `unknown` with beats intact).
+
+Live proof on the fixed build, both runs, normal path, no row edits:
+
+- B idx1 replay: `duplicate=true`, narration `unknown` (legacy row),
+  resolution/attribution intact.
+- A idx2 replay: `duplicate=true`, narration `unknown`, resolution
+  `success`, Wren's communicate intent preserved verbatim
+  ("What did the market bell mean at dawn?").
+- No new canon: world events still 7 (A) / 4 (B) with identical timestamps;
+  traced call counts unchanged (4 / 6); story clock unmoved. Zero model
+  calls issued by either replay.
+
+## Standing gates
+
+- Before any future paid run: verify build identity by image digest (not
+  just an import check) and run a zero-spend smoke test against that
+  deployed build which actually reaches narration and returns `structured`.
+- Do not gate on waiting for provider responsiveness: first the stall
+  question is closed (no stall occurred), and the live decision is now
+  upstream-call cost, which structured narration does not address.
+- Structured narration remains experimental; the usability milestone
+  stays open.

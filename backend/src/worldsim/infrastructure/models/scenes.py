@@ -104,6 +104,7 @@ class SceneRow(Base):
     )
     status: Mapped[str] = mapped_column(String(32), default="proposed")
     beat_budget: Mapped[int] = mapped_column(Integer, default=8)
+    narration_status: Mapped[str | None] = mapped_column(String(16), nullable=True)
     event_id: Mapped[uuid.UUID | None] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("world_event.id", name="fk_scene_event"),

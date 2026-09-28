@@ -154,6 +154,7 @@ class Scene(BaseModel):
     beat_budget: int = Field(default=8, ge=1, le=64)
     resolution_id: ResolutionId | None = None
     event_id: EventId | None = None
+    narration_status: str | None = None
     created_at: AwareDatetime = Field(default_factory=utcnow)
     updated_at: AwareDatetime = Field(default_factory=utcnow)
 

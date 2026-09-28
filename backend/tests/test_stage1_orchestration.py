@@ -12,6 +12,7 @@ from typing import Any
 from uuid import UUID
 
 import pytest
+from sqlalchemy import text as sql_text
 
 from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
 from worldsim.application.orchestration.stage1 import Stage1Orchestrator
@@ -1220,5 +1221,142 @@ def test_structured_mode_saves_delayed_narrator_time(migrated_db: None) -> None:
         dialogue = [b for b in beats if b.kind == NarrationKind.DIALOGUE]
         assert len(dialogue) == 1
         assert dialogue[0].speaker_id == ids_b["ash"]
+
+    asyncio.run(_inner())
+
+
+async def _stored_narration_statuses(report: Any) -> list[str | None]:
+    engine = create_engine(Settings())
+    try:
+        async with create_unit_of_work(engine) as uow:
+            return [
+                (await uow.scenes.get_scene(outcome.scene_id)).narration_status
+                for outcome in report.scenes
+            ]
+    finally:
+        await engine.dispose()
+
+
+async def _null_stored_narration_statuses(report: Any) -> None:
+    """Simulate legacy scene rows that predate the narration-status record."""
+    engine = create_engine(Settings())
+    try:
+        async with engine.connect() as conn:
+            for outcome in report.scenes:
+                await conn.execute(
+                    sql_text("UPDATE scene SET narration_status = NULL WHERE id = :id"),
+                    {"id": outcome.scene_id},
+                )
+            await conn.commit()
+    finally:
+        await engine.dispose()
+
+
+async def _canon_counts(ids: dict[str, UUID], run_id: UUID) -> tuple[int, int]:
+    engine = create_engine(Settings())
+    try:
+        async with create_unit_of_work(engine) as uow:
+            return (
+                await uow.events.count_events(ids["world"]),
+                len(await uow.traces.list_for_phase_run(run_id)),
+            )
+    finally:
+        await engine.dispose()
+
+
+def test_duplicate_replay_returns_stored_structured_status(
+    migrated_db: None,
+) -> None:
+    """Duplicate replays report the recorded source, never infer narrated."""
+    async def _inner() -> None:
+        ids = await _seed()
+        await _set_grant(ids, "player", ids["wren"])
+        await _set_narration_mode(ids, "structured")
+        gateways = _agency_gateways(ids)
+        first = await _orchestrator(gateways).advance_phase(
+            ids["world"], 1, _wren_ask(ids)
+        )
+        assert not first.duplicate
+        assert first.scenes
+        assert all(s.narration == "structured" for s in first.scenes)
+        stored = await _stored_narration_statuses(first)
+        assert stored and all(s == "structured" for s in stored)
+        before = await _canon_counts(ids, first.run_id)
+        replay = await _orchestrator(gateways).advance_phase(ids["world"], 1)
+        assert replay.duplicate
+        assert [s.narration for s in replay.scenes] == [
+            s.narration for s in first.scenes
+        ]
+        assert await _canon_counts(ids, first.run_id) == before
+
+    asyncio.run(_inner())
+
+
+def test_duplicate_replay_returns_stored_model_and_fallback_statuses(
+    migrated_db: None,
+) -> None:
+    """Recorded narrated/fallback sources replay verbatim, not as narrated."""
+    from worldsim.application.ports.model_gateway import ModelUnavailableError
+
+    async def _inner() -> None:
+        ids = await _seed()
+        await _set_grant(ids, "player", ids["wren"])
+        gateways = _agency_gateways(ids)
+        first = await _orchestrator(gateways).advance_phase(
+            ids["world"], 1, _wren_ask(ids)
+        )
+        assert not first.duplicate
+        assert gateways["narrator"].calls != []
+        stored = await _stored_narration_statuses(first)
+        assert stored and all(s in ("narrated", "fallback") for s in stored)
+        replay = await _orchestrator(gateways).advance_phase(ids["world"], 1)
+        assert replay.duplicate
+        assert [s.narration for s in replay.scenes] == [
+            s.narration for s in first.scenes
+        ]
+
+        broken_ids = await _seed()
+        await _set_grant(broken_ids, "player", broken_ids["wren"])
+        broken_gateways = _agency_gateways(broken_ids)
+        broken_gateways["narrator"].enqueue_error(ModelUnavailableError("down"))
+        broken_gateways["narrator"].enqueue_error(ModelUnavailableError("down"))
+        broken_gateways["narrator"].default_text = None
+        broken = await _orchestrator(broken_gateways).advance_phase(
+            broken_ids["world"], 1, _wren_ask(broken_ids)
+        )
+        assert not broken.duplicate
+        assert all(s.narration == "fallback" for s in broken.scenes)
+        broken_stored = await _stored_narration_statuses(broken)
+        assert broken_stored and all(s == "fallback" for s in broken_stored)
+        broken_replay = await _orchestrator(broken_gateways).advance_phase(
+            broken_ids["world"], 1
+        )
+        assert broken_replay.duplicate
+        assert all(s.narration == "fallback" for s in broken_replay.scenes)
+
+    asyncio.run(_inner())
+
+
+def test_duplicate_replay_reports_unknown_for_legacy_rows(
+    migrated_db: None,
+) -> None:
+    """Rows predating the record replay as unknown, with beats intact."""
+    async def _inner() -> None:
+        ids = await _seed()
+        await _set_grant(ids, "player", ids["wren"])
+        await _set_narration_mode(ids, "structured")
+        gateways = _agency_gateways(ids)
+        first = await _orchestrator(gateways).advance_phase(
+            ids["world"], 1, _wren_ask(ids)
+        )
+        assert not first.duplicate
+        before_texts = [(b.kind.value, b.text) for b in await _beats_for_report(first)]
+        assert before_texts
+        await _null_stored_narration_statuses(first)
+        replay = await _orchestrator(gateways).advance_phase(ids["world"], 1)
+        assert replay.duplicate
+        assert all(s.narration == "unknown" for s in replay.scenes)
+        after_texts = [(b.kind.value, b.text) for b in await _beats_for_report(first)]
+        assert after_texts == before_texts
 
     asyncio.run(_inner())

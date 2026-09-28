@@ -10,7 +10,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from pydantic import TypeAdapter
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from worldsim.domain.commands import ActionIntent
@@ -170,6 +170,20 @@ class SqlAlchemySceneRepository:
         )
         await self._session.flush()
 
+    async def save_narration_status(self, scene_id: UUID, status: str) -> None:
+        """Record the narration outcome once; never overwrite a stored one.
+
+        First-write-wins keeps a resumed commit from downgrading a known
+        status (e.g. ``narrated``) to ``skipped``.
+        """
+        await self._session.execute(
+            update(SceneRow)
+            .where(SceneRow.id == scene_id)
+            .where(SceneRow.narration_status.is_(None))
+            .values(narration_status=status)
+        )
+        await self._session.flush()
+
     async def get_attempt(self, attempt_id: UUID) -> Attempt:
         row = await self._session.get(AttemptRow, attempt_id)
         if row is None:
@@ -249,6 +263,7 @@ class SqlAlchemySceneRepository:
             ],
             intent_ids=await self._intent_ids_for_scene(row.id),
             beat_budget=row.beat_budget,
+            narration_status=row.narration_status,
             resolution_id=None,
             event_id=row.event_id,
         )

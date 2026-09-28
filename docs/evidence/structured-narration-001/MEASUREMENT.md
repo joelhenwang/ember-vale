@@ -69,10 +69,13 @@ roster deferral, delayed saving); 1 new classify case in
 narration-graph + timeout-recovery 22/22, harness spec 19/19, `ruff check`
 clean.
 
-## Bounded live run (pending spend confirmation)
+## Bounded live run (executed; see structured-narration-live/LIVE-001.md)
 
-Fresh starter-scenario story seeded with `narration.mode=structured` via
-bundle config; short harness scenario, not a 10-beat session. Compare
+Two short harness runs against deepseek rev10 (story 4287abb1 stale-build
+excluded; story 002208e2 on the fixed build). Core live datum: the
+structured branch executed (zero narrator calls, beats persisted) but beats
+took 185–236s on upstream calls. Duplicate-report inference fixed via
+migration 0039 with live recovery proof. Compare
 attribution/persistence correctness, answer occurrence, per-beat waits,
 failures, and unresolved outcomes separately — not equal spoken-line counts
 (upstream reactions vary), and historical walls are reference only. Success
