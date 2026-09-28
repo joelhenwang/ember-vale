@@ -2,7 +2,7 @@
 import { computed, onMounted, watch } from 'vue'
 import type { TimelineEntry } from '../../../content/clients/worldsim'
 import type { BeatDetailState } from '../../composables/useStory'
-import { readScene, sceneCitations, type ReadingBlock, type ScenePointer } from './beatReading'
+import { readScene, sceneCitations, type ScenePointer, type TopicRecord } from './beatReading'
 
 const props = defineProps<{
   index: number
@@ -46,11 +46,14 @@ function paragraphs(text: string): string[][] {
     .filter((lines) => lines.length > 0)
 }
 
-function topicLine(block: Extract<ReadingBlock, { type: 'topic' }>): string {
-  const speaker = displayName(block.speakerId)
-  const about = `about ${block.topic}`
-  if (!block.targetId) return `${speaker} · ${about}`
-  return `${speaker} → ${displayName(block.targetId)} · ${about}`
+/**
+ * A supplementary topic as a verbatim record: quotation marks preserved
+ * as written, never presented as speech, never a commitment claim.
+ */
+function recordLine(record: TopicRecord): string {
+  const speaker = displayName(record.speakerId)
+  const whom = record.targetId ? `${speaker} → ${displayName(record.targetId)}` : speaker
+  return record.quoted ? `${whom} · ${record.topic}` : `${whom} · topic: ${record.topic}`
 }
 
 type Segment = { kind: 'rich'; pointer: ScenePointer } | { kind: 'legacy'; entry: TimelineEntry }
@@ -126,7 +129,6 @@ function eventSnippets(eventId: string): TimelineEntry[] {
                   </template>
                 </div>
               </div>
-              <p v-else-if="block.type === 'topic'" class="beat__topic">{{ topicLine(block) }}</p>
               <template v-else>
                 <template v-for="para in paragraphs(block.text)" :key="para.join('|')">
                   <p class="beat__text">
@@ -146,13 +148,18 @@ function eventSnippets(eventId: string): TimelineEntry[] {
                   }})
                 </li>
               </ul>
-              <p v-if="readScene(scene.detail, scene.narration).attempted.length">
-                <template
-                  v-for="at in readScene(scene.detail, scene.narration).attempted"
-                  :key="at.speakerId + at.text">
-                  {{ displayName(at.speakerId) }} tried to say {{ at.text }} — not committed.
-                </template>
-              </p>
+              <template v-if="readScene(scene.detail, scene.narration).records.length">
+                <p class="beat__records-head">
+                  Communication records (topics as filed — not speech):
+                </p>
+                <ul>
+                  <template
+                    v-for="record in readScene(scene.detail, scene.narration).records"
+                    :key="record.speakerId + record.topic">
+                    <li>{{ recordLine(record) }}</li>
+                  </template>
+                </ul>
+              </template>
               <p v-if="scene.detail.resolution">
                 Outcome {{ scene.detail.resolution.outcome }} · resolver
                 {{ scene.detail.resolution.resolver }}.
@@ -223,11 +230,10 @@ function eventSnippets(eventId: string): TimelineEntry[] {
   margin: 0 0 6px;
   line-height: 1.5;
 }
-.beat__topic {
-  margin: 0 0 6px;
-  line-height: 1.5;
+.beat__records-head {
+  margin: 6px 0 2px;
+  font-size: 13px;
   color: #6b5d43;
-  font-style: italic;
 }
 .beat__kind {
   font-size: 12px;

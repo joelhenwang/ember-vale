@@ -1,18 +1,15 @@
 /**
  * Pure reading helpers for the room's beat cards (no Vue, no fetches).
  *
- * The established quotation and commitment rules live here so they are
- * covered by deterministic fixtures:
- *
- * - Persisted DIALOGUE beats are speech. Nothing else speaks on its own.
- * - A `communicate` topic is a topic, not an utterance: unquoted topics
- *   render as summaries, never as speaker-labelled dialogue.
- * - A quoted topic counts as quoted speech only when the beat's
- *   resolution committed it (`outcome === 'success'`). Quoted but
- *   uncommitted utterance is an attempt, rendered with the technical
- *   detail — never in the dialogue flow.
- * - Intent/reaction `detail` may be redacted for the viewer (null): then
- *   there is no topic to render at all.
+ * The attribution rule lives here so it is covered by deterministic
+ * fixtures: spoken lines come from persisted DIALOGUE beats only. Scene
+ * resolution outcome never proves an individual utterance committed —
+ * the backend's commitment check reads the reaction's own status, which
+ * the scene API does not expose — so no speech (and no "not committed")
+ * is ever inferred from the outcome. Supplementary intent/reaction
+ * topics stay verbatim records in Beat details, quoted or not.
+ * Intent/reaction `detail` may be redacted for the viewer (null): then
+ * there is no topic to render at all.
  */
 import type { BeatView, SceneDetail } from '../../../content/clients/worldsim'
 
@@ -76,63 +73,50 @@ export function communicateTopics(detail: SceneDetail): CommunicateTopic[] {
 }
 
 export type ReadingBlock =
-  /** Voiced line: persisted DIALOGUE beat, or quoted topic on a committed beat. */
-  | { type: 'say'; speakerId: string | null; text: string; quoted: boolean }
-  /** Communication summary: an unquoted topic. Never presented as speech. */
-  | { type: 'topic'; speakerId: string; targetId: string | null; topic: string }
+  /** Voiced line from a persisted DIALOGUE beat — the only speech source. */
+  | { type: 'say'; speakerId: string | null; text: string }
   /** Narration prose, in stored order. */
   | { type: 'prose'; text: string }
 
-export interface AttemptedSpeech {
+export interface TopicRecord {
   speakerId: string
-  text: string
+  targetId: string | null
+  topic: string
+  quoted: boolean
 }
 
 export interface SceneReading {
   /** Dialogue and prose in the stored narration order (never grouped). */
   blocks: ReadingBlock[]
-  /** Quoted topics on beats that did not commit: attempts, not speech. */
-  attempted: AttemptedSpeech[]
+  /**
+   * Verbatim communicate topics for Beat details. Quotation marks are
+   * preserved as written, but no speech — and no commitment claim in
+   * either direction — is inferred: the resolution outcome does not prove
+   * an individual utterance committed.
+   */
+  records: TopicRecord[]
 }
 
 /**
- * Blocks for one scene. Dialogue beats speak; supplementary topics fill in
- * only when nothing was voiced, and then only under the quotation and
- * commitment rules above.
+ * Blocks for one scene. Only persisted DIALOGUE beats speak; topics are
+ * records regardless of quotation or outcome.
  */
 export function readScene(detail: SceneDetail, narration: BeatView[]): SceneReading {
   const blocks: ReadingBlock[] = []
   for (const beat of narration) {
     if (beat.kind === 'dialogue') {
-      blocks.push({
-        type: 'say',
-        speakerId: beat.speaker_id ?? null,
-        text: beat.text,
-        quoted: false
-      })
+      blocks.push({ type: 'say', speakerId: beat.speaker_id ?? null, text: beat.text })
     } else if (!isAttemptRecord(beat.text ?? '')) {
       blocks.push({ type: 'prose', text: beat.text })
     }
   }
-  const attempted: AttemptedSpeech[] = []
-  if (!blocks.some((b) => b.type === 'say')) {
-    const committed = detail.resolution?.outcome === 'success'
-    for (const topic of communicateTopics(detail)) {
-      if (topic.quoted && committed) {
-        blocks.push({ type: 'say', speakerId: topic.speakerId, text: topic.topic, quoted: true })
-      } else if (topic.quoted) {
-        attempted.push({ speakerId: topic.speakerId, text: topic.topic })
-      } else {
-        blocks.push({
-          type: 'topic',
-          speakerId: topic.speakerId,
-          targetId: topic.targetId,
-          topic: topic.topic
-        })
-      }
-    }
-  }
-  return { blocks, attempted }
+  const records: TopicRecord[] = communicateTopics(detail).map((topic) => ({
+    speakerId: topic.speakerId,
+    targetId: topic.targetId,
+    topic: topic.topic,
+    quoted: topic.quoted
+  }))
+  return { blocks, records }
 }
 
 export interface ScenePointer {

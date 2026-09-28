@@ -1,8 +1,8 @@
 /**
- * Deterministic fixtures for the room's quotation and commitment rules.
- * Shapes mirror the live envelopes: Venice/deepseek narration beats,
- * communicate intent/reaction details (quoted, unquoted, redacted), and
- * resolution outcomes.
+ * Deterministic fixtures for the room's attribution rule: spoken lines
+ * come from persisted DIALOGUE beats only. Scene resolution outcome never
+ * proves an individual utterance committed, so no speech — and no "not
+ * committed" — is inferred from it. Shapes mirror the live envelopes.
  */
 import { describe, expect, it } from 'vitest'
 import type { BeatView, SceneDetail } from '../../../content/clients/worldsim'
@@ -58,59 +58,62 @@ function communicateIntent(
   }
 }
 
-describe('beatReading quotation rules', () => {
-  it('never presents an unquoted topic as dialogue', () => {
+describe('beatReading attribution', () => {
+  it('a quoted intent plus scene success does not manufacture dialogue', () => {
+    const reading = readScene(
+      scene({ intents: [communicateIntent('"Dawn bell means buyers."')] }),
+      [beat('narration', 'Rain on the stones.')]
+    )
+    expect(reading.blocks.filter((b) => b.type === 'say')).toHaveLength(0)
+    expect(reading.blocks.map((b) => b.type)).toEqual(['prose'])
+    expect(reading.records).toEqual([
+      { speakerId: WREN, targetId: ASH, topic: '"Dawn bell means buyers."', quoted: true }
+    ])
+  })
+
+  it('persisted dialogue stays visible with failure/impossible outcomes', () => {
+    for (const outcome of ['failure', 'impossible']) {
+      const reading = readScene(
+        scene(
+          { intents: [communicateIntent('Market stalls')] },
+          { outcome, rationale: 'no', resolver: 'model' }
+        ),
+        [beat('dialogue', 'Stalls open at dawn.', ASH)]
+      )
+      expect(reading.blocks).toContainEqual({
+        type: 'say',
+        speakerId: ASH,
+        text: 'Stalls open at dawn.'
+      })
+    }
+  })
+
+  it('missing narration causes no commitment claim either way', () => {
+    const reading = readScene(scene({ intents: [communicateIntent('"Hello?"')] }, null), [])
+    expect(reading.blocks).toHaveLength(0)
+    expect(reading.records).toEqual([
+      { speakerId: WREN, targetId: ASH, topic: '"Hello?"', quoted: true }
+    ])
+  })
+
+  it('unquoted topics stay records, never speaker-labelled dialogue', () => {
     const reading = readScene(scene({ intents: [communicateIntent('Market stalls')] }), [
       beat('narration', 'Rain on the stones.')
     ])
     expect(reading.blocks.filter((b) => b.type === 'say')).toHaveLength(0)
-    expect(reading.blocks).toContainEqual({
-      type: 'topic',
-      speakerId: WREN,
-      targetId: ASH,
-      topic: 'Market stalls'
-    })
-    expect(reading.attempted).toHaveLength(0)
-  })
-
-  it('renders a quoted topic as speech only on a committed beat', () => {
-    const reading = readScene(
-      scene({ intents: [communicateIntent('"Dawn bell means buyers. Wall."')] }),
-      []
-    )
-    expect(reading.blocks).toContainEqual({
-      type: 'say',
-      speakerId: WREN,
-      text: '"Dawn bell means buyers. Wall."',
-      quoted: true
-    })
-  })
-
-  it('treats quoted topics on failed beats as attempts, not speech', () => {
-    const reading = readScene(
-      scene(
-        { intents: [communicateIntent('"You never listen."')] },
-        { outcome: 'failure', rationale: 'blocked', resolver: 'model' }
-      ),
-      []
-    )
-    expect(reading.blocks.filter((b) => b.type === 'say')).toHaveLength(0)
-    expect(reading.attempted).toEqual([{ speakerId: WREN, text: '"You never listen."' }])
-  })
-
-  it('treats quoted topics without a resolution as attempts', () => {
-    const reading = readScene(scene({ intents: [communicateIntent('"Hello?"')] }, null), [])
-    expect(reading.blocks.filter((b) => b.type === 'say')).toHaveLength(0)
-    expect(reading.attempted).toHaveLength(1)
+    expect(reading.records).toEqual([
+      { speakerId: WREN, targetId: ASH, topic: 'Market stalls', quoted: false }
+    ])
   })
 
   it('renders nothing for redacted (perspective-hidden) detail', () => {
     const reading = readScene(scene({ intents: [communicateIntent(null)] }), [])
     expect(reading.blocks).toHaveLength(0)
+    expect(reading.records).toHaveLength(0)
     expect(communicateTopics(scene({ intents: [communicateIntent(null)] }))).toHaveLength(0)
   })
 
-  it('prefers voiced dialogue and skips the duplicate intent summary', () => {
+  it('prefers voiced dialogue and skips no duplicate intent summary', () => {
     const reading = readScene(
       scene({
         reactions: [
@@ -125,7 +128,8 @@ describe('beatReading quotation rules', () => {
       [beat('dialogue', 'Stalls open at dawn.', ASH)]
     )
     expect(reading.blocks).toHaveLength(1)
-    expect(reading.blocks[0]).toMatchObject({ type: 'say', quoted: false })
+    expect(reading.blocks[0]).toEqual({ type: 'say', speakerId: ASH, text: 'Stalls open at dawn.' })
+    expect(reading.records).toHaveLength(1)
   })
 
   it('keeps narration and dialogue in stored order, never grouped', () => {

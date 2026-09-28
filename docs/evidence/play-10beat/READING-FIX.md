@@ -11,28 +11,35 @@ check) is preserved unmodified below.
 `sceneLines()` turned every `communicate` intent/reaction into a
 speaker-labelled line. `Market stalls` is a topic, not words spoken.
 
+Correction (supersedes the first fix, which wrongly gated quoted topics
+on scene resolution success): spoken lines come from persisted DIALOGUE
+beats only. Scene resolution outcome never proves an individual
+utterance committed — the backend commitment check reads the reaction's
+own status, which the scene API does not expose.
+
 Fix (`src/components/story/beatReading.ts`, pure, fixture-covered):
 
-- Persisted DIALOGUE beats speak. Nothing else does on its own.
-- A quoted topic (`"…"`) counts as quoted speech only when the beat's
-  resolution committed it (`outcome === 'success'`).
-- Unquoted topics render as muted summary lines (`Wren (you) → Ash ·
-about …`) — never with a speaker avatar.
-- Quoted but uncommitted utterances render as attempts in Beat details
-  (`… tried to say … — not committed`).
+- Persisted DIALOGUE beats speak. Nothing else does, regardless of
+  quotation or resolution outcome.
+- All supplementary topics stay verbatim records in Beat details
+  (`Communication records (topics as filed — not speech)`), quoted or
+  not. No speech — and no "not committed" — is inferred from the
+  outcome. A later need for committed speech must expose its
+  authoritative source status explicitly.
 - Redacted (perspective-hidden, null) detail renders nothing.
 
-Regressions (`beatReading.spec.ts`, 13 tests): unquoted-topic summary,
-quoted committed speech, quoted-on-failure and quoted-without-resolution
-as attempts, redacted silence, dialogue precedence (no duplication),
-stored narration/dialogue ordering, attempt-record exclusion,
-pointer aggregation order/dedupe, citation order.
+Regressions (`beatReading.spec.ts`, 13 tests): quoted intent plus
+scene success manufactures no dialogue; dialogue stays visible with
+failure/impossible outcomes; missing narration causes no commitment
+claim either way; unquoted topics stay records; redacted silence;
+dialogue precedence; stored ordering; attempt-record exclusion;
+pointer aggregation order/dedupe; citation order.
 
 In-vivo (existing story `d5104e8a`, seeded real pointers, fresh
 profiles): beat 10 renders one Ash dialogue line, no duplication
 (`rich-beat10.png`); beat 5 (no dialogue beats, fallback) renders zero
-spoken lines and one topic summary (`beat5-summary.png`):
-`Wren (you) → Ash · about Ash, what should I do next — …`.
+spoken lines, zero flow topics, and the verbatim record in Beat details
+(`beat5-summary.png`).
 
 ## Defect 2: one-card-per-beat hid additional scenes
 
