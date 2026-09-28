@@ -171,15 +171,19 @@ class SqlAlchemySceneRepository:
         await self._session.flush()
 
     async def save_narration_status(self, scene_id: UUID, status: str) -> None:
-        """Record the narration outcome once; never overwrite a stored one.
+        """Record the narration outcome; overwrite only a prior failure.
 
-        First-write-wins keeps a resumed commit from downgrading a known
-        status (e.g. ``narrated``) to ``skipped``.
+        A resumed commit must never downgrade a known source (``skipped``
+        writes nothing at the call site), but a ``failed`` attempt may be
+        replaced when a later legitimate resume successfully narrates.
         """
         await self._session.execute(
             update(SceneRow)
             .where(SceneRow.id == scene_id)
-            .where(SceneRow.narration_status.is_(None))
+            .where(
+                (SceneRow.narration_status.is_(None))
+                | (SceneRow.narration_status == "failed")
+            )
             .values(narration_status=status)
         )
         await self._session.flush()

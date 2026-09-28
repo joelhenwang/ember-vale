@@ -1884,13 +1884,15 @@ class Stage1Orchestrator:
         narration = await self._narrate_scene(
             world_id, run_id, scene, result.event_id, quiet, over_budget, runtime=runtime
         )
-        if narration != "skipped":
-            # "skipped" means beats already existed, so the original
-            # source is unknown: never downgrade a stored status to it.
-            # First-write-wins in save_narration_status guards resumes.
+        # The narration source is persisted atomically with its beats
+        # inside _narrate_scene; "skipped" writes nothing. When beats
+        # pre-existed, report the recorded source when known instead of
+        # the skip itself.
+        if narration == "skipped":
             async with self._factory() as uow:
-                await uow.scenes.save_narration_status(scene.id, narration)
-                await uow.commit()
+                stored = await uow.scenes.get_scene(scene.id)
+                if stored.narration_status is not None:
+                    narration = stored.narration_status
         if resolution.outcome == ResolutionOutcome.SUCCESS:
             await self._settle_scene_verbs(world_id, run_id, index, scene, members, result.event_id)
         return SceneOutcome(
@@ -2421,13 +2423,17 @@ class Stage1Orchestrator:
         )
         roster_pre = await self._roster_present(world_id)
         if over_budget or (quiet and not roster_pre):
-            await self._save_fallback_beats(world_id, scene, event_id, facts)
+            await self._save_fallback_beats(
+                world_id, scene, event_id, facts, source="fallback"
+            )
             return "fallback"
         if structured and not roster_pre:
             # Configured structured narration, not a provider outcome:
             # same beats as the quiet path, no narrator call issued and
             # no model-call row traced.
-            await self._save_fallback_beats(world_id, scene, event_id, facts)
+            await self._save_fallback_beats(
+                world_id, scene, event_id, facts, source="structured"
+            )
             return "structured"
         try:
             sampling = runtime.sampling
@@ -2444,17 +2450,29 @@ class Stage1Orchestrator:
             )
             result = await invoke(graph, invocation)
         except Exception:
+            # No beats to atomize with; record the failure best-effort so
+            # replays report it instead of an unknown source. A failed
+            # status write degrades to the old behavior (NULL status).
+            try:
+                async with self._factory() as uow:
+                    await uow.scenes.save_narration_status(scene.id, "failed")
+                    await uow.commit()
+            except Exception:
+                # Best-effort only: failures here must never fail the phase.
+                pass
             return "failed"
+        source = "narrated" if not result["proposal"]["fallback"] else "fallback"
         async with self._factory() as uow:
             for beat_json in result["proposal"]["beats"]:
                 await uow.scenes.save_narration(NarrationBeat.model_validate(beat_json))
+            await uow.scenes.save_narration_status(scene.id, source)
             await uow.commit()
             beat_texts = [
                 str(beat_json.get("text", "")) for beat_json in result["proposal"]["beats"]
             ]
         await self._recruit_from_narration(world_id, "\n".join(beat_texts))
         await self._resolve_combat_tags(world_id, run_id, scene, event_id, beat_texts)
-        return "narrated" if not result["proposal"]["fallback"] else "fallback"
+        return source
 
     async def _save_fallback_beats(
         self,
@@ -2462,8 +2480,10 @@ class Stage1Orchestrator:
         scene: Scene,
         event_id: UUID,
         facts: list[dict[str, str]],
+        *,
+        source: str,
     ) -> None:
-        """Persist deterministic committed-fact beats (every non-model path)."""
+        """Persist deterministic beats with their source, atomically."""
         async with self._factory() as uow:
             for beat in fallback_beats(
                 world_id=world_id,
@@ -2473,6 +2493,7 @@ class Stage1Orchestrator:
                 beats_budget=scene.beat_budget,
             ):
                 await uow.scenes.save_narration(beat)
+            await uow.scenes.save_narration_status(scene.id, source)
             await uow.commit()
 
     async def _recruit_from_narration(self, world_id: UUID, text: str) -> list[str]:
@@ -2653,13 +2674,15 @@ class Stage1Orchestrator:
                 assert stored.event_id is not None
                 resolution = await uow.scenes.get_resolution(scene.id)
                 beats = await uow.scenes.narrations_for_event(stored.event_id)
-                if not beats:
-                    narration = "missing"
-                elif stored.narration_status is not None:
+                if stored.narration_status is not None:
                     narration = stored.narration_status
-                else:
-                    # Legacy rows predate the record: source unknown.
+                elif beats:
+                    # Legacy rows predate the record: beats without source.
                     narration = "unknown"
+                else:
+                    # No beats and no record: attempt failure and beat
+                    # availability stay distinct from an unknown source.
+                    narration = "missing"
                 outcomes.append(
                     SceneOutcome(
                         scene_id=scene.id,

@@ -93,11 +93,15 @@ allowance are unknown (no billing access).
 Diagnosis found a reporting defect in the recovery path itself:
 `_duplicate_report` labeled any scene with beats as `narrated`, mislabeling
 structured/fallback replays as model narration. Fixed by persisting the
-`_narrate_scene` outcome on the scene row (migration
-`0039_scene_narration_status`, nullable; first-write-wins so resumes never
-downgrade to `skipped`) and replaying the stored status; legacy NULL rows
-replay as `unknown`. Backend regressions added (stored structured/model/
-fallback replay verbatim; legacy replays `unknown` with beats intact).
+`_narrate_scene` outcome atomically with its beats (migration
+`0039_scene_narration_status`, nullable): deterministic and model paths
+commit beats plus source in one transaction; recorded `failed` persists even
+with no beats and is replaceable only by a later successful resume; `skipped`
+writes nothing, preserves a known source, and reports it when known; legacy
+NULL rows replay as `unknown`. Backend regressions added (stored
+structured/model/fallback replay verbatim; legacy replays `unknown` with
+beats intact; post-commit interruption resumes with the exact source and no
+extra beats or narrator calls; failed-to-success resume replaces the record).
 
 Live proof on the fixed build, both runs, normal path, no row edits:
 
@@ -120,3 +124,7 @@ Live proof on the fixed build, both runs, normal path, no row edits:
   upstream-call cost, which structured narration does not address.
 - Structured narration remains experimental; the usability milestone
   stays open.
+- The alleged worker stall is closed on the corrected evidence (both runs
+  completed; no open rows, no error, no lock contention). Client-timeout
+  ambiguity (180s cap vs 185–236s server reality) is retained as an
+  observed UX issue, not a canon defect.

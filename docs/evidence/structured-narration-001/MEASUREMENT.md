@@ -29,10 +29,16 @@ Date: 2026-09-28. No paid calls made; no live run yet (needs spend confirmation)
   (shared `_save_fallback_beats` helper): committed-utterance facts become
   cited DIALOGUE beats with speaker attribution; audience filtering and
   normal persistence unchanged. No narrator gateway call, no model-call row.
+  Beats and their source commit atomically (deterministic and model paths);
+  a crash between narration persistence and phase completion resumes with
+  the exact source, no extra beats, no narrator calls.
 - Status `"structured"` distinguishes configured skips from attempted
-  generation (`"narrated"`/`"fallback"`/`"failed"`). Frontend shows no
-  fallback notice for it (only exact `"fallback"` triggers one); quality
-  `fallback_rate` counts only `"fallback"`.
+  generation (`"narrated"`/`"fallback"`/`"failed"`). Recorded failures
+  persist `"failed"` (replayable even with no beats); a later legitimate
+  resume that narrates successfully replaces `failed`, never a known
+  source; `skipped` writes nothing and reports the stored source when
+  known. Frontend shows no fallback notice for it (only exact `"fallback"`
+  triggers one); quality `fallback_rate` counts only `"fallback"`.
 - Recruit/combat accounting: the structured path skips
   `_recruit_from_narration()` and `_resolve_combat_tags()`, identical to the
   existing quiet/over-budget and failure paths. Additionally, structured
@@ -62,12 +68,13 @@ Fake narrator sleeps 1.0s before answering; identical fixtures both runs:
   narrator time plus zero narrator calls, not a wall-clock comparison of
   two database-backed runs; the observed walls above stand as evidence.
 
-Tests: 6 new in `backend/tests/test_stage1_orchestration.py` (zero calls,
+Tests: 11 new in `backend/tests/test_stage1_orchestration.py` (zero calls,
 dialogue persistence, reload/replay, default path, status distinction,
-roster deferral, delayed saving); 1 new classify case in
-`scripts/reliability-baseline-lib.spec.mjs`. Full orchestration module 26/26,
-narration-graph + timeout-recovery 22/22, harness spec 19/19, `ruff check`
-clean.
+roster deferral, delayed saving, stored structured/model/fallback replay,
+legacy-`unknown` replay, post-commit interruption resume, failed-to-success
+resume); mixed-outcome classify cases in
+`scripts/reliability-baseline-lib.spec.mjs`. Full orchestration module,
+migration cycle, and narration-graph suites green; `ruff check` clean.
 
 ## Bounded live run (executed; see structured-narration-live/LIVE-001.md)
 

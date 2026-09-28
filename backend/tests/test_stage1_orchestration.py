@@ -1337,6 +1337,148 @@ def test_duplicate_replay_returns_stored_model_and_fallback_statuses(
     asyncio.run(_inner())
 
 
+def _talking_gateways(ids: dict[str, UUID]) -> dict[str, FakeGateway]:
+    """Autonomous gateways where Ash communicates (never a quiet phase)."""
+    gateways = _role_gateways(ids)
+    snapshot = derive_snapshot_id(derive_run_id(ids["world"], 1))
+
+    def _decide(request: CompletionRequest) -> str | None:
+        if "identity>>Ash" in request.prompt:
+            return json.dumps(
+                {
+                    "family": "communicate",
+                    "character_id": str(ids["ash"]),
+                    "snapshot_id": str(snapshot),
+                    "target_character_id": str(ids["wren"]),
+                    "topic": "dawn patrol",
+                }
+            )
+        if "identity>>Wren" in request.prompt:
+            return _wait_json(ids["wren"], snapshot)
+        return None
+
+    gateways["character"].route = _decide
+    return gateways
+
+
+def test_interrupted_structured_commit_resumes_with_source_intact(
+    migrated_db: None,
+) -> None:
+    """Fault after narration persistence must keep the exact source on resume.
+
+    Boundary: beats plus structured source committed, phase still open. A
+    fresh controller resumes with no extra beats and no narrator calls.
+    """
+    async def _inner() -> None:
+        control_ids = await _seed()
+        await _set_narration_mode(control_ids, "structured")
+        await _orchestrator(_talking_gateways(control_ids)).advance_phase(
+            control_ids["world"], 1
+        )
+        control_run = derive_run_id(control_ids["world"], 1)
+        control_keys = await _beat_keys_for_run(control_run)
+        assert control_keys
+
+        ids = await _seed()
+        await _set_narration_mode(ids, "structured")
+        gateways = _talking_gateways(ids)
+        fired: list[str] = []
+
+        def _hook(point: str) -> None:
+            if point == "after_scenes_committed" and not fired:
+                fired.append(point)
+                raise RuntimeError("injected after commit")
+
+        with pytest.raises(RuntimeError, match="injected"):
+            await _orchestrator(gateways, hook=_hook).advance_phase(ids["world"], 1)
+        assert fired
+        run_id = derive_run_id(ids["world"], 1)
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                scenes = await uow.scenes.list_for_run(run_id)
+                assert scenes
+                stored = await uow.scenes.get_scene(scenes[0].id)
+                assert stored.narration_status == "structured"
+        finally:
+            await engine.dispose()
+        mid_keys = await _beat_keys_for_run(run_id)
+        assert mid_keys == control_keys
+
+        resume_gateways = _talking_gateways(ids)
+        report = await _orchestrator(resume_gateways).advance_phase(ids["world"], 1)
+        assert all(s.narration == "structured" for s in report.scenes)
+        assert gateways["narrator"].calls == []
+        assert resume_gateways["narrator"].calls == []
+        assert await _beat_keys_for_run(run_id) == control_keys
+        stored_after = await _stored_narration_statuses(report)
+        assert stored_after and all(s == "structured" for s in stored_after)
+
+    asyncio.run(_inner())
+
+
+async def _beat_keys_for_run(
+    run_id: UUID,
+) -> list[tuple[str, str, tuple[str, ...]]]:
+    engine = create_engine(Settings())
+    try:
+        async with create_unit_of_work(engine) as uow:
+            beats: list[NarrationBeat] = []
+            for scene in await uow.scenes.list_for_run(run_id):
+                beats.extend(await uow.scenes.narrations_for_event(scene.event_id))
+            return sorted(
+                (b.kind.value, b.text, tuple(b.cited_fact_keys)) for b in beats
+            )
+    finally:
+        await engine.dispose()
+
+
+def test_failed_narration_resumes_to_recorded_success(
+    migrated_db: None,
+) -> None:
+    """A failed attempt may be replaced when a resume narrates successfully."""
+    async def _inner() -> None:
+        ids = await _seed()
+        gateways = _talking_gateways(ids)
+
+        def _boom(_request: CompletionRequest) -> str | None:
+            raise RuntimeError("narrator down")
+
+        gateways["narrator"].route = _boom
+        fired: list[str] = []
+
+        def _hook(point: str) -> None:
+            if point == "after_scenes_committed" and not fired:
+                fired.append(point)
+                raise RuntimeError("injected after commit")
+
+        with pytest.raises(RuntimeError, match="injected"):
+            await _orchestrator(gateways, hook=_hook).advance_phase(ids["world"], 1)
+        assert fired
+        run_id = derive_run_id(ids["world"], 1)
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                scenes = await uow.scenes.list_for_run(run_id)
+                assert scenes
+                stored = await uow.scenes.get_scene(scenes[0].id)
+                assert stored.narration_status == "failed"
+                assert await uow.scenes.narrations_for_event(scenes[0].event_id) == []
+        finally:
+            await engine.dispose()
+
+        resume = await _orchestrator(_talking_gateways(ids)).advance_phase(
+            ids["world"], 1
+        )
+        assert all(s.narration in ("narrated", "fallback") for s in resume.scenes)
+        assert all(s.narration != "failed" for s in resume.scenes)
+        stored_after = await _stored_narration_statuses(resume)
+        assert stored_after and all(s != "failed" for s in stored_after)
+        assert await _beat_keys_for_run(run_id)
+
+    asyncio.run(_inner())
+
+
 def test_duplicate_replay_reports_unknown_for_legacy_rows(
     migrated_db: None,
 ) -> None:
