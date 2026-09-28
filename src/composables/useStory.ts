@@ -151,8 +151,11 @@ interface BeatSceneRef {
 }
 
 export interface LoadedScene {
-  detail: SceneDetail
+  sceneId: string
+  detail: SceneDetail | null
   narration: BeatView[]
+  /** A scene whose reads failed renders its own snippet lines instead. */
+  failed: boolean
 }
 
 export interface BeatDetailState {
@@ -627,25 +630,28 @@ export function useStory(
       ...beatDetails.value,
       [eventId]: { pending: true, failed: false, scenes: [] }
     }
-    try {
-      const scenes: LoadedScene[] = []
-      for (const sceneId of pointer.sceneIds) {
+    // One scene's read failure must not hide the beat's other scenes: each
+    // scene settles on its own, and a failed scene keeps its snippet lines.
+    const scenes: LoadedScene[] = []
+    for (const sceneId of pointer.sceneIds) {
+      try {
         const [detail, narration] = await Promise.all([
           getSceneDetail(sceneId, opts()),
           getSceneNarration(sceneId, opts())
         ])
-        scenes.push({ detail, narration })
+        scenes.push({ sceneId, detail, narration, failed: false })
+      } catch {
+        scenes.push({ sceneId, detail: null, narration: [], failed: true })
       }
       if (seen !== cycle) return
-      beatDetails.value = {
-        ...beatDetails.value,
-        [eventId]: { pending: false, failed: false, scenes }
-      }
-    } catch {
-      if (seen !== cycle) return
-      beatDetails.value = {
-        ...beatDetails.value,
-        [eventId]: { pending: false, failed: true, scenes: [] }
+    }
+    if (seen !== cycle) return
+    beatDetails.value = {
+      ...beatDetails.value,
+      [eventId]: {
+        pending: false,
+        failed: scenes.length > 0 && scenes.every((s) => s.failed),
+        scenes
       }
     }
   }

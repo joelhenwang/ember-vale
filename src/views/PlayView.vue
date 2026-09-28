@@ -10,7 +10,8 @@ import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
 import IconArrowRight from '../components/icons/IconArrowRight.vue'
 import { useInterventions, type DirectMode } from '../composables/useInterventions'
 import { usePlayerAsk } from '../composables/usePlayerAsk'
-import { useStory, type BeatDetailState } from '../composables/useStory'
+import { useStory } from '../composables/useStory'
+import { collectScenePointers, type ScenePointer } from '../components/story/beatReading'
 import type { TimelineEntry } from '../../content/clients/worldsim'
 import { useStoryProvider } from '../composables/useStoryProvider'
 import { selectSeat } from '../api/worldsim'
@@ -300,22 +301,16 @@ function nameOf(id: string): string {
   return nameById.value.get(id) ?? 'Someone'
 }
 
-function beatReading(beat: FeedBeat): {
-  ref?: { fallback: boolean }
-  loaded?: BeatDetailState
-  eventId?: string
-} {
-  for (const entry of beat.entries) {
-    const pointer = story.beatScenes.value[entry.event_id]
-    if (pointer) {
-      return {
-        ref: pointer,
-        loaded: story.beatDetails.value[entry.event_id],
-        eventId: entry.event_id
-      }
-    }
-  }
-  return {}
+/**
+ * Every distinct scene pointer in the beat, in timeline order — a beat
+ * with two resolved scenes renders both, never just the first.
+ */
+function beatPointers(beat: FeedBeat): ScenePointer[] {
+  return collectScenePointers(beat.entries, story.beatScenes.value)
+}
+
+function loadBeatDetails(eventIds: string[]): void {
+  for (const eventId of eventIds) void story.loadBeatDetail(eventId)
 }
 </script>
 
@@ -521,12 +516,11 @@ function beatReading(beat: FeedBeat): {
               <BeatEntry
                 :index="beat.index"
                 :entries="beat.entries"
-                :beat-ref="beatReading(beat).ref"
-                :detail-event-id="beatReading(beat).eventId"
-                :loaded="beatReading(beat).loaded"
+                :pointers="beatPointers(beat)"
+                :loaded-map="story.beatDetails.value"
                 :name-of="nameOf"
                 :you-id="controlledId"
-                @request-detail="story.loadBeatDetail($event)" />
+                @request-details="loadBeatDetails($event)" />
             </li>
           </ol>
           <p class="play__empty" role="status">

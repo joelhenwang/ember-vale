@@ -17,15 +17,15 @@ exhaustion point and the 4096 experiment.
 
 ## Per-arm results
 
-| | Venice @1024 | Deepseek @4096 rerun |
-|---|---|---|
-| Advances committed | 4/4 | 2/4 (follow-up 180s timeout unresolved, 4th blocked by the halt rule) |
-| Retrieval complete | 4/4 | 2/2 of committed |
-| Provider calls ok | 2/14 (both director, ordinary beat) | 6/8 (director x2, character x2, reaction, resolver) |
-| Committed NPC answers | 0 | **1** (question: Ash answers Wren via committed reaction) |
-| Model-authored narration | 0 beats | 0 beats (fallback everywhere) |
-| Beat waits | 26s, 49s, 45s, 29s | 164s, 110s, >180s timeout |
-| Tokens prompt+completion(+reasoning) | 8.6k+3.1k(0); 14.0k+4.1k(0); 14.1k+4.1k(0); 10.4k+3.9k(0) | 6.1k+8.5k(8.5k); 10.4k+6.3k(6.3k); timeout |
+|                                      | Venice @1024                                              | Deepseek @4096 rerun                                                  |
+| ------------------------------------ | --------------------------------------------------------- | --------------------------------------------------------------------- |
+| Advances committed                   | 4/4                                                       | 2/4 (follow-up 180s timeout unresolved, 4th blocked by the halt rule) |
+| Retrieval complete                   | 4/4                                                       | 2/2 of committed                                                      |
+| Provider calls ok                    | 2/14 (both director, ordinary beat)                       | 6/8 (director x2, character x2, reaction, resolver)                   |
+| Committed NPC answers                | 0                                                         | **1** (question: Ash answers Wren via committed reaction)             |
+| Model-authored narration             | 0 beats                                                   | 0 beats (fallback everywhere)                                         |
+| Beat waits                           | 26s, 49s, 45s, 29s                                        | 164s, 110s, >180s timeout                                             |
+| Tokens prompt+completion(+reasoning) | 8.6k+3.1k(0); 14.0k+4.1k(0); 14.1k+4.1k(0); 10.4k+3.9k(0) | 6.1k+8.5k(8.5k); 10.4k+6.3k(6.3k); timeout                            |
 
 ## Why Venice fails
 
@@ -50,13 +50,15 @@ Two follow-ups landed from this finding (no budget change):
 
 ## Selection
 
-**Deepseek @4096 (rev10) is the session configuration.** It is the only
-arm delivering real NPC content (decisions plus a traced Ash answer).
-Caveats, stated plainly: narration is still fallback in every beat, waits
-run 110–164s per beat with tails past the 180s beat timeout (a 10-beat
-session means ~20–30 minutes of waiting), and one wedged follow-up was
-halted rather than forced. Venice is not promoted: a fallback-only
-session with shorter waits is still a fallback-only session.
+**Deepseek @4096 (rev10) is the configuration that produced an answer in
+this comparison — not a validated usable default.** It is the only arm
+delivering real NPC content (decisions plus a traced Ash answer).
+Caveats, stated plainly: model narration prose is absent in every beat,
+waits run 110–164s per beat with tails past the 180s beat timeout (the
+10-beat session took roughly 37 minutes of waiting), and one wedged
+follow-up was halted rather than forced. Venice is not promoted: a
+fallback-only session with shorter waits is still a fallback-only
+session.
 
 ## Files
 

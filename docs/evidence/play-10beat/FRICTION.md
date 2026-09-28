@@ -11,7 +11,7 @@ the recorded 10-beat run itself ended at clock 10.
 - Wizard creation with an explicit pin: provider list, rev10 selection,
   `Selected:` summary, and Review line all named the model; the room
   banner confirms `Storyteller deepseek/… rev 10 (pinned) — live provider
-  configured`.
+configured`.
 - 10/10 beats committed, no stranded runs, no recovery needed. Reload
   after beat 6 restored the clock (beat 6) and the grant.
 - The waiting state renders mid-beat (`waiting.png`): elapsed seconds, the
@@ -23,25 +23,33 @@ the recorded 10-beat run itself ended at clock 10.
 
 ## Slow
 
-Per-beat waits (85, 226, 195, 316, 170, 25, 231, 240, 416, 296s) total
-~37 minutes of waiting for 10 beats. Beat 9 (416s) and beat 4 (316s) are
-the tails the comparison arms predicted. Nothing in the room explains the
-variance. Beat 6 (travel, 25s) shows beats without question handling can
-be quick — the wait tracks provider work, not ceremony.
+Per-beat waits range from 25 to 416 seconds (85, 226, 195, 316, 170, 25,
+231, 240, 416, 296s), totalling roughly 37 minutes of waiting for 10
+beats. Beat 9 (416s) and beat 4 (316s) are the tails the comparison arms
+predicted. Nothing in the room explains the variance. Beat 6 (travel,
+25s) shows beats without question handling can be quick — the wait
+tracks provider work, not ceremony.
 
 ## Repetitive
 
 Nine questions get short one-line answers; the exchange never builds
 beyond Q&A because nothing carries session context forward visibly (a
 follow-up that repeats the earlier answer does not establish remembered
-context — memory stays a separate claim). Narration is fallback
-everywhere in this session's beats per the comparison arms' finding.
+context — memory stays a separate claim). Narration prose is absent in
+all 12 beats — every narration-kind beat in this story's own records is
+an `attempt:*` record (see `READING-FIX.md` per-beat table); dialogue
+answers were voiced on every question beat except beat 5. Commit-time
+narrator fallback notices appeared on beats 5 and 12.
 
 ## Confusing / dependent
 
-- The choice (beat 5 asked where to head) produced advice that named no
-  reachable place, so beat 6 defaulted to the first travel offer
-  (Hearth). Reactive play works only when answers name real destinations.
+- The choice was not demonstrated: beat 5 (which asked where to head)
+  voiced no dialogue at all, and beat 6 defaulted to the first travel
+  offer (Hearth). The keyword match failed on a precise mechanism worth
+  recording: the beat card's action snippet truncates the question
+  mid-sentence, so the full text naming mill and market was never
+  visible to match against. Reactive play needs answers that name real
+  destinations, and matchable text.
 - Wizard `Provider` options load asynchronously; a driver (or a fast
   clicker) that reads them instantly sees an empty list. The play driver
   now waits for the options explicitly.
@@ -78,7 +86,7 @@ committed through the room UI (story now at clock 12) to verify the fix
 on the natural path — fresh profile, no seeded pointers:
 
 - Waiting frames observed live: `Beat 12 is still running — 8s / 33s /
-  58s so far`, same honest text throughout, then the notice clears on
+58s so far`, same honest text throughout, then the notice clears on
   commit. Elapsed time ticks across the wait; nothing else pretends to
   measure progress.
 - Post-commit the Beat 12 card rendered Ash's dialogue with speaker

@@ -1,37 +1,37 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
-import type { BeatView, TimelineEntry } from '../../../content/clients/worldsim'
-import type { BeatDetailState, LoadedScene } from '../../composables/useStory'
+import type { TimelineEntry } from '../../../content/clients/worldsim'
+import type { BeatDetailState } from '../../composables/useStory'
+import { readScene, sceneCitations, type ReadingBlock, type ScenePointer } from './beatReading'
 
 const props = defineProps<{
   index: number
   entries: TimelineEntry[]
-  /** Structured-content pointer for this beat, if committed this session. */
-  beatRef?: { fallback: boolean }
-  /** The pointer's event id: the beat entry the structured content joins on
-   * (not the beat's first entry — world_ticked rows sort before the beat's
-   * own resolved event). */
-  detailEventId?: string
-  /** Loaded scene content; absent while pending or failed. */
-  loaded?: BeatDetailState
+  /** Every distinct scene pointer in this beat, in timeline order. */
+  pointers: ScenePointer[]
+  loadedMap: Record<string, BeatDetailState | undefined>
   nameOf: (id: string) => string
   youId?: string | null
 }>()
 
-const emit = defineEmits<{ (e: 'request-detail', eventId: string): void }>()
+const emit = defineEmits<{ (e: 'request-details', eventIds: string[]): void }>()
 
 function request(): void {
-  if (props.beatRef && !props.loaded && props.detailEventId) {
-    emit('request-detail', props.detailEventId)
-  }
+  const missing = props.pointers.map((p) => p.eventId).filter((id) => !props.loadedMap[id])
+  if (missing.length > 0) emit('request-details', missing)
 }
 
 onMounted(request)
-watch(() => [props.beatRef, props.loaded, props.detailEventId], request)
+watch(() => [props.pointers, props.loadedMap], request)
 
-/** Backend attempt summaries arrive prefixed (`attempt:wait: …`): technical records, not prose. */
-function isAttemptRecord(text: string): boolean {
-  return /^attempt:[a-z_]+:/.test(text.trim())
+function displayName(id: string | null | undefined): string {
+  if (!id) return 'Narration'
+  const name = props.nameOf(id)
+  return props.youId && id === props.youId ? `${name} (you)` : name
+}
+
+function initial(name: string): string {
+  return (name.trim().charAt(0) || '·').toUpperCase()
 }
 
 function paragraphs(text: string): string[][] {
@@ -46,142 +46,140 @@ function paragraphs(text: string): string[][] {
     .filter((lines) => lines.length > 0)
 }
 
-function displayName(id: string | null | undefined): string {
-  if (!id) return 'Narration'
-  const name = props.nameOf(id)
-  return props.youId && id === props.youId ? `${name} (you)` : name
+function topicLine(block: Extract<ReadingBlock, { type: 'topic' }>): string {
+  const speaker = displayName(block.speakerId)
+  const about = `about ${block.topic}`
+  if (!block.targetId) return `${speaker} · ${about}`
+  return `${speaker} → ${displayName(block.targetId)} · ${about}`
 }
 
-function initial(name: string): string {
-  return (name.trim().charAt(0) || '·').toUpperCase()
-}
+type Segment = { kind: 'rich'; pointer: ScenePointer } | { kind: 'legacy'; entry: TimelineEntry }
 
-function cleanTopic(topic: unknown): string | null {
-  if (typeof topic !== 'string' || !topic.trim()) return null
-  const trimmed = topic.trim()
-  return trimmed.length > 1 && trimmed.startsWith('"') && trimmed.endsWith('"')
-    ? trimmed.slice(1, -1)
-    : trimmed
-}
-
-interface SpeakLine {
-  key: string
-  speakerId: string | null
-  text: string
-}
-
-function sceneLines(scene: LoadedScene): { spoken: SpeakLine[]; prose: string[] } {
-  const spoken: SpeakLine[] = []
-  const prose: string[] = []
-  for (const beat of scene.narration) {
-    if (beat.kind === 'dialogue') {
-      spoken.push({ key: beat.id, speakerId: beat.speaker_id ?? null, text: beat.text })
-    } else if (!isAttemptRecord(beat.text ?? '')) {
-      prose.push(beat.text)
+/**
+ * The beat in timeline order: one rich segment per pointed event (its
+ * scenes, or its snippet lines when every read failed), legacy lines for
+ * entries without pointers. Later rows of an already-rendered event are
+ * covered by that event's segment — never repeated.
+ */
+const segments = computed<Segment[]>(() => {
+  const out: Segment[] = []
+  const seen = new Set<string>()
+  for (const entry of props.entries) {
+    const pointer = props.pointers.find((p) => p.eventId === entry.event_id)
+    if (pointer) {
+      if (!seen.has(pointer.eventId)) {
+        seen.add(pointer.eventId)
+        out.push({ kind: 'rich', pointer })
+      }
+    } else {
+      out.push({ kind: 'legacy', entry })
     }
   }
-  if (spoken.length === 0) {
-    // No voiced dialogue beats: fall back to the structured
-    // communicate intents/reactions (never the mashed snippet).
-    const says: SpeakLine[] = []
-    for (const intent of scene.detail.intents ?? []) {
-      if (intent.family !== 'communicate') continue
-      const topic = cleanTopic((intent.detail as Record<string, unknown> | null)?.['topic'])
-      if (topic) {
-        says.push({ key: intent.id, speakerId: intent.author_character_id, text: topic })
-      }
-    }
-    for (const reaction of scene.detail.reactions ?? []) {
-      if (reaction.family !== 'communicate') continue
-      const topic = cleanTopic((reaction.detail as Record<string, unknown> | null)?.['topic'])
-      if (topic) {
-        says.push({ key: reaction.id, speakerId: reaction.reactor_character_id, text: topic })
-      }
-    }
-    spoken.push(...says)
-  }
-  return { spoken, prose }
-}
+  return out
+})
 
-interface TechLine {
-  key: string
-  text: string
+function eventSnippets(eventId: string): TimelineEntry[] {
+  return props.entries.filter((e) => e.event_id === eventId && e.snippet)
 }
-
-function sceneTech(scene: LoadedScene): { attempts: TechLine[]; citations: string[] } {
-  const attempts = (scene.detail.attempts ?? []).map((a) => ({
-    key: a.id,
-    text: `${displayName(a.actor_character_id)} — ${a.observable_summary} (${a.status.replace(/_/g, ' ')})`
-  }))
-  const citations = scene.narration.flatMap((b: BeatView) => b.cited_fact_keys ?? [])
-  return { attempts, citations: [...new Set(citations)] }
-}
-
-const rich = computed(() => props.loaded && !props.loaded.failed && props.loaded.scenes.length > 0)
 </script>
 
 <template>
   <article class="beat" :aria-label="`Beat ${index}`">
     <h3 class="beat__head">Beat {{ index }}</h3>
-    <template v-if="rich">
-      <template v-for="scene in loaded!.scenes" :key="scene.detail.id">
-        <template v-for="line in sceneLines(scene).spoken" :key="line.key">
-          <div class="beat__say">
-            <span class="beat__avatar" aria-hidden="true">{{
-              initial(displayName(line.speakerId))
-            }}</span>
-            <div>
-              <p class="beat__speaker">{{ displayName(line.speakerId) }}</p>
-              <template v-for="para in paragraphs(line.text)" :key="para.join('|')">
-                <p class="beat__text">
-                  <template v-for="(ln, j) in para" :key="j">
-                    {{ ln }}<br v-if="j < para.length - 1" />
-                  </template>
-                </p>
-              </template>
-            </div>
-          </div>
+    <template v-for="(segment, si) in segments" :key="si">
+      <template v-if="segment.kind === 'legacy'">
+        <p class="beat__kind">{{ segment.entry.event_type.replace(/_/g, ' ') }}</p>
+        <p v-if="segment.entry.snippet" class="beat__text">{{ segment.entry.snippet }}</p>
+      </template>
+      <template
+        v-else-if="
+          !loadedMap[segment.pointer.eventId] || loadedMap[segment.pointer.eventId]?.pending
+        ">
+        <p class="beat__empty" role="status">Gathering structured beat…</p>
+      </template>
+      <template v-else-if="loadedMap[segment.pointer.eventId]?.failed">
+        <template
+          v-for="entry in eventSnippets(segment.pointer.eventId)"
+          :key="entry.event_id + entry.sequence">
+          <p class="beat__kind">{{ entry.event_type.replace(/_/g, ' ') }}</p>
+          <p class="beat__text">{{ entry.snippet }}</p>
         </template>
-        <template v-for="text in sceneLines(scene).prose" :key="text">
-          <template v-for="para in paragraphs(text)" :key="para.join('|')">
-            <p class="beat__text">
-              <template v-for="(ln, k) in para" :key="k">
-                {{ ln }}<br v-if="k < para.length - 1" />
+      </template>
+      <template v-else>
+        <template v-for="scene in loadedMap[segment.pointer.eventId]!.scenes" :key="scene.sceneId">
+          <template v-if="!scene.failed && scene.detail">
+            <template
+              v-for="(block, bi) in readScene(scene.detail, scene.narration).blocks"
+              :key="bi">
+              <div v-if="block.type === 'say'" class="beat__say">
+                <span class="beat__avatar" aria-hidden="true">{{
+                  initial(displayName(block.speakerId))
+                }}</span>
+                <div>
+                  <p class="beat__speaker">{{ displayName(block.speakerId) }}</p>
+                  <template v-for="para in paragraphs(block.text)" :key="para.join('|')">
+                    <p class="beat__text">
+                      <template v-for="(ln, j) in para" :key="j">
+                        {{ ln }}<br v-if="j < para.length - 1" />
+                      </template>
+                    </p>
+                  </template>
+                </div>
+              </div>
+              <p v-else-if="block.type === 'topic'" class="beat__topic">{{ topicLine(block) }}</p>
+              <template v-else>
+                <template v-for="para in paragraphs(block.text)" :key="para.join('|')">
+                  <p class="beat__text">
+                    <template v-for="(ln, k) in para" :key="k">
+                      {{ ln }}<br v-if="k < para.length - 1" />
+                    </template>
+                  </p>
+                </template>
               </template>
-            </p>
+            </template>
+            <details class="beat__details">
+              <summary>Beat details</summary>
+              <ul v-if="(scene.detail.attempts ?? []).length">
+                <li v-for="a in scene.detail.attempts ?? []" :key="a.id">
+                  {{ displayName(a.actor_character_id) }} — {{ a.observable_summary }} ({{
+                    a.status.replace(/_/g, ' ')
+                  }})
+                </li>
+              </ul>
+              <p v-if="readScene(scene.detail, scene.narration).attempted.length">
+                <template
+                  v-for="at in readScene(scene.detail, scene.narration).attempted"
+                  :key="at.speakerId + at.text">
+                  {{ displayName(at.speakerId) }} tried to say {{ at.text }} — not committed.
+                </template>
+              </p>
+              <p v-if="scene.detail.resolution">
+                Outcome {{ scene.detail.resolution.outcome }} · resolver
+                {{ scene.detail.resolution.resolver }}.
+                {{ scene.detail.resolution.rationale }}
+              </p>
+              <p v-if="sceneCitations(scene.narration).length">
+                Cites: {{ sceneCitations(scene.narration).join(', ') }}
+              </p>
+              <p v-if="segment.pointer.fallback">
+                Narration for this beat fell back to a deterministic stand-in.
+              </p>
+              <p v-else>Narrated beat.</p>
+              <p v-if="scene.detail.status !== 'committed'">
+                Scene state: {{ scene.detail.status.replace(/_/g, ' ') }}.
+              </p>
+            </details>
+          </template>
+          <template v-else>
+            <template
+              v-for="entry in eventSnippets(segment.pointer.eventId)"
+              :key="entry.event_id + entry.sequence">
+              <p class="beat__kind">{{ entry.event_type.replace(/_/g, ' ') }}</p>
+              <p class="beat__text">{{ entry.snippet }}</p>
+            </template>
           </template>
         </template>
-        <details class="beat__details">
-          <summary>Beat details</summary>
-          <ul v-if="sceneTech(scene).attempts.length">
-            <li v-for="a in sceneTech(scene).attempts" :key="a.key">{{ a.text }}</li>
-          </ul>
-          <p v-if="scene.detail.resolution">
-            Outcome {{ scene.detail.resolution.outcome }} · resolver
-            {{ scene.detail.resolution.resolver }}.
-            {{ scene.detail.resolution.rationale }}
-          </p>
-          <p v-if="sceneTech(scene).citations.length">
-            Cites: {{ sceneTech(scene).citations.join(', ') }}
-          </p>
-          <p v-if="beatRef?.fallback">
-            Narration for this beat fell back to a deterministic stand-in.
-          </p>
-          <p v-else>Narrated beat.</p>
-          <p v-if="scene.detail.status !== 'committed'">
-            Scene state: {{ scene.detail.status.replace(/_/g, ' ') }}.
-          </p>
-        </details>
       </template>
-    </template>
-    <template v-else>
-      <template v-for="entry in entries" :key="entry.event_id">
-        <p class="beat__kind">{{ entry.event_type.replace(/_/g, ' ') }}</p>
-        <p v-if="entry.snippet" class="beat__text">{{ entry.snippet }}</p>
-      </template>
-      <p v-if="beatRef && loaded?.pending" class="beat__empty" role="status">
-        Gathering structured beat…
-      </p>
     </template>
   </article>
 </template>
@@ -224,6 +222,12 @@ const rich = computed(() => props.loaded && !props.loaded.failed && props.loaded
 .beat__text {
   margin: 0 0 6px;
   line-height: 1.5;
+}
+.beat__topic {
+  margin: 0 0 6px;
+  line-height: 1.5;
+  color: #6b5d43;
+  font-style: italic;
 }
 .beat__kind {
   font-size: 12px;

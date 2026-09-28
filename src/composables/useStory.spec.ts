@@ -60,6 +60,8 @@ let activityListHold = false
 let advanceDuplicate = false
 /** Narration marker on the mocked committing response (`narrated` or `fallback`). */
 let advanceNarration = 'narrated'
+/** When true, the committing response carries a second scene on the same event. */
+let advanceSecondScene = false
 type TimelineMode = 'small' | 'big' | 'empty-advance' | 'stuck'
 let timelineMode: TimelineMode = 'small'
 
@@ -162,6 +164,7 @@ function installFetch(): void {
   activityListHold = false
   advanceDuplicate = false
   advanceNarration = 'narrated'
+  advanceSecondScene = false
   vi.stubGlobal(
     'fetch',
     vi.fn(async (rawUrl: string, init: RequestInit = {}) => {
@@ -223,7 +226,17 @@ function installFetch(): void {
               event_id: 'e2',
               resolution_outcome: 'success',
               narration: advanceNarration
-            }
+            },
+            ...(advanceSecondScene
+              ? [
+                  {
+                    scene_id: 'scene-2',
+                    event_id: 'e2',
+                    resolution_outcome: 'success',
+                    narration: advanceNarration
+                  }
+                ]
+              : [])
           ]
         })
       }
@@ -240,8 +253,9 @@ function installFetch(): void {
         ])
       }
       if (method === 'GET' && url.pathname.startsWith('/api/v1/stage1/scenes/')) {
+        const sceneId = url.pathname.split('/').pop() ?? 'scene-1'
         return json({
-          id: 'scene-1',
+          id: sceneId,
           world_id: id,
           phase_run_id: 'run-1',
           status: 'committed',
@@ -1216,6 +1230,66 @@ describe('useStory room', () => {
     await story.load()
     await story.advance()
     expect(story.beatScenes.value).toEqual({})
+  })
+
+  it('loads every scene of a two-scene beat in pointer order', async () => {
+    installFetch()
+    advanceSecondScene = true
+    const story = useStory('A', 'watcher')
+    await story.load()
+    await story.advance()
+    expect(story.beatScenes.value['e2']?.sceneIds).toEqual(['scene-1', 'scene-2'])
+    await story.loadBeatDetail('e2')
+    const loaded = story.beatDetails.value['e2']
+    expect(loaded?.pending).toBe(false)
+    expect(loaded?.failed).toBe(false)
+    expect(loaded?.scenes.map((s) => s.sceneId)).toEqual(['scene-1', 'scene-2'])
+    expect(loaded?.scenes.every((s) => !s.failed)).toBe(true)
+  })
+
+  it('a failed scene keeps its siblings and falls back to snippets', async () => {
+    installFetch()
+    advanceSecondScene = true
+    failures.set('GET /api/v1/stage1/scenes/scene-2', {
+      code: 'GONE',
+      message: 'gone',
+      status: 500
+    })
+    failures.set('GET /api/v1/stage1/scenes/scene-2/narration', {
+      code: 'GONE',
+      message: 'gone',
+      status: 500
+    })
+    const story = useStory('A', 'watcher')
+    await story.load()
+    await story.advance()
+    await story.loadBeatDetail('e2')
+    const loaded = story.beatDetails.value['e2']
+    expect(loaded?.failed).toBe(false)
+    expect(loaded?.scenes).toHaveLength(2)
+    expect(loaded?.scenes[0]).toMatchObject({ sceneId: 'scene-1', failed: false })
+    expect(loaded?.scenes[1]).toMatchObject({ sceneId: 'scene-2', failed: true, detail: null })
+  })
+
+  it('marks the beat failed only when every scene fails', async () => {
+    installFetch()
+    failures.set('GET /api/v1/stage1/scenes/scene-1', {
+      code: 'GONE',
+      message: 'gone',
+      status: 500
+    })
+    failures.set('GET /api/v1/stage1/scenes/scene-1/narration', {
+      code: 'GONE',
+      message: 'gone',
+      status: 500
+    })
+    const story = useStory('A', 'watcher')
+    await story.load()
+    await story.advance()
+    await story.loadBeatDetail('e2')
+    const loaded = story.beatDetails.value['e2']
+    expect(loaded?.failed).toBe(true)
+    expect(loaded?.scenes).toHaveLength(1)
   })
 
   it('restores beat pointers from storage on reload', async () => {
