@@ -1,9 +1,9 @@
 {
   "slice": "browser recovery: Q1 interrupted, reload, Q2 typed, Q1 resumed exactly once",
-  "commit": "184e4a9",
+  "commit": "c641b61",
   "dirty": true,
-  "diffSha256": "8b45db4e794f1ab4c4937ca3c60db922e4a7d94c5fe36c4fc675497db554e4c1",
-  "at": "2026-09-28T09:38:31.109Z",
+  "diffSha256": "fbda966a1bc659c7843c72cbb2f63c3930316dc0cc8d4cda37815b85ae9a78ba",
+  "at": "2026-09-28T10:00:03.800Z",
   "gateway": "fake profile on scratch API (no model spend)",
   "modelSpend": "none",
   "requestSummaries": [
@@ -39,7 +39,13 @@
       "scenario": "recovery",
       "step": "player story seeded on scratch API",
       "ok": true,
-      "detail": "world cbdc7e81"
+      "detail": "world b5510a31"
+    },
+    {
+      "scenario": "recovery",
+      "step": "browser proxy reaches the same scratch instance",
+      "ok": true,
+      "detail": "world b5510a31"
     },
     {
       "scenario": "recovery",
@@ -97,9 +103,9 @@
     },
     {
       "scenario": "recovery",
-      "step": "committed intent is Q1 exactly once with actor and target; Q2 zero times",
+      "step": "committed intent is Q1 exactly once with actor and target IDs; Q2 zero times",
       "ok": true,
-      "detail": "q1=1 q2=0"
+      "detail": "q1=1 q2=0 intents=2"
     },
     {
       "scenario": "recovery",
@@ -122,11 +128,12 @@
   ],
   "committedIntents": [
     {
-      "sequence": 3,
-      "event_id": "4d95b4ef-8af3-448d-a987-b9c1b556d183",
-      "event_type": "action_resolved",
-      "absolute_index": 1,
-      "snippet": "attempt:wait: Ash waits attempt:communicate: Wren says to Ash: What news from the mill, Ash? attempt:wait: Ash waits attempt:communicate: Wren says to Ash: What"
+      "intent_id": "4f89a2a1-697c-588b-9e31-e9f4aa9413cd",
+      "scene_id": "f0f84b70-94ee-5aec-8ee5-fe7871436c42",
+      "author_character_id": "bd4946ab-70cd-4a2f-a89e-f6ee7cee87a4",
+      "family": "communicate",
+      "topic": "What news from the mill, Ash?",
+      "target_character_id": "a9888a18-8d24-40c1-b507-d602d006c25b"
     }
   ]
 }

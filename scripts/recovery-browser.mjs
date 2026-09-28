@@ -22,17 +22,18 @@
  *   node scripts/recovery-browser.mjs \
  *     --base http://127.0.0.1:5174 --api http://127.0.0.1:8102 \
  *     --scratch-db-url postgresql://user:pass@localhost:5433/embervale_recovery \
- *     --out docs/evidence/recovery [--kill <scratch-api-pid>]
+ *     --out docs/evidence/recovery
  *
  * The scenario supervises the scratch API itself: it kills the server
  * mid-beat and respawns the same fake-profile command (DB credentials
  * come from the gitignored .env at runtime, never from evidence).
  * Isolation is enforced, not assumed: --scratch-db-url is required and
  * must name a different database than the live stack, --api must be the
- * scratch port the restarts bind, the fake provider is proven before any
- * mutation, only verified scratch processes are terminated, and
- * restarted servers are stopped in `finally`. Exit non-zero on any
- * failed step; results are still written.
+ * local scratch instance the harness itself starts (an occupied scratch
+ * port is refused), the fake provider is proven before any mutation, the
+ * browser proxy is proven to reach that same instance, only verified
+ * scratch processes are terminated, and owned servers are stopped in
+ * `finally`. Exit non-zero on any failed step; results are still written.
  */
 
 import { execSync, spawn } from 'node:child_process'
@@ -53,16 +54,19 @@ const OUT = opt('--out', 'docs/evidence/recovery')
 const KEY = process.env.RECOVERY_API_KEY || ''
 const ROOT = opt('--root', process.cwd())
 const PYTHON = path.join(ROOT, 'backend', '.venv', 'Scripts', 'python.exe')
-const API_PORT = (() => {
+const API_URL = (() => {
+  // Restarts always bind loopback:8102, so --api must name that same
+  // local instance — never a remote hostname or a different port.
   const parsed = new URL(API)
-  if (parsed.port !== '8102') {
-    throw new Error(`--api must target the scratch port 8102 (restarts always bind it); got ${API}`)
+  const loopback = ['127.0.0.1', 'localhost', '::1'].includes(parsed.hostname)
+  if (!loopback || parsed.port !== '8102') {
+    throw new Error(`--api must be the local scratch instance (loopback:8102); got ${API}`)
   }
-  return parsed.port
+  return parsed
 })()
+const API_PORT = API_URL.port
 const SCRATCH_DB_URL = opt('--scratch-db-url', process.env.RECOVERY_SCRATCH_DB_URL || '')
-let killPid = Number(opt('--kill', '0'))
-const KILL_DELAY_MS = Number(opt('--kill-delay-ms', '600'))
+let killPid = 0
 const ownedApiPids = new Set()
 const EDGE = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
 const Q1 = 'What news from the mill, Ash?'
@@ -156,9 +160,10 @@ function loadDotEnv() {
   return env
 }
 
-function restartApi() {
-  // Supervised directly: respawn the same fake-profile server the stack
-  // started with. Migrations persist in the scratch DB; no alembic rerun.
+function startApi() {
+  // Supervised directly: start (or restart) the fake-profile server on
+  // the validated scratch database. Migrations persist in the scratch
+  // DB; no alembic rerun. Every instance is owned and stopped in `finally`.
   const dot = loadDotEnv()
   const scratchUrl = requireScratchDbUrl(dot.WORLDSIM_DATABASE__URL)
   const child = spawn(
@@ -347,17 +352,44 @@ function watchAdvances(page) {
   })
 }
 
-async function main() {
-  // Validate isolation before any mutation: explicit scratch database
-  // distinct from live, matching --api port, fake provider proven.
-  requireScratchDbUrl(loadDotEnv().WORLDSIM_DATABASE__URL)
-  await requireFakeProfile()
-  if (!killPid) killPid = findApiPid()
-  if (!verifyScratchApi(killPid)) {
-    throw new Error(`no verified scratch API to interrupt (pid ${killPid || 'none'})`)
+async function requireProxySameInstance(worldId) {
+  // The browser reaches the API through the vite proxy: prove the proxy
+  // lands on this same scratch instance before gameplay mutations. A
+  // proxy pointed elsewhere would not know the seeded world.
+  const res = await fetch(`${BASE}/api/v1/stories/${worldId}`, {
+    headers: { 'X-Worldsim-Role': 'watcher', ...(KEY ? { Authorization: `Bearer ${KEY}` } : {}) }
+  })
+  if (!res.ok) throw new Error(`proxy story read -> ${res.status}: not our scratch instance`)
+  const body = await res.json()
+  if (!JSON.stringify(body).includes(worldId)) {
+    throw new Error('proxy story mismatch: not our scratch instance')
   }
+}
+
+async function readRunIntents(runId) {
+  // Structured committed intents for one run, scene by scene.
+  const scenes = await apiCall('GET', `/stage1/scenes?phase_run_id=${runId}&limit=200`)
+  const out = []
+  for (const scene of scenes) {
+    const detail = await apiCall('GET', `/stage1/scenes/${scene.id}`)
+    for (const intent of detail.intents || []) out.push({ scene_id: scene.id, ...intent })
+  }
+  return out
+}
+
+async function main() {
+  // The harness starts and owns its API: validate isolation first, refuse
+  // an occupied scratch port, then prove the fake provider — all before
+  // any mutation. No pre-existing process is ever adopted or killed.
+  requireScratchDbUrl(loadDotEnv().WORLDSIM_DATABASE__URL)
+  if (findApiPid()) throw new Error('refusing: scratch port 8102 already occupied')
+  killPid = startApi()
+  await waitHealthy()
+  await requireFakeProfile()
   const worldId = await seedPlayerStory()
   record('player story seeded on scratch API', true, `world ${worldId.slice(0, 8)}`)
+  await requireProxySameInstance(worldId)
+  record('browser proxy reaches the same scratch instance', true, `world ${worldId.slice(0, 8)}`)
 
   const browser = await chromium.launch({ executablePath: EDGE, headless: true })
   try {
@@ -373,10 +405,14 @@ async function main() {
     // commits first is retried with a fresh topic; only a stranded run
     // exits the loop.
     let strandedIndex = 0
+    let runId = null
     let q1 = Q1
     let killAt = 0
     for (let attempt = 1; attempt <= 5; attempt += 1) {
       q1 = attempt === 1 ? Q1 : `${Q1} (try ${attempt})`
+      // Read the clock before sending: the target beat is next index.
+      const clock = await apiCall('GET', `/simulation/status?world_id=${worldId}`)
+      const targetIndex = clock.absolute_index + 1
       const speak = page.getByRole('region', { name: 'Speak as your character' })
       await page.getByLabel('Say').fill(q1)
       const askBtn = speak.getByRole('button', { name: 'Ask with the next beat' })
@@ -421,10 +457,19 @@ async function main() {
       }
       await askBtn.click()
       await speak.getByRole('button', { name: 'Committing beat…' }).waitFor({ timeout: 15000 })
-      await new Promise((r) => setTimeout(r, KILL_DELAY_MS))
+      // Kill on admission, not on a fixed delay: poll for the open run
+      // and terminate the instant it appears, while the beat is still
+      // executing. A beat that commits first is retried next attempt.
+      const pollUntil = Date.now() + 15000
+      for (;;) {
+        const seen = await apiCall('GET', `/simulation/status?world_id=${worldId}`)
+        if (seen.open_run_index === targetIndex) break
+        if (Date.now() > pollUntil) break
+        await new Promise((r) => setTimeout(r, 25))
+      }
       killAt = Date.now()
       killApi()
-      killPid = restartApi()
+      killPid = startApi()
       await waitHealthy()
       await page.reload({ waitUntil: 'domcontentloaded' })
       await page.locator('.play__badge').waitFor({ timeout: 30000 })
@@ -441,6 +486,12 @@ async function main() {
       const m = banner.match(/Beat (\d+) hasn't finished/)
       if (m) {
         strandedIndex = Number(m[1])
+        // The open run id anchors the structured intent proof later.
+        const status = await apiCall('GET', `/simulation/status?world_id=${worldId}`)
+        if (status.open_run_index !== strandedIndex || !status.open_run_id) {
+          throw new Error('status disagrees with the stranded banner')
+        }
+        runId = status.open_run_id
         record('Q1 interrupted into a stranded open beat', true, `beat ${strandedIndex}`)
         break
       }
@@ -520,26 +571,35 @@ async function main() {
       atIndex.length > 0 && beyond.length === 0,
       `at=${atIndex.length} beyond=${beyond.length}`
     )
-    // Read-only committed-intent proof: Q1's actor, target, and payload
-    // occur exactly once at the stranded index; Q2 occurs nowhere.
-    const q1Committed = atIndex.filter(
-      (e) =>
-        (e.snippet || '').includes(q1) &&
-        (e.snippet || '').includes('Wren') &&
-        (e.snippet || '').includes('Ash')
+    // Read-only committed-intent proof from structured scene records
+    // (not presentation text): exactly one `communicate` intent with
+    // Wren's runtime id, Ash's target id, and the exact Q1 topic; Q2 in
+    // none of the run's intents.
+    const characters = await apiCall('GET', `/stage1/characters?world_id=${worldId}`)
+    const wrenId = characters.find((c) => c.name === 'Wren')?.id
+    const ashId = characters.find((c) => c.name === 'Ash')?.id
+    if (!wrenId || !ashId) throw new Error('seeded cast missing from character roster')
+    const runIntents = await readRunIntents(runId)
+    const q1Committed = runIntents.filter(
+      (i) =>
+        i.family === 'communicate' &&
+        i.author_character_id === wrenId &&
+        i.detail?.target_character_id === ashId &&
+        i.detail?.topic === q1
     )
-    const q2Committed = (timeline.entries || []).filter((e) => (e.snippet || '').includes(Q2))
-    const committedSources = q1Committed.map((e) => ({
-      sequence: e.sequence,
-      event_id: e.event_id,
-      event_type: e.event_type,
-      absolute_index: e.absolute_index,
-      snippet: e.snippet
+    const q2Committed = runIntents.filter((i) => i.detail?.topic === Q2)
+    const committedSources = q1Committed.map((i) => ({
+      intent_id: i.id,
+      scene_id: i.scene_id,
+      author_character_id: i.author_character_id,
+      family: i.family,
+      topic: i.detail?.topic,
+      target_character_id: i.detail?.target_character_id
     }))
     record(
-      'committed intent is Q1 exactly once with actor and target; Q2 zero times',
+      'committed intent is Q1 exactly once with actor and target IDs; Q2 zero times',
       q1Committed.length === 1 && q2Committed.length === 0,
-      `q1=${q1Committed.length} q2=${q2Committed.length}`
+      `q1=${q1Committed.length} q2=${q2Committed.length} intents=${runIntents.length}`
     )
     const busyCount = advanceResponses.filter((r) => r.status === 409).length
     record('refused resume is HTTP 409', busyCount === 1, `${busyCount} busy responses`)

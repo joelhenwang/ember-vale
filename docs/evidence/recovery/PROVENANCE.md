@@ -81,27 +81,27 @@ failing `randomUUID()` still falls through to a working
 Edge against a scratch stack only: scratch vite on 5174 (with an
 env-overridable API target in `vite.config.ts`) → fake-profile API on
 8102 → isolated `embervale_recovery` database. The live compose stack
-was never touched and no model call was made. The run API-seeds a
-Player-as-Wren story, asks Q1, SIGKills the API mid-beat, restarts it,
-and reloads: the banner names stranded beat 1 with its Resume control.
-An immediate resume is correctly refused on the orphaned 300s
-DB-backed execution lease (409 committing notice, nothing filed);
-after the lease expires, Resume replays Q1 verbatim — all 3 sends at
-index 1 carry Q1, exactly one fresh 200 commit (`duplicate: false`),
-clock at Beat 1, no timeline entries beyond it, the Q1 filing retired,
-Q2 never posted and still in the composer. Results, request/response
-summaries, committed-intent sources, and screenshots (`recovery-banner.png`,
-`recovery-composer-q2.png`, `recovery-resumed.png`) are preserved
-alongside; the run's own `at`/`commit`/`diffSha256` fields carry its
-identity. The rerun enforces scratch isolation (explicit scratch
-database URL validated against live, fake provider proven before
-mutations, verified scratch processes only, owned servers stopped in
-`finally`, `--api` pinned to the scratch port) and adds the
-read-only committed-intent proof (Q1 with actor and target exactly
-once by timeline source IDs, Q2 zero times) plus an explicit HTTP 409
-assertion; transport records are labeled summaries. Scratch processes
-were stopped afterwards; only the throwaway scratch database rows
-remain.
+was never touched and no model call was made. The harness starts and
+owns its API (an occupied scratch port is refused), proves the fake
+provider before any mutation, proves the browser proxy reaches that
+same instance, then API-seeds a Player-as-Wren story, asks Q1, kills
+the API on admission, restarts it, and reloads: the banner names
+stranded beat 1 with its Resume control. An immediate resume is
+correctly refused on the orphaned 300s DB-backed execution lease
+(explicit HTTP 409, nothing filed); after the lease expires, Resume
+replays Q1 verbatim — all sends at index 1 carry Q1, exactly one
+fresh 200 commit (`duplicate: false`), clock at Beat 1, no timeline
+entries beyond it. The committed-intent proof reads structured scene
+records: exactly one `communicate` intent with Wren's runtime id,
+Ash's target id, and the exact topic (ID and payload preserved),
+Q2 in none of the run's intents; the Q1 filing retired, Q2 never
+posted and still in the composer. Results, request/response
+summaries, committed-intent sources, and screenshots
+(`recovery-banner.png`, `recovery-composer-q2.png`,
+`recovery-resumed.png`) are preserved alongside; the run's own
+`at`/`commit`/`diffSha256` fields carry its identity. Owned scratch
+processes are stopped in `finally`; only throwaway scratch database
+rows remain.
 
 ## What this record does not claim
 
