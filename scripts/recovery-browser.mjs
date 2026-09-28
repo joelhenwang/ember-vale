@@ -21,12 +21,18 @@
  * Usage (from repo root; RECOVERY_API_KEY must match the scratch API):
  *   node scripts/recovery-browser.mjs \
  *     --base http://127.0.0.1:5174 --api http://127.0.0.1:8102 \
+ *     --scratch-db-url postgresql://user:pass@localhost:5433/embervale_recovery \
  *     --out docs/evidence/recovery [--kill <scratch-api-pid>]
  *
  * The scenario supervises the scratch API itself: it kills the server
  * mid-beat and respawns the same fake-profile command (DB credentials
  * come from the gitignored .env at runtime, never from evidence).
- * Exit non-zero on any failed step; results are still written.
+ * Isolation is enforced, not assumed: --scratch-db-url is required and
+ * must name a different database than the live stack, --api must be the
+ * scratch port the restarts bind, the fake provider is proven before any
+ * mutation, only verified scratch processes are terminated, and
+ * restarted servers are stopped in `finally`. Exit non-zero on any
+ * failed step; results are still written.
  */
 
 import { execSync, spawn } from 'node:child_process'
@@ -47,8 +53,17 @@ const OUT = opt('--out', 'docs/evidence/recovery')
 const KEY = process.env.RECOVERY_API_KEY || ''
 const ROOT = opt('--root', process.cwd())
 const PYTHON = path.join(ROOT, 'backend', '.venv', 'Scripts', 'python.exe')
+const API_PORT = (() => {
+  const parsed = new URL(API)
+  if (parsed.port !== '8102') {
+    throw new Error(`--api must target the scratch port 8102 (restarts always bind it); got ${API}`)
+  }
+  return parsed.port
+})()
+const SCRATCH_DB_URL = opt('--scratch-db-url', process.env.RECOVERY_SCRATCH_DB_URL || '')
 let killPid = Number(opt('--kill', '0'))
 const KILL_DELAY_MS = Number(opt('--kill-delay-ms', '600'))
+const ownedApiPids = new Set()
 const EDGE = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
 const Q1 = 'What news from the mill, Ash?'
 const Q2 = 'What news from the market, Ash?'
@@ -85,11 +100,11 @@ function writeResults(extra = {}) {
         at: new Date().toISOString(),
         gateway: 'fake profile on scratch API (no model spend)',
         modelSpend: 'none',
-        requests: advancePosts.map((b) => ({
+        requestSummaries: advancePosts.map((b) => ({
           absolute_index: b.absolute_index,
           topics: Object.values(b.player_intents || {}).map((i) => i?.topic)
         })),
-        responses: advanceResponses,
+        responseSummaries: advanceResponses,
         results,
         ...extra
       },
@@ -145,13 +160,10 @@ function restartApi() {
   // Supervised directly: respawn the same fake-profile server the stack
   // started with. Migrations persist in the scratch DB; no alembic rerun.
   const dot = loadDotEnv()
-  const scratchUrl = (dot.WORLDSIM_DATABASE__URL || '').replace(
-    /\/embervale$/,
-    '/embervale_recovery'
-  )
+  const scratchUrl = requireScratchDbUrl(dot.WORLDSIM_DATABASE__URL)
   const child = spawn(
     PYTHON,
-    ['-m', 'worldsim.interfaces.cli', 'serve', '--host', '127.0.0.1', '--port', '8102'],
+    ['-m', 'worldsim.interfaces.cli', 'serve', '--host', '127.0.0.1', '--port', API_PORT],
     {
       cwd: ROOT,
       detached: true,
@@ -166,7 +178,67 @@ function restartApi() {
     }
   )
   child.unref()
+  if (child.pid) ownedApiPids.add(child.pid)
   return child.pid
+}
+
+async function requireFakeProfile() {
+  // No mutations until the scratch API proves it is deterministic.
+  const res = await fetch(`${API}/api/v1/health/ready`)
+  if (!res.ok) throw new Error(`scratch API not ready: ${res.status}`)
+  const body = await res.json()
+  const profile = (body.checks || []).find((c) => c.name === 'model_profile')
+  if (!profile || !/active:fake/.test(profile.detail || '')) {
+    throw new Error(
+      `refusing mutations: scratch API is not fake-profile (${profile?.detail || 'unknown'})`
+    )
+  }
+}
+
+function requireScratchDbUrl(liveUrl) {
+  // Explicit, validated isolation: the scratch URL must be given, must
+  // parse as postgres, and must name a different database than the live
+  // stack. A silent replace fallback could restart onto the live DB.
+  if (!SCRATCH_DB_URL) throw new Error('missing --scratch-db-url <postgresql url>')
+  let scratch
+  try {
+    scratch = new URL(SCRATCH_DB_URL)
+  } catch {
+    throw new Error('unparseable --scratch-db-url')
+  }
+  if (!/^postgres/.test(scratch.protocol) || !scratch.pathname || scratch.pathname === '/') {
+    throw new Error('scratch URL must be a postgresql URL with a database name')
+  }
+  if (!liveUrl) throw new Error('live database URL unknown; refusing to guess isolation')
+  let live
+  try {
+    live = new URL(liveUrl.replace(/\+asyncpg$/, ''))
+  } catch {
+    throw new Error('unparseable live database URL; refusing to guess isolation')
+  }
+  if (scratch.pathname === live.pathname) {
+    throw new Error('scratch database matches the live database; refusing to start')
+  }
+  return SCRATCH_DB_URL
+}
+
+function processCommandLine(pid) {
+  try {
+    return execSync(
+      `powershell -Command "(Get-CimInstance Win32_Process -Filter 'ProcessId=${pid}' | Select-Object -ExpandProperty CommandLine)"`,
+      { stdio: 'pipe' }
+    ).toString()
+  } catch {
+    return ''
+  }
+}
+
+function verifyScratchApi(pid) {
+  // Kill only a verified scratch server: the worldsim serve command on
+  // the scratch port. Anything else is left alone.
+  if (!pid) return false
+  const cmd = processCommandLine(pid)
+  return cmd.includes('worldsim.interfaces.cli') && cmd.includes('serve') && cmd.includes(API_PORT)
 }
 
 async function seedPlayerStory() {
@@ -231,7 +303,23 @@ function findApiPid() {
 function killApi() {
   // Forceful termination: the in-flight beat task dies mid-execution and
   // its run row stays open. A graceful stop could let the beat commit.
+  // Only a verified scratch server is ever terminated.
+  if (!verifyScratchApi(killPid)) {
+    throw new Error(`refusing to kill unverified pid ${killPid}`)
+  }
+  ownedApiPids.delete(killPid)
   process.kill(killPid)
+}
+
+function stopOwnedApi() {
+  for (const pid of [...ownedApiPids]) {
+    ownedApiPids.delete(pid)
+    try {
+      if (verifyScratchApi(pid)) process.kill(pid)
+    } catch {
+      /* already gone */
+    }
+  }
 }
 
 const advancePosts = []
@@ -260,8 +348,14 @@ function watchAdvances(page) {
 }
 
 async function main() {
+  // Validate isolation before any mutation: explicit scratch database
+  // distinct from live, matching --api port, fake provider proven.
+  requireScratchDbUrl(loadDotEnv().WORLDSIM_DATABASE__URL)
+  await requireFakeProfile()
   if (!killPid) killPid = findApiPid()
-  if (!killPid) throw new Error('missing --kill <scratch-api-pid> and nothing listens on 8102')
+  if (!verifyScratchApi(killPid)) {
+    throw new Error(`no verified scratch API to interrupt (pid ${killPid || 'none'})`)
+  }
   const worldId = await seedPlayerStory()
   record('player story seeded on scratch API', true, `world ${worldId.slice(0, 8)}`)
 
@@ -426,6 +520,29 @@ async function main() {
       atIndex.length > 0 && beyond.length === 0,
       `at=${atIndex.length} beyond=${beyond.length}`
     )
+    // Read-only committed-intent proof: Q1's actor, target, and payload
+    // occur exactly once at the stranded index; Q2 occurs nowhere.
+    const q1Committed = atIndex.filter(
+      (e) =>
+        (e.snippet || '').includes(q1) &&
+        (e.snippet || '').includes('Wren') &&
+        (e.snippet || '').includes('Ash')
+    )
+    const q2Committed = (timeline.entries || []).filter((e) => (e.snippet || '').includes(Q2))
+    const committedSources = q1Committed.map((e) => ({
+      sequence: e.sequence,
+      event_id: e.event_id,
+      event_type: e.event_type,
+      absolute_index: e.absolute_index,
+      snippet: e.snippet
+    }))
+    record(
+      'committed intent is Q1 exactly once with actor and target; Q2 zero times',
+      q1Committed.length === 1 && q2Committed.length === 0,
+      `q1=${q1Committed.length} q2=${q2Committed.length}`
+    )
+    const busyCount = advanceResponses.filter((r) => r.status === 409).length
+    record('refused resume is HTTP 409', busyCount === 1, `${busyCount} busy responses`)
 
     const stored = await page.evaluate((wid) => {
       const out = []
@@ -461,10 +578,11 @@ async function main() {
     )
 
     await ctx.close()
+    writeResults({ committedIntents: committedSources })
   } finally {
     await browser.close()
+    stopOwnedApi()
   }
-  writeResults()
 }
 
 main().catch((err) => {

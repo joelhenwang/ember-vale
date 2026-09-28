@@ -1,12 +1,12 @@
 {
   "slice": "browser recovery: Q1 interrupted, reload, Q2 typed, Q1 resumed exactly once",
-  "commit": "54e2848",
+  "commit": "184e4a9",
   "dirty": true,
-  "diffSha256": "0968456d4781672622a4db3eced8224ed0497e837ba785c463ebc9a1ad7e0a6f",
-  "at": "2026-09-25T17:52:52.961Z",
+  "diffSha256": "8b45db4e794f1ab4c4937ca3c60db922e4a7d94c5fe36c4fc675497db554e4c1",
+  "at": "2026-09-28T09:38:31.109Z",
   "gateway": "fake profile on scratch API (no model spend)",
   "modelSpend": "none",
-  "requests": [
+  "requestSummaries": [
     {
       "absolute_index": 1,
       "topics": ["What news from the mill, Ash?"]
@@ -20,7 +20,7 @@
       "topics": ["What news from the mill, Ash?"]
     }
   ],
-  "responses": [
+  "responseSummaries": [
     {
       "status": 500,
       "duplicate": "<unparseable>"
@@ -39,7 +39,7 @@
       "scenario": "recovery",
       "step": "player story seeded on scratch API",
       "ok": true,
-      "detail": "world b5402401"
+      "detail": "world cbdc7e81"
     },
     {
       "scenario": "recovery",
@@ -97,6 +97,18 @@
     },
     {
       "scenario": "recovery",
+      "step": "committed intent is Q1 exactly once with actor and target; Q2 zero times",
+      "ok": true,
+      "detail": "q1=1 q2=0"
+    },
+    {
+      "scenario": "recovery",
+      "step": "refused resume is HTTP 409",
+      "ok": true,
+      "detail": "1 busy responses"
+    },
+    {
+      "scenario": "recovery",
       "step": "resume committed fresh, never as a duplicate",
       "ok": true,
       "detail": "[{\"status\":200,\"duplicate\":false,\"absolute_index\":1}]"
@@ -106,6 +118,15 @@
       "step": "Q1 filing retired and Q2 never stored",
       "ok": true,
       "detail": "no filings"
+    }
+  ],
+  "committedIntents": [
+    {
+      "sequence": 3,
+      "event_id": "4d95b4ef-8af3-448d-a987-b9c1b556d183",
+      "event_type": "action_resolved",
+      "absolute_index": 1,
+      "snippet": "attempt:wait: Ash waits attempt:communicate: Wren says to Ash: What news from the mill, Ash? attempt:wait: Ash waits attempt:communicate: Wren says to Ash: What"
     }
   ]
 }

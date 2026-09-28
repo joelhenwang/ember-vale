@@ -90,11 +90,18 @@ after the lease expires, Resume replays Q1 verbatim — all 3 sends at
 index 1 carry Q1, exactly one fresh 200 commit (`duplicate: false`),
 clock at Beat 1, no timeline entries beyond it, the Q1 filing retired,
 Q2 never posted and still in the composer. Results, request/response
-bodies, and screenshots (`recovery-banner.png`,
+summaries, committed-intent sources, and screenshots (`recovery-banner.png`,
 `recovery-composer-q2.png`, `recovery-resumed.png`) are preserved
 alongside; the run's own `at`/`commit`/`diffSha256` fields carry its
-identity. Scratch processes were stopped afterwards; only the
-throwaway scratch database rows remain.
+identity. The rerun enforces scratch isolation (explicit scratch
+database URL validated against live, fake provider proven before
+mutations, verified scratch processes only, owned servers stopped in
+`finally`, `--api` pinned to the scratch port) and adds the
+read-only committed-intent proof (Q1 with actor and target exactly
+once by timeline source IDs, Q2 zero times) plus an explicit HTTP 409
+assertion; transport records are labeled summaries. Scratch processes
+were stopped afterwards; only the throwaway scratch database rows
+remain.
 
 ## What this record does not claim
 
