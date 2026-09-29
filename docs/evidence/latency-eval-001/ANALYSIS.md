@@ -88,6 +88,32 @@ presentation preferences over the presented samples only. Key in
 A corrected pack including arm-B samples can be built offline on request;
 no new paid calls needed.
 
+## Arm E: mistral-nemo narrator (direct-output candidate)
+
+Route `mistralai/mistral-nemo` via the OpenRouter chat/completions gateway,
+temperature 0.2, top_p/top_k unset, json_mode off, per-item max_tokens,
+180s timeout. Same 10 narrator fixture prompts, same repair policy, same
+replay-check scope as arm A (schema plus `beats_valid`, speaker-to-source
+still disabled). Control is arm A narrator (deepseek, already paid): 2/10
+passed at 120s terminal p50. Fixed limit 20 calls (10 + ≤10 repairs);
+19 used. Timeout-stall abort armed, never fired.
+
+- Passed 2/10; 8 exhausted on validation; 0 provider errors, 0
+  reasoning-only, 0 empty. Direct output confirmed: no thinking stalls.
+- Terminal latency p50 13.8s / p90 15.8s; validated p50 14.5s (n=2).
+  Roughly 8x faster than baseline narrator terminal (119.6s).
+- Failure character is attribution, not output: schema-valid beats that
+  cite hallucinated keys (fact values pasted as keys) or unevidenced
+  speaker ids. The single repair rarely corrects this.
+- Usage complete (missing=0): 25,534 billable tokens, est. $0.0005
+  at $0.019/1M in + $0.03/1M out. Billed window 2026-09-29 in
+  results-E.json; runner writes no model_call rows.
+
+Reading: same pass count as baseline at a fraction of the latency, with
+the failure mode moved from no-output to misattribution. Citation
+discipline (exact keys, roster speaker ids) is the remaining gap and
+would be the variable for any follow-up, not this comparison.
+
 ## Duplicate beats: mechanism (read-only)
 
 Withdrawing the timeout-recovery attribution. For every fixture event, the

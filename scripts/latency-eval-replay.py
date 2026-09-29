@@ -44,6 +44,7 @@ ARMS = {
     "B": {"model": "z-ai/glm-4.7-flash", "temperature": 0.2, "json_narrator": False},
     "C": {"model": "deepseek/deepseek-v4-flash-0731", "temperature": 0.0, "json_narrator": False},
     "D1": {"model": "deepseek/deepseek-v4-flash-0731", "temperature": 0.2, "json_narrator": True},
+    "E": {"model": "mistralai/mistral-nemo", "temperature": 0.2, "json_narrator": False},
 }
 
 ROLE_SYSTEM = {
@@ -241,7 +242,7 @@ async def main() -> None:
     global request_role_hint, CANNED_BY_ROLE
     fixture = json.loads((REPO / args.fixture).read_text())
     items = fixture["items"]
-    if args.arm == "D1":
+    if args.arm in ("D1", "E"):
         items = [i for i in items if i["role"] == "narrator"]
     if args.limit:
         items = items[: args.limit]
@@ -259,6 +260,7 @@ async def main() -> None:
         )
     results = []
     total_tokens = 0
+    consecutive_timeouts = 0
     for i, item in enumerate(items):
         request_role_hint = item["role"]
         CANNED_BY_ROLE = {item["role"]: CANNED[item["role"]]}
@@ -276,6 +278,13 @@ async def main() -> None:
         results.append(res)
         print(f"[{i + 1}/{len(items)}] {item['role']} {item['prompt_hash'][:8]} "
               f"{res['outcome']} ttuv={res.get('ttuv_ms')}ms tokens={total_tokens}", flush=True)
+        if any(a.get("error") == "ModelTimeoutError" for a in res.get("attempts", [])):
+            consecutive_timeouts += 1
+        else:
+            consecutive_timeouts = 0
+        if consecutive_timeouts >= 3:
+            print(f"TIMEOUT-STALL: 3 consecutive timeouts, aborting arm {args.arm}")
+            break
         if total_tokens >= args.token_tripwire:
             print(f"TRIPWIRE: {total_tokens} tokens, aborting arm {args.arm}")
             break

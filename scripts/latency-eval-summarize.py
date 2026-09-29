@@ -25,6 +25,7 @@ from pathlib import Path
 PRICE = {
     "deepseek/deepseek-v4-flash-0731": (0.021, 0.32),
     "z-ai/glm-4.7-flash": (0.0605, 0.40),
+    "mistralai/mistral-nemo": (0.019, 0.03),
 }
 
 
