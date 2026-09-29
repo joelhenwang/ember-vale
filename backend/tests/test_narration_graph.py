@@ -526,3 +526,89 @@ def test_fallback_summarizes_instruction_topic() -> None:
     assert beats[0].cited_fact_keys == ["reaction:abc"]
     assert "Tell Wren about the mill" in beats[0].text
     assert beats[0].text != "Tell Wren about the mill"
+
+def test_dedupe_narration_facts_collapses_observer_copies() -> None:
+    from worldsim.application.graphs.narrate import dedupe_narration_facts
+
+    source = uuid.uuid4()
+    assert dedupe_narration_facts(
+        [("attempt:wait", "Ash waits", source), ("attempt:wait", "Ash waits", source)]
+    ) == [("attempt:wait", "Ash waits")]
+
+
+def test_dedupe_narration_facts_keeps_distinct_same_family_actions() -> None:
+    from worldsim.application.graphs.narrate import dedupe_narration_facts
+
+    first, second = uuid.uuid4(), uuid.uuid4()
+    assert dedupe_narration_facts(
+        [
+            ("attempt:communicate", "Wren asks about the mill", first),
+            ("attempt:communicate", "Ash asks about the lamps", second),
+        ]
+    ) == [
+        ("attempt:communicate", "Wren asks about the mill"),
+        ("attempt:communicate", "Ash asks about the lamps"),
+    ]
+
+
+def test_dedupe_narration_facts_keeps_identical_text_distinct_actions() -> None:
+    from worldsim.application.graphs.narrate import dedupe_narration_facts
+
+    first, second = uuid.uuid4(), uuid.uuid4()
+    assert dedupe_narration_facts(
+        [("attempt:wait", "Ash waits", first), ("attempt:wait", "Ash waits", second)]
+    ) == [("attempt:wait", "Ash waits"), ("attempt:wait", "Ash waits")]
+
+
+def test_dedupe_narration_facts_passes_through_unprovenanced_facts() -> None:
+    from worldsim.application.graphs.narrate import dedupe_narration_facts
+
+    legacy = [("attempt:wait", "Ash waits", None), ("attempt:wait", "Ash waits", None)]
+    assert dedupe_narration_facts(legacy) == [
+        ("attempt:wait", "Ash waits"),
+        ("attempt:wait", "Ash waits"),
+    ]
+
+
+def test_dedupe_narration_facts_is_idempotent() -> None:
+    from worldsim.application.graphs.narrate import dedupe_narration_facts
+
+    source = uuid.uuid4()
+    facts = [
+        ("attempt:wait", "Ash waits", source),
+        ("attempt:wait", "Ash waits", source),
+        ("attempt:communicate", "Wren asks", uuid.uuid4()),
+        ("dnd-sheet:ash", "level 1", None),
+    ]
+    once = dedupe_narration_facts(facts)
+    assert dedupe_narration_facts([(k, v, None) for k, v in once]) == once
+
+
+def test_committed_dialogue_pair_retains_speakers_and_citations() -> None:
+    from worldsim.application.graphs.narrate import communication_facts, fallback_beats
+
+    ash, wren = uuid.uuid4(), uuid.uuid4()
+    spoken = _communicate_reaction(ash, wren, topic='"Market news."')
+    instructed = _communicate_reaction(wren, ash, topic="Tell Ash about the mill")
+    facts = communication_facts(
+        [spoken, instructed],
+        {ash: "Ash", wren: "Wren"},
+        [str(ash), str(wren)],
+    )
+    assert [f['key'] for f in facts] == [f"reaction:{spoken.id}", f"reaction:{instructed.id}"]
+    beats = fallback_beats(
+        world_id=uuid.uuid4(),
+        scene_id=None,
+        event_id=uuid.uuid4(),
+        visible_facts=facts,
+        beats_budget=8,
+    )
+    assert len(beats) == 2
+    assert beats[0].kind == "dialogue"
+    assert beats[0].speaker_id == ash
+    assert beats[0].text == "Market news."
+    assert beats[0].cited_fact_keys == [f"reaction:{spoken.id}"]
+    assert beats[1].kind == "narration"
+    assert beats[1].speaker_id == wren
+    assert beats[1].cited_fact_keys == [f"reaction:{instructed.id}"]
+

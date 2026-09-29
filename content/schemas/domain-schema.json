@@ -33,6 +33,19 @@
           "title": "Character Id",
           "type": "string"
         },
+        "direct_step_key": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Direct Step Key"
+        },
         "duration_phases": {
           "minimum": 1,
           "title": "Duration Phases",
@@ -3968,6 +3981,32 @@
           "title": "Completion Tokens",
           "type": "integer"
         },
+        "content_length": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content Length"
+        },
+        "content_type": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content Type"
+        },
         "error_code": {
           "anyOf": [
             {
@@ -3981,6 +4020,19 @@
           "default": null,
           "title": "Error Code"
         },
+        "finish_reason": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Finish Reason"
+        },
         "id": {
           "format": "uuid",
           "title": "Id",
@@ -3991,6 +4043,19 @@
           "minimum": 0,
           "title": "Latency Ms",
           "type": "integer"
+        },
+        "max_tokens": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Tokens"
         },
         "phase_run_id": {
           "anyOf": [
@@ -4004,6 +4069,32 @@
           ],
           "default": null,
           "title": "Phase Run Id"
+        },
+        "pin_profile_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pin Profile Id"
+        },
+        "pin_profile_revision": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pin Profile Revision"
         },
         "profile_name": {
           "maxLength": 64,
@@ -4026,6 +4117,24 @@
           "default": 0,
           "minimum": 0,
           "title": "Prompt Tokens",
+          "type": "integer"
+        },
+        "reasoning_only": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reasoning Only"
+        },
+        "reasoning_tokens": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Reasoning Tokens",
           "type": "integer"
         },
         "role": {
@@ -4690,6 +4799,19 @@
           "minimum": 0.0,
           "title": "Salience",
           "type": "number"
+        },
+        "source_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Id"
         },
         "world_id": {
           "format": "uuid",
@@ -8257,6 +8379,18 @@
           },
           "title": "Mutable Aggregate Ids",
           "type": "array"
+        },
+        "narration_status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Narration Status"
         },
         "participants": {
           "items": {

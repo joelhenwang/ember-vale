@@ -19,7 +19,7 @@
       "name": "advance-k1",
       "sequence": 2,
       "run_id": "cd1e4c34-ac5e-556e-b5cd-1a90a68fb00e",
-      "event_id": "2ea640fa-0775-4393-adcc-ec55749c12d3"
+      "event_id": "6734c39b-1937-4fe8-8c14-ae49ea92368d"
     },
     {
       "name": "scripted-intents",
@@ -59,9 +59,9 @@
     {
       "name": "migration-report",
       "heads": [
-        "0038_preset_creation_receipt"
+        "0040_observation_source"
       ],
-      "applied": "0038_preset_creation_receipt"
+      "applied": "0040_observation_source"
     }
   ]
 }

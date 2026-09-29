@@ -6,6 +6,7 @@ arrive with Stage 2.
 """
 
 from enum import StrEnum
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -38,6 +39,9 @@ class Observation(BaseModel):
     created_phase_index: int = Field(ge=0)
     salience: float = Field(default=1.0, ge=0.0, le=5.0)
     content_hash: str = Field(default="", max_length=64)
+    source_id: UUID | None = Field(default=None)
+    """Stable underlying action identity (the intent id) when the observed
+    facts derive from one action; None for legacy rows and other producers."""
 
 
 class RecentMemory(BaseModel):

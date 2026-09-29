@@ -55,6 +55,7 @@ from worldsim.application.graphs.narrate import (
     NarratorGraphDeps,
     build_narration_graph,
     communication_facts,
+    dedupe_narration_facts,
     fallback_beats,
     load_narrator_prompt,
 )
@@ -2244,7 +2245,7 @@ class Stage1Orchestrator:
         names: Mapping[UUID, str],
     ) -> tuple[list[ObservationSpec], list[MemorySpec]]:
         participant_ids = [p.character_id for p in scene.participants]
-        events: list[ObservableEvent] = []
+        events: list[tuple[Intent, ObservableEvent]] = []
         for intent in sorted(members, key=lambda i: str(i.id)):
             facts = [
                 PerceivedFact(
@@ -2263,28 +2264,34 @@ class Stage1Orchestrator:
                     )
                 )
             events.append(
-                ObservableEvent(
-                    event_id=uuid4(),
-                    world_id=world_id,
-                    location_id=sealed.locations[intent.author_character_id],
-                    participant_ids=participant_ids,
-                    facts=facts,
-                    disclosures=disclosures,
+                (
+                    intent,
+                    ObservableEvent(
+                        event_id=uuid4(),
+                        world_id=world_id,
+                        location_id=sealed.locations[intent.author_character_id],
+                        participant_ids=participant_ids,
+                        facts=facts,
+                        disclosures=disclosures,
+                    ),
                 )
             )
-        observations: list[tuple[UUID, PerceivedFact]] = []
+        observations: list[tuple[UUID, PerceivedFact, UUID]] = []
         for observer in sorted(set(participant_ids) | set(sealed.locations)):
             observer_place = sealed.locations.get(observer)
-            for event in events:
+            for intent, event in events:
                 for fact in permitted_facts(event, observer, observer_place):
-                    observations.append((observer, fact))
-        specs = [observation_spec(observer, [fact]) for observer, fact in observations]
+                    observations.append((observer, fact, intent.id))
+        specs = [
+            observation_spec(observer, [fact], source_id=source_id)
+            for observer, fact, source_id in observations
+        ]
         memories: list[MemorySpec] = []
         for participant in sorted(set(participant_ids)):
             own = next(
                 (
                     index
-                    for index, (observer, _fact) in enumerate(observations)
+                    for index, (observer, _fact, _source) in enumerate(observations)
                     if observer == participant
                 ),
                 None,
@@ -2358,8 +2365,13 @@ class Stage1Orchestrator:
         if existing:
             return "skipped"
         structured = config.get(NARRATION_MODE_KEY) == NARRATION_MODE_STRUCTURED
+        sourced = [
+            (fact.key, fact.value, obs.source_id)
+            for obs in observations
+            for fact in obs.facts
+        ]
         facts = [
-            {"key": fact.key, "value": fact.value} for obs in observations for fact in obs.facts
+            {"key": key, "value": value} for key, value in dedupe_narration_facts(sourced)
         ]
         names = {c.id: c.name for c in characters}
         facts.extend(communication_facts(scene_reactions, names, participants))

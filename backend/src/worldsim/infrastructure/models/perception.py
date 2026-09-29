@@ -30,6 +30,9 @@ class ObservationRow(Base):
         index=True,
     )
     facts: Mapped[list[object]] = mapped_column(JSONB, default=list)
+    source_id: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True), nullable=True
+    )
     created_phase_index: Mapped[int] = mapped_column(Integer)
     salience: Mapped[float] = mapped_column(Float, default=1.0)
     content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)

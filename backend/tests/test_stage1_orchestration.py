@@ -1502,3 +1502,56 @@ def test_duplicate_replay_reports_unknown_for_legacy_rows(
         assert after_texts == before_texts
 
     asyncio.run(_inner())
+
+
+def test_two_observers_produce_one_narration_fact(migrated_db: None) -> None:
+    """One action seen by two characters narrates once (fallback path).
+
+    Wren asks across locations and Ash answers, linking one two-participant
+    scene. The narrator is down, so deterministic fallback beats persist.
+    Each underlying attempt must yield exactly one beat even though both
+    participants observe it; observer records themselves stay per-observer.
+    """
+    async def _inner() -> None:
+        from worldsim.application.ports.model_gateway import ModelUnavailableError
+
+        ids = await _seed()
+        await _set_grant(ids, "player", ids["wren"])
+        gateways = _agency_gateways(ids)
+        gateways["narrator"].enqueue_error(ModelUnavailableError("provider down"))
+        gateways["narrator"].enqueue_error(ModelUnavailableError("provider down"))
+        gateways["narrator"].default_text = None
+        report = await _orchestrator(gateways).advance_phase(
+            ids["world"], 1, _wren_ask(ids)
+        )
+        assert not report.duplicate
+        assert all(s.narration == "fallback" for s in report.scenes)
+        beats = await _beats_for_report(report)
+        assert beats
+        signatures = [
+            (b.kind.value, b.text, tuple(b.cited_fact_keys)) for b in beats
+        ]
+        assert len(signatures) == len(set(signatures)), signatures
+        dialogue = [b for b in beats if b.kind == NarrationKind.DIALOGUE]
+        assert len(dialogue) == 1
+        assert dialogue[0].speaker_id == ids["ash"]
+        assert dialogue[0].cited_fact_keys
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                observations = 0
+                for outcome in report.scenes:
+                    observations += len(
+                        await uow.perception.observations_for_event(outcome.event_id)
+                    )
+                assert observations >= 2 * len(report.scenes)
+                replay = await _orchestrator(gateways).advance_phase(ids["world"], 1)
+                assert replay.duplicate
+                again = await _beats_for_report(report)
+                assert [(b.kind.value, b.text) for b in again] == [
+                    (b.kind.value, b.text) for b in beats
+                ]
+        finally:
+            await engine.dispose()
+
+    asyncio.run(_inner())

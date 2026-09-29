@@ -39,16 +39,22 @@ def narration_spec(scene_id: UUID) -> OutboxSpec:
     )
 
 
-def observation_spec(observer_id: UUID, facts: list[PerceivedFact]) -> ObservationSpec:
+def observation_spec(
+    observer_id: UUID,
+    facts: list[PerceivedFact],
+    source_id: UUID | None = None,
+) -> ObservationSpec:
     """Permitted fact set as a commit observation (key/value only).
 
     Visibility, channel, and concealment metadata stays in the context
     manifest and trace; the observation row keeps exactly what the
-    observer may retain.
+    observer may retain. `source_id` carries the stable underlying action
+    identity (the intent id) when all facts derive from one action.
     """
     return ObservationSpec(
         observer_id=observer_id,
         facts=[ObservationFact(key=fact.key, value=fact.value) for fact in facts],
+        source_id=source_id,
     )
 
 

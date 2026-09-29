@@ -68,6 +68,7 @@ def canonical_input_hash(parts: Mapping[str, Any]) -> str:
 class ObservationSpec:
     observer_id: UUID
     facts: list[ObservationFact] = field(default_factory=list)
+    source_id: UUID | None = None
 
 
 @dataclass(frozen=True)
@@ -410,6 +411,7 @@ class CanonicalTransaction:
                 content_hash=observation_hash(
                     [{"key": fact.key, "value": fact.value} for fact in spec.facts]
                 ),
+                source_id=spec.source_id,
             )
             await uow.perception.add_observation(observation)
             ids.append(observation.id)

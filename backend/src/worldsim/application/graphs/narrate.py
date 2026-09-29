@@ -268,6 +268,29 @@ def beats_valid(
     return None
 
 
+def dedupe_narration_facts(
+    facts: list[tuple[str, str, UUID | None]],
+) -> list[tuple[str, str]]:
+    """One narration fact per underlying action.
+
+    Observer copies share (source, key) and collapse to the first copy;
+    distinct actions survive even with the same key or identical text,
+    and facts without recorded provenance pass through untouched
+    (legacy rows). Never dedupe by key alone: one family key covers
+    many distinct actions.
+    """
+    seen: set[tuple[str, str]] = set()
+    unique: list[tuple[str, str]] = []
+    for key, value, source_id in facts:
+        if source_id is not None:
+            marker = (str(source_id), key)
+            if marker in seen:
+                continue
+            seen.add(marker)
+        unique.append((key, value))
+    return unique
+
+
 def _normalize_fallback_fact(fact: dict[str, Any]) -> dict[str, Any]:
     """Deterministic attributed fallback shape for one visible fact.
 
@@ -572,6 +595,7 @@ __all__ = [
     "NarratorGraphDeps",
     "beats_valid",
     "build_narration_graph",
+    "dedupe_narration_facts",
     "fallback_beats",
     "load_narrator_prompt",
     "render_user_prompt",

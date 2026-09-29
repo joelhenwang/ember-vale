@@ -39,6 +39,7 @@ class SqlAlchemyPerceptionRepository:
                 event_id=observation.event_id,
                 observer_character_id=observation.observer_character_id,
                 facts=[{"key": fact.key, "value": fact.value} for fact in observation.facts],
+                source_id=observation.source_id,
                 created_phase_index=observation.created_phase_index,
                 salience=observation.salience,
                 content_hash=observation.content_hash or None,
@@ -64,6 +65,7 @@ class SqlAlchemyPerceptionRepository:
                 created_phase_index=row.created_phase_index,
                 salience=row.salience,
                 content_hash=row.content_hash or "",
+                source_id=row.source_id,
             )
             for row in rows
         ]
@@ -97,6 +99,7 @@ class SqlAlchemyPerceptionRepository:
                 created_phase_index=row.created_phase_index,
                 salience=row.salience,
                 content_hash=row.content_hash or "",
+                source_id=row.source_id,
             )
             for row in rows
         ]
