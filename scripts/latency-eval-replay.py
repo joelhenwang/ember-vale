@@ -21,23 +21,21 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "backend" / "src"))
 
-from pydantic import SecretStr  # noqa: E402
-
-from worldsim.application.graphs import (  # noqa: E402
+from pydantic import SecretStr
+from worldsim.application.graphs import (
     character,
     director,
     narrate,
     reaction,
     resolve,
 )
-from worldsim.application.ports.model_gateway import (  # noqa: E402
+from worldsim.application.ports.model_gateway import (
     CompletionRequest,
     ModelGatewayError,
-    ModelMalformedError,
     ModelProfile,
     ModelRateLimitedError,
 )
-from worldsim.infrastructure.model_gateway.openrouter import (  # noqa: E402
+from worldsim.infrastructure.model_gateway.openrouter import (
     OpenRouterGateway,
 )
 
@@ -56,10 +54,10 @@ ROLE_SYSTEM = {
     "resolver": lambda: resolve.render_system_prompt(resolve.load_resolver_prompt()),
 }
 
-AUD_RE = re.compile(r"^Audience:\s*(.*)$", re.M)
-BUDGET_RE = re.compile(r"^Beat budget:\s*(\d+)\s*\.\s*$", re.M)
-KEY_RE = re.compile(r'^-\s*key\s+"([^"]+)"\s*:', re.M)
-ROSTER_RE = re.compile(r"^-\s*(.+?)\s*\(id:\s*([^)]+)\)\s*$", re.M)
+AUD_RE = re.compile(r"^Audience:\s*(.*)$", re.MULTILINE)
+BUDGET_RE = re.compile(r"^Beat budget:\s*(\d+)\s*\.\s*$", re.MULTILINE)
+KEY_RE = re.compile(r'^-\s*key\s+"([^"]+)"\s*:', re.MULTILINE)
+ROSTER_RE = re.compile(r"^-\s*(.+?)\s*\(id:\s*([^)]+)\)\s*$", re.MULTILINE)
 
 
 def narrator_context(user_prompt: str) -> tuple[frozenset[str], frozenset[str], int]:
@@ -185,15 +183,25 @@ async def run_item(gateway, arm: str, role: str, item: dict, timeout_s: float) -
         except ModelGatewayError as exc:
             detail = getattr(exc, "detail", "")
             if isinstance(detail, dict):
-                detail_s = json.dumps(detail)[:500]
+                detail_s = json.dumps(detail)[:2000]
             else:
-                detail_s = str(detail)[:500]
-            out["attempts"].append({
+                detail_s = str(detail)[:2000]
+            attempt = {
                 "error": type(exc).__name__,
                 "detail": detail_s,
                 "reasoning_only": bool(isinstance(detail, dict) and detail.get("reasoning_only")),
                 "latency_ms": int((time.monotonic() - t0) * 1000),
-            })
+            }
+            # Recover billable usage at capture time; the summarizer still
+            # treats unparseable details as usage_missing.
+            try:
+                usage = (json.loads(detail_s).get("usage") or {}) if detail_s.startswith("{") else {}
+                attempt["prompt_tokens"] = int(usage.get("prompt_tokens") or 0)
+                attempt["completion_tokens"] = int(usage.get("completion_tokens") or 0)
+                attempt["reasoning_tokens"] = int(usage.get("reasoning_tokens") or 0)
+            except (ValueError, AttributeError):
+                pass
+            out["attempts"].append(attempt)
             break
         ok, info = validate(role, res.text, item["prompt"])
         out["attempts"].append({
@@ -261,7 +269,10 @@ async def main() -> None:
                    "arm": args.arm, "outcome": f"harness_error: {type(exc).__name__}",
                    "attempts": [], "repairs": 0, "validated": False, "ttuv_ms": -1}
         for a in res.get("attempts", []):
-            total_tokens += a.get("prompt_tokens", 0) + a.get("completion_tokens", 0) + a.get("reasoning_tokens", 0)
+            # Billable tokens only. Reasoning-token/completion-token overlap is
+            # unestablished (observed reasoning > completion), so reasoning
+            # tokens are recorded per attempt but never added here.
+            total_tokens += a.get("prompt_tokens", 0) + a.get("completion_tokens", 0)
         results.append(res)
         print(f"[{i + 1}/{len(items)}] {item['role']} {item['prompt_hash'][:8]} "
               f"{res['outcome']} ttuv={res.get('ttuv_ms')}ms tokens={total_tokens}", flush=True)
