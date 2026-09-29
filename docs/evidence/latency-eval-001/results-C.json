@@ -1,0 +1,948 @@
+{
+ "arm": "C",
+ "config": {
+  "model": "deepseek/deepseek-v4-flash-0731",
+  "temperature": 0.0,
+  "json_narrator": false
+ },
+ "fixture_sha": "c0c5cb3120de0aedff58e6e0c9360b52242c72304c14137343e5917966872814",
+ "started_wall": 1790620327.4583998,
+ "ended_wall": 1790622731.5720832,
+ "total_tokens": 152715,
+ "dry_run": false,
+ "results": [
+  {
+   "role": "narrator",
+   "prompt_hash": "1d6cdf95bb9381f4f19a6e8c3ce952598590b327e4446ddf5e31b653de095986",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 147219,
+     "finish_reason": "length",
+     "content_len": 1,
+     "prompt_tokens": 1110,
+     "completion_tokens": 4096,
+     "reasoning_tokens": 4096,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": false,
+     "validation": "ValidationError: 1 validation error for list[BeatProposal]\n  Invalid JSON: EOF while parsing a value at line 1 column 1 [type=json_invalid, input_value=' ', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/json_invalid"
+    },
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790620475-sYYDUSmhBVhHQRg8giHL\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 1194, \"completion_tokens\": 4096, \"reasoning_tokens\": 4098}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 51358
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "texts": [
+    " "
+   ],
+   "ttuv_ms": 198608,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "2ae7ddb9da9ecbbab998bf3106849919be113788c38759a542530821f82a3d11",
+   "arm": "C",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790620526-ukDdzqZnzPTBqBItHW1o\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 999, \"completion_tokens\": 4096, \"reasoning_tokens\": 4096}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 65593
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 65593,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "34a6cdf2413e6485e36f7bd6356eca18c4c0fb45599e28d1fd29eb9da4850953",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 38203,
+     "finish_reason": "stop",
+     "content_len": 1067,
+     "prompt_tokens": 922,
+     "completion_tokens": 2693,
+     "reasoning_tokens": 2371,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['attempt:wait: Ash waits']"
+    },
+    {
+     "latency_ms": 94421,
+     "finish_reason": "stop",
+     "content_len": 630,
+     "prompt_tokens": 980,
+     "completion_tokens": 11824,
+     "reasoning_tokens": 11605,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['attempt:wait']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "texts": [
+    "```json\n[\n  {\n    \"text\": \"Ash waits, still as the morning air.\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"cited_fact_keys\": [\"attempt:wait: Ash waits\"],\n    \"source_effect_ids\": [],\n    \"emotion_hint\": \"calm, expectant\"\n  },\n  {\n    \"text\": \"Wren: \\\"Ask Ash what the Market holds today.\\\"\",\n    \"kind\": \"dialogue\",\n    \"speaker_id\": null,\n    \"cited_fact_keys\": [\"attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today.\"],\n    \"source_effect_ids\": [],\n    \"emotion_hint\": \"curious, prompting\"\n  },\n  {\n    \"text\": \"Ash waits once more, patient and unmoving.\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"cited_fact_keys\": [\"attempt:wait: Ash waits\"],\n    \"source_effect_ids\": [],\n    \"emotion_hint\": \"steady, unhurried\"\n  },\n  {\n    \"text\": \"Wren: \\\"Ask Ash what the Market holds today.\\\"\",\n    \"kind\": \"dialogue\",\n    \"speaker_id\": null,\n    \"cited_fact_keys\": [\"attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today.\"],\n    \"source_effect_ids\": [],\n    \"emotion_hint\": \"insistent, repeated\"\n  }\n]\n```",
+    "[\n  {\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Ash waits.\"\n  },\n  {\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"4667c985-9921-4989-9d8e-d3758d866d05\",\n    \"text\": \"Ask Ash what the Market holds today.\"\n  },\n  {\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Ash waits.\"\n  },\n  {\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"4667c985-9921-4989-9d8e-d3758d866d05\",\n    \"text\": \"Ask Ash what the Market holds today.\"\n  }\n]"
+   ],
+   "ttuv_ms": 132656,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "703d2583e8b01bb53f82b02bc8d3fdd53d6aeafdf4c4359b135838c468942157",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 49077,
+     "finish_reason": "stop",
+     "content_len": 686,
+     "prompt_tokens": 1007,
+     "completion_tokens": 3418,
+     "reasoning_tokens": 3130,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "3 beats"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "[\n  {\n    \"text\": \"Wren asks Ash, 'Ash, one last probe question for the road?'\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"emotion_hint\": \"curious\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Ash waits.\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"emotion_hint\": \"patient\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"One more? Go on then.\",\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"17f19638-b398-45e1-8074-17befed1f719\",\n    \"cited_fact_keys\": [\"reaction:b0130c69-76d5-5852-aac8-e3bac5f5e863\"],\n    \"emotion_hint\": \"amused\",\n    \"source_effect_ids\": []\n  }\n]"
+   ],
+   "ttuv_ms": 49093,
+   "outcome": "usable"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "937f1568995ee99eb8d53896cbe28463b290f0f1079f031685a60e4c59a37556",
+   "arm": "C",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790620773-bcaRXdEbuVbujOzE7KY9\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 997, \"completion_tokens\": 4096, \"reasoning_tokens\": 4096}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 44250
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 44250,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "96ba807f42be3f0a603c155fa382002ba8c93f2363901c2703942947a1e5b820",
+   "arm": "C",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790620818-KL47Ygv7TmBqabKwz1uj\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 1087, \"completion_tokens\": 4096, \"reasoning_tokens\": 4096}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 60391
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 60391,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "9d6fe3434f81998c1075805c7a12b3550ab0ba842d7a706fe0e065306a1743aa",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 79828,
+     "finish_reason": "stop",
+     "content_len": 576,
+     "prompt_tokens": 1010,
+     "completion_tokens": 3736,
+     "reasoning_tokens": 3558,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "4 beats"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": null,\n    \"text\": \"Ask Ash whether the stalls are open yet.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Ash waits again.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": null,\n    \"text\": \"Ask Ash whether the stalls are open yet.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"]\n  }\n]"
+   ],
+   "ttuv_ms": 79828,
+   "outcome": "usable"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "ace3f694c7d649563081ba6e671b90917a1ade1c8edc1d74c98b31ad93219434",
+   "arm": "C",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790620958-G0fbHuTha9d4XluG98sQ\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 919, \"completion_tokens\": 512, \"reasoning_tokens\": 556}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 7218
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 7218,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "e2787b12ef4e1c27c7ed80156e26dfe5aeedcfa386ba8832adef564a1ac7ea4c",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 160421,
+     "finish_reason": "length",
+     "content_len": 1,
+     "prompt_tokens": 1113,
+     "completion_tokens": 4096,
+     "reasoning_tokens": 4096,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": false,
+     "validation": "ValidationError: 1 validation error for list[BeatProposal]\n  Invalid JSON: EOF while parsing a value at line 1 column 1 [type=json_invalid, input_value=' ', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/json_invalid"
+    },
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790621126-mSMzOhpNKNE9hzeCffSy\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 1197, \"completion_tokens\": 4096, \"reasoning_tokens\": 3884}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 227031
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "texts": [
+    " "
+   ],
+   "ttuv_ms": 387469,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "fa5241259d699d7860d2848941116dfc523fa8002236b0ecc9b151da5a551120",
+   "arm": "C",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790621353-3KufzOMp128uXTdV1aRd\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 1045, \"completion_tokens\": 4096, \"reasoning_tokens\": 4424}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 40358
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 40358,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "05a3593976e9845ff0a7d60cb5ee67345261048a18d4bd0c740e16b33b9b4712",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 74985,
+     "finish_reason": "stop",
+     "content_len": 269,
+     "prompt_tokens": 359,
+     "completion_tokens": 1895,
+     "reasoning_tokens": 1819,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": false,
+     "validation": "ValidationError: 2 validation errors for DirectorProposal\nparticipant_ids.0\n  Input should be a valid UUID, invalid character: found `s` at 2 [type=uuid_parsing, input_value='Ash', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/uuid_parsing\nparticipant_ids.1\n  Input should be a "
+    },
+    {
+     "latency_ms": 19311,
+     "finish_reason": "stop",
+     "content_len": 259,
+     "prompt_tokens": 357,
+     "completion_tokens": 1015,
+     "reasoning_tokens": 1017,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "DirectorProposal"
+    }
+   ],
+   "repairs": 1,
+   "validated": true,
+   "texts": [
+    "{\n  \"action\": \"propose_hook\",\n  \"title\": \"The Locked Chest\",\n  \"purpose\": \"A mysterious locked chest is discovered in the Hearth's storage, sparking curiosity and a potential adventure for Ash and Wren.\",\n  \"requested_powers\": [],\n  \"participant_ids\": [\"Ash\", \"Wren\"]\n}",
+    "{\n  \"action\": \"propose_hook\",\n  \"title\": \"A Strange Merchant\",\n  \"purpose\": \"A mysterious merchant sets up a stall in the Market, offering unusual wares that catch the attention of Ash and Wren.\",\n  \"requested_powers\": [\"spawn_npc\"],\n  \"participant_ids\": []\n}"
+   ],
+   "ttuv_ms": 94296,
+   "outcome": "usable"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "11c43659128de8d77f81be7e521609c852aface6bb3fd3586eb74ae09e02f3e8",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 8500,
+     "finish_reason": "stop",
+     "content_len": 181,
+     "prompt_tokens": 359,
+     "completion_tokens": 165,
+     "reasoning_tokens": 124,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "DirectorProposal"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\"action\": \"noop\", \"reason\": \"No unused places, unmet needs, or quiet stretches currently call for a new hook; the existing characters and locations are sufficient for this phase.\"}"
+   ],
+   "ttuv_ms": 8516,
+   "outcome": "usable"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "40586e823ff6e52d8737eb4a5375aaf729c0f8ad0f59156549eac8c6b9502266",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 1656,
+     "finish_reason": "stop",
+     "content_len": 130,
+     "prompt_tokens": 258,
+     "completion_tokens": 33,
+     "reasoning_tokens": 0,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "DirectorProposal"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\"action\": \"noop\", \"reason\": \"The world is just starting with two characters and two places; no unmet need or quiet stretch yet.\"}"
+   ],
+   "ttuv_ms": 1671,
+   "outcome": "usable"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "556d963d1dcb5021f866877b885133644a069556943c3fb00eda40081898981e",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 88014,
+     "finish_reason": "stop",
+     "content_len": 124,
+     "prompt_tokens": 384,
+     "completion_tokens": 2684,
+     "reasoning_tokens": 2650,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "DirectorProposal"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\n  \"action\": \"noop\",\n  \"reason\": \"No open hooks or arcs; the world is just starting, no immediate need for intervention.\"\n}"
+   ],
+   "ttuv_ms": 88014,
+   "outcome": "usable"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "56f0c3575912e14e9076683d46fd8ac766a7add92ecd30dd0b80e56916541742",
+   "arm": "C",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790621586-7Cjl3DYY5FgSQH2cNIGt\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 384, \"completion_tokens\": 1024, \"reasoning_tokens\": 1024}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 46766
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 46766,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "9132ce1849835dfdd15888ad722eaad00269da5c0783ab5398e4112abcdacc71",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 160936,
+     "finish_reason": "length",
+     "content_len": 1,
+     "prompt_tokens": 362,
+     "completion_tokens": 4096,
+     "reasoning_tokens": 4096,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": false,
+     "validation": "ValidationError: 1 validation error for DirectorProposal\n  Invalid JSON: EOF while parsing a value at line 1 column 1 [type=json_invalid, input_value=' ', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/json_invalid"
+    },
+    {
+     "latency_ms": 12828,
+     "finish_reason": "stop",
+     "content_len": 175,
+     "prompt_tokens": 437,
+     "completion_tokens": 729,
+     "reasoning_tokens": 680,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": false,
+     "validation": "ValidationError: 2 validation errors for DirectorProposal\ntitle\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\npurpose\n  Input should be a valid string [type=string_type, input_value=None, inp"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "texts": [
+    " ",
+    "{\"action\":\"noop\",\"title\":null,\"purpose\":null,\"requested_powers\":[],\"participant_ids\":[],\"reason\":\"No open hooks or unmet needs; the phase is quiet and needs no intervention.\"}"
+   ],
+   "ttuv_ms": 173780,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "cf7175ab1d1a52a98e9ed306880d3ad517ca07c2fc1289978a1307ee0f290cc5",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 59311,
+     "finish_reason": "stop",
+     "content_len": 261,
+     "prompt_tokens": 337,
+     "completion_tokens": 1752,
+     "reasoning_tokens": 1676,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": false,
+     "validation": "ValidationError: 2 validation errors for DirectorProposal\nparticipant_ids.0\n  Input should be a valid UUID, invalid character: found `s` at 2 [type=uuid_parsing, input_value='Ash', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/uuid_parsing\nparticipant_ids.1\n  Input should be a "
+    },
+    {
+     "latency_ms": 8937,
+     "finish_reason": "stop",
+     "content_len": 102,
+     "prompt_tokens": 458,
+     "completion_tokens": 258,
+     "reasoning_tokens": 229,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "DirectorProposal"
+    }
+   ],
+   "repairs": 1,
+   "validated": true,
+   "texts": [
+    "{\n  \"action\": \"propose_hook\",\n  \"title\": \"Notice at the Market\",\n  \"purpose\": \"A handwritten notice at the Market asks for help locating a lost keepsake, giving Ash and Wren a reason to explore.\",\n  \"requested_powers\": [],\n  \"participant_ids\": [\"Ash\", \"Wren\"]\n}",
+    "{\"action\": \"noop\", \"reason\": \"No unused places or unmet needs; the phase is quiet and needs no hook.\"}"
+   ],
+   "ttuv_ms": 68296,
+   "outcome": "usable"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "1ef7ef3cc3ac78cf666bdcce73b1994a1dc72b68db80e8f1d084c09bde6d2efd",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 22093,
+     "finish_reason": "stop",
+     "content_len": 295,
+     "prompt_tokens": 3015,
+     "completion_tokens": 340,
+     "reasoning_tokens": 212,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "CommunicateAction"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\n  \"family\": \"communicate\",\n  \"character_id\": \"6899e444-cae2-48a4-9985-495adc53e069\",\n  \"snapshot_id\": \"7099aec0-a1c2-4e55-8dc2-e7ec8ac92d56\",\n  \"target_character_id\": \"9b02110c-9d27-4444-a181-de682b58f82b\",\n  \"topic\": \"\\\"Watch for the usual: dust, bandits, and anyone who smiles too much.\\\"\"\n}"
+   ],
+   "ttuv_ms": 22109,
+   "outcome": "usable"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "2580091f1dc68a1f66a356078ecf5a64d88ab9c9a86814db86233484461aa6fb",
+   "arm": "C",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790621896-n2s8pQd1FIfdIz1OGahW\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2896, \"completion_tokens\": 4096, \"reasoning_tokens\": 4096}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 94593
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 94593,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "2dbf2441819fe922c9088df685f59495b876db8b90c67ba100bf322dd8e42f4d",
+   "arm": "C",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790621991-d7Df9GLjaKTKQsJFppol\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2816, \"completion_tokens\": 512, \"reasoning_tokens\": 512}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 17875
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 17875,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "2e36b3a286c04cc4e7efe1721d200976f48f473ebc38e98cb0630d7d507b591a",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 5313,
+     "finish_reason": "stop",
+     "content_len": 327,
+     "prompt_tokens": 3527,
+     "completion_tokens": 130,
+     "reasoning_tokens": 0,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "CommunicateAction"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\n  \"family\": \"communicate\",\n  \"character_id\": \"17f19638-b398-45e1-8074-17befed1f719\",\n  \"snapshot_id\": \"a19a3069-496e-4751-993b-c9ae9566000a\",\n  \"target_character_id\": \"a19a3069-496e-4751-993b-c9ae9566000a\",\n  \"topic\": \"\\\"Evening will bring a chill off the vale, but no rain. The wind's been steady from the west all day.\\\"\"\n}"
+   ],
+   "ttuv_ms": 5328,
+   "outcome": "usable"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "675f0073856e2f982d791bc17a47b654646042476597712c07aca5cd78ee43a9",
+   "arm": "C",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790622014-2LUZOtJLnW7hJ45XeMSd\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 3034, \"completion_tokens\": 1024, \"reasoning_tokens\": 1024}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 31593
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 31593,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "a3cf419b98fbb24bcbca95773634915f4d5ffb367926f2593b75b22e806f8135",
+   "arm": "C",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790622046-yemuYaK9dfC5wvTkJrwh\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2873, \"completion_tokens\": 4096, \"reasoning_tokens\": 4098}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 71218
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 71218,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "a965dcbdcaaf5d1fa13af8cf30374fc74dae5ddb28805a1518fffe9cf4b4c5f6",
+   "arm": "C",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790622117-iK3sedm2diaaOocMqnpz\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2899, \"completion_tokens\": 512, \"reasoning_tokens\": 512}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 19125
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 19125,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "f3b411ab0daeeaacc35ad992bfadf437dde5d1595005f1c19312669e0238adf7",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 50641,
+     "finish_reason": "stop",
+     "content_len": 124,
+     "prompt_tokens": 2805,
+     "completion_tokens": 1414,
+     "reasoning_tokens": 1365,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "WaitAction"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\"character_id\":\"00000000-0000-0000-0000-000000000000\",\"snapshot_id\":\"00000000-0000-0000-0000-000000000000\",\"family\":\"wait\"}"
+   ],
+   "ttuv_ms": 50641,
+   "outcome": "usable"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "1a2772f772f22e6563b946722de0f589e0e5a0f421c3451e0d949d295594c21d",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 19110,
+     "finish_reason": "stop",
+     "content_len": 215,
+     "prompt_tokens": 3627,
+     "completion_tokens": 437,
+     "reasoning_tokens": 396,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "ResolverProposal"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\"outcome\":\"success\",\"rationale\":\"The communicator's intent to communicate is compatible with the other character waiting, so the communication succeeds without requiring resource or movement changes.\",\"effects\":[]}"
+   ],
+   "ttuv_ms": 19110,
+   "outcome": "usable"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "25a9a4675dbe4ea42477da8d6de67aa602a2bf6e2b60e93fffb2a0e6f03e03c7",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 45515,
+     "finish_reason": "stop",
+     "content_len": 240,
+     "prompt_tokens": 3592,
+     "completion_tokens": 1332,
+     "reasoning_tokens": 1255,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "ResolverProposal"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\"outcome\":\"success\",\"rationale\":\"Character a19a3069-496e-4751-993b-c9ae9566000a can communicate with character 17f19638-b398-45e1-8074-17befed1f719, who is waiting and available; no resource or movement changes are required.\",\"effects\":[]}"
+   ],
+   "ttuv_ms": 45530,
+   "outcome": "usable"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "29051ab6188f0cfedad7490a83010a525715d66c2abb2bb4b472c20e5a0f9b98",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 2765,
+     "finish_reason": "stop",
+     "content_len": 215,
+     "prompt_tokens": 3526,
+     "completion_tokens": 45,
+     "reasoning_tokens": 0,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "ResolverProposal"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\"outcome\": \"success\", \"rationale\": \"The waiting character remains in place while the communicating character delivers a message, which is a feasible interaction given both are present in the scene.\", \"effects\": []}"
+   ],
+   "ttuv_ms": 2780,
+   "outcome": "usable"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "5c81072cb5cec8d9e2f6b04ca9bc2c8dc777eb5b1565ded0bc1c70bce0a374b4",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 61733,
+     "finish_reason": "stop",
+     "content_len": 209,
+     "prompt_tokens": 3567,
+     "completion_tokens": 1866,
+     "reasoning_tokens": 1824,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "ResolverProposal"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\"outcome\": \"success\", \"effects\": [], \"rationale\": \"The waiting intent requires no state change, and the communication intent can be resolved without conflicting with it or altering either allowed aggregate.\"}"
+   ],
+   "ttuv_ms": 61733,
+   "outcome": "usable"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "644442610b0fcd8a4181e2826f58b8fc245f733abeac739c8b0ebf8e0cd28225",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 40311,
+     "finish_reason": "stop",
+     "content_len": 188,
+     "prompt_tokens": 3606,
+     "completion_tokens": 990,
+     "reasoning_tokens": 952,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "ResolverProposal"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\"outcome\":\"success\",\"rationale\":\"The waiting character is available to receive the communication, so the communicator's intent succeeds without requiring any state changes.\",\"effects\":[]}"
+   ],
+   "ttuv_ms": 40311,
+   "outcome": "usable"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "92cf6439ff19bc4bd65d9286eba273de9df9c0440ac9c7153f0ed9b7dd643b76",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 60875,
+     "finish_reason": "stop",
+     "content_len": 181,
+     "prompt_tokens": 3594,
+     "completion_tokens": 1123,
+     "reasoning_tokens": 1085,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "ResolverProposal"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\"outcome\":\"success\",\"rationale\":\"The waiting character is available and the other character can communicate; the intents are compatible and require no state changes.\",\"effects\":[]}"
+   ],
+   "ttuv_ms": 60875,
+   "outcome": "usable"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "b4faab0383beed45b62f161f0cb794cfe47b2c525ba878370bc0b9dd8f2138e5",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 21358,
+     "finish_reason": "stop",
+     "content_len": 303,
+     "prompt_tokens": 3588,
+     "completion_tokens": 1610,
+     "reasoning_tokens": 1846,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "ResolverProposal"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\n  \"outcome\": \"success\",\n  \"effects\": [],\n  \"rationale\": \"The communicator's intent is satisfied by directing communication to the waiting character, and the waiting character's intent is satisfied by remaining present to receive it; the two intents are compatible and require no mechanical changes.\"\n}"
+   ],
+   "ttuv_ms": 21358,
+   "outcome": "usable"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "b5cc6b6533a0e9419c8349ab02020860c4f40a0afc434c559503ca5edb957784",
+   "arm": "C",
+   "attempts": [
+    {
+     "latency_ms": 67875,
+     "finish_reason": "stop",
+     "content_len": 279,
+     "prompt_tokens": 3596,
+     "completion_tokens": 1722,
+     "reasoning_tokens": 1638,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "ResolverProposal"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\"outcome\":\"success\",\"rationale\":\"Character 08c02082-f063-4027-bbaf-1796b00bd110 can communicate with character 55a63245-30ab-4cbf-aaa3-4c5ad2ef7a59, who is waiting and therefore available to receive the communication; no conflicting intent prevents this exchange.\",\"effects\":[]}"
+   ],
+   "ttuv_ms": 67889,
+   "outcome": "usable"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "265347c7d7113d1cfe77f7eac98b90f67263a482ec68b1dd0ba807e948702ab6",
+   "arm": "C",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790622507-Nc9HL1eVqGEsq2t9U1Pm\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2727, \"completion_tokens\": 512, \"reasoning_tokens\": 602}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 5281
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 5281,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "49077715d945332bfd4a692ec872169f05cd6e1ba1d25b7d78f595bb4acaf205",
+   "arm": "C",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790622512-f2DrHJXIY2XGDq8oSKdd\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2730, \"completion_tokens\": 4096, \"reasoning_tokens\": 3608}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 97906
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 97906,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "70ecc81054e9394d1ce1cea101148354705801c8c2ff8276c2cac401a0ca2a0c",
+   "arm": "C",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790622610-QJd68aCwH2EcJxpvrN9J\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2818, \"completion_tokens\": 512, \"reasoning_tokens\": 512}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 38061
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 38061,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "752e76f85086dea210fdd140027323d863fd9114bf4ad2d74fe9a569a1766e34",
+   "arm": "C",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790622648-BkOtEzk1ZXKMye4X4Kg0\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2955, \"completion_tokens\": 512, \"reasoning_tokens\": 563}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 6485
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 6485,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "7b5c8bb87ce2a4582c64bc19c38bdf0bd490d0f7e6b1ce36f1d6437eea443ca6",
+   "arm": "C",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790622654-fTPBMtAycXK6XJjjiEhd\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2952, \"completion_tokens\": 512, \"reasoning_tokens\": 512}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 15671
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 15671,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "7f2b5b8ca31350d7154dbae88a2edd50151e4fd90b9bac539c7ce75bef3bff69",
+   "arm": "C",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790622670-pV95GiU2sIdaoSYiLmfn\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2917, \"completion_tokens\": 512, \"reasoning_tokens\": 512}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 14250
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 14250,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "a9f74a7008f6b1ff1a584161dc2e1f9d162f3582c55d9c54b5a67ab0dbab30e6",
+   "arm": "C",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790622684-UZ8Ks6sgHP7c7V74Er8U\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2953, \"completion_tokens\": 512, \"reasoning_tokens\": 512}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 24578
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 24578,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "b55868c2205fe24f5c89e441e971f18bfd812b0a626e7f55f5929925d7bd26d8",
+   "arm": "C",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790622709-cs9eDLrTQPYDb0vWPAPY\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2810, \"completion_tokens\": 512, \"reasoning_tokens\": 512}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 22781
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 22781,
+   "outcome": "provider_error"
+  }
+ ]
+}

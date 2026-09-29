@@ -1,0 +1,998 @@
+{
+ "arm": "B",
+ "config": {
+  "model": "z-ai/glm-4.7-flash",
+  "temperature": 0.2,
+  "json_narrator": false
+ },
+ "fixture_sha": "c0c5cb3120de0aedff58e6e0c9360b52242c72304c14137343e5917966872814",
+ "started_wall": 1790618075.8541744,
+ "ended_wall": 1790620326.1369011,
+ "total_tokens": 155814,
+ "dry_run": false,
+ "results": [
+  {
+   "role": "narrator",
+   "prompt_hash": "1d6cdf95bb9381f4f19a6e8c3ce952598590b327e4446ddf5e31b653de095986",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 108546,
+     "finish_reason": "stop",
+     "content_len": 1092,
+     "prompt_tokens": 1030,
+     "completion_tokens": 3334,
+     "reasoning_tokens": 2490,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": true,
+     "validation": "5 beats"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "```json\n[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\n      \"attempt:wait\"\n    ],\n    \"speaker_id\": null,\n    \"emotion_hint\": \"\"\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Wren says to Ash: Ash, does the road east stay open in rain?\",\n    \"cited_fact_keys\": [\n      \"attempt:communicate\"\n    ],\n    \"speaker_id\": null,\n    \"emotion_hint\": \"\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\n      \"attempt:wait\"\n    ],\n    \"speaker_id\": null,\n    \"emotion_hint\": \"\"\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Wren says to Ash: Ash, does the road east stay open in rain?\",\n    \"cited_fact_keys\": [\n      \"attempt:communicate\"\n    ],\n    \"speaker_id\": null,\n    \"emotion_hint\": \"\"\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Ash says to Wren: \\\"It stays open, but it'll be mud up to your knees. If you're not in a hurry, wait it out.\\\"\",\n    \"cited_fact_keys\": [\n      \"reaction:f8bd3a7d-eb72-5c5d-a9a1-2038419e3881\"\n    ],\n    \"speaker_id\": \"17f19638-b398-45e1-8074-17befed1f719\",\n    \"emotion_hint\": \"\"\n  }\n]\n```"
+   ],
+   "ttuv_ms": 108578,
+   "outcome": "usable"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "2ae7ddb9da9ecbbab998bf3106849919be113788c38759a542530821f82a3d11",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 72389,
+     "finish_reason": "stop",
+     "content_len": 798,
+     "prompt_tokens": 912,
+     "completion_tokens": 2276,
+     "reasoning_tokens": 1871,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet.']"
+    },
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790618257-iZ8IxpwasgejJJjqsRS5\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 960, \"completion_tokens\": 4096, \"reasoning_tokens\": 4190}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 133985
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "texts": [
+    "```json\n[\n  {\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Wren asks Ash whether the stalls are open yet.\",\n    \"cited_fact_keys\": [\n      \"attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet.\"\n    ]\n  },\n  {\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\n      \"attempt:wait: Ash waits\"\n    ]\n  },\n  {\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Wren asks Ash again whether the stalls are open yet.\",\n    \"cited_fact_keys\": [\n      \"attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet.\"\n    ]\n  },\n  {\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Ash waits again.\",\n    \"cited_fact_keys\": [\n      \"attempt:wait: Ash waits\"\n    ]\n  }\n]\n```"
+   ],
+   "ttuv_ms": 206391,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "34a6cdf2413e6485e36f7bd6356eca18c4c0fb45599e28d1fd29eb9da4850953",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 34500,
+     "finish_reason": "stop",
+     "content_len": 255,
+     "prompt_tokens": 917,
+     "completion_tokens": 1724,
+     "reasoning_tokens": 1595,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today.']"
+    },
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790618425-TxXKBV5MBceYGcRZRInt\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"error\", \"usage\": {\"prompt_tokens\": 0, \"completion_tokens\": 1, \"reasoning_tokens\": 1526}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 63250
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "texts": [
+    "```json\n[\n  {\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Wren prompts Ash to ask about the Market's contents.\",\n    \"cited_fact_keys\": [\n      \"attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today.\"\n    ]\n  }\n]\n```"
+   ],
+   "ttuv_ms": 97750,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "703d2583e8b01bb53f82b02bc8d3fdd53d6aeafdf4c4359b135838c468942157",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 50389,
+     "finish_reason": "stop",
+     "content_len": 827,
+     "prompt_tokens": 1008,
+     "completion_tokens": 2573,
+     "reasoning_tokens": 1982,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": true,
+     "validation": "5 beats"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "```json\n[\n  {\n    \"cited_fact_keys\": [\n      \"attempt:communicate\"\n    ],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Wren asks Ash for one last probe question.\"\n  },\n  {\n    \"cited_fact_keys\": [\n      \"attempt:wait\"\n    ],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Ash waits.\"\n  },\n  {\n    \"cited_fact_keys\": [\n      \"attempt:communicate\"\n    ],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Wren asks Ash for one last probe question again.\"\n  },\n  {\n    \"cited_fact_keys\": [\n      \"attempt:wait\"\n    ],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Ash waits again.\"\n  },\n  {\n    \"cited_fact_keys\": [\n      \"reaction:b0130c69-76d5-5852-aac8-e3bac5f5e863\"\n    ],\n    \"kind\": \"dialogue\",\n    \"speaker_id\": null,\n    \"text\": \"One more? Go on then.\"\n  }\n]\n```"
+   ],
+   "ttuv_ms": 50389,
+   "outcome": "usable"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "937f1568995ee99eb8d53896cbe28463b290f0f1079f031685a60e4c59a37556",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 80296,
+     "finish_reason": "stop",
+     "content_len": 813,
+     "prompt_tokens": 922,
+     "completion_tokens": 726,
+     "reasoning_tokens": 484,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['attempt:wait']"
+    },
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790618619-DfG2BDmyZCTBoWKSkqab\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 946, \"completion_tokens\": 4096, \"reasoning_tokens\": 3884}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 99203
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "texts": [
+    "[\n  {\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Ash waits, silent, as the moment stretches on.\",\n    \"emotion_hint\": \"patient\"\n  },\n  {\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"kind\": \"dialogue\",\n    \"speaker_id\": null,\n    \"text\": \"Wren says to Ash: \\\"Ask Ash what the Market holds today.\\\"\",\n    \"emotion_hint\": \"curious\"\n  },\n  {\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Still, Ash waits \u2014 no answer comes.\",\n    \"emotion_hint\": \"reserved\"\n  },\n  {\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"kind\": \"dialogue\",\n    \"speaker_id\": null,\n    \"text\": \"Wren tries once more, saying to Ash: \\\"Ask Ash what the Market holds today.\\\"\",\n    \"emotion_hint\": \"insistent\"\n  }\n]"
+   ],
+   "ttuv_ms": 179515,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "96ba807f42be3f0a603c155fa382002ba8c93f2363901c2703942947a1e5b820",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 58483,
+     "finish_reason": "stop",
+     "content_len": 1078,
+     "prompt_tokens": 1007,
+     "completion_tokens": 3359,
+     "reasoning_tokens": 2634,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": true,
+     "validation": "6 beats"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "```json\n[\n  {\n    \"text\": \"Wren asks Ash who keeps the lighthouse at night.\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"cited_fact_keys\": [\n      \"attempt:communicate\"\n    ]\n  },\n  {\n    \"text\": \"Ash waits.\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"cited_fact_keys\": [\n      \"attempt:wait\"\n    ]\n  },\n  {\n    \"text\": \"Wren asks Ash who keeps the lighthouse at night.\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"cited_fact_keys\": [\n      \"attempt:communicate\"\n    ]\n  },\n  {\n    \"text\": \"Ash waits.\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"cited_fact_keys\": [\n      \"attempt:wait\"\n    ]\n  },\n  {\n    \"text\": \"Old Marlow, if the lamp's still lit.\",\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"17f19638-b398-45e1-8074-17befed1f719\",\n    \"cited_fact_keys\": [\n      \"reaction:18c99f8d-9abc-55cc-8ce8-9939e12df3a1\"\n    ]\n  },\n  {\n    \"text\": \"Ash provides the answer to Wren's question.\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"cited_fact_keys\": [\n      \"reaction:18c99f8d-9abc-55cc-8ce8-9939e12df3a1\"\n    ]\n  }\n]\n```"
+   ],
+   "ttuv_ms": 58500,
+   "outcome": "usable"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "9d6fe3434f81998c1075805c7a12b3550ab0ba842d7a706fe0e065306a1743aa",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 39889,
+     "finish_reason": "stop",
+     "content_len": 624,
+     "prompt_tokens": 926,
+     "completion_tokens": 2529,
+     "reasoning_tokens": 2197,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": true,
+     "validation": "4 beats"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "```json\n[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\n      \"attempt:wait\"\n    ]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": null,\n    \"text\": \"Wren says to Ash: Ask Ash whether the stalls are open yet.\",\n    \"cited_fact_keys\": [\n      \"attempt:communicate\"\n    ]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits again.\",\n    \"cited_fact_keys\": [\n      \"attempt:wait\"\n    ]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": null,\n    \"text\": \"Wren says to Ash: Ask Ash whether the stalls are open yet.\",\n    \"cited_fact_keys\": [\n      \"attempt:communicate\"\n    ]\n  }\n]\n```"
+   ],
+   "ttuv_ms": 39906,
+   "outcome": "usable"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "ace3f694c7d649563081ba6e671b90917a1ade1c8edc1d74c98b31ad93219434",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790618817-bfQLmxIwHp35BmlOz1R7\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 912, \"completion_tokens\": 512, \"reasoning_tokens\": 435}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 22188
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 22188,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "e2787b12ef4e1c27c7ed80156e26dfe5aeedcfa386ba8832adef564a1ac7ea4c",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 62983,
+     "finish_reason": "stop",
+     "content_len": 944,
+     "prompt_tokens": 1027,
+     "completion_tokens": 2928,
+     "reasoning_tokens": 2216,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": false,
+     "validation": "beats_valid: speaker outside the audience: e518fada-0157-46d8-b9db-df12f6f8f75d"
+    },
+    {
+     "latency_ms": 74186,
+     "finish_reason": "stop",
+     "content_len": 1076,
+     "prompt_tokens": 1081,
+     "completion_tokens": 3365,
+     "reasoning_tokens": 2368,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": false,
+     "validation": "beats_valid: speaker outside the audience: e518fada-0157-46d8-b9db-df12f6f8f75d"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "texts": [
+    "```json\n[\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": null,\n    \"text\": \"Wren asks Ash what the market bell meant at dawn.\",\n    \"cited_fact_keys\": [\n      \"attempt:communicate\"\n    ]\n  },\n  {\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\n      \"attempt:wait\"\n    ]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": null,\n    \"text\": \"Wren asks Ash what the market bell meant at dawn.\",\n    \"cited_fact_keys\": [\n      \"attempt:communicate\"\n    ]\n  },\n  {\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\n      \"attempt:wait\"\n    ]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"e518fada-0157-46d8-b9db-df12f6f8f75d\",\n    \"text\": \"Ash says to Wren: \\\"Dawn bell means the market's waking. Sleep through it and you miss the best bread.\\\"\",\n    \"cited_fact_keys\": [\n      \"reaction:f9077b22-dc67-5c50-aa22-a8252c395c21\"\n    ]\n  }\n]\n```",
+    "```json\n[\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"3a81116a-1e56-4e17-8c5d-02cae78f3deb\",\n    \"text\": \"Wren asks Ash about the market bell at dawn.\",\n    \"cited_fact_keys\": [\n      \"attempt:communicate\"\n    ]\n  },\n  {\n    \"kind\": \"action\",\n    \"speaker_id\": \"e518fada-0157-46d8-b9db-df12f6f8f75d\",\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\n      \"attempt:wait\"\n    ]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"3a81116a-1e56-4e17-8c5d-02cae78f3deb\",\n    \"text\": \"Wren asks Ash about the market bell at dawn again.\",\n    \"cited_fact_keys\": [\n      \"attempt:communicate\"\n    ]\n  },\n  {\n    \"kind\": \"action\",\n    \"speaker_id\": \"e518fada-0157-46d8-b9db-df12f6f8f75d\",\n    \"text\": \"Ash waits again.\",\n    \"cited_fact_keys\": [\n      \"attempt:wait\"\n    ]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"e518fada-0157-46d8-b9db-df12f6f8f75d\",\n    \"text\": \"Ash says to Wren: \\\"Dawn bell means the market's waking. Sleep through it and you miss the best bread.\\\"\",\n    \"cited_fact_keys\": [\n      \"reaction:f9077b22-dc67-5c50-aa22-a8252c395c21\"\n    ]\n  }\n]\n```"
+   ],
+   "ttuv_ms": 137186,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "fa5241259d699d7860d2848941116dfc523fa8002236b0ecc9b151da5a551120",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790618976-jhpZcQvO1VQNNq1baZpa\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 956, \"completion_tokens\": 4096, \"reasoning_tokens\": 3874}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 63312
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 63312,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "05a3593976e9845ff0a7d60cb5ee67345261048a18d4bd0c740e16b33b9b4712",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 15078,
+     "finish_reason": "stop",
+     "content_len": 225,
+     "prompt_tokens": 254,
+     "completion_tokens": 802,
+     "reasoning_tokens": 740,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": false,
+     "validation": "ValidationError: 4 validation errors for DirectorProposal\ntype\n  Extra inputs are not permitted [type=extra_forbidden, input_value='propose_hook', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden\naction\n  Field required [type=missing, input_value={'type': 'propose_"
+    },
+    {
+     "latency_ms": 13061,
+     "finish_reason": "stop",
+     "content_len": 241,
+     "prompt_tokens": 343,
+     "completion_tokens": 859,
+     "reasoning_tokens": 805,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": false,
+     "validation": "ValidationError: 2 validation errors for DirectorProposal\nparticipant_ids.0\n  Input should be a valid UUID, invalid character: found `s` at 2 [type=uuid_parsing, input_value='Ash', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/uuid_parsing\nparticipant_ids.1\n  Input should be a "
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "texts": [
+    "{\n  \"type\": \"propose_hook\",\n  \"title\": \"The Curious Merchant\",\n  \"purpose\": \"A peculiar merchant in the Market offers a strange trinket that sparks curiosity.\",\n  \"requested_powers\": [],\n  \"participant_ids\": [\"Ash\", \"Wren\"]\n}",
+    "{\n  \"action\": \"propose_hook\",\n  \"title\": \"The Mysterious Coin\",\n  \"purpose\": \"A strange, glowing coin appears in the Hearth, sparking curiosity and potential conflict between Ash and Wren.\",\n  \"participant_ids\": [\n    \"Ash\",\n    \"Wren\"\n  ]\n}"
+   ],
+   "ttuv_ms": 28187,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "11c43659128de8d77f81be7e521609c852aface6bb3fd3586eb74ae09e02f3e8",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790619068-7RK4Lk1hbRitCLVHZSio\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 254, \"completion_tokens\": 512, \"reasoning_tokens\": 506}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 7922
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 7922,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "40586e823ff6e52d8737eb4a5375aaf729c0f8ad0f59156549eac8c6b9502266",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790619076-gGFcIUcCDdYsGMRlEYoZ\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 254, \"completion_tokens\": 512, \"reasoning_tokens\": 515}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 9110
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 9110,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "556d963d1dcb5021f866877b885133644a069556943c3fb00eda40081898981e",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 10671,
+     "finish_reason": "stop",
+     "content_len": 117,
+     "prompt_tokens": 279,
+     "completion_tokens": 624,
+     "reasoning_tokens": 633,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": true,
+     "validation": "DirectorProposal"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\n  \"action\": \"noop\",\n  \"reason\": \"Characters are in established locations with no stated needs or open conflicts.\"\n}"
+   ],
+   "ttuv_ms": 10686,
+   "outcome": "usable"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "56f0c3575912e14e9076683d46fd8ac766a7add92ecd30dd0b80e56916541742",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790619095-otYEcPvpEVoqlMykkpEs\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 279, \"completion_tokens\": 1024, \"reasoning_tokens\": 1044}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 16671
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 16671,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "9132ce1849835dfdd15888ad722eaad00269da5c0783ab5398e4112abcdacc71",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 32016,
+     "finish_reason": "stop",
+     "content_len": 236,
+     "prompt_tokens": 279,
+     "completion_tokens": 1457,
+     "reasoning_tokens": 1412,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": false,
+     "validation": "ValidationError: 4 validation errors for DirectorProposal\ntype\n  Extra inputs are not permitted [type=extra_forbidden, input_value='propose_hook', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden\naction\n  Field required [type=missing, input_value={'type': 'propose_"
+    },
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790619144-xSoDnkGpetQB0uVTCw7r\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 368, \"completion_tokens\": 4096, \"reasoning_tokens\": 4100}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 99093
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "texts": [
+    "{\n  \"type\": \"propose_hook\",\n  \"title\": \"Market Disturbance\",\n  \"purpose\": \"A sudden commotion at the Market draws Ash and Wren into the center of the action.\",\n  \"requested_powers\": [],\n  \"participant_ids\": [\n    \"Ash\",\n    \"Wren\"\n  ]\n}"
+   ],
+   "ttuv_ms": 131110,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "cf7175ab1d1a52a98e9ed306880d3ad517ca07c2fc1289978a1307ee0f290cc5",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 48108,
+     "finish_reason": "stop",
+     "content_len": 244,
+     "prompt_tokens": 254,
+     "completion_tokens": 2405,
+     "reasoning_tokens": 2399,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": false,
+     "validation": "ValidationError: 2 validation errors for DirectorProposal\nparticipant_ids.0\n  Input should be a valid UUID, invalid character: found `s` at 2 [type=uuid_parsing, input_value='Ash', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/uuid_parsing\nparticipant_ids.1\n  Input should be a "
+    },
+    {
+     "latency_ms": 30156,
+     "finish_reason": "stop",
+     "content_len": 85,
+     "prompt_tokens": 347,
+     "completion_tokens": 1751,
+     "reasoning_tokens": 1878,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": true,
+     "validation": "DirectorProposal"
+    }
+   ],
+   "repairs": 1,
+   "validated": true,
+   "texts": [
+    "{\n  \"action\": \"propose_hook\",\n  \"title\": \"Strange Noise from Hearth\",\n  \"purpose\": \"A peculiar sound emanates from the Hearth, prompting Ash and Wren to investigate.\",\n  \"participant_ids\": [\n    \"Ash\",\n    \"Wren\"\n  ],\n  \"requested_powers\": []\n}",
+    "{\n  \"action\": \"noop\",\n  \"reason\": \"No active hooks or arcs requiring intervention.\"\n}"
+   ],
+   "ttuv_ms": 78264,
+   "outcome": "usable"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "1ef7ef3cc3ac78cf666bdcce73b1994a1dc72b68db80e8f1d084c09bde6d2efd",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790619321-VDlxUPzp0zDKPBV5kL0d\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2844, \"completion_tokens\": 512, \"reasoning_tokens\": 513}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 12061
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 12061,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "2580091f1dc68a1f66a356078ecf5a64d88ab9c9a86814db86233484461aa6fb",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790619334-xbu3TnTt30SOUg25QfNF\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2709, \"completion_tokens\": 4096, \"reasoning_tokens\": 3874}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 84765
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 84765,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "2dbf2441819fe922c9088df685f59495b876db8b90c67ba100bf322dd8e42f4d",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790619418-7E202WFNjEAVwJ6Bj1aE\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2637, \"completion_tokens\": 512, \"reasoning_tokens\": 524}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 8156
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 8156,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "2e36b3a286c04cc4e7efe1721d200976f48f473ebc38e98cb0630d7d507b591a",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 43875,
+     "finish_reason": "stop",
+     "content_len": 137,
+     "prompt_tokens": 3289,
+     "completion_tokens": 2109,
+     "reasoning_tokens": 1884,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": true,
+     "validation": "WaitAction"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\n  \"character_id\": \"17f19638-b398-45e1-8074-17befed1f719\",\n  \"family\": \"wait\",\n  \"snapshot_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"\n}"
+   ],
+   "ttuv_ms": 43891,
+   "outcome": "usable"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "675f0073856e2f982d791bc17a47b654646042476597712c07aca5cd78ee43a9",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790619470-j0Gl9IYsIjI2ZIqEo7PR\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2845, \"completion_tokens\": 1024, \"reasoning_tokens\": 898}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 17889
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 17889,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "a3cf419b98fbb24bcbca95773634915f4d5ffb367926f2593b75b22e806f8135",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790619488-EOeR0Hk9iomHpVcOeTzL\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2710, \"completion_tokens\": 4096, \"reasoning_tokens\": 4157}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 78234
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 78234,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "a965dcbdcaaf5d1fa13af8cf30374fc74dae5ddb28805a1518fffe9cf4b4c5f6",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790619567-lvgAwoQcqEO9UMjSn96f\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2710, \"completion_tokens\": 512, \"reasoning_tokens\": 521}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 12796
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 12796,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "f3b411ab0daeeaacc35ad992bfadf437dde5d1595005f1c19312669e0238adf7",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 16078,
+     "finish_reason": "stop",
+     "content_len": 136,
+     "prompt_tokens": 2637,
+     "completion_tokens": 159,
+     "reasoning_tokens": 117,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": false,
+     "validation": "ValidationError: 2 validation errors for tagged-union[WaitAction,RestAction,ObserveAction,MoveAction,CommunicateAction,SparAction,AppealAction,TransferAction]\nobserve.character_id\n  Input should be a valid UUID, invalid character: found `w` at 1 [type=uuid_parsing, input_value='wren', input_type=str]\n    For further"
+    },
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790619595-07tpZjjqwq7YrZ083HAz\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2722, \"completion_tokens\": 4096, \"reasoning_tokens\": 3589}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 62983
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "texts": [
+    "{\"family\": \"observe\", \"character_id\": \"wren\", \"snapshot_id\": \"hearth-ember-vale\", \"focus\": \"Ash, standing and waiting here in the vale\"}"
+   ],
+   "ttuv_ms": 79078,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "1a2772f772f22e6563b946722de0f589e0e5a0f421c3451e0d949d295594c21d",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790619659-xsvSx81reSEbU8QHG8u1\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 3445, \"completion_tokens\": 512, \"reasoning_tokens\": 424}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 13156
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 13156,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "25a9a4675dbe4ea42477da8d6de67aa602a2bf6e2b60e93fffb2a0e6f03e03c7",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 31562,
+     "finish_reason": "stop",
+     "content_len": 1183,
+     "prompt_tokens": 3416,
+     "completion_tokens": 1665,
+     "reasoning_tokens": 1164,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": false,
+     "validation": "ValidationError: 3 validation errors for ResolverProposal\neffects.0.record_observation\n  Value error, expected_versions must cover every affected id: ['17f19638-b398-45e1-8074-17befed1f719', 'a19a3069-496e-4751-993b-c9ae9566000a'] [type=value_error, input_value={'effect_type': 'record_o...}], 'schema_version': 1}, i"
+    },
+    {
+     "latency_ms": 90921,
+     "finish_reason": "stop",
+     "content_len": 1242,
+     "prompt_tokens": 3533,
+     "completion_tokens": 3662,
+     "reasoning_tokens": 3196,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": false,
+     "validation": "ValidationError: 3 validation errors for ResolverProposal\neffects.0.advance_clock\n  Value error, expected_versions must cover every affected id: ['17f19638-b398-45e1-8074-17befed1f719', 'a19a3069-496e-4751-993b-c9ae9566000a'] [type=value_error, input_value={'effect_type': 'advance_... 1, 'schema_version': 1}, input_"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "texts": [
+    "{\n  \"outcome\": \"success\",\n  \"rationale\": \"Character A successfully waits for Character B, who arrives and initiates communication. Both characters acknowledge the interaction, with Character B expending a minor amount of stamina to speak.\",\n  \"effects\": [\n    {\n      \"effect_type\": \"record_observation\",\n      \"affected_ids\": [\n        \"17f19638-b398-45e1-8074-17befed1f719\",\n        \"a19a3069-496e-4751-993b-c9ae9566000a\"\n      ],\n      \"observer_character_id\": \"17f19638-b398-45e1-8074-17befed1f719\",\n      \"facts\": [\n        {\n          \"key\": \"interaction\",\n          \"value\": \"Character B arrived and communicated with Character A.\"\n        }\n      ],\n      \"schema_version\": 1\n    },\n    {\n      \"effect_type\": \"record_memory\",\n      \"affected_ids\": [\n        \"17f19638-b398-45e1-8074-17befed1f719\"\n      ],\n      \"owner_character_id\": \"17f19638-b398-45e1-8074-17befed1f719\",\n      \"text\": \"Character B arrived and spoke to me.\",\n      \"schema_version\": 1\n    },\n    {\n      \"effect_type\": \"resource_adjusted\",\n      \"affected_ids\": [\n        \"a19a3069-496e-4751-993b-c9ae9566000a\"\n      ],\n      \"resource\": \"stamina\",\n      \"delta\": -5,\n      \"schema_version\": 1\n    }\n  ]\n}",
+    "{\n  \"outcome\": \"success\",\n  \"rationale\": \"Character A fulfilled the intent to wait, and Character B successfully communicated with them, resulting in a mutual interaction.\",\n  \"effects\": [\n    {\n      \"effect_type\": \"advance_clock\",\n      \"affected_ids\": [\n        \"17f19638-b398-45e1-8074-17befed1f719\",\n        \"a19a3069-496e-4751-993b-c9ae9566000a\"\n      ],\n      \"from_index\": 0,\n      \"to_index\": 1,\n      \"schema_version\": 1\n    },\n    {\n      \"effect_type\": \"record_observation\",\n      \"observer_character_id\": \"17f19638-b398-45e1-8074-17befed1f719\",\n      \"affected_ids\": [\n        \"a19a3069-496e-4751-993b-c9ae9566000a\"\n      ],\n      \"facts\": [\n        {\n          \"key\": \"communication\",\n          \"value\": \"Character B initiated communication.\"\n        }\n      ],\n      \"expected_versions\": {},\n      \"schema_version\": 1\n    },\n    {\n      \"effect_type\": \"record_observation\",\n      \"observer_character_id\": \"a19a3069-496e-4751-993b-c9ae9566000a\",\n      \"affected_ids\": [\n        \"17f19638-b398-45e1-8074-17befed1f719\"\n      ],\n      \"facts\": [\n        {\n          \"key\": \"communication\",\n          \"value\": \"Character A waited and listened.\"\n        }\n      ],\n      \"expected_versions\": {},\n      \"schema_version\": 1\n    }\n  ]\n}"
+   ],
+   "ttuv_ms": 122484,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "29051ab6188f0cfedad7490a83010a525715d66c2abb2bb4b472c20e5a0f9b98",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790619794-8Xm6qymQaXhfohtYPE1V\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 3445, \"completion_tokens\": 512, \"reasoning_tokens\": 433}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 36250
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 36250,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "5c81072cb5cec8d9e2f6b04ca9bc2c8dc777eb5b1565ded0bc1c70bce0a374b4",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 23844,
+     "finish_reason": "stop",
+     "content_len": 925,
+     "prompt_tokens": 3411,
+     "completion_tokens": 1619,
+     "reasoning_tokens": 1186,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": false,
+     "validation": "ValidationError: 2 validation errors for ResolverProposal\neffects.0.record_observation\n  Value error, expected_versions must cover every affected id: ['a19a3069-496e-4751-993b-c9ae9566000a'] [type=value_error, input_value={'effect_type': 'record_o...{}, 'schema_version': 1}, input_type=dict]\n    For further informat"
+    },
+    {
+     "latency_ms": 37296,
+     "finish_reason": "stop",
+     "content_len": 967,
+     "prompt_tokens": 3517,
+     "completion_tokens": 840,
+     "reasoning_tokens": 489,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": true,
+     "validation": "ResolverProposal"
+    }
+   ],
+   "repairs": 1,
+   "validated": true,
+   "texts": [
+    "{\n  \"outcome\": \"success\",\n  \"rationale\": \"Character B successfully initiates communication with Character A, who is waiting, resulting in a successful interaction.\",\n  \"effects\": [\n    {\n      \"effect_type\": \"record_observation\",\n      \"affected_ids\": [\n        \"a19a3069-496e-4751-993b-c9ae9566000a\"\n      ],\n      \"observer_character_id\": \"a19a3069-496e-4751-993b-c9ae9566000a\",\n      \"facts\": [\n        {\n          \"key\": \"Interaction\",\n          \"value\": \"Communication established with waiting character.\"\n        }\n      ],\n      \"expected_versions\": {},\n      \"schema_version\": 1\n    },\n    {\n      \"effect_type\": \"record_memory\",\n      \"affected_ids\": [\n        \"a19a3069-496e-4751-993b-c9ae9566000a\"\n      ],\n      \"owner_character_id\": \"a19a3069-496e-4751-993b-c9ae9566000a\",\n      \"text\": \"Successfully communicated with the waiting character.\",\n      \"expected_versions\": {},\n      \"schema_version\": 1\n    }\n  ]\n}",
+    "{\"outcome\": \"success\", \"rationale\": \"The waiting character remains present and receptive while the other character communicates, so both intents are satisfied by the exchange occurring in the shared scene.\", \"effects\": [{\"effect_type\": \"record_memory\", \"schema_version\": 1, \"affected_ids\": [\"a19a3069-496e-4751-993b-c9ae9566000a\"], \"owner_character_id\": \"a19a3069-496e-4751-993b-c9ae9566000a\", \"expected_versions\": {\"a19a3069-496e-4751-993b-c9ae9566000a\": 1}, \"text\": \"I communicated with the character waiting nearby (17f19638-b398-45e1-8074-17befed1f719), directing my words to them in the scene.\"}, {\"effect_type\": \"record_memory\", \"schema_version\": 1, \"affected_ids\": [\"17f19638-b398-45e1-8074-17befed1f719\"], \"owner_character_id\": \"17f19638-b398-45e1-8074-17befed1f719\", \"expected_versions\": {\"17f19638-b398-45e1-8074-17befed1f719\": 1}, \"text\": \"While waiting, I received communication from the other character present (a19a3069-496e-4751-993b-c9ae9566000a).\"}]}"
+   ],
+   "ttuv_ms": 61171,
+   "outcome": "usable"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "644442610b0fcd8a4181e2826f58b8fc245f733abeac739c8b0ebf8e0cd28225",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790619891-96zUs6xh6czEt20qsaH9\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 3426, \"completion_tokens\": 1024, \"reasoning_tokens\": 983}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 28405
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 28405,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "92cf6439ff19bc4bd65d9286eba273de9df9c0440ac9c7153f0ed9b7dd643b76",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 72500,
+     "finish_reason": "stop",
+     "content_len": 1131,
+     "prompt_tokens": 3416,
+     "completion_tokens": 3238,
+     "reasoning_tokens": 2895,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": false,
+     "validation": "ValidationError: 3 validation errors for ResolverProposal\neffects.0.record_observation\n  Value error, expected_versions must cover every affected id: ['17f19638-b398-45e1-8074-17befed1f719'] [type=value_error, input_value={'effect_type': 'record_o...racter is listening.'}]}, input_type=dict]\n    For further informat"
+    },
+    {
+     "latency_ms": 31296,
+     "finish_reason": "stop",
+     "content_len": 452,
+     "prompt_tokens": 3519,
+     "completion_tokens": 386,
+     "reasoning_tokens": 266,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": true,
+     "validation": "ResolverProposal"
+    }
+   ],
+   "repairs": 1,
+   "validated": true,
+   "texts": [
+    "{\n  \"outcome\": \"success\",\n  \"rationale\": \"The communicator successfully conveyed their message to the waiting character, who listened and received the information.\",\n  \"effects\": [\n    {\n      \"effect_type\": \"record_observation\",\n      \"observer_character_id\": \"a19a3069-496e-4751-993b-c9ae9566000a\",\n      \"affected_ids\": [\n        \"17f19638-b398-45e1-8074-17befed1f719\"\n      ],\n      \"facts\": [\n        {\n          \"key\": \"interaction_state\",\n          \"value\": \"The waiting character is listening.\"\n        }\n      ]\n    },\n    {\n      \"effect_type\": \"record_observation\",\n      \"observer_character_id\": \"17f19638-b398-45e1-8074-17befed1f719\",\n      \"affected_ids\": [\n        \"a19a3069-496e-4751-993b-c9ae9566000a\"\n      ],\n      \"facts\": [\n        {\n          \"key\": \"interaction_state\",\n          \"value\": \"The communicator is speaking.\"\n        }\n      ]\n    },\n    {\n      \"effect_type\": \"record_memory\",\n      \"owner_character_id\": \"a19a3069-496e-4751-993b-c9ae9566000a\",\n      \"affected_ids\": [\n        \"17f19638-b398-45e1-8074-17befed1f719\"\n      ],\n      \"text\": \"I communicated with the waiting character.\"\n    }\n  ]\n}",
+    "{\"outcome\": \"success\", \"rationale\": \"The communication intent by a19a3069-496e-4751-993b-c9ae9566000a is delivered to 17f19638-b398-45e1-8074-17befed1f719, who is present and listening; the wait intent is trivially compatible with receiving the message, so both intents resolve to success. No state-changing effects are asserted this pass because no version information is available to satisfy optimistic concurrency checks on the allowed aggregates.\"}"
+   ],
+   "ttuv_ms": 103813,
+   "outcome": "usable"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "b4faab0383beed45b62f161f0cb794cfe47b2c525ba878370bc0b9dd8f2138e5",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 36953,
+     "finish_reason": "stop",
+     "content_len": 938,
+     "prompt_tokens": 3425,
+     "completion_tokens": 1592,
+     "reasoning_tokens": 1062,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": false,
+     "validation": "ValidationError: 3 validation errors for ResolverProposal\neffects.0.resource_adjusted\n  Value error, expected_versions must cover every affected id: ['2ecde310-3e18-48f5-91aa-0d05b47e4e49'] [type=value_error, input_value={'effect_type': 'resource... 'stamina', 'delta': -5}, input_type=dict]\n    For further informati"
+    },
+    {
+     "latency_ms": 44406,
+     "finish_reason": "stop",
+     "content_len": 1072,
+     "prompt_tokens": 3526,
+     "completion_tokens": 2647,
+     "reasoning_tokens": 1913,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": false,
+     "validation": "ValidationError: 2 validation errors for ResolverProposal\neffects.1.record_memory\n  Value error, expected_versions must cover every affected id: ['2ecde310-3e18-48f5-91aa-0d05b47e4e49'] [type=value_error, input_value={'effect_type': 'record_m...racter waiting nearby.'}, input_type=dict]\n    For further information v"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "texts": [
+    "{\n  \"outcome\": \"success\",\n  \"rationale\": \"Character B successfully initiates communication with Character A, who is waiting, resulting in a successful exchange of information.\",\n  \"effects\": [\n    {\n      \"effect_type\": \"resource_adjusted\",\n      \"affected_ids\": [\n        \"2ecde310-3e18-48f5-91aa-0d05b47e4e49\"\n      ],\n      \"resource\": \"stamina\",\n      \"delta\": -5\n    },\n    {\n      \"effect_type\": \"record_observation\",\n      \"affected_ids\": [\n        \"797f9f12-8ae2-4692-ba4b-ec4f1c49f3ab\"\n      ],\n      \"observer_character_id\": \"797f9f12-8ae2-4692-ba4b-ec4f1c49f3ab\",\n      \"facts\": [\n        {\n          \"key\": \"communication\",\n          \"value\": \"B spoke to A\"\n        }\n      ]\n    },\n    {\n      \"effect_type\": \"record_memory\",\n      \"affected_ids\": [\n        \"797f9f12-8ae2-4692-ba4b-ec4f1c49f3ab\"\n      ],\n      \"owner_character_id\": \"797f9f12-8ae2-4692-ba4b-ec4f1c49f3ab\",\n      \"text\": \"B communicated with me.\"\n    }\n  ]\n}",
+    "{\n  \"outcome\": \"success\",\n  \"rationale\": \"The communicator successfully initiates dialogue with the waiting character, resulting in a verbal exchange.\",\n  \"effects\": [\n    {\n      \"effect_type\": \"resource_adjusted\",\n      \"affected_ids\": [\n        \"2ecde310-3e18-48f5-91aa-0d05b47e4e49\"\n      ],\n      \"resource\": \"stamina\",\n      \"delta\": -5,\n      \"expected_versions\": {\n        \"2ecde310-3e18-48f5-91aa-0d05b47e4e49\": 1\n      }\n    },\n    {\n      \"effect_type\": \"record_memory\",\n      \"affected_ids\": [\n        \"2ecde310-3e18-48f5-91aa-0d05b47e4e49\"\n      ],\n      \"owner_character_id\": \"2ecde310-3e18-48f5-91aa-0d05b47e4e49\",\n      \"text\": \"I communicated with the character waiting nearby.\"\n    },\n    {\n      \"effect_type\": \"record_observation\",\n      \"affected_ids\": [\n        \"797f9f12-8ae2-4692-ba4b-ec4f1c49f3ab\"\n      ],\n      \"observer_character_id\": \"797f9f12-8ae2-4692-ba4b-ec4f1c49f3ab\",\n      \"facts\": [\n        {\n          \"key\": \"interaction\",\n          \"value\": \"Character 2ecde310-3e18-48f5-91aa-0d05b47e4e49 spoke to me.\"\n        }\n      ]\n    }\n  ]\n}"
+   ],
+   "ttuv_ms": 81375,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "b5cc6b6533a0e9419c8349ab02020860c4f40a0afc434c559503ca5edb957784",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 37953,
+     "finish_reason": "stop",
+     "content_len": 1203,
+     "prompt_tokens": 3412,
+     "completion_tokens": 2052,
+     "reasoning_tokens": 1458,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": false,
+     "validation": "ValidationError: 4 validation errors for ResolverProposal\neffects.0.resource_adjusted\n  Value error, expected_versions must cover every affected id: ['55a63245-30ab-4cbf-aaa3-4c5ad2ef7a59'] [type=value_error, input_value={'effect_type': 'resource... 'stamina', 'delta': -5}, input_type=dict]\n    For further informati"
+    },
+    {
+     "latency_ms": 60343,
+     "finish_reason": "stop",
+     "content_len": 1303,
+     "prompt_tokens": 3513,
+     "completion_tokens": 3280,
+     "reasoning_tokens": 2581,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": true,
+     "validation": "ResolverProposal"
+    }
+   ],
+   "repairs": 1,
+   "validated": true,
+   "texts": [
+    "{\n  \"outcome\": \"success\",\n  \"rationale\": \"Character 55a63245 waited while Character 08c02082 initiated communication, resulting in a successful exchange.\",\n  \"effects\": [\n    {\n      \"effect_type\": \"resource_adjusted\",\n      \"affected_ids\": [\n        \"55a63245-30ab-4cbf-aaa3-4c5ad2ef7a59\"\n      ],\n      \"resource\": \"stamina\",\n      \"delta\": -5\n    },\n    {\n      \"effect_type\": \"resource_adjusted\",\n      \"affected_ids\": [\n        \"08c02082-f063-4027-bbaf-1796b00bd110\"\n      ],\n      \"resource\": \"stamina\",\n      \"delta\": -5\n    },\n    {\n      \"effect_type\": \"record_observation\",\n      \"observer_character_id\": \"08c02082-f063-4027-bbaf-1796b00bd110\",\n      \"affected_ids\": [\n        \"55a63245-30ab-4cbf-aaa3-4c5ad2ef7a59\"\n      ],\n      \"facts\": [\n        {\n          \"key\": \"action\",\n          \"value\": \"waited\"\n        },\n        {\n          \"key\": \"location\",\n          \"value\": \"stationary\"\n        }\n      ]\n    },\n    {\n      \"effect_type\": \"record_memory\",\n      \"owner_character_id\": \"55a63245-30ab-4cbf-aaa3-4c5ad2ef7a59\",\n      \"affected_ids\": [\n        \"08c02082-f063-4027-bbaf-1796b00bd110\"\n      ],\n      \"text\": \"Character 08c02082 approached and attempted to communicate.\"\n    }\n  ]\n}",
+    "{\n  \"outcome\": \"success\",\n  \"rationale\": \"Character 55a63245 waits while Character 08c02082 communicates with them, resulting in a successful exchange.\",\n  \"effects\": [\n    {\n      \"effect_type\": \"resource_adjusted\",\n      \"affected_ids\": [\n        \"55a63245-30ab-4cbf-aaa3-4c5ad2ef7a59\"\n      ],\n      \"resource\": \"stamina\",\n      \"delta\": -5,\n      \"expected_versions\": {\n        \"55a63245-30ab-4cbf-aaa3-4c5ad2ef7a59\": 1\n      },\n      \"schema_version\": 1\n    },\n    {\n      \"effect_type\": \"record_observation\",\n      \"observer_character_id\": \"08c02082-f063-4027-bbaf-1796b00bd110\",\n      \"affected_ids\": [\n        \"55a63245-30ab-4cbf-aaa3-4c5ad2ef7a59\"\n      ],\n      \"facts\": [\n        {\n          \"key\": \"communication\",\n          \"value\": \"Character 55a63245 communicated with me.\"\n        }\n      ],\n      \"expected_versions\": {\n        \"55a63245-30ab-4cbf-aaa3-4c5ad2ef7a59\": 1\n      },\n      \"schema_version\": 1\n    },\n    {\n      \"effect_type\": \"record_memory\",\n      \"owner_character_id\": \"08c02082-f063-4027-bbaf-1796b00bd110\",\n      \"affected_ids\": [\n        \"55a63245-30ab-4cbf-aaa3-4c5ad2ef7a59\"\n      ],\n      \"text\": \"I communicated with Character 55a63245.\",\n      \"expected_versions\": {\n        \"55a63245-30ab-4cbf-aaa3-4c5ad2ef7a59\": 1\n      },\n      \"schema_version\": 1\n    }\n  ]\n}"
+   ],
+   "ttuv_ms": 98311,
+   "outcome": "usable"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "265347c7d7113d1cfe77f7eac98b90f67263a482ec68b1dd0ba807e948702ab6",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790620204-i16vqGgWPI0A5ph2DwAs\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2649, \"completion_tokens\": 512, \"reasoning_tokens\": 483}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 12016
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 12016,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "49077715d945332bfd4a692ec872169f05cd6e1ba1d25b7d78f595bb4acaf205",
+   "arm": "B",
+   "attempts": [
+    {
+     "latency_ms": 48000,
+     "finish_reason": "stop",
+     "content_len": 137,
+     "prompt_tokens": 2653,
+     "completion_tokens": 2159,
+     "reasoning_tokens": 1926,
+     "model": "z-ai/glm-4.7-flash",
+     "valid": true,
+     "validation": "WaitAction"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\n  \"family\": \"wait\",\n  \"character_id\": \"a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d\",\n  \"snapshot_id\": \"b2c3d4e5-f6a7-4b5c-9d0e-1f2a3b4c5d6e\"\n}"
+   ],
+   "ttuv_ms": 48014,
+   "outcome": "usable"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "70ecc81054e9394d1ce1cea101148354705801c8c2ff8276c2cac401a0ca2a0c",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790620263-BtaxJjpHsdICpaytGuJm\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2665, \"completion_tokens\": 512, \"reasoning_tokens\": 508}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 8640
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 8640,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "752e76f85086dea210fdd140027323d863fd9114bf4ad2d74fe9a569a1766e34",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790620272-ChQDTRAtlS7YDuxUsomX\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2780, \"completion_tokens\": 512, \"reasoning_tokens\": 493}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 8546
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 8546,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "7b5c8bb87ce2a4582c64bc19c38bdf0bd490d0f7e6b1ce36f1d6437eea443ca6",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790620281-g2NvmRhCo3QAtxZ4prhW\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2764, \"completion_tokens\": 512, \"reasoning_tokens\": 509}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 9469
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 9469,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "7f2b5b8ca31350d7154dbae88a2edd50151e4fd90b9bac539c7ce75bef3bff69",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790620290-13W0YTb8tnyHSDzXk5WY\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2723, \"completion_tokens\": 512, \"reasoning_tokens\": 546}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 16702
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 16702,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "a9f74a7008f6b1ff1a584161dc2e1f9d162f3582c55d9c54b5a67ab0dbab30e6",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790620307-vVCb3Wpwuo0MvGOJ5G7A\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2780, \"completion_tokens\": 512, \"reasoning_tokens\": 466}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 8219
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 8219,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "b55868c2205fe24f5c89e441e971f18bfd812b0a626e7f55f5929925d7bd26d8",
+   "arm": "B",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790620315-GuogTgsQ8fjgVSoSqhk8\", \"model\": \"z-ai/glm-4.7-flash\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2655, \"completion_tokens\": 512, \"reasoning_tokens\": 500}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 10985
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 10985,
+   "outcome": "provider_error"
+  }
+ ]
+}

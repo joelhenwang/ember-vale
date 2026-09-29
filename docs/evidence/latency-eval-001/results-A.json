@@ -1,0 +1,954 @@
+{
+ "arm": "A",
+ "config": {
+  "model": "deepseek/deepseek-v4-flash-0731",
+  "temperature": 0.2,
+  "json_narrator": false
+ },
+ "fixture_sha": "c0c5cb3120de0aedff58e6e0c9360b52242c72304c14137343e5917966872814",
+ "started_wall": 1790615677.9477398,
+ "ended_wall": 1790617970.9549892,
+ "total_tokens": 140596,
+ "dry_run": false,
+ "results": [
+  {
+   "role": "narrator",
+   "prompt_hash": "1d6cdf95bb9381f4f19a6e8c3ce952598590b327e4446ddf5e31b653de095986",
+   "arm": "A",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790615678-E0SlveyC3bQ7TJUT7xye\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 1110, \"completion_tokens\": 4096, \"reasoning_tokens\": 4150}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 37172
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 37172,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "2ae7ddb9da9ecbbab998bf3106849919be113788c38759a542530821f82a3d11",
+   "arm": "A",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790615715-eoMpbfUBA5g7ALuCHnHc\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 999, \"completion_tokens\": 4096, \"reasoning_tokens\": 4095}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 64437
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 64437,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "34a6cdf2413e6485e36f7bd6356eca18c4c0fb45599e28d1fd29eb9da4850953",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 80453,
+     "finish_reason": "stop",
+     "content_len": 600,
+     "prompt_tokens": 1001,
+     "completion_tokens": 3671,
+     "reasoning_tokens": 3559,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['attempt:wait']"
+    },
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790615860-X766DNl4aS27A6knMplD\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 1034, \"completion_tokens\": 4096, \"reasoning_tokens\": 4097}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 72219
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "texts": [
+    "[\n  {\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"kind\": \"action\",\n    \"speaker_id\": null,\n    \"text\": \"Ash waits.\"\n  },\n  {\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"kind\": \"dialogue\",\n    \"speaker_id\": null,\n    \"text\": \"Wren says to Ash, \\\"Ask Ash what the Market holds today.\\\"\"\n  },\n  {\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"kind\": \"action\",\n    \"speaker_id\": null,\n    \"text\": \"Ash waits.\"\n  },\n  {\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"kind\": \"dialogue\",\n    \"speaker_id\": null,\n    \"text\": \"Wren says to Ash, \\\"Ask Ash what the Market holds today.\\\"\"\n  }\n]"
+   ],
+   "ttuv_ms": 152687,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "703d2583e8b01bb53f82b02bc8d3fdd53d6aeafdf4c4359b135838c468942157",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 112030,
+     "finish_reason": "stop",
+     "content_len": 486,
+     "prompt_tokens": 1086,
+     "completion_tokens": 3802,
+     "reasoning_tokens": 3625,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "3 beats"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "[\n  {\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"kind\": \"dialogue\",\n    \"speaker_id\": null,\n    \"text\": \"Ash, one last probe question for the road?\"\n  },\n  {\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"kind\": \"action\",\n    \"speaker_id\": null,\n    \"text\": \"Ash waits.\"\n  },\n  {\n    \"cited_fact_keys\": [\"reaction:b0130c69-76d5-5852-aac8-e3bac5f5e863\"],\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"17f19638-b398-45e1-8074-17befed1f719\",\n    \"text\": \"One more? Go on then.\"\n  }\n]"
+   ],
+   "ttuv_ms": 112046,
+   "outcome": "usable"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "937f1568995ee99eb8d53896cbe28463b290f0f1079f031685a60e4c59a37556",
+   "arm": "A",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790616044-uJn5wmP7a1Im9jjitNhy\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 997, \"completion_tokens\": 4096, \"reasoning_tokens\": 4096}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 127170
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 127170,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "96ba807f42be3f0a603c155fa382002ba8c93f2363901c2703942947a1e5b820",
+   "arm": "A",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790616171-zY5UdGqkSQTioQJKoE0l\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 1087, \"completion_tokens\": 4096, \"reasoning_tokens\": 4096}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 150452
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 150452,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "9d6fe3434f81998c1075805c7a12b3550ab0ba842d7a706fe0e065306a1743aa",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 53469,
+     "finish_reason": "stop",
+     "content_len": 788,
+     "prompt_tokens": 931,
+     "completion_tokens": 1943,
+     "reasoning_tokens": 1809,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "4 beats"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "[\n  {\n    \"text\": \"Ash waits.\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"source_effect_ids\": [],\n    \"emotion_hint\": \"\"\n  },\n  {\n    \"text\": \"Ask Ash whether the stalls are open yet.\",\n    \"kind\": \"dialogue\",\n    \"speaker_id\": null,\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"source_effect_ids\": [],\n    \"emotion_hint\": \"\"\n  },\n  {\n    \"text\": \"Ash waits again.\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"source_effect_ids\": [],\n    \"emotion_hint\": \"\"\n  },\n  {\n    \"text\": \"Ask Ash whether the stalls are open yet.\",\n    \"kind\": \"dialogue\",\n    \"speaker_id\": null,\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"source_effect_ids\": [],\n    \"emotion_hint\": \"\"\n  }\n]"
+   ],
+   "ttuv_ms": 53469,
+   "outcome": "usable"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "ace3f694c7d649563081ba6e671b90917a1ade1c8edc1d74c98b31ad93219434",
+   "arm": "A",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790616375-ijRSzv57I8mt7E4gJ7xb\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 998, \"completion_tokens\": 512, \"reasoning_tokens\": 511}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 10844
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 10844,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "e2787b12ef4e1c27c7ed80156e26dfe5aeedcfa386ba8832adef564a1ac7ea4c",
+   "arm": "A",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790616386-I8y8LREkvtS3OBS8K6Hx\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 1113, \"completion_tokens\": 4096, \"reasoning_tokens\": 4096}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 129155
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 129155,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "fa5241259d699d7860d2848941116dfc523fa8002236b0ecc9b151da5a551120",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 181844,
+     "finish_reason": "length",
+     "content_len": 1,
+     "prompt_tokens": 1045,
+     "completion_tokens": 4096,
+     "reasoning_tokens": 4096,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": false,
+     "validation": "ValidationError: 1 validation error for list[BeatProposal]\n  Invalid JSON: EOF while parsing a value at line 1 column 1 [type=json_invalid, input_value=' ', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/json_invalid"
+    },
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790616697-ZKJPjFcP4VNtwnzglFUb\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 1129, \"completion_tokens\": 4096, \"reasoning_tokens\": 4096}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 113843
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "texts": [
+    " "
+   ],
+   "ttuv_ms": 295687,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "05a3593976e9845ff0a7d60cb5ee67345261048a18d4bd0c740e16b33b9b4712",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 11796,
+     "finish_reason": "stop",
+     "content_len": 188,
+     "prompt_tokens": 359,
+     "completion_tokens": 272,
+     "reasoning_tokens": 227,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": false,
+     "validation": "ValidationError: 1 validation error for DirectorProposal\ntype\n  Extra inputs are not permitted [type=extra_forbidden, input_value='json_object', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden"
+    },
+    {
+     "latency_ms": 5516,
+     "finish_reason": "stop",
+     "content_len": 121,
+     "prompt_tokens": 350,
+     "completion_tokens": 469,
+     "reasoning_tokens": 436,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "DirectorProposal"
+    }
+   ],
+   "repairs": 1,
+   "validated": true,
+   "texts": [
+    "{\"type\":\"json_object\", \"action\": \"noop\", \"reason\": \"No open hooks or arcs, and the existing characters and places provide no unmet need or quiet stretch that calls for a new opportunity.\"}",
+    "{\"action\": \"noop\", \"reason\": \"No open hooks or arcs and no unmet need; the phase is quiet and needs no new opportunity.\"}"
+   ],
+   "ttuv_ms": 17328,
+   "outcome": "usable"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "11c43659128de8d77f81be7e521609c852aface6bb3fd3586eb74ae09e02f3e8",
+   "arm": "A",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790616828-j2UlzobqxsQ01rLfs1rC\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 337, \"completion_tokens\": 512, \"reasoning_tokens\": 512}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 23921
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 23921,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "40586e823ff6e52d8737eb4a5375aaf729c0f8ad0f59156549eac8c6b9502266",
+   "arm": "A",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790616852-iVsQQfYx31W2JAY0kEdG\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 359, \"completion_tokens\": 512, \"reasoning_tokens\": 512}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 18578
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 18578,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "556d963d1dcb5021f866877b885133644a069556943c3fb00eda40081898981e",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 50828,
+     "finish_reason": "stop",
+     "content_len": 265,
+     "prompt_tokens": 384,
+     "completion_tokens": 1487,
+     "reasoning_tokens": 1414,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": false,
+     "validation": "ValidationError: 2 validation errors for DirectorProposal\nparticipant_ids.0\n  Input should be a valid UUID, invalid character: found `s` at 2 [type=uuid_parsing, input_value='Ash', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/uuid_parsing\nparticipant_ids.1\n  Input should be a "
+    },
+    {
+     "latency_ms": 34514,
+     "finish_reason": "stop",
+     "content_len": 214,
+     "prompt_tokens": 483,
+     "completion_tokens": 1110,
+     "reasoning_tokens": 1053,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "DirectorProposal"
+    }
+   ],
+   "repairs": 1,
+   "validated": true,
+   "texts": [
+    "{\"action\": \"propose_hook\", \"title\": \"Locked iron box at the Market\", \"purpose\": \"Ash and Wren discover a locked iron box beneath a market stall, with no key in sight, inviting investigation and a choice.\", \"requested_powers\": [], \"participant_ids\": [\"Ash\", \"Wren\"]}",
+    "{\n  \"action\": \"noop\",\n  \"title\": \"\",\n  \"purpose\": \"No genuine opening exists; both characters are present and no unmet need or unused place calls for attention.\",\n  \"participant_ids\": [],\n  \"requested_powers\": []\n}"
+   ],
+   "ttuv_ms": 85343,
+   "outcome": "usable"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "56f0c3575912e14e9076683d46fd8ac766a7add92ecd30dd0b80e56916541742",
+   "arm": "A",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790616956-xeicfvSl6JNqNbdvLg9J\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 384, \"completion_tokens\": 1024, \"reasoning_tokens\": 1024}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 35250
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 35250,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "9132ce1849835dfdd15888ad722eaad00269da5c0783ab5398e4112abcdacc71",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 125422,
+     "finish_reason": "stop",
+     "content_len": 176,
+     "prompt_tokens": 384,
+     "completion_tokens": 2657,
+     "reasoning_tokens": 2605,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "DirectorProposal"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\"action\": \"noop\", \"title\": \"\", \"purpose\": \"\", \"requested_powers\": [], \"participant_ids\": [], \"reason\": \"No open hooks or arcs; the phase is a quiet start with no unmet need.\"}"
+   ],
+   "ttuv_ms": 125438,
+   "outcome": "usable"
+  },
+  {
+   "role": "director",
+   "prompt_hash": "cf7175ab1d1a52a98e9ed306880d3ad517ca07c2fc1289978a1307ee0f290cc5",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 27562,
+     "finish_reason": "stop",
+     "content_len": 105,
+     "prompt_tokens": 337,
+     "completion_tokens": 917,
+     "reasoning_tokens": 884,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "DirectorProposal"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\"action\": \"noop\", \"reason\": \"No open hooks, arcs, or unmet needs currently call for a new opportunity.\"}"
+   ],
+   "ttuv_ms": 27577,
+   "outcome": "usable"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "1ef7ef3cc3ac78cf666bdcce73b1994a1dc72b68db80e8f1d084c09bde6d2efd",
+   "arm": "A",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790617144-RBBZVEGHv9nUB2klxhKM\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 3037, \"completion_tokens\": 512, \"reasoning_tokens\": 512}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 15844
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 15844,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "2580091f1dc68a1f66a356078ecf5a64d88ab9c9a86814db86233484461aa6fb",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 50250,
+     "finish_reason": "stop",
+     "content_len": 137,
+     "prompt_tokens": 2896,
+     "completion_tokens": 1926,
+     "reasoning_tokens": 1867,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "WaitAction"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\n  \"character_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"snapshot_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"family\": \"wait\"\n}"
+   ],
+   "ttuv_ms": 50265,
+   "outcome": "usable"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "2dbf2441819fe922c9088df685f59495b876db8b90c67ba100bf322dd8e42f4d",
+   "arm": "A",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790617211-w25vwEPEFjBrRGsqIus2\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"stop\", \"usage\": {\"prompt_tokens\": 2794, \"completion_tokens\": 67, \"reasoning_tokens\": 67}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 6781
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 6781,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "2e36b3a286c04cc4e7efe1721d200976f48f473ebc38e98cb0630d7d507b591a",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 31968,
+     "finish_reason": "stop",
+     "content_len": 299,
+     "prompt_tokens": 3448,
+     "completion_tokens": 1777,
+     "reasoning_tokens": 1773,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "CommunicateAction"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\n  \"family\": \"communicate\",\n  \"character_id\": \"17f19638-b398-45e1-8074-17befed1f719\",\n  \"snapshot_id\": \"17f19638-b398-45e1-8074-17befed1f719\",\n  \"target_character_id\": \"a19a3069-496e-4751-993b-c9ae9566000a\",\n  \"topic\": \"\\\"The sky's got that grey look \u2014 I'd wager rain before the lamps are lit.\\\"\"\n}"
+   ],
+   "ttuv_ms": 31968,
+   "outcome": "usable"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "675f0073856e2f982d791bc17a47b654646042476597712c07aca5cd78ee43a9",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 10860,
+     "finish_reason": "stop",
+     "content_len": 246,
+     "prompt_tokens": 3034,
+     "completion_tokens": 279,
+     "reasoning_tokens": 190,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": false,
+     "validation": "ValidationError: 1 validation error for tagged-union[WaitAction,RestAction,ObserveAction,MoveAction,CommunicateAction,SparAction,AppealAction,TransferAction]\ncommunicate.snapshot_id\n  Input should be a valid UUID, invalid length: expected length 32 for simple format, found 0 [type=uuid_parsing, input_value='', input"
+    },
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790617260-KWYxK63tnXeXFyOVEtqD\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 3127, \"completion_tokens\": 1024, \"reasoning_tokens\": 1024}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 31921
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "texts": [
+    "{\"family\":\"communicate\",\"character_id\":\"8eda10a8-d511-487f-97f7-4c831657567a\",\"snapshot_id\":\"\",\"target_character_id\":\"8b2f9cc9-b824-40fd-b2e0-f80394e3eef5\",\"topic\":\"\\\"Keep an eye on the treeline and your purse. Quiet roads breed bold thieves.\\\"\"}"
+   ],
+   "ttuv_ms": 42796,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "a3cf419b98fbb24bcbca95773634915f4d5ffb367926f2593b75b22e806f8135",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 72281,
+     "finish_reason": "stop",
+     "content_len": 302,
+     "prompt_tokens": 2895,
+     "completion_tokens": 2679,
+     "reasoning_tokens": 2564,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "CommunicateAction"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\n  \"family\": \"communicate\",\n  \"character_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"snapshot_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"target_character_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"topic\": \"\\\"Aye, the stalls are open\u2014if you can call the half-empty fishmonger's open.\\\"\"\n}"
+   ],
+   "ttuv_ms": 72296,
+   "outcome": "usable"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "a965dcbdcaaf5d1fa13af8cf30374fc74dae5ddb28805a1518fffe9cf4b4c5f6",
+   "arm": "A",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790617365-F53Rh8AMpgSYZpUwNrpF\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2877, \"completion_tokens\": 512, \"reasoning_tokens\": 512}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 3078
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 3078,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "reaction",
+   "prompt_hash": "f3b411ab0daeeaacc35ad992bfadf437dde5d1595005f1c19312669e0238adf7",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 35969,
+     "finish_reason": "stop",
+     "content_len": 137,
+     "prompt_tokens": 2783,
+     "completion_tokens": 2104,
+     "reasoning_tokens": 2030,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "WaitAction"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\n  \"character_id\": \"60d577bf-580e-4239-9d8d-9c66de4396d3\",\n  \"snapshot_id\": \"60d577bf-580e-4239-9d8d-9c66de4396d3\",\n  \"family\": \"wait\"\n}"
+   ],
+   "ttuv_ms": 36000,
+   "outcome": "usable"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "1a2772f772f22e6563b946722de0f589e0e5a0f421c3451e0d949d295594c21d",
+   "arm": "A",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790617404-x6kIojZnY1FfUC7jA45m\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 3627, \"completion_tokens\": 512, \"reasoning_tokens\": 512}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 18360
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 18360,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "25a9a4675dbe4ea42477da8d6de67aa602a2bf6e2b60e93fffb2a0e6f03e03c7",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 24702,
+     "finish_reason": "stop",
+     "content_len": 332,
+     "prompt_tokens": 3592,
+     "completion_tokens": 859,
+     "reasoning_tokens": 764,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "ResolverProposal"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\n  \"outcome\": \"success\",\n  \"rationale\": \"Character a19a3069-496e-4751-993b-c9ae9566000a can communicate while character 17f19638-b398-45e1-8074-17befed1f719 is waiting, so the waiting character is available to receive the communication. The intents are compatible and no conflicting constraints prevent success.\",\n  \"effects\": []\n}"
+   ],
+   "ttuv_ms": 24702,
+   "outcome": "usable"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "29051ab6188f0cfedad7490a83010a525715d66c2abb2bb4b472c20e5a0f9b98",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 44516,
+     "finish_reason": "stop",
+     "content_len": 836,
+     "prompt_tokens": 3548,
+     "completion_tokens": 3743,
+     "reasoning_tokens": 3421,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": false,
+     "validation": "ValidationError: 2 validation errors for ResolverProposal\neffects.0.record_memory\n  Value error, expected_versions must cover every affected id: ['6beb31b9-0899-4dc1-a103-2022d83ea4fa'] [type=value_error, input_value={'effect_type': 'record_m...8e26, who was waiting.'}, input_type=dict]\n    For further information v"
+    },
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790617491-UjUMcLWS0oK58MsHYZd8\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 3733, \"completion_tokens\": 512, \"reasoning_tokens\": 512}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 14139
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "texts": [
+    "{\n  \"outcome\": \"success\",\n  \"rationale\": \"Character 6beb31b9-0899-4dc1-a103-2022d83ea4fa communicated with character 7019d4cd-218d-4862-81f7-29f265788e26, who was waiting; both intents align, so the exchange succeeds without conflict.\",\n  \"effects\": [\n    {\n      \"effect_type\": \"record_memory\",\n      \"owner_character_id\": \"6beb31b9-0899-4dc1-a103-2022d83ea4fa\",\n      \"affected_ids\": [\n        \"6beb31b9-0899-4dc1-a103-2022d83ea4fa\"\n      ],\n      \"text\": \"Communicated with 7019d4cd-218d-4862-81f7-29f265788e26, who was waiting.\"\n    },\n    {\n      \"effect_type\": \"record_memory\",\n      \"owner_character_id\": \"7019d4cd-218d-4862-81f7-29f265788e26\",\n      \"affected_ids\": [\n        \"7019d4cd-218d-4862-81f7-29f265788e26\"\n      ],\n      \"text\": \"Waited and received communication from 6beb31b9-0899-4dc1-a103-2022d83ea4fa.\"\n    }\n  ]\n}"
+   ],
+   "ttuv_ms": 58656,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "5c81072cb5cec8d9e2f6b04ca9bc2c8dc777eb5b1565ded0bc1c70bce0a374b4",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 25968,
+     "finish_reason": "stop",
+     "content_len": 194,
+     "prompt_tokens": 3589,
+     "completion_tokens": 909,
+     "reasoning_tokens": 866,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "ResolverProposal"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\"outcome\":\"success\",\"rationale\":\"Character 17f is waiting and available, so character a19 can communicate with them; both intents are satisfied without conflicting state changes.\",\"effects\":[]}"
+   ],
+   "ttuv_ms": 25968,
+   "outcome": "usable"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "644442610b0fcd8a4181e2826f58b8fc245f733abeac739c8b0ebf8e0cd28225",
+   "arm": "A",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790617531-1Xvck6bk381yRW8AZ9cD\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 3505, \"completion_tokens\": 1024, \"reasoning_tokens\": 1201}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 17531
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 17531,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "92cf6439ff19bc4bd65d9286eba273de9df9c0440ac9c7153f0ed9b7dd643b76",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 48046,
+     "finish_reason": "stop",
+     "content_len": 182,
+     "prompt_tokens": 3572,
+     "completion_tokens": 3112,
+     "reasoning_tokens": 3537,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "ResolverProposal"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\n  \"outcome\": \"success\",\n  \"rationale\": \"a19 can deliver its communication while 17f is waiting, so both intents are satisfied and no automatic effects conflict.\",\n  \"effects\": []\n}"
+   ],
+   "ttuv_ms": 48046,
+   "outcome": "usable"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "b4faab0383beed45b62f161f0cb794cfe47b2c525ba878370bc0b9dd8f2138e5",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 29156,
+     "finish_reason": "stop",
+     "content_len": 192,
+     "prompt_tokens": 3610,
+     "completion_tokens": 957,
+     "reasoning_tokens": 918,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "ResolverProposal"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\"outcome\": \"success\", \"rationale\": \"The waiting character remains available while the other character communicates, so both intents are satisfied without conflicting effects.\", \"effects\": []}"
+   ],
+   "ttuv_ms": 29156,
+   "outcome": "usable"
+  },
+  {
+   "role": "resolver",
+   "prompt_hash": "b5cc6b6533a0e9419c8349ab02020860c4f40a0afc434c559503ca5edb957784",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 89296,
+     "finish_reason": "stop",
+     "content_len": 231,
+     "prompt_tokens": 3596,
+     "completion_tokens": 3351,
+     "reasoning_tokens": 3294,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "ResolverProposal"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\n  \"outcome\": \"success\",\n  \"rationale\": \"08c02082 communicates with 55a63245, who is waiting and therefore available to receive the communication. Both intents are satisfied, so the scene resolves successfully.\",\n  \"effects\": []\n}"
+   ],
+   "ttuv_ms": 89311,
+   "outcome": "usable"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "265347c7d7113d1cfe77f7eac98b90f67263a482ec68b1dd0ba807e948702ab6",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 2608,
+     "finish_reason": "stop",
+     "content_len": 129,
+     "prompt_tokens": 2727,
+     "completion_tokens": 54,
+     "reasoning_tokens": 0,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": true,
+     "validation": "WaitAction"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "texts": [
+    "{\"character_id\": \"00000000-0000-0000-0000-000000000000\", \"snapshot_id\": \"00000000-0000-0000-0000-000000000000\", \"family\": \"wait\"}"
+   ],
+   "ttuv_ms": 2625,
+   "outcome": "usable"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "49077715d945332bfd4a692ec872169f05cd6e1ba1d25b7d78f595bb4acaf205",
+   "arm": "A",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790617718-wmjkSZwoBlbvSROtrqpJ\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2831, \"completion_tokens\": 4096, \"reasoning_tokens\": 4096}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 92313
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 92313,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "70ecc81054e9394d1ce1cea101148354705801c8c2ff8276c2cac401a0ca2a0c",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 21703,
+     "finish_reason": "length",
+     "content_len": 1,
+     "prompt_tokens": 2818,
+     "completion_tokens": 512,
+     "reasoning_tokens": 512,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": false,
+     "validation": "ValidationError: 1 validation error for tagged-union[WaitAction,RestAction,ObserveAction,MoveAction,CommunicateAction,SparAction,AppealAction,TransferAction]\n  Invalid JSON: EOF while parsing a value at line 1 column 1 [type=json_invalid, input_value=' ', input_type=str]\n    For further information visit https://err"
+    },
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790617832-fdPncrp3U1OG74ERJewS\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2908, \"completion_tokens\": 512, \"reasoning_tokens\": 512}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 21687
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "texts": [
+    " "
+   ],
+   "ttuv_ms": 43406,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "752e76f85086dea210fdd140027323d863fd9114bf4ad2d74fe9a569a1766e34",
+   "arm": "A",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790617854-SSvdAYqJV0jT5A7RhtyS\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2977, \"completion_tokens\": 512, \"reasoning_tokens\": 512}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 28890
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 28890,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "7b5c8bb87ce2a4582c64bc19c38bdf0bd490d0f7e6b1ce36f1d6437eea443ca6",
+   "arm": "A",
+   "attempts": [
+    {
+     "latency_ms": 21718,
+     "finish_reason": "length",
+     "content_len": 1,
+     "prompt_tokens": 2930,
+     "completion_tokens": 512,
+     "reasoning_tokens": 512,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": false,
+     "validation": "ValidationError: 1 validation error for tagged-union[WaitAction,RestAction,ObserveAction,MoveAction,CommunicateAction,SparAction,AppealAction,TransferAction]\n  Invalid JSON: EOF while parsing a value at line 1 column 1 [type=json_invalid, input_value=' ', input_type=str]\n    For further information visit https://err"
+    },
+    {
+     "latency_ms": 22360,
+     "finish_reason": "length",
+     "content_len": 1,
+     "prompt_tokens": 3020,
+     "completion_tokens": 512,
+     "reasoning_tokens": 512,
+     "model": "deepseek/deepseek-v4-flash-0731",
+     "valid": false,
+     "validation": "ValidationError: 1 validation error for tagged-union[WaitAction,RestAction,ObserveAction,MoveAction,CommunicateAction,SparAction,AppealAction,TransferAction]\n  Invalid JSON: EOF while parsing a value at line 1 column 1 [type=json_invalid, input_value=' ', input_type=str]\n    For further information visit https://err"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "texts": [
+    " ",
+    " "
+   ],
+   "ttuv_ms": 44078,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "7f2b5b8ca31350d7154dbae88a2edd50151e4fd90b9bac539c7ce75bef3bff69",
+   "arm": "A",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790617927-cZA4pDNmpXP4WuTwr3zF\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2895, \"completion_tokens\": 512, \"reasoning_tokens\": 512}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 20218
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 20218,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "a9f74a7008f6b1ff1a584161dc2e1f9d162f3582c55d9c54b5a67ab0dbab30e6",
+   "arm": "A",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790617947-ClTlxX7yk8HqQuOgJthw\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2953, \"completion_tokens\": 512, \"reasoning_tokens\": 512}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 11406
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 11406,
+   "outcome": "provider_error"
+  },
+  {
+   "role": "character_decision",
+   "prompt_hash": "b55868c2205fe24f5c89e441e971f18bfd812b0a626e7f55f5929925d7bd26d8",
+   "arm": "A",
+   "attempts": [
+    {
+     "error": "ModelMalformedError",
+     "detail": "{\"http_status\": 200, \"response_id\": \"gen-1790617958-h9VqNobz7D7fNMEf9xsw\", \"model\": \"deepseek/deepseek-v4-flash-0731\", \"finish_reason\": \"length\", \"usage\": {\"prompt_tokens\": 2810, \"completion_tokens\": 512, \"reasoning_tokens\": 515}, \"choices_count\": 1, \"content_type\": \"NoneType\", \"content_length\": null, \"reasoning_only\": true}",
+     "reasoning_only": true,
+     "latency_ms": 12610
+    }
+   ],
+   "repairs": 0,
+   "validated": false,
+   "ttuv_ms": 12610,
+   "outcome": "provider_error"
+  }
+ ]
+}

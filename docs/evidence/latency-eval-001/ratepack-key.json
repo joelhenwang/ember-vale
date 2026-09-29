@@ -1,0 +1,28 @@
+{
+ "seed": 77,
+ "items": {
+  "1d6cdf95": {
+   "X": "room-committed",
+   "Y": "room-committed",
+   "Z": "room-committed"
+  },
+  "703d2583": {
+   "X": "arm-C",
+   "Y": "room-committed",
+   "Z": "arm-A",
+   "W": "room-committed",
+   "V": "room-committed"
+  },
+  "96ba807f": {
+   "X": "room-committed",
+   "Y": "room-committed",
+   "Z": "room-committed"
+  },
+  "9d6fe343": {
+   "X": "arm-A",
+   "Y": "arm-C",
+   "Z": "room-committed",
+   "W": "room-committed"
+  }
+ }
+}
