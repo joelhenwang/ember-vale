@@ -13,7 +13,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
-import re
 import sys
 import time
 from pathlib import Path
@@ -55,20 +54,9 @@ ROLE_SYSTEM = {
     "resolver": lambda: resolve.render_system_prompt(resolve.load_resolver_prompt()),
 }
 
-AUD_RE = re.compile(r"^Audience:\s*(.*)$", re.MULTILINE)
-BUDGET_RE = re.compile(r"^Beat budget:\s*(\d+)\s*\.\s*$", re.MULTILINE)
-KEY_RE = re.compile(r'^-\s*key\s+"([^"]+)"\s*:', re.MULTILINE)
-ROSTER_RE = re.compile(r"^-\s*(.+?)\s*\(id:\s*([^)]+)\)\s*$", re.MULTILINE)
-
-
 def narrator_context(user_prompt: str) -> tuple[frozenset[str], frozenset[str], int]:
-    audience: set[str] = set()
-    m = AUD_RE.search(user_prompt)
-    if m:
-        audience = {a.strip() for a in m.group(1).split(",") if a.strip() and a.strip() != "none"}
-    keys = set(KEY_RE.findall(user_prompt))
-    b = BUDGET_RE.search(user_prompt)
-    return frozenset(audience), frozenset(keys), int(b.group(1)) if b else 8
+    """Shared narration-context parser (both documented prompt formats)."""
+    return narrate.parse_narration_context(user_prompt)
 
 
 def validate(role: str, raw: str, user_prompt: str) -> tuple[bool, str]:

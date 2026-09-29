@@ -1,0 +1,427 @@
+{
+ "A": [
+  {
+   "prompt_hash": "1d6cdf95",
+   "outcome_recorded": "provider_error"
+  },
+  {
+   "prompt_hash": "2ae7ddb9",
+   "outcome_recorded": "provider_error"
+  },
+  {
+   "prompt_hash": "34a6cdf2",
+   "outcome_recorded": "provider_error",
+   "attempt0": {
+    "pass": true,
+    "detail": "4 beats",
+    "latency_ms": 80453
+   }
+  },
+  {
+   "prompt_hash": "703d2583",
+   "outcome_recorded": "usable",
+   "attempt0": {
+    "pass": true,
+    "detail": "3 beats",
+    "latency_ms": 112030
+   }
+  },
+  {
+   "prompt_hash": "937f1568",
+   "outcome_recorded": "provider_error"
+  },
+  {
+   "prompt_hash": "96ba807f",
+   "outcome_recorded": "provider_error"
+  },
+  {
+   "prompt_hash": "9d6fe343",
+   "outcome_recorded": "usable",
+   "attempt0": {
+    "pass": true,
+    "detail": "4 beats",
+    "latency_ms": 53469
+   }
+  },
+  {
+   "prompt_hash": "ace3f694",
+   "outcome_recorded": "provider_error"
+  },
+  {
+   "prompt_hash": "e2787b12",
+   "outcome_recorded": "provider_error"
+  },
+  {
+   "prompt_hash": "fa524125",
+   "outcome_recorded": "provider_error",
+   "attempt0": {
+    "pass": false,
+    "detail": "schema: 1 errors",
+    "latency_ms": 181844
+   }
+  }
+ ],
+ "B": [
+  {
+   "prompt_hash": "1d6cdf95",
+   "outcome_recorded": "usable",
+   "attempt0": {
+    "pass": true,
+    "detail": "5 beats",
+    "latency_ms": 108546
+   }
+  },
+  {
+   "prompt_hash": "2ae7ddb9",
+   "outcome_recorded": "provider_error",
+   "attempt0": {
+    "pass": false,
+    "detail": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet.']",
+    "latency_ms": 72389
+   }
+  },
+  {
+   "prompt_hash": "34a6cdf2",
+   "outcome_recorded": "provider_error",
+   "attempt0": {
+    "pass": false,
+    "detail": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today.']",
+    "latency_ms": 34500
+   }
+  },
+  {
+   "prompt_hash": "703d2583",
+   "outcome_recorded": "usable",
+   "attempt0": {
+    "pass": true,
+    "detail": "5 beats",
+    "latency_ms": 50389
+   }
+  },
+  {
+   "prompt_hash": "937f1568",
+   "outcome_recorded": "provider_error",
+   "attempt0": {
+    "pass": true,
+    "detail": "4 beats",
+    "latency_ms": 80296
+   }
+  },
+  {
+   "prompt_hash": "96ba807f",
+   "outcome_recorded": "usable",
+   "attempt0": {
+    "pass": true,
+    "detail": "6 beats",
+    "latency_ms": 58483
+   }
+  },
+  {
+   "prompt_hash": "9d6fe343",
+   "outcome_recorded": "usable",
+   "attempt0": {
+    "pass": true,
+    "detail": "4 beats",
+    "latency_ms": 39889
+   }
+  },
+  {
+   "prompt_hash": "ace3f694",
+   "outcome_recorded": "provider_error"
+  },
+  {
+   "prompt_hash": "e2787b12",
+   "outcome_recorded": "exhausted",
+   "attempt0": {
+    "pass": true,
+    "detail": "5 beats",
+    "latency_ms": 62983
+   },
+   "repair": {
+    "pass": true,
+    "detail": "5 beats",
+    "latency_ms": 74186
+   }
+  },
+  {
+   "prompt_hash": "fa524125",
+   "outcome_recorded": "provider_error"
+  }
+ ],
+ "C": [
+  {
+   "prompt_hash": "1d6cdf95",
+   "outcome_recorded": "provider_error",
+   "attempt0": {
+    "pass": false,
+    "detail": "schema: 1 errors",
+    "latency_ms": 147219
+   }
+  },
+  {
+   "prompt_hash": "2ae7ddb9",
+   "outcome_recorded": "provider_error"
+  },
+  {
+   "prompt_hash": "34a6cdf2",
+   "outcome_recorded": "exhausted",
+   "attempt0": {
+    "pass": false,
+    "detail": "beats_valid: unsupported facts cited: ['attempt:wait: Ash waits']",
+    "latency_ms": 38203
+   },
+   "repair": {
+    "pass": true,
+    "detail": "4 beats",
+    "latency_ms": 94421
+   }
+  },
+  {
+   "prompt_hash": "703d2583",
+   "outcome_recorded": "usable",
+   "attempt0": {
+    "pass": true,
+    "detail": "3 beats",
+    "latency_ms": 49077
+   }
+  },
+  {
+   "prompt_hash": "937f1568",
+   "outcome_recorded": "provider_error"
+  },
+  {
+   "prompt_hash": "96ba807f",
+   "outcome_recorded": "provider_error"
+  },
+  {
+   "prompt_hash": "9d6fe343",
+   "outcome_recorded": "usable",
+   "attempt0": {
+    "pass": true,
+    "detail": "4 beats",
+    "latency_ms": 79828
+   }
+  },
+  {
+   "prompt_hash": "ace3f694",
+   "outcome_recorded": "provider_error"
+  },
+  {
+   "prompt_hash": "e2787b12",
+   "outcome_recorded": "provider_error",
+   "attempt0": {
+    "pass": false,
+    "detail": "schema: 1 errors",
+    "latency_ms": 160421
+   }
+  },
+  {
+   "prompt_hash": "fa524125",
+   "outcome_recorded": "provider_error"
+  }
+ ],
+ "D1": [
+  {
+   "prompt_hash": "1d6cdf95",
+   "outcome_recorded": "provider_error",
+   "attempt0": {
+    "pass": false,
+    "detail": "schema: 1 errors",
+    "latency_ms": 88468
+   }
+  },
+  {
+   "prompt_hash": "2ae7ddb9",
+   "outcome_recorded": "provider_error"
+  },
+  {
+   "prompt_hash": "34a6cdf2",
+   "outcome_recorded": "provider_error",
+   "attempt0": {
+    "pass": false,
+    "detail": "schema: 1 errors",
+    "latency_ms": 27764
+   }
+  },
+  {
+   "prompt_hash": "703d2583",
+   "outcome_recorded": "provider_error",
+   "attempt0": {
+    "pass": false,
+    "detail": "schema: 1 errors",
+    "latency_ms": 15343
+   }
+  },
+  {
+   "prompt_hash": "937f1568",
+   "outcome_recorded": "provider_error"
+  },
+  {
+   "prompt_hash": "96ba807f",
+   "outcome_recorded": "provider_error"
+  },
+  {
+   "prompt_hash": "9d6fe343",
+   "outcome_recorded": "exhausted",
+   "attempt0": {
+    "pass": false,
+    "detail": "schema: 1 errors",
+    "latency_ms": 65188
+   },
+   "repair": {
+    "pass": false,
+    "detail": "schema: 1 errors",
+    "latency_ms": 24968
+   }
+  },
+  {
+   "prompt_hash": "ace3f694",
+   "outcome_recorded": "provider_error"
+  },
+  {
+   "prompt_hash": "e2787b12",
+   "outcome_recorded": "provider_error"
+  },
+  {
+   "prompt_hash": "fa524125",
+   "outcome_recorded": "provider_error"
+  }
+ ],
+ "E": [
+  {
+   "prompt_hash": "1d6cdf95",
+   "outcome_recorded": "exhausted",
+   "attempt0": {
+    "pass": true,
+    "detail": "5 beats",
+    "latency_ms": 20014
+   },
+   "repair": {
+    "pass": true,
+    "detail": "6 beats",
+    "latency_ms": 9921
+   }
+  },
+  {
+   "prompt_hash": "2ae7ddb9",
+   "outcome_recorded": "exhausted",
+   "attempt0": {
+    "pass": false,
+    "detail": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet.']",
+    "latency_ms": 10077
+   },
+   "repair": {
+    "pass": false,
+    "detail": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet.']",
+    "latency_ms": 4343
+   }
+  },
+  {
+   "prompt_hash": "34a6cdf2",
+   "outcome_recorded": "exhausted",
+   "attempt0": {
+    "pass": true,
+    "detail": "4 beats",
+    "latency_ms": 5468
+   },
+   "repair": {
+    "pass": true,
+    "detail": "4 beats",
+    "latency_ms": 4608
+   }
+  },
+  {
+   "prompt_hash": "703d2583",
+   "outcome_recorded": "usable",
+   "attempt0": {
+    "pass": true,
+    "detail": "5 beats",
+    "latency_ms": 15764
+   }
+  },
+  {
+   "prompt_hash": "937f1568",
+   "outcome_recorded": "exhausted",
+   "attempt0": {
+    "pass": true,
+    "detail": "4 beats",
+    "latency_ms": 4860
+   },
+   "repair": {
+    "pass": true,
+    "detail": "4 beats",
+    "latency_ms": 5233
+   }
+  },
+  {
+   "prompt_hash": "96ba807f",
+   "outcome_recorded": "exhausted",
+   "attempt0": {
+    "pass": true,
+    "detail": "6 beats",
+    "latency_ms": 7906
+   },
+   "repair": {
+    "pass": true,
+    "detail": "5 beats",
+    "latency_ms": 6750
+   }
+  },
+  {
+   "prompt_hash": "9d6fe343",
+   "outcome_recorded": "usable",
+   "attempt0": {
+    "pass": true,
+    "detail": "4 beats",
+    "latency_ms": 6203
+   },
+   "repair": {
+    "pass": true,
+    "detail": "4 beats",
+    "latency_ms": 6827
+   }
+  },
+  {
+   "prompt_hash": "ace3f694",
+   "outcome_recorded": "exhausted",
+   "attempt0": {
+    "pass": false,
+    "detail": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today.']",
+    "latency_ms": 4483
+   },
+   "repair": {
+    "pass": false,
+    "detail": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today.']",
+    "latency_ms": 4750
+   }
+  },
+  {
+   "prompt_hash": "e2787b12",
+   "outcome_recorded": "exhausted",
+   "attempt0": {
+    "pass": true,
+    "detail": "5 beats",
+    "latency_ms": 7110
+   },
+   "repair": {
+    "pass": true,
+    "detail": "6 beats",
+    "latency_ms": 8500
+   }
+  },
+  {
+   "prompt_hash": "fa524125",
+   "outcome_recorded": "exhausted",
+   "attempt0": {
+    "pass": false,
+    "detail": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet.']",
+    "latency_ms": 4172
+   },
+   "repair": {
+    "pass": false,
+    "detail": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet.']",
+    "latency_ms": 4172
+   }
+  }
+ ]
+}

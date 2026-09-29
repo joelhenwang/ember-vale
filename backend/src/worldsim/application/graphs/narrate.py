@@ -15,6 +15,7 @@ back to structured event text; canon never waits for prose.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -144,6 +145,30 @@ def _speaker_roster(visible_facts: list[dict[str, str]]) -> list[str]:
         return []
     return ["Speakers (use these exact ids when setting speaker_id):", *entries]
 
+
+_AUDIENCE_RE = re.compile(r"^Audience:\s*(.*)$", re.M)
+_KEY_RE = re.compile(r'^-\s*key\s+"([^"]+)"\s*:', re.M)
+_LEGACY_KEY_RE = re.compile(r"^- ([A-Za-z0-9_:.\-]+):\s", re.M)
+_PROMPT_BUDGET_RE = re.compile(r"^Beat budget:\s*(\d+)\s*\.\s*$", re.M)
+
+
+def parse_narration_context(user_prompt: str) -> tuple[frozenset[str], frozenset[str], int]:
+    """Invert render_user_prompt audience/fact rendering, both known formats.
+
+    The renderer ends the audience line with a sentence period that is not
+    part of any id, and historical prompts render facts as `- key:` without
+    quotes. Roster lines (`- Name (id: ...)`) never match either pattern.
+    """
+    audience: set[str] = set()
+    m = _AUDIENCE_RE.search(user_prompt)
+    if m:
+        rendered = m.group(1).strip()
+        if rendered.endswith("."):
+            rendered = rendered[:-1]
+        audience = {a.strip() for a in rendered.split(",") if a.strip() and a.strip() != "none"}
+    keys = set(_KEY_RE.findall(user_prompt)) | set(_LEGACY_KEY_RE.findall(user_prompt))
+    b = _PROMPT_BUDGET_RE.search(user_prompt)
+    return frozenset(audience), frozenset(keys), int(b.group(1)) if b else 8
 
 def render_user_prompt(
     audience_ids: list[str],
@@ -598,6 +623,7 @@ __all__ = [
     "dedupe_narration_facts",
     "fallback_beats",
     "load_narrator_prompt",
+    "parse_narration_context",
     "render_user_prompt",
     "stamp_beats",
 ]

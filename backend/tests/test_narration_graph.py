@@ -612,3 +612,76 @@ def test_committed_dialogue_pair_retains_speakers_and_citations() -> None:
     assert beats[1].speaker_id == wren
     assert beats[1].cited_fact_keys == [f"reaction:{instructed.id}"]
 
+
+
+
+AUDIENCE_1D6C = (
+"Audience: 17f19638-b398-45e1-8074-17befed1f719,"
+" a19a3069-496e-4751-993b-c9ae9566000a."
+)
+
+
+def test_parse_audience_strips_sentence_period() -> None:
+    from worldsim.application.graphs.narrate import parse_narration_context
+
+    audience, _keys, _budget = parse_narration_context(AUDIENCE_1D6C + chr(10))
+    assert audience == frozenset({
+"17f19638-b398-45e1-8074-17befed1f719",
+"a19a3069-496e-4751-993b-c9ae9566000a",
+    })
+
+
+def test_parse_keys_supports_legacy_unquoted_format() -> None:
+    from worldsim.application.graphs.narrate import parse_narration_context
+
+    prompt = chr(10).join([
+"Audience: 61777125-77b7-4233-aa68-5827554491ee, fbb1c051-8fb9-4dae-b800-b198c7249f3e.",
+"Visible facts:",
+"- attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet.",
+"- attempt:wait: Ash waits",
+    ])
+    _audience, keys, _budget = parse_narration_context(prompt)
+    assert keys == frozenset({"attempt:communicate", "attempt:wait"})
+
+
+def test_parse_keys_supports_quoted_format_and_ignores_roster() -> None:
+    from worldsim.application.graphs.narrate import parse_narration_context
+
+    prompt = chr(10).join([
+"Audience: 17f19638-b398-45e1-8074-17befed1f719, a19a3069-496e-4751-993b-c9ae9566000a.",
+"Visible facts:",
+'- key "attempt:communicate": Wren says to Ash: Ash, one last probe question for the road?',
+'- key "reaction:b0130c69-76d5-5852-aac8-e3bac5f5e863": Ash says to Wren: "One more? Go on then."',
+"- Ash (id: 17f19638-b398-45e1-8074-17befed1f719)",
+    ])
+    _audience, keys, _budget = parse_narration_context(prompt)
+    assert keys == frozenset({
+"attempt:communicate",
+"reaction:b0130c69-76d5-5852-aac8-e3bac5f5e863",
+    })
+
+
+def test_parsed_context_accepts_exact_ids_and_rejects_foreign() -> None:
+    from worldsim.application.graphs.narrate import beats_valid, parse_narration_context
+    from worldsim.domain.narration import BeatProposal
+
+    prompt = AUDIENCE_1D6C + chr(10) + '- key "attempt:wait": Ash waits'
+    audience, keys, budget = parse_narration_context(prompt)
+    good = BeatProposal(text="Ash waits.", cited_fact_keys=["attempt:wait"], kind="narration")
+    assert beats_valid(
+        [good], visible_keys=keys, audience_ids=audience, beats_budget=budget
+    ) is None
+    foreign_speaker = BeatProposal(
+        text="Ash waits.", cited_fact_keys=["attempt:wait"], kind="narration",
+        speaker_id="ffffffff-ffff-ffff-ffff-ffffffffffff",
+    )
+    assert beats_valid(
+        [foreign_speaker], visible_keys=keys, audience_ids=audience, beats_budget=budget
+    ) is not None
+    invented_key = BeatProposal(
+        text="Ash waits.", cited_fact_keys=["attempt:wait: Ash waits"], kind="narration"
+    )
+    assert beats_valid(
+        [invented_key], visible_keys=keys, audience_ids=audience, beats_budget=budget
+    ) is not None
+
