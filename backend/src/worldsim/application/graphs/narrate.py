@@ -44,7 +44,7 @@ from worldsim.domain.narration import BeatProposal, NarrationBeat
 from worldsim.domain.scenes import Reaction
 
 #: Versioned narrator prompt file.
-NARRATOR_PROMPT_VERSION = "narrator.v1"
+NARRATOR_PROMPT_VERSION = "narrator.v2"
 
 _BEATS_ADAPTER: TypeAdapter[list[BeatProposal]] = TypeAdapter(list[BeatProposal])
 
@@ -188,6 +188,61 @@ def parse_narration_context(user_prompt: str) -> tuple[frozenset[str], frozenset
     b = _PROMPT_BUDGET_RE.search(user_prompt)
     return frozenset(audience), frozenset(keys), int(b.group(1)) if b else 8
 
+_ATTEMPT_SPEECH_RE = re.compile(r"^(.*?) says to (.*?): (.*)$", re.DOTALL)
+
+
+def _render_fact_line(fact: Mapping[str, str]) -> str:
+    """One prompt line with its source category stated explicitly.
+
+    Attempts are narration-only by construction: communicate attempts read
+    as attempts with a topic, never as quoted speech. Committed quoted
+    speech carries its speaker id and dialogue eligibility inline;
+    attributed summaries are marked narration-only. Stored fact values are
+    untouched — this is presentation only, so canon and history keep
+    their wording.
+    """
+    key = str(fact["key"])
+    value = str(fact["value"])
+    speaker = fact.get("speaker")
+    if key.startswith("attempt:"):
+        match = _ATTEMPT_SPEECH_RE.match(value) if "communicate" in key else None
+        if match:
+            text = (
+                f"{match.group(1)} attempts to communicate with {match.group(2)}; "
+                f"topic: {match.group(3)}"
+            )
+        else:
+            text = value
+        return f'- key "{key}": [attempt \u2014 narration-only] {text}'
+    if speaker and fact.get("utterance"):
+        name = fact.get("speaker_name", speaker)
+        return (
+            f'- key "{key}": [quoted speech \u2014 dialogue-eligible] {value} '
+            f"(speaker {name}, id: {speaker})"
+        )
+    if speaker:
+        return f'- key "{key}": [attributed summary \u2014 narration-only] {value}'
+    return f'- key "{key}": {value}'
+
+
+def repair_instruction(denial: str) -> str:
+    """Actionable repair suffix shared by production and the eval replay.
+
+    Names the required fix — the invalid beat must become narrator prose
+    or be removed — and explicitly prohibits rescuing it by citing a
+    different speech key whose words do not support the output.
+    """
+    return (
+        f"Your previous output was rejected ({denial}). "
+        "The cited beat is invalid as dialogue: rewrite it as narrator prose "
+        "with speaker_id null citing the same key, or remove it. "
+        "Do not fix this by citing a different speech key \u2014 never put words "
+        "in a speaker's mouth that the cited utterance does not support; "
+        "quote identified utterances faithfully. "
+        "Output a JSON array of beat objects matching the response schema."
+    )
+
+
 def render_user_prompt(
     audience_ids: list[str],
     visible_facts: list[dict[str, str]],
@@ -201,7 +256,7 @@ def render_user_prompt(
         f"Event {event_id}" + (f" in scene {scene_id}." if scene_id else "."),
         f"Audience: {', '.join(audience_ids) or 'none'}.",
         "Visible facts:",
-        *[f'- key "{fact["key"]}": {fact["value"]}' for fact in visible_facts],
+        *[_render_fact_line(fact) for fact in visible_facts],
         *_speaker_roster(visible_facts),
         f"Beat budget: {beats_budget}.",
     ]
@@ -586,11 +641,7 @@ async def _repair_call(deps: NarratorGraphDeps, system: str, user: str, denial: 
     try:
         repaired = await deps.gateway.complete(
             CompletionRequest(
-                prompt=(
-                    f"{user}\n\nYour previous output was rejected "
-                    f"({denial}). Output a JSON array of beat objects "
-                    "matching the response schema."
-                ),
+                prompt=f"{user}\n\n{repair_instruction(denial)}",
                 system=system,
                 max_tokens=deps.max_tokens,
                 temperature=deps.temperature,
@@ -669,5 +720,6 @@ __all__ = [
     "load_narrator_prompt",
     "parse_narration_context",
     "render_user_prompt",
+    "repair_instruction",
     "stamp_beats",
 ]

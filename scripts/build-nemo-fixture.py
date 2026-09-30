@@ -39,6 +39,7 @@ from test_stage1_orchestration import (
     _set_grant,
 )
 from worldsim.application.graphs.narrate import (
+    NARRATOR_PROMPT_VERSION,
     _fact_view,
     communication_facts,
     dedupe_narration_facts,
@@ -262,7 +263,7 @@ if __name__ == "__main__":
     doc = {
         "source": "production assembly (build-nemo-fixture.py, zero model spend)",
         "code_revision": revision,
-        "prompt_version": "narrator.v1",
+        "prompt_version": NARRATOR_PROMPT_VERSION,
         "sampling_captured": {
             "temperature": out[0]["captured_temperature"],
             "top_p": out[0]["captured_top_p"],
@@ -272,7 +273,8 @@ if __name__ == "__main__":
         },
         "items": out,
     }
-    dest = REPO / "docs" / "evidence" / "latency-eval-001" / "fixture-narrator-nemo-001.json"
+    name = sys.argv[1] if len(sys.argv) > 1 else "fixture-narrator-nemo-001.json"
+    dest = REPO / "docs" / "evidence" / "latency-eval-001" / name
     dest.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     for o in out:
         print(f"{o['scenario']}: keys={o['visible_keys']} speech={o['speech_keys']} "

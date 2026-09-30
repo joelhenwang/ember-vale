@@ -213,11 +213,7 @@ async def run_item(
     for attempt in range(2):  # initial + one repair
         if attempt == 1:
             if role == "narrator":
-                prompt = (
-                    f"{base}\n\nYour previous output was rejected "
-                    f"({denial}). Output a JSON array of beat objects "
-                    "matching the response schema."
-                )
+                prompt = f"{base}\n\n{narrate.repair_instruction(denial)}"
             else:
                 prompt = (
                     f"{base}\n\nYour previous output was rejected "

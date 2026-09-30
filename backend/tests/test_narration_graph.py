@@ -881,3 +881,166 @@ def test_narration_summary_keeps_null_speaker() -> None:
         [summary], visible_keys=keys, audience_ids=audience, beats_budget=8,
     ) is None
 
+def test_render_marks_communicate_attempt_as_topic() -> None:
+    from worldsim.application.graphs.narrate import _render_fact_line
+
+    line = _render_fact_line(
+        {"key": "attempt:communicate", "value": "Wren says to Ash: dawn patrol"}
+    )
+    assert line == (
+        '- key "attempt:communicate": [attempt \u2014 narration-only] '
+        "Wren attempts to communicate with Ash; topic: dawn patrol"
+    )
+
+
+def test_render_marks_wait_attempt_narration_only() -> None:
+    from worldsim.application.graphs.narrate import _render_fact_line
+
+    line = _render_fact_line({"key": "attempt:wait", "value": "Ash waits"})
+    assert "[attempt \u2014 narration-only]" in line
+    assert line.endswith("Ash waits")
+
+
+def test_render_marks_speech_eligible_with_speaker() -> None:
+    from worldsim.application.graphs.narrate import _render_fact_line
+
+    line = _render_fact_line(
+        {
+            "key": "reaction:s2",
+            "value": 'Ash says to Wren: "One more?"',
+            "speaker": "a",
+            "speaker_name": "Ash",
+            "utterance": "One more?",
+        }
+    )
+    assert "[quoted speech \u2014 dialogue-eligible]" in line
+    assert '"One more?"' in line
+    assert "(speaker Ash, id: a)" in line
+
+
+def test_render_marks_summary_narration_only() -> None:
+    from worldsim.application.graphs.narrate import _render_fact_line
+
+    line = _render_fact_line(
+        {
+            "key": "reaction:s1",
+            "value": 'Wren speaks to Ash about "stalls"',
+            "speaker": "w",
+            "speaker_name": "Wren",
+        }
+    )
+    assert "[attributed summary \u2014 narration-only]" in line
+    assert "dialogue-eligible" not in line
+
+
+def test_rendered_categorized_prompt_parses() -> None:
+    from worldsim.application.graphs.narrate import (
+        parse_narration_context,
+        render_user_prompt,
+    )
+
+    prompt = render_user_prompt(
+        ["a", "w"],
+        [
+            {"key": "attempt:communicate", "value": "Wren says to Ash: dawn patrol"},
+            {
+                "key": "reaction:s2",
+                "value": 'Ash says to Wren: "One more?"',
+                "speaker": "a",
+                "speaker_name": "Ash",
+                "utterance": "One more?",
+            },
+        ],
+        "e1",
+        "s1",
+        8,
+    )
+    audience, keys, budget = parse_narration_context(prompt)
+    assert audience == frozenset({"a", "w"})
+    assert keys == frozenset({"attempt:communicate", "reaction:s2"})
+    assert budget == 8
+
+
+def test_repair_instruction_names_fix_and_bars_substitution() -> None:
+    from worldsim.application.graphs.narrate import repair_instruction
+
+    text = repair_instruction(
+        "dialogue cites non-speech evidence: ['attempt:communicate']"
+    )
+    assert "narrator prose" in text
+    assert "same key" in text
+    assert "different speech key" in text
+    assert "matching the response schema" in text
+
+
+def test_graph_repair_sends_actionable_instruction() -> None:
+    wren, ash = uuid.uuid4(), uuid.uuid4()
+    gateway = FakeGateway(profile=NARRATOR_FAKE_PROFILE)
+    gateway.enqueue_text(
+        json.dumps(
+            [
+                {
+                    "text": "Wren asks.",
+                    "cited_fact_keys": ["attempt:communicate"],
+                    "kind": "dialogue",
+                    "speaker_id": str(wren),
+                }
+            ]
+        )
+    )
+    gateway.enqueue_text(json.dumps([_beat("Wren asks.", ["attempt:communicate"])]))
+
+    result = asyncio.run(
+        invoke(
+            build_narration_graph(_deps(gateway)),
+            _invocation(
+                uuid.uuid4(),
+                audience_ids=[str(wren), str(ash)],
+                visible_facts=[
+                    {"key": "attempt:communicate", "value": "Wren asks"},
+                    {"key": "attempt:wait", "value": "Ash waits"},
+                ],
+            ),
+        )
+    )
+
+    assert result["status"] == "narrated"
+    assert result["repair_count"] == 1
+    repair_prompt = gateway.sent_requests[1].prompt
+    assert "narrator prose" in repair_prompt
+    assert "different speech key" in repair_prompt
+
+
+def test_structural_acceptance_does_not_imply_fidelity() -> None:
+    """Retained semantic-failure example (paid Nemo eval, quoted-question).
+
+    This accepted repair output passes structural validation while putting
+    Wren's question ("Where is the mill?", from the attempt fact) into
+    Ash's mouth under Ash's valid reaction citation. beats_valid scope
+    ends at structure; wording fidelity needs separate review. Never
+    loosen validation to "fix" this case — it is correctly accepted.
+    """
+    from worldsim.application.graphs.narrate import beats_valid
+    from worldsim.domain.narration import BeatProposal
+
+    ash = uuid.UUID("2319cc72-5188-4f37-a0ae-e6698d660ccd")
+    wren = uuid.UUID("5e00990a-fb08-4505-84d2-6397b4a6dd3e")
+    key = "reaction:893a99c0-3096-5d23-a287-acc61c39202e"
+    misvoiced = BeatProposal(
+        text="Where is the mill?",
+        cited_fact_keys=[key],
+        kind="dialogue",  # type: ignore[assignment]
+        speaker_id=ash,
+    )
+    assert (
+        beats_valid(
+            [misvoiced],
+            visible_keys=frozenset({"attempt:communicate", "attempt:wait", key}),
+            audience_ids=frozenset({str(ash), str(wren)}),
+            beats_budget=8,
+            fact_speakers={key: str(ash)},
+            speech_keys=frozenset({key}),
+        )
+        is None
+    )
+    assert misvoiced.text != "Past the bridge, second left."
