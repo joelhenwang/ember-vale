@@ -44,6 +44,8 @@ ARMS = {
     "C": {"model": "deepseek/deepseek-v4-flash-0731", "temperature": 0.0, "json_narrator": False},
     "D1": {"model": "deepseek/deepseek-v4-flash-0731", "temperature": 0.2, "json_narrator": True},
     "E": {"model": "mistralai/mistral-nemo", "temperature": 0.2, "json_narrator": False},
+    "F": {"model": "mistralai/mistral-nemo", "temperature": 0.2, "json_narrator": False,
+          "dedupe_prompt_lines": True, "reaction_speakers": True},
 }
 
 ROLE_SYSTEM = {
@@ -59,7 +61,17 @@ def narrator_context(user_prompt: str) -> tuple[frozenset[str], frozenset[str], 
     return narrate.parse_narration_context(user_prompt)
 
 
-def validate(role: str, raw: str, user_prompt: str) -> tuple[bool, str]:
+def dedupe_prompt_lines(prompt: str) -> str:
+    """Shared pipeline-equivalent prompt-line dedup."""
+    return narrate.dedupe_prompt_lines(prompt)
+
+
+def validate(
+    role: str,
+    raw: str,
+    user_prompt: str,
+    speakers: dict[str, str] | None = None,
+) -> tuple[bool, str]:
     """Schema (+ narrator attribution) validation. Returns (ok, detail)."""
     try:
         if role == "narrator":
@@ -67,7 +79,7 @@ def validate(role: str, raw: str, user_prompt: str) -> tuple[bool, str]:
             audience, keys, budget = narrator_context(user_prompt)
             denial = narrate.beats_valid(
                 proposals, visible_keys=keys, audience_ids=audience,
-                beats_budget=budget, fact_speakers=None,
+                beats_budget=budget, fact_speakers=speakers,
             )
             if denial is not None:
                 return False, f"beats_valid: {denial}"
@@ -119,29 +131,40 @@ def load_key() -> str:
     raise SystemExit("gateway key missing from .env")
 
 
-async def run_item(gateway, arm: str, role: str, item: dict, timeout_s: float) -> dict:
+async def run_item(
+    gateway,
+    arm: str,
+    role: str,
+    item: dict,
+    timeout_s: float,
+    speakers: dict[str, str] | None = None,
+) -> dict:
     cfg = ARMS[arm]
     system = ROLE_SYSTEM[role]()
     json_mode = True if role != "narrator" else cfg["json_narrator"]
     temp = cfg["temperature"]
+    base = item["prompt"]
+    if cfg.get("dedupe_prompt_lines"):
+        base = dedupe_prompt_lines(base)
     out: dict = {
         "role": role, "prompt_hash": item["prompt_hash"], "arm": arm,
         "attempts": [], "repairs": 0, "validated": False,
+        "prompt_deduped": base != item["prompt"],
     }
     ttuv_start = time.monotonic()
-    prompt = item["prompt"]
+    prompt = base
     denial: str | None = None
     for attempt in range(2):  # initial + one repair
         if attempt == 1:
             if role == "narrator":
                 prompt = (
-                    f"{item['prompt']}\n\nYour previous output was rejected "
+                    f"{base}\n\nYour previous output was rejected "
                     f"({denial}). Output a JSON array of beat objects "
                     "matching the response schema."
                 )
             else:
                 prompt = (
-                    f"{item['prompt']}\n\nYour previous output was rejected "
+                    f"{base}\n\nYour previous output was rejected "
                     f"({denial}). Output corrected JSON only."
                 )
             out["repairs"] = 1
@@ -192,7 +215,7 @@ async def run_item(gateway, arm: str, role: str, item: dict, timeout_s: float) -
                 pass
             out["attempts"].append(attempt)
             break
-        ok, info = validate(role, res.text, item["prompt"])
+        ok, info = validate(role, res.text, base, speakers)
         out["attempts"].append({
             "latency_ms": res.latency_ms,
             "finish_reason": res.finish_reason,
@@ -230,8 +253,15 @@ async def main() -> None:
     global request_role_hint, CANNED_BY_ROLE
     fixture = json.loads((REPO / args.fixture).read_text())
     items = fixture["items"]
-    if args.arm in ("D1", "E"):
+    if args.arm in ("D1", "E", "F"):
         items = [i for i in items if i["role"] == "narrator"]
+    speaker_map: dict[str, dict[str, str]] = {}
+    if ARMS[args.arm].get("reaction_speakers"):
+        raw_map = json.loads(
+            (REPO / "docs/evidence/latency-eval-001/speaker-map.json").read_text())
+        for h, m in raw_map.items():
+            speaker_map[h] = {k: v for k, v in m["speakers"].items()
+                              if k.startswith("reaction:")}
     if args.limit:
         items = items[: args.limit]
 
@@ -253,7 +283,10 @@ async def main() -> None:
         request_role_hint = item["role"]
         CANNED_BY_ROLE = {item["role"]: CANNED[item["role"]]}
         try:
-            res = await run_item(gateway, args.arm, item["role"], item, args.timeout_s)
+            res = await run_item(
+                gateway, args.arm, item["role"], item, args.timeout_s,
+                speaker_map.get(item["prompt_hash"]),
+            )
         except Exception as exc:  # noqa: BLE001 - harness must not die mid-arm
             res = {"role": item["role"], "prompt_hash": item["prompt_hash"],
                    "arm": args.arm, "outcome": f"harness_error: {type(exc).__name__}",

@@ -1,0 +1,111 @@
+{
+ "1d6cdf95bb9381f4f19a6e8c3ce952598590b327e4446ddf5e31b653de095986": {
+  "speakers": {
+   "reaction:f8bd3a7d-eb72-5c5d-a9a1-2038419e3881": "17f19638-b398-45e1-8074-17befed1f719",
+   "attempt:wait": "17f19638-b398-45e1-8074-17befed1f719",
+   "attempt:communicate": "a19a3069-496e-4751-993b-c9ae9566000a"
+  },
+  "ambiguous": [],
+  "scenes": [
+   "24e92ab2-a4dc-522a-8b35-d39978400db5"
+  ]
+ },
+ "2ae7ddb9da9ecbbab998bf3106849919be113788c38759a542530821f82a3d11": {
+  "speakers": {
+   "reaction:272bcf43-c905-5db4-8e60-364697ffe474": "fbb1c051-8fb9-4dae-b800-b198c7249f3e",
+   "attempt:communicate": "fbb1c051-8fb9-4dae-b800-b198c7249f3e",
+   "attempt:wait": "61777125-77b7-4233-aa68-5827554491ee"
+  },
+  "ambiguous": [],
+  "scenes": [
+   "795afc03-dce5-5b8d-8de1-b3ae0bc46f55"
+  ]
+ },
+ "34a6cdf2413e6485e36f7bd6356eca18c4c0fb45599e28d1fd29eb9da4850953": {
+  "speakers": {
+   "attempt:wait": "4667c985-9921-4989-9d8e-d3758d866d05",
+   "attempt:communicate": "cb38c6b4-d2d9-471f-9bda-0622b47dd4d0"
+  },
+  "ambiguous": [],
+  "scenes": [
+   "5244d77d-381c-56d0-8b8d-c5f75040c169"
+  ]
+ },
+ "703d2583e8b01bb53f82b02bc8d3fdd53d6aeafdf4c4359b135838c468942157": {
+  "speakers": {
+   "reaction:b0130c69-76d5-5852-aac8-e3bac5f5e863": "17f19638-b398-45e1-8074-17befed1f719",
+   "attempt:communicate": "a19a3069-496e-4751-993b-c9ae9566000a",
+   "attempt:wait": "17f19638-b398-45e1-8074-17befed1f719"
+  },
+  "ambiguous": [],
+  "scenes": [
+   "132ecfc5-4d41-5232-98d7-d14c96b69956"
+  ]
+ },
+ "937f1568995ee99eb8d53896cbe28463b290f0f1079f031685a60e4c59a37556": {
+  "speakers": {
+   "reaction:daa21aa0-0679-5899-b58c-abb2fcc2413b": "fbb1c051-8fb9-4dae-b800-b198c7249f3e",
+   "attempt:wait": "61777125-77b7-4233-aa68-5827554491ee",
+   "attempt:communicate": "fbb1c051-8fb9-4dae-b800-b198c7249f3e"
+  },
+  "ambiguous": [],
+  "scenes": [
+   "7e582bad-89f4-541f-8ee0-601440da281b"
+  ]
+ },
+ "96ba807f42be3f0a603c155fa382002ba8c93f2363901c2703942947a1e5b820": {
+  "speakers": {
+   "reaction:18c99f8d-9abc-55cc-8ce8-9939e12df3a1": "17f19638-b398-45e1-8074-17befed1f719",
+   "attempt:wait": "17f19638-b398-45e1-8074-17befed1f719",
+   "attempt:communicate": "a19a3069-496e-4751-993b-c9ae9566000a"
+  },
+  "ambiguous": [],
+  "scenes": [
+   "bae31956-d41f-59fc-accf-27bbbdb83a17"
+  ]
+ },
+ "9d6fe3434f81998c1075805c7a12b3550ab0ba842d7a706fe0e065306a1743aa": {
+  "speakers": {
+   "reaction:17cade35-9052-5373-b6fc-09ccdd2b671f": "0de5b72f-6c59-4190-894c-6b4e94582fca",
+   "attempt:wait": "eb61d8f0-9b14-41f9-ac08-457024fa1363",
+   "attempt:communicate": "0de5b72f-6c59-4190-894c-6b4e94582fca"
+  },
+  "ambiguous": [],
+  "scenes": [
+   "8657b17e-cb89-55a0-94cb-5f728486104c"
+  ]
+ },
+ "ace3f694c7d649563081ba6e671b90917a1ade1c8edc1d74c98b31ad93219434": {
+  "speakers": {
+   "reaction:9c328ffd-a2a1-5013-9e70-9fc46e4d501a": "d6c0fd7e-ab52-4ce5-bed1-56e5203e9be3",
+   "attempt:communicate": "d6c0fd7e-ab52-4ce5-bed1-56e5203e9be3",
+   "attempt:wait": "69830292-3348-4820-a616-95c06f7ebe7f"
+  },
+  "ambiguous": [],
+  "scenes": [
+   "e9c26b4a-f61e-5ad1-93fc-3fb69b4ab0ec"
+  ]
+ },
+ "e2787b12ef4e1c27c7ed80156e26dfe5aeedcfa386ba8832adef564a1ac7ea4c": {
+  "speakers": {
+   "reaction:f9077b22-dc67-5c50-aa22-a8252c395c21": "e518fada-0157-46d8-b9db-df12f6f8f75d",
+   "attempt:communicate": "3a81116a-1e56-4e17-8c5d-02cae78f3deb",
+   "attempt:wait": "e518fada-0157-46d8-b9db-df12f6f8f75d"
+  },
+  "ambiguous": [],
+  "scenes": [
+   "efc9ec2d-e61b-51c7-9c09-babbbefa47c2"
+  ]
+ },
+ "fa5241259d699d7860d2848941116dfc523fa8002236b0ecc9b151da5a551120": {
+  "speakers": {
+   "reaction:272bcf43-c905-5db4-8e60-364697ffe474": "fbb1c051-8fb9-4dae-b800-b198c7249f3e",
+   "attempt:communicate": "fbb1c051-8fb9-4dae-b800-b198c7249f3e",
+   "attempt:wait": "61777125-77b7-4233-aa68-5827554491ee"
+  },
+  "ambiguous": [],
+  "scenes": [
+   "795afc03-dce5-5b8d-8de1-b3ae0bc46f55"
+  ]
+ }
+}

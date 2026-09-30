@@ -685,3 +685,49 @@ def test_parsed_context_accepts_exact_ids_and_rejects_foreign() -> None:
         [invented_key], visible_keys=keys, audience_ids=audience, beats_budget=budget
     ) is not None
 
+
+
+
+def test_dedupe_prompt_lines_keeps_first_fact_copies() -> None:
+    from worldsim.application.graphs.narrate import dedupe_prompt_lines
+
+    prompt = chr(10).join([
+"Event e in scene s.",
+"Audience: a, b.",
+"Visible facts:",
+'- key "attempt:wait": Ash waits',
+'- key "attempt:communicate": Wren asks',
+'- key "attempt:wait": Ash waits',
+"- Ash (id: a)",
+    ])
+    out = dedupe_prompt_lines(prompt).splitlines()
+    assert out.count('- key "attempt:wait": Ash waits') == 1
+    assert out.index('- key "attempt:communicate": Wren asks') == 4
+    assert "- Ash (id: a)" in out
+    assert "Audience: a, b." in out
+
+
+def test_beats_valid_enforces_mapped_speakers() -> None:
+    from worldsim.application.graphs.narrate import beats_valid
+    from worldsim.domain.narration import BeatProposal
+
+    wren = uuid.uuid4()
+    keys = frozenset({"attempt:communicate"})
+    audience = frozenset({str(wren), str(uuid.uuid4())})
+    matched = BeatProposal(
+        text="Wren asks.", cited_fact_keys=["attempt:communicate"], kind="narration",
+        speaker_id=wren,
+    )
+    assert beats_valid(
+        [matched], visible_keys=keys, audience_ids=audience, beats_budget=8,
+        fact_speakers={"attempt:communicate": str(wren)},
+    ) is None
+    mismatched = BeatProposal(
+        text="Wren asks.", cited_fact_keys=["attempt:communicate"], kind="narration",
+        speaker_id=uuid.uuid4(),
+    )
+    assert beats_valid(
+        [mismatched], visible_keys=keys, audience_ids=audience, beats_budget=8,
+        fact_speakers={"attempt:communicate": str(wren)},
+    ) is not None
+

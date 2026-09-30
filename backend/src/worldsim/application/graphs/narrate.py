@@ -152,6 +152,21 @@ _LEGACY_KEY_RE = re.compile(r"^- ([A-Za-z0-9_:.\-]+):\s", re.M)
 _PROMPT_BUDGET_RE = re.compile(r"^Beat budget:\s*(\d+)\s*\.\s*$", re.M)
 
 
+def dedupe_prompt_lines(prompt: str) -> str:
+    """Drop repeated `- ` fact lines, keeping first occurrences.
+
+    Rendered fact lines embed their key, so identical lines are identical
+    (source, key) facts: exactly what the pipeline dedup removes.
+    """
+    seen: set[str] = set()
+    kept: list[str] = []
+    for line in prompt.splitlines():
+        if line.startswith("- ") and line in seen:
+            continue
+        seen.add(line)
+        kept.append(line)
+    return "\n".join(kept)
+
 def parse_narration_context(user_prompt: str) -> tuple[frozenset[str], frozenset[str], int]:
     """Invert render_user_prompt audience/fact rendering, both known formats.
 
@@ -621,6 +636,7 @@ __all__ = [
     "beats_valid",
     "build_narration_graph",
     "dedupe_narration_facts",
+    "dedupe_prompt_lines",
     "fallback_beats",
     "load_narrator_prompt",
     "parse_narration_context",

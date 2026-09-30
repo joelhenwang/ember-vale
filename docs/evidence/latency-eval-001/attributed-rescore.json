@@ -1,0 +1,334 @@
+{
+ "A": [
+  {
+   "prompt_hash": "1d6cdf95"
+  },
+  {
+   "prompt_hash": "2ae7ddb9"
+  },
+  {
+   "prompt_hash": "34a6cdf2",
+   "attempt0": {
+    "attributed_pass": true,
+    "detail": "4 beats"
+   }
+  },
+  {
+   "prompt_hash": "703d2583",
+   "attempt0": {
+    "attributed_pass": true,
+    "detail": "3 beats"
+   }
+  },
+  {
+   "prompt_hash": "937f1568"
+  },
+  {
+   "prompt_hash": "96ba807f"
+  },
+  {
+   "prompt_hash": "9d6fe343",
+   "attempt0": {
+    "attributed_pass": true,
+    "detail": "4 beats"
+   }
+  },
+  {
+   "prompt_hash": "ace3f694"
+  },
+  {
+   "prompt_hash": "e2787b12"
+  },
+  {
+   "prompt_hash": "fa524125",
+   "attempt0": {
+    "attributed_pass": false,
+    "detail": "schema: 1 errors"
+   }
+  }
+ ],
+ "B": [
+  {
+   "prompt_hash": "1d6cdf95",
+   "attempt0": {
+    "attributed_pass": true,
+    "detail": "5 beats"
+   }
+  },
+  {
+   "prompt_hash": "2ae7ddb9",
+   "attempt0": {
+    "attributed_pass": false,
+    "detail": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet.']"
+   }
+  },
+  {
+   "prompt_hash": "34a6cdf2",
+   "attempt0": {
+    "attributed_pass": false,
+    "detail": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today.']"
+   }
+  },
+  {
+   "prompt_hash": "703d2583",
+   "attempt0": {
+    "attributed_pass": true,
+    "detail": "5 beats"
+   }
+  },
+  {
+   "prompt_hash": "937f1568",
+   "attempt0": {
+    "attributed_pass": true,
+    "detail": "4 beats"
+   }
+  },
+  {
+   "prompt_hash": "96ba807f",
+   "attempt0": {
+    "attributed_pass": true,
+    "detail": "6 beats"
+   }
+  },
+  {
+   "prompt_hash": "9d6fe343",
+   "attempt0": {
+    "attributed_pass": true,
+    "detail": "4 beats"
+   }
+  },
+  {
+   "prompt_hash": "ace3f694"
+  },
+  {
+   "prompt_hash": "e2787b12",
+   "attempt0": {
+    "attributed_pass": true,
+    "detail": "5 beats"
+   },
+   "attempt1": {
+    "attributed_pass": true,
+    "detail": "5 beats"
+   }
+  },
+  {
+   "prompt_hash": "fa524125"
+  }
+ ],
+ "C": [
+  {
+   "prompt_hash": "1d6cdf95",
+   "attempt0": {
+    "attributed_pass": false,
+    "detail": "schema: 1 errors"
+   }
+  },
+  {
+   "prompt_hash": "2ae7ddb9"
+  },
+  {
+   "prompt_hash": "34a6cdf2",
+   "attempt0": {
+    "attributed_pass": false,
+    "detail": "beats_valid: unsupported facts cited: ['attempt:wait: Ash waits']"
+   },
+   "attempt1": {
+    "attributed_pass": false,
+    "detail": "beats_valid: speaker does not match cited source: attempt:communicate"
+   }
+  },
+  {
+   "prompt_hash": "703d2583",
+   "attempt0": {
+    "attributed_pass": true,
+    "detail": "3 beats"
+   }
+  },
+  {
+   "prompt_hash": "937f1568"
+  },
+  {
+   "prompt_hash": "96ba807f"
+  },
+  {
+   "prompt_hash": "9d6fe343",
+   "attempt0": {
+    "attributed_pass": true,
+    "detail": "4 beats"
+   }
+  },
+  {
+   "prompt_hash": "ace3f694"
+  },
+  {
+   "prompt_hash": "e2787b12",
+   "attempt0": {
+    "attributed_pass": false,
+    "detail": "schema: 1 errors"
+   }
+  },
+  {
+   "prompt_hash": "fa524125"
+  }
+ ],
+ "D1": [
+  {
+   "prompt_hash": "1d6cdf95",
+   "attempt0": {
+    "attributed_pass": false,
+    "detail": "schema: 1 errors"
+   }
+  },
+  {
+   "prompt_hash": "2ae7ddb9"
+  },
+  {
+   "prompt_hash": "34a6cdf2",
+   "attempt0": {
+    "attributed_pass": false,
+    "detail": "schema: 1 errors"
+   }
+  },
+  {
+   "prompt_hash": "703d2583",
+   "attempt0": {
+    "attributed_pass": false,
+    "detail": "schema: 1 errors"
+   }
+  },
+  {
+   "prompt_hash": "937f1568"
+  },
+  {
+   "prompt_hash": "96ba807f"
+  },
+  {
+   "prompt_hash": "9d6fe343",
+   "attempt0": {
+    "attributed_pass": false,
+    "detail": "schema: 1 errors"
+   },
+   "attempt1": {
+    "attributed_pass": false,
+    "detail": "schema: 1 errors"
+   }
+  },
+  {
+   "prompt_hash": "ace3f694"
+  },
+  {
+   "prompt_hash": "e2787b12"
+  },
+  {
+   "prompt_hash": "fa524125"
+  }
+ ],
+ "E": [
+  {
+   "prompt_hash": "1d6cdf95",
+   "attempt0": {
+    "attributed_pass": true,
+    "detail": "5 beats"
+   },
+   "attempt1": {
+    "attributed_pass": true,
+    "detail": "6 beats"
+   }
+  },
+  {
+   "prompt_hash": "2ae7ddb9",
+   "attempt0": {
+    "attributed_pass": false,
+    "detail": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet.']"
+   },
+   "attempt1": {
+    "attributed_pass": false,
+    "detail": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet.']"
+   }
+  },
+  {
+   "prompt_hash": "34a6cdf2",
+   "attempt0": {
+    "attributed_pass": true,
+    "detail": "4 beats"
+   },
+   "attempt1": {
+    "attributed_pass": true,
+    "detail": "4 beats"
+   }
+  },
+  {
+   "prompt_hash": "703d2583",
+   "attempt0": {
+    "attributed_pass": true,
+    "detail": "5 beats"
+   }
+  },
+  {
+   "prompt_hash": "937f1568",
+   "attempt0": {
+    "attributed_pass": true,
+    "detail": "4 beats"
+   },
+   "attempt1": {
+    "attributed_pass": true,
+    "detail": "4 beats"
+   }
+  },
+  {
+   "prompt_hash": "96ba807f",
+   "attempt0": {
+    "attributed_pass": true,
+    "detail": "6 beats"
+   },
+   "attempt1": {
+    "attributed_pass": true,
+    "detail": "5 beats"
+   }
+  },
+  {
+   "prompt_hash": "9d6fe343",
+   "attempt0": {
+    "attributed_pass": false,
+    "detail": "beats_valid: speaker does not match cited source: attempt:communicate"
+   },
+   "attempt1": {
+    "attributed_pass": true,
+    "detail": "4 beats"
+   }
+  },
+  {
+   "prompt_hash": "ace3f694",
+   "attempt0": {
+    "attributed_pass": false,
+    "detail": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today.']"
+   },
+   "attempt1": {
+    "attributed_pass": false,
+    "detail": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today.']"
+   }
+  },
+  {
+   "prompt_hash": "e2787b12",
+   "attempt0": {
+    "attributed_pass": true,
+    "detail": "5 beats"
+   },
+   "attempt1": {
+    "attributed_pass": true,
+    "detail": "6 beats"
+   }
+  },
+  {
+   "prompt_hash": "fa524125",
+   "attempt0": {
+    "attributed_pass": false,
+    "detail": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet.']"
+   },
+   "attempt1": {
+    "attributed_pass": false,
+    "detail": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet.']"
+   }
+  }
+ ]
+}

@@ -1,0 +1,325 @@
+{
+ "arm": "F",
+ "config": {
+  "model": "mistralai/mistral-nemo",
+  "temperature": 0.2,
+  "json_narrator": false,
+  "dedupe_prompt_lines": true,
+  "reaction_speakers": true
+ },
+ "fixture_sha": "c0c5cb3120de0aedff58e6e0c9360b52242c72304c14137343e5917966872814",
+ "started_wall": 1790698957.449765,
+ "ended_wall": 1790699056.1002545,
+ "total_tokens": 17648,
+ "dry_run": false,
+ "results": [
+  {
+   "role": "narrator",
+   "prompt_hash": "1d6cdf95bb9381f4f19a6e8c3ce952598590b327e4446ddf5e31b653de095986",
+   "arm": "F",
+   "attempts": [
+    {
+     "latency_ms": 15968,
+     "finish_reason": "stop",
+     "content_len": 774,
+     "prompt_tokens": 1064,
+     "completion_tokens": 327,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": true,
+     "validation": "4 beats"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "prompt_deduped": true,
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits patiently, his eyes scanning the horizon.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"17f19638-b398-45e1-8074-17befed1f719\",\n    \"text\": \"Ash, does the road east stay open in rain?\",\n    \"cited_fact_keys\": [\"attempt:communicate\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash responds thoughtfully, his voice steady.\",\n    \"cited_fact_keys\": [\"reaction:f8bd3a7d-eb72-5c5d-a9a1-2038419e3881\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"17f19638-b398-45e1-8074-17befed1f719\",\n    \"text\": \"It stays open, but it'll be mud up to your knees. If you're not in a hurry, wait it out.\",\n    \"cited_fact_keys\": [\"reaction:f8bd3a7d-eb72-5c5d-a9a1-2038419e3881\"]\n  }\n]"
+   ],
+   "ttuv_ms": 16077,
+   "outcome": "usable"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "2ae7ddb9da9ecbbab998bf3106849919be113788c38759a542530821f82a3d11",
+   "arm": "F",
+   "attempts": [
+    {
+     "latency_ms": 13031,
+     "finish_reason": "stop",
+     "content_len": 1607,
+     "prompt_tokens": 935,
+     "completion_tokens": 522,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet']"
+    },
+    {
+     "latency_ms": 7500,
+     "finish_reason": "stop",
+     "content_len": 921,
+     "prompt_tokens": 985,
+     "completion_tokens": 297,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": true,
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Wren turns to Ash, a question on their lips.\",\n    \"cited_fact_keys\": [\"attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash, patiently waiting, turns their attention to Wren.\",\n    \"cited_fact_keys\": [\"attempt:wait: Ash waits\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"61777125-77b7-4233-aa68-5827554491ee\",\n    \"text\": \"Wren asks, \\\"Ash, are the stalls open yet?\\\"\",\n    \"cited_fact_keys\": [\"attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash processes Wren's query, their expression thoughtful.\",\n    \"cited_fact_keys\": [\"attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"fbb1c051-8fb9-4dae-b800-b198c7249f3e\",\n    \"text\": \"Ash responds, \\\"Not yet, but they should be soon.\\\"\",\n    \"cited_fact_keys\": [\"reaction: Ash speaks to Wren about stalls' opening status\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Wren nods, absorbing Ash's response.\",\n    \"cited_fact_keys\": [\"reaction: Ash speaks to Wren about stalls' opening status\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"The two share a moment of silent understanding.\",\n    \"cited_fact_keys\": [\"reaction: Ash speaks to Wren about stalls' opening status\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash returns to their patient waiting, while Wren keeps a watchful eye on the stalls.\",\n    \"cited_fact_keys\": [\"attempt:wait: Ash waits\"]\n  }\n]",
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Wren turned to Ash, a question on their lips.\",\n    \"cited_fact_keys\": [\"attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Ask Ash whether the stalls are open yet.\",\n    \"cited_fact_keys\": [\"attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet\"],\n    \"speaker_id\": \"61777125-77b7-4233-aa68-5827554491ee\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash, hearing the question, paused in their tracks.\",\n    \"cited_fact_keys\": [\"attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet\", \"attempt:wait: Ash waits\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"The air was filled with a moment of anticipation.\",\n    \"cited_fact_keys\": [\"attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet\", \"attempt:wait: Ash waits\"]\n  }\n]"
+   ],
+   "ttuv_ms": 20625,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "34a6cdf2413e6485e36f7bd6356eca18c4c0fb45599e28d1fd29eb9da4850953",
+   "arm": "F",
+   "attempts": [
+    {
+     "latency_ms": 2968,
+     "finish_reason": "stop",
+     "content_len": 312,
+     "prompt_tokens": 938,
+     "completion_tokens": 124,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": true,
+     "validation": "2 beats"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "prompt_deduped": true,
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Wren says to Ash: 'Ask Ash what the Market holds today.'\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": \"cb38c6b4-d2d9-471f-9bda-0622b47dd4d0\"\n  }\n]"
+   ],
+   "ttuv_ms": 3016,
+   "outcome": "usable"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "703d2583e8b01bb53f82b02bc8d3fdd53d6aeafdf4c4359b135838c468942157",
+   "arm": "F",
+   "attempts": [
+    {
+     "latency_ms": 6343,
+     "finish_reason": "stop",
+     "content_len": 650,
+     "prompt_tokens": 1050,
+     "completion_tokens": 271,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: every beat must cite at least one visible fact"
+    },
+    {
+     "latency_ms": 5546,
+     "finish_reason": "stop",
+     "content_len": 561,
+     "prompt_tokens": 1082,
+     "completion_tokens": 244,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": true,
+     "validation": "3 beats"
+    }
+   ],
+   "repairs": 1,
+   "validated": true,
+   "prompt_deduped": true,
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"In the scene, Ash and Wren stood face to face.\",\n    \"cited_fact_keys\": []\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"17f19638-b398-45e1-8074-17befed1f719\",\n    \"text\": \"Ash, one last probe question for the road?\",\n    \"cited_fact_keys\": [\"attempt:communicate\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash paused, considering Wren's request.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"17f19638-b398-45e1-8074-17befed1f719\",\n    \"text\": \"One more? Go on then.\",\n    \"cited_fact_keys\": [\"reaction:b0130c69-76d5-5852-aac8-e3bac5f5e863\"]\n  }\n]",
+    "[\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"17f19638-b398-45e1-8074-17befed1f719\",\n    \"text\": \"Wren turns to Ash, a question lingering in the air.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits, his gaze steady on Wren.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"17f19638-b398-45e1-8074-17befed1f719\",\n    \"text\": \"Ash breaks the silence, \\\"One more? Go on then.\\\"\",\n    \"cited_fact_keys\": [\"reaction:b0130c69-76d5-5852-aac8-e3bac5f5e863\"]\n  }\n]"
+   ],
+   "ttuv_ms": 11968,
+   "outcome": "usable"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "937f1568995ee99eb8d53896cbe28463b290f0f1079f031685a60e4c59a37556",
+   "arm": "F",
+   "attempts": [
+    {
+     "latency_ms": 8389,
+     "finish_reason": "stop",
+     "content_len": 1199,
+     "prompt_tokens": 938,
+     "completion_tokens": 388,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": true,
+     "validation": "8 beats"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "prompt_deduped": true,
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash stands still, waiting.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"\\\"Ask Ash what the Market holds today.\\\" Wren says to Ash.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": \"fbb1c051-8fb9-4dae-b800-b198c7249f3e\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash, caught off guard, hesitates.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"The room falls silent, awaiting Ash's response.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash, after a moment, begins to speak.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"The audience leans in, eager to hear Ash's words.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash's voice fills the room, but his words are lost in the sudden commotion.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"The event comes to an abrupt end, leaving the audience in suspense.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  }\n]"
+   ],
+   "ttuv_ms": 8437,
+   "outcome": "usable"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "96ba807f42be3f0a603c155fa382002ba8c93f2363901c2703942947a1e5b820",
+   "arm": "F",
+   "attempts": [
+    {
+     "latency_ms": 7516,
+     "finish_reason": "stop",
+     "content_len": 677,
+     "prompt_tokens": 1046,
+     "completion_tokens": 307,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": true,
+     "validation": "4 beats"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "prompt_deduped": true,
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Wren asks Ash, 'Who keeps the lighthouse at night?'\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": \"a19a3069-496e-4751-993b-c9ae9566000a\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash responds.\",\n    \"cited_fact_keys\": [\"reaction:18c99f8d-9abc-55cc-8ce8-9939e12df3a1\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Ash tells Wren, 'Old Marlow, if the lamp's still lit.'\",\n    \"cited_fact_keys\": [\"reaction:18c99f8d-9abc-55cc-8ce8-9939e12df3a1\"],\n    \"speaker_id\": \"17f19638-b398-45e1-8074-17befed1f719\"\n  }\n]"
+   ],
+   "ttuv_ms": 7547,
+   "outcome": "usable"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "9d6fe3434f81998c1075805c7a12b3550ab0ba842d7a706fe0e065306a1743aa",
+   "arm": "F",
+   "attempts": [
+    {
+     "latency_ms": 3171,
+     "finish_reason": "stop",
+     "content_len": 297,
+     "prompt_tokens": 946,
+     "completion_tokens": 124,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": true,
+     "validation": "2 beats"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "prompt_deduped": true,
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"0de5b72f-6c59-4190-894c-6b4e94582fca\",\n    \"text\": \"Wren asks Ash, 'Are the stalls open yet?'\",\n    \"cited_fact_keys\": [\"attempt:communicate\"]\n  }\n]"
+   ],
+   "ttuv_ms": 3217,
+   "outcome": "usable"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "ace3f694c7d649563081ba6e671b90917a1ade1c8edc1d74c98b31ad93219434",
+   "arm": "F",
+   "attempts": [
+    {
+     "latency_ms": 7077,
+     "finish_reason": "stop",
+     "content_len": 783,
+     "prompt_tokens": 930,
+     "completion_tokens": 258,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today.']"
+    },
+    {
+     "latency_ms": 5328,
+     "finish_reason": "stop",
+     "content_len": 761,
+     "prompt_tokens": 979,
+     "completion_tokens": 253,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today.']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": true,
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"In the bustling market, Wren turned to Ash, a question on their lips.\",\n    \"cited_fact_keys\": [\"attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today.\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"69830292-3348-4820-a616-95c06f7ebe7f\",\n    \"text\": \"Wren asked Ash, 'What does the Market hold today?'\",\n    \"cited_fact_keys\": [\"attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today.\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash paused, considering the query.\",\n    \"cited_fact_keys\": [\"attempt:wait: Ash waits\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"The market's chatter seemed to fade as Ash prepared to respond.\",\n    \"cited_fact_keys\": [\"attempt:wait: Ash waits\"]\n  }\n]",
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Wren turned to Ash, a question on her lips.\",\n    \"cited_fact_keys\": [\"attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today.\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"69830292-3348-4820-a616-95c06f7ebe7f\",\n    \"text\": \"Wren asked Ash, 'What does the Market hold today?'\",\n    \"cited_fact_keys\": [\"attempt:communicate: Wren says to Ash: Ask Ash what the Market holds today.\"]\n  },\n  {\n    \"kind\": \"action\",\n    \"text\": \"Ash paused, considering Wren's question.\",\n    \"cited_fact_keys\": [\"attempt:wait: Ash waits\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"The air between them grew still as Ash took a moment to respond.\",\n    \"cited_fact_keys\": [\"attempt:wait: Ash waits\"]\n  }\n]"
+   ],
+   "ttuv_ms": 12532,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "e2787b12ef4e1c27c7ed80156e26dfe5aeedcfa386ba8832adef564a1ac7ea4c",
+   "arm": "F",
+   "attempts": [
+    {
+     "latency_ms": 8485,
+     "finish_reason": "stop",
+     "content_len": 765,
+     "prompt_tokens": 1055,
+     "completion_tokens": 303,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": true,
+     "validation": "4 beats"
+    }
+   ],
+   "repairs": 0,
+   "validated": true,
+   "prompt_deduped": true,
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Wren turns to Ash, a question on their lips.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Wren asks Ash, 'What did the market bell mean at dawn?'\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": \"3a81116a-1e56-4e17-8c5d-02cae78f3deb\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash pauses, considering Wren's query.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Ash responds to Wren, 'Dawn bell means the market's waking. Sleep through it and you miss the best bread.'\",\n    \"cited_fact_keys\": [\"reaction:f9077b22-dc67-5c50-aa22-a8252c395c21\"],\n    \"speaker_id\": \"e518fada-0157-46d8-b9db-df12f6f8f75d\"\n  }\n]"
+   ],
+   "ttuv_ms": 8516,
+   "outcome": "usable"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "fa5241259d699d7860d2848941116dfc523fa8002236b0ecc9b151da5a551120",
+   "arm": "F",
+   "attempts": [
+    {
+     "latency_ms": 2515,
+     "finish_reason": "stop",
+     "content_len": 311,
+     "prompt_tokens": 982,
+     "completion_tokens": 100,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet.']"
+    },
+    {
+     "latency_ms": 4031,
+     "finish_reason": "stop",
+     "content_len": 447,
+     "prompt_tokens": 1033,
+     "completion_tokens": 167,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": true,
+     "validation": "3 beats"
+    }
+   ],
+   "repairs": 1,
+   "validated": true,
+   "prompt_deduped": true,
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Wren asked Ash if the stalls were open yet.\",\n    \"cited_fact_keys\": [\"attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet.\"]\n  },\n  {\n    \"kind\": \"action\",\n    \"text\": \"Ash waited.\",\n    \"cited_fact_keys\": [\"attempt:wait: Ash waits\"]\n  }\n]",
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Wren attempts to communicate with Ash.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Wren asks Ash, 'Are the stalls open yet?'\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": \"61777125-77b7-4233-aa68-5827554491ee\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits for a response.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  }\n]"
+   ],
+   "ttuv_ms": 6639,
+   "outcome": "usable"
+  }
+ ]
+}
