@@ -318,6 +318,8 @@ def beats_valid(
         ):
             ineligible = sorted(set(proposal.cited_fact_keys) - set(speech_keys))
             return f"dialogue cites non-speech evidence: {ineligible}"
+        if proposal.kind == NarrationKind.DIALOGUE and proposal.speaker_id is None:
+            return "dialogue requires a speaker matching cited speech"
         if proposal.speaker_id is not None and str(proposal.speaker_id) not in audience_ids:
             return f"speaker outside the audience: {proposal.speaker_id}"
         for key in proposal.cited_fact_keys:

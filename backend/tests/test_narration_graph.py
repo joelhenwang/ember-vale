@@ -825,3 +825,59 @@ def test_dialogue_from_quoted_speech_is_accepted() -> None:
         speech_keys=frozenset({"reaction:s2"}),
     ) is None
 
+
+
+
+def test_dialogue_without_speaker_is_rejected() -> None:
+    from worldsim.application.graphs.narrate import beats_valid
+    from worldsim.domain.narration import BeatProposal
+
+    ash, wren = uuid.uuid4(), uuid.uuid4()
+    keys = frozenset({"reaction:s2"})
+    audience = frozenset({str(wren), str(ash)})
+    speakers = {"reaction:s2": str(ash)}
+    speech = frozenset({"reaction:s2"})
+    omitted = BeatProposal(text="One more?", cited_fact_keys=["reaction:s2"], kind="dialogue")
+    assert beats_valid(
+        [omitted], visible_keys=keys, audience_ids=audience, beats_budget=8,
+        fact_speakers=speakers, speech_keys=speech,
+    ) == "dialogue requires a speaker matching cited speech"
+    null = BeatProposal(
+        text="One more?", cited_fact_keys=["reaction:s2"], kind="dialogue", speaker_id=None,
+    )
+    assert beats_valid(
+        [null], visible_keys=keys, audience_ids=audience, beats_budget=8,
+        fact_speakers=speakers, speech_keys=speech,
+    ) == "dialogue requires a speaker matching cited speech"
+
+
+def test_dialogue_with_wrong_in_audience_speaker_is_rejected() -> None:
+    from worldsim.application.graphs.narrate import beats_valid
+    from worldsim.domain.narration import BeatProposal
+
+    ash, wren = uuid.uuid4(), uuid.uuid4()
+    keys = frozenset({"reaction:s2"})
+    audience = frozenset({str(wren), str(ash)})
+    borrowed = BeatProposal(
+        text="One more?", cited_fact_keys=["reaction:s2"], kind="dialogue",
+        speaker_id=wren,
+    )
+    assert beats_valid(
+        [borrowed], visible_keys=keys, audience_ids=audience, beats_budget=8,
+        fact_speakers={"reaction:s2": str(ash)},
+        speech_keys=frozenset({"reaction:s2"}),
+    ) == "speaker does not match cited source: reaction:s2"
+
+
+def test_narration_summary_keeps_null_speaker() -> None:
+    from worldsim.application.graphs.narrate import beats_valid
+    from worldsim.domain.narration import BeatProposal
+
+    ash, wren = uuid.uuid4(), uuid.uuid4()
+    keys = frozenset({"attempt:wait"})
+    audience = frozenset({str(wren), str(ash)})
+    summary = BeatProposal(text="Ash waits.", cited_fact_keys=["attempt:wait"], kind="narration")
+    assert beats_valid(
+        [summary], visible_keys=keys, audience_ids=audience, beats_budget=8,
+    ) is None
+

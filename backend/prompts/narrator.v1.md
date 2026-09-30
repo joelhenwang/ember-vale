@@ -11,6 +11,10 @@ Rules:
 - Every beat needs at least one cited fact key from the visible set.
 - Cite keys exactly as quoted after `key` (the description after the colon is not part of the key).
 - `speaker_id` must be null (narrator voice) or an audience member.
+- A `dialogue` beat must set `speaker_id` to the exact id of the speaker
+  of its cited quoted-speech fact; never leave it null and never borrow
+  another voice. Attempt facts are narration-only: summarize them in
+  narrator voice with `speaker_id` null.
 - Facts whose key starts with `reaction:` record committed communication.
   A `NAME says to NAME: "utterance"` fact quotes identified spoken words:
   render each as a `dialogue` beat with that speaker, citing its key, and

@@ -4,8 +4,9 @@ Advances a deterministic two-participant scene with scripted gateways and
 captures the narrator CompletionRequests production actually built:
 sourced observations, deduped facts, current templates, full validation
 enforced. The narrator voices an attempt as dialogue, so production must
-deny it (speech eligibility) and fall back — while the captured initial
-prompt is byte-exact current-pipeline input for future eval arms.
+deny it (speaker attribution after eligibility succeeds) and fall back —
+while the captured initial prompt is byte-exact current-pipeline input
+for future eval arms.
 
 Writes docs/evidence/latency-eval-001/fixture-narrator-v2.json.
 """
@@ -52,23 +53,23 @@ def test_production_assembly_builds_deduped_narrator_prompt(migrated_db: None) -
         await _set_grant(ids, "player", ids["wren"])
         gateways = _agency_gateways(ids)
 
-        def _voice_an_attempt(request: CompletionRequest) -> str | None:
-            audience, keys, _budget = parse_narration_context(request.prompt)
-            attempts = sorted(k for k in keys if k.startswith("attempt:"))
-            if not attempts or not audience:
-                raise AssertionError("fixture scene must observe an attempt")
+        def _speakerless_dialogue(request: CompletionRequest) -> str | None:
+            _audience, keys, _budget = parse_narration_context(request.prompt)
+            speech = sorted(k for k in keys if k.startswith("reaction:"))
+            if not speech:
+                raise AssertionError("fixture scene must commit quoted speech")
             return json.dumps(
                 [
                     {
-                        "text": "Wren turns to Ash, asking.",
-                        "cited_fact_keys": [attempts[0]],
+                        "text": "Dawn patrol passed at first light.",
+                        "cited_fact_keys": [speech[0]],
                         "kind": "dialogue",
-                        "speaker_id": sorted(audience)[0],
+                        "speaker_id": None,
                     }
                 ]
             )
 
-        gateways["narrator"].route = _voice_an_attempt
+        gateways["narrator"].route = _speakerless_dialogue
         report = await _orchestrator(gateways).advance_phase(ids["world"], 1, _wren_ask(ids))
         assert not report.duplicate
         assert all(s.narration == "fallback" for s in report.scenes)
