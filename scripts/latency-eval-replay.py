@@ -62,7 +62,7 @@ def narrator_context(user_prompt: str) -> tuple[frozenset[str], frozenset[str], 
 
 
 def dedupe_prompt_lines(prompt: str) -> str:
-    """Shared pipeline-equivalent prompt-line dedup."""
+    """Historical-experiment line dedup (arm F only, not pipeline-equivalent)."""
     return narrate.dedupe_prompt_lines(prompt)
 
 

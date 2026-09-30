@@ -711,9 +711,9 @@ def test_beats_valid_enforces_mapped_speakers() -> None:
     from worldsim.application.graphs.narrate import beats_valid
     from worldsim.domain.narration import BeatProposal
 
-    wren = uuid.uuid4()
+    wren, ash = uuid.uuid4(), uuid.uuid4()
     keys = frozenset({"attempt:communicate"})
-    audience = frozenset({str(wren), str(uuid.uuid4())})
+    audience = frozenset({str(wren), str(ash)})
     matched = BeatProposal(
         text="Wren asks.", cited_fact_keys=["attempt:communicate"], kind="narration",
         speaker_id=wren,
@@ -722,12 +722,14 @@ def test_beats_valid_enforces_mapped_speakers() -> None:
         [matched], visible_keys=keys, audience_ids=audience, beats_budget=8,
         fact_speakers={"attempt:communicate": str(wren)},
     ) is None
+    # The wrong speaker is the OTHER in-audience character: audience
+    # validation alone accepts it, so only source attribution rejects it.
     mismatched = BeatProposal(
         text="Wren asks.", cited_fact_keys=["attempt:communicate"], kind="narration",
-        speaker_id=uuid.uuid4(),
+        speaker_id=ash,
     )
     assert beats_valid(
         [mismatched], visible_keys=keys, audience_ids=audience, beats_budget=8,
         fact_speakers={"attempt:communicate": str(wren)},
-    ) is not None
+    ) == "speaker does not match cited source: attempt:communicate"
 

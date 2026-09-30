@@ -78,23 +78,34 @@ input facts ("repeats her question", "tries again", "waits again").
 reaction dialogue correct). Structural acceptance, even attributed, does
 not establish gameplay suitability.
 
-## Arm F: current pipeline + nemo (integration, paid)
+## Arm F: historical-prompt dedup experiment (paid, NOT pipeline output)
 
-Deduped narrator prompts (line-dedup proven equal to pipeline assembly
-output: one attempt per family per scene on all 10 items), current system
-template, nemo at temp 0.2, same repair policy, production validation
-(schema plus `beats_valid` with reaction-key speakers, attempts unchecked
-as in production). Model and sampling fixed; the variable is the pipeline.
+Arm F removes identical lines from the retained historical prompts; it
+does not rebuild prompts through `render_user_prompt()`. Retain it as a
+dedup experiment only:
 
-- Passed 8/10 under production validation; 2 exhausted (invented
-  compound keys on old-format items). Attempt-0 7/10, one converted by
-  repair. Under the stricter offline attempt-speaker lens: 5/10.
-- Terminal p50 8.5s / p90 16.1s; validated p50 8.0s (n=8).
-  Zero provider errors, zero reasoning-only.
-- 17,648 tokens, missing=0, est. $0.0004 of the $0.50 envelope.
-  20-call limit, 14 calls used; stall abort never fired.
-- Repeated-action beats are gone from passing outputs (one wait plus one
-  communicate where the fixture carried two of each). The remaining
-  semantic gap is unchanged: unquoted instruction topics still voiced as
-  direct speech (e.g. 34a6cdf2). That is a prompt/contract problem, not
-  a latency or attribution one.
+- Five fixtures keep legacy `- attempt:` formatting; today's renderer
+  emits `- key "attempt:":`.
+- `fa524125` still carries its earlier rejection/repair instruction.
+- Line-dedup is false in general: distinct actions can render identical
+  text, which production preserves via source IDs. It coincides with
+  pipeline output on these 10 items only because each scene holds one
+  attempt per family. Future integration fixtures must go through
+  production assembly/rendering with source identities preserved.
+
+Corrected counts from `results-F.json` (original records preserved):
+attempt-0 passes 6/10; passes after repair 8/10; repair conversions 2
+(`703d2583`, `fa524125`); 14 calls used of the 20-call limit; accepted
+final outputs also passing the offline attempt-speaker check 5/10, with
+`1d6cdf95`, `703d2583`, `fa524125` failing attribution. Terminal p50
+8.5s / p90 16.1s; validated p50 8.0s (n=8). Zero provider errors, zero
+reasoning-only. 17,648 tokens, missing=0, est. $0.0004 of the $0.50
+envelope; stall abort never fired.
+
+Semantic content (beyond keys): `1d6cdf95` assigns Wren's question to
+Ash; `703d2583` presents Wren-turns-to-Ash as dialogue spoken by Ash;
+accepted `937f1568` invents Ash speaking, an audience leaning in, and a
+sudden commotion from attempt/wait facts. Valid citation keys do not
+establish that prose follows those facts — this is more than a
+quotation-prompt problem, and the remaining work is speech-eligibility
+and attribution, not another model comparison.

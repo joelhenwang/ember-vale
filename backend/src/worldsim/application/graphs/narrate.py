@@ -155,8 +155,11 @@ _PROMPT_BUDGET_RE = re.compile(r"^Beat budget:\s*(\d+)\s*\.\s*$", re.M)
 def dedupe_prompt_lines(prompt: str) -> str:
     """Drop repeated `- ` fact lines, keeping first occurrences.
 
-    Rendered fact lines embed their key, so identical lines are identical
-    (source, key) facts: exactly what the pipeline dedup removes.
+    HISTORICAL-EXPERIMENT ONLY (arm F replay). Identical lines do NOT
+    imply identical (source, key) facts in general: distinct actions can
+    render identical text, and production correctly preserves those via
+    source IDs. Build future integration fixtures through production
+    assembly/rendering with source identities preserved.
     """
     seen: set[str] = set()
     kept: list[str] = []
