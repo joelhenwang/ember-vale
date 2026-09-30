@@ -88,10 +88,11 @@ dedup experiment only:
   emits `- key "attempt:":`.
 - `fa524125` still carries its earlier rejection/repair instruction.
 - Line-dedup is false in general: distinct actions can render identical
-  text, which production preserves via source IDs. It coincides with
-  pipeline output on these 10 items only because each scene holds one
-  attempt per family. Future integration fixtures must go through
-  production assembly/rendering with source identities preserved.
+  text, which production preserves via source IDs. It removes the same
+  observer-copy duplicates in this cohort. Legacy formatting and the
+  retained repair instruction still prevent prompt equivalence. Future
+  integration fixtures must go through production assembly/rendering
+  with source identities preserved.
 
 Corrected counts from `results-F.json` (original records preserved):
 attempt-0 passes 6/10; passes after repair 8/10; repair conversions 2

@@ -733,3 +733,95 @@ def test_beats_valid_enforces_mapped_speakers() -> None:
         fact_speakers={"attempt:communicate": str(wren)},
     ) == "speaker does not match cited source: attempt:communicate"
 
+
+
+
+def test_speech_eligible_keys_only_quoted_speech() -> None:
+    from worldsim.application.graphs.narrate import speech_eligible_keys
+
+    facts = [
+        {"key": "attempt:communicate", "value": "Wren asks"},
+        {"key": "reaction:s1", "value": 'Wren speaks to Ash about "stalls"', "speaker": "w"},
+        {
+            "key": "reaction:s2",
+            "value": 'Ash says to Wren: "One more?"',
+            "speaker": "a",
+            "utterance": "One more?",
+        },
+    ]
+    assert speech_eligible_keys(facts) == frozenset({"reaction:s2"})
+
+
+def test_dialogue_from_attempt_is_rejected_even_with_right_speaker() -> None:
+    from worldsim.application.graphs.narrate import beats_valid
+    from worldsim.domain.narration import BeatProposal
+
+    wren, ash = uuid.uuid4(), uuid.uuid4()
+    keys = frozenset({"attempt:communicate"})
+    audience = frozenset({str(wren), str(ash)})
+    voiced_attempt = BeatProposal(
+        text="Wren says to Ash: 'Ask Ash what the Market holds today.'",
+        cited_fact_keys=["attempt:communicate"], kind="dialogue",
+        speaker_id=wren,
+    )
+    assert beats_valid(
+        [voiced_attempt], visible_keys=keys, audience_ids=audience, beats_budget=8,
+        fact_speakers={"attempt:communicate": str(wren)},
+        speech_keys=frozenset(),
+    ) == "dialogue cites non-speech evidence: ['attempt:communicate']"
+
+
+def test_dialogue_from_attempt_reports_speech_before_speaker() -> None:
+    from worldsim.application.graphs.narrate import beats_valid
+    from worldsim.domain.narration import BeatProposal
+
+    wren, ash = uuid.uuid4(), uuid.uuid4()
+    keys = frozenset({"attempt:communicate"})
+    audience = frozenset({str(wren), str(ash)})
+    others_words = BeatProposal(
+        text="Wren turns to Ash, asking.",
+        cited_fact_keys=["attempt:communicate"], kind="dialogue",
+        speaker_id=ash,
+    )
+    assert beats_valid(
+        [others_words], visible_keys=keys, audience_ids=audience, beats_budget=8,
+        fact_speakers={"attempt:communicate": str(wren)},
+        speech_keys=frozenset(),
+    ) == "dialogue cites non-speech evidence: ['attempt:communicate']"
+
+
+def test_dialogue_from_unquoted_topic_is_rejected() -> None:
+    from worldsim.application.graphs.narrate import beats_valid
+    from worldsim.domain.narration import BeatProposal
+
+    wren, ash = uuid.uuid4(), uuid.uuid4()
+    keys = frozenset({"reaction:s1"})
+    audience = frozenset({str(wren), str(ash)})
+    quoted_topic = BeatProposal(
+        text="Tell Ash about the mill.", cited_fact_keys=["reaction:s1"], kind="dialogue",
+        speaker_id=wren,
+    )
+    assert beats_valid(
+        [quoted_topic], visible_keys=keys, audience_ids=audience, beats_budget=8,
+        fact_speakers={"reaction:s1": str(wren)},
+        speech_keys=frozenset(),
+    ) == "dialogue cites non-speech evidence: ['reaction:s1']"
+
+
+def test_dialogue_from_quoted_speech_is_accepted() -> None:
+    from worldsim.application.graphs.narrate import beats_valid
+    from worldsim.domain.narration import BeatProposal
+
+    ash, wren = uuid.uuid4(), uuid.uuid4()
+    keys = frozenset({"reaction:s2", "attempt:wait"})
+    audience = frozenset({str(wren), str(ash)})
+    spoken = BeatProposal(
+        text="One more?", cited_fact_keys=["reaction:s2"], kind="dialogue",
+        speaker_id=ash,
+    )
+    assert beats_valid(
+        [spoken], visible_keys=keys, audience_ids=audience, beats_budget=8,
+        fact_speakers={"reaction:s2": str(ash)},
+        speech_keys=frozenset({"reaction:s2"}),
+    ) is None
+

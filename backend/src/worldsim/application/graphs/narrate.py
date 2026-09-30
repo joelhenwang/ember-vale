@@ -274,6 +274,15 @@ def communication_facts(
     return facts
 
 
+def speech_eligible_keys(facts: list[dict[str, str]]) -> frozenset[str]:
+    """Keys eligible for DIALOGUE citation: committed quoted speech only.
+
+    Attempted communication and unquoted topic summaries carry no identified
+    utterance and may only be paraphrased as narration. Same predicate the
+    deterministic fallback uses: speaker plus utterance.
+    """
+    return frozenset(f["key"] for f in facts if f.get("speaker") and f.get("utterance"))
+
 def beats_valid(
     proposals: list[BeatProposal],
     *,
@@ -281,11 +290,15 @@ def beats_valid(
     audience_ids: frozenset[str],
     beats_budget: int,
     fact_speakers: Mapping[str, str] | None = None,
+    speech_keys: frozenset[str] | None = None,
 ) -> str | None:
     """Unsupported-fact validator: cited keys, speakers, and budget.
 
     Beats citing a spoken-communication fact must carry that fact's
     speaker; attribution is checked against the source, not the audience.
+    DIALOGUE beats may only cite speech-eligible keys (committed quoted
+    speech); attempts and topic summaries are narration-only. None skips
+    the speech check (legacy callers).
     """
     if not proposals:
         return "narration needs at least one beat"
@@ -298,6 +311,13 @@ def beats_valid(
             return f"unsupported facts cited: {sorted(unknown)}"
         if not proposal.cited_fact_keys:
             return "every beat must cite at least one visible fact"
+        if (
+            speech_keys is not None
+            and proposal.kind == NarrationKind.DIALOGUE
+            and not set(proposal.cited_fact_keys) <= set(speech_keys)
+        ):
+            ineligible = sorted(set(proposal.cited_fact_keys) - set(speech_keys))
+            return f"dialogue cites non-speech evidence: {ineligible}"
         if proposal.speaker_id is not None and str(proposal.speaker_id) not in audience_ids:
             return f"speaker outside the audience: {proposal.speaker_id}"
         for key in proposal.cited_fact_keys:
@@ -476,6 +496,7 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
         budget_raw = state.get("beats_budget")
         budget = budget_raw if isinstance(budget_raw, int) else 8
         fact_speakers = {f["key"]: f["speaker"] for f in facts if "speaker" in f}
+        speech_keys = speech_eligible_keys(facts)
         errors: list[str] = []
         repairs = 0
         try:
@@ -529,6 +550,7 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
                 audience_ids=audience,
                 beats_budget=budget,
                 fact_speakers=fact_speakers,
+                speech_keys=speech_keys,
             )
             if denial is not None:
                 errors.append(f"attempt {repairs}: {denial}")
@@ -640,6 +662,7 @@ __all__ = [
     "build_narration_graph",
     "dedupe_narration_facts",
     "dedupe_prompt_lines",
+    "speech_eligible_keys",
     "fallback_beats",
     "load_narrator_prompt",
     "parse_narration_context",
