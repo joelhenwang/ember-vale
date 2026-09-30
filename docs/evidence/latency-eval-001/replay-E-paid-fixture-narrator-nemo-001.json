@@ -1,0 +1,418 @@
+{
+ "arm": "E",
+ "config": {
+  "model": "mistralai/mistral-nemo",
+  "temperature": 0.2,
+  "json_narrator": false
+ },
+ "fixture_sha": "9bbc0e56a6368c475a5ab1075f1ace5c23ef4ffedc6dab3929caa87421b78092",
+ "started_wall": 1790773626.266827,
+ "ended_wall": 1790773836.1995165,
+ "total_tokens": 26888,
+ "dry_run": false,
+ "runner_revision": "7a2460381b6c04970c75229e2092cd10206d75b7",
+ "max_calls": 20,
+ "complete": true,
+ "results": [
+  {
+   "role": "narrator",
+   "prompt_hash": "7b7117c808836e32b839dc262e1994cbe8dca009b64a42e98ee2ca1718e9653d",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 12250,
+     "finish_reason": "stop",
+     "content_len": 893,
+     "prompt_tokens": 1095,
+     "completion_tokens": 363,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: dialogue cites non-speech evidence: ['attempt:communicate']"
+    },
+    {
+     "latency_ms": 7094,
+     "finish_reason": "stop",
+     "content_len": 722,
+     "prompt_tokens": 1131,
+     "completion_tokens": 318,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: dialogue cites non-speech evidence: ['attempt:communicate']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Wren and Ash stand ready, dawn breaking around them.\",\n    \"cited_fact_keys\": [\"attempt:communicate\", \"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Wren says to Ash: dawn patrol\",\n    \"speaker_id\": \"c58b6298-6df1-4493-afee-e28f5dcb3c8e\",\n    \"cited_fact_keys\": [\"attempt:communicate\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits patiently, eyes scanning the horizon.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"The dawn patrol passes by, as Ash had expected.\",\n    \"cited_fact_keys\": [\"reaction:90292134-8365-5b8d-b6dc-538a17fbd53a\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Ash says to Wren: \\\"Dawn patrol passed at first light.\\\"\",\n    \"speaker_id\": \"c58b6298-6df1-4493-afee-e28f5dcb3c8e\",\n    \"cited_fact_keys\": [\"reaction:90292134-8365-5b8d-b6dc-538a17fbd53a\"]\n  }\n]",
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waited patiently.\",\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"speaker_id\": null\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Wren says to Ash: dawn patrol\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": \"f458e7b3-2e34-4b9b-99b5-3bed3ada9837\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash responds to Wren.\",\n    \"cited_fact_keys\": [\"reaction:90292134-8365-5b8d-b6dc-538a17fbd53a\"],\n    \"speaker_id\": null\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Ash says to Wren: 'Dawn patrol passed at first light.'\",\n    \"cited_fact_keys\": [\"reaction:90292134-8365-5b8d-b6dc-538a17fbd53a\"],\n    \"speaker_id\": \"c58b6298-6df1-4493-afee-e28f5dcb3c8e\"\n  }\n]"
+   ],
+   "ttuv_ms": 19562,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "5f4717b8437120d397fe5b1cd373fef5667479f4214ef32dcf04c08c73b05f77",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 10625,
+     "finish_reason": "stop",
+     "content_len": 467,
+     "prompt_tokens": 1101,
+     "completion_tokens": 196,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: dialogue cites non-speech evidence: ['attempt:communicate']"
+    },
+    {
+     "latency_ms": 5202,
+     "finish_reason": "stop",
+     "content_len": 475,
+     "prompt_tokens": 1136,
+     "completion_tokens": 197,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: dialogue cites non-speech evidence: ['attempt:communicate']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Wren says to Ash: dawn patrol\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": \"1a014f68-b3cd-4f14-ad49-6f8fc30f844e\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash speaks to Wren about something.\",\n    \"cited_fact_keys\": [\"reaction:281d7e50-5b19-5549-a909-70f6914e458c\"],\n    \"speaker_id\": null\n  }\n]",
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits patiently.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"ced5a99c-4c76-42c3-9dca-a8b0c55f7ae8\",\n    \"text\": \"\\\"Dawn patrol,\\\" Ash says to Wren.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash speaks to Wren about telling her about the mill.\",\n    \"cited_fact_keys\": [\"reaction:281d7e50-5b19-5549-a909-70f6914e458c\"]\n  }\n]"
+   ],
+   "ttuv_ms": 15952,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "a785d039fa4c5f280e6b1a0743ed16582bbac80aeb21cfe5535bd06fecf082b2",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 3766,
+     "finish_reason": "stop",
+     "content_len": 285,
+     "prompt_tokens": 1005,
+     "completion_tokens": 117,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: dialogue cites non-speech evidence: ['attempt:communicate']"
+    },
+    {
+     "latency_ms": 3171,
+     "finish_reason": "stop",
+     "content_len": 286,
+     "prompt_tokens": 1039,
+     "completion_tokens": 117,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: dialogue cites non-speech evidence: ['attempt:communicate']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Wren says to Ash: dawn patrol\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": \"68271bbd-a37f-4fad-89f5-61b7aa360353\"\n  }\n]",
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Wren says to Ash: dawn patrol.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": \"68271bbd-a37f-4fad-89f5-61b7aa360353\"\n  }\n]"
+   ],
+   "ttuv_ms": 7000,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "372ec670bd7fe716e16291a402a72abae5d5694a8b0e36ee87c86d660ac2044a",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 4657,
+     "finish_reason": "stop",
+     "content_len": 697,
+     "prompt_tokens": 1001,
+     "completion_tokens": 259,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: every beat must cite at least one visible fact"
+    },
+    {
+     "latency_ms": 7937,
+     "finish_reason": "stop",
+     "content_len": 325,
+     "prompt_tokens": 1034,
+     "completion_tokens": 124,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: dialogue cites non-speech evidence: ['attempt:communicate']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"In the heart of the bustling city, a conversation unfolds between Ash and Wren.\",\n    \"cited_fact_keys\": []\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Ash speaks to Wren, saying, 'Dawn patrol.'\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": \"36f5b579-17d6-45e3-b625-b7abf9edb9a8\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Wren, hearing Ash's words, pauses, considering the plan.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"]\n  },\n  {\n    \"kind\": \"action\",\n    \"text\": \"Wren decides to wait for further instructions.\",\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"speaker_id\": \"9d0c820b-1958-4cdc-b10c-364604214b16\"\n  }\n]",
+    "[\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"36f5b579-17d6-45e3-b625-b7abf9edb9a8\",\n    \"text\": \"Ash speaks to Wren about the dawn patrol.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Wren waits for Ash to finish speaking.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  }\n]"
+   ],
+   "ttuv_ms": 12671,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "b34b0a936518951ae32594ed8ab22de858cfff8c889a822aad1e336be97bec7f",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 14375,
+     "finish_reason": "stop",
+     "content_len": 633,
+     "prompt_tokens": 1097,
+     "completion_tokens": 291,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: dialogue cites non-speech evidence: ['attempt:communicate']"
+    },
+    {
+     "latency_ms": 12858,
+     "finish_reason": "stop",
+     "content_len": 633,
+     "prompt_tokens": 1133,
+     "completion_tokens": 291,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: dialogue cites non-speech evidence: ['attempt:communicate']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Wren waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Ash says to Wren: dawn patrol\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": \"8183691f-f52e-40ae-95dd-0beb953480e3\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Wren responds to Ash.\",\n    \"cited_fact_keys\": [\"reaction:78e2ddf1-86d0-5ec1-b685-708defe9f732\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"The mill road is clear.\",\n    \"cited_fact_keys\": [\"reaction:78e2ddf1-86d0-5ec1-b685-708defe9f732\"],\n    \"speaker_id\": \"f444e9e8-f347-4add-836a-7f9180820ab5\"\n  }\n]",
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Wren waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Ash says to Wren: dawn patrol\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": \"8183691f-f52e-40ae-95dd-0beb953480e3\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Wren responds to Ash.\",\n    \"cited_fact_keys\": [\"reaction:78e2ddf1-86d0-5ec1-b685-708defe9f732\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"The mill road is clear.\",\n    \"cited_fact_keys\": [\"reaction:78e2ddf1-86d0-5ec1-b685-708defe9f732\"],\n    \"speaker_id\": \"f444e9e8-f347-4add-836a-7f9180820ab5\"\n  }\n]"
+   ],
+   "ttuv_ms": 27312,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "3af7470f9e1bb97bb7f74160b306afb19be1022ddb700158215c4a8dd7533a9b",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 8937,
+     "finish_reason": "stop",
+     "content_len": 466,
+     "prompt_tokens": 1093,
+     "completion_tokens": 192,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: dialogue cites non-speech evidence: ['attempt:communicate']"
+    },
+    {
+     "latency_ms": 3453,
+     "finish_reason": "stop",
+     "content_len": 467,
+     "prompt_tokens": 1128,
+     "completion_tokens": 192,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: dialogue cites non-speech evidence: ['attempt:communicate']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Wren waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Ash says to Wren: dawn patrol\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": \"aa533fa3-64ff-4328-adf6-2b0a0a075220\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Wren speaks to Ash about a topic.\",\n    \"cited_fact_keys\": [\"reaction:e3d17cce-eaf1-572f-b22e-ee9cc52e457e\"],\n    \"speaker_id\": null\n  }\n]",
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Wren waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Ash says to Wren: dawn patrol.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": \"aa533fa3-64ff-4328-adf6-2b0a0a075220\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Wren speaks to Ash about a topic.\",\n    \"cited_fact_keys\": [\"reaction:e3d17cce-eaf1-572f-b22e-ee9cc52e457e\"],\n    \"speaker_id\": null\n  }\n]"
+   ],
+   "ttuv_ms": 12485,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "df2b3056fb08543201c9ee38cef35947af63caef55ae8b2852131488270debf8",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 14547,
+     "finish_reason": "stop",
+     "content_len": 517,
+     "prompt_tokens": 1105,
+     "completion_tokens": 235,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: dialogue cites non-speech evidence: ['attempt:communicate']"
+    },
+    {
+     "latency_ms": 11312,
+     "finish_reason": "stop",
+     "content_len": 468,
+     "prompt_tokens": 1141,
+     "completion_tokens": 218,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": true,
+     "validation": "3 beats"
+    }
+   ],
+   "repairs": 1,
+   "validated": true,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Wren asks Ash, 'Where is the mill?'\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": \"5e00990a-fb08-4505-84d2-6397b4a6dd3e\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash responds, 'Past the bridge, second left.'\",\n    \"cited_fact_keys\": [\"reaction:893a99c0-3096-5d23-a287-acc61c39202e\"],\n    \"speaker_id\": \"2319cc72-5188-4f37-a0ae-e6698d660ccd\"\n  }\n]",
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Where is the mill?\",\n    \"cited_fact_keys\": [\"reaction:893a99c0-3096-5d23-a287-acc61c39202e\"],\n    \"speaker_id\": \"2319cc72-5188-4f37-a0ae-e6698d660ccd\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash responds, 'Past the bridge, second left.'\",\n    \"cited_fact_keys\": [\"reaction:893a99c0-3096-5d23-a287-acc61c39202e\"]\n  }\n]"
+   ],
+   "ttuv_ms": 25969,
+   "blocked": false,
+   "outcome": "usable"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "75093bbc821d3b783229ea4d18d14fb91844adc4e1d27ff5d9430648445aa45e",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 13655,
+     "finish_reason": "stop",
+     "content_len": 651,
+     "prompt_tokens": 1110,
+     "completion_tokens": 307,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: dialogue cites non-speech evidence: ['attempt:communicate']"
+    },
+    {
+     "latency_ms": 13766,
+     "finish_reason": "stop",
+     "content_len": 650,
+     "prompt_tokens": 1146,
+     "completion_tokens": 306,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: dialogue cites non-speech evidence: ['attempt:communicate']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Wren says to Ash: 'Mill stores.'\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": \"9c50ef50-4d9c-4a53-a249-e8a387957933\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash responds to Wren.\",\n    \"cited_fact_keys\": [\"reaction:12d894d6-d1f7-5cef-980f-67d9bf764d79\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Ash says to Wren: 'Grain and oilskins.'\",\n    \"cited_fact_keys\": [\"reaction:12d894d6-d1f7-5cef-980f-67d9bf764d79\"],\n    \"speaker_id\": \"4d83b612-9447-43fc-91c4-80e9ba1b17c9\"\n  }\n]",
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Wren says to Ash: mill stores\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": \"9c50ef50-4d9c-4a53-a249-e8a387957933\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash responds to Wren.\",\n    \"cited_fact_keys\": [\"reaction:12d894d6-d1f7-5cef-980f-67d9bf764d79\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Ash says to Wren: \\\"Grain and oilskins.\\\"\",\n    \"cited_fact_keys\": [\"reaction:12d894d6-d1f7-5cef-980f-67d9bf764d79\"],\n    \"speaker_id\": \"4d83b612-9447-43fc-91c4-80e9ba1b17c9\"\n  }\n]"
+   ],
+   "ttuv_ms": 27532,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "789b1ed0a88895d846f2ece8b423215d99ca82fc953984e7f88ddb67fe38d5bd",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 15905,
+     "finish_reason": "stop",
+     "content_len": 662,
+     "prompt_tokens": 1112,
+     "completion_tokens": 304,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: dialogue cites non-speech evidence: ['attempt:communicate']"
+    },
+    {
+     "latency_ms": 16390,
+     "finish_reason": "stop",
+     "content_len": 647,
+     "prompt_tokens": 1148,
+     "completion_tokens": 295,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: dialogue cites non-speech evidence: ['attempt:communicate']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Wren asks Ash, 'Who keeps the lighthouse at night?'\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": \"4491dd92-df6f-4775-8a7f-152f78c7dd97\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash responds.\",\n    \"cited_fact_keys\": [\"reaction:5bd1c82a-4274-5687-871d-15c184db08a2\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"'Old Marlow, if the lamp is still lit.'\",\n    \"cited_fact_keys\": [\"reaction:5bd1c82a-4274-5687-871d-15c184db08a2\"],\n    \"speaker_id\": \"a943876d-5bcb-469a-a3de-bade719113d5\"\n  }\n]",
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"a943876d-5bcb-469a-a3de-bade719113d5\",\n    \"text\": \"Who keeps the lighthouse at night?\",\n    \"cited_fact_keys\": [\"attempt:communicate\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash responds.\",\n    \"cited_fact_keys\": [\"reaction:5bd1c82a-4274-5687-871d-15c184db08a2\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"a943876d-5bcb-469a-a3de-bade719113d5\",\n    \"text\": \"\\\"Old Marlow, if the lamp is still lit.\\\"\",\n    \"cited_fact_keys\": [\"reaction:5bd1c82a-4274-5687-871d-15c184db08a2\"]\n  }\n]"
+   ],
+   "ttuv_ms": 32359,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "dce2d8a615e3863c4adc1d9399fbdfb828e98a445959676b38e906ac148256d9",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 17062,
+     "finish_reason": "stop",
+     "content_len": 687,
+     "prompt_tokens": 1109,
+     "completion_tokens": 308,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: dialogue cites non-speech evidence: ['attempt:communicate']"
+    },
+    {
+     "latency_ms": 11594,
+     "finish_reason": "stop",
+     "content_len": 574,
+     "prompt_tokens": 1145,
+     "completion_tokens": 249,
+     "reasoning_tokens": 0,
+     "model": "mistralai/mistral-nemo",
+     "valid": false,
+     "validation": "beats_valid: dialogue cites non-speech evidence: ['attempt:communicate']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Wren says to Ash: 'Ask Ash whether the stalls are open yet.'\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": \"db37962d-fddf-4a6e-abbd-bd4bb515a670\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash responds to Wren.\",\n    \"cited_fact_keys\": [\"reaction:4d2204a9-9bcd-50a9-8e25-cbdd447298cb\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"text\": \"Ash says to Wren: 'Stalls open at second bell.'\",\n    \"cited_fact_keys\": [\"reaction:4d2204a9-9bcd-50a9-8e25-cbdd447298cb\"],\n    \"speaker_id\": \"4869a644-39f3-43c5-ab0a-541e77a2bfb1\"\n  }\n]",
+    "[\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"db37962d-fddf-4a6e-abbd-bd4bb515a670\",\n    \"text\": \"Ask Ash whether the stalls are open yet.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"]\n  },\n  {\n    \"kind\": \"narration\",\n    \"text\": \"Ash turns to Wren.\",\n    \"cited_fact_keys\": [\"reaction:4d2204a9-9bcd-50a9-8e25-cbdd447298cb\"]\n  },\n  {\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"4869a644-39f3-43c5-ab0a-541e77a2bfb1\",\n    \"text\": \"\\\"Stalls open at second bell.\\\"\"\n  }\n]"
+   ],
+   "ttuv_ms": 28719,
+   "blocked": false,
+   "outcome": "exhausted"
+  }
+ ]
+}

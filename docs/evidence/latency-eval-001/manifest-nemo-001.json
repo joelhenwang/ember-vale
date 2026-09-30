@@ -51,7 +51,7 @@
   ],
   "result": "PASS: replay validate() agrees with production beats_valid (with speech_keys + fact_speakers) on all 10 scenarios"
  },
- "paid_execution": "NOT RUN this turn; awaiting explicit go-ahead under the existing $0.50 envelope",
+ "paid_execution": "RUN 2026-09-30: replay-E-paid-fixture-narrator-nemo-001.json (runner 7a246038, clean tree, 20/20 calls, 0 provider errors). First-attempt 0/10, repair conversions 1/10, fallback-required 9/10; est. $0.000565 unreconciled.",
  "prompt_version": "narrator.v1",
  "reporting_plan": [
   "first-attempt acceptance",
