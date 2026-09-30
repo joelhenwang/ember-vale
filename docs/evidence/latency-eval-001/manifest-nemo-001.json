@@ -1,1 +1,118 @@
-{"accounting":{"additional_cap_requested":0.0,"authorized_envelope":0.5,"estimated_max":0.002,"prior_spend_detail":{"A_deepseek_t0.2":0.0295,"B_glm_t0.2":0.0447,"C_deepseek_t0.0":0.0331,"D1_json_mode":0.0156,"E_nemo_t0.2":0.0005,"F_dedup_experiment":0.0004},"prior_spend_total":0.1238,"remaining_headroom":0.3762,"source":"docs/evidence/latency-eval-001/ANALYSIS.md cost section + ANALYSIS-CORRECTED.md arm-F note"},"call_budget":{"max_calls":20,"per_scenario":"1 initial + at most 1 repair","stall_abort":"3 consecutive timeouts","timeout_s":180.0,"token_tripwire":400000},"code_revision":"42bb38e0f4958cb866401105e60ee5679af39ff7","dry_run":{"calls":20,"evidence":"docs/evidence/latency-eval-001/dry-run-nemo-001.json","note":"Canned invalid payload exhausts initial+repair on every item, exercising both call paths with $0 spend.","outcome":"10/10 exhausted as expected; harness + embedded-metadata validation path runs end to end.","paid_calls":0},"evaluator":"scripts/latency-eval-replay.py (validate() threads per-item speakers + speech_keys into production beats_valid; None preserves legacy path)","fixture":"docs/evidence/latency-eval-001/fixture-narrator-nemo-001.json","fixture_sha256":"9bbc0e56a6368c475a5ab1075f1ace5c23ef4ffedc6dab3929caa87421b78092","fixture_source":"production assembly via scripts/build-nemo-fixture.py (zero model spend); per-scenario prompt rebuild equality asserted","invalid_response_variants":"covered separately by backend/tests/test_narrator_fixture.py (attempt_as_dialogue, speakerless_speech); NOT counted as storytelling scenarios","model":"mistralai/mistral-nemo","offline_parity_gate":{"battery_per_scenario":["valid-narration","valid-dialogue (speech scenarios)","attempt-as-dialogue","speakerless-speech (speech scenarios)","wrong-speaker (speech scenarios)","outsider-speaker","unknown-key","over-budget","production fallback_beats accepted"],"result":"PASS: replay validate() agrees with production beats_valid (with speech_keys + fact_speakers) on all 10 scenarios"},"paid_execution":"NOT RUN this turn; awaiting explicit go-ahead under the existing $0.50 envelope","prompt_version":"narrator.v1","reporting_plan":["first-attempt acceptance","repair conversions","fallback-required outcomes","speech attribution (eligibility + source match)","prose fidelity (faithful quote vs invented/misvoiced speech)","narrator call latency (separate from acceptance)","estimated cost from billable tokens"],"reporting_scope_note":"Standalone replay does not prove persisted fallback or whole-beat latency; those stay separate steps (ordinary-play timing).","route":"OpenRouter chat/completions via OpenRouterGateway (same route as arm E)","sampling":{"json_mode":false,"max_tokens":"per-item captured cap (512 on all 10); recorded explicitly, never overridden","temperature":0.2,"top_k":"omitted","top_p":"omitted"},"scenarios":[{"family":"quoted speech (Ash speaker)","name":"quoted-speech-ash"},{"family":"topic-only communication","name":"topic-only-ash"},{"family":"attempts without speech","name":"attempts-ash-waits"},{"family":"attempts without speech","name":"attempts-wren-waits"},{"family":"quoted speech (Wren speaker)","name":"quoted-speech-wren"},{"family":"topic-only communication","name":"topic-only-wren"},{"family":"quoted speech incl. quoted attempt","name":"quoted-question"},{"family":"quoted speech, short utterance","name":"mill-brief"},{"family":"quoted speech","name":"lighthouse"},{"family":"quoted speech","name":"stalls"}],"scope":"10 distinct production-captured narrator scenarios"}
+{
+ "accounting": {
+  "additional_cap_requested": 0.0,
+  "authorized_envelope": 0.5,
+  "estimated_max": 0.002,
+  "prior_spend_detail": {
+   "A_deepseek_t0.2": 0.0295,
+   "B_glm_t0.2": 0.0447,
+   "C_deepseek_t0.0": 0.0331,
+   "D1_json_mode": 0.0156,
+   "E_nemo_t0.2": 0.0005,
+   "F_dedup_experiment": 0.0004
+  },
+  "prior_spend_total": 0.1238,
+  "remaining_headroom": 0.3762,
+  "source": "docs/evidence/latency-eval-001/ANALYSIS.md cost section + ANALYSIS-CORRECTED.md arm-F note"
+ },
+ "call_budget": {
+  "max_calls": 20,
+  "per_scenario": "1 initial + at most 1 repair",
+  "stall_abort": "3 consecutive timeouts",
+  "timeout_s": 180.0,
+  "token_tripwire": 400000,
+  "enforcement": "run-wide CallBudget acquired before every gateway.complete incl. rate-limit retries; exhaustion preserves completed results and records rest blocked"
+ },
+ "code_revision": "42bb38e0f4958cb866401105e60ee5679af39ff7",
+ "dry_run": {
+  "calls": 20,
+  "evidence": "docs/evidence/latency-eval-001/replay-E-dry-fixture-narrator-nemo-001.json",
+  "note": "Canned invalid payload exercises initial+repair paths with zero spend; exactly 20/20 budgeted calls used, none blocked.",
+  "outcome": "10/10 exhausted as expected; harness + embedded-metadata validation path runs end to end.",
+  "paid_calls": 0
+ },
+ "evaluator": "scripts/latency-eval-replay.py (validate() threads per-item speakers + speech_keys into production beats_valid; None preserves legacy path; run-wide --max-calls budget enforced pre-invocation incl. retries; --out refuses existing destinations; per-item checkpoint; captured system prompt pinned; runner revision recorded)",
+ "fixture": "docs/evidence/latency-eval-001/fixture-narrator-nemo-001.json",
+ "fixture_sha256": "9bbc0e56a6368c475a5ab1075f1ace5c23ef4ffedc6dab3929caa87421b78092",
+ "fixture_source": "production assembly via scripts/build-nemo-fixture.py (zero model spend); per-scenario prompt rebuild equality asserted",
+ "invalid_response_variants": "covered separately by backend/tests/test_narrator_fixture.py (attempt_as_dialogue, speakerless_speech); NOT counted as storytelling scenarios",
+ "model": "mistralai/mistral-nemo",
+ "offline_parity_gate": {
+  "battery_per_scenario": [
+   "valid-narration",
+   "valid-dialogue (speech scenarios)",
+   "attempt-as-dialogue",
+   "speakerless-speech (speech scenarios)",
+   "wrong-speaker (speech scenarios)",
+   "outsider-speaker",
+   "unknown-key",
+   "over-budget",
+   "production fallback_beats accepted"
+  ],
+  "result": "PASS: replay validate() agrees with production beats_valid (with speech_keys + fact_speakers) on all 10 scenarios"
+ },
+ "paid_execution": "NOT RUN this turn; awaiting explicit go-ahead under the existing $0.50 envelope",
+ "prompt_version": "narrator.v1",
+ "reporting_plan": [
+  "first-attempt acceptance",
+  "repair conversions",
+  "fallback-required outcomes",
+  "speech attribution (eligibility + source match)",
+  "prose fidelity (faithful quote vs invented/misvoiced speech)",
+  "narrator call latency (separate from acceptance)",
+  "estimated cost from billable tokens"
+ ],
+ "reporting_scope_note": "Standalone replay does not prove persisted fallback or whole-beat latency; those stay separate steps (ordinary-play timing).",
+ "route": "OpenRouter chat/completions via OpenRouterGateway (same route as arm E)",
+ "sampling": {
+  "json_mode": false,
+  "max_tokens": "per-item captured cap (512 on all 10); recorded explicitly, never overridden",
+  "temperature": 0.2,
+  "top_k": "omitted",
+  "top_p": "omitted"
+ },
+ "scenarios": [
+  {
+   "family": "quoted speech (Ash speaker)",
+   "name": "quoted-speech-ash"
+  },
+  {
+   "family": "topic-only communication",
+   "name": "topic-only-ash"
+  },
+  {
+   "family": "attempts without speech",
+   "name": "attempts-ash-waits"
+  },
+  {
+   "family": "attempts without speech",
+   "name": "attempts-wren-waits"
+  },
+  {
+   "family": "quoted speech (Wren speaker)",
+   "name": "quoted-speech-wren"
+  },
+  {
+   "family": "topic-only communication",
+   "name": "topic-only-wren"
+  },
+  {
+   "family": "quoted speech incl. quoted attempt",
+   "name": "quoted-question"
+  },
+  {
+   "family": "quoted speech, short utterance",
+   "name": "mill-brief"
+  },
+  {
+   "family": "quoted speech",
+   "name": "lighthouse"
+  },
+  {
+   "family": "quoted speech",
+   "name": "stalls"
+  }
+ ],
+ "scope": "10 distinct production-captured narrator scenarios",
+ "billing_status": "estimates only; billing has not been reconciled"
+}

@@ -6,10 +6,13 @@
   "json_narrator": false
  },
  "fixture_sha": "9bbc0e56a6368c475a5ab1075f1ace5c23ef4ffedc6dab3929caa87421b78092",
- "started_wall": 1790768514.0210147,
- "ended_wall": 1790768514.0333693,
+ "started_wall": 1790773300.8942568,
+ "ended_wall": 1790773301.1362147,
  "total_tokens": 2920,
  "dry_run": true,
+ "runner_revision": "45b4702595ce7912471e287f6e95e4733b371c1d",
+ "max_calls": 20,
+ "complete": true,
  "results": [
   {
    "role": "narrator",
@@ -42,11 +45,13 @@
    "repairs": 1,
    "validated": false,
    "prompt_deduped": false,
+   "system_source": "captured",
    "texts": [
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
    ],
    "ttuv_ms": 0,
+   "blocked": false,
    "outcome": "exhausted"
   },
   {
@@ -80,11 +85,13 @@
    "repairs": 1,
    "validated": false,
    "prompt_deduped": false,
+   "system_source": "captured",
    "texts": [
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
    ],
    "ttuv_ms": 0,
+   "blocked": false,
    "outcome": "exhausted"
   },
   {
@@ -118,11 +125,13 @@
    "repairs": 1,
    "validated": false,
    "prompt_deduped": false,
+   "system_source": "captured",
    "texts": [
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
    ],
    "ttuv_ms": 0,
+   "blocked": false,
    "outcome": "exhausted"
   },
   {
@@ -156,11 +165,13 @@
    "repairs": 1,
    "validated": false,
    "prompt_deduped": false,
+   "system_source": "captured",
    "texts": [
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
    ],
    "ttuv_ms": 0,
+   "blocked": false,
    "outcome": "exhausted"
   },
   {
@@ -194,11 +205,13 @@
    "repairs": 1,
    "validated": false,
    "prompt_deduped": false,
+   "system_source": "captured",
    "texts": [
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
    ],
    "ttuv_ms": 0,
+   "blocked": false,
    "outcome": "exhausted"
   },
   {
@@ -232,11 +245,13 @@
    "repairs": 1,
    "validated": false,
    "prompt_deduped": false,
+   "system_source": "captured",
    "texts": [
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
    ],
    "ttuv_ms": 0,
+   "blocked": false,
    "outcome": "exhausted"
   },
   {
@@ -270,11 +285,13 @@
    "repairs": 1,
    "validated": false,
    "prompt_deduped": false,
+   "system_source": "captured",
    "texts": [
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
    ],
    "ttuv_ms": 0,
+   "blocked": false,
    "outcome": "exhausted"
   },
   {
@@ -308,11 +325,13 @@
    "repairs": 1,
    "validated": false,
    "prompt_deduped": false,
+   "system_source": "captured",
    "texts": [
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
    ],
    "ttuv_ms": 0,
+   "blocked": false,
    "outcome": "exhausted"
   },
   {
@@ -346,11 +365,13 @@
    "repairs": 1,
    "validated": false,
    "prompt_deduped": false,
+   "system_source": "captured",
    "texts": [
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
    ],
    "ttuv_ms": 0,
+   "blocked": false,
    "outcome": "exhausted"
   },
   {
@@ -384,11 +405,13 @@
    "repairs": 1,
    "validated": false,
    "prompt_deduped": false,
+   "system_source": "captured",
    "texts": [
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
     "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
    ],
    "ttuv_ms": 0,
+   "blocked": false,
    "outcome": "exhausted"
   }
  ]

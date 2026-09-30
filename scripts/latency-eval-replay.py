@@ -1,4 +1,4 @@
-"""Latency eval replay: frozen captured prompts, one variable per arm ($2 cap).
+"""Latency eval replay: frozen captured prompts, one variable per arm.
 
 Arms: A=deepseek baseline, B=GLM model swap, C=temp 0.0, D1=narrator JSON mode.
 D1 runs narrator items only (other roles already use json_mode=True live).
@@ -6,13 +6,19 @@ D1 runs narrator items only (other roles already use json_mode=True live).
 Zero-paid-call dry run: --dry-run replays canned valid payloads through the
 real adapters/validators with no network.
 
-Results: docs/evidence/latency-eval-001/results-<arm>.json
+Run-wide gateway-call budget (--max-calls, default 20) is enforced before every
+invocation including rate-limit retries; exhausted runs keep completed results
+and mark the rest blocked. Output goes to --out (default
+replay-<arm>-<dry|paid>-<fixture-stem>.json); existing destinations are refused
+unless --overwrite is passed, and results checkpoint per item.
 """
 from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
 import json
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -131,6 +137,44 @@ class FakeGateway:
         )
 
 
+class _BudgetExhausted(Exception):
+    """Raised when a counted call is refused by the run-wide call budget."""
+
+
+class CallBudget:
+    """Run-wide gateway-call budget, checked before every invocation.
+
+    Rate-limit retries are invocations too: every gateway.complete call
+    site acquires first, so ten scenarios can never exceed max_calls
+    no matter how often providers ask for a retry.
+    """
+
+    def __init__(self, max_calls: int) -> None:
+        if max_calls < 1:
+            raise ValueError("max_calls must be at least 1")
+        self.max_calls = max_calls
+        self.used = 0
+
+    def acquire(self) -> bool:
+        """Reserve one call; False when the budget is exhausted."""
+        if self.used >= self.max_calls:
+            return False
+        self.used += 1
+        return True
+
+    @property
+    def exhausted(self) -> bool:
+        """True once no further call may be reserved."""
+        return self.used >= self.max_calls
+
+
+async def _counted_call(budget: CallBudget | None, gateway, req):
+    """One budget-counted gateway invocation; None budget is unbounded."""
+    if budget is not None and not budget.acquire():
+        raise _BudgetExhausted()
+    return await gateway.complete(req)
+
+
 def load_key() -> str:
     for line in (REPO / ".env").read_text().splitlines():
         if line.startswith("WORLDSIM_PROVIDER__OPENROUTER_API_KEY="):
@@ -144,11 +188,14 @@ async def run_item(
     role: str,
     item: dict,
     timeout_s: float,
+    budget: CallBudget | None = None,
     speakers: dict[str, str] | None = None,
     speech_keys: frozenset[str] | set[str] | None = None,
 ) -> dict:
     cfg = ARMS[arm]
-    system = ROLE_SYSTEM[role]()
+    if role == "narrator" and item.get("system") is not None:
+        assert item["system"] == ROLE_SYSTEM[role](), "captured system prompt drifted"
+    system = item.get("system") or ROLE_SYSTEM[role]()
     json_mode = True if role != "narrator" else cfg["json_narrator"]
     temp = cfg["temperature"]
     base = item["prompt"]
@@ -158,6 +205,7 @@ async def run_item(
         "role": role, "prompt_hash": item["prompt_hash"], "arm": arm,
         "attempts": [], "repairs": 0, "validated": False,
         "prompt_deduped": base != item["prompt"],
+        "system_source": "captured" if item.get("system") else "reloaded",
     }
     ttuv_start = time.monotonic()
     prompt = base
@@ -182,7 +230,14 @@ async def run_item(
         )
         t0 = time.monotonic()
         try:
-            res = await gateway.complete(req)
+            res = await _counted_call(budget, gateway, req)
+        except _BudgetExhausted:
+            out["attempts"].append({
+                "error": "budget_exhausted",
+                "detail": "run call budget refuses further invocations",
+                "latency_ms": int((time.monotonic() - t0) * 1000),
+            })
+            break
         except ModelRateLimitedError as exc:
             wait = getattr(exc, "retry_after_s", None) or 5.0
             wait = min(float(wait), 60.0)
@@ -192,7 +247,14 @@ async def run_item(
             })
             await asyncio.sleep(wait)
             try:
-                res = await gateway.complete(req)
+                res = await _counted_call(budget, gateway, req)
+            except _BudgetExhausted:
+                out["attempts"].append({
+                    "error": "budget_exhausted",
+                    "detail": "run call budget refuses the rate-limit retry",
+                    "latency_ms": int((time.monotonic() - t0) * 1000),
+                })
+                break
             except ModelGatewayError as exc2:
                 out["attempts"].append({
                     "error": type(exc2).__name__,
@@ -241,11 +303,37 @@ async def run_item(
             break
         denial = info
     out["ttuv_ms"] = int((time.monotonic() - ttuv_start) * 1000)
+    out["blocked"] = any(a.get("error") == "budget_exhausted" for a in out["attempts"])
     out["outcome"] = (
-        "usable" if out["validated"]
+        "blocked" if out["blocked"] else "usable" if out["validated"]
         else ("provider_error" if any("error" in a for a in out["attempts"]) else "exhausted")
     )
     return out
+
+
+def _write_doc(out_path: Path, doc: dict) -> None:
+    """Checkpoint the run document (completed results survive aborts)."""
+    out_path.write_text(json.dumps(doc, indent=1))
+
+
+def _runner_revision() -> str:
+    """Repo revision of the runner itself (unknown when git is unavailable)."""
+    try:
+        return subprocess.run(
+            ["git", "rev-parse", "HEAD"], capture_output=True, text=True,
+            cwd=REPO, check=True,
+        ).stdout.strip()
+    except Exception:  # noqa: BLE001 - evidence field must never fail the run
+        return "unknown"
+
+
+def _blocked_record(arm: str, item: dict) -> dict:
+    """Explicit record for an item never started (call budget exhausted)."""
+    return {
+        "role": item["role"], "prompt_hash": item["prompt_hash"], "arm": arm,
+        "outcome": "blocked", "detail": "run call budget exhausted before first call",
+        "attempts": [], "repairs": 0, "validated": False, "ttuv_ms": -1,
+    }
 
 
 async def main() -> None:
@@ -256,6 +344,9 @@ async def main() -> None:
     ap.add_argument("--token-tripwire", type=int, default=400000)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--out", default=None)
+    ap.add_argument("--overwrite", action="store_true")
+    ap.add_argument("--max-calls", type=int, default=20)
     args = ap.parse_args()
 
     global request_role_hint, CANNED_BY_ROLE
@@ -273,7 +364,29 @@ async def main() -> None:
     if args.limit:
         items = items[: args.limit]
 
+    mode = "dry" if args.dry_run else "paid"
+    fixture_stem = Path(args.fixture).stem
+    out_path = Path(args.out) if args.out else (
+        REPO / "docs" / "evidence" / "latency-eval-001"
+        / f"replay-{args.arm}-{mode}-{fixture_stem}.json"
+    )
+    if out_path.exists() and not args.overwrite:
+        ap.error(f"refusing to overwrite existing {out_path} (pass --overwrite)")
+    budget = CallBudget(args.max_calls)
     started_wall = time.time()
+    fixture_sha = hashlib.sha256((REPO / args.fixture).read_bytes()).hexdigest()
+    runner_revision = _runner_revision()
+    expected_system = ROLE_SYSTEM["narrator"]()
+    for item in items:
+        if (
+            item.get("role") == "narrator"
+            and item.get("system") is not None
+            and item["system"] != expected_system
+        ):
+            ap.error(
+                "captured system prompt drifted for "
+                f"{item.get('prompt_hash')}: rebuild the fixture or update the prompt"
+            )
     if args.dry_run:
         gateway = FakeGateway()  # type: ignore[assignment]
     else:
@@ -297,6 +410,7 @@ async def main() -> None:
             speech = item.get("speech_keys")
             res = await run_item(
                 gateway, args.arm, item["role"], item, args.timeout_s,
+                budget,
                 speakers,
                 frozenset(speech) if speech is not None else None,
             )
@@ -312,17 +426,32 @@ async def main() -> None:
         results.append(res)
         print(f"[{i + 1}/{len(items)}] {item['role']} {item['prompt_hash'][:8]} "
               f"{res['outcome']} ttuv={res.get('ttuv_ms')}ms tokens={total_tokens}", flush=True)
+        _write_doc(out_path, {
+            "arm": args.arm, "config": ARMS[args.arm],
+            "fixture_sha": fixture_sha, "runner_revision": runner_revision,
+            "max_calls": args.max_calls, "started_wall": started_wall,
+            "ended_wall": None, "total_tokens": total_tokens,
+            "dry_run": args.dry_run, "complete": False, "results": results,
+        })
         if any(a.get("error") == "ModelTimeoutError" for a in res.get("attempts", [])):
             consecutive_timeouts += 1
         else:
             consecutive_timeouts = 0
+        if res.get("outcome") == "blocked" or budget.exhausted:
+            for rest in items[i + 1 :]:
+                results.append(_blocked_record(args.arm, rest))
+            print(
+                f"CALL-BUDGET: {budget.used}/{budget.max_calls} calls used; "
+                "remaining items recorded blocked",
+                flush=True,
+            )
+            break
         if consecutive_timeouts >= 3:
             print(f"TIMEOUT-STALL: 3 consecutive timeouts, aborting arm {args.arm}")
             break
         if total_tokens >= args.token_tripwire:
             print(f"TRIPWIRE: {total_tokens} tokens, aborting arm {args.arm}")
             break
-    import hashlib
 
     fixture_bytes = (REPO / args.fixture).read_bytes()
     doc = {
@@ -330,10 +459,12 @@ async def main() -> None:
         "fixture_sha": hashlib.sha256(fixture_bytes).hexdigest(),
         "started_wall": started_wall, "ended_wall": time.time(),
         "total_tokens": total_tokens, "dry_run": args.dry_run,
+        "runner_revision": runner_revision, "max_calls": args.max_calls,
+        "complete": True,
         "results": results,
     }
-    out_path = REPO / f"docs/evidence/latency-eval-001/results-{args.arm}.json"
-    out_path.write_text(json.dumps(doc, indent=1))
+    doc["ended_wall"] = time.time()
+    _write_doc(out_path, doc)
     print(f"wrote {out_path} n={len(results)} tokens={total_tokens}")
 
 
