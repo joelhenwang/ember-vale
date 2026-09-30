@@ -71,8 +71,14 @@ def validate(
     raw: str,
     user_prompt: str,
     speakers: dict[str, str] | None = None,
+    speech_keys: frozenset[str] | set[str] | None = None,
 ) -> tuple[bool, str]:
-    """Schema (+ narrator attribution) validation. Returns (ok, detail)."""
+    """Schema (+ narrator attribution) validation. Returns (ok, detail).
+
+    speech_keys enforces the production DIALOGUE speech-eligibility gate
+    (committed quoted speech only); None preserves the legacy
+    unattributed path for fixtures without exported speech metadata.
+    """
     try:
         if role == "narrator":
             proposals = narrate._BEATS_ADAPTER.validate_json(narrate.unfence_json(raw))
@@ -80,6 +86,7 @@ def validate(
             denial = narrate.beats_valid(
                 proposals, visible_keys=keys, audience_ids=audience,
                 beats_budget=budget, fact_speakers=speakers,
+                speech_keys=frozenset(speech_keys) if speech_keys is not None else None,
             )
             if denial is not None:
                 return False, f"beats_valid: {denial}"
@@ -138,6 +145,7 @@ async def run_item(
     item: dict,
     timeout_s: float,
     speakers: dict[str, str] | None = None,
+    speech_keys: frozenset[str] | set[str] | None = None,
 ) -> dict:
     cfg = ARMS[arm]
     system = ROLE_SYSTEM[role]()
@@ -215,7 +223,7 @@ async def run_item(
                 pass
             out["attempts"].append(attempt)
             break
-        ok, info = validate(role, res.text, base, speakers)
+        ok, info = validate(role, res.text, base, speakers, speech_keys)
         out["attempts"].append({
             "latency_ms": res.latency_ms,
             "finish_reason": res.finish_reason,
@@ -283,9 +291,14 @@ async def main() -> None:
         request_role_hint = item["role"]
         CANNED_BY_ROLE = {item["role"]: CANNED[item["role"]]}
         try:
+            # Item-embedded narrator metadata (production-captured fixtures)
+            # wins; the legacy arm-F speaker map covers historical prompts.
+            speakers = item.get("speakers") or speaker_map.get(item["prompt_hash"])
+            speech = item.get("speech_keys")
             res = await run_item(
                 gateway, args.arm, item["role"], item, args.timeout_s,
-                speaker_map.get(item["prompt_hash"]),
+                speakers,
+                frozenset(speech) if speech is not None else None,
             )
         except Exception as exc:  # noqa: BLE001 - harness must not die mid-arm
             res = {"role": item["role"], "prompt_hash": item["prompt_hash"],
