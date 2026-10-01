@@ -228,20 +228,48 @@ def _render_fact_line(fact: Mapping[str, str]) -> str:
 def repair_instruction(denial: str) -> str:
     """Actionable repair suffix shared by production and the eval replay.
 
-    Names the required fix — the invalid beat must become narrator prose
-    or be removed — and explicitly prohibits rescuing it by citing a
-    different speech key whose words do not support the output.
+    The guidance follows the denial: non-speech dialogue must become
+    narrator prose or be removed; eligible speech with a missing or wrong
+    speaker keeps its utterance under the source's exact speaker; schema,
+    citation, and budget failures get the corresponding correction without
+    any claim about dialogue.
     """
-    return (
-        f"Your previous output was rejected ({denial}). "
-        "The cited beat is invalid as dialogue: rewrite it as narrator prose "
-        "with speaker_id null citing the same key, or remove it. "
-        "Do not fix this by citing a different speech key \u2014 never put words "
-        "in a speaker's mouth that the cited utterance does not support; "
-        "quote identified utterances faithfully. "
-        "Output a JSON array of beat objects matching the response schema."
-    )
-
+    head = f"Your previous output was rejected ({denial}). "
+    tail = "Output a JSON array of beat objects matching the response schema."
+    if "dialogue cites non-speech evidence" in denial:
+        fix = (
+            "The cited beat is invalid as dialogue: rewrite it as factual "
+            "narrator prose with speaker_id null citing the same key, or "
+            "remove it. Do not fix this by citing a different speech key "
+            "— never put words in a speaker's mouth that the cited "
+            "utterance does not support; "
+            "quote identified utterances faithfully. "
+        )
+    elif (
+        "dialogue requires a speaker matching cited speech" in denial
+        or "speaker does not match cited source" in denial
+        or "speaker outside the audience" in denial
+    ):
+        fix = (
+            "Keep the beat as dialogue with its supported utterance, but set "
+            "speaker_id to the cited speech fact's exact speaker "
+            "— never leave it null and never borrow another voice. "
+        )
+    elif "unsupported facts cited" in denial or "must cite at least one" in denial:
+        fix = (
+            "Cite only visible fact keys exactly as quoted after `key`; drop "
+            "or replace any invented or missing key instead of keeping it. "
+        )
+    elif "beat budget exceeded" in denial or "at least one beat" in denial:
+        fix = "Keep the narration within the beat budget with at least one beat. "
+    elif "schema errors" in denial:
+        fix = (
+            "Emit a single JSON array of beat objects exactly matching the "
+            "response schema, with no surrounding prose or fencing. "
+        )
+    else:
+        fix = "Correct exactly the stated problem and resubmit valid beats. "
+    return head + fix + tail
 
 def render_user_prompt(
     audience_ids: list[str],

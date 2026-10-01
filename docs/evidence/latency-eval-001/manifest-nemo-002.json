@@ -1,1 +1,71 @@
-{"accounting":{"additional_cap_requested":0.0,"authorized_envelope":0.5,"estimated_max":0.002,"prior_spend_estimates":{"comparison_run":0.0,"nemo_001_paid":0.000565,"older_arms":0.1238},"remaining_headroom_estimate":0.3756},"billing_status":"estimates only; billing has not been reconciled","call_budget":{"enforcement":"run-wide CallBudget acquired before every gateway.complete incl. rate-limit retries","max_calls":20,"per_scenario":"1 initial + at most 1 repair","stall_abort":"3 consecutive timeouts","timeout_s":180.0,"token_tripwire":400000},"code_revision":"96c9a977cba6d94bfcc4d629af25fbf885f916ee","dry_run":{"calls":20,"evidence":"docs/evidence/latency-eval-001/replay-E-dry-fixture-narrator-nemo-002.json","note":"Canned invalid payload exercises initial+repair paths with zero spend; exactly 20/20 budgeted calls used, none blocked.","outcome":"10/10 exhausted as expected; shared repair instruction path runs end to end.","paid_calls":0},"evaluator":"scripts/latency-eval-replay.py (same gated validate() as baseline; narrator repair now uses production repair_instruction())","fixture":"docs/evidence/latency-eval-001/fixture-narrator-nemo-002.json","fixture_sha256":"b10f8111712e15e197986f34a89e8ffdd7d4b150b6f7f04b8468b961966ddf95","fixture_source":"production assembly via scripts/build-nemo-fixture.py (zero model spend); per-scenario prompt rebuild equality asserted","held_fixed":["model mistralai/mistral-nemo via OpenRouter","sampling temperature 0.2, top_p/top_k omitted, JSON mode off","per-item 512-token caps","validation (beats_valid incl. speech eligibility + attribution, unchanged)","same ten scenario matrix (fresh production capture, distinct IDs)"],"intervention":{"presentation":"render_user_prompt states source categories: attempts read as attempts-with-topic marked narration-only; quoted speech carries speaker id + dialogue-eligibility; summaries marked narration-only. Stored fact values, keys, canon, history unchanged.","prompt":"narrator.v2 (narrator.v1 preserved)","repair":"shared repair_instruction(): invalid beat must become narrator prose or be removed; prohibits rescuing via a different speech key; quote utterances faithfully. Used by production _repair_call and replay alike."},"model":"mistralai/mistral-nemo","offline_parity_gate":{"result":"PASS: replay validate() agrees with production beats_valid on all 10 scenarios (002 cohort)"},"paid_execution":"NOT RUN; awaiting explicit go-ahead under the existing $0.50 envelope","prompt_version":"narrator.v2","reporting_plan":["first-attempt acceptance","repair conversions","fallback-required outcomes","speech attribution","prose fidelity incl. retained question-as-Ash semantic-failure example","narrator call latency (separate from acceptance)","estimated cost from billable tokens"],"reporting_scope_note":"Structural acceptance does not imply fidelity; standalone replay does not prove persisted fallback or whole-beat latency.","route":"OpenRouter chat/completions via OpenRouterGateway (same route as arm E)","sampling":{"json_mode":false,"max_tokens":"per-item captured cap (512); recorded explicitly, never overridden","temperature":0.2,"top_k":"omitted","top_p":"omitted"},"scope":"10 production-captured narrator scenarios, same matrix as 001 cohort"}
+{
+ "accounting": {
+  "additional_cap_requested": 0.0,
+  "authorized_envelope": 0.5,
+  "estimated_max": 0.002,
+  "prior_spend_estimates": {
+   "comparison_run": 0.0,
+   "nemo_001_paid": 0.000565,
+   "older_arms": 0.1238
+  },
+  "remaining_headroom_estimate": 0.3756
+ },
+ "billing_status": "estimates only; billing has not been reconciled",
+ "call_budget": {
+  "enforcement": "run-wide CallBudget acquired before every gateway.complete incl. rate-limit retries",
+  "max_calls": 20,
+  "per_scenario": "1 initial + at most 1 repair",
+  "stall_abort": "3 consecutive timeouts",
+  "timeout_s": 180.0,
+  "token_tripwire": 400000
+ },
+ "code_revision": "96c9a977cba6d94bfcc4d629af25fbf885f916ee",
+ "dry_run": {
+  "calls": 20,
+  "evidence": "docs/evidence/latency-eval-001/replay-E-dry-fixture-narrator-nemo-002.json",
+  "note": "Canned invalid payload exercises initial+repair paths with zero spend; exactly 20/20 budgeted calls used, none blocked.",
+  "outcome": "10/10 exhausted as expected; shared repair instruction path runs end to end.",
+  "paid_calls": 0
+ },
+ "evaluator": "scripts/latency-eval-replay.py (same gated validate() as baseline; narrator repair now uses production repair_instruction())",
+ "fixture": "docs/evidence/latency-eval-001/fixture-narrator-nemo-002.json",
+ "fixture_sha256": "33693fe0747295f2add137ae62a078b61eba59e94d851270139b224da5d54474",
+ "fixture_source": "production assembly via scripts/build-nemo-fixture.py (zero model spend); per-scenario prompt rebuild equality asserted",
+ "held_fixed": [
+  "model mistralai/mistral-nemo via OpenRouter",
+  "sampling temperature 0.2, top_p/top_k omitted, JSON mode off",
+  "per-item 512-token caps",
+  "validation (beats_valid incl. speech eligibility + attribution, unchanged)",
+  "same ten scenario matrix (fresh production capture, distinct IDs)"
+ ],
+ "intervention": {
+  "presentation": "render_user_prompt states source categories: attempts read as attempts-with-topic marked narration-only; quoted speech carries speaker id + dialogue-eligibility; summaries marked narration-only. Stored fact values, keys, canon, history unchanged.",
+  "prompt": "narrator.v2 (narrator.v1 preserved)",
+  "repair": "shared denial-specific repair_instruction(): non-speech dialogue becomes narrator prose or is removed; missing/wrong-speaker keeps its utterance under the exact source speaker; citation/budget/schema failures get the corresponding correction with no dialogue claim. Used by production _repair_call and replay alike."
+ },
+ "model": "mistralai/mistral-nemo",
+ "offline_parity_gate": {
+  "result": "PASS: replay validate() agrees with production beats_valid on all 10 scenarios (002 cohort)"
+ },
+ "paid_execution": "NOT RUN; awaiting explicit go-ahead under the existing $0.50 envelope",
+ "prompt_version": "narrator.v2",
+ "reporting_plan": [
+  "first-attempt acceptance",
+  "repair conversions",
+  "fallback-required outcomes",
+  "speech attribution",
+  "prose fidelity incl. retained question-as-Ash semantic-failure example",
+  "narrator call latency (separate from acceptance)",
+  "estimated cost from billable tokens"
+ ],
+ "reporting_scope_note": "Structural acceptance does not imply fidelity; standalone replay does not prove persisted fallback or whole-beat latency.",
+ "route": "OpenRouter chat/completions via OpenRouterGateway (same route as arm E)",
+ "sampling": {
+  "json_mode": false,
+  "max_tokens": "per-item captured cap (512); recorded explicitly, never overridden",
+  "temperature": 0.2,
+  "top_k": "omitted",
+  "top_p": "omitted"
+ },
+ "scope": "10 production-captured narrator scenarios, same matrix as 001 cohort"
+}

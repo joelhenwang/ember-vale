@@ -1044,3 +1044,133 @@ def test_structural_acceptance_does_not_imply_fidelity() -> None:
         is None
     )
     assert misvoiced.text != "Past the bridge, second left."
+
+def test_repair_for_missing_speaker_keeps_dialogue() -> None:
+    from worldsim.application.graphs.narrate import repair_instruction
+
+    text = repair_instruction("dialogue requires a speaker matching cited speech")
+    assert "exact speaker" in text
+    assert "supported utterance" in text
+    assert "invalid as dialogue" not in text
+
+
+def test_repair_for_wrong_speaker_keeps_dialogue() -> None:
+    from worldsim.application.graphs.narrate import repair_instruction
+
+    text = repair_instruction("speaker does not match cited source: reaction:s")
+    assert "exact speaker" in text
+    assert "borrow another voice" in text
+    assert "invalid as dialogue" not in text
+
+
+def test_repair_for_invented_key_drops_it() -> None:
+    from worldsim.application.graphs.narrate import repair_instruction
+
+    text = repair_instruction("unsupported facts cited: ['dragons']")
+    assert "drop" in text
+    assert "invalid as dialogue" not in text
+    assert "same key" not in text
+
+
+def test_repair_for_schema_error_names_format() -> None:
+    from worldsim.application.graphs.narrate import repair_instruction
+
+    text = repair_instruction("attempt 0: 2 schema errors")
+    assert "exactly matching the response schema" in text
+    assert "invalid as dialogue" not in text
+
+
+def _repair_prompt_for(
+    first: str, visible_facts: list, audience_ids: list | None = None
+) -> str:
+    if audience_ids is None:
+        audience_ids = [str(uuid.uuid4()), str(uuid.uuid4())]
+    gateway = FakeGateway(profile=NARRATOR_FAKE_PROFILE)
+    gateway.enqueue_text(first)
+    gateway.enqueue_text(json.dumps([_beat("Ash waits.", ["attempt:wait"])]))
+    result = asyncio.run(
+        invoke(
+            build_narration_graph(_deps(gateway)),
+            _invocation(
+                uuid.uuid4(),
+                audience_ids=audience_ids,
+                visible_facts=visible_facts,
+            ),
+        )
+    )
+    assert result["status"] == "narrated"
+    assert result["repair_count"] == 1
+    return gateway.sent_requests[1].prompt
+
+
+def _speech_facts(ash: str) -> list:
+    return [
+        {"key": "attempt:wait", "value": "Ash waits"},
+        {
+            "key": "reaction:s",
+            "value": 'Ash says to Wren: "One more?"',
+            "speaker": ash,
+            "speaker_name": "Ash",
+            "utterance": "One more?",
+        },
+    ]
+
+
+def test_graph_repair_for_missing_speaker_preserves_dialogue() -> None:
+    ash = str(uuid.uuid4())
+    prompt = _repair_prompt_for(
+        json.dumps(
+            [
+                {
+                    "text": "One more?",
+                    "cited_fact_keys": ["reaction:s"],
+                    "kind": "dialogue",
+                    "speaker_id": None,
+                }
+            ]
+        ),
+        _speech_facts(ash),
+    )
+    assert "dialogue requires a speaker matching cited speech" in prompt
+    assert "exact speaker" in prompt
+    assert "invalid as dialogue" not in prompt
+
+
+def test_graph_repair_for_wrong_speaker_preserves_dialogue() -> None:
+    ash = str(uuid.uuid4())
+    wren = str(uuid.uuid4())
+    prompt = _repair_prompt_for(
+        json.dumps(
+            [
+                {
+                    "text": "One more?",
+                    "cited_fact_keys": ["reaction:s"],
+                    "kind": "dialogue",
+                    "speaker_id": wren,
+                }
+            ]
+        ),
+        _speech_facts(ash),
+        audience_ids=[ash, wren],
+    )
+    assert "speaker does not match cited source" in prompt
+    assert "exact speaker" in prompt
+    assert "invalid as dialogue" not in prompt
+
+
+def test_graph_repair_for_invented_key_drops_it() -> None:
+    prompt = _repair_prompt_for(
+        json.dumps([_beat("Dragons land.", ["dragons"])]),
+        [{"key": "attempt:wait", "value": "Ash waits"}],
+    )
+    assert "drop" in prompt
+    assert "invalid as dialogue" not in prompt
+
+
+def test_graph_repair_for_malformed_json_names_format() -> None:
+    prompt = _repair_prompt_for(
+        "not json at all",
+        [{"key": "attempt:wait", "value": "Ash waits"}],
+    )
+    assert "exactly matching the response schema" in prompt
+    assert "invalid as dialogue" not in prompt
