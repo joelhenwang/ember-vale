@@ -1,0 +1,51 @@
+{
+ "source": "offline re-score of replay-E-paid-fixture-narrator-nemo-002.json accepted outputs under the whole-word quote-containment rule ($0)",
+ "rule": "dialogue does not quote cited speech",
+ "summary": {
+  "dialogue_beats_checked": 5,
+  "would_reject": 0,
+  "items_rejected": []
+ },
+ "beats": [
+  {
+   "scenario": "quoted-speech-ash",
+   "key": "reaction:b1f7b7fd-4a75-506f-a348-899766d36ff1",
+   "quote": "Dawn patrol passed at first light.",
+   "text": "\"Dawn patrol passed at first light.\" Ash informs Wren.",
+   "speaker_id": "76a88421-1e5b-47ac-93bb-412d31b97e4f",
+   "contained": true
+  },
+  {
+   "scenario": "quoted-speech-wren",
+   "key": "reaction:f4022018-ee77-55b9-ac47-fb4d3c4177cd",
+   "quote": "The mill road is clear.",
+   "text": "\"The mill road is clear.\" Wren informs Ash.",
+   "speaker_id": "1ae080ce-2fe5-44ae-b0a1-4e1e9fabd095",
+   "contained": true
+  },
+  {
+   "scenario": "quoted-question",
+   "key": "reaction:e2de4482-07e9-564a-ac21-8cc6071db631",
+   "quote": "Past the bridge, second left.",
+   "text": "\"Past the bridge, second left.\" Ash tells Wren.",
+   "speaker_id": "a93bed22-8fed-41f3-82bc-19b393946f9d",
+   "contained": true
+  },
+  {
+   "scenario": "mill-brief",
+   "key": "reaction:1b79501b-c989-552f-a9ca-4f80fbeb6ffa",
+   "quote": "Grain and oilskins.",
+   "text": "\"Grain and oilskins.\" Ash said to Wren.",
+   "speaker_id": "b64df113-d89f-4b2f-b0c3-747e4c960c90",
+   "contained": true
+  },
+  {
+   "scenario": "lighthouse",
+   "key": "reaction:fd6d665f-0c06-550b-94f2-db31c1bda453",
+   "quote": "Old Marlow, if the lamp is still lit.",
+   "text": "\"Old Marlow, if the lamp is still lit.\" Ash responds to Wren's query about the lighthouse's night keeper.",
+   "speaker_id": "6403d03b-baa4-4beb-855f-90342026a08c",
+   "contained": true
+  }
+ ]
+}

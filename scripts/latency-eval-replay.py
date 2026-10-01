@@ -78,12 +78,14 @@ def validate(
     user_prompt: str,
     speakers: dict[str, str] | None = None,
     speech_keys: frozenset[str] | set[str] | None = None,
+    utterances: dict[str, str] | None = None,
 ) -> tuple[bool, str]:
     """Schema (+ narrator attribution) validation. Returns (ok, detail).
 
     speech_keys enforces the production DIALOGUE speech-eligibility gate
     (committed quoted speech only); None preserves the legacy
     unattributed path for fixtures without exported speech metadata.
+    utterances adds the production quote-containment check; None skips it.
     """
     try:
         if role == "narrator":
@@ -93,6 +95,7 @@ def validate(
                 proposals, visible_keys=keys, audience_ids=audience,
                 beats_budget=budget, fact_speakers=speakers,
                 speech_keys=frozenset(speech_keys) if speech_keys is not None else None,
+                fact_utterances=utterances,
             )
             if denial is not None:
                 return False, f"beats_valid: {denial}"
@@ -191,6 +194,7 @@ async def run_item(
     budget: CallBudget | None = None,
     speakers: dict[str, str] | None = None,
     speech_keys: frozenset[str] | set[str] | None = None,
+    utterances: dict[str, str] | None = None,
 ) -> dict:
     cfg = ARMS[arm]
     if role == "narrator" and item.get("system") is not None:
@@ -281,7 +285,7 @@ async def run_item(
                 pass
             out["attempts"].append(attempt)
             break
-        ok, info = validate(role, res.text, base, speakers, speech_keys)
+        ok, info = validate(role, res.text, base, speakers, speech_keys, utterances)
         out["attempts"].append({
             "latency_ms": res.latency_ms,
             "finish_reason": res.finish_reason,
@@ -404,11 +408,13 @@ async def main() -> None:
             # wins; the legacy arm-F speaker map covers historical prompts.
             speakers = item.get("speakers") or speaker_map.get(item["prompt_hash"])
             speech = item.get("speech_keys")
+            utterances = item.get("utterances")
             res = await run_item(
                 gateway, args.arm, item["role"], item, args.timeout_s,
                 budget,
                 speakers,
                 frozenset(speech) if speech is not None else None,
+                utterances,
             )
         except Exception as exc:  # noqa: BLE001 - harness must not die mid-arm
             res = {"role": item["role"], "prompt_hash": item["prompt_hash"],

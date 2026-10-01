@@ -270,6 +270,12 @@ def repair_instruction(denial: str) -> str:
         )
     elif "beat budget exceeded" in denial or "at least one beat" in denial:
         fix = "Keep the narration within the beat budget with at least one beat. "
+    elif "does not quote cited speech" in denial:
+        fix = (
+            "Quote the cited words exactly in the dialogue beat, or rewrite "
+            "the beat as narrator prose. Do not change the speaker or the "
+            "key to work around the mismatch. "
+        )
     elif "schema errors" in denial:
         fix = (
             "Emit a single JSON array of beat objects exactly matching the "
@@ -315,6 +321,20 @@ def _identify_utterance(topic: str) -> str | None:
         inner = text[1:-1].strip()
         return inner or None
     return None
+
+
+_QUOTE_TRANSLATE = str.maketrans(
+    {chr(8220): chr(34), chr(8221): chr(34),
+     chr(8216): chr(39), chr(8219): chr(39), chr(8217): chr(39)})
+_TRAILING_PUNCT = ".,!?;:"
+
+
+def _normalize_quote(text: str) -> str:
+    """Comparable form for quote containment: unified quotes, no
+    whitespace, trailing punctuation stripped from both sides."""
+    return " ".join(str(text).translate(_QUOTE_TRANSLATE).split()).rstrip(
+        _TRAILING_PUNCT
+    )
 
 
 def communication_facts(
@@ -382,6 +402,7 @@ def beats_valid(
     beats_budget: int,
     fact_speakers: Mapping[str, str] | None = None,
     speech_keys: frozenset[str] | None = None,
+    fact_utterances: Mapping[str, str] | None = None,
 ) -> str | None:
     """Unsupported-fact validator: cited keys, speakers, and budget.
 
@@ -389,13 +410,16 @@ def beats_valid(
     speaker; attribution is checked against the source, not the audience.
     DIALOGUE beats may only cite speech-eligible keys (committed quoted
     speech); attempts and topic summaries are narration-only. None skips
-    the speech check (legacy callers).
+    the speech check (legacy callers). When fact_utterances is given,
+    DIALOGUE text must contain the cited quote (whitespace, curly
+    quotes, and final punctuation ignored).
     """
     if not proposals:
         return "narration needs at least one beat"
     if len(proposals) > beats_budget:
         return f"beat budget exceeded: {len(proposals)} > {beats_budget}"
     speakers = dict(fact_speakers or {})
+    utterances = dict(fact_utterances or {})
     for proposal in proposals:
         unknown = set(proposal.cited_fact_keys) - visible_keys
         if unknown:
@@ -421,6 +445,16 @@ def beats_valid(
                 and str(proposal.speaker_id) != expected
             ):
                 return f"speaker does not match cited source: {key}"
+        if fact_utterances is not None and proposal.kind == NarrationKind.DIALOGUE:
+            normalized_text = _normalize_quote(proposal.text)
+            for key in proposal.cited_fact_keys:
+                quote = utterances.get(key)
+                normalized_quote = _normalize_quote(quote) if quote else ""
+                if normalized_quote and not re.search(
+                    r"(?<!\w)" + re.escape(normalized_quote) + r"(?!\w)",
+                    normalized_text,
+                ):
+                    return f"dialogue does not quote cited speech: {key}"
     return None
 
 
@@ -450,27 +484,48 @@ def dedupe_narration_facts(
 def _normalize_fallback_fact(fact: dict[str, Any]) -> dict[str, Any]:
     """Deterministic attributed fallback shape for one visible fact.
 
-    Identified utterances (speaker plus utterance) become DIALOGUE
-    beats voiced by their speaker through the same persisted feed path;
-    instruction-like topics keep an attributed narrative summary instead of
-    purported spoken words. Everything else keeps the legacy key: value
-    narrator rendering.
+    Identified utterances (speaker plus utterance) become DIALOGUE beats
+    with exactly the quoted words; topic summaries keep an attributed
+    narrative summary with their speaker. Attempts read as attempts via
+    the same parse the prompt uses — never as quoted speech — and beat
+    text never shows fact keys; keys live only in cited_fact_keys.
     """
     speaker = fact.get("speaker")
     utterance = fact.get("utterance")
-    is_speech = bool(speaker and utterance)
+    if speaker and utterance:
+        return {
+            "key": fact["key"],
+            "kind": NarrationKind.DIALOGUE,
+            "speaker": UUID(str(speaker)),
+            "text": str(utterance),
+        }
     if speaker:
         return {
             "key": fact["key"],
-            "kind": NarrationKind.DIALOGUE if is_speech else NarrationKind.NARRATION,
+            "kind": NarrationKind.NARRATION,
             "speaker": UUID(str(speaker)),
-            "text": str(utterance) if is_speech else str(fact["value"]),
+            "text": str(fact["value"]),
+        }
+    key = str(fact["key"])
+    value = str(fact["value"])
+    if key.startswith("attempt:"):
+        match = _ATTEMPT_SPEECH_RE.match(value) if "communicate" in key else None
+        if match:
+            value = (
+                f"{match.group(1)} tries to speak with {match.group(2)} "
+                f"about: {match.group(3)}"
+            )
+        return {
+            "key": fact["key"],
+            "kind": NarrationKind.NARRATION,
+            "speaker": None,
+            "text": value,
         }
     return {
         "key": fact["key"],
         "kind": NarrationKind.NARRATION,
         "speaker": None,
-        "text": f"{fact['key']}: {fact['value']}",
+        "text": value,
     }
 
 
@@ -482,11 +537,13 @@ def fallback_beats(
     visible_facts: list[dict[str, str]],
     beats_budget: int,
 ) -> list[NarrationBeat]:
-    """Structured-event fallback: one beat per visible fact, budget-capped."""
-    ordered = [f for f in visible_facts if f.get("speaker")] + [
-        f for f in visible_facts if not f.get("speaker")
-    ]
-    facts = [_normalize_fallback_fact(f) for f in ordered[: max(beats_budget, 1)]]
+    """Structured-event fallback: one beat per visible fact, budget-capped.
+
+    Facts keep their original order so attempts (questions) come before
+    the reactions (answers) that follow them. When the budget cuts facts
+    off, the earliest facts are kept.
+    """
+    facts = [_normalize_fallback_fact(f) for f in visible_facts[: max(beats_budget, 1)]]
     if not facts:
         return [
             NarrationBeat(
@@ -590,6 +647,7 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
         budget = budget_raw if isinstance(budget_raw, int) else 8
         fact_speakers = {f["key"]: f["speaker"] for f in facts if "speaker" in f}
         speech_keys = speech_eligible_keys(facts)
+        fact_utterances = {f["key"]: f["utterance"] for f in facts if "utterance" in f}
         errors: list[str] = []
         repairs = 0
         try:
@@ -644,6 +702,7 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
                 beats_budget=budget,
                 fact_speakers=fact_speakers,
                 speech_keys=speech_keys,
+                fact_utterances=fact_utterances,
             )
             if denial is not None:
                 errors.append(f"attempt {repairs}: {denial}")

@@ -214,6 +214,7 @@ def run_one(spec: dict) -> dict:
             "visible_keys": sorted(keys),
             "speech_keys": sorted(speech_eligible_keys(facts)),
             "speakers": {f["key"]: f["speaker"] for f in facts if "speaker" in f},
+            "utterances": {f["key"]: f["utterance"] for f in facts if "utterance" in f},
             "speaker_names": {str(cid): n for cid, n in names.items()
                               if str(cid) in set(participants)},
             "beat_budget": budget,
@@ -273,7 +274,7 @@ if __name__ == "__main__":
         },
         "items": out,
     }
-    name = sys.argv[1] if len(sys.argv) > 1 else "fixture-narrator-nemo-001.json"
+    name = sys.argv[1] if len(sys.argv) > 1 else "fixture-narrator-nemo-003.json"
     dest = REPO / "docs" / "evidence" / "latency-eval-001" / name
     dest.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     for o in out:

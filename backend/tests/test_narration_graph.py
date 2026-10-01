@@ -204,7 +204,8 @@ def test_model_outage_uses_structured_fallback() -> None:
     assert result["status"] == "fallback"
     beats = result["proposal"]["beats"]
     assert len(beats) == 2
-    assert "arrival" in beats[0]["text"]
+    assert "Wren arrives at the market" in beats[0]["text"]
+    assert beats[0]["text"].startswith("arrival:") is False
 
 
 def test_uncommitted_event_refused_without_call() -> None:
@@ -1205,3 +1206,326 @@ def test_graph_repair_for_misattributed_summary_keeps_narration() -> None:
     assert "speaker_id: null" in prompt
     assert "Never convert narration-only" in prompt
     assert "Keep the beat as dialogue" not in prompt
+
+def test_fallback_renders_attempts_without_keys_in_order() -> None:
+    from worldsim.application.graphs.narrate import fallback_beats
+
+    ash = uuid.uuid4()
+    beats = fallback_beats(
+        world_id=uuid.uuid4(),
+        scene_id=None,
+        event_id=uuid.uuid4(),
+        visible_facts=[
+            {
+                "key": "attempt:communicate",
+                "value": "Wren says to Ash: Ask Ash whether the stalls are open yet.",
+            },
+            {"key": "attempt:wait", "value": "Ash waits"},
+            {
+                "key": "reaction:s",
+                "value": 'Ash says to Wren: "Stalls open at second bell."',
+                "speaker": str(ash),
+                "speaker_name": "Ash",
+                "utterance": "Stalls open at second bell.",
+            },
+        ],
+        beats_budget=8,
+    )
+
+    assert [b.kind.value for b in beats] == ["narration", "narration", "dialogue"]
+    assert beats[0].text == (
+        "Wren tries to speak with Ash about:"
+        " Ask Ash whether the stalls are open yet."
+    )
+    assert beats[0].cited_fact_keys == ["attempt:communicate"]
+    assert beats[1].text == "Ash waits"
+    assert all("attempt:" not in b.text for b in beats)
+    assert all("says to" not in b.text for b in beats)
+    assert beats[2].text == "Stalls open at second bell."
+    assert beats[2].speaker_id == ash
+
+
+def test_fallback_budget_keeps_earliest_facts() -> None:
+    from worldsim.application.graphs.narrate import fallback_beats
+
+    beats = fallback_beats(
+        world_id=uuid.uuid4(),
+        scene_id=None,
+        event_id=uuid.uuid4(),
+        visible_facts=[
+            {
+                "key": "attempt:communicate",
+                "value": "Wren says to Ash: Ask Ash whether the stalls are open yet.",
+            },
+            {"key": "attempt:wait", "value": "Ash waits"},
+            {
+                "key": "reaction:s",
+                "value": 'Ash says to Wren: "Stalls open at second bell."',
+                "speaker": str(uuid.uuid4()),
+                "utterance": "Stalls open at second bell.",
+            },
+        ],
+        beats_budget=2,
+    )
+
+    assert [b.cited_fact_keys for b in beats] == [
+        ["attempt:communicate"],
+        ["attempt:wait"],
+    ]
+
+
+def test_dialogue_with_exact_quote_and_tag_passes() -> None:
+    from worldsim.application.graphs.narrate import beats_valid
+    from worldsim.domain.narration import BeatProposal
+
+    ash = uuid.uuid4()
+    key = "reaction:s2"
+    quoted = BeatProposal(
+        text='"One more?" Ash says.',
+        cited_fact_keys=[key],
+        kind="dialogue",  # type: ignore[assignment]
+        speaker_id=ash,
+    )
+    assert (
+        beats_valid(
+            [quoted],
+            visible_keys=frozenset({"attempt:wait", key}),
+            audience_ids=frozenset({str(ash), str(uuid.uuid4())}),
+            beats_budget=8,
+            fact_speakers={key: str(ash)},
+            speech_keys=frozenset({key}),
+            fact_utterances={key: "One more?"},
+        )
+        is None
+    )
+
+
+def test_dialogue_paraphrase_rejected() -> None:
+    from worldsim.application.graphs.narrate import beats_valid
+    from worldsim.domain.narration import BeatProposal
+
+    ash = uuid.uuid4()
+    key = "reaction:s2"
+    paraphrased = BeatProposal(
+        text="Glad to see you.",
+        cited_fact_keys=[key],
+        kind="dialogue",  # type: ignore[assignment]
+        speaker_id=ash,
+    )
+    assert (
+        beats_valid(
+            [paraphrased],
+            visible_keys=frozenset({"attempt:wait", key}),
+            audience_ids=frozenset({str(ash), str(uuid.uuid4())}),
+            beats_budget=8,
+            fact_speakers={key: str(ash)},
+            speech_keys=frozenset({key}),
+            fact_utterances={key: "One more?"},
+        )
+        == f"dialogue does not quote cited speech: {key}"
+    )
+
+
+def test_dialogue_curly_quotes_pass() -> None:
+    from worldsim.application.graphs.narrate import beats_valid
+    from worldsim.domain.narration import BeatProposal
+
+    ash = uuid.uuid4()
+    key = "reaction:s2"
+    curly = BeatProposal(
+        text="“One more?”",
+        cited_fact_keys=[key],
+        kind="dialogue",  # type: ignore[assignment]
+        speaker_id=ash,
+    )
+    assert (
+        beats_valid(
+            [curly],
+            visible_keys=frozenset({"attempt:wait", key}),
+            audience_ids=frozenset({str(ash), str(uuid.uuid4())}),
+            beats_budget=8,
+            fact_speakers={key: str(ash)},
+            speech_keys=frozenset({key}),
+            fact_utterances={key: "One more?"},
+        )
+        is None
+    )
+
+
+def test_graph_repair_carries_quote_guidance() -> None:
+    ash = str(uuid.uuid4())
+    wren = str(uuid.uuid4())
+    gateway = FakeGateway(profile=NARRATOR_FAKE_PROFILE)
+    gateway.enqueue_text(
+        json.dumps(
+            [
+                {
+                    "text": "Glad to see you.",
+                    "cited_fact_keys": ["reaction:s"],
+                    "kind": "dialogue",
+                    "speaker_id": ash,
+                }
+            ]
+        )
+    )
+    gateway.enqueue_text(
+        json.dumps(
+            [
+                {
+                    "text": '"One more?"',
+                    "cited_fact_keys": ["reaction:s"],
+                    "kind": "dialogue",
+                    "speaker_id": ash,
+                }
+            ]
+        )
+    )
+    result = asyncio.run(
+        invoke(
+            build_narration_graph(_deps(gateway)),
+            _invocation(
+                uuid.uuid4(),
+                audience_ids=[ash, wren],
+                visible_facts=[
+                    {"key": "attempt:wait", "value": "Ash waits"},
+                    {
+                        "key": "reaction:s",
+                        "value": 'Ash says to Wren: "One more?"',
+                        "speaker": ash,
+                        "speaker_name": "Ash",
+                        "utterance": "One more?",
+                    },
+                ],
+            ),
+        )
+    )
+
+    assert result["status"] == "narrated"
+    assert result["repair_count"] == 1
+    repair_prompt = gateway.sent_requests[1].prompt
+    assert "dialogue does not quote cited speech" in repair_prompt
+    assert "Quote the cited words exactly" in repair_prompt
+
+
+def test_dialogue_single_quotes_both_directions_pass() -> None:
+    from worldsim.application.graphs.narrate import beats_valid
+    from worldsim.domain.narration import BeatProposal
+
+    ash = uuid.uuid4()
+    key = "reaction:s2"
+    audience = frozenset({str(ash), str(uuid.uuid4())})
+    stored_curly = 'It’s lit.'
+    stored_straight = "It's lit."
+    lv = "It's lit,"
+    cv = 'It’s lit'
+    tag = ' Ash says.'
+    cases = [
+        (stored_curly, chr(34) + lv + chr(34) + tag),
+        (stored_straight, chr(34) + cv + chr(33) + chr(34)),
+    ]
+    for quote, text in cases:
+        assert (
+            beats_valid(
+                [
+                    BeatProposal(
+                        text=text,
+                        cited_fact_keys=[key],
+                        kind="dialogue",  # type: ignore[assignment]
+                        speaker_id=ash,
+                    )
+                ],
+                visible_keys=frozenset({"attempt:wait", key}),
+                audience_ids=audience,
+                beats_budget=8,
+                fact_speakers={key: str(ash)},
+                speech_keys=frozenset({key}),
+                fact_utterances={key: quote},
+            )
+            is None
+        )
+
+
+def test_dialogue_skips_quote_check_without_utterances() -> None:
+    from worldsim.application.graphs.narrate import beats_valid
+    from worldsim.domain.narration import BeatProposal
+
+    ash = uuid.uuid4()
+    key = "reaction:s2"
+    assert (
+        beats_valid(
+            [
+                BeatProposal(
+                    text="Anything goes.",
+                    cited_fact_keys=[key],
+                    kind="dialogue",  # type: ignore[assignment]
+                    speaker_id=ash,
+                )
+            ],
+            visible_keys=frozenset({"attempt:wait", key}),
+            audience_ids=frozenset({str(ash), str(uuid.uuid4())}),
+            beats_budget=8,
+            fact_speakers={key: str(ash)},
+            speech_keys=frozenset({key}),
+        )
+        is None
+    )
+
+
+def test_dialogue_quote_substring_only_rejected() -> None:
+    from worldsim.application.graphs.narrate import beats_valid
+    from worldsim.domain.narration import BeatProposal
+
+    ash = uuid.uuid4()
+    key = "reaction:s2"
+    audience = frozenset({str(ash), str(uuid.uuid4())})
+    cases = [
+        ("No.", "Not today, Ash says."),
+        ("Yes.", "Yesterday it rained."),
+    ]
+    for quote, text in cases:
+        assert (
+            beats_valid(
+                [
+                    BeatProposal(
+                        text=text,
+                        cited_fact_keys=[key],
+                        kind="dialogue",  # type: ignore[assignment]
+                        speaker_id=ash,
+                    )
+                ],
+                visible_keys=frozenset({"attempt:wait", key}),
+                audience_ids=audience,
+                beats_budget=8,
+                fact_speakers={key: str(ash)},
+                speech_keys=frozenset({key}),
+                fact_utterances={key: quote},
+            )
+            == f"dialogue does not quote cited speech: {key}"
+        )
+
+
+def test_dialogue_quote_whole_word_passes() -> None:
+    from worldsim.application.graphs.narrate import beats_valid
+    from worldsim.domain.narration import BeatProposal
+
+    ash = uuid.uuid4()
+    key = "reaction:s2"
+    assert (
+        beats_valid(
+            [
+                BeatProposal(
+                    text="No, Ash says.",
+                    cited_fact_keys=[key],
+                    kind="dialogue",  # type: ignore[assignment]
+                    speaker_id=ash,
+                )
+            ],
+            visible_keys=frozenset({"attempt:wait", key}),
+            audience_ids=frozenset({str(ash), str(uuid.uuid4())}),
+            beats_budget=8,
+            fact_speakers={key: str(ash)},
+            speech_keys=frozenset({key}),
+            fact_utterances={key: "No."},
+        )
+        is None
+    )
