@@ -47,7 +47,7 @@
  "offline_parity_gate": {
   "result": "PASS: replay validate() agrees with production beats_valid on all 10 scenarios (002 cohort)"
  },
- "paid_execution": "NOT RUN; awaiting explicit go-ahead under the existing $0.50 envelope",
+ "paid_execution": "RUN: replay-E-paid-fixture-narrator-nemo-002.json (runner bcb858b, clean tree, 12 invocations of 20-call ceiling, 0 blocked). Structural 9/10 (7 first-attempt, 2 repair conversions); 1 provider_error (stalls, ModelUnavailableError) -> fallback. Semantic review separate. Est. $0.00032 unreconciled.",
  "prompt_version": "narrator.v2",
  "reporting_plan": [
   "first-attempt acceptance",
