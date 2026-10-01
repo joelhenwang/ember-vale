@@ -11,10 +11,13 @@ eligibility rejects it even with an in-audience speaker), and
 (speaker attribution rejects it). The captured initial prompt is
 byte-exact current-pipeline input for future eval arms.
 
-Writes docs/evidence/latency-eval-001/fixture-narrator-v2.json.
+Writes docs/evidence/latency-eval-001/fixture-narrator-v2.json only when
+WORLDSIM_WRITE_FIXTURES=1; otherwise the captured prompt goes to pytest's
+tmp_path so ordinary test runs leave the working tree untouched.
 """
 import asyncio
 import json
+import os
 from pathlib import Path
 from uuid import UUID
 
@@ -39,6 +42,22 @@ FIXTURE_PATH = (
 )
 
 
+def _fixture_dest(tmp_path: Path) -> Path:
+    """Evidence path only on explicit opt-in; otherwise a throwaway path."""
+    if os.environ.get("WORLDSIM_WRITE_FIXTURES") == "1":
+        return FIXTURE_PATH
+    return tmp_path / FIXTURE_PATH.name
+
+
+def test_fixture_write_gated_behind_env_var(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("WORLDSIM_WRITE_FIXTURES", raising=False)
+    assert _fixture_dest(tmp_path) == tmp_path / "fixture-narrator-v2.json"
+    monkeypatch.setenv("WORLDSIM_WRITE_FIXTURES", "1")
+    assert _fixture_dest(tmp_path) == FIXTURE_PATH
+
+
 def _request_record(request: CompletionRequest) -> dict:
     return {
         "prompt": request.prompt,
@@ -55,7 +74,7 @@ def _request_record(request: CompletionRequest) -> dict:
     "case", ["attempt_as_dialogue", "speakerless_speech"]
 )
 def test_production_assembly_builds_deduped_narrator_prompt(
-    migrated_db: None, case: str
+    migrated_db: None, tmp_path: Path, case: str
 ) -> None:
     async def _inner() -> None:
         ids = await _seed()
@@ -114,8 +133,9 @@ def test_production_assembly_builds_deduped_narrator_prompt(
         assert keys
         assert budget >= 1
 
-        FIXTURE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        FIXTURE_PATH.write_text(
+        dest = _fixture_dest(tmp_path)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(
             json.dumps(
                 {
                     "source": "production assembly (narrator fixture test)",
