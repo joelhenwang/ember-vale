@@ -1,0 +1,110 @@
+{
+ "exclusion": "build-nemo-fixture.py writes only to scratch databases that are dropped after the run, so no local-DB row is fixture-produced. Two wild topics coincide with fixture scenario text and are flagged, not dropped: player ask 'Who keeps the lighthouse at night?' and model quote 'Old Marlow, if the lamp's still lit.'",
+ "inputs": {
+  "database": "local embervale (character_intent family=communicate with player idempotency prefix; reaction family=communicate status=committed)",
+  "stage_evidence": "docs/evidence/stage-c (screenshots only) and evidence/stage* (audit/scenario/trace JSONs); grep for topic found nothing, 0 topics contributed"
+ },
+ "model_reactions": {
+  "instruction_style": {
+   "distinct": 0,
+   "examples": [],
+   "n": 0
+  },
+  "note": "reaction rows, all status=committed",
+  "plain_about_topic": {
+   "distinct": 0,
+   "examples": [],
+   "n": 0
+  },
+  "quoted_speech": {
+   "distinct": 15,
+   "examples": [
+    {
+     "n": 1,
+     "topic": "\"Aye, some from the eastern passes, though their carts are lighter than their stories.\""
+    },
+    {
+     "n": 1,
+     "topic": "\"Dawn bell means the first stalls are opening. Traders ring it to call the early buyers.\""
+    },
+    {
+     "n": 1,
+     "topic": "\"Dawn bell means the market's waking. Sleep through it and you miss the best bread.\""
+    },
+    {
+     "n": 1,
+     "topic": "\"Haven't heard who. Bell rang true enough, though.\""
+    },
+    {
+     "n": 1,
+     "topic": "\"It stays open, but it'll be mud up to your knees. If you're not in a hurry, wait it out.\""
+    }
+   ],
+   "n": 15
+  },
+  "total": 15
+ },
+ "player_attempts": {
+  "instruction_style": {
+   "distinct": 4,
+   "examples": [
+    {
+     "n": 8,
+     "topic": "Ask Ash what the Market holds today."
+    },
+    {
+     "n": 2,
+     "topic": "Ask Ash whether the stalls are open yet."
+    },
+    {
+     "n": 2,
+     "topic": "Tell Ash about the road into Ember Vale."
+    },
+    {
+     "n": 1,
+     "topic": "Ask Ash to show her the way to the Market stalls."
+    }
+   ],
+   "n": 13
+  },
+  "note": "character_intent rows, all status=validated; validated is the committed form of a player attempt",
+  "plain_about_topic": {
+   "distinct": 14,
+   "examples": [
+    {
+     "n": 17,
+     "topic": "What did the market bell mean at dawn?"
+    },
+    {
+     "n": 9,
+     "topic": "What should we watch for on the road ahead?"
+    },
+    {
+     "n": 4,
+     "topic": "The bell meant the north road is open again."
+    },
+    {
+     "n": 3,
+     "topic": "And what does the open north road mean for us?"
+    },
+    {
+     "n": 2,
+     "topic": "What news from the mill, Ash?"
+    }
+   ],
+   "n": 44
+  },
+  "quoted_speech": {
+   "distinct": 0,
+   "examples": [],
+   "n": 0
+  },
+  "total": 57
+ },
+ "rules": {
+  "instruction_style": "unquoted topic starting with an imperative verb (ask|tell|order|command|instruct|request|demand|beg|urge|invite|warn|remind|advise|promise|threaten)",
+  "plain_about_topic": "everything else",
+  "quoted_speech": "production _identify_utterance(topic) is not None"
+ },
+ "source": "read-only census of real communicate actions; no fixture, no model, no writes except this file"
+}
