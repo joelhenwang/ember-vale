@@ -1174,3 +1174,34 @@ def test_graph_repair_for_malformed_json_names_format() -> None:
     )
     assert "exactly matching the response schema" in prompt
     assert "invalid as dialogue" not in prompt
+
+def test_graph_repair_for_misattributed_summary_keeps_narration() -> None:
+    ash = str(uuid.uuid4())
+    wren = str(uuid.uuid4())
+    prompt = _repair_prompt_for(
+        json.dumps(
+            [
+                {
+                    "text": "Ash tells Wren about the mill.",
+                    "cited_fact_keys": ["reaction:s1"],
+                    "kind": "narration",
+                    "speaker_id": wren,
+                }
+            ]
+        ),
+        [
+            {"key": "attempt:wait", "value": "Ash waits"},
+            {
+                "key": "reaction:s1",
+                "value": 'Ash speaks to Wren about "the mill"',
+                "speaker": ash,
+                "speaker_name": "Ash",
+            },
+        ],
+        audience_ids=[ash, wren],
+    )
+    assert "speaker does not match cited source" in prompt
+    assert "retain narration" in prompt
+    assert "speaker_id: null" in prompt
+    assert "Never convert narration-only" in prompt
+    assert "Keep the beat as dialogue" not in prompt

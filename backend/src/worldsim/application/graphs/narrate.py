@@ -245,15 +245,23 @@ def repair_instruction(denial: str) -> str:
             "utterance does not support; "
             "quote identified utterances faithfully. "
         )
+    elif "dialogue requires a speaker matching cited speech" in denial:
+        fix = (
+            "Keep the beat as dialogue with its supported utterance, but set "
+            "speaker_id to the cited speech fact's exact speaker. "
+        )
     elif (
-        "dialogue requires a speaker matching cited speech" in denial
-        or "speaker does not match cited source" in denial
+        "speaker does not match cited source" in denial
         or "speaker outside the audience" in denial
     ):
         fix = (
-            "Keep the beat as dialogue with its supported utterance, but set "
-            "speaker_id to the cited speech fact's exact speaker "
-            "— never leave it null and never borrow another voice. "
+            "Fix the speaker attribution without changing what the evidence "
+            "supports: for dialogue supported by eligible speech, set "
+            "speaker_id to the cited speech fact's exact speaker with its "
+            "supported utterance — never leave it null and never borrow "
+            "another voice. For narrator prose, retain narration and use "
+            "speaker_id: null. Never convert narration-only evidence into "
+            "dialogue to fix attribution. "
         )
     elif "unsupported facts cited" in denial or "must cite at least one" in denial:
         fix = (
