@@ -1,13 +1,16 @@
 """Build the bounded Nemo narrator fixture (zero model spend).
 
-Runs the real Stage1Orchestrator with scripted gateways over a 10-scenario
+Runs the real Stage1Orchestrator with scripted gateways over a 16-scenario
 matrix (quoted speech, topic-only communication, attempts without speech,
-both speakers); the narrator gateway returns a canned VALID beat so each
-phase completes narrated. Captures each initial narrator CompletionRequest
-and rebuilds authoritative metadata from committed rows with production
-functions (prompt rebuild equality is asserted per scenario).
+both speakers, plus outsider-target reaction, multiple reactions, observe
+alongside speech, long/one-word/apostrophe utterances); the narrator
+gateway returns a canned VALID beat so each phase completes narrated.
+Captures each initial narrator CompletionRequest and rebuilds authoritative
+metadata from committed rows with production functions (prompt rebuild
+equality is asserted per scenario).
 
-Writes docs/evidence/latency-eval-001/fixture-narrator-nemo-001.json.
+Writes docs/evidence/latency-eval-001/fixture-narrator-nemo-003.json
+(or the name in argv[1]).
 Requires a reachable PostgreSQL (WORLDSIM_DATABASE__URL); builds a
 migration-head template and per-scenario scratch clones, dropped after.
 """
@@ -56,7 +59,10 @@ from worldsim.application.orchestration.service import (
 from worldsim.application.ports.model_gateway import (
     CompletionRequest,
 )
+from worldsim.domain.characters import Character, CharacterCard
 from worldsim.domain.commands import CommunicateAction
+from worldsim.domain.enums import LifeStatus
+from worldsim.domain.ids import new_card_id, new_character_id
 from worldsim.infrastructure.db.engine import create_engine
 from worldsim.infrastructure.repositories.unit_of_work import (
     create_unit_of_work,
@@ -81,6 +87,35 @@ def _make_template() -> tuple[str, str]:
 
 ZERO_SNAP = "00000000-0000-0000-0000-000000000000"
 
+
+async def _seed_marlow(ids: dict, *, dead: bool) -> UUID:
+    """Third world character for outsider/multi-reaction scenes (mirrors _seed)."""
+    engine = create_engine(Settings())
+    try:
+        async with create_unit_of_work(engine) as uow:
+            marlow = new_character_id()
+            await uow.characters.add_identity(marlow, ids["world"], "Marlow")
+            await uow.characters.add_card(
+                CharacterCard(id=new_card_id(), character_id=marlow, name="Marlow", version=1)
+            )
+            await uow.characters.add_state(
+                Character(
+                    id=marlow,
+                    world_id=ids["world"],
+                    name="Marlow",
+                    card_version=1,
+                    location_id=ids["hearth"],
+                    stamina=80,
+                    mana=40,
+                    **({"life_status": LifeStatus.DEAD} if dead else {}),
+                )
+            )
+            await uow.versions.ensure(marlow, ids["world"], "character")
+            await uow.commit()
+            return marlow
+    finally:
+        await engine.dispose()
+
 SCENARIOS = [
     {"name": "quoted-speech-ash", "controller": "wren", "ask": "dawn patrol",
      "answer": ("communicate", '"Dawn patrol passed at first light."')},
@@ -102,6 +137,28 @@ SCENARIOS = [
      "answer": ("communicate", '"Old Marlow, if the lamp is still lit."')},
     {"name": "stalls", "controller": "wren", "ask": "Ask Ash whether the stalls are open yet.",
      "answer": ("communicate", '"Stalls open at second bell."')},
+    {"name": "outsider-reaction", "controller": "wren", "ask": "dawn patrol",
+     "answer": ("communicate", '"Rest easy, Marlow. The north road is open again."'),
+     "third": "dead", "answer_target": "third"},
+    {"name": "two-reactions", "controller": "wren", "ask": "dawn patrol",
+     "answer": ("communicate", '"Dawn bell means the first stalls are opening."'),
+     "third": "alive",
+     "third_intent": ("communicate", '"Road is clear past the hearth."', "ash"),
+     "third_answer": ("communicate", '"Aye, and mind the loose stones past the bridge."')},
+    {"name": "observe-alongside-speech", "controller": "wren", "ask": "dawn patrol",
+     "answer": ("communicate", '"Dawn bell means the market\'s waking."'),
+     "third": "alive", "third_intent": ("observe", "Ash")},
+    {"name": "long-utterance", "controller": "wren",
+     "ask": "What should we watch for on the road ahead?",
+     "answer": ("communicate", ('"Dawn bell means the market is waking early today, so hurry down '
+                '"with coin and basket before the best bread and freshest fish are gone '
+                '"from the stalls."'))},
+    {"name": "one-word-reply", "controller": "wren",
+     "ask": "Is the old bridge safe to cross?",
+     "answer": ("communicate", '"No."')},
+    {"name": "apostrophe-quote", "controller": "wren",
+     "ask": "What news from the mill, Ash?",
+     "answer": ("communicate", '"It\'s still standing, unless someone\'s moved it."')},
 ]
 
 
@@ -116,6 +173,11 @@ def run_one(spec: dict) -> dict:
         ids = await _seed()
         controller = ids[spec["controller"]]
         other = ids["ash"] if spec["controller"] == "wren" else ids["wren"]
+        third_mode = spec.get("third")
+        marlow: UUID | None = None
+        if third_mode is not None:
+            marlow = await _seed_marlow(ids, dead=third_mode == "dead")
+            ids["marlow"] = marlow
         await _set_grant(ids, "player", controller)
         gateways = _role_gateways(ids)
         base_character = gateways["character"].route
@@ -126,6 +188,31 @@ def run_one(spec: dict) -> dict:
         def character_route(request: CompletionRequest) -> str | None:
             if f"identity>>{c_name}" in request.prompt:
                 raise AssertionError(f"controlled {c_name} must not reach model decision")
+            if third_mode == "alive" and "identity>>Marlow" in request.prompt:
+                tintent = spec.get("third_intent")
+                assert tintent is not None, "living third character needs a scripted intent"
+                if tintent[0] == "communicate":
+                    ttarget = {"ash": ids["ash"], "wren": ids["wren"]}.get(
+                        tintent[2] if len(tintent) > 2 else "", controller)
+                    return json.dumps(
+                        {
+                            "family": "communicate",
+                            "character_id": str(marlow),
+                            "snapshot_id": str(snap),
+                            "target_character_id": str(ttarget),
+                            "topic": tintent[1],
+                        }
+                    )
+                if tintent[0] == "observe":
+                    return json.dumps(
+                        {
+                            "family": "observe",
+                            "character_id": str(marlow),
+                            "snapshot_id": str(snap),
+                            "focus": tintent[1],
+                        }
+                    )
+                raise AssertionError(f"unknown third intent kind: {tintent[0]}")
             assert base_character is not None
             return base_character(request)
 
@@ -134,15 +221,29 @@ def run_one(spec: dict) -> dict:
         def reaction_route(request: CompletionRequest) -> str | None:
             if f"identity>>{c_name}" in request.prompt:
                 raise AssertionError(f"controlled {c_name} must not reach model reaction")
+            if third_mode == "alive" and "identity>>Marlow" in request.prompt:
+                tanswer = spec.get("third_answer", ("wait", None))
+                if tanswer[0] == "communicate":
+                    return json.dumps(
+                        {
+                            "family": "communicate",
+                            "character_id": str(marlow),
+                            "snapshot_id": ZERO_SNAP,
+                            "target_character_id": str(controller),
+                            "topic": tanswer[1],
+                        }
+                    )
+                return _wait_json(marlow, UUID(ZERO_SNAP))
             # Uncontrolled side answers per scenario (or falls back to base).
             me = other
+            target = marlow if spec.get("answer_target") == "third" else controller
             if kind == "communicate":
                 return json.dumps(
                     {
                         "family": "communicate",
                         "character_id": str(me),
                         "snapshot_id": ZERO_SNAP,
-                        "target_character_id": str(controller),
+                        "target_character_id": str(target),
                         "topic": topic,
                     }
                 )

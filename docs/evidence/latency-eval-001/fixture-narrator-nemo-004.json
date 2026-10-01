@@ -1,0 +1,970 @@
+{
+ "code_revision": "78fbbc07e09225d802ada76365d60006eac61a67",
+ "items": [
+  {
+   "audience": [
+    "b0610ba6-f8e4-4427-8e86-e877fa84ebe0",
+    "b47d0636-accb-4b66-9813-a03a30b1e05c"
+   ],
+   "beat_budget": 8,
+   "captured_temperature": null,
+   "captured_top_k": null,
+   "captured_top_p": null,
+   "event_id": "36e7097a-4338-4c6b-b314-882cee586253",
+   "json_mode": false,
+   "max_tokens": 512,
+   "narrator_calls": 1,
+   "phase_status": [
+    "narrated"
+   ],
+   "prompt": "Event 36e7097a-4338-4c6b-b314-882cee586253 in scene 74efa903-1725-5166-a0e5-ca22202798c5.\nAudience: b0610ba6-f8e4-4427-8e86-e877fa84ebe0, b47d0636-accb-4b66-9813-a03a30b1e05c.\nVisible facts:\n- key \"attempt:wait\": [attempt \u2014 narration-only] Ash waits\n- key \"attempt:communicate\": [attempt \u2014 narration-only] Wren attempts to communicate with Ash; topic: dawn patrol\n- key \"reaction:43629d56-c1d6-59b8-a2fe-9a3b0c8ef32e\": [quoted speech \u2014 dialogue-eligible] Ash says to Wren: \"Dawn patrol passed at first light.\" (speaker Ash, id: b0610ba6-f8e4-4427-8e86-e877fa84ebe0)\nSpeakers (use these exact ids when setting speaker_id):\n- Ash (id: b0610ba6-f8e4-4427-8e86-e877fa84ebe0)\nBeat budget: 8.",
+   "prompt_hash": "95c1bbee38a0f379bd83920cdebc64a9c82e0023ffa34839dc85ee0aea1af3d4",
+   "role": "narrator",
+   "scenario": "quoted-speech-ash",
+   "scene_id": "74efa903-1725-5166-a0e5-ca22202798c5",
+   "sources": {
+    "attempt:communicate": [
+     "e7dcf170-cca2-5b93-bdb8-37817d3ac83c"
+    ],
+    "attempt:wait": [
+     "1dc7a74d-e092-5a21-b897-fdbed9c29a6f"
+    ],
+    "reaction:43629d56-c1d6-59b8-a2fe-9a3b0c8ef32e": {
+     "kind": "CommunicateAction",
+     "reaction_id": "43629d56-c1d6-59b8-a2fe-9a3b0c8ef32e",
+     "reactor": "b0610ba6-f8e4-4427-8e86-e877fa84ebe0",
+     "status": "committed",
+     "target": "b47d0636-accb-4b66-9813-a03a30b1e05c",
+     "topic": "\"Dawn patrol passed at first light.\""
+    }
+   },
+   "speaker_names": {
+    "b0610ba6-f8e4-4427-8e86-e877fa84ebe0": "Ash",
+    "b47d0636-accb-4b66-9813-a03a30b1e05c": "Wren"
+   },
+   "speakers": {
+    "reaction:43629d56-c1d6-59b8-a2fe-9a3b0c8ef32e": "b0610ba6-f8e4-4427-8e86-e877fa84ebe0"
+   },
+   "speech_keys": [
+    "reaction:43629d56-c1d6-59b8-a2fe-9a3b0c8ef32e"
+   ],
+   "system": "# Narrator role prompt v2\n\nYou narrate one committed event for a stated audience. The visible\nfacts below are everything the audience may learn: every beat you\nwrite must cite only those fact keys, name only the given event, and\nspeak only as the narrator or as an audience member.\n\nSource categories (every fact line states its own):\n\n- `[attempt \u2014 narration-only]` records something a character tried or\n  did, not words anyone spoke. Describe it in narrator voice with\n  `speaker_id` null. Never render it as dialogue, even though its\n  topic may read like speech.\n- `[quoted speech \u2014 dialogue-eligible]` quotes identified spoken words\n  with the speaker's exact id. Render each as a `dialogue` beat with\n  that speaker, citing its key, and quote short utterances faithfully\n  (longer ones may be paraphrased without changing meaning).\n- `[attributed summary \u2014 narration-only]` is an attributed summary, not\n  spoken words: render it in narrator voice, citing its key \u2014 never\n  present its topic as a quotation, and never put words in a speaker's\n  mouth beyond a cited utterance.\n\nRules:\n\n- Output a JSON array of beat objects matching RESPONSE_SCHEMA below.\n- Every beat needs at least one cited fact key from the visible set.\n- Cite keys exactly as quoted after `key` (the description after the colon is not part of the key).\n- `speaker_id` must be null (narrator voice) or an audience member.\n- A `dialogue` beat must set `speaker_id` to the exact id of the speaker\n  of its cited quoted-speech fact; never leave it null and never borrow\n  another voice. Attempt facts are narration-only: summarize them in\n  narrator voice with `speaker_id` null.\n- Never substitute a different speech key to rescue a rejected beat:\n  the output words must come from the cited utterance. Put no words in\n  a speaker's mouth beyond a cited utterance.\n- The `Speakers` roster maps each speaker name to its exact id; use those\n  ids when setting `speaker_id`.\n- Never add characters, places, injuries, items, or outcomes absent\n  from the visible facts. Understatement beats invention.\n- Keep the whole narration within the beat budget.\n\nRESPONSE_SCHEMA:\n\n{\n  \"$defs\": {\n    \"BeatProposal\": {\n      \"additionalProperties\": false,\n      \"description\": \"Model-authored beat shape: the graph stamps ids and event linkage.\",\n      \"properties\": {\n        \"cited_fact_keys\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Cited Fact Keys\",\n          \"type\": \"array\"\n        },\n        \"emotion_hint\": {\n          \"default\": \"\",\n          \"maxLength\": 128,\n          \"title\": \"Emotion Hint\",\n          \"type\": \"string\"\n        },\n        \"kind\": {\n          \"$ref\": \"#/$defs/NarrationKind\",\n          \"default\": \"narration\"\n        },\n        \"source_effect_ids\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Source Effect Ids\",\n          \"type\": \"array\"\n        },\n        \"speaker_id\": {\n          \"anyOf\": [\n            {\n              \"format\": \"uuid\",\n              \"type\": \"string\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ],\n          \"default\": null,\n          \"title\": \"Speaker Id\"\n        },\n        \"text\": {\n          \"maxLength\": 2000,\n          \"minLength\": 1,\n          \"title\": \"Text\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"text\"\n      ],\n      \"title\": \"BeatProposal\",\n      \"type\": \"object\"\n    },\n    \"NarrationKind\": {\n      \"enum\": [\n        \"narration\",\n        \"dialogue\",\n        \"action\",\n        \"system\",\n        \"transition\"\n      ],\n      \"title\": \"NarrationKind\",\n      \"type\": \"string\"\n    }\n  },\n  \"items\": {\n    \"$ref\": \"#/$defs/BeatProposal\"\n  },\n  \"type\": \"array\"\n}\n",
+   "utterances": {
+    "reaction:43629d56-c1d6-59b8-a2fe-9a3b0c8ef32e": "Dawn patrol passed at first light."
+   },
+   "visible_keys": [
+    "attempt:communicate",
+    "attempt:wait",
+    "reaction:43629d56-c1d6-59b8-a2fe-9a3b0c8ef32e"
+   ]
+  },
+  {
+   "audience": [
+    "26186a2e-1ee2-4f7a-8b86-774c49327cd1",
+    "b7f73d71-5729-4b34-a606-1780b332139a"
+   ],
+   "beat_budget": 8,
+   "captured_temperature": null,
+   "captured_top_k": null,
+   "captured_top_p": null,
+   "event_id": "af1d4d87-e18f-4f04-8370-3deca40107fa",
+   "json_mode": false,
+   "max_tokens": 512,
+   "narrator_calls": 1,
+   "phase_status": [
+    "narrated"
+   ],
+   "prompt": "Event af1d4d87-e18f-4f04-8370-3deca40107fa in scene cfc13b60-6311-56bf-a855-1ed9fda8e3cb.\nAudience: 26186a2e-1ee2-4f7a-8b86-774c49327cd1, b7f73d71-5729-4b34-a606-1780b332139a.\nVisible facts:\n- key \"attempt:communicate\": [attempt \u2014 narration-only] Wren attempts to communicate with Ash; topic: dawn patrol\n- key \"attempt:wait\": [attempt \u2014 narration-only] Ash waits\n- key \"reaction:bc12e3e5-41aa-5adb-a533-3175e4227b6d\": [attributed summary \u2014 narration-only] Ash speaks to Wren about \"Tell Wren about the mill\"\nSpeakers (use these exact ids when setting speaker_id):\n- Ash (id: b7f73d71-5729-4b34-a606-1780b332139a)\nBeat budget: 8.",
+   "prompt_hash": "dce5f5599962486926bddadb05bdcca0b94347942dfa8f9117c23d45e9f2b5e6",
+   "role": "narrator",
+   "scenario": "topic-only-ash",
+   "scene_id": "cfc13b60-6311-56bf-a855-1ed9fda8e3cb",
+   "sources": {
+    "attempt:communicate": [
+     "40e79293-dede-5963-972d-f097f97fafad"
+    ],
+    "attempt:wait": [
+     "a379d0eb-4783-575c-a3c8-802af8d343fe"
+    ],
+    "reaction:bc12e3e5-41aa-5adb-a533-3175e4227b6d": {
+     "kind": "CommunicateAction",
+     "reaction_id": "bc12e3e5-41aa-5adb-a533-3175e4227b6d",
+     "reactor": "b7f73d71-5729-4b34-a606-1780b332139a",
+     "status": "committed",
+     "target": "26186a2e-1ee2-4f7a-8b86-774c49327cd1",
+     "topic": "Tell Wren about the mill"
+    }
+   },
+   "speaker_names": {
+    "26186a2e-1ee2-4f7a-8b86-774c49327cd1": "Wren",
+    "b7f73d71-5729-4b34-a606-1780b332139a": "Ash"
+   },
+   "speakers": {
+    "reaction:bc12e3e5-41aa-5adb-a533-3175e4227b6d": "b7f73d71-5729-4b34-a606-1780b332139a"
+   },
+   "speech_keys": [],
+   "system": "# Narrator role prompt v2\n\nYou narrate one committed event for a stated audience. The visible\nfacts below are everything the audience may learn: every beat you\nwrite must cite only those fact keys, name only the given event, and\nspeak only as the narrator or as an audience member.\n\nSource categories (every fact line states its own):\n\n- `[attempt \u2014 narration-only]` records something a character tried or\n  did, not words anyone spoke. Describe it in narrator voice with\n  `speaker_id` null. Never render it as dialogue, even though its\n  topic may read like speech.\n- `[quoted speech \u2014 dialogue-eligible]` quotes identified spoken words\n  with the speaker's exact id. Render each as a `dialogue` beat with\n  that speaker, citing its key, and quote short utterances faithfully\n  (longer ones may be paraphrased without changing meaning).\n- `[attributed summary \u2014 narration-only]` is an attributed summary, not\n  spoken words: render it in narrator voice, citing its key \u2014 never\n  present its topic as a quotation, and never put words in a speaker's\n  mouth beyond a cited utterance.\n\nRules:\n\n- Output a JSON array of beat objects matching RESPONSE_SCHEMA below.\n- Every beat needs at least one cited fact key from the visible set.\n- Cite keys exactly as quoted after `key` (the description after the colon is not part of the key).\n- `speaker_id` must be null (narrator voice) or an audience member.\n- A `dialogue` beat must set `speaker_id` to the exact id of the speaker\n  of its cited quoted-speech fact; never leave it null and never borrow\n  another voice. Attempt facts are narration-only: summarize them in\n  narrator voice with `speaker_id` null.\n- Never substitute a different speech key to rescue a rejected beat:\n  the output words must come from the cited utterance. Put no words in\n  a speaker's mouth beyond a cited utterance.\n- The `Speakers` roster maps each speaker name to its exact id; use those\n  ids when setting `speaker_id`.\n- Never add characters, places, injuries, items, or outcomes absent\n  from the visible facts. Understatement beats invention.\n- Keep the whole narration within the beat budget.\n\nRESPONSE_SCHEMA:\n\n{\n  \"$defs\": {\n    \"BeatProposal\": {\n      \"additionalProperties\": false,\n      \"description\": \"Model-authored beat shape: the graph stamps ids and event linkage.\",\n      \"properties\": {\n        \"cited_fact_keys\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Cited Fact Keys\",\n          \"type\": \"array\"\n        },\n        \"emotion_hint\": {\n          \"default\": \"\",\n          \"maxLength\": 128,\n          \"title\": \"Emotion Hint\",\n          \"type\": \"string\"\n        },\n        \"kind\": {\n          \"$ref\": \"#/$defs/NarrationKind\",\n          \"default\": \"narration\"\n        },\n        \"source_effect_ids\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Source Effect Ids\",\n          \"type\": \"array\"\n        },\n        \"speaker_id\": {\n          \"anyOf\": [\n            {\n              \"format\": \"uuid\",\n              \"type\": \"string\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ],\n          \"default\": null,\n          \"title\": \"Speaker Id\"\n        },\n        \"text\": {\n          \"maxLength\": 2000,\n          \"minLength\": 1,\n          \"title\": \"Text\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"text\"\n      ],\n      \"title\": \"BeatProposal\",\n      \"type\": \"object\"\n    },\n    \"NarrationKind\": {\n      \"enum\": [\n        \"narration\",\n        \"dialogue\",\n        \"action\",\n        \"system\",\n        \"transition\"\n      ],\n      \"title\": \"NarrationKind\",\n      \"type\": \"string\"\n    }\n  },\n  \"items\": {\n    \"$ref\": \"#/$defs/BeatProposal\"\n  },\n  \"type\": \"array\"\n}\n",
+   "utterances": {},
+   "visible_keys": [
+    "attempt:communicate",
+    "attempt:wait",
+    "reaction:bc12e3e5-41aa-5adb-a533-3175e4227b6d"
+   ]
+  },
+  {
+   "audience": [
+    "1437d2e9-6fde-446a-851b-5b9efffea144",
+    "1c0d51f1-64a0-42b0-a696-c462e887dd57"
+   ],
+   "beat_budget": 8,
+   "captured_temperature": null,
+   "captured_top_k": null,
+   "captured_top_p": null,
+   "event_id": "d1508855-8b74-4f86-9218-4d55ac98b51b",
+   "json_mode": false,
+   "max_tokens": 512,
+   "narrator_calls": 1,
+   "phase_status": [
+    "narrated"
+   ],
+   "prompt": "Event d1508855-8b74-4f86-9218-4d55ac98b51b in scene 918797d0-e3c6-5676-9a4d-d4de4f852de0.\nAudience: 1437d2e9-6fde-446a-851b-5b9efffea144, 1c0d51f1-64a0-42b0-a696-c462e887dd57.\nVisible facts:\n- key \"attempt:communicate\": [attempt \u2014 narration-only] Wren attempts to communicate with Ash; topic: dawn patrol\n- key \"attempt:wait\": [attempt \u2014 narration-only] Ash waits\nBeat budget: 8.",
+   "prompt_hash": "7377cad9cc0b4052be380397f12644e8bcab71786fce1d39713797e7bae5a66e",
+   "role": "narrator",
+   "scenario": "attempts-ash-waits",
+   "scene_id": "918797d0-e3c6-5676-9a4d-d4de4f852de0",
+   "sources": {
+    "attempt:communicate": [
+     "312f058e-3f58-5475-86f4-e6b3189d36f4"
+    ],
+    "attempt:wait": [
+     "74a0fb8e-57ac-580e-95e0-dfdf0010c74b"
+    ],
+    "reaction:037170f3-de9c-5e32-bf5f-21fc2f151a8f": {
+     "kind": "ObserveAction",
+     "reaction_id": "037170f3-de9c-5e32-bf5f-21fc2f151a8f",
+     "reactor": "1c0d51f1-64a0-42b0-a696-c462e887dd57",
+     "status": "committed",
+     "target": "",
+     "topic": ""
+    }
+   },
+   "speaker_names": {
+    "1437d2e9-6fde-446a-851b-5b9efffea144": "Wren",
+    "1c0d51f1-64a0-42b0-a696-c462e887dd57": "Ash"
+   },
+   "speakers": {},
+   "speech_keys": [],
+   "system": "# Narrator role prompt v2\n\nYou narrate one committed event for a stated audience. The visible\nfacts below are everything the audience may learn: every beat you\nwrite must cite only those fact keys, name only the given event, and\nspeak only as the narrator or as an audience member.\n\nSource categories (every fact line states its own):\n\n- `[attempt \u2014 narration-only]` records something a character tried or\n  did, not words anyone spoke. Describe it in narrator voice with\n  `speaker_id` null. Never render it as dialogue, even though its\n  topic may read like speech.\n- `[quoted speech \u2014 dialogue-eligible]` quotes identified spoken words\n  with the speaker's exact id. Render each as a `dialogue` beat with\n  that speaker, citing its key, and quote short utterances faithfully\n  (longer ones may be paraphrased without changing meaning).\n- `[attributed summary \u2014 narration-only]` is an attributed summary, not\n  spoken words: render it in narrator voice, citing its key \u2014 never\n  present its topic as a quotation, and never put words in a speaker's\n  mouth beyond a cited utterance.\n\nRules:\n\n- Output a JSON array of beat objects matching RESPONSE_SCHEMA below.\n- Every beat needs at least one cited fact key from the visible set.\n- Cite keys exactly as quoted after `key` (the description after the colon is not part of the key).\n- `speaker_id` must be null (narrator voice) or an audience member.\n- A `dialogue` beat must set `speaker_id` to the exact id of the speaker\n  of its cited quoted-speech fact; never leave it null and never borrow\n  another voice. Attempt facts are narration-only: summarize them in\n  narrator voice with `speaker_id` null.\n- Never substitute a different speech key to rescue a rejected beat:\n  the output words must come from the cited utterance. Put no words in\n  a speaker's mouth beyond a cited utterance.\n- The `Speakers` roster maps each speaker name to its exact id; use those\n  ids when setting `speaker_id`.\n- Never add characters, places, injuries, items, or outcomes absent\n  from the visible facts. Understatement beats invention.\n- Keep the whole narration within the beat budget.\n\nRESPONSE_SCHEMA:\n\n{\n  \"$defs\": {\n    \"BeatProposal\": {\n      \"additionalProperties\": false,\n      \"description\": \"Model-authored beat shape: the graph stamps ids and event linkage.\",\n      \"properties\": {\n        \"cited_fact_keys\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Cited Fact Keys\",\n          \"type\": \"array\"\n        },\n        \"emotion_hint\": {\n          \"default\": \"\",\n          \"maxLength\": 128,\n          \"title\": \"Emotion Hint\",\n          \"type\": \"string\"\n        },\n        \"kind\": {\n          \"$ref\": \"#/$defs/NarrationKind\",\n          \"default\": \"narration\"\n        },\n        \"source_effect_ids\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Source Effect Ids\",\n          \"type\": \"array\"\n        },\n        \"speaker_id\": {\n          \"anyOf\": [\n            {\n              \"format\": \"uuid\",\n              \"type\": \"string\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ],\n          \"default\": null,\n          \"title\": \"Speaker Id\"\n        },\n        \"text\": {\n          \"maxLength\": 2000,\n          \"minLength\": 1,\n          \"title\": \"Text\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"text\"\n      ],\n      \"title\": \"BeatProposal\",\n      \"type\": \"object\"\n    },\n    \"NarrationKind\": {\n      \"enum\": [\n        \"narration\",\n        \"dialogue\",\n        \"action\",\n        \"system\",\n        \"transition\"\n      ],\n      \"title\": \"NarrationKind\",\n      \"type\": \"string\"\n    }\n  },\n  \"items\": {\n    \"$ref\": \"#/$defs/BeatProposal\"\n  },\n  \"type\": \"array\"\n}\n",
+   "utterances": {},
+   "visible_keys": [
+    "attempt:communicate",
+    "attempt:wait"
+   ]
+  },
+  {
+   "audience": [
+    "8860cf6f-6f02-4b32-93e8-9c0df61d13a0",
+    "aeb53e1d-bfb7-408e-ae55-7e7c444a7f5e"
+   ],
+   "beat_budget": 8,
+   "captured_temperature": null,
+   "captured_top_k": null,
+   "captured_top_p": null,
+   "event_id": "ed32fe91-f4ca-46a4-bf5e-b3de243142e7",
+   "json_mode": false,
+   "max_tokens": 512,
+   "narrator_calls": 1,
+   "phase_status": [
+    "narrated"
+   ],
+   "prompt": "Event ed32fe91-f4ca-46a4-bf5e-b3de243142e7 in scene b188c516-a5d3-5a7a-a34e-c1df6beee2ca.\nAudience: 8860cf6f-6f02-4b32-93e8-9c0df61d13a0, aeb53e1d-bfb7-408e-ae55-7e7c444a7f5e.\nVisible facts:\n- key \"attempt:communicate\": [attempt \u2014 narration-only] Ash attempts to communicate with Wren; topic: dawn patrol\n- key \"attempt:wait\": [attempt \u2014 narration-only] Wren waits\nBeat budget: 8.",
+   "prompt_hash": "ed4d61338ccc591ffe5747637685febe47488649a570d87e1dfb71e7b07ab9e3",
+   "role": "narrator",
+   "scenario": "attempts-wren-waits",
+   "scene_id": "b188c516-a5d3-5a7a-a34e-c1df6beee2ca",
+   "sources": {
+    "attempt:communicate": [
+     "58845eac-2d3d-5614-b988-2bd047c78206"
+    ],
+    "attempt:wait": [
+     "708f498b-6292-58ad-971a-231292a0012e"
+    ],
+    "reaction:4d778376-cf4e-5c38-9583-0cea5ee8cbcc": {
+     "kind": "ObserveAction",
+     "reaction_id": "4d778376-cf4e-5c38-9583-0cea5ee8cbcc",
+     "reactor": "aeb53e1d-bfb7-408e-ae55-7e7c444a7f5e",
+     "status": "committed",
+     "target": "",
+     "topic": ""
+    }
+   },
+   "speaker_names": {
+    "8860cf6f-6f02-4b32-93e8-9c0df61d13a0": "Ash",
+    "aeb53e1d-bfb7-408e-ae55-7e7c444a7f5e": "Wren"
+   },
+   "speakers": {},
+   "speech_keys": [],
+   "system": "# Narrator role prompt v2\n\nYou narrate one committed event for a stated audience. The visible\nfacts below are everything the audience may learn: every beat you\nwrite must cite only those fact keys, name only the given event, and\nspeak only as the narrator or as an audience member.\n\nSource categories (every fact line states its own):\n\n- `[attempt \u2014 narration-only]` records something a character tried or\n  did, not words anyone spoke. Describe it in narrator voice with\n  `speaker_id` null. Never render it as dialogue, even though its\n  topic may read like speech.\n- `[quoted speech \u2014 dialogue-eligible]` quotes identified spoken words\n  with the speaker's exact id. Render each as a `dialogue` beat with\n  that speaker, citing its key, and quote short utterances faithfully\n  (longer ones may be paraphrased without changing meaning).\n- `[attributed summary \u2014 narration-only]` is an attributed summary, not\n  spoken words: render it in narrator voice, citing its key \u2014 never\n  present its topic as a quotation, and never put words in a speaker's\n  mouth beyond a cited utterance.\n\nRules:\n\n- Output a JSON array of beat objects matching RESPONSE_SCHEMA below.\n- Every beat needs at least one cited fact key from the visible set.\n- Cite keys exactly as quoted after `key` (the description after the colon is not part of the key).\n- `speaker_id` must be null (narrator voice) or an audience member.\n- A `dialogue` beat must set `speaker_id` to the exact id of the speaker\n  of its cited quoted-speech fact; never leave it null and never borrow\n  another voice. Attempt facts are narration-only: summarize them in\n  narrator voice with `speaker_id` null.\n- Never substitute a different speech key to rescue a rejected beat:\n  the output words must come from the cited utterance. Put no words in\n  a speaker's mouth beyond a cited utterance.\n- The `Speakers` roster maps each speaker name to its exact id; use those\n  ids when setting `speaker_id`.\n- Never add characters, places, injuries, items, or outcomes absent\n  from the visible facts. Understatement beats invention.\n- Keep the whole narration within the beat budget.\n\nRESPONSE_SCHEMA:\n\n{\n  \"$defs\": {\n    \"BeatProposal\": {\n      \"additionalProperties\": false,\n      \"description\": \"Model-authored beat shape: the graph stamps ids and event linkage.\",\n      \"properties\": {\n        \"cited_fact_keys\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Cited Fact Keys\",\n          \"type\": \"array\"\n        },\n        \"emotion_hint\": {\n          \"default\": \"\",\n          \"maxLength\": 128,\n          \"title\": \"Emotion Hint\",\n          \"type\": \"string\"\n        },\n        \"kind\": {\n          \"$ref\": \"#/$defs/NarrationKind\",\n          \"default\": \"narration\"\n        },\n        \"source_effect_ids\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Source Effect Ids\",\n          \"type\": \"array\"\n        },\n        \"speaker_id\": {\n          \"anyOf\": [\n            {\n              \"format\": \"uuid\",\n              \"type\": \"string\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ],\n          \"default\": null,\n          \"title\": \"Speaker Id\"\n        },\n        \"text\": {\n          \"maxLength\": 2000,\n          \"minLength\": 1,\n          \"title\": \"Text\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"text\"\n      ],\n      \"title\": \"BeatProposal\",\n      \"type\": \"object\"\n    },\n    \"NarrationKind\": {\n      \"enum\": [\n        \"narration\",\n        \"dialogue\",\n        \"action\",\n        \"system\",\n        \"transition\"\n      ],\n      \"title\": \"NarrationKind\",\n      \"type\": \"string\"\n    }\n  },\n  \"items\": {\n    \"$ref\": \"#/$defs/BeatProposal\"\n  },\n  \"type\": \"array\"\n}\n",
+   "utterances": {},
+   "visible_keys": [
+    "attempt:communicate",
+    "attempt:wait"
+   ]
+  },
+  {
+   "audience": [
+    "ce4c14aa-992b-49dc-890c-aa5ade33519e",
+    "e348681c-85cf-4d73-8a1e-ed288f3b1483"
+   ],
+   "beat_budget": 8,
+   "captured_temperature": null,
+   "captured_top_k": null,
+   "captured_top_p": null,
+   "event_id": "dae01449-1b33-4436-8f2c-32f103bf47e9",
+   "json_mode": false,
+   "max_tokens": 512,
+   "narrator_calls": 1,
+   "phase_status": [
+    "narrated"
+   ],
+   "prompt": "Event dae01449-1b33-4436-8f2c-32f103bf47e9 in scene 3828fcd9-1935-5856-8a4a-dc49061207de.\nAudience: ce4c14aa-992b-49dc-890c-aa5ade33519e, e348681c-85cf-4d73-8a1e-ed288f3b1483.\nVisible facts:\n- key \"attempt:communicate\": [attempt \u2014 narration-only] Ash attempts to communicate with Wren; topic: dawn patrol\n- key \"attempt:wait\": [attempt \u2014 narration-only] Wren waits\n- key \"reaction:8dbfdfb2-d1b1-561c-af88-43481ef14a0e\": [quoted speech \u2014 dialogue-eligible] Wren says to Ash: \"The mill road is clear.\" (speaker Wren, id: ce4c14aa-992b-49dc-890c-aa5ade33519e)\nSpeakers (use these exact ids when setting speaker_id):\n- Wren (id: ce4c14aa-992b-49dc-890c-aa5ade33519e)\nBeat budget: 8.",
+   "prompt_hash": "b2269c0ec875695593b2707f323370faf28a6ee69188c38fa8f5c5723277623d",
+   "role": "narrator",
+   "scenario": "quoted-speech-wren",
+   "scene_id": "3828fcd9-1935-5856-8a4a-dc49061207de",
+   "sources": {
+    "attempt:communicate": [
+     "2dae2526-2e84-5a94-b98b-1cbc23a9503d"
+    ],
+    "attempt:wait": [
+     "b1106dcc-3df0-5aed-9cee-5a42a987ad04"
+    ],
+    "reaction:8dbfdfb2-d1b1-561c-af88-43481ef14a0e": {
+     "kind": "CommunicateAction",
+     "reaction_id": "8dbfdfb2-d1b1-561c-af88-43481ef14a0e",
+     "reactor": "ce4c14aa-992b-49dc-890c-aa5ade33519e",
+     "status": "committed",
+     "target": "e348681c-85cf-4d73-8a1e-ed288f3b1483",
+     "topic": "\"The mill road is clear.\""
+    }
+   },
+   "speaker_names": {
+    "ce4c14aa-992b-49dc-890c-aa5ade33519e": "Wren",
+    "e348681c-85cf-4d73-8a1e-ed288f3b1483": "Ash"
+   },
+   "speakers": {
+    "reaction:8dbfdfb2-d1b1-561c-af88-43481ef14a0e": "ce4c14aa-992b-49dc-890c-aa5ade33519e"
+   },
+   "speech_keys": [
+    "reaction:8dbfdfb2-d1b1-561c-af88-43481ef14a0e"
+   ],
+   "system": "# Narrator role prompt v2\n\nYou narrate one committed event for a stated audience. The visible\nfacts below are everything the audience may learn: every beat you\nwrite must cite only those fact keys, name only the given event, and\nspeak only as the narrator or as an audience member.\n\nSource categories (every fact line states its own):\n\n- `[attempt \u2014 narration-only]` records something a character tried or\n  did, not words anyone spoke. Describe it in narrator voice with\n  `speaker_id` null. Never render it as dialogue, even though its\n  topic may read like speech.\n- `[quoted speech \u2014 dialogue-eligible]` quotes identified spoken words\n  with the speaker's exact id. Render each as a `dialogue` beat with\n  that speaker, citing its key, and quote short utterances faithfully\n  (longer ones may be paraphrased without changing meaning).\n- `[attributed summary \u2014 narration-only]` is an attributed summary, not\n  spoken words: render it in narrator voice, citing its key \u2014 never\n  present its topic as a quotation, and never put words in a speaker's\n  mouth beyond a cited utterance.\n\nRules:\n\n- Output a JSON array of beat objects matching RESPONSE_SCHEMA below.\n- Every beat needs at least one cited fact key from the visible set.\n- Cite keys exactly as quoted after `key` (the description after the colon is not part of the key).\n- `speaker_id` must be null (narrator voice) or an audience member.\n- A `dialogue` beat must set `speaker_id` to the exact id of the speaker\n  of its cited quoted-speech fact; never leave it null and never borrow\n  another voice. Attempt facts are narration-only: summarize them in\n  narrator voice with `speaker_id` null.\n- Never substitute a different speech key to rescue a rejected beat:\n  the output words must come from the cited utterance. Put no words in\n  a speaker's mouth beyond a cited utterance.\n- The `Speakers` roster maps each speaker name to its exact id; use those\n  ids when setting `speaker_id`.\n- Never add characters, places, injuries, items, or outcomes absent\n  from the visible facts. Understatement beats invention.\n- Keep the whole narration within the beat budget.\n\nRESPONSE_SCHEMA:\n\n{\n  \"$defs\": {\n    \"BeatProposal\": {\n      \"additionalProperties\": false,\n      \"description\": \"Model-authored beat shape: the graph stamps ids and event linkage.\",\n      \"properties\": {\n        \"cited_fact_keys\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Cited Fact Keys\",\n          \"type\": \"array\"\n        },\n        \"emotion_hint\": {\n          \"default\": \"\",\n          \"maxLength\": 128,\n          \"title\": \"Emotion Hint\",\n          \"type\": \"string\"\n        },\n        \"kind\": {\n          \"$ref\": \"#/$defs/NarrationKind\",\n          \"default\": \"narration\"\n        },\n        \"source_effect_ids\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Source Effect Ids\",\n          \"type\": \"array\"\n        },\n        \"speaker_id\": {\n          \"anyOf\": [\n            {\n              \"format\": \"uuid\",\n              \"type\": \"string\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ],\n          \"default\": null,\n          \"title\": \"Speaker Id\"\n        },\n        \"text\": {\n          \"maxLength\": 2000,\n          \"minLength\": 1,\n          \"title\": \"Text\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"text\"\n      ],\n      \"title\": \"BeatProposal\",\n      \"type\": \"object\"\n    },\n    \"NarrationKind\": {\n      \"enum\": [\n        \"narration\",\n        \"dialogue\",\n        \"action\",\n        \"system\",\n        \"transition\"\n      ],\n      \"title\": \"NarrationKind\",\n      \"type\": \"string\"\n    }\n  },\n  \"items\": {\n    \"$ref\": \"#/$defs/BeatProposal\"\n  },\n  \"type\": \"array\"\n}\n",
+   "utterances": {
+    "reaction:8dbfdfb2-d1b1-561c-af88-43481ef14a0e": "The mill road is clear."
+   },
+   "visible_keys": [
+    "attempt:communicate",
+    "attempt:wait",
+    "reaction:8dbfdfb2-d1b1-561c-af88-43481ef14a0e"
+   ]
+  },
+  {
+   "audience": [
+    "02b99a9e-24da-4904-a3ab-50e04e112c05",
+    "be1315ea-e58c-4c69-b7c4-c8c62b75e040"
+   ],
+   "beat_budget": 8,
+   "captured_temperature": null,
+   "captured_top_k": null,
+   "captured_top_p": null,
+   "event_id": "f1da2287-1661-4b68-adc9-49fa263d747e",
+   "json_mode": false,
+   "max_tokens": 512,
+   "narrator_calls": 1,
+   "phase_status": [
+    "narrated"
+   ],
+   "prompt": "Event f1da2287-1661-4b68-adc9-49fa263d747e in scene 1b40fd4e-1491-54a4-81b6-bf30d28039e7.\nAudience: 02b99a9e-24da-4904-a3ab-50e04e112c05, be1315ea-e58c-4c69-b7c4-c8c62b75e040.\nVisible facts:\n- key \"attempt:wait\": [attempt \u2014 narration-only] Wren waits\n- key \"attempt:communicate\": [attempt \u2014 narration-only] Ash attempts to communicate with Wren; topic: dawn patrol\n- key \"reaction:b46ac158-179d-57ac-bc36-8068f5a162e8\": [attributed summary \u2014 narration-only] Wren speaks to Ash about \"Tell Ash about the lamps\"\nSpeakers (use these exact ids when setting speaker_id):\n- Wren (id: be1315ea-e58c-4c69-b7c4-c8c62b75e040)\nBeat budget: 8.",
+   "prompt_hash": "a76691b8535195f612dc26297f9f3adc15c609de48407243dc482a51e9c1e01e",
+   "role": "narrator",
+   "scenario": "topic-only-wren",
+   "scene_id": "1b40fd4e-1491-54a4-81b6-bf30d28039e7",
+   "sources": {
+    "attempt:communicate": [
+     "ca61fcda-d3d5-59e1-bd3b-df28bc88c332"
+    ],
+    "attempt:wait": [
+     "24186890-7193-55f0-ad8f-a2ea4444bad4"
+    ],
+    "reaction:b46ac158-179d-57ac-bc36-8068f5a162e8": {
+     "kind": "CommunicateAction",
+     "reaction_id": "b46ac158-179d-57ac-bc36-8068f5a162e8",
+     "reactor": "be1315ea-e58c-4c69-b7c4-c8c62b75e040",
+     "status": "committed",
+     "target": "02b99a9e-24da-4904-a3ab-50e04e112c05",
+     "topic": "Tell Ash about the lamps"
+    }
+   },
+   "speaker_names": {
+    "02b99a9e-24da-4904-a3ab-50e04e112c05": "Ash",
+    "be1315ea-e58c-4c69-b7c4-c8c62b75e040": "Wren"
+   },
+   "speakers": {
+    "reaction:b46ac158-179d-57ac-bc36-8068f5a162e8": "be1315ea-e58c-4c69-b7c4-c8c62b75e040"
+   },
+   "speech_keys": [],
+   "system": "# Narrator role prompt v2\n\nYou narrate one committed event for a stated audience. The visible\nfacts below are everything the audience may learn: every beat you\nwrite must cite only those fact keys, name only the given event, and\nspeak only as the narrator or as an audience member.\n\nSource categories (every fact line states its own):\n\n- `[attempt \u2014 narration-only]` records something a character tried or\n  did, not words anyone spoke. Describe it in narrator voice with\n  `speaker_id` null. Never render it as dialogue, even though its\n  topic may read like speech.\n- `[quoted speech \u2014 dialogue-eligible]` quotes identified spoken words\n  with the speaker's exact id. Render each as a `dialogue` beat with\n  that speaker, citing its key, and quote short utterances faithfully\n  (longer ones may be paraphrased without changing meaning).\n- `[attributed summary \u2014 narration-only]` is an attributed summary, not\n  spoken words: render it in narrator voice, citing its key \u2014 never\n  present its topic as a quotation, and never put words in a speaker's\n  mouth beyond a cited utterance.\n\nRules:\n\n- Output a JSON array of beat objects matching RESPONSE_SCHEMA below.\n- Every beat needs at least one cited fact key from the visible set.\n- Cite keys exactly as quoted after `key` (the description after the colon is not part of the key).\n- `speaker_id` must be null (narrator voice) or an audience member.\n- A `dialogue` beat must set `speaker_id` to the exact id of the speaker\n  of its cited quoted-speech fact; never leave it null and never borrow\n  another voice. Attempt facts are narration-only: summarize them in\n  narrator voice with `speaker_id` null.\n- Never substitute a different speech key to rescue a rejected beat:\n  the output words must come from the cited utterance. Put no words in\n  a speaker's mouth beyond a cited utterance.\n- The `Speakers` roster maps each speaker name to its exact id; use those\n  ids when setting `speaker_id`.\n- Never add characters, places, injuries, items, or outcomes absent\n  from the visible facts. Understatement beats invention.\n- Keep the whole narration within the beat budget.\n\nRESPONSE_SCHEMA:\n\n{\n  \"$defs\": {\n    \"BeatProposal\": {\n      \"additionalProperties\": false,\n      \"description\": \"Model-authored beat shape: the graph stamps ids and event linkage.\",\n      \"properties\": {\n        \"cited_fact_keys\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Cited Fact Keys\",\n          \"type\": \"array\"\n        },\n        \"emotion_hint\": {\n          \"default\": \"\",\n          \"maxLength\": 128,\n          \"title\": \"Emotion Hint\",\n          \"type\": \"string\"\n        },\n        \"kind\": {\n          \"$ref\": \"#/$defs/NarrationKind\",\n          \"default\": \"narration\"\n        },\n        \"source_effect_ids\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Source Effect Ids\",\n          \"type\": \"array\"\n        },\n        \"speaker_id\": {\n          \"anyOf\": [\n            {\n              \"format\": \"uuid\",\n              \"type\": \"string\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ],\n          \"default\": null,\n          \"title\": \"Speaker Id\"\n        },\n        \"text\": {\n          \"maxLength\": 2000,\n          \"minLength\": 1,\n          \"title\": \"Text\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"text\"\n      ],\n      \"title\": \"BeatProposal\",\n      \"type\": \"object\"\n    },\n    \"NarrationKind\": {\n      \"enum\": [\n        \"narration\",\n        \"dialogue\",\n        \"action\",\n        \"system\",\n        \"transition\"\n      ],\n      \"title\": \"NarrationKind\",\n      \"type\": \"string\"\n    }\n  },\n  \"items\": {\n    \"$ref\": \"#/$defs/BeatProposal\"\n  },\n  \"type\": \"array\"\n}\n",
+   "utterances": {},
+   "visible_keys": [
+    "attempt:communicate",
+    "attempt:wait",
+    "reaction:b46ac158-179d-57ac-bc36-8068f5a162e8"
+   ]
+  },
+  {
+   "audience": [
+    "4db800f5-2c54-42cb-bb4b-e306ede2d9e0",
+    "ccf9e54e-f84c-4a30-b630-6595274cf230"
+   ],
+   "beat_budget": 8,
+   "captured_temperature": null,
+   "captured_top_k": null,
+   "captured_top_p": null,
+   "event_id": "798d271d-6a7a-4d4f-acb0-272727729a2a",
+   "json_mode": false,
+   "max_tokens": 512,
+   "narrator_calls": 1,
+   "phase_status": [
+    "narrated"
+   ],
+   "prompt": "Event 798d271d-6a7a-4d4f-acb0-272727729a2a in scene 11674e83-2f05-5459-9481-4b09a93ef557.\nAudience: 4db800f5-2c54-42cb-bb4b-e306ede2d9e0, ccf9e54e-f84c-4a30-b630-6595274cf230.\nVisible facts:\n- key \"attempt:wait\": [attempt \u2014 narration-only] Ash waits\n- key \"attempt:communicate\": [attempt \u2014 narration-only] Wren attempts to communicate with Ash; topic: \"Where is the mill?\"\n- key \"reaction:b32ce4a8-3783-5183-bf5d-30cb85c7535d\": [quoted speech \u2014 dialogue-eligible] Ash says to Wren: \"Past the bridge, second left.\" (speaker Ash, id: 4db800f5-2c54-42cb-bb4b-e306ede2d9e0)\nSpeakers (use these exact ids when setting speaker_id):\n- Ash (id: 4db800f5-2c54-42cb-bb4b-e306ede2d9e0)\nBeat budget: 8.",
+   "prompt_hash": "4dd6ea36335351521bfd1ae03f061f05514fb684f65ebcb8a48d2f3c9a5e9fd4",
+   "role": "narrator",
+   "scenario": "quoted-question",
+   "scene_id": "11674e83-2f05-5459-9481-4b09a93ef557",
+   "sources": {
+    "attempt:communicate": [
+     "e02b3845-8d0b-5763-8c32-daccb3141e96"
+    ],
+    "attempt:wait": [
+     "9097eff4-ddd7-5d22-b3d7-7e2682c5e430"
+    ],
+    "reaction:b32ce4a8-3783-5183-bf5d-30cb85c7535d": {
+     "kind": "CommunicateAction",
+     "reaction_id": "b32ce4a8-3783-5183-bf5d-30cb85c7535d",
+     "reactor": "4db800f5-2c54-42cb-bb4b-e306ede2d9e0",
+     "status": "committed",
+     "target": "ccf9e54e-f84c-4a30-b630-6595274cf230",
+     "topic": "\"Past the bridge, second left.\""
+    }
+   },
+   "speaker_names": {
+    "4db800f5-2c54-42cb-bb4b-e306ede2d9e0": "Ash",
+    "ccf9e54e-f84c-4a30-b630-6595274cf230": "Wren"
+   },
+   "speakers": {
+    "reaction:b32ce4a8-3783-5183-bf5d-30cb85c7535d": "4db800f5-2c54-42cb-bb4b-e306ede2d9e0"
+   },
+   "speech_keys": [
+    "reaction:b32ce4a8-3783-5183-bf5d-30cb85c7535d"
+   ],
+   "system": "# Narrator role prompt v2\n\nYou narrate one committed event for a stated audience. The visible\nfacts below are everything the audience may learn: every beat you\nwrite must cite only those fact keys, name only the given event, and\nspeak only as the narrator or as an audience member.\n\nSource categories (every fact line states its own):\n\n- `[attempt \u2014 narration-only]` records something a character tried or\n  did, not words anyone spoke. Describe it in narrator voice with\n  `speaker_id` null. Never render it as dialogue, even though its\n  topic may read like speech.\n- `[quoted speech \u2014 dialogue-eligible]` quotes identified spoken words\n  with the speaker's exact id. Render each as a `dialogue` beat with\n  that speaker, citing its key, and quote short utterances faithfully\n  (longer ones may be paraphrased without changing meaning).\n- `[attributed summary \u2014 narration-only]` is an attributed summary, not\n  spoken words: render it in narrator voice, citing its key \u2014 never\n  present its topic as a quotation, and never put words in a speaker's\n  mouth beyond a cited utterance.\n\nRules:\n\n- Output a JSON array of beat objects matching RESPONSE_SCHEMA below.\n- Every beat needs at least one cited fact key from the visible set.\n- Cite keys exactly as quoted after `key` (the description after the colon is not part of the key).\n- `speaker_id` must be null (narrator voice) or an audience member.\n- A `dialogue` beat must set `speaker_id` to the exact id of the speaker\n  of its cited quoted-speech fact; never leave it null and never borrow\n  another voice. Attempt facts are narration-only: summarize them in\n  narrator voice with `speaker_id` null.\n- Never substitute a different speech key to rescue a rejected beat:\n  the output words must come from the cited utterance. Put no words in\n  a speaker's mouth beyond a cited utterance.\n- The `Speakers` roster maps each speaker name to its exact id; use those\n  ids when setting `speaker_id`.\n- Never add characters, places, injuries, items, or outcomes absent\n  from the visible facts. Understatement beats invention.\n- Keep the whole narration within the beat budget.\n\nRESPONSE_SCHEMA:\n\n{\n  \"$defs\": {\n    \"BeatProposal\": {\n      \"additionalProperties\": false,\n      \"description\": \"Model-authored beat shape: the graph stamps ids and event linkage.\",\n      \"properties\": {\n        \"cited_fact_keys\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Cited Fact Keys\",\n          \"type\": \"array\"\n        },\n        \"emotion_hint\": {\n          \"default\": \"\",\n          \"maxLength\": 128,\n          \"title\": \"Emotion Hint\",\n          \"type\": \"string\"\n        },\n        \"kind\": {\n          \"$ref\": \"#/$defs/NarrationKind\",\n          \"default\": \"narration\"\n        },\n        \"source_effect_ids\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Source Effect Ids\",\n          \"type\": \"array\"\n        },\n        \"speaker_id\": {\n          \"anyOf\": [\n            {\n              \"format\": \"uuid\",\n              \"type\": \"string\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ],\n          \"default\": null,\n          \"title\": \"Speaker Id\"\n        },\n        \"text\": {\n          \"maxLength\": 2000,\n          \"minLength\": 1,\n          \"title\": \"Text\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"text\"\n      ],\n      \"title\": \"BeatProposal\",\n      \"type\": \"object\"\n    },\n    \"NarrationKind\": {\n      \"enum\": [\n        \"narration\",\n        \"dialogue\",\n        \"action\",\n        \"system\",\n        \"transition\"\n      ],\n      \"title\": \"NarrationKind\",\n      \"type\": \"string\"\n    }\n  },\n  \"items\": {\n    \"$ref\": \"#/$defs/BeatProposal\"\n  },\n  \"type\": \"array\"\n}\n",
+   "utterances": {
+    "reaction:b32ce4a8-3783-5183-bf5d-30cb85c7535d": "Past the bridge, second left."
+   },
+   "visible_keys": [
+    "attempt:communicate",
+    "attempt:wait",
+    "reaction:b32ce4a8-3783-5183-bf5d-30cb85c7535d"
+   ]
+  },
+  {
+   "audience": [
+    "aaf203d0-dda2-460f-83a3-f414a76a0bcb",
+    "efcd6a45-c324-4b79-a5f9-665c674699fc"
+   ],
+   "beat_budget": 8,
+   "captured_temperature": null,
+   "captured_top_k": null,
+   "captured_top_p": null,
+   "event_id": "3ed53088-e131-4ef6-9ba0-e07c522d166b",
+   "json_mode": false,
+   "max_tokens": 512,
+   "narrator_calls": 1,
+   "phase_status": [
+    "narrated"
+   ],
+   "prompt": "Event 3ed53088-e131-4ef6-9ba0-e07c522d166b in scene d1aa1482-7a18-5c25-9d08-34f9628325bd.\nAudience: aaf203d0-dda2-460f-83a3-f414a76a0bcb, efcd6a45-c324-4b79-a5f9-665c674699fc.\nVisible facts:\n- key \"attempt:wait\": [attempt \u2014 narration-only] Ash waits\n- key \"attempt:communicate\": [attempt \u2014 narration-only] Wren attempts to communicate with Ash; topic: mill stores\n- key \"reaction:f3f4f891-9b24-5a75-ae7d-78bf56563f8f\": [quoted speech \u2014 dialogue-eligible] Ash says to Wren: \"Grain and oilskins.\" (speaker Ash, id: aaf203d0-dda2-460f-83a3-f414a76a0bcb)\nSpeakers (use these exact ids when setting speaker_id):\n- Ash (id: aaf203d0-dda2-460f-83a3-f414a76a0bcb)\nBeat budget: 8.",
+   "prompt_hash": "e23f364feceaaa3a589c7e7725d350ce9f44036c62418d25fd66781044921b73",
+   "role": "narrator",
+   "scenario": "mill-brief",
+   "scene_id": "d1aa1482-7a18-5c25-9d08-34f9628325bd",
+   "sources": {
+    "attempt:communicate": [
+     "bacacc3e-4c28-566d-a86d-a1aa4ed0fca6"
+    ],
+    "attempt:wait": [
+     "858dc747-a13c-5c85-8d0c-c83775f54fe4"
+    ],
+    "reaction:f3f4f891-9b24-5a75-ae7d-78bf56563f8f": {
+     "kind": "CommunicateAction",
+     "reaction_id": "f3f4f891-9b24-5a75-ae7d-78bf56563f8f",
+     "reactor": "aaf203d0-dda2-460f-83a3-f414a76a0bcb",
+     "status": "committed",
+     "target": "efcd6a45-c324-4b79-a5f9-665c674699fc",
+     "topic": "\"Grain and oilskins.\""
+    }
+   },
+   "speaker_names": {
+    "aaf203d0-dda2-460f-83a3-f414a76a0bcb": "Ash",
+    "efcd6a45-c324-4b79-a5f9-665c674699fc": "Wren"
+   },
+   "speakers": {
+    "reaction:f3f4f891-9b24-5a75-ae7d-78bf56563f8f": "aaf203d0-dda2-460f-83a3-f414a76a0bcb"
+   },
+   "speech_keys": [
+    "reaction:f3f4f891-9b24-5a75-ae7d-78bf56563f8f"
+   ],
+   "system": "# Narrator role prompt v2\n\nYou narrate one committed event for a stated audience. The visible\nfacts below are everything the audience may learn: every beat you\nwrite must cite only those fact keys, name only the given event, and\nspeak only as the narrator or as an audience member.\n\nSource categories (every fact line states its own):\n\n- `[attempt \u2014 narration-only]` records something a character tried or\n  did, not words anyone spoke. Describe it in narrator voice with\n  `speaker_id` null. Never render it as dialogue, even though its\n  topic may read like speech.\n- `[quoted speech \u2014 dialogue-eligible]` quotes identified spoken words\n  with the speaker's exact id. Render each as a `dialogue` beat with\n  that speaker, citing its key, and quote short utterances faithfully\n  (longer ones may be paraphrased without changing meaning).\n- `[attributed summary \u2014 narration-only]` is an attributed summary, not\n  spoken words: render it in narrator voice, citing its key \u2014 never\n  present its topic as a quotation, and never put words in a speaker's\n  mouth beyond a cited utterance.\n\nRules:\n\n- Output a JSON array of beat objects matching RESPONSE_SCHEMA below.\n- Every beat needs at least one cited fact key from the visible set.\n- Cite keys exactly as quoted after `key` (the description after the colon is not part of the key).\n- `speaker_id` must be null (narrator voice) or an audience member.\n- A `dialogue` beat must set `speaker_id` to the exact id of the speaker\n  of its cited quoted-speech fact; never leave it null and never borrow\n  another voice. Attempt facts are narration-only: summarize them in\n  narrator voice with `speaker_id` null.\n- Never substitute a different speech key to rescue a rejected beat:\n  the output words must come from the cited utterance. Put no words in\n  a speaker's mouth beyond a cited utterance.\n- The `Speakers` roster maps each speaker name to its exact id; use those\n  ids when setting `speaker_id`.\n- Never add characters, places, injuries, items, or outcomes absent\n  from the visible facts. Understatement beats invention.\n- Keep the whole narration within the beat budget.\n\nRESPONSE_SCHEMA:\n\n{\n  \"$defs\": {\n    \"BeatProposal\": {\n      \"additionalProperties\": false,\n      \"description\": \"Model-authored beat shape: the graph stamps ids and event linkage.\",\n      \"properties\": {\n        \"cited_fact_keys\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Cited Fact Keys\",\n          \"type\": \"array\"\n        },\n        \"emotion_hint\": {\n          \"default\": \"\",\n          \"maxLength\": 128,\n          \"title\": \"Emotion Hint\",\n          \"type\": \"string\"\n        },\n        \"kind\": {\n          \"$ref\": \"#/$defs/NarrationKind\",\n          \"default\": \"narration\"\n        },\n        \"source_effect_ids\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Source Effect Ids\",\n          \"type\": \"array\"\n        },\n        \"speaker_id\": {\n          \"anyOf\": [\n            {\n              \"format\": \"uuid\",\n              \"type\": \"string\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ],\n          \"default\": null,\n          \"title\": \"Speaker Id\"\n        },\n        \"text\": {\n          \"maxLength\": 2000,\n          \"minLength\": 1,\n          \"title\": \"Text\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"text\"\n      ],\n      \"title\": \"BeatProposal\",\n      \"type\": \"object\"\n    },\n    \"NarrationKind\": {\n      \"enum\": [\n        \"narration\",\n        \"dialogue\",\n        \"action\",\n        \"system\",\n        \"transition\"\n      ],\n      \"title\": \"NarrationKind\",\n      \"type\": \"string\"\n    }\n  },\n  \"items\": {\n    \"$ref\": \"#/$defs/BeatProposal\"\n  },\n  \"type\": \"array\"\n}\n",
+   "utterances": {
+    "reaction:f3f4f891-9b24-5a75-ae7d-78bf56563f8f": "Grain and oilskins."
+   },
+   "visible_keys": [
+    "attempt:communicate",
+    "attempt:wait",
+    "reaction:f3f4f891-9b24-5a75-ae7d-78bf56563f8f"
+   ]
+  },
+  {
+   "audience": [
+    "0a50501e-6d5a-4497-b88d-923dc8d859a6",
+    "35682193-2970-4278-a265-ec10164cc041"
+   ],
+   "beat_budget": 8,
+   "captured_temperature": null,
+   "captured_top_k": null,
+   "captured_top_p": null,
+   "event_id": "b8e98aa6-419c-47a9-af0e-0137e5b34c21",
+   "json_mode": false,
+   "max_tokens": 512,
+   "narrator_calls": 1,
+   "phase_status": [
+    "narrated"
+   ],
+   "prompt": "Event b8e98aa6-419c-47a9-af0e-0137e5b34c21 in scene 6ad87f44-2ce5-50ff-869a-0a3ce8886826.\nAudience: 0a50501e-6d5a-4497-b88d-923dc8d859a6, 35682193-2970-4278-a265-ec10164cc041.\nVisible facts:\n- key \"attempt:wait\": [attempt \u2014 narration-only] Ash waits\n- key \"attempt:communicate\": [attempt \u2014 narration-only] Wren attempts to communicate with Ash; topic: Who keeps the lighthouse at night?\n- key \"reaction:9506e223-424b-54f7-85c5-2e5a5168532b\": [quoted speech \u2014 dialogue-eligible] Ash says to Wren: \"Old Marlow, if the lamp is still lit.\" (speaker Ash, id: 35682193-2970-4278-a265-ec10164cc041)\nSpeakers (use these exact ids when setting speaker_id):\n- Ash (id: 35682193-2970-4278-a265-ec10164cc041)\nBeat budget: 8.",
+   "prompt_hash": "55c3646bb9b457b38382f0fb1e018b5831812eb06b55f8e19cb5d5c0af038e93",
+   "role": "narrator",
+   "scenario": "lighthouse",
+   "scene_id": "6ad87f44-2ce5-50ff-869a-0a3ce8886826",
+   "sources": {
+    "attempt:communicate": [
+     "d2e704ab-9afb-5ffa-b06f-975d153d7a63"
+    ],
+    "attempt:wait": [
+     "862f79ff-3de9-5b6e-a8a2-ad1b7ee53296"
+    ],
+    "reaction:9506e223-424b-54f7-85c5-2e5a5168532b": {
+     "kind": "CommunicateAction",
+     "reaction_id": "9506e223-424b-54f7-85c5-2e5a5168532b",
+     "reactor": "35682193-2970-4278-a265-ec10164cc041",
+     "status": "committed",
+     "target": "0a50501e-6d5a-4497-b88d-923dc8d859a6",
+     "topic": "\"Old Marlow, if the lamp is still lit.\""
+    }
+   },
+   "speaker_names": {
+    "0a50501e-6d5a-4497-b88d-923dc8d859a6": "Wren",
+    "35682193-2970-4278-a265-ec10164cc041": "Ash"
+   },
+   "speakers": {
+    "reaction:9506e223-424b-54f7-85c5-2e5a5168532b": "35682193-2970-4278-a265-ec10164cc041"
+   },
+   "speech_keys": [
+    "reaction:9506e223-424b-54f7-85c5-2e5a5168532b"
+   ],
+   "system": "# Narrator role prompt v2\n\nYou narrate one committed event for a stated audience. The visible\nfacts below are everything the audience may learn: every beat you\nwrite must cite only those fact keys, name only the given event, and\nspeak only as the narrator or as an audience member.\n\nSource categories (every fact line states its own):\n\n- `[attempt \u2014 narration-only]` records something a character tried or\n  did, not words anyone spoke. Describe it in narrator voice with\n  `speaker_id` null. Never render it as dialogue, even though its\n  topic may read like speech.\n- `[quoted speech \u2014 dialogue-eligible]` quotes identified spoken words\n  with the speaker's exact id. Render each as a `dialogue` beat with\n  that speaker, citing its key, and quote short utterances faithfully\n  (longer ones may be paraphrased without changing meaning).\n- `[attributed summary \u2014 narration-only]` is an attributed summary, not\n  spoken words: render it in narrator voice, citing its key \u2014 never\n  present its topic as a quotation, and never put words in a speaker's\n  mouth beyond a cited utterance.\n\nRules:\n\n- Output a JSON array of beat objects matching RESPONSE_SCHEMA below.\n- Every beat needs at least one cited fact key from the visible set.\n- Cite keys exactly as quoted after `key` (the description after the colon is not part of the key).\n- `speaker_id` must be null (narrator voice) or an audience member.\n- A `dialogue` beat must set `speaker_id` to the exact id of the speaker\n  of its cited quoted-speech fact; never leave it null and never borrow\n  another voice. Attempt facts are narration-only: summarize them in\n  narrator voice with `speaker_id` null.\n- Never substitute a different speech key to rescue a rejected beat:\n  the output words must come from the cited utterance. Put no words in\n  a speaker's mouth beyond a cited utterance.\n- The `Speakers` roster maps each speaker name to its exact id; use those\n  ids when setting `speaker_id`.\n- Never add characters, places, injuries, items, or outcomes absent\n  from the visible facts. Understatement beats invention.\n- Keep the whole narration within the beat budget.\n\nRESPONSE_SCHEMA:\n\n{\n  \"$defs\": {\n    \"BeatProposal\": {\n      \"additionalProperties\": false,\n      \"description\": \"Model-authored beat shape: the graph stamps ids and event linkage.\",\n      \"properties\": {\n        \"cited_fact_keys\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Cited Fact Keys\",\n          \"type\": \"array\"\n        },\n        \"emotion_hint\": {\n          \"default\": \"\",\n          \"maxLength\": 128,\n          \"title\": \"Emotion Hint\",\n          \"type\": \"string\"\n        },\n        \"kind\": {\n          \"$ref\": \"#/$defs/NarrationKind\",\n          \"default\": \"narration\"\n        },\n        \"source_effect_ids\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Source Effect Ids\",\n          \"type\": \"array\"\n        },\n        \"speaker_id\": {\n          \"anyOf\": [\n            {\n              \"format\": \"uuid\",\n              \"type\": \"string\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ],\n          \"default\": null,\n          \"title\": \"Speaker Id\"\n        },\n        \"text\": {\n          \"maxLength\": 2000,\n          \"minLength\": 1,\n          \"title\": \"Text\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"text\"\n      ],\n      \"title\": \"BeatProposal\",\n      \"type\": \"object\"\n    },\n    \"NarrationKind\": {\n      \"enum\": [\n        \"narration\",\n        \"dialogue\",\n        \"action\",\n        \"system\",\n        \"transition\"\n      ],\n      \"title\": \"NarrationKind\",\n      \"type\": \"string\"\n    }\n  },\n  \"items\": {\n    \"$ref\": \"#/$defs/BeatProposal\"\n  },\n  \"type\": \"array\"\n}\n",
+   "utterances": {
+    "reaction:9506e223-424b-54f7-85c5-2e5a5168532b": "Old Marlow, if the lamp is still lit."
+   },
+   "visible_keys": [
+    "attempt:communicate",
+    "attempt:wait",
+    "reaction:9506e223-424b-54f7-85c5-2e5a5168532b"
+   ]
+  },
+  {
+   "audience": [
+    "207a5b8d-2fd6-43a3-ae6b-0e3606d791a7",
+    "e8cd5c01-566b-405a-a55c-cae79cd7f830"
+   ],
+   "beat_budget": 8,
+   "captured_temperature": null,
+   "captured_top_k": null,
+   "captured_top_p": null,
+   "event_id": "fef4ba17-8da4-46ba-ab4f-98c9a6735f36",
+   "json_mode": false,
+   "max_tokens": 512,
+   "narrator_calls": 1,
+   "phase_status": [
+    "narrated"
+   ],
+   "prompt": "Event fef4ba17-8da4-46ba-ab4f-98c9a6735f36 in scene b302f624-67ad-5d3b-9492-4768759d9418.\nAudience: 207a5b8d-2fd6-43a3-ae6b-0e3606d791a7, e8cd5c01-566b-405a-a55c-cae79cd7f830.\nVisible facts:\n- key \"attempt:wait\": [attempt \u2014 narration-only] Ash waits\n- key \"attempt:communicate\": [attempt \u2014 narration-only] Wren attempts to communicate with Ash; topic: Ask Ash whether the stalls are open yet.\n- key \"reaction:537d1274-8656-5e40-96ce-6fbc0cf0b34e\": [quoted speech \u2014 dialogue-eligible] Ash says to Wren: \"Stalls open at second bell.\" (speaker Ash, id: e8cd5c01-566b-405a-a55c-cae79cd7f830)\nSpeakers (use these exact ids when setting speaker_id):\n- Ash (id: e8cd5c01-566b-405a-a55c-cae79cd7f830)\nBeat budget: 8.",
+   "prompt_hash": "1dcf5370d2d21a129c549b55e4742f01d22e711483e89dc81737ebb7a6d2c24a",
+   "role": "narrator",
+   "scenario": "stalls",
+   "scene_id": "b302f624-67ad-5d3b-9492-4768759d9418",
+   "sources": {
+    "attempt:communicate": [
+     "918079cb-2eb1-56d1-a742-bd0971dbe9a4"
+    ],
+    "attempt:wait": [
+     "6bb16dab-a6cd-50e0-93ec-92dca5db53fa"
+    ],
+    "reaction:537d1274-8656-5e40-96ce-6fbc0cf0b34e": {
+     "kind": "CommunicateAction",
+     "reaction_id": "537d1274-8656-5e40-96ce-6fbc0cf0b34e",
+     "reactor": "e8cd5c01-566b-405a-a55c-cae79cd7f830",
+     "status": "committed",
+     "target": "207a5b8d-2fd6-43a3-ae6b-0e3606d791a7",
+     "topic": "\"Stalls open at second bell.\""
+    }
+   },
+   "speaker_names": {
+    "207a5b8d-2fd6-43a3-ae6b-0e3606d791a7": "Wren",
+    "e8cd5c01-566b-405a-a55c-cae79cd7f830": "Ash"
+   },
+   "speakers": {
+    "reaction:537d1274-8656-5e40-96ce-6fbc0cf0b34e": "e8cd5c01-566b-405a-a55c-cae79cd7f830"
+   },
+   "speech_keys": [
+    "reaction:537d1274-8656-5e40-96ce-6fbc0cf0b34e"
+   ],
+   "system": "# Narrator role prompt v2\n\nYou narrate one committed event for a stated audience. The visible\nfacts below are everything the audience may learn: every beat you\nwrite must cite only those fact keys, name only the given event, and\nspeak only as the narrator or as an audience member.\n\nSource categories (every fact line states its own):\n\n- `[attempt \u2014 narration-only]` records something a character tried or\n  did, not words anyone spoke. Describe it in narrator voice with\n  `speaker_id` null. Never render it as dialogue, even though its\n  topic may read like speech.\n- `[quoted speech \u2014 dialogue-eligible]` quotes identified spoken words\n  with the speaker's exact id. Render each as a `dialogue` beat with\n  that speaker, citing its key, and quote short utterances faithfully\n  (longer ones may be paraphrased without changing meaning).\n- `[attributed summary \u2014 narration-only]` is an attributed summary, not\n  spoken words: render it in narrator voice, citing its key \u2014 never\n  present its topic as a quotation, and never put words in a speaker's\n  mouth beyond a cited utterance.\n\nRules:\n\n- Output a JSON array of beat objects matching RESPONSE_SCHEMA below.\n- Every beat needs at least one cited fact key from the visible set.\n- Cite keys exactly as quoted after `key` (the description after the colon is not part of the key).\n- `speaker_id` must be null (narrator voice) or an audience member.\n- A `dialogue` beat must set `speaker_id` to the exact id of the speaker\n  of its cited quoted-speech fact; never leave it null and never borrow\n  another voice. Attempt facts are narration-only: summarize them in\n  narrator voice with `speaker_id` null.\n- Never substitute a different speech key to rescue a rejected beat:\n  the output words must come from the cited utterance. Put no words in\n  a speaker's mouth beyond a cited utterance.\n- The `Speakers` roster maps each speaker name to its exact id; use those\n  ids when setting `speaker_id`.\n- Never add characters, places, injuries, items, or outcomes absent\n  from the visible facts. Understatement beats invention.\n- Keep the whole narration within the beat budget.\n\nRESPONSE_SCHEMA:\n\n{\n  \"$defs\": {\n    \"BeatProposal\": {\n      \"additionalProperties\": false,\n      \"description\": \"Model-authored beat shape: the graph stamps ids and event linkage.\",\n      \"properties\": {\n        \"cited_fact_keys\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Cited Fact Keys\",\n          \"type\": \"array\"\n        },\n        \"emotion_hint\": {\n          \"default\": \"\",\n          \"maxLength\": 128,\n          \"title\": \"Emotion Hint\",\n          \"type\": \"string\"\n        },\n        \"kind\": {\n          \"$ref\": \"#/$defs/NarrationKind\",\n          \"default\": \"narration\"\n        },\n        \"source_effect_ids\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Source Effect Ids\",\n          \"type\": \"array\"\n        },\n        \"speaker_id\": {\n          \"anyOf\": [\n            {\n              \"format\": \"uuid\",\n              \"type\": \"string\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ],\n          \"default\": null,\n          \"title\": \"Speaker Id\"\n        },\n        \"text\": {\n          \"maxLength\": 2000,\n          \"minLength\": 1,\n          \"title\": \"Text\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"text\"\n      ],\n      \"title\": \"BeatProposal\",\n      \"type\": \"object\"\n    },\n    \"NarrationKind\": {\n      \"enum\": [\n        \"narration\",\n        \"dialogue\",\n        \"action\",\n        \"system\",\n        \"transition\"\n      ],\n      \"title\": \"NarrationKind\",\n      \"type\": \"string\"\n    }\n  },\n  \"items\": {\n    \"$ref\": \"#/$defs/BeatProposal\"\n  },\n  \"type\": \"array\"\n}\n",
+   "utterances": {
+    "reaction:537d1274-8656-5e40-96ce-6fbc0cf0b34e": "Stalls open at second bell."
+   },
+   "visible_keys": [
+    "attempt:communicate",
+    "attempt:wait",
+    "reaction:537d1274-8656-5e40-96ce-6fbc0cf0b34e"
+   ]
+  },
+  {
+   "audience": [
+    "15621818-c952-4a06-a146-95c4c1f9d546",
+    "9af83949-948b-499c-bc3f-954ff49df36f"
+   ],
+   "beat_budget": 8,
+   "captured_temperature": null,
+   "captured_top_k": null,
+   "captured_top_p": null,
+   "event_id": "401074bd-5688-4396-969d-f83064d014b1",
+   "json_mode": false,
+   "max_tokens": 512,
+   "narrator_calls": 1,
+   "phase_status": [
+    "narrated"
+   ],
+   "prompt": "Event 401074bd-5688-4396-969d-f83064d014b1 in scene d6ac2049-3ec3-50fd-960a-41b803c88b58.\nAudience: 15621818-c952-4a06-a146-95c4c1f9d546, 9af83949-948b-499c-bc3f-954ff49df36f.\nVisible facts:\n- key \"attempt:communicate\": [attempt \u2014 narration-only] Wren attempts to communicate with Ash; topic: dawn patrol\n- key \"attempt:wait\": [attempt \u2014 narration-only] Ash waits\nBeat budget: 8.",
+   "prompt_hash": "f3df89dcb9053c6805b178cbeb8fae9804091b2fed9d254324b331d120678ef5",
+   "role": "narrator",
+   "scenario": "outsider-reaction",
+   "scene_id": "d6ac2049-3ec3-50fd-960a-41b803c88b58",
+   "sources": {
+    "attempt:communicate": [
+     "a446e056-5efc-58b5-b799-11074db49920"
+    ],
+    "attempt:wait": [
+     "edd9fc85-3c4a-5568-b419-7017fab3b037"
+    ],
+    "reaction:a0a2dbb4-ede2-5d8a-a0d0-43af3fc09f5c": {
+     "kind": "CommunicateAction",
+     "reaction_id": "a0a2dbb4-ede2-5d8a-a0d0-43af3fc09f5c",
+     "reactor": "9af83949-948b-499c-bc3f-954ff49df36f",
+     "status": "committed",
+     "target": "d7d7c0ef-6330-48a3-b160-3c183c5de6a4",
+     "topic": "\"Rest easy, Marlow. The north road is open again.\""
+    }
+   },
+   "speaker_names": {
+    "15621818-c952-4a06-a146-95c4c1f9d546": "Wren",
+    "9af83949-948b-499c-bc3f-954ff49df36f": "Ash"
+   },
+   "speakers": {},
+   "speech_keys": [],
+   "system": "# Narrator role prompt v2\n\nYou narrate one committed event for a stated audience. The visible\nfacts below are everything the audience may learn: every beat you\nwrite must cite only those fact keys, name only the given event, and\nspeak only as the narrator or as an audience member.\n\nSource categories (every fact line states its own):\n\n- `[attempt \u2014 narration-only]` records something a character tried or\n  did, not words anyone spoke. Describe it in narrator voice with\n  `speaker_id` null. Never render it as dialogue, even though its\n  topic may read like speech.\n- `[quoted speech \u2014 dialogue-eligible]` quotes identified spoken words\n  with the speaker's exact id. Render each as a `dialogue` beat with\n  that speaker, citing its key, and quote short utterances faithfully\n  (longer ones may be paraphrased without changing meaning).\n- `[attributed summary \u2014 narration-only]` is an attributed summary, not\n  spoken words: render it in narrator voice, citing its key \u2014 never\n  present its topic as a quotation, and never put words in a speaker's\n  mouth beyond a cited utterance.\n\nRules:\n\n- Output a JSON array of beat objects matching RESPONSE_SCHEMA below.\n- Every beat needs at least one cited fact key from the visible set.\n- Cite keys exactly as quoted after `key` (the description after the colon is not part of the key).\n- `speaker_id` must be null (narrator voice) or an audience member.\n- A `dialogue` beat must set `speaker_id` to the exact id of the speaker\n  of its cited quoted-speech fact; never leave it null and never borrow\n  another voice. Attempt facts are narration-only: summarize them in\n  narrator voice with `speaker_id` null.\n- Never substitute a different speech key to rescue a rejected beat:\n  the output words must come from the cited utterance. Put no words in\n  a speaker's mouth beyond a cited utterance.\n- The `Speakers` roster maps each speaker name to its exact id; use those\n  ids when setting `speaker_id`.\n- Never add characters, places, injuries, items, or outcomes absent\n  from the visible facts. Understatement beats invention.\n- Keep the whole narration within the beat budget.\n\nRESPONSE_SCHEMA:\n\n{\n  \"$defs\": {\n    \"BeatProposal\": {\n      \"additionalProperties\": false,\n      \"description\": \"Model-authored beat shape: the graph stamps ids and event linkage.\",\n      \"properties\": {\n        \"cited_fact_keys\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Cited Fact Keys\",\n          \"type\": \"array\"\n        },\n        \"emotion_hint\": {\n          \"default\": \"\",\n          \"maxLength\": 128,\n          \"title\": \"Emotion Hint\",\n          \"type\": \"string\"\n        },\n        \"kind\": {\n          \"$ref\": \"#/$defs/NarrationKind\",\n          \"default\": \"narration\"\n        },\n        \"source_effect_ids\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Source Effect Ids\",\n          \"type\": \"array\"\n        },\n        \"speaker_id\": {\n          \"anyOf\": [\n            {\n              \"format\": \"uuid\",\n              \"type\": \"string\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ],\n          \"default\": null,\n          \"title\": \"Speaker Id\"\n        },\n        \"text\": {\n          \"maxLength\": 2000,\n          \"minLength\": 1,\n          \"title\": \"Text\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"text\"\n      ],\n      \"title\": \"BeatProposal\",\n      \"type\": \"object\"\n    },\n    \"NarrationKind\": {\n      \"enum\": [\n        \"narration\",\n        \"dialogue\",\n        \"action\",\n        \"system\",\n        \"transition\"\n      ],\n      \"title\": \"NarrationKind\",\n      \"type\": \"string\"\n    }\n  },\n  \"items\": {\n    \"$ref\": \"#/$defs/BeatProposal\"\n  },\n  \"type\": \"array\"\n}\n",
+   "utterances": {},
+   "visible_keys": [
+    "attempt:communicate",
+    "attempt:wait"
+   ]
+  },
+  {
+   "audience": [
+    "431ab867-6848-47c0-a714-72e4b6728c91",
+    "4e2d26d6-d24a-4120-94b2-ec322af21058",
+    "e3f8c086-8b8e-465d-b77d-bab960b56dea"
+   ],
+   "beat_budget": 8,
+   "captured_temperature": null,
+   "captured_top_k": null,
+   "captured_top_p": null,
+   "event_id": "19e1d9b6-e21f-40de-ba11-886c6160a1f5",
+   "json_mode": false,
+   "max_tokens": 512,
+   "narrator_calls": 1,
+   "phase_status": [
+    "narrated"
+   ],
+   "prompt": "Event 19e1d9b6-e21f-40de-ba11-886c6160a1f5 in scene 6ce13a85-1e1a-5474-a42e-420fec7cb05f.\nAudience: 431ab867-6848-47c0-a714-72e4b6728c91, 4e2d26d6-d24a-4120-94b2-ec322af21058, e3f8c086-8b8e-465d-b77d-bab960b56dea.\nVisible facts:\n- key \"attempt:wait\": [attempt \u2014 narration-only] Ash waits\n- key \"attempt:communicate\": [attempt \u2014 narration-only] Marlow attempts to communicate with Ash; topic: \"Road is clear past the hearth.\"\n- key \"attempt:communicate\": [attempt \u2014 narration-only] Wren attempts to communicate with Ash; topic: dawn patrol\n- key \"reaction:1c10a8a0-6c00-5230-b9fe-35750b761a9f\": [quoted speech \u2014 dialogue-eligible] Ash says to Wren: \"Dawn bell means the first stalls are opening.\" (speaker Ash, id: 431ab867-6848-47c0-a714-72e4b6728c91)\n- key \"reaction:1d810c33-12a0-5a5b-b446-59fa8cf9acbd\": [quoted speech \u2014 dialogue-eligible] Ash says to Wren: \"Dawn bell means the first stalls are opening.\" (speaker Ash, id: 431ab867-6848-47c0-a714-72e4b6728c91)\n- key \"reaction:d495ac80-c428-5063-af3e-3e6252973e2b\": [quoted speech \u2014 dialogue-eligible] Marlow says to Wren: \"Aye, and mind the loose stones past the bridge.\" (speaker Marlow, id: 4e2d26d6-d24a-4120-94b2-ec322af21058)\n- key \"reaction:d867f171-b257-54b6-a3fd-3aff8920ca58\": [quoted speech \u2014 dialogue-eligible] Marlow says to Wren: \"Aye, and mind the loose stones past the bridge.\" (speaker Marlow, id: 4e2d26d6-d24a-4120-94b2-ec322af21058)\nSpeakers (use these exact ids when setting speaker_id):\n- Ash (id: 431ab867-6848-47c0-a714-72e4b6728c91)\n- Marlow (id: 4e2d26d6-d24a-4120-94b2-ec322af21058)\nBeat budget: 8.",
+   "prompt_hash": "854de3761d182ec90cba58c50d36ce031be137e2845586f4723c968ba638d8e2",
+   "role": "narrator",
+   "scenario": "two-reactions",
+   "scene_id": "6ce13a85-1e1a-5474-a42e-420fec7cb05f",
+   "sources": {
+    "attempt:communicate": [
+     "20cde6ae-6c78-5033-a090-3a578e6308bd",
+     "a12ae4d6-9e04-545c-9978-1e7881916e2b"
+    ],
+    "attempt:wait": [
+     "0fcf9f5a-8d5c-5a82-852b-c2cc560d9202"
+    ],
+    "reaction:1c10a8a0-6c00-5230-b9fe-35750b761a9f": {
+     "kind": "CommunicateAction",
+     "reaction_id": "1c10a8a0-6c00-5230-b9fe-35750b761a9f",
+     "reactor": "431ab867-6848-47c0-a714-72e4b6728c91",
+     "status": "committed",
+     "target": "e3f8c086-8b8e-465d-b77d-bab960b56dea",
+     "topic": "\"Dawn bell means the first stalls are opening.\""
+    },
+    "reaction:1d810c33-12a0-5a5b-b446-59fa8cf9acbd": {
+     "kind": "CommunicateAction",
+     "reaction_id": "1d810c33-12a0-5a5b-b446-59fa8cf9acbd",
+     "reactor": "431ab867-6848-47c0-a714-72e4b6728c91",
+     "status": "committed",
+     "target": "e3f8c086-8b8e-465d-b77d-bab960b56dea",
+     "topic": "\"Dawn bell means the first stalls are opening.\""
+    },
+    "reaction:d495ac80-c428-5063-af3e-3e6252973e2b": {
+     "kind": "CommunicateAction",
+     "reaction_id": "d495ac80-c428-5063-af3e-3e6252973e2b",
+     "reactor": "4e2d26d6-d24a-4120-94b2-ec322af21058",
+     "status": "committed",
+     "target": "e3f8c086-8b8e-465d-b77d-bab960b56dea",
+     "topic": "\"Aye, and mind the loose stones past the bridge.\""
+    },
+    "reaction:d867f171-b257-54b6-a3fd-3aff8920ca58": {
+     "kind": "CommunicateAction",
+     "reaction_id": "d867f171-b257-54b6-a3fd-3aff8920ca58",
+     "reactor": "4e2d26d6-d24a-4120-94b2-ec322af21058",
+     "status": "committed",
+     "target": "e3f8c086-8b8e-465d-b77d-bab960b56dea",
+     "topic": "\"Aye, and mind the loose stones past the bridge.\""
+    }
+   },
+   "speaker_names": {
+    "431ab867-6848-47c0-a714-72e4b6728c91": "Ash",
+    "4e2d26d6-d24a-4120-94b2-ec322af21058": "Marlow",
+    "e3f8c086-8b8e-465d-b77d-bab960b56dea": "Wren"
+   },
+   "speakers": {
+    "reaction:1c10a8a0-6c00-5230-b9fe-35750b761a9f": "431ab867-6848-47c0-a714-72e4b6728c91",
+    "reaction:1d810c33-12a0-5a5b-b446-59fa8cf9acbd": "431ab867-6848-47c0-a714-72e4b6728c91",
+    "reaction:d495ac80-c428-5063-af3e-3e6252973e2b": "4e2d26d6-d24a-4120-94b2-ec322af21058",
+    "reaction:d867f171-b257-54b6-a3fd-3aff8920ca58": "4e2d26d6-d24a-4120-94b2-ec322af21058"
+   },
+   "speech_keys": [
+    "reaction:1c10a8a0-6c00-5230-b9fe-35750b761a9f",
+    "reaction:1d810c33-12a0-5a5b-b446-59fa8cf9acbd",
+    "reaction:d495ac80-c428-5063-af3e-3e6252973e2b",
+    "reaction:d867f171-b257-54b6-a3fd-3aff8920ca58"
+   ],
+   "system": "# Narrator role prompt v2\n\nYou narrate one committed event for a stated audience. The visible\nfacts below are everything the audience may learn: every beat you\nwrite must cite only those fact keys, name only the given event, and\nspeak only as the narrator or as an audience member.\n\nSource categories (every fact line states its own):\n\n- `[attempt \u2014 narration-only]` records something a character tried or\n  did, not words anyone spoke. Describe it in narrator voice with\n  `speaker_id` null. Never render it as dialogue, even though its\n  topic may read like speech.\n- `[quoted speech \u2014 dialogue-eligible]` quotes identified spoken words\n  with the speaker's exact id. Render each as a `dialogue` beat with\n  that speaker, citing its key, and quote short utterances faithfully\n  (longer ones may be paraphrased without changing meaning).\n- `[attributed summary \u2014 narration-only]` is an attributed summary, not\n  spoken words: render it in narrator voice, citing its key \u2014 never\n  present its topic as a quotation, and never put words in a speaker's\n  mouth beyond a cited utterance.\n\nRules:\n\n- Output a JSON array of beat objects matching RESPONSE_SCHEMA below.\n- Every beat needs at least one cited fact key from the visible set.\n- Cite keys exactly as quoted after `key` (the description after the colon is not part of the key).\n- `speaker_id` must be null (narrator voice) or an audience member.\n- A `dialogue` beat must set `speaker_id` to the exact id of the speaker\n  of its cited quoted-speech fact; never leave it null and never borrow\n  another voice. Attempt facts are narration-only: summarize them in\n  narrator voice with `speaker_id` null.\n- Never substitute a different speech key to rescue a rejected beat:\n  the output words must come from the cited utterance. Put no words in\n  a speaker's mouth beyond a cited utterance.\n- The `Speakers` roster maps each speaker name to its exact id; use those\n  ids when setting `speaker_id`.\n- Never add characters, places, injuries, items, or outcomes absent\n  from the visible facts. Understatement beats invention.\n- Keep the whole narration within the beat budget.\n\nRESPONSE_SCHEMA:\n\n{\n  \"$defs\": {\n    \"BeatProposal\": {\n      \"additionalProperties\": false,\n      \"description\": \"Model-authored beat shape: the graph stamps ids and event linkage.\",\n      \"properties\": {\n        \"cited_fact_keys\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Cited Fact Keys\",\n          \"type\": \"array\"\n        },\n        \"emotion_hint\": {\n          \"default\": \"\",\n          \"maxLength\": 128,\n          \"title\": \"Emotion Hint\",\n          \"type\": \"string\"\n        },\n        \"kind\": {\n          \"$ref\": \"#/$defs/NarrationKind\",\n          \"default\": \"narration\"\n        },\n        \"source_effect_ids\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Source Effect Ids\",\n          \"type\": \"array\"\n        },\n        \"speaker_id\": {\n          \"anyOf\": [\n            {\n              \"format\": \"uuid\",\n              \"type\": \"string\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ],\n          \"default\": null,\n          \"title\": \"Speaker Id\"\n        },\n        \"text\": {\n          \"maxLength\": 2000,\n          \"minLength\": 1,\n          \"title\": \"Text\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"text\"\n      ],\n      \"title\": \"BeatProposal\",\n      \"type\": \"object\"\n    },\n    \"NarrationKind\": {\n      \"enum\": [\n        \"narration\",\n        \"dialogue\",\n        \"action\",\n        \"system\",\n        \"transition\"\n      ],\n      \"title\": \"NarrationKind\",\n      \"type\": \"string\"\n    }\n  },\n  \"items\": {\n    \"$ref\": \"#/$defs/BeatProposal\"\n  },\n  \"type\": \"array\"\n}\n",
+   "utterances": {
+    "reaction:1c10a8a0-6c00-5230-b9fe-35750b761a9f": "Dawn bell means the first stalls are opening.",
+    "reaction:1d810c33-12a0-5a5b-b446-59fa8cf9acbd": "Dawn bell means the first stalls are opening.",
+    "reaction:d495ac80-c428-5063-af3e-3e6252973e2b": "Aye, and mind the loose stones past the bridge.",
+    "reaction:d867f171-b257-54b6-a3fd-3aff8920ca58": "Aye, and mind the loose stones past the bridge."
+   },
+   "visible_keys": [
+    "attempt:communicate",
+    "attempt:wait",
+    "reaction:1c10a8a0-6c00-5230-b9fe-35750b761a9f",
+    "reaction:1d810c33-12a0-5a5b-b446-59fa8cf9acbd",
+    "reaction:d495ac80-c428-5063-af3e-3e6252973e2b",
+    "reaction:d867f171-b257-54b6-a3fd-3aff8920ca58"
+   ]
+  },
+  {
+   "audience": [
+    "3cd0f840-d571-4a95-97b0-3884258d9708",
+    "7b5e222b-9eb7-47ef-a34e-37a595cc180f",
+    "9c6878e9-7981-494b-9487-b37d27451a50"
+   ],
+   "beat_budget": 8,
+   "captured_temperature": null,
+   "captured_top_k": null,
+   "captured_top_p": null,
+   "event_id": "8c958cee-4636-4ddb-b443-eedaac724f85",
+   "json_mode": false,
+   "max_tokens": 512,
+   "narrator_calls": 1,
+   "phase_status": [
+    "narrated"
+   ],
+   "prompt": "Event 8c958cee-4636-4ddb-b443-eedaac724f85 in scene 1bcc557f-83e0-5ffe-8c70-b410b217d7b9.\nAudience: 3cd0f840-d571-4a95-97b0-3884258d9708, 7b5e222b-9eb7-47ef-a34e-37a595cc180f, 9c6878e9-7981-494b-9487-b37d27451a50.\nVisible facts:\n- key \"attempt:observe\": [attempt \u2014 narration-only] Marlow observes\n- key \"attempt:communicate\": [attempt \u2014 narration-only] Wren attempts to communicate with Ash; topic: dawn patrol\n- key \"attempt:wait\": [attempt \u2014 narration-only] Ash waits\n- key \"reaction:447fab1f-455a-5e0e-a7f6-6db8e85c38ba\": [quoted speech \u2014 dialogue-eligible] Ash says to Wren: \"Dawn bell means the market's waking.\" (speaker Ash, id: 3cd0f840-d571-4a95-97b0-3884258d9708)\n- key \"reaction:b78b8708-c6af-5b03-90c8-abea31a4045c\": [quoted speech \u2014 dialogue-eligible] Ash says to Wren: \"Dawn bell means the market's waking.\" (speaker Ash, id: 3cd0f840-d571-4a95-97b0-3884258d9708)\nSpeakers (use these exact ids when setting speaker_id):\n- Ash (id: 3cd0f840-d571-4a95-97b0-3884258d9708)\nBeat budget: 8.",
+   "prompt_hash": "8594417a7eea78685d810cc4a4f09f921566ddf7b3c9025cd73ead09bf3f2c1b",
+   "role": "narrator",
+   "scenario": "observe-alongside-speech",
+   "scene_id": "1bcc557f-83e0-5ffe-8c70-b410b217d7b9",
+   "sources": {
+    "attempt:communicate": [
+     "a181ca2f-bb13-58e3-8eaf-734f638d6cf8"
+    ],
+    "attempt:observe": [
+     "9bc01619-222d-55a8-9e87-0daaefb533b7"
+    ],
+    "attempt:wait": [
+     "c07cb445-bda1-5fb0-ab1c-c621caebbb5b"
+    ],
+    "reaction:447fab1f-455a-5e0e-a7f6-6db8e85c38ba": {
+     "kind": "CommunicateAction",
+     "reaction_id": "447fab1f-455a-5e0e-a7f6-6db8e85c38ba",
+     "reactor": "3cd0f840-d571-4a95-97b0-3884258d9708",
+     "status": "committed",
+     "target": "7b5e222b-9eb7-47ef-a34e-37a595cc180f",
+     "topic": "\"Dawn bell means the market's waking.\""
+    },
+    "reaction:4b4aec8e-e1b5-5628-ac61-f9e1b3a2b78e": {
+     "kind": "WaitAction",
+     "reaction_id": "4b4aec8e-e1b5-5628-ac61-f9e1b3a2b78e",
+     "reactor": "9c6878e9-7981-494b-9487-b37d27451a50",
+     "status": "committed",
+     "target": "",
+     "topic": ""
+    },
+    "reaction:b78b8708-c6af-5b03-90c8-abea31a4045c": {
+     "kind": "CommunicateAction",
+     "reaction_id": "b78b8708-c6af-5b03-90c8-abea31a4045c",
+     "reactor": "3cd0f840-d571-4a95-97b0-3884258d9708",
+     "status": "committed",
+     "target": "7b5e222b-9eb7-47ef-a34e-37a595cc180f",
+     "topic": "\"Dawn bell means the market's waking.\""
+    },
+    "reaction:ba02138e-49e9-5515-aed0-ca9341eeb7b8": {
+     "kind": "WaitAction",
+     "reaction_id": "ba02138e-49e9-5515-aed0-ca9341eeb7b8",
+     "reactor": "9c6878e9-7981-494b-9487-b37d27451a50",
+     "status": "committed",
+     "target": "",
+     "topic": ""
+    }
+   },
+   "speaker_names": {
+    "3cd0f840-d571-4a95-97b0-3884258d9708": "Ash",
+    "7b5e222b-9eb7-47ef-a34e-37a595cc180f": "Wren",
+    "9c6878e9-7981-494b-9487-b37d27451a50": "Marlow"
+   },
+   "speakers": {
+    "reaction:447fab1f-455a-5e0e-a7f6-6db8e85c38ba": "3cd0f840-d571-4a95-97b0-3884258d9708",
+    "reaction:b78b8708-c6af-5b03-90c8-abea31a4045c": "3cd0f840-d571-4a95-97b0-3884258d9708"
+   },
+   "speech_keys": [
+    "reaction:447fab1f-455a-5e0e-a7f6-6db8e85c38ba",
+    "reaction:b78b8708-c6af-5b03-90c8-abea31a4045c"
+   ],
+   "system": "# Narrator role prompt v2\n\nYou narrate one committed event for a stated audience. The visible\nfacts below are everything the audience may learn: every beat you\nwrite must cite only those fact keys, name only the given event, and\nspeak only as the narrator or as an audience member.\n\nSource categories (every fact line states its own):\n\n- `[attempt \u2014 narration-only]` records something a character tried or\n  did, not words anyone spoke. Describe it in narrator voice with\n  `speaker_id` null. Never render it as dialogue, even though its\n  topic may read like speech.\n- `[quoted speech \u2014 dialogue-eligible]` quotes identified spoken words\n  with the speaker's exact id. Render each as a `dialogue` beat with\n  that speaker, citing its key, and quote short utterances faithfully\n  (longer ones may be paraphrased without changing meaning).\n- `[attributed summary \u2014 narration-only]` is an attributed summary, not\n  spoken words: render it in narrator voice, citing its key \u2014 never\n  present its topic as a quotation, and never put words in a speaker's\n  mouth beyond a cited utterance.\n\nRules:\n\n- Output a JSON array of beat objects matching RESPONSE_SCHEMA below.\n- Every beat needs at least one cited fact key from the visible set.\n- Cite keys exactly as quoted after `key` (the description after the colon is not part of the key).\n- `speaker_id` must be null (narrator voice) or an audience member.\n- A `dialogue` beat must set `speaker_id` to the exact id of the speaker\n  of its cited quoted-speech fact; never leave it null and never borrow\n  another voice. Attempt facts are narration-only: summarize them in\n  narrator voice with `speaker_id` null.\n- Never substitute a different speech key to rescue a rejected beat:\n  the output words must come from the cited utterance. Put no words in\n  a speaker's mouth beyond a cited utterance.\n- The `Speakers` roster maps each speaker name to its exact id; use those\n  ids when setting `speaker_id`.\n- Never add characters, places, injuries, items, or outcomes absent\n  from the visible facts. Understatement beats invention.\n- Keep the whole narration within the beat budget.\n\nRESPONSE_SCHEMA:\n\n{\n  \"$defs\": {\n    \"BeatProposal\": {\n      \"additionalProperties\": false,\n      \"description\": \"Model-authored beat shape: the graph stamps ids and event linkage.\",\n      \"properties\": {\n        \"cited_fact_keys\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Cited Fact Keys\",\n          \"type\": \"array\"\n        },\n        \"emotion_hint\": {\n          \"default\": \"\",\n          \"maxLength\": 128,\n          \"title\": \"Emotion Hint\",\n          \"type\": \"string\"\n        },\n        \"kind\": {\n          \"$ref\": \"#/$defs/NarrationKind\",\n          \"default\": \"narration\"\n        },\n        \"source_effect_ids\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Source Effect Ids\",\n          \"type\": \"array\"\n        },\n        \"speaker_id\": {\n          \"anyOf\": [\n            {\n              \"format\": \"uuid\",\n              \"type\": \"string\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ],\n          \"default\": null,\n          \"title\": \"Speaker Id\"\n        },\n        \"text\": {\n          \"maxLength\": 2000,\n          \"minLength\": 1,\n          \"title\": \"Text\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"text\"\n      ],\n      \"title\": \"BeatProposal\",\n      \"type\": \"object\"\n    },\n    \"NarrationKind\": {\n      \"enum\": [\n        \"narration\",\n        \"dialogue\",\n        \"action\",\n        \"system\",\n        \"transition\"\n      ],\n      \"title\": \"NarrationKind\",\n      \"type\": \"string\"\n    }\n  },\n  \"items\": {\n    \"$ref\": \"#/$defs/BeatProposal\"\n  },\n  \"type\": \"array\"\n}\n",
+   "utterances": {
+    "reaction:447fab1f-455a-5e0e-a7f6-6db8e85c38ba": "Dawn bell means the market's waking.",
+    "reaction:b78b8708-c6af-5b03-90c8-abea31a4045c": "Dawn bell means the market's waking."
+   },
+   "visible_keys": [
+    "attempt:communicate",
+    "attempt:observe",
+    "attempt:wait",
+    "reaction:447fab1f-455a-5e0e-a7f6-6db8e85c38ba",
+    "reaction:b78b8708-c6af-5b03-90c8-abea31a4045c"
+   ]
+  },
+  {
+   "audience": [
+    "b086392a-9bc7-4fa5-9d0a-b74d29eed643",
+    "d7494275-5469-497a-b1f5-f463cea42cc1"
+   ],
+   "beat_budget": 8,
+   "captured_temperature": null,
+   "captured_top_k": null,
+   "captured_top_p": null,
+   "event_id": "99e9add3-e9c9-49e6-a639-9ead5b19686d",
+   "json_mode": false,
+   "max_tokens": 512,
+   "narrator_calls": 1,
+   "phase_status": [
+    "narrated"
+   ],
+   "prompt": "Event 99e9add3-e9c9-49e6-a639-9ead5b19686d in scene 2db2b4fb-4f73-5934-baad-83a246782894.\nAudience: b086392a-9bc7-4fa5-9d0a-b74d29eed643, d7494275-5469-497a-b1f5-f463cea42cc1.\nVisible facts:\n- key \"attempt:communicate\": [attempt \u2014 narration-only] Wren attempts to communicate with Ash; topic: What should we watch for on the road ahead?\n- key \"attempt:wait\": [attempt \u2014 narration-only] Ash waits\n- key \"reaction:fd089613-509b-5587-a7fb-d9d5833b9a2a\": [quoted speech \u2014 dialogue-eligible] Ash says to Wren: \"Dawn bell means the market is waking early today, so hurry down \"with coin and basket before the best bread and freshest fish are gone \"from the stalls.\" (speaker Ash, id: d7494275-5469-497a-b1f5-f463cea42cc1)\nSpeakers (use these exact ids when setting speaker_id):\n- Ash (id: d7494275-5469-497a-b1f5-f463cea42cc1)\nBeat budget: 8.",
+   "prompt_hash": "80ea5b0e9f40abd0e483a90069ec089af14fade4169cb16877e19454cbbd6134",
+   "role": "narrator",
+   "scenario": "long-utterance",
+   "scene_id": "2db2b4fb-4f73-5934-baad-83a246782894",
+   "sources": {
+    "attempt:communicate": [
+     "6b4304fe-4727-5fc5-95e2-288cb0f5794d"
+    ],
+    "attempt:wait": [
+     "8381b2a1-5194-5a49-b639-30b86623c76a"
+    ],
+    "reaction:fd089613-509b-5587-a7fb-d9d5833b9a2a": {
+     "kind": "CommunicateAction",
+     "reaction_id": "fd089613-509b-5587-a7fb-d9d5833b9a2a",
+     "reactor": "d7494275-5469-497a-b1f5-f463cea42cc1",
+     "status": "committed",
+     "target": "b086392a-9bc7-4fa5-9d0a-b74d29eed643",
+     "topic": "\"Dawn bell means the market is waking early today, so hurry down \"with coin and basket before the best bread and freshest fish are gone \"from the stalls.\""
+    }
+   },
+   "speaker_names": {
+    "b086392a-9bc7-4fa5-9d0a-b74d29eed643": "Wren",
+    "d7494275-5469-497a-b1f5-f463cea42cc1": "Ash"
+   },
+   "speakers": {
+    "reaction:fd089613-509b-5587-a7fb-d9d5833b9a2a": "d7494275-5469-497a-b1f5-f463cea42cc1"
+   },
+   "speech_keys": [
+    "reaction:fd089613-509b-5587-a7fb-d9d5833b9a2a"
+   ],
+   "system": "# Narrator role prompt v2\n\nYou narrate one committed event for a stated audience. The visible\nfacts below are everything the audience may learn: every beat you\nwrite must cite only those fact keys, name only the given event, and\nspeak only as the narrator or as an audience member.\n\nSource categories (every fact line states its own):\n\n- `[attempt \u2014 narration-only]` records something a character tried or\n  did, not words anyone spoke. Describe it in narrator voice with\n  `speaker_id` null. Never render it as dialogue, even though its\n  topic may read like speech.\n- `[quoted speech \u2014 dialogue-eligible]` quotes identified spoken words\n  with the speaker's exact id. Render each as a `dialogue` beat with\n  that speaker, citing its key, and quote short utterances faithfully\n  (longer ones may be paraphrased without changing meaning).\n- `[attributed summary \u2014 narration-only]` is an attributed summary, not\n  spoken words: render it in narrator voice, citing its key \u2014 never\n  present its topic as a quotation, and never put words in a speaker's\n  mouth beyond a cited utterance.\n\nRules:\n\n- Output a JSON array of beat objects matching RESPONSE_SCHEMA below.\n- Every beat needs at least one cited fact key from the visible set.\n- Cite keys exactly as quoted after `key` (the description after the colon is not part of the key).\n- `speaker_id` must be null (narrator voice) or an audience member.\n- A `dialogue` beat must set `speaker_id` to the exact id of the speaker\n  of its cited quoted-speech fact; never leave it null and never borrow\n  another voice. Attempt facts are narration-only: summarize them in\n  narrator voice with `speaker_id` null.\n- Never substitute a different speech key to rescue a rejected beat:\n  the output words must come from the cited utterance. Put no words in\n  a speaker's mouth beyond a cited utterance.\n- The `Speakers` roster maps each speaker name to its exact id; use those\n  ids when setting `speaker_id`.\n- Never add characters, places, injuries, items, or outcomes absent\n  from the visible facts. Understatement beats invention.\n- Keep the whole narration within the beat budget.\n\nRESPONSE_SCHEMA:\n\n{\n  \"$defs\": {\n    \"BeatProposal\": {\n      \"additionalProperties\": false,\n      \"description\": \"Model-authored beat shape: the graph stamps ids and event linkage.\",\n      \"properties\": {\n        \"cited_fact_keys\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Cited Fact Keys\",\n          \"type\": \"array\"\n        },\n        \"emotion_hint\": {\n          \"default\": \"\",\n          \"maxLength\": 128,\n          \"title\": \"Emotion Hint\",\n          \"type\": \"string\"\n        },\n        \"kind\": {\n          \"$ref\": \"#/$defs/NarrationKind\",\n          \"default\": \"narration\"\n        },\n        \"source_effect_ids\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Source Effect Ids\",\n          \"type\": \"array\"\n        },\n        \"speaker_id\": {\n          \"anyOf\": [\n            {\n              \"format\": \"uuid\",\n              \"type\": \"string\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ],\n          \"default\": null,\n          \"title\": \"Speaker Id\"\n        },\n        \"text\": {\n          \"maxLength\": 2000,\n          \"minLength\": 1,\n          \"title\": \"Text\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"text\"\n      ],\n      \"title\": \"BeatProposal\",\n      \"type\": \"object\"\n    },\n    \"NarrationKind\": {\n      \"enum\": [\n        \"narration\",\n        \"dialogue\",\n        \"action\",\n        \"system\",\n        \"transition\"\n      ],\n      \"title\": \"NarrationKind\",\n      \"type\": \"string\"\n    }\n  },\n  \"items\": {\n    \"$ref\": \"#/$defs/BeatProposal\"\n  },\n  \"type\": \"array\"\n}\n",
+   "utterances": {
+    "reaction:fd089613-509b-5587-a7fb-d9d5833b9a2a": "Dawn bell means the market is waking early today, so hurry down \"with coin and basket before the best bread and freshest fish are gone \"from the stalls."
+   },
+   "visible_keys": [
+    "attempt:communicate",
+    "attempt:wait",
+    "reaction:fd089613-509b-5587-a7fb-d9d5833b9a2a"
+   ]
+  },
+  {
+   "audience": [
+    "101edaed-863e-4673-90d3-dce48fcf4a1c",
+    "2784082c-45ed-4440-afc0-f52e28253dc9"
+   ],
+   "beat_budget": 8,
+   "captured_temperature": null,
+   "captured_top_k": null,
+   "captured_top_p": null,
+   "event_id": "8576d1ce-ed4c-4443-bdec-a0dce422690f",
+   "json_mode": false,
+   "max_tokens": 512,
+   "narrator_calls": 1,
+   "phase_status": [
+    "narrated"
+   ],
+   "prompt": "Event 8576d1ce-ed4c-4443-bdec-a0dce422690f in scene 9ac9e100-e441-5add-8ab1-3f4daa905dcd.\nAudience: 101edaed-863e-4673-90d3-dce48fcf4a1c, 2784082c-45ed-4440-afc0-f52e28253dc9.\nVisible facts:\n- key \"attempt:communicate\": [attempt \u2014 narration-only] Wren attempts to communicate with Ash; topic: Is the old bridge safe to cross?\n- key \"attempt:wait\": [attempt \u2014 narration-only] Ash waits\n- key \"reaction:e857937b-7438-5472-9146-919a04b3d66f\": [quoted speech \u2014 dialogue-eligible] Ash says to Wren: \"No.\" (speaker Ash, id: 101edaed-863e-4673-90d3-dce48fcf4a1c)\nSpeakers (use these exact ids when setting speaker_id):\n- Ash (id: 101edaed-863e-4673-90d3-dce48fcf4a1c)\nBeat budget: 8.",
+   "prompt_hash": "e23254da950942a8a9e9c7106a4424e53c173ff3af3dceb64caeff8397497bff",
+   "role": "narrator",
+   "scenario": "one-word-reply",
+   "scene_id": "9ac9e100-e441-5add-8ab1-3f4daa905dcd",
+   "sources": {
+    "attempt:communicate": [
+     "0837b048-557a-54cd-bda5-d8bbfca42233"
+    ],
+    "attempt:wait": [
+     "1ba36078-cec6-511c-9aef-f2b25ad405e4"
+    ],
+    "reaction:e857937b-7438-5472-9146-919a04b3d66f": {
+     "kind": "CommunicateAction",
+     "reaction_id": "e857937b-7438-5472-9146-919a04b3d66f",
+     "reactor": "101edaed-863e-4673-90d3-dce48fcf4a1c",
+     "status": "committed",
+     "target": "2784082c-45ed-4440-afc0-f52e28253dc9",
+     "topic": "\"No.\""
+    }
+   },
+   "speaker_names": {
+    "101edaed-863e-4673-90d3-dce48fcf4a1c": "Ash",
+    "2784082c-45ed-4440-afc0-f52e28253dc9": "Wren"
+   },
+   "speakers": {
+    "reaction:e857937b-7438-5472-9146-919a04b3d66f": "101edaed-863e-4673-90d3-dce48fcf4a1c"
+   },
+   "speech_keys": [
+    "reaction:e857937b-7438-5472-9146-919a04b3d66f"
+   ],
+   "system": "# Narrator role prompt v2\n\nYou narrate one committed event for a stated audience. The visible\nfacts below are everything the audience may learn: every beat you\nwrite must cite only those fact keys, name only the given event, and\nspeak only as the narrator or as an audience member.\n\nSource categories (every fact line states its own):\n\n- `[attempt \u2014 narration-only]` records something a character tried or\n  did, not words anyone spoke. Describe it in narrator voice with\n  `speaker_id` null. Never render it as dialogue, even though its\n  topic may read like speech.\n- `[quoted speech \u2014 dialogue-eligible]` quotes identified spoken words\n  with the speaker's exact id. Render each as a `dialogue` beat with\n  that speaker, citing its key, and quote short utterances faithfully\n  (longer ones may be paraphrased without changing meaning).\n- `[attributed summary \u2014 narration-only]` is an attributed summary, not\n  spoken words: render it in narrator voice, citing its key \u2014 never\n  present its topic as a quotation, and never put words in a speaker's\n  mouth beyond a cited utterance.\n\nRules:\n\n- Output a JSON array of beat objects matching RESPONSE_SCHEMA below.\n- Every beat needs at least one cited fact key from the visible set.\n- Cite keys exactly as quoted after `key` (the description after the colon is not part of the key).\n- `speaker_id` must be null (narrator voice) or an audience member.\n- A `dialogue` beat must set `speaker_id` to the exact id of the speaker\n  of its cited quoted-speech fact; never leave it null and never borrow\n  another voice. Attempt facts are narration-only: summarize them in\n  narrator voice with `speaker_id` null.\n- Never substitute a different speech key to rescue a rejected beat:\n  the output words must come from the cited utterance. Put no words in\n  a speaker's mouth beyond a cited utterance.\n- The `Speakers` roster maps each speaker name to its exact id; use those\n  ids when setting `speaker_id`.\n- Never add characters, places, injuries, items, or outcomes absent\n  from the visible facts. Understatement beats invention.\n- Keep the whole narration within the beat budget.\n\nRESPONSE_SCHEMA:\n\n{\n  \"$defs\": {\n    \"BeatProposal\": {\n      \"additionalProperties\": false,\n      \"description\": \"Model-authored beat shape: the graph stamps ids and event linkage.\",\n      \"properties\": {\n        \"cited_fact_keys\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Cited Fact Keys\",\n          \"type\": \"array\"\n        },\n        \"emotion_hint\": {\n          \"default\": \"\",\n          \"maxLength\": 128,\n          \"title\": \"Emotion Hint\",\n          \"type\": \"string\"\n        },\n        \"kind\": {\n          \"$ref\": \"#/$defs/NarrationKind\",\n          \"default\": \"narration\"\n        },\n        \"source_effect_ids\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Source Effect Ids\",\n          \"type\": \"array\"\n        },\n        \"speaker_id\": {\n          \"anyOf\": [\n            {\n              \"format\": \"uuid\",\n              \"type\": \"string\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ],\n          \"default\": null,\n          \"title\": \"Speaker Id\"\n        },\n        \"text\": {\n          \"maxLength\": 2000,\n          \"minLength\": 1,\n          \"title\": \"Text\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"text\"\n      ],\n      \"title\": \"BeatProposal\",\n      \"type\": \"object\"\n    },\n    \"NarrationKind\": {\n      \"enum\": [\n        \"narration\",\n        \"dialogue\",\n        \"action\",\n        \"system\",\n        \"transition\"\n      ],\n      \"title\": \"NarrationKind\",\n      \"type\": \"string\"\n    }\n  },\n  \"items\": {\n    \"$ref\": \"#/$defs/BeatProposal\"\n  },\n  \"type\": \"array\"\n}\n",
+   "utterances": {
+    "reaction:e857937b-7438-5472-9146-919a04b3d66f": "No."
+   },
+   "visible_keys": [
+    "attempt:communicate",
+    "attempt:wait",
+    "reaction:e857937b-7438-5472-9146-919a04b3d66f"
+   ]
+  },
+  {
+   "audience": [
+    "1f741036-4221-4860-bee5-c8ae40c1e24e",
+    "847a38bd-ceb6-419f-a322-979ea557ce91"
+   ],
+   "beat_budget": 8,
+   "captured_temperature": null,
+   "captured_top_k": null,
+   "captured_top_p": null,
+   "event_id": "4d0bdb65-9eb3-4152-ae2c-041ca365452f",
+   "json_mode": false,
+   "max_tokens": 512,
+   "narrator_calls": 1,
+   "phase_status": [
+    "narrated"
+   ],
+   "prompt": "Event 4d0bdb65-9eb3-4152-ae2c-041ca365452f in scene 4f0d1d41-7543-5a99-982f-2059a98ece58.\nAudience: 1f741036-4221-4860-bee5-c8ae40c1e24e, 847a38bd-ceb6-419f-a322-979ea557ce91.\nVisible facts:\n- key \"attempt:communicate\": [attempt \u2014 narration-only] Wren attempts to communicate with Ash; topic: What news from the mill, Ash?\n- key \"attempt:wait\": [attempt \u2014 narration-only] Ash waits\n- key \"reaction:cc47bf3e-e807-5bb5-96f9-d67b3ef1d871\": [quoted speech \u2014 dialogue-eligible] Ash says to Wren: \"It's still standing, unless someone's moved it.\" (speaker Ash, id: 1f741036-4221-4860-bee5-c8ae40c1e24e)\nSpeakers (use these exact ids when setting speaker_id):\n- Ash (id: 1f741036-4221-4860-bee5-c8ae40c1e24e)\nBeat budget: 8.",
+   "prompt_hash": "cefaa38e0ce43f6ed06218bced0360cf16837fccb618e461c98fd7e80a01b293",
+   "role": "narrator",
+   "scenario": "apostrophe-quote",
+   "scene_id": "4f0d1d41-7543-5a99-982f-2059a98ece58",
+   "sources": {
+    "attempt:communicate": [
+     "6d56ba48-a0bc-502a-a477-0458429d43f2"
+    ],
+    "attempt:wait": [
+     "b8e38b5e-2448-59ce-a308-8e1ba77044c1"
+    ],
+    "reaction:cc47bf3e-e807-5bb5-96f9-d67b3ef1d871": {
+     "kind": "CommunicateAction",
+     "reaction_id": "cc47bf3e-e807-5bb5-96f9-d67b3ef1d871",
+     "reactor": "1f741036-4221-4860-bee5-c8ae40c1e24e",
+     "status": "committed",
+     "target": "847a38bd-ceb6-419f-a322-979ea557ce91",
+     "topic": "\"It's still standing, unless someone's moved it.\""
+    }
+   },
+   "speaker_names": {
+    "1f741036-4221-4860-bee5-c8ae40c1e24e": "Ash",
+    "847a38bd-ceb6-419f-a322-979ea557ce91": "Wren"
+   },
+   "speakers": {
+    "reaction:cc47bf3e-e807-5bb5-96f9-d67b3ef1d871": "1f741036-4221-4860-bee5-c8ae40c1e24e"
+   },
+   "speech_keys": [
+    "reaction:cc47bf3e-e807-5bb5-96f9-d67b3ef1d871"
+   ],
+   "system": "# Narrator role prompt v2\n\nYou narrate one committed event for a stated audience. The visible\nfacts below are everything the audience may learn: every beat you\nwrite must cite only those fact keys, name only the given event, and\nspeak only as the narrator or as an audience member.\n\nSource categories (every fact line states its own):\n\n- `[attempt \u2014 narration-only]` records something a character tried or\n  did, not words anyone spoke. Describe it in narrator voice with\n  `speaker_id` null. Never render it as dialogue, even though its\n  topic may read like speech.\n- `[quoted speech \u2014 dialogue-eligible]` quotes identified spoken words\n  with the speaker's exact id. Render each as a `dialogue` beat with\n  that speaker, citing its key, and quote short utterances faithfully\n  (longer ones may be paraphrased without changing meaning).\n- `[attributed summary \u2014 narration-only]` is an attributed summary, not\n  spoken words: render it in narrator voice, citing its key \u2014 never\n  present its topic as a quotation, and never put words in a speaker's\n  mouth beyond a cited utterance.\n\nRules:\n\n- Output a JSON array of beat objects matching RESPONSE_SCHEMA below.\n- Every beat needs at least one cited fact key from the visible set.\n- Cite keys exactly as quoted after `key` (the description after the colon is not part of the key).\n- `speaker_id` must be null (narrator voice) or an audience member.\n- A `dialogue` beat must set `speaker_id` to the exact id of the speaker\n  of its cited quoted-speech fact; never leave it null and never borrow\n  another voice. Attempt facts are narration-only: summarize them in\n  narrator voice with `speaker_id` null.\n- Never substitute a different speech key to rescue a rejected beat:\n  the output words must come from the cited utterance. Put no words in\n  a speaker's mouth beyond a cited utterance.\n- The `Speakers` roster maps each speaker name to its exact id; use those\n  ids when setting `speaker_id`.\n- Never add characters, places, injuries, items, or outcomes absent\n  from the visible facts. Understatement beats invention.\n- Keep the whole narration within the beat budget.\n\nRESPONSE_SCHEMA:\n\n{\n  \"$defs\": {\n    \"BeatProposal\": {\n      \"additionalProperties\": false,\n      \"description\": \"Model-authored beat shape: the graph stamps ids and event linkage.\",\n      \"properties\": {\n        \"cited_fact_keys\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Cited Fact Keys\",\n          \"type\": \"array\"\n        },\n        \"emotion_hint\": {\n          \"default\": \"\",\n          \"maxLength\": 128,\n          \"title\": \"Emotion Hint\",\n          \"type\": \"string\"\n        },\n        \"kind\": {\n          \"$ref\": \"#/$defs/NarrationKind\",\n          \"default\": \"narration\"\n        },\n        \"source_effect_ids\": {\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"title\": \"Source Effect Ids\",\n          \"type\": \"array\"\n        },\n        \"speaker_id\": {\n          \"anyOf\": [\n            {\n              \"format\": \"uuid\",\n              \"type\": \"string\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ],\n          \"default\": null,\n          \"title\": \"Speaker Id\"\n        },\n        \"text\": {\n          \"maxLength\": 2000,\n          \"minLength\": 1,\n          \"title\": \"Text\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"text\"\n      ],\n      \"title\": \"BeatProposal\",\n      \"type\": \"object\"\n    },\n    \"NarrationKind\": {\n      \"enum\": [\n        \"narration\",\n        \"dialogue\",\n        \"action\",\n        \"system\",\n        \"transition\"\n      ],\n      \"title\": \"NarrationKind\",\n      \"type\": \"string\"\n    }\n  },\n  \"items\": {\n    \"$ref\": \"#/$defs/BeatProposal\"\n  },\n  \"type\": \"array\"\n}\n",
+   "utterances": {
+    "reaction:cc47bf3e-e807-5bb5-96f9-d67b3ef1d871": "It's still standing, unless someone's moved it."
+   },
+   "visible_keys": [
+    "attempt:communicate",
+    "attempt:wait",
+    "reaction:cc47bf3e-e807-5bb5-96f9-d67b3ef1d871"
+   ]
+  }
+ ],
+ "prompt_version": "narrator.v2",
+ "sampling_captured": {
+  "json_mode": false,
+  "max_tokens": 512,
+  "temperature": null,
+  "top_k": null,
+  "top_p": null
+ },
+ "source": "production assembly (build-nemo-fixture.py, zero model spend)"
+}

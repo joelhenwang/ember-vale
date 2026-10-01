@@ -6,7 +6,7 @@ D1 runs narrator items only (other roles already use json_mode=True live).
 Zero-paid-call dry run: --dry-run replays canned valid payloads through the
 real adapters/validators with no network.
 
-Run-wide gateway-call budget (--max-calls, default 20) is enforced before every
+Run-wide gateway-call budget (--max-calls, default 32) is enforced before every
 invocation including rate-limit retries; exhausted runs keep completed results
 and mark the rest blocked. Output goes to --out (default
 replay-<arm>-<dry|paid>-<fixture-stem>.json); existing destinations are refused
@@ -148,7 +148,7 @@ class CallBudget:
     """Run-wide gateway-call budget, checked before every invocation.
 
     Rate-limit retries are invocations too: every gateway.complete call
-    site acquires first, so ten scenarios can never exceed max_calls
+    site acquires first, so sixteen scenarios can never exceed max_calls
     no matter how often providers ask for a retry.
     """
 
@@ -346,7 +346,7 @@ async def main() -> None:
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--out", default=None)
     ap.add_argument("--overwrite", action="store_true")
-    ap.add_argument("--max-calls", type=int, default=20)
+    ap.add_argument("--max-calls", type=int, default=32)
     args = ap.parse_args()
 
     global request_role_hint, CANNED_BY_ROLE

@@ -1,0 +1,658 @@
+{
+ "arm": "E",
+ "config": {
+  "model": "mistralai/mistral-nemo",
+  "temperature": 0.2,
+  "json_narrator": false
+ },
+ "fixture_sha": "35fe44df2fc35769369ef757d0f229476d4ade078413699830ae94b7e6990c90",
+ "started_wall": 1790871812.1680613,
+ "ended_wall": 1790871812.6939495,
+ "total_tokens": 7079,
+ "dry_run": true,
+ "runner_revision": "78fbbc07e09225d802ada76365d60006eac61a67",
+ "max_calls": 32,
+ "complete": true,
+ "results": [
+  {
+   "role": "narrator",
+   "prompt_hash": "95c1bbee38a0f379bd83920cdebc64a9c82e0023ffa34839dc85ee0aea1af3d4",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 171,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    },
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 240,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
+   ],
+   "ttuv_ms": 0,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "dce5f5599962486926bddadb05bdcca0b94347942dfa8f9117c23d45e9f2b5e6",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 157,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    },
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 225,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
+   ],
+   "ttuv_ms": 0,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "7377cad9cc0b4052be380397f12644e8bcab71786fce1d39713797e7bae5a66e",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 94,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    },
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 163,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
+   ],
+   "ttuv_ms": 0,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "ed4d61338ccc591ffe5747637685febe47488649a570d87e1dfb71e7b07ab9e3",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 95,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    },
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 163,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
+   ],
+   "ttuv_ms": 0,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "b2269c0ec875695593b2707f323370faf28a6ee69188c38fa8f5c5723277623d",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 169,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    },
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 238,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
+   ],
+   "ttuv_ms": 0,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "a76691b8535195f612dc26297f9f3adc15c609de48407243dc482a51e9c1e01e",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 157,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    },
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 226,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
+   ],
+   "ttuv_ms": 0,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "4dd6ea36335351521bfd1ae03f061f05514fb684f65ebcb8a48d2f3c9a5e9fd4",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 172,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    },
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 241,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
+   ],
+   "ttuv_ms": 0,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "e23f364feceaaa3a589c7e7725d350ce9f44036c62418d25fd66781044921b73",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 167,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    },
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 236,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
+   ],
+   "ttuv_ms": 0,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "55c3646bb9b457b38382f0fb1e018b5831812eb06b55f8e19cb5d5c0af038e93",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 178,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    },
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 246,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
+   ],
+   "ttuv_ms": 0,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "1dcf5370d2d21a129c549b55e4742f01d22e711483e89dc81737ebb7a6d2c24a",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 177,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    },
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 245,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
+   ],
+   "ttuv_ms": 0,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "f3df89dcb9053c6805b178cbeb8fae9804091b2fed9d254324b331d120678ef5",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 94,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    },
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 163,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
+   ],
+   "ttuv_ms": 0,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "854de3761d182ec90cba58c50d36ce031be137e2845586f4723c968ba638d8e2",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 394,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    },
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 463,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
+   ],
+   "ttuv_ms": 0,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "8594417a7eea78685d810cc4a4f09f921566ddf7b3c9025cd73ead09bf3f2c1b",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 249,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    },
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 318,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
+   ],
+   "ttuv_ms": 0,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "80ea5b0e9f40abd0e483a90069ec089af14fade4169cb16877e19454cbbd6134",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 209,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    },
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 277,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
+   ],
+   "ttuv_ms": 0,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "e23254da950942a8a9e9c7106a4424e53c173ff3af3dceb64caeff8397497bff",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 169,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    },
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 237,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
+   ],
+   "ttuv_ms": 0,
+   "blocked": false,
+   "outcome": "exhausted"
+  },
+  {
+   "role": "narrator",
+   "prompt_hash": "cefaa38e0ce43f6ed06218bced0360cf16837fccb618e461c98fd7e80a01b293",
+   "arm": "E",
+   "attempts": [
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 179,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    },
+    {
+     "latency_ms": 1,
+     "finish_reason": null,
+     "content_len": 73,
+     "prompt_tokens": 247,
+     "completion_tokens": 10,
+     "reasoning_tokens": 0,
+     "model": "dry",
+     "valid": false,
+     "validation": "beats_valid: unsupported facts cited: ['k']"
+    }
+   ],
+   "repairs": 1,
+   "validated": false,
+   "prompt_deduped": false,
+   "system_source": "captured",
+   "texts": [
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]",
+    "[{\"text\": \"dry run beat\", \"cited_fact_keys\": [\"k\"], \"kind\": \"narration\"}]"
+   ],
+   "ttuv_ms": 0,
+   "blocked": false,
+   "outcome": "exhausted"
+  }
+ ]
+}
