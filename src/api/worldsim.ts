@@ -26,8 +26,13 @@ import type {
   PresetDetail,
   PresetPublishView,
   PresetSummary,
+  ProviderConnectionCreate,
+  ProviderConnectionPatch,
   ProviderConnectionView,
+  ProviderProfileCreate,
   ProviderProfileView,
+  ProviderTestRequest,
+  ProviderTestView,
   RoleGrantView,
   RoleSelectRequest,
   SceneDetail,
@@ -405,6 +410,53 @@ export function listProfiles(
   return apiFetch<ProviderProfileView[]>(`/settings/providers/${connectionId}/profiles`, {
     ...opts,
     method: 'GET'
+  })
+}
+
+export function createProvider(
+  body: ProviderConnectionCreate,
+  opts: CallOptions = {}
+): Promise<ProviderConnectionView> {
+  // The server also adds profile revision 1 with the adapter's default model.
+  return apiFetch<ProviderConnectionView>('/settings/providers', { ...opts, method: 'POST', body })
+}
+
+export function updateProvider(
+  connectionId: string,
+  body: ProviderConnectionPatch,
+  opts: CallOptions = {}
+): Promise<ProviderConnectionView> {
+  // expected_version guards concurrent edits (VERSION_CONFLICT on mismatch).
+  return apiFetch<ProviderConnectionView>(`/settings/providers/${connectionId}`, {
+    ...opts,
+    method: 'PATCH',
+    body
+  })
+}
+
+export function addProfile(
+  connectionId: string,
+  body: ProviderProfileCreate,
+  opts: CallOptions = {}
+): Promise<ProviderProfileView> {
+  // Append-only: stories keep the revision they pinned.
+  return apiFetch<ProviderProfileView>(`/settings/providers/${connectionId}/profiles`, {
+    ...opts,
+    method: 'POST',
+    body
+  })
+}
+
+export function testProvider(
+  connectionId: string,
+  opts: CallOptions = {}
+): Promise<ProviderTestView> {
+  // Reachability of the SAVED connection only; never sends the credential.
+  const body: ProviderTestRequest = { live: false }
+  return apiFetch<ProviderTestView>(`/settings/providers/${connectionId}/test`, {
+    ...opts,
+    method: 'POST',
+    body
   })
 }
 

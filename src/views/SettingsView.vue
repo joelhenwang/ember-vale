@@ -1,19 +1,20 @@
 <!--
-  SettingsView — page defaults for NEW stories (existing stories keep their
-  own configuration, per the subtitle). AI connections is the fully wired
-  section from the mockup; the other sidebar entries render honest
-  placeholder panels (their screens haven't been provided yet).
+  SettingsView — storyteller connections that new stories can pin.
 
-  All field state, dirty tracking and the (fake) connection tests live in
-  src/game/settings.ts; this view is markup + composition of the shared
-  pieces (PageIntro, SaveBar, StudioSelect, FieldRow, ConnectionCard).
+  AI connections is wired to the backend (/settings/providers): a
+  connection names an adapter, an endpoint and the NAME of a server-side
+  environment variable holding the key; model and sampling are
+  append-only profile revisions, so stories keep the revision they pinned.
+  Connection tests probe the SAVED connection's endpoint (reachability
+  only; no credential is sent and no text is generated). Image generation
+  has no backend adapter in this build and says so. The other sidebar
+  entries remain honest placeholders.
 
-  DEMO scope: Test connection / Generate test image are timer-faked
-  transitions in the store — a production client probes the endpoint and,
-  for test art, enqueues the image pipeline just like the studios do.
+  State and requests live in useProviderSettings; validation and request
+  shaping in src/game/providerSettings.ts.
 -->
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import SaveBar from '../components/ui/SaveBar.vue'
 import PageIntro from '../components/ui/PageIntro.vue'
 import StudioSelect from '../components/studio/StudioSelect.vue'
@@ -30,19 +31,8 @@ import IconImage from '../components/icons/IconImage.vue'
 import IconLock from '../components/icons/IconLock.vue'
 import IconCheck from '../components/icons/IconCheck.vue'
 import IconInfo from '../components/icons/IconInfo.vue'
-import {
-  applyConnectionTest,
-  discardSettings,
-  generateTestImage,
-  IMAGE_PROVIDERS,
-  isSettingsDirty,
-  providerModels,
-  saveSettings,
-  setProvider,
-  settings,
-  STORY_PROVIDERS,
-  type ConnStatus
-} from '../game/settings'
+import { ADAPTER_LABELS, DEFAULT_MODEL, type Adapter } from '../game/providerSettings'
+import { NEW_CONNECTION, useProviderSettings } from '../composables/useProviderSettings'
 
 /* sections ------------------------------------------------------------- */
 const sections = [
@@ -65,47 +55,72 @@ const SECTION_BLURB: Record<string, string> = {
   advanced:
     'Prompt overrides, telemetry and offline models. Most players never visit. Screen pending.'
 }
-
-/* dirty / save ---------------------------------------------------------- */
-/** Placeholder copy for every section except the designed one. */
+/** Placeholder copy for every section except the wired one. */
 const sectionBlurb = computed(() =>
   active.value === 'ai-connections' ? '' : (SECTION_BLURB[active.value] ?? '')
 )
 
-const dirty = computed(() => isSettingsDirty())
+/* storyteller connections ------------------------------------------------ */
+const s = useProviderSettings()
+onMounted(() => void s.load())
+
+const connectionOptions = computed(() => [
+  ...s.connections.value.map((c) => ({ value: c.id, label: c.name })),
+  { value: NEW_CONNECTION, label: 'New connection…' }
+])
+const adapterOptions = (Object.keys(ADAPTER_LABELS) as Adapter[]).map((value) => ({
+  value,
+  label: ADAPTER_LABELS[value]
+}))
+const MODEL_SUGGESTIONS = ['openrouter/auto', 'mistralai/mistral-nemo']
+
+function selectConnection(id: string): void {
+  if (id !== s.selected.value) s.select(id)
+}
+function setAdapter(value: string): void {
+  const adapter: Adapter = value === 'fake' ? 'fake' : 'openrouter'
+  const previousDefault = DEFAULT_MODEL[s.form.value.adapter]
+  s.form.value.adapter = adapter
+  // Swap the model only while it is still the previous adapter's default.
+  if (s.form.value.modelId === previousDefault) s.form.value.modelId = DEFAULT_MODEL[adapter]
+}
+
+/** Credential note for the saved connection; unsaved edits are unknown. */
+const credentialNote = computed(() => {
+  const saved = s.connection.value
+  if (!s.form.value.credentialEnv.trim()) return { ok: false, text: 'No key reference set.' }
+  if (!saved || s.form.value.credentialEnv.trim() !== (saved.credential_env ?? '')) {
+    return { ok: false, text: 'Checked on the server after saving.' }
+  }
+  return saved.has_credential
+    ? { ok: true, text: 'Key found in the server environment.' }
+    : { ok: false, text: 'Not set in the server environment yet.' }
+})
+
+const revisionNote = computed(() => {
+  const rev = s.profile.value?.revision
+  return rev
+    ? `Revision ${rev}. Saving model changes adds revision ${rev + 1}; stories keep the revision they pinned.`
+    : 'Saved as revision 1 of this connection.'
+})
+
+function testedAt(iso: string | undefined): string {
+  if (!iso) return ''
+  const when = new Date(iso)
+  return Number.isNaN(when.getTime()) ? iso : when.toLocaleTimeString()
+}
+
+/* save bar ---------------------------------------------------------------- */
 const savedFlash = ref(false)
 let flashTimer: ReturnType<typeof setTimeout> | undefined
-function save(): void {
-  saveSettings()
-  savedFlash.value = true
-  clearTimeout(flashTimer)
-  flashTimer = setTimeout(() => (savedFlash.value = false), 1400)
+async function save(): Promise<void> {
+  if (await s.save()) {
+    savedFlash.value = true
+    clearTimeout(flashTimer)
+    flashTimer = setTimeout(() => (savedFlash.value = false), 1400)
+  }
 }
 onBeforeUnmount(() => clearTimeout(flashTimer))
-
-/* connection tests ------------------------------------------------------- */
-function connStatus(which: 'story' | 'image'): ConnStatus {
-  return settings[which].status
-}
-let testTimer: ReturnType<typeof setTimeout> | undefined
-function testConnection(which: 'story' | 'image'): void {
-  if (settings[which].status === 'testing') return
-  settings[which].status = 'testing'
-  clearTimeout(testTimer)
-  // DEMO: fake round-trip; production HEADs the endpoint and reads its
-  // capability response.
-  testTimer = setTimeout(() => applyConnectionTest(which), 700)
-}
-onBeforeUnmount(() => clearTimeout(testTimer))
-
-const imageReady = computed(
-  () => !!settings.image.provider && settings.image.status === 'reachable'
-)
-const CAPABILITY_LABEL: Record<string, string> = {
-  unknown: 'Unknown',
-  supported: 'Supported',
-  unsupported: 'Not supported'
-}
 </script>
 
 <template>
@@ -113,7 +128,7 @@ const CAPABILITY_LABEL: Record<string, string> = {
     <header class="settings__head">
       <PageIntro
         title="Settings"
-        sub="Defaults for new stories. Existing stories keep their configuration." />
+        sub="Storyteller connections you can pin when you begin a story. Stories keep the revision they started with." />
       <span class="settings__rule" aria-hidden="true"></span>
     </header>
 
@@ -121,7 +136,6 @@ const CAPABILITY_LABEL: Record<string, string> = {
       <SettingsNav v-model="active" :sections="sections" />
 
       <div class="settings__main">
-        <!-- AI connections (the fully designed screen) -------------------- -->
         <template v-if="active === 'ai-connections'">
           <div
             id="settings-panel-ai-connections"
@@ -129,52 +143,153 @@ const CAPABILITY_LABEL: Record<string, string> = {
             aria-labelledby="settings-tab-ai-connections">
             <h2 class="settings__section">AI connections</h2>
             <p class="settings__section-sub">
-              Connect the models that write and illustrate your stories.
+              Stories without a pinned connection use the server’s environment default.
+            </p>
+
+            <p v-if="s.error.value" class="settings__alert" role="alert">{{ s.error.value }}</p>
+            <p v-if="s.loading.value" class="ev-info settings__card">
+              <IconInfo :size="14" /> Loading connections…
             </p>
 
             <ConnectionCard
+              v-else
               class="settings__card"
               :icon="IconDoc"
               title="Story generation"
-              :status="connStatus('story')"
-              caption="Used to generate story text, choices, and narrative elements. A successful
-                connection only confirms the endpoint is accessible, not that generation works.">
-              <FieldRow label="Provider">
+              :status="s.status.value"
+              caption="Writes narration, dialogue and character decisions. A reachable endpoint only
+                confirms the server can be contacted, not that generation works.">
+              <FieldRow label="Connection" :span="3">
                 <StudioSelect
-                  :model-value="settings.story.provider"
-                  :options="STORY_PROVIDERS"
-                  @update:model-value="setProvider('story', $event)" />
+                  :model-value="s.selected.value"
+                  :options="connectionOptions"
+                  aria-label="Connection"
+                  @update:model-value="selectConnection" />
               </FieldRow>
-              <FieldRow label="Model">
+              <FieldRow label="Name">
+                <input v-model="s.form.value.name" class="ev-input" aria-label="Name" />
+                <p v-if="s.errors.value.name" class="field-err">{{ s.errors.value.name }}</p>
+              </FieldRow>
+              <FieldRow label="Adapter">
                 <StudioSelect
-                  v-model="settings.story.model"
-                  :options="providerModels('story')"
-                  placeholder="Select model"
-                  :disabled="!settings.story.provider" />
+                  :model-value="s.form.value.adapter"
+                  :options="adapterOptions"
+                  aria-label="Adapter"
+                  @update:model-value="setAdapter" />
               </FieldRow>
               <FieldRow label="Endpoint" :span="3">
-                <input v-model="settings.story.endpoint" class="ev-input" placeholder="http://…" />
+                <input
+                  v-model="s.form.value.endpoint"
+                  class="ev-input"
+                  aria-label="Endpoint"
+                  placeholder="https://openrouter.ai/api/v1" />
+                <p v-if="s.errors.value.endpoint" class="field-err">
+                  {{ s.errors.value.endpoint }}
+                </p>
+                <label class="check">
+                  <input v-model="s.form.value.allowLocal" type="checkbox" />
+                  Allow a local or private-network endpoint
+                </label>
               </FieldRow>
-              <FieldRow label="Credential reference" :span="2">
+              <FieldRow label="Key variable" :span="2">
                 <span class="cred">
                   <span class="cred__lock"><IconLock :size="15" /></span>
-                  <input v-model="settings.story.cred" class="cred__input" spellcheck="false" />
+                  <input
+                    v-model="s.form.value.credentialEnv"
+                    class="cred__input"
+                    spellcheck="false"
+                    aria-label="Server environment variable holding the key"
+                    placeholder="WORLDSIM_PROVIDER__OPENROUTER_API_KEY" />
                 </span>
+                <p v-if="s.errors.value.credentialEnv" class="field-err">
+                  {{ s.errors.value.credentialEnv }}
+                </p>
+                <p class="testcol__note" :class="{ 'testcol__note--ok': credentialNote.ok }">
+                  <IconCheck v-if="credentialNote.ok" :size="10" />
+                  {{ credentialNote.text }} The key itself never leaves the server.
+                </p>
                 <template #after>
                   <div class="testcol">
                     <button
                       type="button"
                       class="testbtn"
-                      :disabled="connStatus('story') === 'testing'"
-                      @click="testConnection('story')">
-                      {{ connStatus('story') === 'testing' ? 'Testing…' : 'Test connection' }}
+                      :disabled="!s.canTest.value"
+                      @click="s.test()">
+                      {{ s.testing.value ? 'Testing…' : 'Test connection' }}
                     </button>
-                    <p v-if="settings.story.lastChecked" class="testcol__note testcol__note--ok">
-                      <IconCheck :size="10" /> Last checked {{ settings.story.lastChecked }}
+                    <p v-if="s.dirty.value || !s.connection.value" class="testcol__note">
+                      Save first — tests use the saved connection.
                     </p>
-                    <p class="testcol__note">Tests use the values currently entered.</p>
+                    <template v-else-if="s.lastTest.value">
+                      <p
+                        class="testcol__note"
+                        :class="{ 'testcol__note--ok': s.lastTest.value.reachable }">
+                        <IconCheck v-if="s.lastTest.value.reachable" :size="10" />
+                        {{ s.lastTest.value.detail }} · {{ testedAt(s.lastTest.value.tested_at) }}
+                      </p>
+                      <p class="testcol__note">
+                        Text generation: {{ s.lastTest.value.text_ready }}
+                      </p>
+                    </template>
+                    <p v-else class="testcol__note">Checks the endpoint; sends no key.</p>
                   </div>
                 </template>
+              </FieldRow>
+
+              <h4 class="settings__sub">Model</h4>
+              <FieldRow label="Model" :span="3">
+                <input
+                  v-model="s.form.value.modelId"
+                  class="ev-input"
+                  list="settings-model-suggestions"
+                  aria-label="Model"
+                  spellcheck="false" />
+                <datalist id="settings-model-suggestions">
+                  <option v-for="m in MODEL_SUGGESTIONS" :key="m" :value="m" />
+                </datalist>
+                <p v-if="s.errors.value.modelId" class="field-err">
+                  {{ s.errors.value.modelId }}
+                </p>
+                <p class="testcol__note">{{ revisionNote }}</p>
+              </FieldRow>
+              <FieldRow label="Temperature">
+                <input
+                  v-model="s.form.value.temperature"
+                  class="ev-input"
+                  inputmode="decimal"
+                  aria-label="Temperature"
+                  placeholder="Provider default" />
+                <p v-if="s.errors.value.temperature" class="field-err">
+                  {{ s.errors.value.temperature }}
+                </p>
+              </FieldRow>
+              <FieldRow label="Top P">
+                <input
+                  v-model="s.form.value.topP"
+                  class="ev-input"
+                  inputmode="decimal"
+                  aria-label="Top P"
+                  placeholder="Provider default" />
+                <p v-if="s.errors.value.topP" class="field-err">{{ s.errors.value.topP }}</p>
+              </FieldRow>
+              <FieldRow label="Top K">
+                <input
+                  v-model="s.form.value.topK"
+                  class="ev-input"
+                  inputmode="numeric"
+                  aria-label="Top K"
+                  placeholder="Provider default" />
+                <p v-if="s.errors.value.topK" class="field-err">{{ s.errors.value.topK }}</p>
+              </FieldRow>
+              <FieldRow label="Max tokens">
+                <input
+                  v-model="s.form.value.maxTokens"
+                  class="ev-input"
+                  inputmode="numeric"
+                  aria-label="Max tokens" />
+                <p v-if="s.errors.value.maxTokens" class="field-err">
+                  {{ s.errors.value.maxTokens }}
+                </p>
               </FieldRow>
             </ConnectionCard>
 
@@ -182,78 +297,9 @@ const CAPABILITY_LABEL: Record<string, string> = {
               class="settings__card"
               :icon="IconImage"
               title="Image generation"
-              :status="connStatus('image')"
-              caption="Used to generate scene illustrations and other images for your stories.">
-              <FieldRow label="Provider">
-                <StudioSelect
-                  :model-value="settings.image.provider"
-                  :options="IMAGE_PROVIDERS"
-                  placeholder="Select provider"
-                  @update:model-value="setProvider('image', $event)" />
-              </FieldRow>
-              <FieldRow label="Model">
-                <StudioSelect
-                  v-model="settings.image.model"
-                  :options="providerModels('image')"
-                  placeholder="Select model"
-                  :disabled="!settings.image.provider" />
-              </FieldRow>
-              <FieldRow label="Endpoint" :span="3">
-                <input
-                  v-model="settings.image.endpoint"
-                  class="ev-input"
-                  placeholder="https://your-image-provider.example" />
-              </FieldRow>
-              <FieldRow label="Credential reference" :span="2">
-                <span class="cred">
-                  <span class="cred__lock"><IconLock :size="15" /></span>
-                  <input v-model="settings.image.cred" class="cred__input" spellcheck="false" />
-                </span>
-                <template #after>
-                  <div class="testcol">
-                    <button
-                      type="button"
-                      class="testbtn"
-                      :disabled="connStatus('image') === 'testing'"
-                      @click="testConnection('image')">
-                      {{ connStatus('image') === 'testing' ? 'Testing…' : 'Test connection' }}
-                    </button>
-                    <p class="testcol__note">Tests use the values currently entered.</p>
-                  </div>
-                </template>
-              </FieldRow>
-
-              <!-- capabilities panel ------------------------------------- -->
-              <div class="caps">
-                <div class="caps__head">
-                  <b>Detected capabilities (after connection test)</b>
-                  <div class="caps__act">
-                    <button
-                      type="button"
-                      class="testbtn"
-                      :disabled="!imageReady"
-                      @click="generateTestImage">
-                      <IconImage :size="14" /> Generate test image
-                    </button>
-                    <p class="testcol__note">
-                      Select a provider and verify its capabilities first.
-                    </p>
-                  </div>
-                </div>
-                <div class="caps__items">
-                  <span class="cap">
-                    <span
-                      class="cap__ring"
-                      :class="`cap__ring--${settings.image.envImages}`"></span>
-                    Environment images: {{ CAPABILITY_LABEL[settings.image.envImages] }}
-                  </span>
-                  <span class="cap">
-                    <span class="cap__ring" :class="`cap__ring--${settings.image.charRefs}`"></span>
-                    Character references: {{ CAPABILITY_LABEL[settings.image.charRefs] }}
-                  </span>
-                </div>
-              </div>
-            </ConnectionCard>
+              status="unavailable"
+              caption="Scene and character art uses the bundled illustrations for now. Generating new
+                images needs a server-side image adapter, which this build does not include yet." />
           </div>
         </template>
 
@@ -272,12 +318,19 @@ const CAPABILITY_LABEL: Record<string, string> = {
     </div>
 
     <SaveBar
-      :dirty="dirty"
+      v-if="active === 'ai-connections'"
+      :dirty="s.dirty.value"
       :saved="savedFlash"
       secondary-label="Discard"
-      @secondary="discardSettings">
+      @secondary="s.discard()">
       <template #end>
-        <button type="button" class="cta cta--foot" @click="save">Save settings</button>
+        <button
+          type="button"
+          class="cta cta--foot"
+          :disabled="!s.dirty.value || !s.valid.value || s.saving.value"
+          @click="save">
+          {{ s.saving.value ? 'Saving…' : 'Save connection' }}
+        </button>
       </template>
     </SaveBar>
   </main>
@@ -408,58 +461,41 @@ const CAPABILITY_LABEL: Record<string, string> = {
   color: #2e7d43;
 }
 
-/* capabilities panel --------------------------------------------------------*/
-.caps {
+/* wired form additions ---------------------------------------------------- */
+.settings__sub {
   grid-column: 1 / -1;
-  border: 1px solid #e0d2b0;
-  border-radius: 12px;
-  background: #f8f1dd;
-  padding: 14px 18px 16px;
-}
-.caps__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-.caps__head b {
-  font-size: 15.5px;
+  margin: 6px 0 -4px;
+  padding-top: 14px;
+  border-top: 1px solid #e4d6b4;
+  font-size: 15px;
   font-weight: 600;
   color: var(--ink-2);
 }
-.caps__act {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 5px;
+.settings__alert {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border: 1px solid #d6a58c;
+  border-radius: 10px;
+  background: #fbede5;
+  color: #8a3b1c;
+  font-size: 14.5px;
 }
-.caps__items {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px 30px;
-  margin-top: 13px;
+.field-err {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #b3542e;
 }
-.cap {
+.check {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-size: 15px;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 14px;
   color: var(--ink-2);
 }
-.cap__ring {
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  border: 1.6px solid #b49a68;
-  flex: none;
-}
-.cap__ring--supported {
-  border-color: #2e7d43;
-  background: radial-gradient(circle, #2e7d43 0 42%, transparent 46%);
-}
-.cap__ring--unsupported {
-  border-color: #b3542e;
+.cta:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 /* placeholder sections ------------------------------------------------------ */

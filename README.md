@@ -25,7 +25,7 @@ npm run build        # typecheck + production bundle
 | `/new-story` | `NewStoryView` | wizard band (6-step stepper), cast picker with live search/filter/sort, selected-cast panel, footer nav; state lives in `src/game/catalog.ts` (`wizard`) |
 | `/library` | `LibraryView` | internal tabs via `?tab=` — `characters` (default), `worlds`, `style-packs`, `templates`; search, chip filters, sort, grid/list toggle |
 | `/stories` | `StoriesView` | “Your stories” shelf — status chips (All / In progress / Archived), search, sort, grid/list density, one `StoryCard` per saved tale with working Archive/Restore; unwired sub-routes (…/configuration, …/saves) fall to `StubView` |
-| `/settings` | `SettingsView` | “Settings” — vertical section nav (SettingsNav); AI connections fully wired (provider/model/endpoint/credential, fake connection tests + capability panel); other sections show honest placeholders; SaveBar dirty/discard/save like the studios |
+| `/settings` | `SettingsView` | “Settings” — vertical section nav (SettingsNav); AI connections wired to `/settings/providers` (storyteller connections, model revisions, real reachability tests; image generation shown as not available in this build); other sections show honest placeholders; SaveBar dirty/discard/save like the studios |
 | `/library/character/:id` · `/new-story/character/:id` | `CharacterStudioView` | “Give {name} a voice” — drives/voice form cards; preview column is the separate `CharacterPreviewPanel` (Appearance / Voice / Behavior tabs, full-body render swap, dialogue sampling) |
 | `/library/world/:id` · `/new-story/world/:id` | `WorldStudioView` | “Shape your world” — look fields, per-place editors with tabs; preview panel with Scene / Map / Summary, condition selects, preview regeneration |
 | `*` | `StubView` | “chapter still being written” placeholder for unwired pages |
@@ -79,10 +79,11 @@ breadcrumb and where *Finish* returns.
 - `src/game/stories.ts` — the saved-story shelf (`storyShelf` records + `storiesUi`
   toolbar state). `filters.filterStories` does the search/chip/sort work;
   `setStoryArchived` is the one mutation the page exposes today.
-- `src/game/settings.ts` — per-section settings state with the same
-  snapshot-based dirty/save/discard cycle as the studios, plus pure
-  `applyConnectionTest` / `setProvider` transitions (the timers around them
-  are DEMO fakes in the view).
+- `src/game/providerSettings.ts` + `src/composables/useProviderSettings.ts`
+  — storyteller connections for the Settings page: form ↔ DTO mapping,
+  validation mirroring the backend limits, patch-only-what-changed saves,
+  a new profile revision only when model/sampling changed, and test status
+  that never reports an outdated configuration as reachable.
 
 - Shared atoms that grew out of these pages — reuse before re-writing:
   `ui/PageIntro` (emblem + title + sub + actions slot), `ui/SaveBar`
@@ -119,8 +120,8 @@ breadcrumb and where *Finish* returns.
 `src/game/*.spec.ts` — vitest, node environment: filter/sort purity
 (library, cast, stories shelf), draft seed → edit → save → dirty cycle,
 suggest-only-fills-blanks, wren/generic beat variant cycling, the image
-registry fallback/override, settings save/discard + connection-test +
-provider/model coupling transitions.
+registry fallback/override, provider settings (validation, save planning,
+create/patch/revision flows, version conflicts, test staleness).
 
 ## Placeholders shipped in `public/images/`
 

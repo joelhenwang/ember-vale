@@ -12,7 +12,7 @@
 import { computed } from 'vue'
 import type { Component } from 'vue'
 import StatusPill from '../ui/StatusPill.vue'
-import type { ConnStatus } from '../../game/settings'
+import type { ConnStatus } from '../../game/providerSettings'
 
 const props = defineProps<{
   icon: Component
@@ -25,7 +25,8 @@ const STATUS = {
   reachable: { tone: 'ok', label: 'Endpoint reachable' },
   unreachable: { tone: 'fail', label: 'Endpoint unreachable' },
   testing: { tone: 'info', label: 'Checking…' },
-  untested: { tone: 'warn', label: 'Not tested' }
+  untested: { tone: 'warn', label: 'Not tested' },
+  unavailable: { tone: 'info', label: 'Not available in this build' }
 } as const
 
 const pill = computed(() => STATUS[props.status])
