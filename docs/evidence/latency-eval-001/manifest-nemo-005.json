@@ -7,9 +7,10 @@
    "comparison_run": 0.0,
    "nemo_001_paid": 0.000565,
    "nemo_004_paid": 0.001868,
+   "nemo_005_paid": 0.00175,
    "older_arms": 0.1238
   },
-  "remaining_headroom_estimate": 0.3664
+  "remaining_headroom_estimate": 0.3682
  },
  "billing_status": "estimates only; billing has not been reconciled",
  "call_budget": {
