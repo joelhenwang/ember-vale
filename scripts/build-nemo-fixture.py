@@ -9,7 +9,7 @@ Captures each initial narrator CompletionRequest and rebuilds authoritative
 metadata from committed rows with production functions (prompt rebuild
 equality is asserted per scenario).
 
-Writes docs/evidence/latency-eval-001/fixture-narrator-nemo-003.json
+Writes docs/evidence/latency-eval-001/fixture-narrator-nemo-005.json
 (or the name in argv[1]).
 Requires a reachable PostgreSQL (WORLDSIM_DATABASE__URL); builds a
 migration-head template and per-scenario scratch clones, dropped after.
@@ -151,8 +151,8 @@ SCENARIOS = [
     {"name": "long-utterance", "controller": "wren",
      "ask": "What should we watch for on the road ahead?",
      "answer": ("communicate", ('"Dawn bell means the market is waking early today, so hurry down '
-                '"with coin and basket before the best bread and freshest fish are gone '
-                '"from the stalls."'))},
+                'with coin and basket before the best bread and freshest fish are gone '
+                'from the stalls."'))},
     {"name": "one-word-reply", "controller": "wren",
      "ask": "Is the old bridge safe to cross?",
      "answer": ("communicate", '"No."')},
@@ -217,13 +217,19 @@ def run_one(spec: dict) -> dict:
             return base_character(request)
 
         kind, topic = spec["answer"]
+        # Production asks every other participant to react once per attempt,
+        # so a three-person scene issues several reaction calls per reactor.
+        # Each scripted reactor speaks on its first call and waits afterwards;
+        # answering every call with the same line duplicated the speech facts.
+        spoken: set[str] = set()
 
         def reaction_route(request: CompletionRequest) -> str | None:
             if f"identity>>{c_name}" in request.prompt:
                 raise AssertionError(f"controlled {c_name} must not reach model reaction")
             if third_mode == "alive" and "identity>>Marlow" in request.prompt:
                 tanswer = spec.get("third_answer", ("wait", None))
-                if tanswer[0] == "communicate":
+                if tanswer[0] == "communicate" and "marlow" not in spoken:
+                    spoken.add("marlow")
                     return json.dumps(
                         {
                             "family": "communicate",
@@ -237,7 +243,10 @@ def run_one(spec: dict) -> dict:
             # Uncontrolled side answers per scenario (or falls back to base).
             me = other
             target = marlow if spec.get("answer_target") == "third" else controller
+            if kind == "communicate" and "other" in spoken:
+                return _wait_json(me, UUID(ZERO_SNAP))
             if kind == "communicate":
+                spoken.add("other")
                 return json.dumps(
                     {
                         "family": "communicate",
@@ -375,7 +384,7 @@ if __name__ == "__main__":
         },
         "items": out,
     }
-    name = sys.argv[1] if len(sys.argv) > 1 else "fixture-narrator-nemo-003.json"
+    name = sys.argv[1] if len(sys.argv) > 1 else "fixture-narrator-nemo-005.json"
     dest = REPO / "docs" / "evidence" / "latency-eval-001" / name
     dest.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     for o in out:
