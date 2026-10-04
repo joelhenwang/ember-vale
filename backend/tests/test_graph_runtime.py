@@ -80,7 +80,7 @@ def test_thread_id_is_task_run_id() -> None:
     assert thread_id_for(task_run_id) == str(task_run_id)
 
 
-def test_interrupted_graph_resumes_once() -> None:
+def test_interrupted_graph_resumes_once(migrated_db: None) -> None:
     async def _inner() -> None:
         invocation = _invocation(uuid.uuid4())
         async with checkpointer(_dsn()) as saver:
@@ -95,7 +95,7 @@ def test_interrupted_graph_resumes_once() -> None:
     _run(_inner())
 
 
-def test_prune_leaves_canon_intact() -> None:
+def test_prune_leaves_canon_intact(migrated_db: None) -> None:
     async def _inner() -> None:
         settings = Settings()
         engine = create_engine(settings)
@@ -128,7 +128,7 @@ def test_prune_leaves_canon_intact() -> None:
     _run(_inner())
 
 
-def test_langsmith_disabled_behavior_identical() -> None:
+def test_langsmith_disabled_behavior_identical(migrated_db: None) -> None:
     async def _run_case(tracing: str) -> dict[str, Any]:
         os.environ["LANGSMITH_TRACING"] = tracing
         invocation = _invocation(uuid.uuid4())
