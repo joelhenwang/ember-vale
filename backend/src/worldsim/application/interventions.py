@@ -603,8 +603,12 @@ async def plan_attempts(
     the user. Conflicting or stale steps fail with reasons; valid ones
     return intents for the beat. Nothing is marked completed here —
     record_attempts completes steps only after their beat commits.
+    An intervention with a step that fails here is re-finished from its
+    step states, so one whose steps all fail ends FAILED instead of
+    staying EXECUTING forever.
     """
     planned: list[PlannedAttempt] = []
+    failed: list[Intervention] = []
     directed: dict[UUID, ActionIntent] = {}
     async with factory() as uow:
         characters = {
@@ -626,12 +630,16 @@ async def plan_attempts(
                 )
             except DomainError as error:
                 await _mark_step(factory, step, StepStatus.FAILED, str(error))
+                if intervention not in failed:
+                    failed.append(intervention)
                 continue
             planned.append(
                 PlannedAttempt(
                     actor=actor, intent=intent, ref=f"{intervention.id.hex}:{step.seq}"
                 )
             )
+    for intervention in failed:
+        await _finish_intervention(factory, intervention)
     return planned
 
 
