@@ -18,6 +18,7 @@ import argparse
 import asyncio
 import hashlib
 import json
+import re
 import subprocess
 import sys
 import time
@@ -302,6 +303,10 @@ async def run_item(
             out["validated"] = True
             break
         denial = info
+        if role == "narrator" and info.startswith("ValidationError"):
+            # Same denial production feeds repair_instruction for unparsable output.
+            count = re.search(r"(\d+) validation error", info)
+            denial = narrate.schema_denial(int(count.group(1)) if count else 1, res.finish_reason)
     out["ttuv_ms"] = int((time.monotonic() - ttuv_start) * 1000)
     out["blocked"] = any(a.get("error") == "budget_exhausted" for a in out["attempts"])
     out["outcome"] = (

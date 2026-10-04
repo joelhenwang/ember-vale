@@ -26,6 +26,7 @@ class ScriptedText:
     text: str
     prompt_tokens: int = 0
     completion_tokens: int = 0
+    finish_reason: str | None = None
 
 
 @dataclass
@@ -38,12 +39,19 @@ class FakeGateway:
     _calls: list[str] = field(default_factory=list)
     _requests: list[CompletionRequest] = field(default_factory=list)
 
-    def enqueue_text(self, text: str, prompt_tokens: int = 0, completion_tokens: int = 0) -> None:
+    def enqueue_text(
+        self,
+        text: str,
+        prompt_tokens: int = 0,
+        completion_tokens: int = 0,
+        finish_reason: str | None = None,
+    ) -> None:
         self._script.append(
             ScriptedText(
                 text=text,
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens,
+                finish_reason=finish_reason,
             )
         )
 
@@ -91,6 +99,7 @@ class FakeGateway:
             model=self.profile.model_id,
             profile_version=self.profile.version,
             latency_ms=0,
+            finish_reason=item.finish_reason,
         )
 
     async def embed(self, request: EmbeddingRequest) -> EmbeddingResult:

@@ -225,6 +225,29 @@ def _render_fact_line(fact: Mapping[str, str]) -> str:
     return f'- key "{key}": {value}'
 
 
+NARRATOR_TOKENS_PER_BEAT = 128
+TRUNCATED_DENIAL = "output truncated at the token limit"
+
+
+def narrator_max_tokens(configured: int, beats_budget: int) -> int:
+    """Completion cap that can hold the whole beat budget.
+
+    The sampling profile's max_tokens is shared by every role; a full
+    narration of 8 JSON beats needs roughly 500 tokens, so a 512 cap
+    truncates busy events mid-JSON. Never below the configured value,
+    never above the gateway ceiling of 4096.
+    """
+    floor = NARRATOR_TOKENS_PER_BEAT * max(beats_budget, 1)
+    return min(max(configured, floor), 4096)
+
+
+def schema_denial(error_count: int, finish_reason: str | None) -> str:
+    """Denial for unparsable output; truncation gets its own correction."""
+    if finish_reason == "length":
+        return TRUNCATED_DENIAL
+    return f"{error_count} schema errors"
+
+
 def repair_instruction(denial: str) -> str:
     """Actionable repair suffix shared by production and the eval replay.
 
@@ -236,7 +259,13 @@ def repair_instruction(denial: str) -> str:
     """
     head = f"Your previous output was rejected ({denial}). "
     tail = "Output a JSON array of beat objects matching the response schema."
-    if "dialogue cites non-speech evidence" in denial:
+    if TRUNCATED_DENIAL in denial:
+        fix = (
+            "The output hit the length limit before the JSON array closed. "
+            "Write fewer, shorter beats: one beat per quoted utterance, "
+            "attempts summarized together, and no fact narrated twice. "
+        )
+    elif "dialogue cites non-speech evidence" in denial:
         fix = (
             "The cited beat is invalid as dialogue: rewrite it as factual "
             "narrator prose with speaker_id null citing the same key, or "
@@ -330,11 +359,12 @@ _TRAILING_PUNCT = ".,!?;:"
 
 
 def _normalize_quote(text: str) -> str:
-    """Comparable form for quote containment: unified quotes, no
-    whitespace, trailing punctuation stripped from both sides."""
-    return " ".join(str(text).translate(_QUOTE_TRANSLATE).split()).rstrip(
-        _TRAILING_PUNCT
-    )
+    """Comparable form for quote containment: curly quotes unified,
+    double quote marks dropped (stray inner quotes in a stored utterance
+    must not force a fallback), whitespace runs collapsed, trailing
+    punctuation stripped. Apostrophes are kept as part of words."""
+    unified = str(text).translate(_QUOTE_TRANSLATE).replace('"', " ")
+    return " ".join(unified.split()).rstrip(_TRAILING_PUNCT)
 
 
 def communication_facts(
@@ -648,6 +678,7 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
         fact_speakers = {f["key"]: f["speaker"] for f in facts if "speaker" in f}
         speech_keys = speech_eligible_keys(facts)
         fact_utterances = {f["key"]: f["utterance"] for f in facts if "utterance" in f}
+        max_tokens = narrator_max_tokens(deps.max_tokens, budget)
         errors: list[str] = []
         repairs = 0
         try:
@@ -655,7 +686,7 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
                 CompletionRequest(
                     prompt=user,
                     system=system,
-                    max_tokens=deps.max_tokens,
+                    max_tokens=max_tokens,
                     temperature=deps.temperature,
                     top_p=deps.top_p,
                     top_k=deps.top_k,
@@ -679,17 +710,22 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
                 state, beats, True, f"provider failed ({type(exc).__name__})", [], 0, None
             )
         raw: str | None = result.text
+        finish_reason = result.finish_reason
         while True:
             try:
                 proposals = _BEATS_ADAPTER.validate_json(unfence_json(raw))
             except ValidationError as exc:
-                errors.append(f"attempt {repairs}: {exc.error_count()} schema errors")
+                errors.append(
+                    f"attempt {repairs}: {schema_denial(exc.error_count(), finish_reason)}"
+                )
                 if repairs >= deps.repair_budget:
                     return _fallback(
                         state, world_id, scene_id, event_id, facts, budget, errors, repairs, raw
                     )
                 repairs += 1
-                raw = await _repair_call(deps, system, user, errors[-1])
+                raw, finish_reason = await _repair_call(
+                    deps, system, user, errors[-1], max_tokens
+                )
                 if raw is None:
                     return _fallback(
                         state, world_id, scene_id, event_id, facts, budget, errors, repairs, None
@@ -711,7 +747,7 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
                         state, world_id, scene_id, event_id, facts, budget, errors, repairs, raw
                     )
                 repairs += 1
-                raw = await _repair_call(deps, system, user, denial)
+                raw, finish_reason = await _repair_call(deps, system, user, denial, max_tokens)
                 if raw is None:
                     return _fallback(
                         state, world_id, scene_id, event_id, facts, budget, errors, repairs, None
@@ -731,14 +767,16 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
     return builder.compile()
 
 
-async def _repair_call(deps: NarratorGraphDeps, system: str, user: str, denial: str) -> str | None:
-    """One bounded repair call; None when the provider fails."""
+async def _repair_call(
+    deps: NarratorGraphDeps, system: str, user: str, denial: str, max_tokens: int
+) -> tuple[str | None, str | None]:
+    """One bounded repair call: (text, finish_reason); text None when the provider fails."""
     try:
         repaired = await deps.gateway.complete(
             CompletionRequest(
                 prompt=f"{user}\n\n{repair_instruction(denial)}",
                 system=system,
-                max_tokens=deps.max_tokens,
+                max_tokens=max_tokens,
                 temperature=deps.temperature,
                 top_p=deps.top_p,
                 top_k=deps.top_k,
@@ -751,8 +789,8 @@ async def _repair_call(deps: NarratorGraphDeps, system: str, user: str, denial: 
         ModelRefusalError,
         ModelMalformedError,
     ):
-        return None
-    return repaired.text
+        return None, None
+    return repaired.text, repaired.finish_reason
 
 
 def _beats_json(beats: list[NarrationBeat]) -> list[dict[str, Any]]:
@@ -815,6 +853,8 @@ __all__ = [
     "load_narrator_prompt",
     "parse_narration_context",
     "render_user_prompt",
+    "narrator_max_tokens",
     "repair_instruction",
+    "schema_denial",
     "stamp_beats",
 ]

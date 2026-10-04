@@ -1529,3 +1529,80 @@ def test_dialogue_quote_whole_word_passes() -> None:
         )
         is None
     )
+
+
+def test_narrator_max_tokens_fits_beat_budget() -> None:
+    from worldsim.application.graphs.narrate import narrator_max_tokens
+
+    assert narrator_max_tokens(512, 8) == 1024
+    assert narrator_max_tokens(2048, 8) == 2048
+    assert narrator_max_tokens(512, 2) == 512
+    assert narrator_max_tokens(512, 64) == 4096
+
+
+def test_truncated_output_gets_shorter_beats_repair() -> None:
+    gateway = FakeGateway(profile=NARRATOR_FAKE_PROFILE)
+    gateway.enqueue_text('[{"text": "Ash waits", "cited_fact_keys": ["att', finish_reason="length")
+    gateway.enqueue_text(json.dumps([_beat("Ash waits.", ["attempt:wait"])]))
+    result = asyncio.run(
+        invoke(
+            build_narration_graph(_deps(gateway)),
+            _invocation(
+                uuid.uuid4(), visible_facts=[{"key": "attempt:wait", "value": "Ash waits"}]
+            ),
+        )
+    )
+
+    assert result["status"] == "narrated"
+    assert result["repair_count"] == 1
+    assert "output truncated at the token limit" in result["validation_errors"][0]
+    initial, repair = gateway.sent_requests
+    assert initial.max_tokens == repair.max_tokens == 1024
+    assert "fewer, shorter beats" in repair.prompt
+    assert "exactly matching the response schema" not in repair.prompt
+
+
+def test_unparsable_output_without_truncation_keeps_schema_repair() -> None:
+    from worldsim.application.graphs.narrate import schema_denial
+
+    assert schema_denial(2, "stop") == "2 schema errors"
+    assert schema_denial(2, None) == "2 schema errors"
+    prompt = _repair_prompt_for("not json at all", [{"key": "attempt:wait", "value": "Ash waits"}])
+    assert "fewer, shorter beats" not in prompt
+
+
+def _quote_denial(text: str, utterance: str) -> str | None:
+    from worldsim.application.graphs.narrate import beats_valid
+    from worldsim.domain.narration import BeatProposal
+
+    ash = uuid.uuid4()
+    key = "reaction:q"
+    return beats_valid(
+        [
+            BeatProposal(
+                text=text,
+                cited_fact_keys=[key],
+                kind="dialogue",  # type: ignore[assignment]
+                speaker_id=ash,
+            )
+        ],
+        visible_keys=frozenset({key}),
+        audience_ids=frozenset({str(ash)}),
+        beats_budget=8,
+        fact_speakers={key: str(ash)},
+        speech_keys=frozenset({key}),
+        fact_utterances={key: utterance},
+    )
+
+
+def test_stray_inner_quotes_in_stored_utterance_do_not_reject() -> None:
+    stored = 'so hurry down "with coin and basket before the bread is gone "from the stalls.'
+    clean = '"So hurry down with coin and basket before the bread is gone from the stalls."'
+    assert _quote_denial(clean.replace('"So', '"so'), stored) is None
+
+
+def test_quote_marks_dropped_but_words_still_required() -> None:
+    assert _quote_denial('"No," Ash says.', "No.") is None
+    assert _quote_denial("“Don’t cross,” Ash warns.", "Don't cross.") is None
+    assert _quote_denial('"Not today," Ash says.', "No.") is not None
+    assert _quote_denial('"Dont cross," Ash warns.', "Don't cross.") is not None

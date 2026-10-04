@@ -1,0 +1,11 @@
+{
+ "source": "offline re-score of replay-E-paid-fixture-narrator-nemo-004-s1/s2/s3.json outputs under the quote rule that drops double quote marks before whole-word containment ($0)",
+ "rule_change": "_normalize_quote now replaces double quote marks with spaces before collapsing whitespace; apostrophes kept; whole-word matching unchanged",
+ "summary": {
+  "parseable_attempts_checked": 54,
+  "previously_accepted_now_rejected": 0,
+  "previously_rejected_now_accepted": 6,
+  "now_accepted_detail": "all 6 long-utterance attempts (s1/s2/s3, initial and repair): the stored utterance carried stray inner quote marks from the fixture builder; the model's clean rendering now matches"
+ },
+ "effect_on_004_counts": "long-utterance would have been accepted first attempt in all 3 samples; the 5 fallbacks reduce to the 2 two-reactions truncations, which the separate token-cap change addresses"
+}
