@@ -9,7 +9,9 @@ expiry so a crashed owner cannot wedge the world.
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Awaitable, Callable
+from contextlib import suppress
 from datetime import timedelta
 from time import perf_counter
 from uuid import UUID, uuid4
@@ -21,8 +23,10 @@ from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.tasks import Lease, TaskRun
 from worldsim.domain.time import utcnow
 
-#: Execution lease per scope; model latency fits comfortably inside.
+#: Execution lease per scope. Live beats have run past 400 s, so a held
+#: slot is renewed every HEARTBEAT_SECONDS while its work runs.
 LEASE_SECONDS = 300
+HEARTBEAT_SECONDS = LEASE_SECONDS / 3
 
 
 class SlotBusy(DomainError):
@@ -102,8 +106,15 @@ async def guarded_timed[T](
     claim_started_at = perf_counter()
     slot = await admit(factory, world_id, scope, owner, run_id)
     execution_at = perf_counter()
+    renewal = asyncio.create_task(_keep_alive(factory, slot.id, owner))
     try:
-        result = await work()
+        try:
+            result = await work()
+        finally:
+            # Stop renewing before any release so no heartbeat follows it.
+            renewal.cancel()
+            with suppress(asyncio.CancelledError):
+                await renewal
     except DomainError as error:
         if error.code in (
             ErrorCode.VALIDATION_FAILED,
@@ -125,6 +136,15 @@ async def guarded_timed[T](
         max(0, int((execution_at - claim_started_at) * 1000)),
         max(0, int((finished_at - execution_at) * 1000)),
     )
+
+
+async def _keep_alive(factory: Callable[[], UnitOfWork], task_id: UUID, owner: str) -> None:
+    """Renew a held slot's lease until cancelled; stop if it was lost."""
+    service = TaskService(factory)
+    while True:
+        await asyncio.sleep(HEARTBEAT_SECONDS)
+        if not await service.heartbeat(task_id, owner, LEASE_SECONDS):
+            return
 
 
 def phase_scope(index: int) -> str:

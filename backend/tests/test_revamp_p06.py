@@ -77,6 +77,7 @@ def test_failed_slot_requeues(migrated_db: None) -> None:
 
     asyncio.run(_inner_requeue())
 
+
 def test_concurrent_advance_executes_once(
     migrated_db: None, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -142,4 +143,57 @@ def test_concurrent_advance_executes_once(
             replay = await client.post("/api/v1/stage1/advance", json=body, headers=_watcher())
             assert replay.status_code == 200, replay.text
             assert replay.json()["duplicate"] is True
+
     asyncio.run(_inner_race())
+
+
+def test_held_slot_lease_is_renewed_during_long_work(
+    migrated_db: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A beat longer than the lease keeps its slot: the lease is renewed."""
+    from worldsim.application import execution
+
+    monkeypatch.setattr(execution, "HEARTBEAT_SECONDS", 0.05)
+    captured: dict[str, Any] = {}
+    real_admit = execution.admit
+
+    async def _capturing_admit(*args: Any, **kwargs: Any) -> Any:
+        slot = await real_admit(*args, **kwargs)
+        captured["slot"] = slot
+        return slot
+
+    monkeypatch.setattr(execution, "admit", _capturing_admit)
+
+    async def _inner_renew() -> None:
+        engine = create_engine(Settings())
+        try:
+            factory = lambda: create_unit_of_work(engine)  # noqa: E731
+            world = new_world_id()
+            async with factory() as uow:
+                await uow.worlds.add(World(id=world, name="Slot", seed_version="p06"))
+                await uow.commit()
+            expiries: list[Any] = []
+
+            async def _work() -> str:
+                slot = captured["slot"]
+                for _ in range(2):
+                    await asyncio.sleep(0.2)
+                    async with factory() as uow:
+                        task = await uow.tasks.get(slot.id)
+                    assert task.lease is not None
+                    expiries.append(task.lease.expires_at)
+                return "done"
+
+            owner = new_owner("t")
+            result = await execution.guarded(factory, world, phase_scope(1), owner, None, _work)
+            assert result == "done"
+            first_expiry = captured["slot"].lease.expires_at
+            assert expiries[0] > first_expiry
+            assert expiries[1] > expiries[0]
+            async with factory() as uow:
+                task = await uow.tasks.get(captured["slot"].id)
+            assert task.state == "succeeded"
+        finally:
+            await engine.dispose()
+
+    asyncio.run(_inner_renew())
