@@ -1,0 +1,73 @@
+{
+ "accounting": {
+  "additional_cap_requested": 0.0,
+  "authorized_envelope": 0.5,
+  "estimated_max": 0.004,
+  "prior_spend_estimates": {
+   "comparison_run": 0.0,
+   "nemo_001_paid": 0.000565,
+   "nemo_004_paid": 0.001868,
+   "nemo_005_paid": 0.00175,
+   "nemo_006_paid": 0.00181,
+   "older_arms": 0.1238
+  },
+  "remaining_headroom_estimate": 0.3664
+ },
+ "billing_status": "estimates only; billing has not been reconciled",
+ "call_budget": {
+  "enforcement": "run-wide CallBudget acquired before every gateway.complete incl. rate-limit retries",
+  "max_calls": 32,
+  "per_scenario": "1 initial + at most 1 repair",
+  "stall_abort": "3 consecutive timeouts",
+  "timeout_s": 180.0,
+  "token_tripwire": 400000
+ },
+ "code_revision": "87411b4",
+ "comparison_to_004": "004: 37 first / 6 repair / 5 fallback (two-reactions truncation x2, long-utterance fixture defect x3). 005: 43 / 4 / 1.",
+ "comparison_to_005": "005: 43/4/1; 006: 39/8/1. Not an alias effect: attempts-wren-waits, outsider-reaction and topic-only-wren have different fact ORDER between the 005 and 006 captures (attempt:wait before attempt:communicate in 006). Fact order comes from unordered DB reads, so production narrator prompts are not deterministic; with wait listed first the model voiced the communicate attempt more often. Fixed next by sorting narration facts deterministically.",
+ "dry_run": {
+  "calls": 32,
+  "evidence": "docs/evidence/latency-eval-001/replay-E-dry-fixture-narrator-nemo-006.json",
+  "paid_calls": 0
+ },
+ "evaluator": "scripts/latency-eval-replay.py (same gated validate() as baseline; narrator repair uses production repair_instruction())",
+ "fixture": "docs/evidence/latency-eval-001/fixture-narrator-nemo-006.json",
+ "fixture_sha256": "b8760db875f45331ec43c22ee4841016e3a1261eb52e8976067b33b7c21842de",
+ "fixture_source": "production assembly via scripts/build-nemo-fixture.py at 1719f7c; reaction keys shown as reaction:1..n with per-item alias maps",
+ "held_fixed": [
+  "model mistralai/mistral-nemo via OpenRouter",
+  "sampling temperature 0.2, top_p/top_k omitted, JSON mode off",
+  "per-item captured caps (1024 after the budget-sized cap)",
+  "validation (beats_valid incl. speech eligibility, attribution, whole-word quote containment as committed)",
+  "same sixteen scenario matrix (fresh production capture, distinct IDs)"
+ ],
+ "intervention": {
+  "aliases": "narrator prompt shows reaction keys as reaction:1..n; graph maps cited aliases back before validation; repair denials shown with aliases"
+ },
+ "model": "mistralai/mistral-nemo",
+ "offline_parity_gate": {
+  "result": "PASS: replay validate() agrees with production beats_valid on all 16 scenarios (004 cohort, 135/135 checks)"
+ },
+ "open_issue": "nondeterministic fact order in narrator prompts",
+ "paid_execution": "RUN: replay-E-paid-fixture-narrator-nemo-006-s1/s2/s3.json (runner 87411b4, 57 calls, 0 blocked, 0 provider errors). Structural 47/48: 39 first-attempt, 8 repaired, 1 fallback (attempts-wren-waits s3). No unsupported-key citations (the 005 key-swap failure class is gone). Every accepted output cites every speech fact. First-response latency median 3.9s (2.6-24.5s). 69,617 prompt + 10,536 completion tokens, est. $0.0018.",
+ "prompt_version": "narrator.v2",
+ "reporting_plan": [
+  "first-attempt acceptance",
+  "repair conversions",
+  "fallback-required outcomes",
+  "speech attribution",
+  "prose fidelity incl. retained question-as-Ash semantic-failure example",
+  "narrator call latency (separate from acceptance)",
+  "estimated cost from billable tokens"
+ ],
+ "reporting_scope_note": "Structural acceptance does not imply fidelity; standalone replay does not prove persisted fallback or whole-beat latency. Long-utterance outcomes reflect a malformed fixture topic (embedded quotes), not model fidelity.",
+ "route": "OpenRouter chat/completions via OpenRouterGateway (same route as arm E)",
+ "sampling": {
+  "json_mode": false,
+  "max_tokens": "per-item captured cap (512); recorded explicitly, never overridden",
+  "temperature": 0.2,
+  "top_k": "omitted",
+  "top_p": "omitted"
+ },
+ "scope": "16 production-captured narrator scenarios (10 carried + outsider-reaction, two-reactions, observe-alongside-speech, long-utterance, one-word-reply, apostrophe-quote)"
+}
