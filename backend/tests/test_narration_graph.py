@@ -958,7 +958,8 @@ def test_rendered_categorized_prompt_parses() -> None:
     )
     audience, keys, budget = parse_narration_context(prompt)
     assert audience == frozenset({"a", "w"})
-    assert keys == frozenset({"attempt:communicate", "reaction:s2"})
+    # The prompt shows reaction keys by their short alias.
+    assert keys == frozenset({"attempt:communicate", "reaction:1"})
     assert budget == 8
 
 
@@ -1606,3 +1607,82 @@ def test_quote_marks_dropped_but_words_still_required() -> None:
     assert _quote_denial("“Don’t cross,” Ash warns.", "Don't cross.") is None
     assert _quote_denial('"Not today," Ash says.', "No.") is not None
     assert _quote_denial('"Dont cross," Ash warns.', "Don't cross.") is not None
+
+
+def _aliased_speech_facts(ash: str) -> list[dict[str, str]]:
+    return [
+        {"key": "attempt:wait", "value": "Wren waits"},
+        {
+            "key": "reaction:9fc8efec-427e-5d30-8ab2-d64c5ae784fe",
+            "value": 'Ash says to Wren: "Grain and oilskins."',
+            "speaker": ash,
+            "speaker_name": "Ash",
+            "utterance": "Grain and oilskins.",
+        },
+    ]
+
+
+def test_prompt_shows_reaction_keys_by_short_alias() -> None:
+    from worldsim.application.graphs.narrate import _fact_view, render_user_prompt
+
+    ash = str(uuid.uuid4())
+    prompt = render_user_prompt(
+        [ash], [_fact_view(f) for f in _aliased_speech_facts(ash)], "e1", "s1", 8
+    )
+    assert 'key "reaction:1"' in prompt
+    assert "9fc8efec" not in prompt
+
+
+def test_aliased_citation_is_stored_under_the_real_key() -> None:
+    ash = str(uuid.uuid4())
+    gateway = FakeGateway(profile=NARRATOR_FAKE_PROFILE)
+    gateway.enqueue_text(
+        json.dumps(
+            [
+                {
+                    "kind": "dialogue",
+                    "text": '"Grain and oilskins," Ash says.',
+                    "cited_fact_keys": ["reaction:1"],
+                    "speaker_id": ash,
+                }
+            ]
+        )
+    )
+    result = asyncio.run(
+        invoke(
+            build_narration_graph(_deps(gateway)),
+            _invocation(
+                uuid.uuid4(), audience_ids=[ash], visible_facts=_aliased_speech_facts(ash)
+            ),
+        )
+    )
+    assert result["status"] == "narrated"
+    assert result["repair_count"] == 0
+    beat = result["proposal"]["beats"][0]
+    assert beat["cited_fact_keys"] == ["reaction:9fc8efec-427e-5d30-8ab2-d64c5ae784fe"]
+
+
+def test_speaker_id_as_reaction_key_is_rejected_and_repair_uses_alias() -> None:
+    ash = str(uuid.uuid4())
+    gateway = FakeGateway(profile=NARRATOR_FAKE_PROFILE)
+    wrong = {
+        "kind": "dialogue",
+        "text": '"Grain and oilskins," Ash says.',
+        "cited_fact_keys": [f"reaction:{ash}"],
+        "speaker_id": ash,
+    }
+    gateway.enqueue_text(json.dumps([wrong]))
+    gateway.enqueue_text(json.dumps([{**wrong, "cited_fact_keys": ["reaction:1"]}]))
+    result = asyncio.run(
+        invoke(
+            build_narration_graph(_deps(gateway)),
+            _invocation(
+                uuid.uuid4(), audience_ids=[ash], visible_facts=_aliased_speech_facts(ash)
+            ),
+        )
+    )
+    assert result["status"] == "narrated"
+    assert result["repair_count"] == 1
+    repair_prompt = gateway.sent_requests[1].prompt
+    assert "unsupported facts cited" in repair_prompt
+    assert "9fc8efec" not in repair_prompt

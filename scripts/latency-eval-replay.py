@@ -80,6 +80,7 @@ def validate(
     speakers: dict[str, str] | None = None,
     speech_keys: frozenset[str] | set[str] | None = None,
     utterances: dict[str, str] | None = None,
+    aliases: dict[str, str] | None = None,
 ) -> tuple[bool, str]:
     """Schema (+ narrator attribution) validation. Returns (ok, detail).
 
@@ -92,6 +93,11 @@ def validate(
         if role == "narrator":
             proposals = narrate._BEATS_ADAPTER.validate_json(narrate.unfence_json(raw))
             audience, keys, budget = narrator_context(user_prompt)
+            if aliases:
+                # Same alias resolution production applies before beats_valid.
+                proposals = narrate.resolve_citations(proposals, aliases)
+                real = {alias: key for key, alias in aliases.items()}
+                keys = frozenset(real.get(k, k) for k in keys)
             denial = narrate.beats_valid(
                 proposals, visible_keys=keys, audience_ids=audience,
                 beats_budget=budget, fact_speakers=speakers,
@@ -196,6 +202,7 @@ async def run_item(
     speakers: dict[str, str] | None = None,
     speech_keys: frozenset[str] | set[str] | None = None,
     utterances: dict[str, str] | None = None,
+    aliases: dict[str, str] | None = None,
 ) -> dict:
     cfg = ARMS[arm]
     if role == "narrator" and item.get("system") is not None:
@@ -286,7 +293,7 @@ async def run_item(
                 pass
             out["attempts"].append(attempt)
             break
-        ok, info = validate(role, res.text, base, speakers, speech_keys, utterances)
+        ok, info = validate(role, res.text, base, speakers, speech_keys, utterances, aliases)
         out["attempts"].append({
             "latency_ms": res.latency_ms,
             "finish_reason": res.finish_reason,
@@ -307,6 +314,8 @@ async def run_item(
             # Same denial production feeds repair_instruction for unparsable output.
             count = re.search(r"(\d+) validation error", info)
             denial = narrate.schema_denial(int(count.group(1)) if count else 1, res.finish_reason)
+        if role == "narrator" and aliases:
+            denial = narrate.shown_denial(denial, aliases)
     out["ttuv_ms"] = int((time.monotonic() - ttuv_start) * 1000)
     out["blocked"] = any(a.get("error") == "budget_exhausted" for a in out["attempts"])
     out["outcome"] = (
@@ -420,6 +429,7 @@ async def main() -> None:
                 speakers,
                 frozenset(speech) if speech is not None else None,
                 utterances,
+                item.get("aliases"),
             )
         except Exception as exc:  # noqa: BLE001 - harness must not die mid-arm
             res = {"role": item["role"], "prompt_hash": item["prompt_hash"],

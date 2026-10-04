@@ -467,7 +467,8 @@ def _speech_route(ids: dict[str, UUID], snapshots: dict[int, UUID], narrator: st
         if "You narrate" in system:
             if narrator == "outage":
                 return ModelUnavailableError("provider down")
-            key = re.search(r"reaction:[0-9a-f-]{36}", prompt).group(0)  # type: ignore[union-attr]
+            # The prompt shows reaction keys by short alias (reaction:1).
+            key = re.search(r"reaction:\d+", prompt).group(0)  # type: ignore[union-attr]
             return json.dumps(
                 [
                     {
@@ -529,7 +530,9 @@ def test_committed_communication_narrated_with_attribution(
         r for r in gateway.sent_requests if "reaction:" in r.prompt and "Event " in r.prompt
     ]
     assert len(narrator_reqs) == 1
-    assert expected_key in narrator_reqs[0].prompt
+    # Shown by alias; the stored beat below still cites the real key.
+    assert 'key "reaction:1"' in narrator_reqs[0].prompt
+    assert expected_key not in narrator_reqs[0].prompt
     assert "Ash" in narrator_reqs[0].prompt
     assert str(ids["ash"]) in narrator_reqs[0].prompt
 

@@ -170,6 +170,7 @@ def dedupe_prompt_lines(prompt: str) -> str:
         kept.append(line)
     return "\n".join(kept)
 
+
 def parse_narration_context(user_prompt: str) -> tuple[frozenset[str], frozenset[str], int]:
     """Invert render_user_prompt audience/fact rendering, both known formats.
 
@@ -188,10 +189,47 @@ def parse_narration_context(user_prompt: str) -> tuple[frozenset[str], frozenset
     b = _PROMPT_BUDGET_RE.search(user_prompt)
     return frozenset(audience), frozenset(keys), int(b.group(1)) if b else 8
 
+
 _ATTEMPT_SPEECH_RE = re.compile(r"^(.*?) says to (.*?): (.*)$", re.DOTALL)
 
 
-def _render_fact_line(fact: Mapping[str, str]) -> str:
+def citation_aliases(facts: list[dict[str, str]]) -> dict[str, str]:
+    """Short prompt labels for long citation keys: real key -> alias.
+
+    Reaction keys embed a 36-character UUID next to speaker UUIDs, which
+    invites a model to cite ``reaction:<speaker id>``. Each reaction key
+    is shown as ``reaction:1``, ``reaction:2`` ... in fact order; the graph
+    maps cited aliases back before validation, so stored beats, canon and
+    audit rows keep the real keys. Other keys are already short.
+    """
+    aliases: dict[str, str] = {}
+    for fact in facts:
+        key = str(fact["key"])
+        if key.startswith("reaction:") and key not in aliases:
+            aliases[key] = f"reaction:{len(aliases) + 1}"
+    return aliases
+
+
+def shown_denial(denial: str, aliases: Mapping[str, str]) -> str:
+    """Denial text as the model saw the keys (real keys -> aliases)."""
+    for key, alias in aliases.items():
+        denial = denial.replace(key, alias)
+    return denial
+
+
+def resolve_citations(
+    proposals: list[BeatProposal], aliases: Mapping[str, str]
+) -> list[BeatProposal]:
+    """Map aliased citations back to real keys; unknown keys pass through
+    unchanged so the validator still rejects them."""
+    real = {alias: key for key, alias in aliases.items()}
+    return [
+        p.model_copy(update={"cited_fact_keys": [real.get(k, k) for k in p.cited_fact_keys]})
+        for p in proposals
+    ]
+
+
+def _render_fact_line(fact: Mapping[str, str], shown_key: str | None = None) -> str:
     """One prompt line with its source category stated explicitly.
 
     Attempts are narration-only by construction: communicate attempts read
@@ -204,6 +242,7 @@ def _render_fact_line(fact: Mapping[str, str]) -> str:
     key = str(fact["key"])
     value = str(fact["value"])
     speaker = fact.get("speaker")
+    shown = shown_key or key
     if key.startswith("attempt:"):
         match = _ATTEMPT_SPEECH_RE.match(value) if "communicate" in key else None
         if match:
@@ -213,16 +252,16 @@ def _render_fact_line(fact: Mapping[str, str]) -> str:
             )
         else:
             text = value
-        return f'- key "{key}": [attempt \u2014 narration-only] {text}'
+        return f'- key "{shown}": [attempt \u2014 narration-only] {text}'
     if speaker and fact.get("utterance"):
         name = fact.get("speaker_name", speaker)
         return (
-            f'- key "{key}": [quoted speech \u2014 dialogue-eligible] {value} '
+            f'- key "{shown}": [quoted speech \u2014 dialogue-eligible] {value} '
             f"(speaker {name}, id: {speaker})"
         )
     if speaker:
-        return f'- key "{key}": [attributed summary \u2014 narration-only] {value}'
-    return f'- key "{key}": {value}'
+        return f'- key "{shown}": [attributed summary \u2014 narration-only] {value}'
+    return f'- key "{shown}": {value}'
 
 
 NARRATOR_TOKENS_PER_BEAT = 128
@@ -280,8 +319,7 @@ def repair_instruction(denial: str) -> str:
             "speaker_id to the cited speech fact's exact speaker. "
         )
     elif (
-        "speaker does not match cited source" in denial
-        or "speaker outside the audience" in denial
+        "speaker does not match cited source" in denial or "speaker outside the audience" in denial
     ):
         fix = (
             "Fix the speaker attribution without changing what the evidence "
@@ -314,6 +352,7 @@ def repair_instruction(denial: str) -> str:
         fix = "Correct exactly the stated problem and resubmit valid beats. "
     return head + fix + tail
 
+
 def render_user_prompt(
     audience_ids: list[str],
     visible_facts: list[dict[str, str]],
@@ -322,12 +361,15 @@ def render_user_prompt(
     beats_budget: int,
     dnd_context: str | None = None,
 ) -> str:
-    """Audience-scoped context: facts, event linkage, and beat budget."""
+    """Audience-scoped context: facts, event linkage, and beat budget.
+
+    Reaction keys are shown by their citation_aliases label."""
+    aliases = citation_aliases(visible_facts)
     lines = [
         f"Event {event_id}" + (f" in scene {scene_id}." if scene_id else "."),
         f"Audience: {', '.join(audience_ids) or 'none'}.",
         "Visible facts:",
-        *[_render_fact_line(fact) for fact in visible_facts],
+        *[_render_fact_line(fact, aliases.get(str(fact["key"]))) for fact in visible_facts],
         *_speaker_roster(visible_facts),
         f"Beat budget: {beats_budget}.",
     ]
@@ -353,8 +395,14 @@ def _identify_utterance(topic: str) -> str | None:
 
 
 _QUOTE_TRANSLATE = str.maketrans(
-    {chr(8220): chr(34), chr(8221): chr(34),
-     chr(8216): chr(39), chr(8219): chr(39), chr(8217): chr(39)})
+    {
+        chr(8220): chr(34),
+        chr(8221): chr(34),
+        chr(8216): chr(39),
+        chr(8219): chr(39),
+        chr(8217): chr(39),
+    }
+)
 _TRAILING_PUNCT = ".,!?;:"
 
 
@@ -423,6 +471,7 @@ def speech_eligible_keys(facts: list[dict[str, str]]) -> frozenset[str]:
     deterministic fallback uses: speaker plus utterance.
     """
     return frozenset(f["key"] for f in facts if f.get("speaker") and f.get("utterance"))
+
 
 def beats_valid(
     proposals: list[BeatProposal],
@@ -541,10 +590,7 @@ def _normalize_fallback_fact(fact: dict[str, Any]) -> dict[str, Any]:
     if key.startswith("attempt:"):
         match = _ATTEMPT_SPEECH_RE.match(value) if "communicate" in key else None
         if match:
-            value = (
-                f"{match.group(1)} tries to speak with {match.group(2)} "
-                f"about: {match.group(3)}"
-            )
+            value = f"{match.group(1)} tries to speak with {match.group(2)} about: {match.group(3)}"
         return {
             "key": fact["key"],
             "kind": NarrationKind.NARRATION,
@@ -668,9 +714,7 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
         assert isinstance(world_raw, str) and isinstance(event_raw, str)
         world_id, event_id = UUID(world_raw), UUID(event_raw)
         scene_id = UUID(str(scene_raw)) if scene_raw else None
-        facts = [
-            _fact_view(f) for f in state.get("visible_facts", [])
-        ]
+        facts = [_fact_view(f) for f in state.get("visible_facts", [])]
         visible_keys = frozenset(f["key"] for f in facts)
         audience = frozenset(str(a) for a in state.get("audience_ids", []))
         budget_raw = state.get("beats_budget")
@@ -678,6 +722,7 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
         fact_speakers = {f["key"]: f["speaker"] for f in facts if "speaker" in f}
         speech_keys = speech_eligible_keys(facts)
         fact_utterances = {f["key"]: f["utterance"] for f in facts if "utterance" in f}
+        aliases = citation_aliases(facts)
         max_tokens = narrator_max_tokens(deps.max_tokens, budget)
         errors: list[str] = []
         repairs = 0
@@ -723,14 +768,13 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
                         state, world_id, scene_id, event_id, facts, budget, errors, repairs, raw
                     )
                 repairs += 1
-                raw, finish_reason = await _repair_call(
-                    deps, system, user, errors[-1], max_tokens
-                )
+                raw, finish_reason = await _repair_call(deps, system, user, errors[-1], max_tokens)
                 if raw is None:
                     return _fallback(
                         state, world_id, scene_id, event_id, facts, budget, errors, repairs, None
                     )
                 continue
+            proposals = resolve_citations(proposals, aliases)
             denial = beats_valid(
                 proposals,
                 visible_keys=visible_keys,
@@ -747,7 +791,9 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
                         state, world_id, scene_id, event_id, facts, budget, errors, repairs, raw
                     )
                 repairs += 1
-                raw, finish_reason = await _repair_call(deps, system, user, denial, max_tokens)
+                raw, finish_reason = await _repair_call(
+                    deps, system, user, shown_denial(denial, aliases), max_tokens
+                )
                 if raw is None:
                     return _fallback(
                         state, world_id, scene_id, event_id, facts, budget, errors, repairs, None
@@ -846,6 +892,7 @@ __all__ = [
     "NarratorGraphDeps",
     "beats_valid",
     "build_narration_graph",
+    "citation_aliases",
     "dedupe_narration_facts",
     "dedupe_prompt_lines",
     "speech_eligible_keys",
@@ -855,6 +902,8 @@ __all__ = [
     "render_user_prompt",
     "narrator_max_tokens",
     "repair_instruction",
+    "resolve_citations",
     "schema_denial",
+    "shown_denial",
     "stamp_beats",
 ]

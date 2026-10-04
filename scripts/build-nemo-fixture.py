@@ -9,7 +9,7 @@ Captures each initial narrator CompletionRequest and rebuilds authoritative
 metadata from committed rows with production functions (prompt rebuild
 equality is asserted per scenario).
 
-Writes docs/evidence/latency-eval-001/fixture-narrator-nemo-005.json
+Writes docs/evidence/latency-eval-001/fixture-narrator-nemo-006.json
 (or the name in argv[1]).
 Requires a reachable PostgreSQL (WORLDSIM_DATABASE__URL); builds a
 migration-head template and per-scenario scratch clones, dropped after.
@@ -47,6 +47,7 @@ from worldsim.application.graphs.narrate import (
     communication_facts,
     dedupe_narration_facts,
     load_narrator_prompt,
+    citation_aliases,
     parse_narration_context,
     render_system_prompt,
     render_user_prompt,
@@ -321,7 +322,9 @@ def run_one(spec: dict) -> dict:
             "captured_top_k": initial.top_k,
             "json_mode": initial.json_mode,
             "audience": sorted(audience),
-            "visible_keys": sorted(keys),
+            # Real keys; the prompt shows reaction keys by alias.
+            "visible_keys": sorted({str(f["key"]) for f in views}),
+            "aliases": citation_aliases(views),
             "speech_keys": sorted(speech_eligible_keys(facts)),
             "speakers": {f["key"]: f["speaker"] for f in facts if "speaker" in f},
             "utterances": {f["key"]: f["utterance"] for f in facts if "utterance" in f},
@@ -384,7 +387,7 @@ if __name__ == "__main__":
         },
         "items": out,
     }
-    name = sys.argv[1] if len(sys.argv) > 1 else "fixture-narrator-nemo-005.json"
+    name = sys.argv[1] if len(sys.argv) > 1 else "fixture-narrator-nemo-006.json"
     dest = REPO / "docs" / "evidence" / "latency-eval-001" / name
     dest.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     for o in out:
