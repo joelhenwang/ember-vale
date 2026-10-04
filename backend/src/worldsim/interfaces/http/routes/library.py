@@ -345,7 +345,9 @@ async def validate_import(body: api.PresetCreateRequest, request: Request) -> di
 @router.post("/library/import/apply", response_model=api.PresetDetail)
 async def apply_import(body: api.PresetCreateRequest, request: Request) -> api.PresetDetail:
     """Explicit atomic apply after a validate preview."""
-    return await create_preset(body, request)
+    # Called directly, not through FastAPI, so the Header() default must be
+    # replaced explicitly; otherwise every apply fails with a 500.
+    return await create_preset(body, request, idempotency_key=None)
 
 
 def _asset_view(asset: AssetRecord) -> api.AssetView:
