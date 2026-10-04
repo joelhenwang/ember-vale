@@ -19,6 +19,7 @@ from worldsim.application.ports.model_gateway import (
     ModelProfile,
     ModelRateLimitedError,
     ModelRefusalError,
+    ModelUnavailableError,
 )
 from worldsim.domain.costs import PRICING_VERSION, compute_cost
 from worldsim.infrastructure.db.engine import create_engine
@@ -104,6 +105,25 @@ def test_retry_exhausts_and_raises_last() -> None:
 
 async def _ignore_sleep(delay: float) -> None:
     return None
+
+
+def test_retry_skips_permanent_http_rejections() -> None:
+    for status in (400, 401, 403, 404):
+        error = ModelUnavailableError("rejected", detail={"http_status": status})
+        inner = ScriptedGateway(FAKE_TEST_PROFILE, [error])
+        gateway = RetryingGateway(inner, sleep=_ignore_sleep)
+        with pytest.raises(ModelUnavailableError):
+            asyncio.run(gateway.complete(_request()))
+        assert inner.calls == 1, status
+
+
+def test_retry_still_retries_transient_http_failures() -> None:
+    for status in (408, 500, 502, 503):
+        error = ModelUnavailableError("down", detail={"http_status": status})
+        inner = ScriptedGateway(FAKE_TEST_PROFILE, [error, _result()])
+        gateway = RetryingGateway(inner, sleep=_ignore_sleep)
+        assert asyncio.run(gateway.complete(_request())).text == '{"ok": true}'
+        assert inner.calls == 2, status
 
 
 def test_retry_never_retries_refusal() -> None:

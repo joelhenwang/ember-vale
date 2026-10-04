@@ -5,7 +5,9 @@ Policy, frozen here and in backend/README.md:
   without a hint, exponential backoff applies.
 - Timeouts and transport failures retry on a short backoff.
 - Refusals and malformed responses never retry: retrying a
-  deterministic rejection only burns budget.
+  deterministic rejection only burns budget. The same holds for
+  permanent HTTP 4xx rejections (bad request, auth, missing model);
+  408/425/429 stay retryable.
 - After exhaustion the original error propagates and the graphs
   degrade through their existing fallback paths; retry never
   invents a completion.
@@ -33,6 +35,17 @@ from worldsim.application.ports.model_gateway import (
 )
 
 SleepFn = Callable[[float], Coroutine[Any, Any, None]]
+
+#: 4xx statuses that are transient and worth retrying.
+RETRYABLE_4XX = frozenset({408, 425, 429})
+
+
+def is_permanent_rejection(error: ModelGatewayError) -> bool:
+    """True for a provider HTTP 4xx that retrying cannot fix."""
+    detail: dict[str, Any] = error.detail if isinstance(error.detail, dict) else {}
+    status = detail.get("http_status")
+    return isinstance(status, int) and 400 <= status < 500 and status not in RETRYABLE_4XX
+
 
 #: Hard bounds so a slow provider cannot stall a phase indefinitely.
 MAX_ATTEMPTS = 3
@@ -85,7 +98,7 @@ class RetryingGateway:
                 record["http_status"] = detail.get("http_status")
                 record["usage"] = detail.get("usage")
             attempts.append(record)
-            if attempt >= self._max_attempts - 1:
+            if attempt >= self._max_attempts - 1 or is_permanent_rejection(last):
                 assert last is not None
                 prior = last.detail if isinstance(last.detail, dict) else {}
                 last.detail = {**prior, "attempts": attempts}
