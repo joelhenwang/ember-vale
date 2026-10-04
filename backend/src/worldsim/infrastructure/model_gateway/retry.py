@@ -33,6 +33,7 @@ from worldsim.application.ports.model_gateway import (
     ModelUnavailableError,
     ProbeResult,
 )
+from worldsim.domain.jsonvalues import json_object
 
 SleepFn = Callable[[float], Coroutine[Any, Any, None]]
 
@@ -90,11 +91,11 @@ class RetryingGateway:
             latency_ms = max(0, int((time.monotonic() - started) * 1000))
             record: dict[str, Any] = {
                 "attempt": attempt + 1,
-                "error": type(last).__name__ if last is not None else "unknown",
+                "error": type(last).__name__,
                 "latency_ms": latency_ms,
             }
-            detail = getattr(last, "detail", None)
-            if isinstance(detail, dict):
+            detail = json_object(getattr(last, "detail", None))
+            if detail is not None:
                 record["http_status"] = detail.get("http_status")
                 record["usage"] = detail.get("usage")
             attempts.append(record)

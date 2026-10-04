@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from worldsim.application.ports.traces import StoredCompletion
 from worldsim.domain.enums import CallStatus
+from worldsim.domain.jsonvalues import json_list, json_object
 from worldsim.domain.tracing import ContextManifest, ManifestSource, ModelCall
 from worldsim.infrastructure.models.calls import (
     ContextManifestRow,
@@ -21,25 +22,22 @@ from worldsim.infrastructure.repositories._common import missing
 
 
 def _sampling_of(row: ModelCallRow) -> dict[str, Any]:
-    request = row.request if isinstance(row.request, dict) else {}
-    sampling = request.get("sampling")
-    return dict(sampling) if isinstance(sampling, dict) else {}
+    request = json_object(row.request) or {}
+    return dict(json_object(request.get("sampling")) or {})
 
 
 def _max_tokens_of(row: ModelCallRow) -> int | None:
-    request = row.request if isinstance(row.request, dict) else {}
+    request = json_object(row.request) or {}
     max_tokens = request.get("max_tokens")
     return max_tokens if isinstance(max_tokens, int) else None
 
 
 def _result_of(row: ModelCallRow) -> dict[str, Any]:
-    result = row.result if isinstance(row.result, dict) else {}
-    return result
+    return json_object(row.result) or {}
 
 
 def _usage_of_result(result: dict[str, Any]) -> dict[str, Any]:
-    usage = result.get("usage")
-    return dict(usage) if isinstance(usage, dict) else {}
+    return dict(json_object(result.get("usage")) or {})
 
 
 def _failure_layer_of(row: ModelCallRow) -> dict[str, Any]:
@@ -231,11 +229,9 @@ class SqlAlchemyTraceRepository:
 
     async def get_call_attempts(self, call_id: UUID) -> list[dict[str, Any]]:
         row = await self._require_row(call_id)
-        result = row.result if isinstance(row.result, dict) else {}
-        attempts = result.get("attempts")
-        if not isinstance(attempts, list):
-            return []
-        return [dict(entry) for entry in attempts if isinstance(entry, dict)]
+        result = json_object(row.result) or {}
+        entries = (json_object(entry) for entry in json_list(result.get("attempts")) or [])
+        return [dict(entry) for entry in entries if entry is not None]
 
     async def save_manifest(self, manifest: ContextManifest) -> None:
         self._session.add(

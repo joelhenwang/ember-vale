@@ -26,6 +26,7 @@ from worldsim.application.ports.model_gateway import (
     ModelUnavailableError,
     ProbeResult,
 )
+from worldsim.domain.jsonvalues import json_list, json_object
 
 DIAG_BODY_MAX = 4096
 
@@ -47,8 +48,8 @@ def _has_reasoning(message: dict[str, Any]) -> bool:
         value = message.get(key)
         if isinstance(value, str) and value:
             return True
-    details = message.get("reasoning_details")
-    return isinstance(details, list) and bool(details)
+    details = json_list(message.get("reasoning_details"))
+    return bool(details)
 
 
 def _retry_after_s(response: httpx.Response) -> float | None:
@@ -131,11 +132,11 @@ class OpenRouterGateway:
 
     @staticmethod
     def _usage_of(payload: dict[str, Any]) -> dict[str, int]:
-        usage = payload.get("usage")
-        if not isinstance(usage, dict):
+        usage = json_object(payload.get("usage"))
+        if usage is None:
             return {"prompt_tokens": 0, "completion_tokens": 0, "reasoning_tokens": 0}
-        details = usage.get("completion_tokens_details")
-        reasoning = details.get("reasoning_tokens") if isinstance(details, dict) else 0
+        details = json_object(usage.get("completion_tokens_details"))
+        reasoning = details.get("reasoning_tokens") if details is not None else 0
         return {
             "prompt_tokens": int(usage.get("prompt_tokens", 0) or 0),
             "completion_tokens": int(usage.get("completion_tokens", 0) or 0),
@@ -149,7 +150,7 @@ class OpenRouterGateway:
             payload = response.json()
         except ValueError:
             return None
-        return payload if isinstance(payload, dict) else None
+        return json_object(payload)
 
     @staticmethod
     def _diag(
@@ -159,28 +160,28 @@ class OpenRouterGateway:
         raw_body: str | None = None,
     ) -> dict[str, Any]:
         """Provider-boundary facts. No headers, no credentials, no prompts."""
-        choices = payload.get("choices") if isinstance(payload, dict) else None
-        first = choices[0] if isinstance(choices, list) and choices else None
-        message = first.get("message") if isinstance(first, dict) else None
+        choices = json_list(payload.get("choices")) if payload is not None else None
+        first = json_object(choices[0]) if choices else None
+        message = json_object(first.get("message")) if first is not None else None
         diag: dict[str, Any] = {
             "http_status": response.status_code,
-            "response_id": payload.get("id") if isinstance(payload, dict) else None,
-            "model": payload.get("model") if isinstance(payload, dict) else None,
-            "finish_reason": first.get("finish_reason") if isinstance(first, dict) else None,
-            "usage": OpenRouterGateway._usage_of(payload) if isinstance(payload, dict) else None,
-            "choices_count": len(choices) if isinstance(choices, list) else None,
+            "response_id": payload.get("id") if payload is not None else None,
+            "model": payload.get("model") if payload is not None else None,
+            "finish_reason": first.get("finish_reason") if first is not None else None,
+            "usage": OpenRouterGateway._usage_of(payload) if payload is not None else None,
+            "choices_count": len(choices) if choices is not None else None,
             "content_type": type(content).__name__,
             "content_length": len(content) if isinstance(content, str) else None,
         }
         if raw_body is not None:
             diag["raw_body"] = raw_body
-        error = payload.get("error") if isinstance(payload, dict) else None
+        error = payload.get("error") if payload is not None else None
         if error is not None:
             if isinstance(error, (str, int, float)):
                 diag["provider_error"] = error
             else:
                 diag["provider_error"] = str(error)[:500]
-        refusal = message.get("refusal") if isinstance(message, dict) else None
+        refusal = message.get("refusal") if message is not None else None
         if refusal is not None:
             diag["refusal"] = str(refusal)[:500]
         return diag

@@ -34,6 +34,7 @@ from worldsim.application.ports.traces import StoredCompletion, TraceExporter
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.costs import compute_cost
 from worldsim.domain.enums import CallStatus
+from worldsim.domain.jsonvalues import json_object
 from worldsim.domain.tracing import ContextManifest, ManifestSource, ModelCall
 
 _SECRET_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
@@ -77,10 +78,8 @@ def rendered_hash_for(prompt: str, profile: ModelProfile, prompt_version: str) -
 
 def _usage_of(detail: object) -> tuple[int, int]:
     """Provider-reported token usage on a failed call, when available."""
-    if not isinstance(detail, dict):
-        return (0, 0)
-    usage = detail.get("usage")
-    if not isinstance(usage, dict):
+    usage = json_object((json_object(detail) or {}).get("usage"))
+    if usage is None:
         return (0, 0)
     prompt = usage.get("prompt_tokens")
     completion = usage.get("completion_tokens")
@@ -227,7 +226,7 @@ class TraceService:
                     call_id,
                     _error_code(exc),
                     latency_ms,
-                    detail if isinstance(detail, dict) else None,
+                    json_object(detail),
                     prompt_tokens=failed_usage[0],
                     completion_tokens=failed_usage[1],
                 )

@@ -37,6 +37,7 @@ from worldsim.application.ports.model_gateway import (
 )
 from worldsim.domain.commands import ActionIntent
 from worldsim.domain.ids import derive_reaction_id
+from worldsim.domain.jsonvalues import json_list, json_object
 from worldsim.domain.scenes import Reaction
 
 #: Versioned reaction prompt file.
@@ -99,11 +100,10 @@ def render_system_prompt(template: str) -> str:
 
 def _roster_of(raw: Any) -> list[dict[str, str]]:
     """Sanitize the known-characters roster from graph state."""
-    if not isinstance(raw, list):
-        return []
     roster: list[dict[str, str]] = []
-    for entry in raw:
-        if not isinstance(entry, dict):
+    for item in json_list(raw) or []:
+        entry = json_object(item)
+        if entry is None:
             continue
         char_id, name = entry.get("id"), entry.get("name")
         if isinstance(char_id, str) and char_id and isinstance(name, str) and name:

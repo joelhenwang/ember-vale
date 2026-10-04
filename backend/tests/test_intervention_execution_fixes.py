@@ -16,8 +16,9 @@ from __future__ import annotations
 import asyncio
 import json
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
+import pytest
 from sqlalchemy.exc import IntegrityError
 
 from worldsim.application import interventions as service
@@ -544,6 +545,7 @@ def test_inactive_activity_is_adopted_not_reapplied(migrated_db: None) -> None:
         original = await service._start_directed_activity(
             factory, ids["world"], 1, step, step.targets, chars
         )
+        assert original is not None
         async with factory() as uow:
             await interrupt_activity(uow, original, absolute=1)
 
@@ -609,3 +611,36 @@ def test_overlapping_appliers_converge_on_one_activity(migrated_db: None, monkey
         assert done.result_activity_id == mine[0].id
 
     _run(_inner())
+
+
+@pytest.mark.parametrize(
+    "bad_targets",
+    [
+        {"stamina": "lots"},
+        {"conditions": "plague"},
+        {"life_status": "zombie"},
+        {"mana": 500},
+    ],
+)
+def test_malformed_override_targets_fail_the_step_not_the_beat(
+    bad_targets: dict[str, object],
+) -> None:
+    """Bad stored targets raise DomainError (step FAILED), never escape."""
+    from worldsim.domain.errors import DomainError, ErrorCode
+    from worldsim.domain.interventions import InterventionStep, StepKind
+
+    step = InterventionStep(
+        id=uuid4(),
+        intervention_id=uuid4(),
+        seq=0,
+        step_key="override",
+        kind=StepKind.OVERRIDE_CHARACTER,
+        targets={"character_id": str(uuid4()), **bad_targets},
+    )
+
+    def _no_db() -> Any:
+        raise AssertionError("validation must fail before any database access")
+
+    with pytest.raises(DomainError) as caught:
+        asyncio.run(service._apply_override_step(_no_db, uuid4(), 1, step, uuid4()))
+    assert caught.value.code is ErrorCode.VALIDATION_FAILED

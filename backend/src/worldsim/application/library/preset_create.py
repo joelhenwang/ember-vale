@@ -70,10 +70,12 @@ async def create_preset(
     except ValueError as exc:
         raise DomainError(ErrorCode.VALIDATION_FAILED, f"unknown kind: {kind}") from exc
     parsed = _parse_strict(preset_kind.value, payload)
-    trimmed = name.strip() if isinstance(name, str) else ""
+    # Boundary guards: route code has passed non-str defaults here before
+    # (a FastAPI Header() object), so keep the runtime checks.
+    trimmed = name.strip() if isinstance(name, str) else ""  # pyright: ignore[reportUnnecessaryIsInstance]
     if not (1 <= len(trimmed) <= 128):
         raise DomainError(ErrorCode.VALIDATION_FAILED, "preset name must be 1..128 characters")
-    key = idempotency_key.strip() if isinstance(idempotency_key, str) else ""
+    key = idempotency_key.strip() if isinstance(idempotency_key, str) else ""  # pyright: ignore[reportUnnecessaryIsInstance]
     if not key:
         raise DomainError(ErrorCode.VALIDATION_FAILED, "idempotency key is required")
     wanted = request_hash(preset_kind.value, trimmed, parsed.model_dump(mode="json"))

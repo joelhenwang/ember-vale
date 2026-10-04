@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID, uuid4
 
-from pydantic import TypeAdapter
+from pydantic import TypeAdapter, ValidationError
 
 from worldsim.application.commands.activities import start_activity
 from worldsim.application.commands.deity import apply_override
@@ -833,20 +833,25 @@ async def _apply_override_step(
     A replayed commit key collides instead of duplicating: the recorded
     event is the proof, so crash recovery converges on it.
     """
-    targets = step.targets
-    character_id = UUID(str(targets["character_id"]))
-    life_status = targets.get("life_status")
+    # Targets are the step model serialized at submission; re-parse them so
+    # values arrive typed and a malformed stored row fails this step
+    # (DomainError) instead of escaping the drain and failing the beat.
+    try:
+        override = OverrideCharacterStep.model_validate(step.targets)
+        life_status = LifeStatus(override.life_status) if override.life_status else None
+    except (ValidationError, ValueError) as exc:
+        raise DomainError(ErrorCode.VALIDATION_FAILED, f"invalid override targets: {exc}") from exc
     return await apply_override(
         factory,
         world_id,
-        character_id,
+        override.character_id,
         derive_run_id(world_id, index),
         index,
-        stamina=targets.get("stamina"),
-        mana=targets.get("mana"),
-        life_status=LifeStatus(life_status) if life_status else None,
-        conditions=list(targets.get("conditions") or []),
-        retcon=bool(targets.get("retcon", False)),
+        stamina=override.stamina,
+        mana=override.mana,
+        life_status=life_status,
+        conditions=list(override.conditions),
+        retcon=override.retcon,
         key=f"{_step_gate_key(intervention_id, step.seq)}:override",
     )
 
