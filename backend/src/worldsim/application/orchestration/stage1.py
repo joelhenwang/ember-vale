@@ -40,6 +40,7 @@ from worldsim.application.commands.director import accept_decision
 from worldsim.application.commands.inventory import move_item
 from worldsim.application.commands.knowledge import fold_claim
 from worldsim.application.commands.party import recruit_companion
+from worldsim.application.conditions import tick_conditions
 from worldsim.application.context.assembler import assemble, to_manifest_dict
 from worldsim.application.graphs.character import (
     CHARACTER_PROMPT_VERSION,
@@ -497,6 +498,10 @@ class Stage1Orchestrator:
         if drain_queue:
             batch = await claim_for_boundary(self._factory, world_id, f"s1:{run_id.hex[:8]}")
             await apply_batch(self._factory, world_id, index, batch, set(player_intents or {}))
+            # Conditions created by this drain tick in their start phase too;
+            # the route ticks before the beat, when they do not exist yet.
+            # Idempotent per (condition, index), so existing ones tick once.
+            await tick_conditions(self._factory, world_id, index)
             for planned in await plan_attempts(
                 self._factory, world_id, sealed.snapshot_id, set(player_intents or {})
             ):
@@ -1612,26 +1617,10 @@ class Stage1Orchestrator:
                         "role": grant_role.value if grant_role is not None else None,
                     },
                 )
-        if player_action is not None:
-            denial = precheck_action(
-                player_action,
-                known_character_ids=frozenset(known),
-                location_ids=frozenset(place_ids),
-            )
-            if denial is not None:
-                await self._finish_task(task_run_id, owner, False)
-                raise DomainError(ErrorCode.VALIDATION_FAILED, f"player intent rejected: {denial}")
-            intent = Intent(
-                id=derive_intent_id(world_id, sealed.snapshot_id, character.id),
-                world_id=world_id,
-                snapshot_id=sealed.snapshot_id,
-                phase_run_id=run_id,
-                author_character_id=character.id,
-                action=player_action,
-                idempotency_key=f"player:{task_run_id}",
-            )
-            await self._finish_task(task_run_id, owner, True)
-            return intent
+        # Directed attempts first: advance_phase also merges them into
+        # player_intents, and only a "direct:" key lets record_attempts
+        # complete the queued step. Built as "player:", a directed attempt
+        # was never completed and was replanned every phase.
         direct = directed.get(character.id)
         if direct is not None:
             direct_intent, ref = direct
@@ -1653,6 +1642,26 @@ class Stage1Orchestrator:
                 author_character_id=character.id,
                 action=direct_intent,
                 idempotency_key=f"direct:{ref}",
+            )
+            await self._finish_task(task_run_id, owner, True)
+            return intent
+        if player_action is not None:
+            denial = precheck_action(
+                player_action,
+                known_character_ids=frozenset(known),
+                location_ids=frozenset(place_ids),
+            )
+            if denial is not None:
+                await self._finish_task(task_run_id, owner, False)
+                raise DomainError(ErrorCode.VALIDATION_FAILED, f"player intent rejected: {denial}")
+            intent = Intent(
+                id=derive_intent_id(world_id, sealed.snapshot_id, character.id),
+                world_id=world_id,
+                snapshot_id=sealed.snapshot_id,
+                phase_run_id=run_id,
+                author_character_id=character.id,
+                action=player_action,
+                idempotency_key=f"player:{task_run_id}",
             )
             await self._finish_task(task_run_id, owner, True)
             return intent
