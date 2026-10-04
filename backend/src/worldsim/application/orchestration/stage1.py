@@ -2061,10 +2061,17 @@ class Stage1Orchestrator:
         names: Mapping[UUID, str],
         runtime: PhaseRuntime,
     ) -> list[Reaction]:
-        """One bounded reaction graph per eligible reactor (sequential)."""
-        reactions: list[Reaction] = []
+        """One bounded reaction graph per eligible (attempt, reactor) pair.
+
+        Reactors run concurrently; each reactor still handles its
+        attempts in order, so its task and trace rows never race. Every
+        reaction reads only the sealed snapshot and its own attempt.
+        Results keep the attempt-major, participant-minor order of the
+        former sequential loop.
+        """
         participant_ids = [str(p.character_id) for p in scene.participants]
-        for attempt in attempts:
+        pairs: dict[UUID, list[tuple[int, Attempt]]] = {}
+        for index, attempt in enumerate(attempts):
             for participant in scene.participants:
                 reactor_id = participant.character_id
                 if reactor_id == attempt.actor_character_id:
@@ -2073,6 +2080,12 @@ class Stage1Orchestrator:
                     # Player agency: the controlled character reacts only
                     # through submitted player intents, never model prose.
                     continue
+                pairs.setdefault(reactor_id, []).append((index, attempt))
+        order = {p.character_id: rank for rank, p in enumerate(scene.participants)}
+
+        async def _reactor(reactor_id: UUID) -> list[tuple[int, int, Reaction]]:
+            out: list[tuple[int, int, Reaction]] = []
+            for index, attempt in pairs[reactor_id]:
                 reaction = await self._react_one(
                     world_id,
                     run_id,
@@ -2085,8 +2098,12 @@ class Stage1Orchestrator:
                     runtime,
                 )
                 if reaction is not None:
-                    reactions.append(reaction)
-        return reactions
+                    out.append((index, order[reactor_id], reaction))
+            return out
+
+        gathered = await asyncio.gather(*(_reactor(r) for r in pairs))
+        ranked = sorted((item for batch in gathered for item in batch), key=lambda t: (t[0], t[1]))
+        return [reaction for _, _, reaction in ranked]
 
     async def _react_one(
         self,
