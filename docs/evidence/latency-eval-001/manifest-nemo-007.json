@@ -1,0 +1,75 @@
+{
+ "accounting": {
+  "additional_cap_requested": 0.0,
+  "authorized_envelope": 0.5,
+  "estimated_max": 0.004,
+  "prior_spend_estimates": {
+   "comparison_run": 0.0,
+   "nemo_001_paid": 0.000565,
+   "nemo_004_paid": 0.001868,
+   "nemo_005_paid": 0.00175,
+   "nemo_006_paid": 0.00181,
+   "nemo_007_paid": 0.0018,
+   "older_arms": 0.1238
+  },
+  "remaining_headroom_estimate": 0.3646
+ },
+ "billing_status": "estimates only; billing has not been reconciled",
+ "call_budget": {
+  "enforcement": "run-wide CallBudget acquired before every gateway.complete incl. rate-limit retries",
+  "max_calls": 32,
+  "per_scenario": "1 initial + at most 1 repair",
+  "stall_abort": "3 consecutive timeouts",
+  "timeout_s": 180.0,
+  "token_tripwire": 400000
+ },
+ "code_revision": "f7ba9da",
+ "comparison": "005 43/4/1 (UUID keys, unsorted facts); 006 39/8/1 (aliases, unsorted facts); 007 39/9/0 (aliases, sorted facts).",
+ "comparison_to_004": "004: 37 first / 6 repair / 5 fallback (two-reactions truncation x2, long-utterance fixture defect x3). 005: 43 / 4 / 1.",
+ "dry_run": {
+  "calls": 32,
+  "evidence": "docs/evidence/latency-eval-001/replay-E-dry-fixture-narrator-nemo-007.json",
+  "paid_calls": 0
+ },
+ "evaluator": "scripts/latency-eval-replay.py (same gated validate() as baseline; narrator repair uses production repair_instruction())",
+ "fixture": "docs/evidence/latency-eval-001/fixture-narrator-nemo-007.json",
+ "fixture_sha256": "b92e0784c040f5d3e96a0f41518d0157edbe9230a2d2cb752b41afc20b5e8662",
+ "fixture_source": "production assembly via scripts/build-nemo-fixture.py at e4f68fc; deterministic fact order (attempts sorted by key before reactions); aliased reaction keys",
+ "held_fixed": [
+  "model mistralai/mistral-nemo via OpenRouter",
+  "sampling temperature 0.2, top_p/top_k omitted, JSON mode off",
+  "per-item captured caps (1024 after the budget-sized cap)",
+  "validation (beats_valid incl. speech eligibility, attribution, whole-word quote containment as committed)",
+  "same sixteen scenario matrix (fresh production capture, distinct IDs)"
+ ],
+ "intervention": {
+  "fact_order": "dedupe_narration_facts sorts by key, source id, text before collapsing observer copies"
+ },
+ "model": "mistralai/mistral-nemo",
+ "offline_parity_gate": {
+  "result": "PASS: replay validate() agrees with production beats_valid on all 16 scenarios (004 cohort, 135/135 checks)"
+ },
+ "open_issue": "topic-only scenarios (instruction-style topics) are repaired every time; they are fixture-authored, not observed in real play",
+ "paid_execution": "RUN: replay-E-paid-fixture-narrator-nemo-007-s1/s2/s3.json (57 calls, 0 blocked, 0 provider errors). Structural 48/48: 39 first-attempt, 9 repaired, 0 fallback. Repairs: topic-only-ash x3 and topic-only-wren x3 (hand-written instruction topics voiced as dialogue; census found no such topics in real model reactions), outsider-reaction and two-reactions x1 each (a beat without citation), lighthouse x1 (dialogue text did not contain the quote). Every accepted output cites every speech fact. First-response latency median 4.0s (1.5-13.1s). 70,002 prompt + 10,006 completion tokens, est. $0.0018.",
+ "prompt_version": "narrator.v2",
+ "reporting_plan": [
+  "first-attempt acceptance",
+  "repair conversions",
+  "fallback-required outcomes",
+  "speech attribution",
+  "prose fidelity incl. retained question-as-Ash semantic-failure example",
+  "narrator call latency (separate from acceptance)",
+  "estimated cost from billable tokens"
+ ],
+ "reporting_scope_note": "Structural acceptance does not imply fidelity; standalone replay does not prove persisted fallback or whole-beat latency. Long-utterance outcomes reflect a malformed fixture topic (embedded quotes), not model fidelity.",
+ "route": "OpenRouter chat/completions via OpenRouterGateway (same route as arm E)",
+ "runner_revision_note": "Samples recorded HEAD f7ba9da, d45b629, 70d7bf0: unrelated commits landed during the run (retry policy, interventions). The replay calls OpenRouterGateway directly and imports neither; narrate.py and the fixture are identical across all three samples.",
+ "sampling": {
+  "json_mode": false,
+  "max_tokens": "per-item captured cap (512); recorded explicitly, never overridden",
+  "temperature": 0.2,
+  "top_k": "omitted",
+  "top_p": "omitted"
+ },
+ "scope": "16 production-captured narrator scenarios (10 carried + outsider-reaction, two-reactions, observe-alongside-speech, long-utterance, one-word-reply, apostrophe-quote)"
+}
