@@ -541,16 +541,33 @@ def test_dedupe_narration_facts_keeps_distinct_same_family_actions() -> None:
     from worldsim.application.graphs.narrate import dedupe_narration_facts
 
     first, second = uuid.uuid4(), uuid.uuid4()
-    assert dedupe_narration_facts(
-        [
-            ("attempt:communicate", "Wren asks about the mill", first),
-            ("attempt:communicate", "Ash asks about the lamps", second),
-        ]
-    ) == [
-        ("attempt:communicate", "Wren asks about the mill"),
-        ("attempt:communicate", "Ash asks about the lamps"),
+    rows = [
+        ("attempt:communicate", "Wren asks about the mill", first),
+        ("attempt:communicate", "Ash asks about the lamps", second),
     ]
+    kept = dedupe_narration_facts(rows)
+    assert sorted(kept) == [
+        ("attempt:communicate", "Ash asks about the lamps"),
+        ("attempt:communicate", "Wren asks about the mill"),
+    ]
+    # Deterministic regardless of the (unordered) read order.
+    assert dedupe_narration_facts(list(reversed(rows))) == kept
 
+
+def test_narration_fact_order_is_independent_of_read_order() -> None:
+    from worldsim.application.graphs.narrate import dedupe_narration_facts
+
+    wren, ash = uuid.uuid4(), uuid.uuid4()
+    rows = [
+        ("attempt:wait", "Ash waits", ash),
+        ("attempt:communicate", "Wren says to Ash: dawn patrol", wren),
+    ]
+    expected = [
+        ("attempt:communicate", "Wren says to Ash: dawn patrol"),
+        ("attempt:wait", "Ash waits"),
+    ]
+    assert dedupe_narration_facts(rows) == expected
+    assert dedupe_narration_facts(list(reversed(rows))) == expected
 
 def test_dedupe_narration_facts_keeps_identical_text_distinct_actions() -> None:
     from worldsim.application.graphs.narrate import dedupe_narration_facts

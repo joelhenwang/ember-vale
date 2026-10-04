@@ -9,7 +9,7 @@ Captures each initial narrator CompletionRequest and rebuilds authoritative
 metadata from committed rows with production functions (prompt rebuild
 equality is asserted per scenario).
 
-Writes docs/evidence/latency-eval-001/fixture-narrator-nemo-006.json
+Writes docs/evidence/latency-eval-001/fixture-narrator-nemo-007.json
 (or the name in argv[1]).
 Requires a reachable PostgreSQL (WORLDSIM_DATABASE__URL); builds a
 migration-head template and per-scenario scratch clones, dropped after.
@@ -387,7 +387,7 @@ if __name__ == "__main__":
         },
         "items": out,
     }
-    name = sys.argv[1] if len(sys.argv) > 1 else "fixture-narrator-nemo-006.json"
+    name = sys.argv[1] if len(sys.argv) > 1 else "fixture-narrator-nemo-007.json"
     dest = REPO / "docs" / "evidence" / "latency-eval-001" / name
     dest.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     for o in out:

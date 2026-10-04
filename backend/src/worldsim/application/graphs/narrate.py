@@ -547,10 +547,17 @@ def dedupe_narration_facts(
     and facts without recorded provenance pass through untouched
     (legacy rows). Never dedupe by key alone: one family key covers
     many distinct actions.
+
+    Output order is deterministic (key, then source, then text):
+    observations arrive ordered by observer id, which is random per
+    world, and prompt order changes model output
+    (nemo-006 voiced communicate attempts more often when attempt:wait
+    was listed first). Sorting also keeps narrator prompts reproducible.
     """
+    ordered = sorted(facts, key=lambda f: (f[0], str(f[2] or ""), f[1]))
     seen: set[tuple[str, str]] = set()
     unique: list[tuple[str, str]] = []
-    for key, value, source_id in facts:
+    for key, value, source_id in ordered:
         if source_id is not None:
             marker = (str(source_id), key)
             if marker in seen:
