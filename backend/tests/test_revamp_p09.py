@@ -273,7 +273,10 @@ def test_multi_leg_journey_progresses(world_ids: dict[str, UUID]) -> None:
             mid = await client.get(
                 f"/api/v1/interventions/{created.json()['id']}", headers=_deity()
             )
-            assert mid.json()["status"] == "executing", mid.text
+            # Leg 1 finishes at the phase-2 tick and the in-beat drain starts
+            # leg 2 in the same phase, so both legs are under way by now.
+            assert mid.json()["status"] == "completed", mid.text
+            assert all(s["status"] == "completed" for s in mid.json()["steps"])
 
             third = await client.post(
                 "/api/v1/stage1/advance",

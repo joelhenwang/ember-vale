@@ -1024,7 +1024,7 @@ def test_failed_resume_preserves_open_run(migrated_db: None) -> None:
         orch = _orchestrator(gateways)
         engine = create_engine(Settings())
         try:
-            admitted = await orch._admit_run(ids["world"], 1)  # pyright: ignore[reportPrivateUsage]
+            admitted, _, _ = await orch._admit_run(ids["world"], 1)  # pyright: ignore[reportPrivateUsage]
             connection = ProviderConnection(
                 id=uuid4(),
                 adapter=AdapterKind.FAKE,
