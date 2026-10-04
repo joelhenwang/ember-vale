@@ -23,6 +23,8 @@ import worldsim
 
 Environment = Literal["local", "test"]
 ProviderProfile = Literal["fake", "openrouter"]
+#: Model-calling roles; selection.ROLE_NAMES re-exports this tuple.
+MODEL_ROLES = ("character", "reaction", "resolver", "narrator", "director", "summary")
 
 _PUBLIC_BIND_HOSTS = frozenset({"0.0.0.0", "::", ""})
 
@@ -66,8 +68,27 @@ class ProviderSettings(BaseModel):
     openrouter_api_key: SecretStr | None = None
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     openrouter_model: str = "openrouter/auto"
+    #: Optional per-role model overrides, e.g.
+    #: WORLDSIM_PROVIDER__ROLE_MODELS__NARRATOR=mistralai/mistral-nemo.
+    #: Roles left out use openrouter_model. Story pins still win.
+    role_models: dict[str, str] = Field(default_factory=dict)
     embedding_model: str = "test-embed"
     embedding_dim: int = Field(default=768, ge=1, le=4096)
+
+    @field_validator("role_models")
+    @classmethod
+    def _known_roles_only(cls, value: dict[str, str]) -> dict[str, str]:
+        normalized = {role.lower(): model.strip() for role, model in value.items()}
+        unknown = sorted(set(normalized) - set(MODEL_ROLES))
+        if unknown:
+            raise ValueError(
+                f"unknown role(s) in WORLDSIM_PROVIDER__ROLE_MODELS: {unknown}; "
+                f"expected any of {list(MODEL_ROLES)}"
+            )
+        empty = sorted(role for role, model in normalized.items() if not model)
+        if empty:
+            raise ValueError(f"empty model id for role(s) {empty} in role_models")
+        return normalized
 
     @field_validator("openrouter_base_url")
     @classmethod

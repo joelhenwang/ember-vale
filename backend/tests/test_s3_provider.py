@@ -133,6 +133,28 @@ def test_selection_wires_openrouter_with_key(
     assert profiles["narrator"].adapter == "openrouter"
 
 
+def test_selection_routes_role_model_overrides(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WORLDSIM_PROVIDER__ACTIVE_PROFILE", "openrouter")
+    monkeypatch.setenv("WORLDSIM_PROVIDER__OPENROUTER_API_KEY", "sk-test-key")
+    monkeypatch.setenv("WORLDSIM_PROVIDER__OPENROUTER_MODEL", "main/storyteller")
+    monkeypatch.setenv("WORLDSIM_PROVIDER__ROLE_MODELS__NARRATOR", "mistralai/mistral-nemo")
+    gateways, profiles = gateways_for_settings(Settings())
+    assert profiles["narrator"].model_id == "mistralai/mistral-nemo"
+    assert gateways["narrator"].profile.model_id == "mistralai/mistral-nemo"
+    others = {role: p.model_id for role, p in profiles.items() if role != "narrator"}
+    assert set(others.values()) == {"main/storyteller"}
+
+
+def test_role_model_overrides_reject_unknown_roles(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WORLDSIM_PROVIDER__ROLE_MODELS__NARRATER", "mistralai/mistral-nemo")
+    with pytest.raises(ValueError, match="unknown role"):
+        Settings()
+
+
 def test_selection_rejects_openrouter_without_key(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

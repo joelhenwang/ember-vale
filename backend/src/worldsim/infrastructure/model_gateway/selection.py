@@ -31,9 +31,9 @@ from worldsim.infrastructure.model_gateway.profiles import (
     SUMMARY_FAKE_PROFILE,
 )
 from worldsim.infrastructure.model_gateway.retry import RetryingGateway
-from worldsim.infrastructure.settings import Settings
+from worldsim.infrastructure.settings import MODEL_ROLES, Settings
 
-ROLE_NAMES = ("character", "reaction", "resolver", "narrator", "director", "summary")
+ROLE_NAMES = MODEL_ROLES
 
 FAKE_PROFILES: dict[str, ModelProfile] = {
     "character": CHARACTER_FAKE_PROFILE,
@@ -66,13 +66,17 @@ def gateways_for_settings(
     if settings.provider.active_profile == "openrouter":
         key = settings.provider.openrouter_api_key
         assert key is not None, "settings reject openrouter without credentials"
-        profile = OPENROUTER_CHAT_PROFILE.model_copy(
-            update={"model_id": settings.provider.openrouter_model}
-        )
+        overrides = settings.provider.role_models
+        profiles = {
+            role: OPENROUTER_CHAT_PROFILE.model_copy(
+                update={"model_id": overrides.get(role, settings.provider.openrouter_model)}
+            )
+            for role in ROLE_NAMES
+        }
         gateways: dict[str, ModelGateway] = {
             role: RetryingGateway(
                 OpenRouterGateway(
-                    profile,
+                    profiles[role],
                     api_key=key,
                     base_url=settings.provider.openrouter_base_url,
                     client=client,
@@ -80,7 +84,6 @@ def gateways_for_settings(
             )
             for role in ROLE_NAMES
         }
-        profiles = {role: profile for role in ROLE_NAMES}
         return gateways, profiles
     return (
         {
