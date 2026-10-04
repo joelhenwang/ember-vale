@@ -57,6 +57,8 @@ class DirectorState(GraphState, total=False):
     system_prompt: str
     user_prompt: str
     raw_response: str | None
+    #: True only when the provider failed (not a model rejection).
+    provider_failed: bool
 
 
 @dataclass(frozen=True)
@@ -146,7 +148,12 @@ def build_director_graph(deps: DirectorGraphDeps) -> Any:
             ModelRefusalError,
             ModelMalformedError,
         ) as exc:
-            return _noop(f"provider failed ({type(exc).__name__})", [], 0)
+            # Flagged so the phase leaves the cooldown untouched and the
+            # next phase retries; a model rejection still advances it.
+            return {
+                **_noop(f"provider failed ({type(exc).__name__})", [], 0),
+                "provider_failed": True,
+            }
         raw: str | None = result.text
         while True:
             try:

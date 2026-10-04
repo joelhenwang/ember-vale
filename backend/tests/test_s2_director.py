@@ -310,3 +310,36 @@ def test_director_phase_accepts_and_records(migrated_db: None) -> None:
             await engine.dispose()
 
     _run(_inner())
+
+
+def test_director_outage_leaves_cooldown_for_retry(migrated_db: None) -> None:
+    def _route(request: Any) -> str | None:
+        if "You direct" in (request.system or ""):
+            raise ModelUnavailableError("provider down")
+        return None
+
+    gateway = FakeGateway(profile=DIRECTOR_FAKE_PROFILE)
+    gateway.route = _route
+
+    async def _inner() -> None:
+        from worldsim.application.orchestration.stage1 import SealedPhase
+
+        ids = await _seed_director_world()
+        orch = _orchestrator(gateway)
+        engine = create_engine(Settings())
+        try:
+            sealed = SealedPhase(snapshot_id=ids["run"], versions={}, locations={})
+            runtime = await orch._runtime(ids["world"])
+            async with create_unit_of_work(engine) as uow:
+                before = (await uow.worlds.get_config(ids["world"])).get("director.last_absolute")
+            status = await orch._director_phase(ids["world"], ids["run"], 4, sealed, runtime)
+            assert status == "unavailable"
+            async with create_unit_of_work(engine) as uow:
+                config = await uow.worlds.get_config(ids["world"])
+                assert config.get("director.last_absolute") == before
+                run = await uow.phases.get_run(ids["run"])
+                assert run.state.value == PhaseRunState.DIRECTOR_COMPLETE.value
+        finally:
+            await engine.dispose()
+
+    _run(_inner())

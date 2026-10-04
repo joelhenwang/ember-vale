@@ -1499,6 +1499,11 @@ class Stage1Orchestrator:
             await self._finish_task(task_run_id, owner, False)
             await self._set_state(run_id, PhaseRunState.DIRECTOR_COMPLETE)
             return "unavailable"
+        if result.get("provider_failed"):
+            # Outage: keep director.last_absolute so the next phase retries.
+            await self._finish_task(task_run_id, owner, False)
+            await self._set_state(run_id, PhaseRunState.DIRECTOR_COMPLETE)
+            return "unavailable"
         await self._finish_task(task_run_id, owner, True)
         decision = DirectorDecision.model_validate(result.get("decision") or {})
         status = str(result.get("status", "noop"))
