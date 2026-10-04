@@ -180,10 +180,7 @@ class SqlAlchemySceneRepository:
         await self._session.execute(
             update(SceneRow)
             .where(SceneRow.id == scene_id)
-            .where(
-                (SceneRow.narration_status.is_(None))
-                | (SceneRow.narration_status == "failed")
-            )
+            .where((SceneRow.narration_status.is_(None)) | (SceneRow.narration_status == "failed"))
             .values(narration_status=status)
         )
         await self._session.flush()

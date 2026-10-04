@@ -188,6 +188,7 @@ async def _inner(client: ApiClient, gateway: FakeGateway) -> None:
         talk,
         {"X-Worldsim-Role": "player", "X-Worldsim-Character": str(wren)},
     )
+    assert resumed.status_code == 200, resumed.text
     for index in range(21, 31):
         report = _advance(client, wid, index)
         assert report.status_code == 200, (index, report.text)

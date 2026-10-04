@@ -147,9 +147,7 @@ async def create_preset(
             await uow.presets.add_revision(revision)
             await uow.commit()
         return await _detail(request, preset.id, 1)
-    preset_id = await create_one(
-        state.uow_factory(), body.kind, body.name, body.payload, key
-    )
+    preset_id = await create_one(state.uow_factory(), body.kind, body.name, body.payload, key)
     return await _detail(request, preset_id, 1)
 
 
@@ -252,9 +250,7 @@ async def discard_editor_draft(
 ) -> dict[str, str]:
     """Abandon a draft; the caller\'s version must still be current."""
     state = request.app.state.app_state
-    await editor_drafts.discard_draft(
-        state.uow_factory(), preset_id, draft_id, expected_version
-    )
+    await editor_drafts.discard_draft(state.uow_factory(), preset_id, draft_id, expected_version)
     return {"draft_id": str(draft_id)}
 
 

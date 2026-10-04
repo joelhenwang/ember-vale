@@ -37,9 +37,7 @@ class StoryCatalogRow(Base):
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     metadata_version: Mapped[int] = mapped_column(Integer, default=1)
 
-    __table_args__ = (
-        CheckConstraint("metadata_version >= 1", name="ck_catalog_metadata_version"),
-    )
+    __table_args__ = (CheckConstraint("metadata_version >= 1", name="ck_catalog_metadata_version"),)
 
 
 class StoryInitialSetupRow(Base):
@@ -56,9 +54,7 @@ class StoryInitialSetupRow(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     provenance: Mapped[str] = mapped_column(String(32))
 
-    __table_args__ = (
-        CheckConstraint("schema_version >= 1", name="ck_setup_schema_version"),
-    )
+    __table_args__ = (CheckConstraint("schema_version >= 1", name="ck_setup_schema_version"),)
 
 
 class StoryDraftRow(Base):

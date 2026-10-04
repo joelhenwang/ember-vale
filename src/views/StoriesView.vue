@@ -16,13 +16,7 @@ import type { StorySetupView } from '../../content/clients/worldsim'
 import { filterStories } from '../game/filters'
 import { setStoryArchived, storiesUi, storyShelf, type StoryRecord } from '../game/stories'
 import { sortStoriesNewest, toStoryRecord, type ResolvedWorld } from '../game/records'
-import {
-  archiveStory,
-  getSetup,
-  getStory,
-  listStories,
-  unarchiveStory
-} from '../api/worldsim'
+import { archiveStory, getSetup, getStory, listStories, unarchiveStory } from '../api/worldsim'
 import { usePresets } from '../composables/usePresets'
 import SetupDialog from '../components/story/SetupDialog.vue'
 import PageIntro from '../components/ui/PageIntro.vue'
@@ -112,11 +106,7 @@ onMounted(async () => {
       if (!detail) return null
       return toStoryRecord(detail, worldOf(s.world_name))
     })
-    storyShelf.splice(
-      0,
-      storyShelf.length,
-      ...records.filter((r): r is StoryRecord => r !== null)
-    )
+    storyShelf.splice(0, storyShelf.length, ...records.filter((r): r is StoryRecord => r !== null))
   } catch (err) {
     loadError.value = err instanceof Error ? err.message : 'could not load stories'
   } finally {
@@ -169,7 +159,11 @@ onMounted(async () => {
         </div>
 
         <p v-if="!list.length" class="stories__none">
-          {{ storyShelf.length ? 'No stories in this drawer — try another word.' : 'No stories yet — begin a tale to fill this shelf.' }}
+          {{
+            storyShelf.length
+              ? 'No stories in this drawer — try another word.'
+              : 'No stories yet — begin a tale to fill this shelf.'
+          }}
         </p>
       </template>
       <SetupDialog :setup="setup" :open="showSetup" @close="showSetup = false" />

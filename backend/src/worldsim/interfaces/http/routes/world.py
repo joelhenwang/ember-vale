@@ -135,7 +135,9 @@ async def seed_world(request: Request) -> SeedResponse:
             now = utcnow()
             await uow.stories.put_catalog(
                 StoryCatalogEntry(
-                    world_id=result.world_id, title=world.name, created_at=now,
+                    world_id=result.world_id,
+                    title=world.name,
+                    created_at=now,
                 )
             )
             await uow.stories.put_setup(

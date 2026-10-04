@@ -11,9 +11,12 @@ from uuid import UUID
 
 import httpx
 import pytest
+from test_stage1_api import (
+    ApiClient,
+    _seed_two,  # pyright: ignore[reportPrivateUsage]
+)
 from test_stage1_api import _route_for as _base_route_for  # pyright: ignore[reportPrivateUsage]
-from test_stage1_api import _seed_two  # pyright: ignore[reportPrivateUsage]
-from test_stage1_api import ApiClient
+
 from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
 from worldsim.domain.activities import TravelRoute
 from worldsim.domain.ids import new_route_id
@@ -135,9 +138,7 @@ def test_force_travel_queued_then_applied_once(seeded_ids: dict[str, UUID]) -> N
             )
             assert advance.status_code == 200, advance.text
 
-            done = await client.get(
-                f"/api/v1/interventions/{first.json()['id']}", headers=_deity()
-            )
+            done = await client.get(f"/api/v1/interventions/{first.json()['id']}", headers=_deity())
             assert done.json()["status"] == "completed", done.text
 
             activities = await client.get(
@@ -204,7 +205,11 @@ def test_ambiguous_names_need_clarification(migrated_db: None) -> None:
         world = raw.post("/api/v1/world/seed").json()["world_id"]
         first = client.post(
             "/api/v1/stage1/characters",
-            json={"world_id": world, "name": "Ash", "location_id": "10000000-0000-4000-8000-000000000011"},
+            json={
+                "world_id": world,
+                "name": "Ash",
+                "location_id": "10000000-0000-4000-8000-000000000011",
+            },
             headers=_watcher(),
         )
         assert first.status_code == 200, first.text
@@ -267,7 +272,13 @@ def test_unsupported_fight_is_explicit(seeded_ids: dict[str, UUID]) -> None:
 
     def route(request: Any) -> Any:
         if "game-master" in (request.system or ""):
-            return json.dumps({"schema_version": 1, "steps": [], "clarification": "lethal combat is unsupported; offer a sparring bout"})
+            return json.dumps(
+                {
+                    "schema_version": 1,
+                    "steps": [],
+                    "clarification": "lethal combat is unsupported; offer a sparring bout",
+                }
+            )
         return None
 
     gateway = FakeGateway(profile=FAKE_TEST_PROFILE)
@@ -283,7 +294,10 @@ def test_unsupported_fight_is_explicit(seeded_ids: dict[str, UUID]) -> None:
                     "client_request_id": "p07-fight-1",
                     "text": "Start a lethal fight between Wren and Ash",
                     "mode": "force",
-                    "scope": {"kind": "characters", "character_ids": [str(ids["wren"]), str(ids["ash"])]},
+                    "scope": {
+                        "kind": "characters",
+                        "character_ids": [str(ids["wren"]), str(ids["ash"])],
+                    },
                     "effective_at": "next_boundary",
                 },
                 headers=_deity(),

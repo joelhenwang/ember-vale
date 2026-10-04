@@ -106,9 +106,7 @@ def test_same_key_with_different_content_conflicts(client: ApiClient) -> None:
     renamed = _create(client, "shared-key", _body("Miri renamed"))
     assert renamed.status_code == 409, renamed.text
     assert renamed.json()["error"]["code"] == "IDEMPOTENCY_CONFLICT"
-    repayloaded = _create(
-        client, "shared-key", _body("Miri", {"appearance": "A new cloak."})
-    )
+    repayloaded = _create(client, "shared-key", _body("Miri", {"appearance": "A new cloak."}))
     assert repayloaded.status_code == 409, repayloaded.text
     assert repayloaded.json()["error"]["code"] == "IDEMPOTENCY_CONFLICT"
     # The conflict created nothing: the original preset still stands alone.

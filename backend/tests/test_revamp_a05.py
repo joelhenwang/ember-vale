@@ -277,6 +277,7 @@ def test_probe_shape_and_cache_scopes(client: ApiClient) -> None:
     assert cleared.status_code == 200, cleared.text
     assert cleared.json()["removed"] >= 0
 
+
 def test_created_story_executes_with_pinned_sampling(migrated_db: None) -> None:
     """Creation -> resolution -> execution stays connected.
 
@@ -294,8 +295,10 @@ def test_created_story_executes_with_pinned_sampling(migrated_db: None) -> None:
 
     def _route(request: CompletionRequest) -> str:
         seen.append(request)
-        return ('{"family": "wait", "character_id": "00000000-0000-0000-0000-000000000000",'
-            ' "snapshot_id": "00000000-0000-0000-0000-000000000000"}')
+        return (
+            '{"family": "wait", "character_id": "00000000-0000-0000-0000-000000000000",'
+            ' "snapshot_id": "00000000-0000-0000-0000-000000000000"}'
+        )
 
     gateway.route = _route
     app = create_app(
@@ -449,8 +452,7 @@ def test_created_story_executes_with_pinned_sampling(migrated_db: None) -> None:
         executed = _executed_models(pinned, 1)
         assert executed, "expected audited model calls for the pinned run"
         assert all(model == "fake-echo" for model in executed), (
-            "executed model must come from the pin, not the gateway: "
-            f"{executed}"
+            f"executed model must come from the pin, not the gateway: {executed}"
         )
 
         moved = api.post(
@@ -483,9 +485,9 @@ def test_created_story_executes_with_pinned_sampling(migrated_db: None) -> None:
 
 #: Unpinned stories send the environment cap (512); summary, resolver and
 #: director raise it to their floors, the narrator sizes it to the beat budget.
-_UNPINNED_CAPS = {512} | {role_max_tokens(512, r) for r in ROLE_MAX_TOKEN_FLOORS} | {
-    narrator_max_tokens(512, 8)
-}
+_UNPINNED_CAPS = (
+    {512} | {role_max_tokens(512, r) for r in ROLE_MAX_TOKEN_FLOORS} | {narrator_max_tokens(512, 8)}
+)
 
 
 def test_pinned_profile_selects_gateway_model_on_wire(
@@ -676,12 +678,16 @@ def test_pinned_profile_selects_gateway_model_on_wire(
 
             async with AsyncSession(engine) as session:
                 pinned_rows = (
-                    await session.execute(
-                        sa_select(ModelCallRow).where(
-                            ModelCallRow.phase_run_id == derive_run_id(pinned_world, 2)
+                    (
+                        await session.execute(
+                            sa_select(ModelCallRow).where(
+                                ModelCallRow.phase_run_id == derive_run_id(pinned_world, 2)
+                            )
                         )
                     )
-                ).scalars().all()
+                    .scalars()
+                    .all()
+                )
                 assert pinned_rows, "expected audited calls for the pinned run"
                 for row in pinned_rows:
                     sampling = row.request["sampling"]
@@ -696,12 +702,16 @@ def test_pinned_profile_selects_gateway_model_on_wire(
                 assert profile_row.adapter == "openrouter"
                 assert profile_row.model_id == "pinned-model-B"
                 plain_rows = (
-                    await session.execute(
-                        sa_select(ModelCallRow).where(
-                            ModelCallRow.phase_run_id == derive_run_id(plain_world, 2)
+                    (
+                        await session.execute(
+                            sa_select(ModelCallRow).where(
+                                ModelCallRow.phase_run_id == derive_run_id(plain_world, 2)
+                            )
                         )
                     )
-                ).scalars().all()
+                    .scalars()
+                    .all()
+                )
                 assert plain_rows, "expected audited calls for the unpinned run"
                 for row in plain_rows:
                     sampling = row.request["sampling"]
@@ -855,9 +865,7 @@ def test_explicit_pin_missing_connection_fails_closed(migrated_db: None) -> None
                     raise DomainError(ErrorCode.NOT_FOUND, "connection removed")
                 return await real_get_connection(self, connection_id)
 
-            with mock.patch.object(
-                SqlAlchemySettingsRepository, "get_connection", _gone
-            ):
+            with mock.patch.object(SqlAlchemySettingsRepository, "get_connection", _gone):
                 with pytest.raises(DomainError) as caught:
                     await orch.advance_phase(ids["world"], 1)
             assert caught.value.code is ErrorCode.PRECONDITION_FAILED

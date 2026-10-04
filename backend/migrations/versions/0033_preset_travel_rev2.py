@@ -77,9 +77,7 @@ def upgrade() -> None:
             "AND content_hash = 'builtin-v2' "
             "AND payload->'travel' = CAST(:fixed_travel AS JSONB)"
         ).bindparams(
-            sa.bindparam(
-                "id", type_=postgresql.UUID(as_uuid=True), value=_uuid(WORLD_PRESET_ID)
-            ),
+            sa.bindparam("id", type_=postgresql.UUID(as_uuid=True), value=_uuid(WORLD_PRESET_ID)),
             original=WORLD_REV1_ORIGINAL,
             fixed_travel='[["hearth", "market"], ["market", "hearth"]]',
         )
@@ -97,9 +95,7 @@ def upgrade() -> None:
                 "WHERE NOT EXISTS (SELECT 1 FROM preset_revision "
                 "WHERE preset_id = :id AND revision = 2)"
             ).bindparams(
-                sa.bindparam(
-                    "id", type_=postgresql.UUID(as_uuid=True), value=_uuid(preset_id)
-                ),
+                sa.bindparam("id", type_=postgresql.UUID(as_uuid=True), value=_uuid(preset_id)),
                 payload=payload,
                 content_hash=content_hash,
             )
@@ -126,8 +122,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.execute(
         sa.text(
-            "DELETE FROM preset_revision WHERE revision = 2 AND preset_id IN "
-            "(:world, :template)"
+            "DELETE FROM preset_revision WHERE revision = 2 AND preset_id IN (:world, :template)"
         ).bindparams(
             sa.bindparam(
                 "world", type_=postgresql.UUID(as_uuid=True), value=_uuid(WORLD_PRESET_ID)

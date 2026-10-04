@@ -154,6 +154,7 @@ async def chronicle(
         watermark=high,
     )
 
+
 def _schematic_manifest(world_id: UUID, locations: list[Location]) -> api.MapManifestView:
     """Deterministic fallback anchors, explicitly labelled schematic."""
     return api.MapManifestView(
@@ -166,6 +167,7 @@ def _schematic_manifest(world_id: UUID, locations: list[Location]) -> api.MapMan
             for x, y in [_anchor(location.id)]
         ],
     )
+
 
 def _as_uuid(raw: object) -> UUID | None:
     if isinstance(raw, UUID):
@@ -198,6 +200,7 @@ def _activity_view(activity: Activity) -> api.ActivityView:
         else None,
         version=activity.version,
     )
+
 
 def _curated_manifest(assets_root: Path, locations: list[Location]) -> api.MapManifestView | None:
     """Curated anchors by location name; None unless every location resolves."""

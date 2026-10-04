@@ -241,12 +241,7 @@ export function useInterventions(worldId: () => string, header: () => CallOption
     // unrelated direction preserves Retry/Discard, and clearing the
     // selection alone never reconciles.
     const last = pending.value
-    if (
-      found &&
-      last &&
-      found.client_request_id === last.key &&
-      found.world_id === last.worldId
-    ) {
+    if (found && last && found.client_request_id === last.key && found.world_id === last.worldId) {
       pending.value = null
     }
   }

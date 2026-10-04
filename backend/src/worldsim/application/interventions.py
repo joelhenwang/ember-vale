@@ -130,8 +130,7 @@ async def interpret(
 
     context = {
         "characters": [
-            {"id": str(c.id), "name": c.name, "location_id": str(c.location_id)}
-            for c in characters
+            {"id": str(c.id), "name": c.name, "location_id": str(c.location_id)} for c in characters
         ],
         "locations": [{"id": str(loc.id), "name": loc.name} for loc in locations],
     }
@@ -310,9 +309,8 @@ async def submit(
             viewer,
             sampling=sampling,
         )
-        if (
-            outcome.status == InterventionStatus.QUEUED
-            and (not outcome.interpretation or not outcome.interpretation.steps)
+        if outcome.status == InterventionStatus.QUEUED and (
+            not outcome.interpretation or not outcome.interpretation.steps
         ):
             note = (
                 outcome.note
@@ -404,9 +402,7 @@ async def _claim_step_gate(
             command_type="direct_step",
             expected_versions={},
             payload={"intervention_id": str(intervention_id), "seq": seq},
-            input_hash=canonical_input_hash(
-                {"intervention_id": str(intervention_id), "seq": seq}
-            ),
+            input_hash=canonical_input_hash({"intervention_id": str(intervention_id), "seq": seq}),
         )
         return True
     except DomainError as exc:
@@ -475,9 +471,7 @@ async def apply_batch(
                     actor = None
                 if actor is not None and actor in active_actors:
                     continue
-            await _apply_effect_step(
-                factory, world_id, index, step, intervention.id, characters
-            )
+            await _apply_effect_step(factory, world_id, index, step, intervention.id, characters)
         await _finish_intervention(factory, intervention)
 
 
@@ -625,7 +619,11 @@ async def plan_attempts(
                 continue
             try:
                 actor, intent = _direct_attempt(
-                    step, step.targets, characters, set(filed_actors), directed,
+                    step,
+                    step.targets,
+                    characters,
+                    set(filed_actors),
+                    directed,
                     snapshot_id,
                 )
             except DomainError as error:
@@ -634,9 +632,7 @@ async def plan_attempts(
                     failed.append(intervention)
                 continue
             planned.append(
-                PlannedAttempt(
-                    actor=actor, intent=intent, ref=f"{intervention.id.hex}:{step.seq}"
-                )
+                PlannedAttempt(actor=actor, intent=intent, ref=f"{intervention.id.hex}:{step.seq}")
             )
     for intervention in failed:
         await _finish_intervention(factory, intervention)
@@ -758,9 +754,7 @@ def _direct_attempt(
             ErrorCode.PRECONDITION_FAILED, "actor already has a filed attempt this phase"
         )
     if character_id in directed:
-        raise DomainError(
-            ErrorCode.PRECONDITION_FAILED, "actor already directed this phase"
-        )
+        raise DomainError(ErrorCode.PRECONDITION_FAILED, "actor already directed this phase")
     action = dict(targets.get("action") or {})
     action["character_id"] = str(character_id)
     action["snapshot_id"] = str(snapshot_id)
@@ -961,9 +955,8 @@ async def edit_text(
             viewer,
             sampling=sampling,
         )
-        if (
-            outcome.status == InterventionStatus.QUEUED
-            and (not outcome.interpretation or not outcome.interpretation.steps)
+        if outcome.status == InterventionStatus.QUEUED and (
+            not outcome.interpretation or not outcome.interpretation.steps
         ):
             note = (
                 outcome.note

@@ -93,9 +93,7 @@ def test_success_carries_reasoning_and_envelope() -> None:
         {
             "id": "resp-3",
             "model": "deepseek/x",
-            "choices": [
-                {"finish_reason": "stop", "message": {"content": '{"a": 1}'}}
-            ],
+            "choices": [{"finish_reason": "stop", "message": {"content": '{"a": 1}'}}],
             "usage": {
                 "prompt_tokens": 7,
                 "completion_tokens": 100,
@@ -319,6 +317,8 @@ def test_reasoning_only_response_names_the_shape() -> None:
     assert detail["finish_reason"] == "length"
     assert detail["content_type"] == "NoneType"
     assert detail["usage"]["reasoning_tokens"] == 512
+
+
 def test_reasoning_content_counts_as_reasoning_only() -> None:
     """Live 2026-09-29 Venice probe shape: HTTP 200 with empty-string content,
     chain-of-thought in `reasoning_content` (DeepSeek-R1/Venice convention),

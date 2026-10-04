@@ -342,10 +342,7 @@ def test_provider_error_propagates_instead_of_clarifying(migrated_db: None) -> N
                 "e6-provider-1",
             )
         async with factory() as uow:
-            assert (
-                await uow.interventions.find_by_client_key(ids["world"], "e6-provider-1")
-                is None
-            )
+            assert await uow.interventions.find_by_client_key(ids["world"], "e6-provider-1") is None
 
     _run(_inner())
 
@@ -461,9 +458,7 @@ def test_spar_attempt_directs_for_advance(migrated_db: None) -> None:
             steps = await uow.interventions.list_steps(item.id)
             assert steps[0].status == StepStatus.QUEUED
         # Post-seal planning stamps the sealed snapshot server-side.
-        planned = await service.plan_attempts(
-            factory, ids["world"], new_snapshot_id(), set()
-        )
+        planned = await service.plan_attempts(factory, ids["world"], new_snapshot_id(), set())
         assert len(planned) == 1
         assert planned[0].actor == ids["wren"]
         assert planned[0].intent.family == "spar"

@@ -61,9 +61,7 @@ def migrated_scratch(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     name = scratch_name("worldsim_schema_test")
     settings = Settings()
     create_scratch_database(settings, name)
-    monkeypatch.setenv(
-        "WORLDSIM_DATABASE__URL", _replace_database(settings.database.url, name)
-    )
+    monkeypatch.setenv("WORLDSIM_DATABASE__URL", _replace_database(settings.database.url, name))
     config = Config()
     config.set_main_option("script_location", str(Path(__file__).parent.parent / "migrations"))
     alembic_command.upgrade(config, "head")

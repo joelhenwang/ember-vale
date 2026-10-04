@@ -435,9 +435,7 @@ class Stage1Orchestrator:
             for role, profile in self._profiles.items():
                 gateways[role] = self._gateways(role)
                 profiles[role] = cast(ModelProfile, profile)
-            return PhaseRuntime(
-                sampling=sampling, gateways=gateways, profiles=profiles, pin=None
-            )
+            return PhaseRuntime(sampling=sampling, gateways=gateways, profiles=profiles, pin=None)
         if self._pin_gateways is None:
             raise DomainError(
                 ErrorCode.PRECONDITION_FAILED,
@@ -448,9 +446,7 @@ class Stage1Orchestrator:
             gateway = self._pin_gateways(role, pin)
             gateways[role] = gateway
             profiles[role] = gateway.profile
-        return PhaseRuntime(
-            sampling=sampling, gateways=gateways, profiles=profiles, pin=pin
-        )
+        return PhaseRuntime(sampling=sampling, gateways=gateways, profiles=profiles, pin=pin)
 
     async def advance_phase(
         self,
@@ -691,9 +687,7 @@ class Stage1Orchestrator:
                 owner = await resolve_controlled_character(uow, world_id)
                 grant = await uow.roles.get_for_world(world_id)
                 grant_role = grant.role if grant is not None else None
-                self._reject_stale_submissions(
-                    owner, player_intents, submitter_id, grant_role
-                )
+                self._reject_stale_submissions(owner, player_intents, submitter_id, grant_role)
                 if existing is not None:
                     return existing, owner, grant_role
                 await uow.phases.create_run(
@@ -717,11 +711,8 @@ class Stage1Orchestrator:
                 twin_owner = await resolve_controlled_character(uow, world_id)
                 twin_grant = await uow.roles.get_for_world(world_id)
                 twin_role = twin_grant.role if twin_grant is not None else None
-                self._reject_stale_submissions(
-                    twin_owner, player_intents, submitter_id, twin_role
-                )
+                self._reject_stale_submissions(twin_owner, player_intents, submitter_id, twin_role)
                 return twin, twin_owner, twin_role
-
 
     @staticmethod
     def _reject_stale_submissions(
@@ -764,9 +755,7 @@ class Stage1Orchestrator:
                 },
             )
         if grant_role is None:
-            if submitter_id is None or any(
-                actor != submitter_id for actor in player_intents
-            ):
+            if submitter_id is None or any(actor != submitter_id for actor in player_intents):
                 raise DomainError(
                     ErrorCode.FORBIDDEN,
                     "player submission is stale: no player currently controls a character",
@@ -774,11 +763,9 @@ class Stage1Orchestrator:
             return
         raise DomainError(
             ErrorCode.FORBIDDEN,
-            "player submissions are forbidden under "
-            f"the active {grant_role.value} grant",
+            f"player submissions are forbidden under the active {grant_role.value} grant",
             {"role": grant_role.value},
         )
-
 
     async def _require_previous_complete_in(
         self, uow: UnitOfWork, world_id: UUID, index: int
@@ -1941,7 +1928,7 @@ class Stage1Orchestrator:
         # A directed attempt is completed only now that its execution is
         # durably recorded: the scene event is the proof.
         directed_outcomes = [
-            (member.idempotency_key[len("direct:"):], result.event_id)
+            (member.idempotency_key[len("direct:") :], result.event_id)
             for member in members
             if member.idempotency_key.startswith("direct:")
         ]
@@ -2230,8 +2217,7 @@ class Stage1Orchestrator:
                 "participant_ids": participant_ids,
                 "known_character_ids": [str(c) for c in sealed.locations],
                 "known_characters": [
-                    {"id": str(c), "name": names.get(c, c.hex[:8])}
-                    for c in sealed.locations
+                    {"id": str(c), "name": names.get(c, c.hex[:8])} for c in sealed.locations
                 ],
                 "location_ids": [str(loc.id) for loc in locations],
                 "beats_remaining": scene.beat_budget,
@@ -2450,13 +2436,9 @@ class Stage1Orchestrator:
             return "skipped"
         structured = config.get(NARRATION_MODE_KEY) == NARRATION_MODE_STRUCTURED
         sourced = [
-            (fact.key, fact.value, obs.source_id)
-            for obs in observations
-            for fact in obs.facts
+            (fact.key, fact.value, obs.source_id) for obs in observations for fact in obs.facts
         ]
-        facts = [
-            {"key": key, "value": value} for key, value in dedupe_narration_facts(sourced)
-        ]
+        facts = [{"key": key, "value": value} for key, value in dedupe_narration_facts(sourced)]
         names = {c.id: c.name for c in characters}
         facts.extend(communication_facts(scene_reactions, names, participants))
         dnd_context: str | None = None
@@ -2519,17 +2501,13 @@ class Stage1Orchestrator:
         )
         roster_pre = await self._roster_present(world_id)
         if over_budget or (quiet and not roster_pre):
-            await self._save_fallback_beats(
-                world_id, scene, event_id, facts, source="fallback"
-            )
+            await self._save_fallback_beats(world_id, scene, event_id, facts, source="fallback")
             return "fallback"
         if structured and not roster_pre:
             # Configured structured narration, not a provider outcome:
             # same beats as the quiet path, no narrator call issued and
             # no model-call row traced.
-            await self._save_fallback_beats(
-                world_id, scene, event_id, facts, source="structured"
-            )
+            await self._save_fallback_beats(world_id, scene, event_id, facts, source="structured")
             return "structured"
         try:
             sampling = runtime.sampling

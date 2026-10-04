@@ -15,6 +15,7 @@ Writes docs/evidence/latency-eval-001/fixture-narrator-v2.json only when
 WORLDSIM_WRITE_FIXTURES=1; otherwise the captured prompt goes to pytest's
 tmp_path so ordinary test runs leave the working tree untouched.
 """
+
 import asyncio
 import json
 import os
@@ -70,9 +71,7 @@ def _request_record(request: CompletionRequest) -> dict:
     }
 
 
-@pytest.mark.parametrize(
-    "case", ["attempt_as_dialogue", "speakerless_speech"]
-)
+@pytest.mark.parametrize("case", ["attempt_as_dialogue", "speakerless_speech"])
 def test_production_assembly_builds_deduped_narrator_prompt(
     migrated_db: None, tmp_path: Path, case: str
 ) -> None:

@@ -17,7 +17,10 @@ const cover = useGameImage('hero.currentStory')
 <template>
   <section class="hero ev-card" aria-label="Current story">
     <div class="hero__frame">
-      <img class="hero__img" :src="cover" :alt="`${story?.title ?? 'Ember Vale'} — scene illustration`" />
+      <img
+        class="hero__img"
+        :src="cover"
+        :alt="`${story?.title ?? 'Ember Vale'} — scene illustration`" />
 
       <!-- parchment overlay, clipped with the signature diagonal notch -->
       <div class="hero__panel">

@@ -127,8 +127,7 @@ def render_user_prompt(
         if entry.get("id") and entry.get("name")
     )
     known = (
-        "Known characters (use these exact ids when your reaction targets "
-        f"someone):\n{roster}\n\n"
+        f"Known characters (use these exact ids when your reaction targets someone):\n{roster}\n\n"
         if roster
         else ""
     )

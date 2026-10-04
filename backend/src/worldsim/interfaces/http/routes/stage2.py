@@ -68,8 +68,7 @@ async def timeline(
                     event_id=event.id,
                     event_type=event.event_type.value,
                     absolute_index=event.absolute_index,
-                    snippet=" ".join(_voiced_beat_text(b, names) for b in beats)[:160]
-                    or None,
+                    snippet=" ".join(_voiced_beat_text(b, names) for b in beats)[:160] or None,
                 )
             )
         total = await uow.events.count_events(world_id)

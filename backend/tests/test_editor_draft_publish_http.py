@@ -60,9 +60,7 @@ def _save(
     return saved.json()
 
 
-def _publish(
-    client: ApiClient, preset_id: str, draft_id: str, version: int, preset_version: int
-):
+def _publish(client: ApiClient, preset_id: str, draft_id: str, version: int, preset_version: int):
     return client.post(
         f"/api/v1/library/presets/{preset_id}/editor-drafts/{draft_id}/publish",
         json={"expected_version": version, "preset_expected_version": preset_version},
@@ -95,18 +93,14 @@ def test_publish_replay_names_older_revision_after_newer_lands(client: ApiClient
     preset_id = made.json()["id"]
 
     first_draft = _open(client, preset_id, 1)
-    first_saved = _save(
-        client, preset_id, first_draft["id"], 1, {"name": "Miri of the ford"}
-    )
+    first_saved = _save(client, preset_id, first_draft["id"], 1, {"name": "Miri of the ford"})
     first = _publish(client, preset_id, first_draft["id"], first_saved["version"], 0)
     assert first.status_code == 200, first.text
     assert first.json()["published_revision"] == 2
     _complete(client, preset_id, first_draft["id"], first_saved["version"])
 
     second_draft = _open(client, preset_id, 2)
-    second_saved = _save(
-        client, preset_id, second_draft["id"], 1, {"name": "Miri of the hills"}
-    )
+    second_saved = _save(client, preset_id, second_draft["id"], 1, {"name": "Miri of the hills"})
     second = _publish(client, preset_id, second_draft["id"], second_saved["version"], 1)
     assert second.status_code == 200, second.text
     assert second.json()["published_revision"] == 3

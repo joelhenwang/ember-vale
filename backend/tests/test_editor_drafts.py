@@ -100,9 +100,7 @@ def test_open_save_discard_roundtrip(migrated_db: None) -> None:
             factory, preset.id, draft.id, 1, {"description": "A greener valley."}
         )
         assert saved.version == 2
-        assert await _fields(factory, preset.id, draft.id) == {
-            "description": "A greener valley."
-        }
+        assert await _fields(factory, preset.id, draft.id) == {"description": "A greener valley."}
 
         with pytest.raises(DomainError) as exc:
             await service.discard_draft(factory, preset.id, draft.id, 99)
@@ -214,6 +212,7 @@ def test_readonly_presets_reject_drafts(migrated_db: None) -> None:
 
 def test_identical_publish_retry_replays_original_revision(migrated_db: None) -> None:
     """An ambiguous retry returns the recorded revision, never a duplicate."""
+
     async def _inner() -> None:
         factory = _factory()
         preset = await _make_preset(factory)
@@ -250,6 +249,7 @@ def test_identical_publish_retry_replays_original_revision(migrated_db: None) ->
 
 def test_publish_retry_replays_while_successor_draft_live(migrated_db: None) -> None:
     """Publish A, complete A, open B, retry A: A's receipt answers, B untouched."""
+
     async def _inner() -> None:
         factory = _factory()
         preset = await _make_preset(factory)
@@ -277,6 +277,7 @@ def test_publish_retry_replays_while_successor_draft_live(migrated_db: None) -> 
 
 def test_publish_edit_publish_keeps_both_replays(migrated_db: None) -> None:
     """Saved edits after publication publish as a new revision; both replays survive."""
+
     async def _inner() -> None:
         factory = _factory()
         preset = await _make_preset(factory)
@@ -295,14 +296,10 @@ def test_publish_edit_publish_keeps_both_replays(migrated_db: None) -> None:
         second = await service.publish_draft(factory, preset.id, draft.id, edited.version, 1)
         assert second.revision == 3
 
-        replay_first = await service.publish_draft(
-            factory, preset.id, draft.id, saved.version, 0
-        )
+        replay_first = await service.publish_draft(factory, preset.id, draft.id, saved.version, 0)
         assert replay_first.revision == 2
         assert replay_first.content_hash == first.content_hash
-        replay_second = await service.publish_draft(
-            factory, preset.id, draft.id, edited.version, 1
-        )
+        replay_second = await service.publish_draft(factory, preset.id, draft.id, edited.version, 1)
         assert replay_second.revision == 3
         async with factory() as uow:
             assert (await uow.presets.get_preset(preset.id)).current_revision == 3
@@ -312,6 +309,7 @@ def test_publish_edit_publish_keeps_both_replays(migrated_db: None) -> None:
 
 def test_publish_replay_survives_later_revisions(migrated_db: None) -> None:
     """Replay returns the original revision even after rev 3 exists."""
+
     async def _inner() -> None:
         factory = _factory()
         preset = await _make_preset(factory)
@@ -348,13 +346,12 @@ def test_publish_replay_survives_later_revisions(migrated_db: None) -> None:
 
 def test_publish_rename_updates_display_name(migrated_db: None) -> None:
     """Rename, publish, reload: Library and studios see the new name."""
+
     async def _inner() -> None:
         factory = _factory()
         preset = await _make_preset(factory)
         draft, _ = await service.open_draft(factory, preset.id, 1)
-        saved = await service.save_draft(
-            factory, preset.id, draft.id, 1, {"name": "Greener Vale"}
-        )
+        saved = await service.save_draft(factory, preset.id, draft.id, 1, {"name": "Greener Vale"})
         published = await service.publish_draft(factory, preset.id, draft.id, saved.version, 0)
         assert published.revision == 2
         async with factory() as uow:
@@ -376,6 +373,7 @@ def test_publish_rename_updates_display_name(migrated_db: None) -> None:
 
 def test_completed_draft_lifecycle(migrated_db: None) -> None:
     """Completion retires a published draft but never newer edits."""
+
     async def _inner() -> None:
         factory = _factory()
         preset = await _make_preset(factory)
@@ -410,9 +408,7 @@ def test_completed_draft_lifecycle(migrated_db: None) -> None:
     _run(_inner())
 
 
-def test_overlapping_saves_serialize_on_the_row(
-    migrated_db: None, monkeypatch: Any
-) -> None:
+def test_overlapping_saves_serialize_on_the_row(migrated_db: None, monkeypatch: Any) -> None:
     """Two saves inside the window together: one wins, one conflicts."""
     from worldsim.infrastructure.repositories.presets import SqlAlchemyPresetRepository
 
@@ -491,9 +487,7 @@ def test_overlapping_publishes_converge_on_one_revision(
     _run(_inner())
 
 
-def test_overlapping_opens_resolve_to_one_draft(
-    migrated_db: None, monkeypatch: Any
-) -> None:
+def test_overlapping_opens_resolve_to_one_draft(migrated_db: None, monkeypatch: Any) -> None:
     """Two opens inside the window together share a single draft."""
     from worldsim.infrastructure.repositories.presets import SqlAlchemyPresetRepository
 

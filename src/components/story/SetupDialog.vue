@@ -20,11 +20,19 @@ function pretty(value: unknown): string {
         Frozen when the story was created — it never changes, even as the story moves on.
       </p>
       <dl v-if="setup" class="setup__meta">
-        <div><dt>Provenance</dt><dd>{{ setup.provenance }}</dd></div>
-        <div><dt>Captured</dt><dd>{{ setup.created_at }}</dd></div>
+        <div>
+          <dt>Provenance</dt>
+          <dd>{{ setup.provenance }}</dd>
+        </div>
+        <div>
+          <dt>Captured</dt>
+          <dd>{{ setup.created_at }}</dd>
+        </div>
         <div>
           <dt>Content hash</dt>
-          <dd><code>{{ setup.content_hash }}</code></dd>
+          <dd>
+            <code>{{ setup.content_hash }}</code>
+          </dd>
         </div>
       </dl>
       <pre v-if="setup" class="setup__json">{{ pretty(setup.payload) }}</pre>

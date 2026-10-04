@@ -73,9 +73,7 @@ async def resolve_profile(uow: UnitOfWork, world_id: UUID) -> ProviderProfileRev
         ) from None
 
 
-async def resolve_controlled_character(
-    uow: UnitOfWork, world_id: UUID
-) -> UUID | None:
+async def resolve_controlled_character(uow: UnitOfWork, world_id: UUID) -> UUID | None:
     """The active player grant's bound character, if any.
 
     Ownership follows the same persisted role grant that execution

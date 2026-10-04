@@ -70,7 +70,9 @@ def world_ids(migrated_db: None) -> dict[str, UUID]:
 
 
 def _gateway_for(plan: dict[str, Any] | None, ids: dict[str, UUID], max_index: int) -> FakeGateway:
-    snapshots = {i: derive_snapshot_id(derive_run_id(ids["world"], i)) for i in range(1, max_index + 1)}
+    snapshots = {
+        i: derive_snapshot_id(derive_run_id(ids["world"], i)) for i in range(1, max_index + 1)
+    }
     base = _base_route_for(ids, snapshots)
     gateway = FakeGateway(profile=FAKE_TEST_PROFILE)
 
@@ -117,7 +119,10 @@ def test_plague_persists_ticks_and_recovers(world_ids: dict[str, UUID]) -> None:
 
     async def _inner() -> None:
         app = create_app(
-            Settings(), seed_dir=SEED_DIR, migrations_dir=MIGRATIONS, gateway_factory=lambda: gateway
+            Settings(),
+            seed_dir=SEED_DIR,
+            migrations_dir=MIGRATIONS,
+            gateway_factory=lambda: gateway,
         )
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(transport=transport, base_url="http://p09") as client:
@@ -227,7 +232,10 @@ def test_multi_leg_journey_progresses(world_ids: dict[str, UUID]) -> None:
 
     async def _inner() -> None:
         app = create_app(
-            Settings(), seed_dir=SEED_DIR, migrations_dir=MIGRATIONS, gateway_factory=lambda: gateway
+            Settings(),
+            seed_dir=SEED_DIR,
+            migrations_dir=MIGRATIONS,
+            gateway_factory=lambda: gateway,
         )
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(transport=transport, base_url="http://p09") as client:
@@ -306,7 +314,10 @@ def test_distant_spar_fails_with_travel_first(world_ids: dict[str, UUID]) -> Non
 
     async def _inner() -> None:
         app = create_app(
-            Settings(), seed_dir=SEED_DIR, migrations_dir=MIGRATIONS, gateway_factory=lambda: gateway
+            Settings(),
+            seed_dir=SEED_DIR,
+            migrations_dir=MIGRATIONS,
+            gateway_factory=lambda: gateway,
         )
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(transport=transport, base_url="http://p09") as client:
@@ -361,7 +372,10 @@ def test_mid_sequence_cancel_preserves_history(world_ids: dict[str, UUID]) -> No
 
     async def _inner() -> None:
         app = create_app(
-            Settings(), seed_dir=SEED_DIR, migrations_dir=MIGRATIONS, gateway_factory=lambda: gateway
+            Settings(),
+            seed_dir=SEED_DIR,
+            migrations_dir=MIGRATIONS,
+            gateway_factory=lambda: gateway,
         )
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(transport=transport, base_url="http://p09") as client:

@@ -80,9 +80,7 @@ def _draft(client: ApiClient, role: str = "watcher", controlled: str | None = No
     return created.json()["id"]
 
 
-def _create(
-    client: ApiClient, draft_id: str, key: str, version: int = 1
-) -> httpx.Response:
+def _create(client: ApiClient, draft_id: str, key: str, version: int = 1) -> httpx.Response:
     return client.post(
         "/api/v1/stories",
         json={"draft_id": draft_id, "expected_draft_version": version},

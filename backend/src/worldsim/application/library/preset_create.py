@@ -72,15 +72,11 @@ async def create_preset(
     parsed = _parse_strict(preset_kind.value, payload)
     trimmed = name.strip() if isinstance(name, str) else ""
     if not (1 <= len(trimmed) <= 128):
-        raise DomainError(
-            ErrorCode.VALIDATION_FAILED, "preset name must be 1..128 characters"
-        )
+        raise DomainError(ErrorCode.VALIDATION_FAILED, "preset name must be 1..128 characters")
     key = idempotency_key.strip() if isinstance(idempotency_key, str) else ""
     if not key:
         raise DomainError(ErrorCode.VALIDATION_FAILED, "idempotency key is required")
-    wanted = request_hash(
-        preset_kind.value, trimmed, parsed.model_dump(mode="json")
-    )
+    wanted = request_hash(preset_kind.value, trimmed, parsed.model_dump(mode="json"))
     async with factory() as uow:
         existing = await uow.presets.find_creation_receipt(OPERATOR, key)
         if existing is not None:
@@ -126,16 +122,12 @@ async def create_preset(
         return preset.id
 
 
-async def _replay_after_race(
-    factory: Callable[[], UnitOfWork], key: str, wanted: str
-) -> UUID:
+async def _replay_after_race(factory: Callable[[], UnitOfWork], key: str, wanted: str) -> UUID:
     """Adopt the winner's receipt by the same replay rules."""
     async with factory() as uow:
         existing = await uow.presets.find_creation_receipt(OPERATOR, key)
         if existing is None:
-            raise DomainError(
-                ErrorCode.PRECONDITION_FAILED, "creation raced and left nothing"
-            )
+            raise DomainError(ErrorCode.PRECONDITION_FAILED, "creation raced and left nothing")
         if existing.request_hash != wanted:
             raise DomainError(
                 ErrorCode.IDEMPOTENCY_CONFLICT,

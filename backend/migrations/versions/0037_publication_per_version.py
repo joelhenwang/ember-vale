@@ -24,9 +24,7 @@ depends_on = None
 def upgrade() -> None:
     # 0036 created this primary key unnamed, so the shared naming
     # convention called it pk_editor_publication.
-    op.drop_constraint(
-        "pk_editor_publication", "editor_publication", type_="primary"
-    )
+    op.drop_constraint("pk_editor_publication", "editor_publication", type_="primary")
     op.create_primary_key(
         "pk_editor_publication",
         "editor_publication",
@@ -35,9 +33,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_constraint(
-        "pk_editor_publication", "editor_publication", type_="primary"
-    )
-    op.create_primary_key(
-        "pk_editor_publication", "editor_publication", ["draft_id"]
-    )
+    op.drop_constraint("pk_editor_publication", "editor_publication", type_="primary")
+    op.create_primary_key("pk_editor_publication", "editor_publication", ["draft_id"])

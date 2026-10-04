@@ -83,10 +83,14 @@ async def _calls_for(world: UUID) -> list[ModelCallRow]:
     try:
         async with AsyncSession(engine) as session:
             rows = (
-                await session.execute(
-                    sa_select(ModelCallRow).where(ModelCallRow.world_id == world)
+                (
+                    await session.execute(
+                        sa_select(ModelCallRow).where(ModelCallRow.world_id == world)
+                    )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             return list(rows)
     finally:
         await engine.dispose()
@@ -145,9 +149,7 @@ def test_pinned_interpretation_uses_pin_and_audits(
 
     # The pin's sampling governs the outgoing interpretation request —
     # audit identity alone is not enough.
-    interpret_requests = [
-        request for request in _gateway.sent_requests if request.json_mode
-    ]
+    interpret_requests = [request for request in _gateway.sent_requests if request.json_mode]
     assert interpret_requests, "expected a recorded interpretation request"
     outgoing = interpret_requests[0]
     assert outgoing.temperature == 0.2
@@ -185,9 +187,7 @@ def test_committed_beat_event_visible_to_player(
     assert first.status_code == 200, first.text
 
     player = {"X-Worldsim-Role": "player", "X-Worldsim-Character": str(ids["wren"])}
-    listed = client.get(
-        "/api/v1/stage2/timeline", params={"world_id": str(world)}, headers=player
-    )
+    listed = client.get("/api/v1/stage2/timeline", params={"world_id": str(world)}, headers=player)
     assert listed.status_code == 200, listed.text
     kinds = [entry["event_type"] for entry in listed.json()["entries"]]
     assert "action_resolved" in kinds, kinds
@@ -214,9 +214,7 @@ def test_unpinned_clarification_stays_queued_across_reload(
     assert filed.json()["status"] == "needs_clarification"
 
     # A reload re-reads the operator queue: the item is still there.
-    listed = client.get(
-        "/api/v1/interventions", params={"world_id": str(world)}, headers=_deity()
-    )
+    listed = client.get("/api/v1/interventions", params={"world_id": str(world)}, headers=_deity())
     assert listed.status_code == 200, listed.text
     assert [entry["id"] for entry in listed.json()] == [filed.json()["id"]]
 
@@ -225,9 +223,7 @@ def test_unpinned_clarification_stays_queued_across_reload(
     assert "pin_profile_id" not in rows[0].request["sampling"]
 
     # Unpinned interpretation keeps the documented request default.
-    interpret_requests = [
-        request for request in _gateway.sent_requests if request.json_mode
-    ]
+    interpret_requests = [request for request in _gateway.sent_requests if request.json_mode]
     assert interpret_requests, "expected a recorded interpretation request"
     assert interpret_requests[0].max_tokens == 1024
     assert interpret_requests[0].temperature is None

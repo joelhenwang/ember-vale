@@ -106,9 +106,7 @@ def test_live_pin_over_fake_environment(migrated_db: None) -> None:
         connection = _connection(client, "openrouter", "Live")
         profile = _profile(client, connection["id"], "live-model")
         world_id = asyncio.run(
-            _seed_world(
-                {"profile_id": profile["id"], "profile_revision": profile["revision"]}
-            )
+            _seed_world({"profile_id": profile["id"], "profile_revision": profile["revision"]})
         )
         res = client.get(f"/api/v1/stories/{world_id}/provider", headers=_watcher())
     assert res.status_code == 200, res.text
@@ -123,9 +121,7 @@ def test_live_pin_over_fake_environment(migrated_db: None) -> None:
     assert body["effective_model_id"] == "live-model"
 
 
-def test_fake_pin_over_live_environment(
-    migrated_db: None, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_fake_pin_over_live_environment(migrated_db: None, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("WORLDSIM_PROVIDER__ACTIVE_PROFILE", "openrouter")
     monkeypatch.setenv("WORLDSIM_PROVIDER__OPENROUTER_API_KEY", "test-key")
     with _app() as raw:
@@ -133,9 +129,7 @@ def test_fake_pin_over_live_environment(
         connection = _connection(client, "fake", "Demo")
         profile = _profile(client, connection["id"], "fake-echo")
         world_id = asyncio.run(
-            _seed_world(
-                {"profile_id": profile["id"], "profile_revision": profile["revision"]}
-            )
+            _seed_world({"profile_id": profile["id"], "profile_revision": profile["revision"]})
         )
         res = client.get(f"/api/v1/stories/{world_id}/provider", headers=_watcher())
     assert res.status_code == 200, res.text
@@ -165,9 +159,7 @@ def test_unpinned_story_reports_environment_default(migrated_db: None) -> None:
 def test_broken_pin_reports_unavailable(migrated_db: None) -> None:
     with _app() as raw:
         client = ApiClient(raw)
-        world_id = asyncio.run(
-            _seed_world({"profile_id": str(uuid4()), "profile_revision": 1})
-        )
+        world_id = asyncio.run(_seed_world({"profile_id": str(uuid4()), "profile_revision": 1}))
         res = client.get(f"/api/v1/stories/{world_id}/provider", headers=_watcher())
     assert res.status_code == 200, res.text
     body = res.json()

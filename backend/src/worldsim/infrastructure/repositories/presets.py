@@ -210,9 +210,7 @@ class SqlAlchemyPresetRepository:
             raise
 
     async def save_editor_draft(self, draft: EditorDraft, expected_version: int) -> EditorDraft:
-        row = await self._session.get(
-            EditorDraftRow, draft.id, with_for_update=True
-        )
+        row = await self._session.get(EditorDraftRow, draft.id, with_for_update=True)
         if row is None:
             raise missing("editor draft", draft.id)
         if row.version != expected_version:
@@ -241,9 +239,7 @@ class SqlAlchemyPresetRepository:
         matches the receipt, and completion can verify no newer edits
         exist. Locked and version-checked like every other mutation.
         """
-        row = await self._session.get(
-            EditorDraftRow, draft_id, with_for_update=True
-        )
+        row = await self._session.get(EditorDraftRow, draft_id, with_for_update=True)
         if row is None:
             raise missing("editor draft", draft_id)
         if row.version != expected_version:
@@ -255,9 +251,7 @@ class SqlAlchemyPresetRepository:
         await self._session.flush()
 
     async def delete_editor_draft(self, draft_id: EditorDraftId, expected_version: int) -> None:
-        row = await self._session.get(
-            EditorDraftRow, draft_id, with_for_update=True
-        )
+        row = await self._session.get(EditorDraftRow, draft_id, with_for_update=True)
         if row is None:
             raise missing("editor draft", draft_id)
         if row.version != expected_version:
@@ -297,9 +291,7 @@ class SqlAlchemyPresetRepository:
                 ) from exc
             raise
 
-    async def list_publications_for_draft(
-        self, draft_id: EditorDraftId
-    ) -> list[EditorPublication]:
+    async def list_publications_for_draft(self, draft_id: EditorDraftId) -> list[EditorPublication]:
         """Durable replay log: survives draft completion; explicit discard voids it."""
         query = (
             select(EditorPublicationRow)
@@ -311,9 +303,7 @@ class SqlAlchemyPresetRepository:
 
     async def delete_publications_for_draft(self, draft_id: EditorDraftId) -> None:
         """Void every receipt for the draft: no version replays afterwards."""
-        query = select(EditorPublicationRow).where(
-            EditorPublicationRow.draft_id == draft_id
-        )
+        query = select(EditorPublicationRow).where(EditorPublicationRow.draft_id == draft_id)
         rows = (await self._session.execute(query)).scalars().all()
         for row in rows:
             await self._session.delete(row)
@@ -341,9 +331,7 @@ class SqlAlchemyPresetRepository:
         )
         await self._session.flush()
 
-    async def find_creation_receipt(
-        self, operator: str, key: str
-    ) -> PresetCreationReceipt | None:
+    async def find_creation_receipt(self, operator: str, key: str) -> PresetCreationReceipt | None:
         row = await self._session.get(PresetCreationReceiptRow, (operator, key))
         return self._to_creation_receipt(row) if row is not None else None
 

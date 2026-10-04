@@ -282,9 +282,7 @@ class OpenRouterGateway:
             finish_reason=choice.get("finish_reason")
             if isinstance(choice.get("finish_reason"), str)
             else None,
-            response_id=payload.get("id")
-            if isinstance(payload.get("id"), str)
-            else None,
+            response_id=payload.get("id") if isinstance(payload.get("id"), str) else None,
         )
 
     async def embed(self, request: EmbeddingRequest) -> EmbeddingResult:

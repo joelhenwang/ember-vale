@@ -313,8 +313,7 @@ def _base_type(schema: dict[str, object]) -> str:
             kept = [
                 o
                 for o in options
-                if isinstance(o, dict)
-                and (o.get("$ref") or o.get("type") not in (None, "null"))
+                if isinstance(o, dict) and (o.get("$ref") or o.get("type") not in (None, "null"))
             ]
             if len(kept) == 1 and isinstance(kept[0], dict):
                 return _base_type(kept[0])

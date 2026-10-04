@@ -22,10 +22,7 @@ class ModelGatewayError(Exception):
     locally, and only when explicitly enabled.
     """
 
-
-    def __init__(
-        self, message: str = "", *, detail: dict[str, Any] | None = None
-    ) -> None:
+    def __init__(self, message: str = "", *, detail: dict[str, Any] | None = None) -> None:
         super().__init__(message)
         self.detail = detail
 

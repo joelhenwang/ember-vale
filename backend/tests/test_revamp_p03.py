@@ -29,7 +29,7 @@ MARKET = UUID("10000000-0000-4000-8000-000000000012")
 @pytest.fixture
 def client(migrated_db: None) -> Iterator[ApiClient]:
     gateway = FakeGateway(profile=FAKE_TEST_PROFILE)
-    gateway.route = lambda request: None  # noqa: E731
+    gateway.route = lambda request: None
     app = create_app(
         Settings(),
         seed_dir=SEED_DIR,
@@ -174,7 +174,11 @@ def test_link_existing_member_with_version_check(client: ApiClient) -> None:
 
     linked = client.post(
         f"/api/v1/stage1/party/{member['id']}/link",
-        json={"world_id": str(WORLD), "character_id": str(WREN), "expected_version": member["version"]},
+        json={
+            "world_id": str(WORLD),
+            "character_id": str(WREN),
+            "expected_version": member["version"],
+        },
         headers=_watcher(),
     )
     assert linked.status_code == 200, linked.text
@@ -182,7 +186,11 @@ def test_link_existing_member_with_version_check(client: ApiClient) -> None:
 
     stale = client.post(
         f"/api/v1/stage1/party/{member['id']}/link",
-        json={"world_id": str(WORLD), "character_id": str(WREN), "expected_version": member["version"]},
+        json={
+            "world_id": str(WORLD),
+            "character_id": str(WREN),
+            "expected_version": member["version"],
+        },
         headers=_watcher(),
     )
     assert stale.status_code == 409, stale.text

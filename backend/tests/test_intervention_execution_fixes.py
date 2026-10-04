@@ -487,9 +487,7 @@ def test_same_label_condition_steps_in_one_intervention_stay_separate(
             "A cough spreads",
             "e6-fix-samelabel-1",
             [
-                _condition_step(
-                    "Grey Cough", "A harsh cough at the Hearth.", [ids["hearth"]]
-                ),
+                _condition_step("Grey Cough", "A harsh cough at the Hearth.", [ids["hearth"]]),
                 _condition_step(
                     "Grey Cough", "A harsh cough at the Market.", [ids["market"]], severity=4
                 ),
@@ -503,9 +501,7 @@ def test_same_label_condition_steps_in_one_intervention_stay_separate(
         scopes = {tuple(sorted(c.scope_location_ids)) for c in conditions}
         assert scopes == {(ids["hearth"],), (ids["market"],)}
         steps = sorted(await _steps_of(factory, item.id), key=lambda s: s.seq)
-        assert sorted(c.source_step_key for c in conditions) == sorted(
-            s.step_key for s in steps
-        )
+        assert sorted(c.source_step_key for c in conditions) == sorted(s.step_key for s in steps)
 
         # The first condition later goes inactive while its step was never
         # marked: reapplying the step adopts the original, never a third.
@@ -563,9 +559,7 @@ def test_inactive_activity_is_adopted_not_reapplied(migrated_db: None) -> None:
     _run(_inner())
 
 
-def test_overlapping_appliers_converge_on_one_activity(
-    migrated_db: None, monkeypatch: Any
-) -> None:
+def test_overlapping_appliers_converge_on_one_activity(migrated_db: None, monkeypatch: Any) -> None:
     """Two appliers inside the effect window together persist one activity."""
 
     async def _inner() -> None:

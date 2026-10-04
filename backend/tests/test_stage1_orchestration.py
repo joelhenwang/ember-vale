@@ -253,6 +253,7 @@ def test_advance_refuses_second_open_run(migrated_db: None) -> None:
     still active must fail closed (409) instead of creating a
     second open run that breaks reconciliation later.
     """
+
     async def _inner() -> None:
         ids = await _seed()
         orch = _orchestrator(_role_gateways(ids))
@@ -370,9 +371,7 @@ def test_player_substitution_controls_attempt(migrated_db: None) -> None:
             )
         }
         # No grant: pass the request-time submitter as the HTTP route would.
-        report = await orch.advance_phase(
-            ids["world"], 1, player, submitter_id=ids["ash"]
-        )
+        report = await orch.advance_phase(ids["world"], 1, player, submitter_id=ids["ash"])
         engine = create_engine(Settings())
         try:
             async with create_unit_of_work(engine) as uow:
@@ -653,9 +652,7 @@ def test_controlled_character_has_no_model_proposals(migrated_db: None) -> None:
                 reactions = []
                 for scene in await uow.scenes.list_for_run(report.run_id):
                     reactions.extend(await uow.scenes.reactions_for_scene(scene.id))
-                ash_answers = [
-                    r for r in reactions if r.reactor_character_id == ids["ash"]
-                ]
+                ash_answers = [r for r in reactions if r.reactor_character_id == ids["ash"]]
                 assert len(ash_answers) == 1
                 assert ash_answers[0].action.topic.startswith('"')  # type: ignore[union-attr]
                 assert not [r for r in reactions if r.reactor_character_id == ids["wren"]]
@@ -663,8 +660,7 @@ def test_controlled_character_has_no_model_proposals(migrated_db: None) -> None:
                 assert not [
                     c
                     for c in calls
-                    if c.role in ("character_decision", "reaction")
-                    and c.actor_id == ids["wren"]
+                    if c.role in ("character_decision", "reaction") and c.actor_id == ids["wren"]
                 ]
         finally:
             await engine.dispose()
@@ -703,8 +699,7 @@ def test_controlled_ownership_survives_reload_and_retry(migrated_db: None) -> No
                 assert not [
                     c
                     for c in calls
-                    if c.role in ("character_decision", "reaction")
-                    and c.actor_id == ids["wren"]
+                    if c.role in ("character_decision", "reaction") and c.actor_id == ids["wren"]
                 ]
         finally:
             await engine.dispose()
@@ -746,6 +741,7 @@ def test_resolve_controlled_character_rejects_other_grants(migrated_db: None) ->
         assert await _resolve_grant((await _grant_ids("watcher"))["world"]) is None
 
     asyncio.run(_inner())
+
 
 def test_observer_setup_with_player_grant_protects(migrated_db: None) -> None:
     """The setup snapshot says observer; the active Player grant still owns Wren."""
@@ -816,15 +812,12 @@ def test_role_change_moves_protection_to_ash(migrated_db: None) -> None:
                 assert intent.action.family.value == "wait"
                 calls = await uow.traces.list_for_phase_run(second.run_id)
                 assert [
-                    c
-                    for c in calls
-                    if c.role == "character_decision" and c.actor_id == ids["wren"]
+                    c for c in calls if c.role == "character_decision" and c.actor_id == ids["wren"]
                 ]
                 assert not [
                     c
                     for c in calls
-                    if c.role in ("character_decision", "reaction")
-                    and c.actor_id == ids["ash"]
+                    if c.role in ("character_decision", "reaction") and c.actor_id == ids["ash"]
                 ]
                 try:
                     await uow.scenes.get_intent(
@@ -932,15 +925,12 @@ def test_admitted_ownership_follows_grant_changed_during_preflight(
                 assert intent.action.family.value == "wait"
                 calls = await uow.traces.list_for_phase_run(report.run_id)
                 assert [
-                    c
-                    for c in calls
-                    if c.role == "character_decision" and c.actor_id == ids["wren"]
+                    c for c in calls if c.role == "character_decision" and c.actor_id == ids["wren"]
                 ]
                 assert not [
                     c
                     for c in calls
-                    if c.role in ("character_decision", "reaction")
-                    and c.actor_id == ids["ash"]
+                    if c.role in ("character_decision", "reaction") and c.actor_id == ids["ash"]
                 ]
                 try:
                     await uow.scenes.get_intent(
@@ -958,6 +948,7 @@ def test_admitted_ownership_follows_grant_changed_during_preflight(
 
 def test_retry_after_grant_change_keeps_admitted_ownership(migrated_db: None) -> None:
     """A duplicate re-advance after a grant change adds no canon for the old run."""
+
     async def _inner() -> None:
         ids = await _seed()
         await _set_grant(ids, "player", ids["wren"])
@@ -1008,14 +999,13 @@ def test_structured_narration_skips_narrator_and_keeps_dialogue(
     migrated_db: None,
 ) -> None:
     """Structured mode issues no narrator call yet persists cited dialogue."""
+
     async def _inner() -> None:
         ids = await _seed()
         await _set_grant(ids, "player", ids["wren"])
         await _set_narration_mode(ids, "structured")
         gateways = _agency_gateways(ids)
-        report = await _orchestrator(gateways).advance_phase(
-            ids["world"], 1, _wren_ask(ids)
-        )
+        report = await _orchestrator(gateways).advance_phase(ids["world"], 1, _wren_ask(ids))
         assert not report.duplicate
         assert report.scenes
         assert all(s.narration == "structured" for s in report.scenes)
@@ -1040,6 +1030,7 @@ def test_structured_narration_skips_narrator_and_keeps_dialogue(
 
 def test_structured_dialogue_survives_reload_and_replay(migrated_db: None) -> None:
     """Structured beats reload identically and duplicate replay adds no canon."""
+
     async def _read_texts(report: Any) -> list[tuple[str, str]]:
         return [(b.kind.value, b.text) for b in await _beats_for_report(report)]
 
@@ -1048,9 +1039,7 @@ def test_structured_dialogue_survives_reload_and_replay(migrated_db: None) -> No
         await _set_grant(ids, "player", ids["wren"])
         await _set_narration_mode(ids, "structured")
         gateways = _agency_gateways(ids)
-        first = await _orchestrator(gateways).advance_phase(
-            ids["world"], 1, _wren_ask(ids)
-        )
+        first = await _orchestrator(gateways).advance_phase(ids["world"], 1, _wren_ask(ids))
         assert not first.duplicate
         before = await _read_texts(first)
         assert before
@@ -1071,13 +1060,12 @@ def test_structured_dialogue_survives_reload_and_replay(migrated_db: None) -> No
 
 def test_default_narration_mode_still_calls_narrator(migrated_db: None) -> None:
     """Without the opt-in flag the narrator gateway is invoked as before."""
+
     async def _inner() -> None:
         ids = await _seed()
         await _set_grant(ids, "player", ids["wren"])
         gateways = _agency_gateways(ids)
-        report = await _orchestrator(gateways).advance_phase(
-            ids["world"], 1, _wren_ask(ids)
-        )
+        report = await _orchestrator(gateways).advance_phase(ids["world"], 1, _wren_ask(ids))
         assert not report.duplicate
         assert gateways["narrator"].calls != []
         assert all(s.narration in ("narrated", "fallback") for s in report.scenes)
@@ -1106,9 +1094,7 @@ def test_structured_status_distinct_from_generation_failure(
         gateways = _agency_gateways(ids)
         gateways["narrator"].enqueue_error(ModelUnavailableError("provider down"))
         gateways["narrator"].enqueue_error(ModelUnavailableError("provider down"))
-        report = await _orchestrator(gateways).advance_phase(
-            ids["world"], 1, _wren_ask(ids)
-        )
+        report = await _orchestrator(gateways).advance_phase(ids["world"], 1, _wren_ask(ids))
         assert not report.duplicate
         assert all(s.narration == "structured" for s in report.scenes)
         assert gateways["narrator"].calls == []
@@ -1149,15 +1135,11 @@ def test_structured_narration_defers_to_model_for_party_roster(
         try:
             async with create_unit_of_work(engine) as uow:
                 data = load_data(root / "content" / "dnd")
-                await recruit_companion(
-                    uow, data, ids["world"], "Lyra", "elf ranger, level 3"
-                )
+                await recruit_companion(uow, data, ids["world"], "Lyra", "elf ranger, level 3")
         finally:
             await engine.dispose()
         gateways = _agency_gateways(ids)
-        report = await _orchestrator(gateways).advance_phase(
-            ids["world"], 1, _wren_ask(ids)
-        )
+        report = await _orchestrator(gateways).advance_phase(ids["world"], 1, _wren_ask(ids))
         assert not report.duplicate
         assert gateways["narrator"].calls != []
         assert all(s.narration != "structured" for s in report.scenes)
@@ -1193,9 +1175,7 @@ def test_structured_mode_saves_delayed_narrator_time(migrated_db: None) -> None:
                 spent["seconds"] += perf_counter() - start
 
         narrator.complete = _delayed  # type: ignore[method-assign]
-        report = await _orchestrator(gateways).advance_phase(
-            ids["world"], 1, _wren_ask(ids)
-        )
+        report = await _orchestrator(gateways).advance_phase(ids["world"], 1, _wren_ask(ids))
         return ids, gateways, report, spent["seconds"]
 
     async def _inner() -> None:
@@ -1274,14 +1254,13 @@ def test_duplicate_replay_returns_stored_structured_status(
     migrated_db: None,
 ) -> None:
     """Duplicate replays report the recorded source, never infer narrated."""
+
     async def _inner() -> None:
         ids = await _seed()
         await _set_grant(ids, "player", ids["wren"])
         await _set_narration_mode(ids, "structured")
         gateways = _agency_gateways(ids)
-        first = await _orchestrator(gateways).advance_phase(
-            ids["world"], 1, _wren_ask(ids)
-        )
+        first = await _orchestrator(gateways).advance_phase(ids["world"], 1, _wren_ask(ids))
         assert not first.duplicate
         assert first.scenes
         assert all(s.narration == "structured" for s in first.scenes)
@@ -1290,9 +1269,7 @@ def test_duplicate_replay_returns_stored_structured_status(
         before = await _canon_counts(ids, first.run_id)
         replay = await _orchestrator(gateways).advance_phase(ids["world"], 1)
         assert replay.duplicate
-        assert [s.narration for s in replay.scenes] == [
-            s.narration for s in first.scenes
-        ]
+        assert [s.narration for s in replay.scenes] == [s.narration for s in first.scenes]
         assert await _canon_counts(ids, first.run_id) == before
 
     asyncio.run(_inner())
@@ -1308,18 +1285,14 @@ def test_duplicate_replay_returns_stored_model_and_fallback_statuses(
         ids = await _seed()
         await _set_grant(ids, "player", ids["wren"])
         gateways = _agency_gateways(ids)
-        first = await _orchestrator(gateways).advance_phase(
-            ids["world"], 1, _wren_ask(ids)
-        )
+        first = await _orchestrator(gateways).advance_phase(ids["world"], 1, _wren_ask(ids))
         assert not first.duplicate
         assert gateways["narrator"].calls != []
         stored = await _stored_narration_statuses(first)
         assert stored and all(s in ("narrated", "fallback") for s in stored)
         replay = await _orchestrator(gateways).advance_phase(ids["world"], 1)
         assert replay.duplicate
-        assert [s.narration for s in replay.scenes] == [
-            s.narration for s in first.scenes
-        ]
+        assert [s.narration for s in replay.scenes] == [s.narration for s in first.scenes]
 
         broken_ids = await _seed()
         await _set_grant(broken_ids, "player", broken_ids["wren"])
@@ -1334,9 +1307,7 @@ def test_duplicate_replay_returns_stored_model_and_fallback_statuses(
         assert all(s.narration == "fallback" for s in broken.scenes)
         broken_stored = await _stored_narration_statuses(broken)
         assert broken_stored and all(s == "fallback" for s in broken_stored)
-        broken_replay = await _orchestrator(broken_gateways).advance_phase(
-            broken_ids["world"], 1
-        )
+        broken_replay = await _orchestrator(broken_gateways).advance_phase(broken_ids["world"], 1)
         assert broken_replay.duplicate
         assert all(s.narration == "fallback" for s in broken_replay.scenes)
 
@@ -1375,12 +1346,11 @@ def test_interrupted_structured_commit_resumes_with_source_intact(
     Boundary: beats plus structured source committed, phase still open. A
     fresh controller resumes with no extra beats and no narrator calls.
     """
+
     async def _inner() -> None:
         control_ids = await _seed()
         await _set_narration_mode(control_ids, "structured")
-        await _orchestrator(_talking_gateways(control_ids)).advance_phase(
-            control_ids["world"], 1
-        )
+        await _orchestrator(_talking_gateways(control_ids)).advance_phase(control_ids["world"], 1)
         control_run = derive_run_id(control_ids["world"], 1)
         control_keys = await _beat_keys_for_run(control_run)
         assert control_keys
@@ -1432,9 +1402,7 @@ async def _beat_keys_for_run(
             beats: list[NarrationBeat] = []
             for scene in await uow.scenes.list_for_run(run_id):
                 beats.extend(await uow.scenes.narrations_for_event(scene.event_id))
-            return sorted(
-                (b.kind.value, b.text, tuple(b.cited_fact_keys)) for b in beats
-            )
+            return sorted((b.kind.value, b.text, tuple(b.cited_fact_keys)) for b in beats)
     finally:
         await engine.dispose()
 
@@ -1443,6 +1411,7 @@ def test_failed_narration_resumes_to_recorded_success(
     migrated_db: None,
 ) -> None:
     """A failed attempt may be replaced when a resume narrates successfully."""
+
     async def _inner() -> None:
         ids = await _seed()
         gateways = _talking_gateways(ids)
@@ -1473,9 +1442,7 @@ def test_failed_narration_resumes_to_recorded_success(
         finally:
             await engine.dispose()
 
-        resume = await _orchestrator(_talking_gateways(ids)).advance_phase(
-            ids["world"], 1
-        )
+        resume = await _orchestrator(_talking_gateways(ids)).advance_phase(ids["world"], 1)
         assert all(s.narration in ("narrated", "fallback") for s in resume.scenes)
         assert all(s.narration != "failed" for s in resume.scenes)
         stored_after = await _stored_narration_statuses(resume)
@@ -1489,14 +1456,13 @@ def test_duplicate_replay_reports_unknown_for_legacy_rows(
     migrated_db: None,
 ) -> None:
     """Rows predating the record replay as unknown, with beats intact."""
+
     async def _inner() -> None:
         ids = await _seed()
         await _set_grant(ids, "player", ids["wren"])
         await _set_narration_mode(ids, "structured")
         gateways = _agency_gateways(ids)
-        first = await _orchestrator(gateways).advance_phase(
-            ids["world"], 1, _wren_ask(ids)
-        )
+        first = await _orchestrator(gateways).advance_phase(ids["world"], 1, _wren_ask(ids))
         assert not first.duplicate
         before_texts = [(b.kind.value, b.text) for b in await _beats_for_report(first)]
         assert before_texts
@@ -1518,6 +1484,7 @@ def test_two_observers_produce_one_narration_fact(migrated_db: None) -> None:
     Each underlying attempt must yield exactly one beat even though both
     participants observe it; observer records themselves stay per-observer.
     """
+
     async def _inner() -> None:
         from worldsim.application.ports.model_gateway import ModelUnavailableError
 
@@ -1527,16 +1494,12 @@ def test_two_observers_produce_one_narration_fact(migrated_db: None) -> None:
         gateways["narrator"].enqueue_error(ModelUnavailableError("provider down"))
         gateways["narrator"].enqueue_error(ModelUnavailableError("provider down"))
         gateways["narrator"].default_text = None
-        report = await _orchestrator(gateways).advance_phase(
-            ids["world"], 1, _wren_ask(ids)
-        )
+        report = await _orchestrator(gateways).advance_phase(ids["world"], 1, _wren_ask(ids))
         assert not report.duplicate
         assert all(s.narration == "fallback" for s in report.scenes)
         beats = await _beats_for_report(report)
         assert beats
-        signatures = [
-            (b.kind.value, b.text, tuple(b.cited_fact_keys)) for b in beats
-        ]
+        signatures = [(b.kind.value, b.text, tuple(b.cited_fact_keys)) for b in beats]
         assert len(signatures) == len(set(signatures)), signatures
         dialogue = [b for b in beats if b.kind == NarrationKind.DIALOGUE]
         assert len(dialogue) == 1

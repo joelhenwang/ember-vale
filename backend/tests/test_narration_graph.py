@@ -87,9 +87,7 @@ def test_valid_beats_accepted_with_event_linkage() -> None:
 def test_fenced_json_accepted_without_repair() -> None:
     event_id = uuid.uuid4()
     gateway = FakeGateway(profile=NARRATOR_FAKE_PROFILE)
-    gateway.enqueue_text(
-        "```json\n" + json.dumps([_beat("Wren arrives.", ["arrival"])]) + "\n```"
-    )
+    gateway.enqueue_text("```json\n" + json.dumps([_beat("Wren arrives.", ["arrival"])]) + "\n```")
 
     result = asyncio.run(invoke(build_narration_graph(_deps(gateway)), _invocation(event_id)))
 
@@ -102,9 +100,7 @@ def test_fenced_json_accepted_without_repair() -> None:
 def test_unlabelled_fence_accepted_without_repair() -> None:
     event_id = uuid.uuid4()
     gateway = FakeGateway(profile=NARRATOR_FAKE_PROFILE)
-    gateway.enqueue_text(
-        "```\n" + json.dumps([_beat("Wren arrives.", ["arrival"])]) + "\n```"
-    )
+    gateway.enqueue_text("```\n" + json.dumps([_beat("Wren arrives.", ["arrival"])]) + "\n```")
 
     result = asyncio.run(invoke(build_narration_graph(_deps(gateway)), _invocation(event_id)))
 
@@ -528,6 +524,7 @@ def test_fallback_summarizes_instruction_topic() -> None:
     assert "Tell Wren about the mill" in beats[0].text
     assert beats[0].text != "Tell Wren about the mill"
 
+
 def test_dedupe_narration_facts_collapses_observer_copies() -> None:
     from worldsim.application.graphs.narrate import dedupe_narration_facts
 
@@ -568,6 +565,7 @@ def test_narration_fact_order_is_independent_of_read_order() -> None:
     ]
     assert dedupe_narration_facts(rows) == expected
     assert dedupe_narration_facts(list(reversed(rows))) == expected
+
 
 def test_dedupe_narration_facts_keeps_identical_text_distinct_actions() -> None:
     from worldsim.application.graphs.narrate import dedupe_narration_facts
@@ -613,7 +611,7 @@ def test_committed_dialogue_pair_retains_speakers_and_citations() -> None:
         {ash: "Ash", wren: "Wren"},
         [str(ash), str(wren)],
     )
-    assert [f['key'] for f in facts] == [f"reaction:{spoken.id}", f"reaction:{instructed.id}"]
+    assert [f["key"] for f in facts] == [f"reaction:{spoken.id}", f"reaction:{instructed.id}"]
     beats = fallback_beats(
         world_id=uuid.uuid4(),
         scene_id=None,
@@ -631,11 +629,8 @@ def test_committed_dialogue_pair_retains_speakers_and_citations() -> None:
     assert beats[1].cited_fact_keys == [f"reaction:{instructed.id}"]
 
 
-
-
 AUDIENCE_1D6C = (
-"Audience: 17f19638-b398-45e1-8074-17befed1f719,"
-" a19a3069-496e-4751-993b-c9ae9566000a."
+    "Audience: 17f19638-b398-45e1-8074-17befed1f719, a19a3069-496e-4751-993b-c9ae9566000a."
 )
 
 
@@ -643,21 +638,25 @@ def test_parse_audience_strips_sentence_period() -> None:
     from worldsim.application.graphs.narrate import parse_narration_context
 
     audience, _keys, _budget = parse_narration_context(AUDIENCE_1D6C + chr(10))
-    assert audience == frozenset({
-"17f19638-b398-45e1-8074-17befed1f719",
-"a19a3069-496e-4751-993b-c9ae9566000a",
-    })
+    assert audience == frozenset(
+        {
+            "17f19638-b398-45e1-8074-17befed1f719",
+            "a19a3069-496e-4751-993b-c9ae9566000a",
+        }
+    )
 
 
 def test_parse_keys_supports_legacy_unquoted_format() -> None:
     from worldsim.application.graphs.narrate import parse_narration_context
 
-    prompt = chr(10).join([
-"Audience: 61777125-77b7-4233-aa68-5827554491ee, fbb1c051-8fb9-4dae-b800-b198c7249f3e.",
-"Visible facts:",
-"- attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet.",
-"- attempt:wait: Ash waits",
-    ])
+    prompt = chr(10).join(
+        [
+            "Audience: 61777125-77b7-4233-aa68-5827554491ee, fbb1c051-8fb9-4dae-b800-b198c7249f3e.",
+            "Visible facts:",
+            "- attempt:communicate: Wren says to Ash: Ask Ash whether the stalls are open yet.",
+            "- attempt:wait: Ash waits",
+        ]
+    )
     _audience, keys, _budget = parse_narration_context(prompt)
     assert keys == frozenset({"attempt:communicate", "attempt:wait"})
 
@@ -665,18 +664,22 @@ def test_parse_keys_supports_legacy_unquoted_format() -> None:
 def test_parse_keys_supports_quoted_format_and_ignores_roster() -> None:
     from worldsim.application.graphs.narrate import parse_narration_context
 
-    prompt = chr(10).join([
-"Audience: 17f19638-b398-45e1-8074-17befed1f719, a19a3069-496e-4751-993b-c9ae9566000a.",
-"Visible facts:",
-'- key "attempt:communicate": Wren says to Ash: Ash, one last probe question for the road?',
-'- key "reaction:b0130c69-76d5-5852-aac8-e3bac5f5e863": Ash says to Wren: "One more? Go on then."',
-"- Ash (id: 17f19638-b398-45e1-8074-17befed1f719)",
-    ])
+    prompt = chr(10).join(
+        [
+            "Audience: 17f19638-b398-45e1-8074-17befed1f719, a19a3069-496e-4751-993b-c9ae9566000a.",
+            "Visible facts:",
+            '- key "attempt:communicate": Wren says to Ash: Ash, one last probe question for the road?',  # noqa: E501
+            '- key "reaction:b0130c69-76d5-5852-aac8-e3bac5f5e863": Ash says to Wren: "One more? Go on then."',  # noqa: E501
+            "- Ash (id: 17f19638-b398-45e1-8074-17befed1f719)",
+        ]
+    )
     _audience, keys, _budget = parse_narration_context(prompt)
-    assert keys == frozenset({
-"attempt:communicate",
-"reaction:b0130c69-76d5-5852-aac8-e3bac5f5e863",
-    })
+    assert keys == frozenset(
+        {
+            "attempt:communicate",
+            "reaction:b0130c69-76d5-5852-aac8-e3bac5f5e863",
+        }
+    )
 
 
 def test_parsed_context_accepts_exact_ids_and_rejects_foreign() -> None:
@@ -686,38 +689,44 @@ def test_parsed_context_accepts_exact_ids_and_rejects_foreign() -> None:
     prompt = AUDIENCE_1D6C + chr(10) + '- key "attempt:wait": Ash waits'
     audience, keys, budget = parse_narration_context(prompt)
     good = BeatProposal(text="Ash waits.", cited_fact_keys=["attempt:wait"], kind="narration")
-    assert beats_valid(
-        [good], visible_keys=keys, audience_ids=audience, beats_budget=budget
-    ) is None
+    assert (
+        beats_valid([good], visible_keys=keys, audience_ids=audience, beats_budget=budget) is None
+    )
     foreign_speaker = BeatProposal(
-        text="Ash waits.", cited_fact_keys=["attempt:wait"], kind="narration",
+        text="Ash waits.",
+        cited_fact_keys=["attempt:wait"],
+        kind="narration",
         speaker_id="ffffffff-ffff-ffff-ffff-ffffffffffff",
     )
-    assert beats_valid(
-        [foreign_speaker], visible_keys=keys, audience_ids=audience, beats_budget=budget
-    ) is not None
+    assert (
+        beats_valid(
+            [foreign_speaker], visible_keys=keys, audience_ids=audience, beats_budget=budget
+        )
+        is not None
+    )
     invented_key = BeatProposal(
         text="Ash waits.", cited_fact_keys=["attempt:wait: Ash waits"], kind="narration"
     )
-    assert beats_valid(
-        [invented_key], visible_keys=keys, audience_ids=audience, beats_budget=budget
-    ) is not None
-
-
+    assert (
+        beats_valid([invented_key], visible_keys=keys, audience_ids=audience, beats_budget=budget)
+        is not None
+    )
 
 
 def test_dedupe_prompt_lines_keeps_first_fact_copies() -> None:
     from worldsim.application.graphs.narrate import dedupe_prompt_lines
 
-    prompt = chr(10).join([
-"Event e in scene s.",
-"Audience: a, b.",
-"Visible facts:",
-'- key "attempt:wait": Ash waits',
-'- key "attempt:communicate": Wren asks',
-'- key "attempt:wait": Ash waits',
-"- Ash (id: a)",
-    ])
+    prompt = chr(10).join(
+        [
+            "Event e in scene s.",
+            "Audience: a, b.",
+            "Visible facts:",
+            '- key "attempt:wait": Ash waits',
+            '- key "attempt:communicate": Wren asks',
+            '- key "attempt:wait": Ash waits',
+            "- Ash (id: a)",
+        ]
+    )
     out = dedupe_prompt_lines(prompt).splitlines()
     assert out.count('- key "attempt:wait": Ash waits') == 1
     assert out.index('- key "attempt:communicate": Wren asks') == 4
@@ -733,25 +742,39 @@ def test_beats_valid_enforces_mapped_speakers() -> None:
     keys = frozenset({"attempt:communicate"})
     audience = frozenset({str(wren), str(ash)})
     matched = BeatProposal(
-        text="Wren asks.", cited_fact_keys=["attempt:communicate"], kind="narration",
+        text="Wren asks.",
+        cited_fact_keys=["attempt:communicate"],
+        kind="narration",
         speaker_id=wren,
     )
-    assert beats_valid(
-        [matched], visible_keys=keys, audience_ids=audience, beats_budget=8,
-        fact_speakers={"attempt:communicate": str(wren)},
-    ) is None
+    assert (
+        beats_valid(
+            [matched],
+            visible_keys=keys,
+            audience_ids=audience,
+            beats_budget=8,
+            fact_speakers={"attempt:communicate": str(wren)},
+        )
+        is None
+    )
     # The wrong speaker is the OTHER in-audience character: audience
     # validation alone accepts it, so only source attribution rejects it.
     mismatched = BeatProposal(
-        text="Wren asks.", cited_fact_keys=["attempt:communicate"], kind="narration",
+        text="Wren asks.",
+        cited_fact_keys=["attempt:communicate"],
+        kind="narration",
         speaker_id=ash,
     )
-    assert beats_valid(
-        [mismatched], visible_keys=keys, audience_ids=audience, beats_budget=8,
-        fact_speakers={"attempt:communicate": str(wren)},
-    ) == "speaker does not match cited source: attempt:communicate"
-
-
+    assert (
+        beats_valid(
+            [mismatched],
+            visible_keys=keys,
+            audience_ids=audience,
+            beats_budget=8,
+            fact_speakers={"attempt:communicate": str(wren)},
+        )
+        == "speaker does not match cited source: attempt:communicate"
+    )
 
 
 def test_speech_eligible_keys_only_quoted_speech() -> None:
@@ -779,14 +802,21 @@ def test_dialogue_from_attempt_is_rejected_even_with_right_speaker() -> None:
     audience = frozenset({str(wren), str(ash)})
     voiced_attempt = BeatProposal(
         text="Wren says to Ash: 'Ask Ash what the Market holds today.'",
-        cited_fact_keys=["attempt:communicate"], kind="dialogue",
+        cited_fact_keys=["attempt:communicate"],
+        kind="dialogue",
         speaker_id=wren,
     )
-    assert beats_valid(
-        [voiced_attempt], visible_keys=keys, audience_ids=audience, beats_budget=8,
-        fact_speakers={"attempt:communicate": str(wren)},
-        speech_keys=frozenset(),
-    ) == "dialogue cites non-speech evidence: ['attempt:communicate']"
+    assert (
+        beats_valid(
+            [voiced_attempt],
+            visible_keys=keys,
+            audience_ids=audience,
+            beats_budget=8,
+            fact_speakers={"attempt:communicate": str(wren)},
+            speech_keys=frozenset(),
+        )
+        == "dialogue cites non-speech evidence: ['attempt:communicate']"
+    )
 
 
 def test_dialogue_from_attempt_reports_speech_before_speaker() -> None:
@@ -798,14 +828,21 @@ def test_dialogue_from_attempt_reports_speech_before_speaker() -> None:
     audience = frozenset({str(wren), str(ash)})
     others_words = BeatProposal(
         text="Wren turns to Ash, asking.",
-        cited_fact_keys=["attempt:communicate"], kind="dialogue",
+        cited_fact_keys=["attempt:communicate"],
+        kind="dialogue",
         speaker_id=ash,
     )
-    assert beats_valid(
-        [others_words], visible_keys=keys, audience_ids=audience, beats_budget=8,
-        fact_speakers={"attempt:communicate": str(wren)},
-        speech_keys=frozenset(),
-    ) == "dialogue cites non-speech evidence: ['attempt:communicate']"
+    assert (
+        beats_valid(
+            [others_words],
+            visible_keys=keys,
+            audience_ids=audience,
+            beats_budget=8,
+            fact_speakers={"attempt:communicate": str(wren)},
+            speech_keys=frozenset(),
+        )
+        == "dialogue cites non-speech evidence: ['attempt:communicate']"
+    )
 
 
 def test_dialogue_from_unquoted_topic_is_rejected() -> None:
@@ -816,14 +853,22 @@ def test_dialogue_from_unquoted_topic_is_rejected() -> None:
     keys = frozenset({"reaction:s1"})
     audience = frozenset({str(wren), str(ash)})
     quoted_topic = BeatProposal(
-        text="Tell Ash about the mill.", cited_fact_keys=["reaction:s1"], kind="dialogue",
+        text="Tell Ash about the mill.",
+        cited_fact_keys=["reaction:s1"],
+        kind="dialogue",
         speaker_id=wren,
     )
-    assert beats_valid(
-        [quoted_topic], visible_keys=keys, audience_ids=audience, beats_budget=8,
-        fact_speakers={"reaction:s1": str(wren)},
-        speech_keys=frozenset(),
-    ) == "dialogue cites non-speech evidence: ['reaction:s1']"
+    assert (
+        beats_valid(
+            [quoted_topic],
+            visible_keys=keys,
+            audience_ids=audience,
+            beats_budget=8,
+            fact_speakers={"reaction:s1": str(wren)},
+            speech_keys=frozenset(),
+        )
+        == "dialogue cites non-speech evidence: ['reaction:s1']"
+    )
 
 
 def test_dialogue_from_quoted_speech_is_accepted() -> None:
@@ -834,16 +879,22 @@ def test_dialogue_from_quoted_speech_is_accepted() -> None:
     keys = frozenset({"reaction:s2", "attempt:wait"})
     audience = frozenset({str(wren), str(ash)})
     spoken = BeatProposal(
-        text="One more?", cited_fact_keys=["reaction:s2"], kind="dialogue",
+        text="One more?",
+        cited_fact_keys=["reaction:s2"],
+        kind="dialogue",
         speaker_id=ash,
     )
-    assert beats_valid(
-        [spoken], visible_keys=keys, audience_ids=audience, beats_budget=8,
-        fact_speakers={"reaction:s2": str(ash)},
-        speech_keys=frozenset({"reaction:s2"}),
-    ) is None
-
-
+    assert (
+        beats_valid(
+            [spoken],
+            visible_keys=keys,
+            audience_ids=audience,
+            beats_budget=8,
+            fact_speakers={"reaction:s2": str(ash)},
+            speech_keys=frozenset({"reaction:s2"}),
+        )
+        is None
+    )
 
 
 def test_dialogue_without_speaker_is_rejected() -> None:
@@ -856,17 +907,34 @@ def test_dialogue_without_speaker_is_rejected() -> None:
     speakers = {"reaction:s2": str(ash)}
     speech = frozenset({"reaction:s2"})
     omitted = BeatProposal(text="One more?", cited_fact_keys=["reaction:s2"], kind="dialogue")
-    assert beats_valid(
-        [omitted], visible_keys=keys, audience_ids=audience, beats_budget=8,
-        fact_speakers=speakers, speech_keys=speech,
-    ) == "dialogue requires a speaker matching cited speech"
-    null = BeatProposal(
-        text="One more?", cited_fact_keys=["reaction:s2"], kind="dialogue", speaker_id=None,
+    assert (
+        beats_valid(
+            [omitted],
+            visible_keys=keys,
+            audience_ids=audience,
+            beats_budget=8,
+            fact_speakers=speakers,
+            speech_keys=speech,
+        )
+        == "dialogue requires a speaker matching cited speech"
     )
-    assert beats_valid(
-        [null], visible_keys=keys, audience_ids=audience, beats_budget=8,
-        fact_speakers=speakers, speech_keys=speech,
-    ) == "dialogue requires a speaker matching cited speech"
+    null = BeatProposal(
+        text="One more?",
+        cited_fact_keys=["reaction:s2"],
+        kind="dialogue",
+        speaker_id=None,
+    )
+    assert (
+        beats_valid(
+            [null],
+            visible_keys=keys,
+            audience_ids=audience,
+            beats_budget=8,
+            fact_speakers=speakers,
+            speech_keys=speech,
+        )
+        == "dialogue requires a speaker matching cited speech"
+    )
 
 
 def test_dialogue_with_wrong_in_audience_speaker_is_rejected() -> None:
@@ -877,14 +945,22 @@ def test_dialogue_with_wrong_in_audience_speaker_is_rejected() -> None:
     keys = frozenset({"reaction:s2"})
     audience = frozenset({str(wren), str(ash)})
     borrowed = BeatProposal(
-        text="One more?", cited_fact_keys=["reaction:s2"], kind="dialogue",
+        text="One more?",
+        cited_fact_keys=["reaction:s2"],
+        kind="dialogue",
         speaker_id=wren,
     )
-    assert beats_valid(
-        [borrowed], visible_keys=keys, audience_ids=audience, beats_budget=8,
-        fact_speakers={"reaction:s2": str(ash)},
-        speech_keys=frozenset({"reaction:s2"}),
-    ) == "speaker does not match cited source: reaction:s2"
+    assert (
+        beats_valid(
+            [borrowed],
+            visible_keys=keys,
+            audience_ids=audience,
+            beats_budget=8,
+            fact_speakers={"reaction:s2": str(ash)},
+            speech_keys=frozenset({"reaction:s2"}),
+        )
+        == "speaker does not match cited source: reaction:s2"
+    )
 
 
 def test_narration_summary_keeps_null_speaker() -> None:
@@ -895,9 +971,16 @@ def test_narration_summary_keeps_null_speaker() -> None:
     keys = frozenset({"attempt:wait"})
     audience = frozenset({str(wren), str(ash)})
     summary = BeatProposal(text="Ash waits.", cited_fact_keys=["attempt:wait"], kind="narration")
-    assert beats_valid(
-        [summary], visible_keys=keys, audience_ids=audience, beats_budget=8,
-    ) is None
+    assert (
+        beats_valid(
+            [summary],
+            visible_keys=keys,
+            audience_ids=audience,
+            beats_budget=8,
+        )
+        is None
+    )
+
 
 def test_render_marks_communicate_attempt_as_topic() -> None:
     from worldsim.application.graphs.narrate import _render_fact_line
@@ -983,9 +1066,7 @@ def test_rendered_categorized_prompt_parses() -> None:
 def test_repair_instruction_names_fix_and_bars_substitution() -> None:
     from worldsim.application.graphs.narrate import repair_instruction
 
-    text = repair_instruction(
-        "dialogue cites non-speech evidence: ['attempt:communicate']"
-    )
+    text = repair_instruction("dialogue cites non-speech evidence: ['attempt:communicate']")
     assert "narrator prose" in text
     assert "same key" in text
     assert "different speech key" in text
@@ -1064,6 +1145,7 @@ def test_structural_acceptance_does_not_imply_fidelity() -> None:
     )
     assert misvoiced.text != "Past the bridge, second left."
 
+
 def test_repair_for_missing_speaker_keeps_dialogue() -> None:
     from worldsim.application.graphs.narrate import repair_instruction
 
@@ -1099,9 +1181,7 @@ def test_repair_for_schema_error_names_format() -> None:
     assert "invalid as dialogue" not in text
 
 
-def _repair_prompt_for(
-    first: str, visible_facts: list, audience_ids: list | None = None
-) -> str:
+def _repair_prompt_for(first: str, visible_facts: list, audience_ids: list | None = None) -> str:
     if audience_ids is None:
         audience_ids = [str(uuid.uuid4()), str(uuid.uuid4())]
     gateway = FakeGateway(profile=NARRATOR_FAKE_PROFILE)
@@ -1194,6 +1274,7 @@ def test_graph_repair_for_malformed_json_names_format() -> None:
     assert "exactly matching the response schema" in prompt
     assert "invalid as dialogue" not in prompt
 
+
 def test_graph_repair_for_misattributed_summary_keeps_narration() -> None:
     ash = str(uuid.uuid4())
     wren = str(uuid.uuid4())
@@ -1225,6 +1306,7 @@ def test_graph_repair_for_misattributed_summary_keeps_narration() -> None:
     assert "Never convert narration-only" in prompt
     assert "Keep the beat as dialogue" not in prompt
 
+
 def test_fallback_renders_attempts_without_keys_in_order() -> None:
     from worldsim.application.graphs.narrate import fallback_beats
 
@@ -1252,8 +1334,7 @@ def test_fallback_renders_attempts_without_keys_in_order() -> None:
 
     assert [b.kind.value for b in beats] == ["narration", "narration", "dialogue"]
     assert beats[0].text == (
-        "Wren tries to speak with Ash about:"
-        " Ask Ash whether the stalls are open yet."
+        "Wren tries to speak with Ash about: Ask Ash whether the stalls are open yet."
     )
     assert beats[0].cited_fact_keys == ["attempt:communicate"]
     assert beats[1].text == "Ash waits"
@@ -1432,11 +1513,11 @@ def test_dialogue_single_quotes_both_directions_pass() -> None:
     ash = uuid.uuid4()
     key = "reaction:s2"
     audience = frozenset({str(ash), str(uuid.uuid4())})
-    stored_curly = 'It’s lit.'
+    stored_curly = "It’s lit."
     stored_straight = "It's lit."
     lv = "It's lit,"
-    cv = 'It’s lit'
-    tag = ' Ash says.'
+    cv = "It’s lit"
+    tag = " Ash says."
     cases = [
         (stored_curly, chr(34) + lv + chr(34) + tag),
         (stored_straight, chr(34) + cv + chr(33) + chr(34)),
@@ -1668,9 +1749,7 @@ def test_aliased_citation_is_stored_under_the_real_key() -> None:
     result = asyncio.run(
         invoke(
             build_narration_graph(_deps(gateway)),
-            _invocation(
-                uuid.uuid4(), audience_ids=[ash], visible_facts=_aliased_speech_facts(ash)
-            ),
+            _invocation(uuid.uuid4(), audience_ids=[ash], visible_facts=_aliased_speech_facts(ash)),
         )
     )
     assert result["status"] == "narrated"
@@ -1693,9 +1772,7 @@ def test_speaker_id_as_reaction_key_is_rejected_and_repair_uses_alias() -> None:
     result = asyncio.run(
         invoke(
             build_narration_graph(_deps(gateway)),
-            _invocation(
-                uuid.uuid4(), audience_ids=[ash], visible_facts=_aliased_speech_facts(ash)
-            ),
+            _invocation(uuid.uuid4(), audience_ids=[ash], visible_facts=_aliased_speech_facts(ash)),
         )
     )
     assert result["status"] == "narrated"

@@ -64,6 +64,8 @@ def test_player_presentation_hides_threads(client: ApiClient) -> None:
     assert body["capabilities"]["role"] == "player"
     assert body["threads"] == []
     assert body["manifest"]["schematic"] is False
+
+
 def test_travel_activity_carries_route_projection(client: ApiClient) -> None:
     async def _leg() -> None:
         from worldsim.domain.activities import TravelRoute
@@ -92,7 +94,12 @@ def test_travel_activity_carries_route_projection(client: ApiClient) -> None:
     asyncio.run(_leg())
     started = client.post(
         "/api/v1/stage2/activities",
-        json={"world_id": str(WORLD), "character_id": str(WREN), "kind": "travel", "to_location_id": str(MARKET)},
+        json={
+            "world_id": str(WORLD),
+            "character_id": str(WREN),
+            "kind": "travel",
+            "to_location_id": str(MARKET),
+        },
         headers=_deity(),
     )
     assert started.status_code == 200, started.text

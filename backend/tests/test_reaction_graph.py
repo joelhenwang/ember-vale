@@ -132,9 +132,7 @@ def test_placeholder_target_rejected_with_exact_reason() -> None:
     result = asyncio.run(
         invoke(
             build_reaction_graph(_deps(gateway)),
-            _invocation(
-                reactor, initiator, attempt, known_character_ids=[str(initiator)]
-            ),
+            _invocation(reactor, initiator, attempt, known_character_ids=[str(initiator)]),
         )
     )
 

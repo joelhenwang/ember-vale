@@ -230,4 +230,3 @@ async def cancel_intervention(
     await effective_role(request, current.world_id)
     await service.cancel(state.uow_factory(), intervention_id, body.expected_version)
     return await _detail(request, intervention_id)
-

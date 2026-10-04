@@ -26,9 +26,7 @@ class ProviderConnectionRow(Base):
     config_version: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
-    __table_args__ = (
-        CheckConstraint("config_version >= 0", name="ck_connection_config_version"),
-    )
+    __table_args__ = (CheckConstraint("config_version >= 0", name="ck_connection_config_version"),)
 
 
 class ProviderProfileRevisionRow(Base):

@@ -10,9 +10,11 @@ from uuid import UUID
 
 import httpx
 import pytest
+from test_stage1_api import (
+    ApiClient,
+    _seed_two,  # pyright: ignore[reportPrivateUsage]
+)
 from test_stage1_api import _route_for as _base_route_for  # pyright: ignore[reportPrivateUsage]
-from test_stage1_api import _seed_two  # pyright: ignore[reportPrivateUsage]
-from test_stage1_api import ApiClient
 
 from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
@@ -152,9 +154,7 @@ def test_player_attempt_flows_through_queue(migrated_db: None) -> None:
                 headers=player,
             )
             assert advance.status_code == 200, advance.text
-            done = await http.get(
-                f"/api/v1/interventions/{queued.json()['id']}", headers=player
-            )
+            done = await http.get(f"/api/v1/interventions/{queued.json()['id']}", headers=player)
             assert done.json()["status"] == "completed", done.text
 
     asyncio.run(_inner())

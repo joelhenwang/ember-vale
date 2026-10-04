@@ -19,9 +19,8 @@ from uuid import UUID
 import pytest
 from fastapi.testclient import TestClient
 
-from worldsim.domain.characters import Character, CharacterCard
-from worldsim.domain.world import Location, World
 from worldsim.domain.activities import TravelRoute
+from worldsim.domain.characters import Character, CharacterCard
 from worldsim.domain.ids import (
     new_card_id,
     new_character_id,
@@ -29,6 +28,7 @@ from worldsim.domain.ids import (
     new_route_id,
     new_world_id,
 )
+from worldsim.domain.world import Location, World
 from worldsim.infrastructure.db.engine import create_engine
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
 from worldsim.infrastructure.model_gateway.profiles import FAKE_TEST_PROFILE, STAGE0_DEFAULT_BEAT
