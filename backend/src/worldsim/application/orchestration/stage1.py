@@ -30,6 +30,7 @@ from collections.abc import Callable, Generator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from datetime import timedelta
+from pathlib import Path
 from typing import Any, Protocol, cast
 from uuid import UUID, uuid4
 
@@ -224,7 +225,9 @@ from worldsim.domain.tasks import Lease
 from worldsim.domain.time import PHASES_PER_DAY, absolute_index, utcnow
 from worldsim.domain.tracing import ManifestSource
 
-DND_DATA_DIR = "content/dnd"
+#: Resolved from this file like the prompt paths (and like
+#: interfaces/http/state.py), so loading works from any working directory.
+DND_DATA_DIR = Path(__file__).resolve().parents[5] / "content" / "dnd"
 
 
 #: Run states that refuse advancement (same bucket as Stage 0).
@@ -291,6 +294,18 @@ class SceneOutcome:
 
 
 _phase_log = logging.getLogger("worldsim.phase")
+
+#: Completion-cap floors for roles whose output grows with the world:
+#: summaries and digests cite many observation ids, the resolver lists
+#: effects for every intent, the director emits hook plus arc objects.
+#: The shared sampling cap (default 512) truncates these mid-JSON. The
+#: narrator sizes its own cap from the beat budget (narrator_max_tokens).
+ROLE_MAX_TOKEN_FLOORS: dict[str, int] = {"summary": 1024, "resolver": 1024, "director": 768}
+
+
+def role_max_tokens(configured: int, role: str) -> int:
+    """Configured cap raised to the role's floor, never above 4096."""
+    return min(max(configured, ROLE_MAX_TOKEN_FLOORS.get(role, 0)), 4096)
 
 
 @contextmanager
@@ -1152,7 +1167,7 @@ class Stage1Orchestrator:
                 temperature=sampling.temperature,
                 top_p=sampling.top_p,
                 top_k=sampling.top_k,
-                max_tokens=sampling.max_tokens,
+                max_tokens=role_max_tokens(sampling.max_tokens, "summary"),
             )
         )
         try:
@@ -1332,7 +1347,7 @@ class Stage1Orchestrator:
                 temperature=sampling.temperature,
                 top_p=sampling.top_p,
                 top_k=sampling.top_k,
-                max_tokens=sampling.max_tokens,
+                max_tokens=role_max_tokens(sampling.max_tokens, "summary"),
             )
         )
         try:
@@ -1490,7 +1505,7 @@ class Stage1Orchestrator:
                 temperature=sampling.temperature,
                 top_p=sampling.top_p,
                 top_k=sampling.top_k,
-                max_tokens=sampling.max_tokens,
+                max_tokens=role_max_tokens(sampling.max_tokens, "director"),
             )
         )
         try:
@@ -2299,7 +2314,7 @@ class Stage1Orchestrator:
                 temperature=sampling.temperature,
                 top_p=sampling.top_p,
                 top_k=sampling.top_k,
-                max_tokens=sampling.max_tokens,
+                max_tokens=role_max_tokens(sampling.max_tokens, "resolver"),
             )
         )
         result = await invoke(graph, invocation)

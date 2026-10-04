@@ -15,7 +15,9 @@ from pydantic import SecretStr
 from test_preset_revisions import ASH_PRESET_ID, WORLD_PRESET_ID, WREN_PRESET_ID
 from test_stage1_api import ApiClient
 
+from worldsim.application.graphs.narrate import narrator_max_tokens
 from worldsim.application.library.builtins import ensure_builtin_presets
+from worldsim.application.orchestration.stage1 import ROLE_MAX_TOKEN_FLOORS, role_max_tokens
 from worldsim.application.ports.model_gateway import CompletionRequest
 from worldsim.application.settings.endpoints import EndpointPolicy, validate_endpoint
 from worldsim.application.settings.resolution import SamplingParams, resolve_sampling
@@ -474,7 +476,16 @@ def test_created_story_executes_with_pinned_sampling(migrated_db: None) -> None:
         _advance(plain, 1)
         assert seen, "expected recorded model requests"
         assert all(r.temperature is None for r in seen)
-        assert all(r.max_tokens == 512 for r in seen)
+        # Environment cap, raised only to documented per-role floors.
+        assert {r.max_tokens for r in seen} <= _UNPINNED_CAPS
+        assert 512 in {r.max_tokens for r in seen}
+
+
+#: Unpinned stories send the environment cap (512); summary, resolver and
+#: director raise it to their floors, the narrator sizes it to the beat budget.
+_UNPINNED_CAPS = {512} | {role_max_tokens(512, r) for r in ROLE_MAX_TOKEN_FLOORS} | {
+    narrator_max_tokens(512, 8)
+}
 
 
 def test_pinned_profile_selects_gateway_model_on_wire(
@@ -635,7 +646,8 @@ def test_pinned_profile_selects_gateway_model_on_wire(
             assert bodies, "expected outbound calls for the unpinned story"
             assert all(model == "env-model-A" for model in _models()), _models()
             assert all("temperature" not in body for body in bodies)
-            assert all(body.get("max_tokens") == 512 for body in bodies)
+            caps = {body.get("max_tokens") for body in bodies}
+            assert caps <= _UNPINNED_CAPS and 512 in caps, caps
             bodies.clear()
 
             revision_c = revision_b.model_copy(
