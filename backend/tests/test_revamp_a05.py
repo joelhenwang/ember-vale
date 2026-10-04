@@ -7,6 +7,7 @@ import json
 import os
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any, cast
 from uuid import UUID
 
 import pytest
@@ -690,7 +691,7 @@ def test_pinned_profile_selects_gateway_model_on_wire(
                 )
                 assert pinned_rows, "expected audited calls for the pinned run"
                 for row in pinned_rows:
-                    sampling = row.request["sampling"]
+                    sampling = cast(dict[str, Any], row.request["sampling"])
                     assert sampling["model_id"] == "pinned-model-B"
                     assert sampling["pin_profile_id"] == str(revision_b.id)
                     assert sampling["pin_profile_revision"] == 1
@@ -714,7 +715,7 @@ def test_pinned_profile_selects_gateway_model_on_wire(
                 )
                 assert plain_rows, "expected audited calls for the unpinned run"
                 for row in plain_rows:
-                    sampling = row.request["sampling"]
+                    sampling = cast(dict[str, Any], row.request["sampling"])
                     assert sampling["model_id"] == "env-model-A"
                     assert "pin_profile_id" not in sampling
                     assert row.result["model"] == "env-model-A"

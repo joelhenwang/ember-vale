@@ -24,7 +24,7 @@ from __future__ import annotations
 import asyncio
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 import httpx
@@ -145,14 +145,16 @@ def test_client_disconnect_leaves_resumable_run(migrated_db: None) -> None:
     async def _inner() -> None:
         ids = await _seed()
         gateways = _role_gateways(ids)
-        gateways["character"] = _GatedGateway(gateways["character"])
+        gated = _GatedGateway(gateways["character"])
+        # Duck-typed stand-in: same complete/embed/probe surface.
+        gateways["character"] = cast(FakeGateway, gated)
         orch = _orchestrator(gateways)
         player = _player_intents(ids)
 
         flight = asyncio.ensure_future(
             orch.advance_phase(ids["world"], 1, player, submitter_id=ids["ash"])
         )
-        await gateways["character"].entered.wait()
+        await gated.entered.wait()
         await asyncio.sleep(0)
         flight.cancel()
         with pytest.raises(asyncio.CancelledError):
@@ -162,7 +164,7 @@ def test_client_disconnect_leaves_resumable_run(migrated_db: None) -> None:
         assert await _open_run_id(ids) == derive_run_id(ids["world"], 1)
 
         # Resume with the same submission; the gate is now open.
-        gateways["character"].release.set()
+        gated.release.set()
         report = await orch.advance_phase(ids["world"], 1, player, submitter_id=ids["ash"])
         assert not report.duplicate
         engine = create_engine(Settings())
@@ -271,7 +273,7 @@ def test_room_recovers_timed_out_beat(migrated_db: None, monkeypatch: pytest.Mon
             Settings(),
             seed_dir=SEED_DIR,
             migrations_dir=MIGRATIONS,
-            gateway_factory=lambda: gateway,
+            gateway_factory=lambda: cast(FakeGateway, gateway),
         )
         headers = _player_headers(ids["ash"])
         body = _advance_body(ids, snapshot)

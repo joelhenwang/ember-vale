@@ -58,7 +58,7 @@ jobs:
       - run: uv sync --frozen
       - run: uv run ruff check .
       - run: uv run ruff format --check .
-      # Fails only on errors not recorded in .basedpyright/baseline.json;
-      # refresh with `basedpyright --writebaseline` after fixing old ones.
+      # Strict for src; tests relax only private-access and unknown-type rules
+      # (pyrightconfig.json). Zero errors, no baseline.
       - run: uv run basedpyright
       - run: uv run pytest

@@ -11,7 +11,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
-from collections.abc import Iterator
+from collections.abc import Generator
 from pathlib import Path
 from uuid import UUID
 
@@ -49,7 +49,7 @@ def _run(coro):
 
 
 @contextlib.contextmanager
-def _scratch_db(monkeypatch: pytest.MonkeyPatch, name: str) -> Iterator[None]:
+def _scratch_db(monkeypatch: pytest.MonkeyPatch, name: str) -> Generator[None]:
     from fixtures.postgres import (
         create_scratch_database,
         drop_scratch_database,
@@ -72,7 +72,7 @@ def _upgrade_to(revision: str) -> None:
 
 
 @contextlib.contextmanager
-def _client() -> Iterator[ApiClient]:
+def _client() -> Generator[ApiClient]:
     gateway = FakeGateway(profile=FAKE_TEST_PROFILE)
     gateway.route = lambda request: None
     app = create_app(
@@ -200,6 +200,7 @@ def test_pre0032_upgrade_preserves_history(monkeypatch: pytest.MonkeyPatch) -> N
             draft_before = client.get(f"/api/v1/story-drafts/{draft_id}", headers={}).json()
         _upgrade_to("head")
         world1, world_current = _read_revision(UUID(WORLD_PRESET_ID), 1)
+        assert isinstance(world1.payload, WorldPresetPayload)
         assert world1.payload.travel == []
         assert world1.content_hash == "builtin-v1"
         assert world_current == 2
@@ -231,6 +232,7 @@ def test_post0032_upgrade_restores_rev1(monkeypatch: pytest.MonkeyPatch) -> None
     with _scratch_db(monkeypatch, "worldsim_revtest_post"):
         _upgrade_to("0032_starter_travel")
         mutated, _ = _read_revision(UUID(WORLD_PRESET_ID), 1)
+        assert isinstance(mutated.payload, WorldPresetPayload)
         assert sorted(tuple(pair) for pair in mutated.payload.travel) == [
             ("hearth", "market"),
             ("market", "hearth"),
@@ -243,6 +245,7 @@ def test_post0032_upgrade_restores_rev1(monkeypatch: pytest.MonkeyPatch) -> None
             setup_before = _setup_bytes(client, world_id)
         _upgrade_to("head")
         restored, world_current = _read_revision(UUID(WORLD_PRESET_ID), 1)
+        assert isinstance(restored.payload, WorldPresetPayload)
         assert restored.payload.travel == []
         assert restored.content_hash == "builtin-v1"
         assert world_current == 2

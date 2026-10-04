@@ -10,7 +10,7 @@ submissions still mint exactly one preset.
 from __future__ import annotations
 
 import threading
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -31,7 +31,7 @@ MIGRATIONS = ROOT / "backend" / "migrations"
 
 
 @pytest.fixture
-def client(migrated_db: None) -> Iterator[ApiClient]:
+def client(migrated_db: None) -> Generator[ApiClient]:
     gateway = FakeGateway(profile=FAKE_TEST_PROFILE)
     app = create_app(
         Settings(),
@@ -44,7 +44,7 @@ def client(migrated_db: None) -> Iterator[ApiClient]:
 
 
 @contextmanager
-def fresh_client() -> Iterator[ApiClient]:
+def fresh_client() -> Generator[ApiClient]:
     """A second app instance on the same database: a full restart."""
     gateway = FakeGateway(profile=FAKE_TEST_PROFILE)
     app = create_app(

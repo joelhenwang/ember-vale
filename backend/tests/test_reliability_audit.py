@@ -78,6 +78,7 @@ def test_failed_call_preserves_usage_and_attempts(migrated_db: None) -> None:
             spec = _spec(world_id)
             with pytest.raises(ModelUnavailableError):
                 await service.run_call(spec, gateway, CompletionRequest(prompt="Narrate the tick."))
+            assert spec.phase_run_id is not None
             async with create_unit_of_work(engine) as uow:
                 calls = await uow.traces.list_for_phase_run(spec.phase_run_id)
                 assert len(calls) == 1

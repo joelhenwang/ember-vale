@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
@@ -196,6 +197,12 @@ def _add_broken_world() -> str:
     return str(preset_id)
 
 
+def _count(conn: Any, table: str) -> int:
+    row = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()
+    assert row is not None
+    return int(row[0])
+
+
 def _row_counts() -> dict[str, int]:
     from fixtures.postgres import sync_dsn
     from psycopg import connect
@@ -203,7 +210,7 @@ def _row_counts() -> dict[str, int]:
     conn = connect(sync_dsn(Settings()), autocommit=True)
     try:
         return {
-            table: int(conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0])
+            table: _count(conn, table)
             for table in ("world", "location", "travel_route", "story_draft")
         }
     finally:

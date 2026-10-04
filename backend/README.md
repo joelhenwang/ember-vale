@@ -42,7 +42,7 @@ Run from `backend/` (CI runs exactly these, see `.github/workflows/ci.yml`):
 
 ```bash
 uv run ruff check . && uv run ruff format --check .
-uv run basedpyright        # fails only on errors not in .basedpyright/baseline.json
+uv run basedpyright        # zero errors; strict for src, relaxed private/unknown rules for tests
 uv run pytest              # fast suite; `-m "not soak"` adds the sim gates
 ```
 
@@ -59,5 +59,3 @@ times out (the compose database listens on 5433).
 Tests never modify tracked files by default. Evidence bundles go to a
 scratch directory; `WORLDSIM_WRITE_EVIDENCE=1` regenerates the committed
 bundles under `evidence/`, `WORLDSIM_WRITE_FIXTURES=1` the narrator fixture.
-After fixing old type errors, shrink the baseline with
-`uv run basedpyright --writebaseline`.

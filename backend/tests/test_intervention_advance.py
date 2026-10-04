@@ -43,7 +43,7 @@ MIGRATIONS = ROOT / "backend" / "migrations"
 DIRECTOR_SYSTEM = "game-master instruction"
 
 
-def _directed_route(request: Any) -> str:
+def _directed_route(request: Any) -> str | None:
     """Name-resolving director: Wren/Market from the prompt context.
 
     Every other prompt gets the dev stand-in text, exactly like the

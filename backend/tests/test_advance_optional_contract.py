@@ -7,6 +7,7 @@ that contract.
 """
 
 import uuid
+from typing import Any, cast
 
 import pytest
 from pydantic import ValidationError
@@ -14,8 +15,8 @@ from pydantic import ValidationError
 from worldsim.interfaces.http import schemas as api
 
 
-def _base(**overrides):
-    body = {"world_id": str(uuid.uuid4()), "absolute_index": 1}
+def _base(**overrides: Any) -> dict[str, Any]:
+    body: dict[str, Any] = {"world_id": str(uuid.uuid4()), "absolute_index": 1}
     body.update(overrides)
     return body
 
@@ -35,4 +36,4 @@ def test_player_intents_null_rejected():
 
 def test_draft_payload_null_rejected():
     with pytest.raises(ValidationError):
-        api.StoryDraftCreateRequest(payload=None, current_step="world")
+        api.StoryDraftCreateRequest(payload=cast(Any, None), current_step="world")

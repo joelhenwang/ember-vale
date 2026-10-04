@@ -16,7 +16,11 @@ from sqlalchemy import text as sql_text
 
 from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
 from worldsim.application.orchestration.stage1 import Stage1Orchestrator
-from worldsim.application.ports.model_gateway import CompletionRequest, ProbeResult
+from worldsim.application.ports.model_gateway import (
+    CompletionRequest,
+    ModelGatewayError,
+    ProbeResult,
+)
 from worldsim.application.tasks.service import TaskService
 from worldsim.application.tracing.service import TraceService
 from worldsim.application.transactions.canonical import CanonicalTransaction
@@ -593,7 +597,7 @@ def _agency_gateways(ids: dict[str, UUID]) -> dict[str, FakeGateway]:
     gateways = _role_gateways(ids)
     base_decide = gateways["character"].route
 
-    def _no_wren_decision(request: CompletionRequest) -> str | None:
+    def _no_wren_decision(request: CompletionRequest) -> str | ModelGatewayError | None:
         # Decision prompts name only the decider in the identity block;
         # later-phase history may mention anyone anywhere else.
         if "identity>>Wren" in request.prompt:
@@ -1401,6 +1405,7 @@ async def _beat_keys_for_run(
         async with create_unit_of_work(engine) as uow:
             beats: list[NarrationBeat] = []
             for scene in await uow.scenes.list_for_run(run_id):
+                assert scene.event_id is not None
                 beats.extend(await uow.scenes.narrations_for_event(scene.event_id))
             return sorted((b.kind.value, b.text, tuple(b.cited_fact_keys)) for b in beats)
     finally:
@@ -1438,6 +1443,7 @@ def test_failed_narration_resumes_to_recorded_success(
                 assert scenes
                 stored = await uow.scenes.get_scene(scenes[0].id)
                 assert stored.narration_status == "failed"
+                assert scenes[0].event_id is not None
                 assert await uow.scenes.narrations_for_event(scenes[0].event_id) == []
         finally:
             await engine.dispose()

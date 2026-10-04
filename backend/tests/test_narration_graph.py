@@ -19,6 +19,7 @@ from worldsim.application.graphs.narrate import (
 from worldsim.application.graphs.runtime import invoke
 from worldsim.application.graphs.state import GraphInvocation
 from worldsim.application.ports.model_gateway import ModelUnavailableError
+from worldsim.domain.enums import NarrationKind
 from worldsim.domain.errors import DomainError
 from worldsim.infrastructure.db.engine import create_engine
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
@@ -688,15 +689,17 @@ def test_parsed_context_accepts_exact_ids_and_rejects_foreign() -> None:
 
     prompt = AUDIENCE_1D6C + chr(10) + '- key "attempt:wait": Ash waits'
     audience, keys, budget = parse_narration_context(prompt)
-    good = BeatProposal(text="Ash waits.", cited_fact_keys=["attempt:wait"], kind="narration")
+    good = BeatProposal(
+        text="Ash waits.", cited_fact_keys=["attempt:wait"], kind=NarrationKind.NARRATION
+    )
     assert (
         beats_valid([good], visible_keys=keys, audience_ids=audience, beats_budget=budget) is None
     )
     foreign_speaker = BeatProposal(
         text="Ash waits.",
         cited_fact_keys=["attempt:wait"],
-        kind="narration",
-        speaker_id="ffffffff-ffff-ffff-ffff-ffffffffffff",
+        kind=NarrationKind.NARRATION,
+        speaker_id=uuid.UUID("ffffffff-ffff-ffff-ffff-ffffffffffff"),
     )
     assert (
         beats_valid(
@@ -705,7 +708,7 @@ def test_parsed_context_accepts_exact_ids_and_rejects_foreign() -> None:
         is not None
     )
     invented_key = BeatProposal(
-        text="Ash waits.", cited_fact_keys=["attempt:wait: Ash waits"], kind="narration"
+        text="Ash waits.", cited_fact_keys=["attempt:wait: Ash waits"], kind=NarrationKind.NARRATION
     )
     assert (
         beats_valid([invented_key], visible_keys=keys, audience_ids=audience, beats_budget=budget)
@@ -744,7 +747,7 @@ def test_beats_valid_enforces_mapped_speakers() -> None:
     matched = BeatProposal(
         text="Wren asks.",
         cited_fact_keys=["attempt:communicate"],
-        kind="narration",
+        kind=NarrationKind.NARRATION,
         speaker_id=wren,
     )
     assert (
@@ -762,7 +765,7 @@ def test_beats_valid_enforces_mapped_speakers() -> None:
     mismatched = BeatProposal(
         text="Wren asks.",
         cited_fact_keys=["attempt:communicate"],
-        kind="narration",
+        kind=NarrationKind.NARRATION,
         speaker_id=ash,
     )
     assert (
@@ -803,7 +806,7 @@ def test_dialogue_from_attempt_is_rejected_even_with_right_speaker() -> None:
     voiced_attempt = BeatProposal(
         text="Wren says to Ash: 'Ask Ash what the Market holds today.'",
         cited_fact_keys=["attempt:communicate"],
-        kind="dialogue",
+        kind=NarrationKind.DIALOGUE,
         speaker_id=wren,
     )
     assert (
@@ -829,7 +832,7 @@ def test_dialogue_from_attempt_reports_speech_before_speaker() -> None:
     others_words = BeatProposal(
         text="Wren turns to Ash, asking.",
         cited_fact_keys=["attempt:communicate"],
-        kind="dialogue",
+        kind=NarrationKind.DIALOGUE,
         speaker_id=ash,
     )
     assert (
@@ -855,7 +858,7 @@ def test_dialogue_from_unquoted_topic_is_rejected() -> None:
     quoted_topic = BeatProposal(
         text="Tell Ash about the mill.",
         cited_fact_keys=["reaction:s1"],
-        kind="dialogue",
+        kind=NarrationKind.DIALOGUE,
         speaker_id=wren,
     )
     assert (
@@ -881,7 +884,7 @@ def test_dialogue_from_quoted_speech_is_accepted() -> None:
     spoken = BeatProposal(
         text="One more?",
         cited_fact_keys=["reaction:s2"],
-        kind="dialogue",
+        kind=NarrationKind.DIALOGUE,
         speaker_id=ash,
     )
     assert (
@@ -906,7 +909,9 @@ def test_dialogue_without_speaker_is_rejected() -> None:
     audience = frozenset({str(wren), str(ash)})
     speakers = {"reaction:s2": str(ash)}
     speech = frozenset({"reaction:s2"})
-    omitted = BeatProposal(text="One more?", cited_fact_keys=["reaction:s2"], kind="dialogue")
+    omitted = BeatProposal(
+        text="One more?", cited_fact_keys=["reaction:s2"], kind=NarrationKind.DIALOGUE
+    )
     assert (
         beats_valid(
             [omitted],
@@ -921,7 +926,7 @@ def test_dialogue_without_speaker_is_rejected() -> None:
     null = BeatProposal(
         text="One more?",
         cited_fact_keys=["reaction:s2"],
-        kind="dialogue",
+        kind=NarrationKind.DIALOGUE,
         speaker_id=None,
     )
     assert (
@@ -947,7 +952,7 @@ def test_dialogue_with_wrong_in_audience_speaker_is_rejected() -> None:
     borrowed = BeatProposal(
         text="One more?",
         cited_fact_keys=["reaction:s2"],
-        kind="dialogue",
+        kind=NarrationKind.DIALOGUE,
         speaker_id=wren,
     )
     assert (
@@ -970,7 +975,9 @@ def test_narration_summary_keeps_null_speaker() -> None:
     ash, wren = uuid.uuid4(), uuid.uuid4()
     keys = frozenset({"attempt:wait"})
     audience = frozenset({str(wren), str(ash)})
-    summary = BeatProposal(text="Ash waits.", cited_fact_keys=["attempt:wait"], kind="narration")
+    summary = BeatProposal(
+        text="Ash waits.", cited_fact_keys=["attempt:wait"], kind=NarrationKind.NARRATION
+    )
     assert (
         beats_valid(
             [summary],

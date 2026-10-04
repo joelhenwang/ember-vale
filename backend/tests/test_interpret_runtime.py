@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any, cast
 from uuid import UUID
 
 import pytest
@@ -140,7 +141,7 @@ def test_pinned_interpretation_uses_pin_and_audits(
 
     rows = asyncio.run(_calls_for(world))
     assert rows, "expected an audited interpretation call"
-    sampling = rows[0].request["sampling"]
+    sampling = cast(dict[str, Any], rows[0].request["sampling"])
     assert sampling["model_id"] == "fake-travel-pin"
     assert sampling["pin_profile_id"] == pin["id"]
     assert sampling["pin_profile_revision"] == pin["revision"]
@@ -220,7 +221,7 @@ def test_unpinned_clarification_stays_queued_across_reload(
 
     rows = asyncio.run(_calls_for(world))
     assert rows, "expected an audited interpretation call"
-    assert "pin_profile_id" not in rows[0].request["sampling"]
+    assert "pin_profile_id" not in cast(dict[str, Any], rows[0].request["sampling"])
 
     # Unpinned interpretation keeps the documented request default.
     interpret_requests = [request for request in _gateway.sent_requests if request.json_mode]
