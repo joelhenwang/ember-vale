@@ -3,8 +3,9 @@
 Coherent subsystem vendored from `joelhenwang/pixelsaga` @ full SHA
 `653614d2840c8746b1ed215049a6ee78de0fb0d1` (branch
 `feat/ember-vale-integration`; the earlier handoff pinned `785713d`).
-Read-only source; do not edit the engine's domain/application semantics to
-rename things.
+Originally read-only; Ember Vale now carries engine fixes in `backend/src`
+(narrator validation and repair, orchestration timing, reliability fixes).
+They are candidates for upstreaming; keep the internal `worldsim` names.
 
 Provenance note: `git diff 785713dcf6fd4c071b04944469c5cbbb56a628bc..653614d`
 over `backend/` + `content/` is EMPTY — the I00–I08b commits between the two
@@ -21,7 +22,7 @@ a repo-root checkout):
 
 - `backend/src/worldsim` — domain, application, infrastructure, interfaces
   (FastAPI `create_app`, CLI `serve`, 16 HTTP route groups under `/api/v1`).
-- `backend/migrations` — 31 Alembic revisions (`0001`–`0031`).
+- `backend/migrations` — Alembic revisions (`0001`–`0040` at the time of writing).
 - `backend/prompts` — versioned role prompts.
 - `backend/scripts` — contract/client generators.
 - `content/` — seeds, definitions, dnd tables, schemas, visual styles.
@@ -34,3 +35,29 @@ PixelSaga frontend, AGENTS.md, repo-level instructions.
 Ember Vale owns: `compose.yaml` (isolated DB/volume/ports), `.env.example`,
 vite `/api` proxy, `src/api/` client. API projections for Ember Vale arrive in
 E2; the engine's internal package name (`worldsim`) is kept.
+
+## Development checks
+
+Run from `backend/` (CI runs exactly these, see `.github/workflows/ci.yml`):
+
+```bash
+uv run ruff check . && uv run ruff format --check .
+uv run basedpyright        # fails only on errors not in .basedpyright/baseline.json
+uv run pytest              # fast suite; `-m "not soak"` adds the sim gates
+```
+
+Tests need Postgres with an explicit URL. Do not source the repo `.env`
+wholesale: it selects the live OpenRouter provider. Export only the URL:
+
+```bash
+export WORLDSIM_DATABASE__URL="$(grep '^WORLDSIM_DATABASE__URL=' ../.env | cut -d= -f2-)"
+```
+
+Without it, settings fall back to `localhost:5432` and every database test
+times out (the compose database listens on 5433).
+
+Tests never modify tracked files by default. Evidence bundles go to a
+scratch directory; `WORLDSIM_WRITE_EVIDENCE=1` regenerates the committed
+bundles under `evidence/`, `WORLDSIM_WRITE_FIXTURES=1` the narrator fixture.
+After fixing old type errors, shrink the baseline with
+`uv run basedpyright --writebaseline`.

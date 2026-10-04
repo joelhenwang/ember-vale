@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: embervale
+          POSTGRES_USER: embervale
+          POSTGRES_PASSWORD: ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U embervale -d embervale"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Explicit test configuration: never the live provider, never the
+      # tracked evidence directories (stage gates write there by default).
+      WORLDSIM_DATABASE__URL: postgresql+asyncpg://embervale:ci-only@localhost:5432/embervale
+      WORLDSIM_PROVIDER__ACTIVE_PROFILE: fake
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: echo "WORLDSIM_EVIDENCE_DIR=$RUNNER_TEMP/evidence" >> "$GITHUB_ENV"
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      # Fails only on errors not recorded in .basedpyright/baseline.json;
+      # refresh with `basedpyright --writebaseline` after fixing old ones.
+      - run: uv run basedpyright
+      - run: uv run pytest
