@@ -23,8 +23,11 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import logging
 import random
-from collections.abc import Callable, Mapping
+import time
+from collections.abc import Callable, Generator, Mapping
+from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from datetime import timedelta
 from typing import Any, Protocol, cast
@@ -287,6 +290,20 @@ class SceneOutcome:
     narration: str
 
 
+_phase_log = logging.getLogger("worldsim.phase")
+
+
+@contextmanager
+def _timed(timings: dict[str, int], stage: str) -> Generator[None]:
+    """Accumulate wall-clock milliseconds for one phase stage."""
+    started = time.monotonic()
+    try:
+        yield
+    finally:
+        elapsed = int((time.monotonic() - started) * 1000)
+        timings[stage] = timings.get(stage, 0) + elapsed
+
+
 @dataclass(frozen=True)
 class Stage1PhaseReport:
     run_id: UUID
@@ -296,6 +313,9 @@ class Stage1PhaseReport:
     scenes: list[SceneOutcome] = field(default_factory=list)
     duplicate: bool = False
     quiet: bool = False
+    #: Wall-clock ms per stage (probe, director, decide, react, resolve,
+    #: narrate, scenes, day_end, total); empty on duplicate replays.
+    timings_ms: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -444,8 +464,11 @@ class Stage1Orchestrator:
         # raises before any run row exists, so a rejected fresh advance
         # leaves no orphan open run and the same index can retry.
         runtime = await self._runtime(world_id)
+        timings: dict[str, int] = {}
+        phase_started = time.monotonic()
         self._fire("before_probe")
-        await self._probe_gate(runtime)
+        with _timed(timings, "probe"):
+            await self._probe_gate(runtime)
         run, admitted_owner, admitted_role = await self._admit_run(
             world_id, index, player_intents, submitter_id
         )
@@ -454,7 +477,8 @@ class Stage1Orchestrator:
             return await self._duplicate_report(world_id, run_id)
         await self._tick(world_id, run_id, index)
         sealed = await self._seal(world_id, run_id, index)
-        await self._director_phase(world_id, run_id, index, sealed, runtime)
+        with _timed(timings, "director"):
+            await self._director_phase(world_id, run_id, index, sealed, runtime)
         # Queued directions drain inside the beat (past the duplicate
         # replay above): effects apply pre-decision, attempts merge into
         # the decision and complete only once their scenes commit.
@@ -468,16 +492,17 @@ class Stage1Orchestrator:
                 directed[planned.actor] = (planned.intent, planned.ref)
         merged = dict(player_intents or {})
         merged.update({actor: intent for actor, (intent, _ref) in directed.items()})
-        intents = await self._decide_all(
-            world_id,
-            run_id,
-            sealed,
-            merged,
-            directed,
-            runtime=runtime,
-            submitter_id=submitter_id,
-            grant_role=admitted_role,
-        )
+        with _timed(timings, "decide"):
+            intents = await self._decide_all(
+                world_id,
+                run_id,
+                sealed,
+                merged,
+                directed,
+                runtime=runtime,
+                submitter_id=submitter_id,
+                grant_role=admitted_role,
+            )
         await self._set_state(run_id, PhaseRunState.INTENTS_COMPLETE)
         quiet = is_quiet_phase(intent.action.family for intent in intents)
         async with self._factory() as uow:
@@ -495,30 +520,42 @@ class Stage1Orchestrator:
         )
         await self._set_state(run_id, PhaseRunState.SCENES_ASSEMBLED)
         outcomes: list[SceneOutcome] = []
-        for scene in scenes:
-            over_budget = await self._over_budget(world_id, run_id)
-            outcomes.append(
-                await self._commit_scene(
-                    world_id,
-                    run_id,
-                    index,
-                    sealed,
-                    scene,
-                    intents,
-                    names,
-                    quiet,
-                    over_budget,
-                    runtime=runtime,
+        with _timed(timings, "scenes"):
+            for scene in scenes:
+                over_budget = await self._over_budget(world_id, run_id)
+                outcomes.append(
+                    await self._commit_scene(
+                        world_id,
+                        run_id,
+                        index,
+                        sealed,
+                        scene,
+                        intents,
+                        names,
+                        quiet,
+                        over_budget,
+                        runtime=runtime,
+                        timings=timings,
+                    )
                 )
-            )
         await self._set_state(run_id, PhaseRunState.SCENES_COMMITTED)
         self._fire("after_scenes_committed")
         await self._set_state(run_id, PhaseRunState.COMPLETED)
         if index % PHASES_PER_DAY == PHASES_PER_DAY - 1:
-            await self._summarize_day(world_id, run_id, index, index // PHASES_PER_DAY + 1, runtime)
-            await self._promote_memories(
-                world_id, run_id, index, index // PHASES_PER_DAY + 1, runtime
-            )
+            with _timed(timings, "day_end"):
+                await self._summarize_day(
+                    world_id, run_id, index, index // PHASES_PER_DAY + 1, runtime
+                )
+                await self._promote_memories(
+                    world_id, run_id, index, index // PHASES_PER_DAY + 1, runtime
+                )
+        timings["total"] = int((time.monotonic() - phase_started) * 1000)
+        _phase_log.info(
+            "phase %s timings %s",
+            index,
+            timings,
+            extra={"world_id": str(world_id), "phase_index": index, "timings_ms": timings},
+        )
         return Stage1PhaseReport(
             run_id=run_id,
             world_id=world_id,
@@ -526,6 +563,7 @@ class Stage1Orchestrator:
             snapshot_id=sealed.snapshot_id,
             scenes=outcomes,
             quiet=quiet,
+            timings_ms=timings,
         )
 
     async def _over_budget(self, world_id: UUID, run_id: UUID) -> bool:
@@ -578,8 +616,10 @@ class Stage1Orchestrator:
             await uow.commit()
 
     async def _probe_gate(self, runtime: PhaseRuntime) -> None:
-        for role in ("character", "reaction", "resolver", "narrator"):
-            probe = await runtime.gateways[role].probe()
+        roles = ("character", "reaction", "resolver", "narrator")
+        # Concurrent: each probe is an independent provider round trip.
+        probes = await asyncio.gather(*(runtime.gateways[role].probe() for role in roles))
+        for role, probe in zip(roles, probes, strict=True):
             if not probe.ok:
                 raise DomainError(
                     ErrorCode.PRECONDITION_FAILED,
@@ -1831,8 +1871,10 @@ class Stage1Orchestrator:
         over_budget: bool = False,
         *,
         runtime: PhaseRuntime,
+        timings: dict[str, int] | None = None,
     ) -> SceneOutcome:
         """React, resolve, commit, and narrate one scene (sequential barrier)."""
+        stage_ms: dict[str, int] = timings if timings is not None else {}
         members = [i for i in intents if i.id in scene.intent_ids]
         attempts = [
             Attempt(
@@ -1845,10 +1887,14 @@ class Stage1Orchestrator:
             )
             for i in sorted(members, key=lambda x: str(x.id))
         ]
-        reactions = await self._react_all(world_id, run_id, sealed, scene, attempts, names, runtime)
-        resolution, live_versions = await self._resolve_scene(
-            world_id, run_id, sealed, scene, members, runtime
-        )
+        with _timed(stage_ms, "react"):
+            reactions = await self._react_all(
+                world_id, run_id, sealed, scene, attempts, names, runtime
+            )
+        with _timed(stage_ms, "resolve"):
+            resolution, live_versions = await self._resolve_scene(
+                world_id, run_id, sealed, scene, members, runtime
+            )
         observations, memories = self._perceive_scene(world_id, sealed, scene, members, names)
         # Only the aggregates this scene mutates enter the version check,
         # pinned to the versions the resolver just validated.
@@ -1882,9 +1928,10 @@ class Stage1Orchestrator:
         if directed_outcomes:
             await record_attempts(self._factory, directed_outcomes)
         self._fire("before_narration")
-        narration = await self._narrate_scene(
-            world_id, run_id, scene, result.event_id, quiet, over_budget, runtime=runtime
-        )
+        with _timed(stage_ms, "narrate"):
+            narration = await self._narrate_scene(
+                world_id, run_id, scene, result.event_id, quiet, over_budget, runtime=runtime
+            )
         # The narration source is persisted atomically with its beats
         # inside _narrate_scene; "skipped" writes nothing. When beats
         # pre-existed, report the recorded source when known instead of

@@ -232,6 +232,12 @@ def test_duplicate_phase_replays_without_new_canon(migrated_db: None) -> None:
             second = await orch.advance_phase(ids["world"], 1)
             assert second.duplicate
             assert [s.event_id for s in second.scenes] == [s.event_id for s in first.scenes]
+            # A fresh phase reports per-stage wall time; a replay does no work.
+            stages = {"probe", "director", "decide", "react", "resolve", "narrate", "scenes"}
+            assert stages | {"total"} <= set(first.timings_ms)
+            assert all(ms >= 0 for ms in first.timings_ms.values())
+            assert first.timings_ms["total"] >= first.timings_ms["scenes"]
+            assert second.timings_ms == {}
             async with create_unit_of_work(engine) as uow:
                 assert await uow.events.count_events(ids["world"]) == before
         finally:
