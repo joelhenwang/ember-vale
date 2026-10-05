@@ -25,6 +25,7 @@ npm run build        # typecheck + production bundle
 | `/new-story` | `NewStoryView` | wizard band (6-step stepper), cast picker with live search/filter/sort, selected-cast panel, footer nav; state lives in `src/game/catalog.ts` (`wizard`) |
 | `/library` | `LibraryView` | internal tabs via `?tab=` — `characters` (default), `worlds`, `style-packs`, `templates`; search, chip filters, sort, grid/list toggle |
 | `/stories` | `StoriesView` | “Your stories” shelf — status chips (All / In progress / Archived), search, sort, grid/list density, one `StoryCard` per saved tale with working Archive/Restore; unwired sub-routes (…/configuration, …/saves) fall to `StubView` |
+| `/stories/:storyId/watch` | `ObservatoryView` | World Observatory — map-led view (map art, place anchors, portrait tokens, routes) with a per-beat event feed and an event dialog; Step / Play / Pause drive server-side autoplay (beats run on the server one at a time through the same gate as manual advance, stop at the chosen beat limit, and pause themselves when nobody has reported presence for 60 s) |
 | `/settings` | `SettingsView` | “Settings” — vertical section nav (SettingsNav); AI connections wired to `/settings/providers` (storyteller connections, model revisions, real reachability tests; image generation shown as not available in this build); other sections show honest placeholders; SaveBar dirty/discard/save like the studios |
 | `/library/character/:id` · `/new-story/character/:id` | `CharacterStudioView` | “Give {name} a voice” — drives/voice form cards; preview column is the separate `CharacterPreviewPanel` (Appearance / Voice / Behavior tabs, full-body render swap, dialogue sampling) |
 | `/library/world/:id` · `/new-story/world/:id` | `WorldStudioView` | “Shape your world” — look fields, per-place editors with tabs; preview panel with Scene / Map / Summary, condition selects, preview regeneration |
@@ -84,6 +85,13 @@ breadcrumb and where *Finish* returns.
   validation mirroring the backend limits, patch-only-what-changed saves,
   a new profile revision only when model/sampling changed, and test status
   that never reports an outdated configuration as reachable.
+
+- `src/game/observatory.ts` + `src/composables/useObservatory.ts` — the
+  observatory: token layout from map anchors (never model coordinates),
+  honest autoplay status lines, per-beat feed grouping; the composable polls
+  faster while autoplay plays, reports presence only while the tab is
+  visible, and runs Step as a one-beat autoplay so closing the tab never
+  strands a beat.
 
 - Shared atoms that grew out of these pages — reuse before re-writing:
   `ui/PageIntro` (emblem + title + sub + actions slot), `ui/SaveBar`

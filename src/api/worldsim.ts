@@ -11,7 +11,10 @@
 import type {
   ActivityListResponse,
   ActivityView,
+  AutoplayPlayRequest,
+  AutoplayView,
   BeatView,
+  ChronicleResponse,
   DraftValidationView,
   EditorDraftCompleteRequest,
   EditorDraftOpenRequest,
@@ -23,6 +26,7 @@ import type {
   InterventionRequest,
   InterventionView,
   MapResponse,
+  PresentationResponse,
   PresetDetail,
   PresetPublishView,
   PresetSummary,
@@ -365,6 +369,74 @@ export function getTimeline(
 
 export function getMap(worldId: string, opts: CallOptions = {}): Promise<MapResponse> {
   return apiFetch<MapResponse>(`/stage2/map?world_id=${worldId}`, { ...opts, method: 'GET' })
+}
+
+/* Observatory -------------------------------------------------------------- */
+
+export function getPresentation(
+  worldId: string,
+  opts: CallOptions = {}
+): Promise<PresentationResponse> {
+  // Map manifest (art + place anchors), cast positions, clock and run state
+  // in one perspective-filtered read.
+  return apiFetch<PresentationResponse>(`/world/presentation?world_id=${worldId}`, {
+    ...opts,
+    method: 'GET'
+  })
+}
+
+export function getChronicle(
+  worldId: string,
+  after: number,
+  opts: CallOptions = {},
+  limit = 50
+): Promise<ChronicleResponse> {
+  // Visible events after a source cursor, with title/text, participants and
+  // place; `next_after` advances even when a page is empty.
+  return apiFetch<ChronicleResponse>(
+    `/world/chronicle?world_id=${worldId}&after=${after}&limit=${limit}`,
+    { ...opts, method: 'GET' }
+  )
+}
+
+/** Same-origin URL for stored art (map, portraits); the dev proxy adds auth. */
+export function assetUrl(worldId: string, assetId: string): string {
+  return `/api/v1/assets/${assetId}?world_id=${worldId}`
+}
+
+export function getAutoplay(worldId: string, opts: CallOptions = {}): Promise<AutoplayView> {
+  return apiFetch<AutoplayView>(`/stories/${worldId}/autoplay`, { ...opts, method: 'GET' })
+}
+
+export function playAutoplay(
+  worldId: string,
+  body: AutoplayPlayRequest,
+  opts: CallOptions = {}
+): Promise<AutoplayView> {
+  // Server-side: beats keep running while an observer reports presence,
+  // up to the beat limit, one at a time through the same gate as Step.
+  return apiFetch<AutoplayView>(`/stories/${worldId}/autoplay/play`, {
+    ...opts,
+    method: 'POST',
+    body
+  })
+}
+
+export function pauseAutoplay(worldId: string, opts: CallOptions = {}): Promise<AutoplayView> {
+  // Stops admitting beats; one already running finishes and commits.
+  return apiFetch<AutoplayView>(`/stories/${worldId}/autoplay/pause`, {
+    ...opts,
+    method: 'POST'
+  })
+}
+
+export function reportPresence(worldId: string, opts: CallOptions = {}): Promise<AutoplayView> {
+  // Without a fresh presence report autoplay pauses itself after its grace
+  // period, so a closed tab never keeps spending.
+  return apiFetch<AutoplayView>(`/stories/${worldId}/autoplay/presence`, {
+    ...opts,
+    method: 'POST'
+  })
 }
 
 /* Beat reading ------------------------------------------------------------ */

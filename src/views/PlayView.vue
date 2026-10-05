@@ -347,6 +347,9 @@ function loadBeatDetails(eventIds: string[]): void {
         <button type="button" class="play__link" @click="showSetup = true">
           Initial configuration
         </button>
+        <RouterLink class="play__link" :to="{ name: 'story-watch', params: { storyId } }">
+          Open the observatory
+        </RouterLink>
         <span class="play__as">Mode set by the story grant</span>
       </p>
       <p v-if="controlledMissing" class="play__notice play__notice--error" role="alert">
