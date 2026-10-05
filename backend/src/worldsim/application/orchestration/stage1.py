@@ -127,7 +127,9 @@ from worldsim.domain.commands import (
 )
 from worldsim.domain.context import ContextEnvelope, ContextRequest, SourceCandidate
 from worldsim.domain.director import (
+    ADDED_PLACES_CONFIG_KEY,
     DIRECTOR_COOLDOWN_PHASES,
+    MAX_ADDED_PLACES,
     MAX_SPAWNED_NPCS,
     SPAWNED_CONFIG_KEY,
     DirectorDecision,
@@ -1652,9 +1654,12 @@ class Stage1Orchestrator:
         spawns_left = max(
             0, MAX_SPAWNED_NPCS - (spawned_raw if isinstance(spawned_raw, int) else 0)
         )
+        added_raw = config.get(ADDED_PLACES_CONFIG_KEY)
+        places_left = max(0, MAX_ADDED_PLACES - (added_raw if isinstance(added_raw, int) else 0))
         summary = (
             director_summary(index, characters, locations, hooks, arcs, recent, quiet_streak)
             + f"\nNew characters you may still add to this story: {spawns_left}."
+            + f"\nNew places you may still add to this story: {places_left}."
         )
         hook_id = new_hook_id()
         arc_id = new_arc_id()
@@ -1699,6 +1704,9 @@ class Stage1Orchestrator:
                 # Deterministic per hook, so a replayed beat names the same person.
                 "npc_id": str(uuid5(hook_id, "npc")),
                 "item_id": str(uuid5(hook_id, "item")),
+                "place_id": str(uuid5(hook_id, "place")),
+                "places_left": places_left,
+                "place_names": [loc.name for loc in locations],
             },
         )
         sampling = runtime.sampling

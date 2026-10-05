@@ -258,6 +258,38 @@ describe('useObservatory', () => {
     expect(obs.beatOpen.value).toBe(false)
   })
 
+  it('re-reads place names when the world gains a place', async () => {
+    const { api, setView } = fakeApi()
+    let mapReads = 0
+    const placesNow = [{ id: 'hearth', name: 'Hearth', region: '', discovered: true }]
+    api.getMap = async () => {
+      mapReads += 1
+      return { world_id: 'w', places: [...placesNow] }
+    }
+    const obs = useObservatory(ref('w'), { api, schedule: fakeTimers().schedule })
+    await obs.load()
+    await obs.refresh()
+    expect(mapReads).toBe(1) // nothing new: no extra read
+
+    placesNow.push({ id: 'forge', name: 'Old Forge', region: '', discovered: true })
+    setView(
+      presentation({
+        manifest: {
+          id: 'm',
+          version: 1,
+          schematic: false,
+          anchors: [
+            { location_id: 'hearth', x: 0.2, y: 0.3 },
+            { location_id: 'forge', x: 0.3, y: 0.4 }
+          ]
+        }
+      })
+    )
+    await obs.refresh()
+    expect(mapReads).toBe(2)
+    expect(obs.places.value.map((p) => p.name)).toEqual(['Hearth', 'Old Forge'])
+  })
+
   it('stops scheduling after dispose', async () => {
     const { api } = fakeApi()
     const timers = fakeTimers()

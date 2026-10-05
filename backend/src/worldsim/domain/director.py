@@ -35,6 +35,26 @@ SUPPORTED_POWERS = frozenset({"spawn_npc", "new_location", "place_item"})
 #: New characters the director may add to one story.
 MAX_SPAWNED_NPCS = 3
 SPAWNED_CONFIG_KEY = "director.spawned_npcs"
+#: New places the director may add to one story.
+MAX_ADDED_PLACES = 3
+ADDED_PLACES_CONFIG_KEY = "director.added_places"
+
+
+class PlaceSpec(BaseModel):
+    """A new place an opening needs, reached from an existing one."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    name: str = Field(min_length=1, max_length=128)
+    description: str = Field(default="", max_length=600)
+    connect_to: LocationId
+    travel_phases: int = Field(default=1, ge=1, le=4)
+
+
+class AddedPlace(PlaceSpec):
+    """An accepted new place, with the id it will be created under."""
+
+    id: LocationId
 
 
 class NpcSpec(BaseModel):
@@ -44,7 +64,8 @@ class NpcSpec(BaseModel):
 
     name: str = Field(min_length=1, max_length=64)
     description: str = Field(default="", max_length=600)
-    location_id: LocationId
+    #: Left out: the place this same proposal adds.
+    location_id: LocationId | None = None
 
 
 class ItemSpec(BaseModel):
@@ -54,19 +75,30 @@ class ItemSpec(BaseModel):
 
     name: str = Field(min_length=1, max_length=128)
     description: str = Field(default="", max_length=600)
+    #: Left out: the place this same proposal adds.
+    location_id: LocationId | None = None
+
+
+class PlacedItem(BaseModel):
+    """An accepted item, with its id and the concrete place it lies."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    id: ItemInstanceId
+    name: str = Field(min_length=1, max_length=128)
+    description: str = Field(default="", max_length=600)
     location_id: LocationId
 
 
-class PlacedItem(ItemSpec):
-    """An accepted item, with the id it will be created under."""
+class SpawnedNpc(BaseModel):
+    """An accepted new character, with its id and the concrete place it starts."""
 
-    id: ItemInstanceId
-
-
-class SpawnedNpc(NpcSpec):
-    """An accepted new character, with the id it will be created under."""
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     id: CharacterId
+    name: str = Field(min_length=1, max_length=64)
+    description: str = Field(default="", max_length=600)
+    location_id: LocationId
 
 
 class DirectorProposal(BaseModel):
@@ -82,6 +114,7 @@ class DirectorProposal(BaseModel):
     reason: str = Field(default="", max_length=512)
     npc: NpcSpec | None = None
     item: ItemSpec | None = None
+    place: PlaceSpec | None = None
 
 
 class DirectorDecision(BaseModel):
@@ -94,6 +127,7 @@ class DirectorDecision(BaseModel):
     arc: NarrativeArc | None = None
     npc: SpawnedNpc | None = None
     item: PlacedItem | None = None
+    place: AddedPlace | None = None
     reason: str = Field(default="", max_length=512)
 
 
@@ -119,6 +153,9 @@ def validate_proposal(
     spawns_left: int = 0,
     npc_id: CharacterId | None = None,
     item_id: ItemInstanceId | None = None,
+    place_id: LocationId | None = None,
+    places_left: int = 0,
+    known_place_names: frozenset[str] = frozenset(),
 ) -> DirectorDecision:
     """Accept well-formed proposals inside privilege and budget; else reject."""
     if proposal.action == "noop":
@@ -136,29 +173,59 @@ def validate_proposal(
     if proposal.action == "propose_hook":
         if active_hooks >= MAX_ACTIVE_HOOKS:
             return DirectorDecision(accepted=False, reason="hook budget exhausted")
+        added: AddedPlace | None = None
+        if proposal.place is not None or "new_location" in proposal.requested_powers:
+            place = proposal.place
+            if place is None or place_id is None:
+                return DirectorDecision(
+                    accepted=False, reason="new_location needs a place: name, connect_to"
+                )
+            if places_left <= 0:
+                return DirectorDecision(accepted=False, reason="no new places left for this story")
+            if place.connect_to not in known_location_ids:
+                return DirectorDecision(
+                    accepted=False,
+                    reason=f"new place must connect to a known location: {place.connect_to}",
+                )
+            if place.name.strip().casefold() in known_place_names:
+                return DirectorDecision(
+                    accepted=False, reason=f"a place named {place.name!r} already exists"
+                )
+            added = AddedPlace(**place.model_dump(), id=place_id)
+            # The new place can host the opening's new character or item.
+            known_location_ids = known_location_ids | {place_id}
+        default_place = added.id if added is not None else None
         spawned: SpawnedNpc | None = None
         if proposal.npc is not None or "spawn_npc" in proposal.requested_powers:
-            denial = _spawn_denial(proposal.npc, known_location_ids, spawns_left, npc_id)
+            npc = proposal.npc
+            if npc is not None and npc.location_id is None:
+                npc = npc.model_copy(update={"location_id": default_place})
+            denial = _spawn_denial(npc, known_location_ids, spawns_left, npc_id)
             if denial is not None:
                 return DirectorDecision(accepted=False, reason=denial)
-            assert proposal.npc is not None and npc_id is not None
-            spawned = SpawnedNpc(**proposal.npc.model_dump(), id=npc_id)
+            assert npc is not None and npc_id is not None and npc.location_id is not None
+            spawned = SpawnedNpc(**npc.model_dump(), id=npc_id)
         placed: PlacedItem | None = None
         if proposal.item is not None or "place_item" in proposal.requested_powers:
-            if proposal.item is None or item_id is None:
+            item = proposal.item
+            if item is not None and item.location_id is None:
+                item = item.model_copy(update={"location_id": default_place})
+            if item is None or item_id is None:
                 return DirectorDecision(
                     accepted=False, reason="place_item needs an item: name, location_id"
                 )
-            if proposal.item.location_id not in known_location_ids:
+            if item.location_id is None or item.location_id not in known_location_ids:
                 return DirectorDecision(
                     accepted=False,
-                    reason=f"item place is not a known location: {proposal.item.location_id}",
+                    reason=f"item place is not a known location: {item.location_id}",
                 )
-            placed = PlacedItem(**proposal.item.model_dump(), id=item_id)
+            placed = PlacedItem(**item.model_dump(), id=item_id)
         participants = list(proposal.participant_ids)
         powers = list(proposal.requested_powers)
         if placed is not None and "place_item" not in powers:
             powers.append("place_item")
+        if added is not None and "new_location" not in powers:
+            powers.append("new_location")
         if spawned is not None:
             # A hook naming nobody is heard by everyone; naming only the new
             # character would hide it from the cast it is meant to reach.
@@ -178,6 +245,7 @@ def validate_proposal(
             ),
             npc=spawned,
             item=placed,
+            place=added,
         )
     if active_arcs >= MAX_ACTIVE_ARCS:
         return DirectorDecision(accepted=False, reason="arc budget exhausted")
@@ -202,6 +270,6 @@ def _spawn_denial(
         return "spawn_npc needs an npc: name, description, location_id"
     if npc_id is None or spawns_left <= 0:
         return "no new characters left for this story"
-    if npc.location_id not in known_location_ids:
+    if npc.location_id is None or npc.location_id not in known_location_ids:
         return f"npc place is not a known location: {npc.location_id}"
     return None

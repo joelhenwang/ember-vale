@@ -2292,6 +2292,48 @@
     },
     "DirectorDecision": {
       "$defs": {
+        "AddedPlace": {
+          "additionalProperties": false,
+          "description": "An accepted new place, with the id it will be created under.",
+          "properties": {
+            "connect_to": {
+              "format": "uuid",
+              "title": "Connect To",
+              "type": "string"
+            },
+            "description": {
+              "default": "",
+              "maxLength": 600,
+              "title": "Description",
+              "type": "string"
+            },
+            "id": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            },
+            "name": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            },
+            "travel_phases": {
+              "default": 1,
+              "maximum": 4,
+              "minimum": 1,
+              "title": "Travel Phases",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "name",
+            "connect_to",
+            "id"
+          ],
+          "title": "AddedPlace",
+          "type": "object"
+        },
         "NarrativeArc": {
           "additionalProperties": false,
           "description": "One longer purpose spanning several phases.",
@@ -2420,7 +2462,7 @@
         },
         "PlacedItem": {
           "additionalProperties": false,
-          "description": "An accepted item, with the id it will be created under.",
+          "description": "An accepted item, with its id and the concrete place it lies.",
           "properties": {
             "description": {
               "default": "",
@@ -2446,16 +2488,16 @@
             }
           },
           "required": [
+            "id",
             "name",
-            "location_id",
-            "id"
+            "location_id"
           ],
           "title": "PlacedItem",
           "type": "object"
         },
         "SpawnedNpc": {
           "additionalProperties": false,
-          "description": "An accepted new character, with the id it will be created under.",
+          "description": "An accepted new character, with its id and the concrete place it starts.",
           "properties": {
             "description": {
               "default": "",
@@ -2481,9 +2523,9 @@
             }
           },
           "required": [
+            "id",
             "name",
-            "location_id",
-            "id"
+            "location_id"
           ],
           "title": "SpawnedNpc",
           "type": "object"
@@ -2540,6 +2582,17 @@
           ],
           "default": null
         },
+        "place": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AddedPlace"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "reason": {
           "default": "",
           "maxLength": 512,
@@ -2566,9 +2619,17 @@
               "type": "string"
             },
             "location_id": {
-              "format": "uuid",
-              "title": "Location Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Location Id"
             },
             "name": {
               "maxLength": 128,
@@ -2578,8 +2639,7 @@
             }
           },
           "required": [
-            "name",
-            "location_id"
+            "name"
           ],
           "title": "ItemSpec",
           "type": "object"
@@ -2595,9 +2655,17 @@
               "type": "string"
             },
             "location_id": {
-              "format": "uuid",
-              "title": "Location Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Location Id"
             },
             "name": {
               "maxLength": 64,
@@ -2607,10 +2675,45 @@
             }
           },
           "required": [
-            "name",
-            "location_id"
+            "name"
           ],
           "title": "NpcSpec",
+          "type": "object"
+        },
+        "PlaceSpec": {
+          "additionalProperties": false,
+          "description": "A new place an opening needs, reached from an existing one.",
+          "properties": {
+            "connect_to": {
+              "format": "uuid",
+              "title": "Connect To",
+              "type": "string"
+            },
+            "description": {
+              "default": "",
+              "maxLength": 600,
+              "title": "Description",
+              "type": "string"
+            },
+            "name": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            },
+            "travel_phases": {
+              "default": 1,
+              "maximum": 4,
+              "minimum": 1,
+              "title": "Travel Phases",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "name",
+            "connect_to"
+          ],
+          "title": "PlaceSpec",
           "type": "object"
         }
       },
@@ -2651,6 +2754,17 @@
           },
           "title": "Participant Ids",
           "type": "array"
+        },
+        "place": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlaceSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "purpose": {
           "default": "",

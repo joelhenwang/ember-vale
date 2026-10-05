@@ -2,14 +2,21 @@
 
 from __future__ import annotations
 
-from uuid import uuid4
+from uuid import uuid4, uuid5
 
 from worldsim.application.transactions.canonical import canonical_input_hash
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.characters import Character, CharacterCard
-from worldsim.domain.director import SPAWNED_CONFIG_KEY, DirectorDecision, SpawnedNpc
+from worldsim.domain.director import (
+    ADDED_PLACES_CONFIG_KEY,
+    SPAWNED_CONFIG_KEY,
+    AddedPlace,
+    DirectorDecision,
+    SpawnedNpc,
+)
 from worldsim.domain.ids import WorldId, new_card_id
 from worldsim.domain.progress import ItemInstance
+from worldsim.domain.world import Location, Route
 
 #: Catalog key for one-off items a director opening places (named per instance).
 PLACED_ITEM_KEY = "found_object"
@@ -26,6 +33,8 @@ async def accept_decision(
     """Persist accepted rows, audit the command, and advance the cooldown."""
     await uow.worlds.put_config(world_id, "director.last_absolute", last_absolute)
     if decision.accepted:
+        if decision.place is not None:
+            await _add_place(uow, world_id, decision.place)
         if decision.npc is not None:
             await _spawn(uow, world_id, decision.npc)
         if decision.item is not None:
@@ -52,6 +61,7 @@ async def accept_decision(
             "arc_id": str(decision.arc.id) if decision.arc else None,
             "npc_id": str(decision.npc.id) if decision.npc else None,
             "item_id": str(decision.item.id) if decision.item else None,
+            "place_id": str(decision.place.id) if decision.place else None,
         }
         await uow.commands.add(
             command_id=uuid4(),
@@ -64,6 +74,53 @@ async def accept_decision(
             input_hash=canonical_input_hash({"key": key, "payload": payload}),
         )
     await uow.commit()
+
+
+#: Stamina a route to a director-added place costs per phase of travel.
+ROUTE_STAMINA_PER_PHASE = 5
+
+
+async def _add_place(uow: UnitOfWork, world_id: WorldId, place: AddedPlace) -> None:
+    """Create the opening's new place, joined both ways to the place it connects to."""
+    origin = await uow.locations.get(place.connect_to)
+    cost = ROUTE_STAMINA_PER_PHASE * place.travel_phases
+    await uow.locations.add(
+        Location(
+            id=place.id,
+            world_id=world_id,
+            name=place.name.strip(),
+            region=origin.region,
+            routes=[
+                Route(
+                    id=uuid5(place.id, "route-back"),
+                    destination_location_id=origin.id,
+                    duration_phases=place.travel_phases,
+                    stamina_cost=cost,
+                )
+            ],
+            discovered=True,
+        )
+    )
+    await uow.locations.save(
+        origin.model_copy(
+            update={
+                "routes": [
+                    *origin.routes,
+                    Route(
+                        id=uuid5(place.id, "route-there"),
+                        destination_location_id=place.id,
+                        duration_phases=place.travel_phases,
+                        stamina_cost=cost,
+                    ),
+                ]
+            }
+        ),
+        origin.version,
+    )
+    config = await uow.worlds.get_config(world_id)
+    added = config.get(ADDED_PLACES_CONFIG_KEY)
+    count = added if isinstance(added, int) else 0
+    await uow.worlds.put_config(world_id, ADDED_PLACES_CONFIG_KEY, count + 1)
 
 
 async def _spawn(uow: UnitOfWork, world_id: WorldId, npc: SpawnedNpc) -> None:

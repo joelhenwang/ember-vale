@@ -90,7 +90,7 @@ export function useObservatory(worldId: Ref<string>, options: ObservatoryOptions
 
   const grant = ref<RoleGrantView | null>(null)
   const title = ref<string | null>(null)
-  /** Place names and routes; geography is fixed for a story, read once. */
+  /** Place names and routes; re-read when an opening adds a place. */
   const places = ref<MapPlace[]>([])
   const presentation = ref<PresentationResponse | null>(null)
   const entries = ref<ChronicleEntry[]>([])
@@ -145,10 +145,23 @@ export function useObservatory(worldId: Ref<string>, options: ObservatoryOptions
       presentation.value = view
       autoplay.value = state
       trackOpenBeat(view)
+      await refreshPlacesIfNew(view)
       await readChronicle()
       error.value = null
     } catch (err) {
       error.value = message(err, 'Could not reach the world.')
+    }
+  }
+
+  /** Openings can add places during play: re-read the map when one appears. */
+  async function refreshPlacesIfNew(view: PresentationResponse): Promise<void> {
+    const known = new Set(places.value.map((p) => p.id))
+    const unknown = (view.manifest.anchors ?? []).some((a) => !known.has(a.location_id))
+    if (!unknown) return
+    try {
+      places.value = (await api.getMap(worldId.value, opts.value)).places ?? places.value
+    } catch {
+      // Keep the old names; the next refresh tries again.
     }
   }
 

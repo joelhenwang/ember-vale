@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from pathlib import Path
 from uuid import UUID
 
@@ -220,8 +221,40 @@ def _curated_manifest(assets_root: Path, locations: list[Location]) -> api.MapMa
         id=manifest.get("id", "curated"),
         version=1,
         schematic=False,
-        anchors=anchors,
+        anchors=[*anchors, *_neighbour_anchors(anchors, locations)],
     )
+
+
+#: How far from its neighbour an unanchored place is drawn (map fraction).
+NEIGHBOUR_OFFSET = 0.14
+
+
+def _neighbour_anchors(
+    anchors: list[api.MapAnchorView], locations: list[Location]
+) -> list[api.MapAnchorView]:
+    """Places the curated art does not show (added during play), drawn near
+    a connected anchored place at a stable angle so they never jump."""
+    placed = {a.location_id: (float(a.x), float(a.y)) for a in anchors}
+    added: list[api.MapAnchorView] = []
+    for location in sorted(locations, key=lambda loc: loc.id.hex):
+        if location.id in placed:
+            continue
+        linked = [r.destination_location_id for r in location.routes] + [
+            other.id
+            for other in locations
+            if any(r.destination_location_id == location.id for r in other.routes)
+        ]
+        neighbour = next((placed[n] for n in linked if n in placed), None)
+        if neighbour is None:
+            x, y = _anchor(location.id)
+        else:
+            angle = _anchor(location.id)[0] * 2 * math.pi
+            x = neighbour[0] + NEIGHBOUR_OFFSET * math.cos(angle)
+            y = neighbour[1] + NEIGHBOUR_OFFSET * math.sin(angle)
+        x, y = min(max(x, 0.05), 0.95), min(max(y, 0.05), 0.95)
+        placed[location.id] = (x, y)
+        added.append(api.MapAnchorView(location_id=location.id, x=x, y=y))
+    return added
 
 
 async def _newest_by_subject(uow: UnitOfWork, world_id: UUID, kind: str) -> dict[UUID, UUID]:
