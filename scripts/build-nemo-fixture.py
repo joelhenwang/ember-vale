@@ -47,6 +47,7 @@ from worldsim.application.graphs.narrate import (
     communication_facts,
     dedupe_narration_facts,
     load_narrator_prompt,
+    attempt_speech_facts,
     citation_aliases,
     parse_narration_context,
     render_system_prompt,
@@ -294,6 +295,7 @@ def run_one(spec: dict) -> dict:
                 row = await uow.scenes.get_scene(scene.scene_id)
                 observations = await uow.perception.observations_for_event(scene.event_id)
                 reactions = await uow.scenes.reactions_for_scene(scene.scene_id)
+                intents = [await uow.scenes.get_intent(i) for i in row.intent_ids]
                 characters = await uow.characters.list_for_world(ids["world"])
         finally:
             await engine.dispose()
@@ -302,6 +304,7 @@ def run_one(spec: dict) -> dict:
         names = {c.id: c.name for c in characters}
         sourced = [(f.key, f.value, obs.source_id) for obs in observations for f in obs.facts]
         facts = [{"key": k, "value": v} for k, v in dedupe_narration_facts(sourced)]
+        facts.extend(attempt_speech_facts(intents, names, participants))
         facts.extend(communication_facts(reactions, names, participants))
         views = [_fact_view(f) for f in facts]
         rebuilt = render_user_prompt(

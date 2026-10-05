@@ -974,3 +974,63 @@ def test_open_run_freezes_grant_for_fresh_resume(
         headers=_watcher(),
     )
     assert reopened.status_code == 200, reopened.text
+
+
+def test_player_say_line_is_narrated_as_the_players_dialogue(
+    api: tuple[ApiClient, FakeGateway, dict[str, UUID]],
+) -> None:
+    """A quoted ("Say") player line reaches narration as the player's speech."""
+    client, gateway, _ = api
+    ids = asyncio.run(_seed_two_at_hearth())
+    snapshots = _snapshots(ids)
+    line = "Is the mill road open?"
+    base = _speech_route(ids, snapshots)
+
+    def _route(request: CompletionRequest) -> Any:
+        if "You narrate" in (request.system or ""):
+            key = re.search(r"speech:\d+", request.prompt).group(0)  # type: ignore[union-attr]
+            return json.dumps(
+                [
+                    {
+                        "speaker_id": str(ids["wren"]),
+                        "kind": "dialogue",
+                        "text": f'"{line}" Wren asks.',
+                        "cited_fact_keys": [key],
+                    }
+                ]
+            )
+        return base(request)
+
+    gateway.route = _route
+    selected = client.post(
+        "/api/v1/stage2/roles/select",
+        json={"world_id": str(ids["world"]), "role": "player", "character_id": str(ids["wren"])},
+        headers=_watcher(),
+    )
+    assert selected.status_code == 200, selected.text
+    say = {
+        str(ids["wren"]): {
+            "family": "communicate",
+            "character_id": str(ids["wren"]),
+            "snapshot_id": str(snapshots[1]),
+            "target_character_id": str(ids["ash"]),
+            "topic": f'"{line}"',
+        }
+    }
+    report = _advance(client, ids["world"], 1, say, _player(ids["wren"]))
+    assert report.status_code == 200, report.text
+    scene_id = report.json()["scenes"][0]["scene_id"]
+
+    narrator_prompt = next(
+        r.prompt for r in gateway.sent_requests if "You narrate" in (r.system or "")
+    )
+    assert f'key "speech:1": [quoted speech — dialogue-eligible] Wren says to Ash: "{line}"' in (
+        narrator_prompt
+    )
+    spoken = [b for b in _narration_beats(client, scene_id) if b["kind"] == "dialogue"]
+    assert [(b["speaker_id"], b["text"]) for b in spoken] == [
+        (str(ids["wren"]), f'"{line}" Wren asks.')
+    ]
+    stored = _stored_citations(scene_id, spoken[0]["source_event_id"])
+    intent_id = derive_intent_id(ids["world"], snapshots[1], ids["wren"])
+    assert [b.cited_fact_keys for b in stored if b.kind == "dialogue"] == [[f"speech:{intent_id}"]]

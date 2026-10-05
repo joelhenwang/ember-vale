@@ -41,7 +41,7 @@ from worldsim.domain.enums import NarrationKind, ReactionStatus
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.ids import new_narration_id
 from worldsim.domain.narration import BeatProposal, NarrationBeat
-from worldsim.domain.scenes import Reaction
+from worldsim.domain.scenes import Intent, Reaction
 
 #: Versioned narrator prompt file.
 NARRATOR_PROMPT_VERSION = "narrator.v2"
@@ -196,17 +196,20 @@ _ATTEMPT_SPEECH_RE = re.compile(r"^(.*?) says to (.*?): (.*)$", re.DOTALL)
 def citation_aliases(facts: list[dict[str, str]]) -> dict[str, str]:
     """Short prompt labels for long citation keys: real key -> alias.
 
-    Reaction keys embed a 36-character UUID next to speaker UUIDs, which
-    invites a model to cite ``reaction:<speaker id>``. Each reaction key
-    is shown as ``reaction:1``, ``reaction:2`` ... in fact order; the graph
+    Reaction and speech keys embed a 36-character UUID next to speaker
+    UUIDs, which invites a model to cite ``reaction:<speaker id>``. Each is
+    shown as ``reaction:1``, ``speech:1`` ... per prefix in fact order; the graph
     maps cited aliases back before validation, so stored beats, canon and
     audit rows keep the real keys. Other keys are already short.
     """
     aliases: dict[str, str] = {}
+    counts: dict[str, int] = {}
     for fact in facts:
         key = str(fact["key"])
-        if key.startswith("reaction:") and key not in aliases:
-            aliases[key] = f"reaction:{len(aliases) + 1}"
+        prefix = key.split(":", 1)[0]
+        if prefix in ("reaction", "speech") and key not in aliases:
+            counts[prefix] = counts.get(prefix, 0) + 1
+            aliases[key] = f"{prefix}:{counts[prefix]}"
     return aliases
 
 
@@ -458,6 +461,47 @@ def communication_facts(
                 "speaker": str(speaker),
                 "speaker_name": speaker_name,
                 **({"utterance": utterance} if utterance is not None else {}),
+            }
+        )
+    return facts
+
+
+def attempt_speech_facts(
+    intents: Sequence[Intent],
+    names: Mapping[UUID, str],
+    audience_ids: list[str] | frozenset[str],
+) -> list[dict[str, str]]:
+    """Speech facts for communicate attempts whose topic quotes exact words.
+
+    A player's "Say" line (or any attempt that quotes its words) is the
+    actor's own speech, so it is dialogue-eligible under the same contract
+    as quoted reactions: speaker and target both in the audience, words
+    identified only by quotation marks (see _identify_utterance). The
+    attempt fact itself stays narration-only; this adds the spoken words
+    under a stable ``speech:<intent id>`` key. Unquoted topics add nothing.
+    """
+    audience = frozenset(str(a) for a in audience_ids)
+    facts: list[dict[str, str]] = []
+    for intent in intents:
+        action = intent.action
+        if not isinstance(action, CommunicateAction):
+            continue
+        utterance = _identify_utterance(action.topic)
+        if utterance is None:
+            continue
+        speaker = intent.author_character_id
+        target = action.target_character_id
+        if str(speaker) not in audience or str(target) not in audience:
+            continue
+        speaker_name = names.get(speaker, speaker.hex[:8])
+        target_name = names.get(target, target.hex[:8])
+        facts.append(
+            {
+                "key": f"speech:{intent.id}",
+                "value": f'{speaker_name} says to {target_name}: "{utterance}"',
+                "speaker": str(speaker),
+                "speaker_name": speaker_name,
+                "utterance": utterance,
             }
         )
     return facts
@@ -898,6 +942,7 @@ __all__ = [
     "NarrateState",
     "NarratorGraphDeps",
     "beats_valid",
+    "attempt_speech_facts",
     "build_narration_graph",
     "citation_aliases",
     "dedupe_narration_facts",

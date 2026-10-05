@@ -1787,3 +1787,101 @@ def test_speaker_id_as_reaction_key_is_rejected_and_repair_uses_alias() -> None:
     repair_prompt = gateway.sent_requests[1].prompt
     assert "unsupported facts cited" in repair_prompt
     assert "9fc8efec" not in repair_prompt
+
+
+def _communicate_intent(author: uuid.UUID, target: uuid.UUID, topic: str) -> Any:
+    from worldsim.domain.commands import CommunicateAction
+    from worldsim.domain.scenes import Intent
+
+    return Intent(
+        id=uuid.uuid4(),
+        world_id=uuid.uuid4(),
+        snapshot_id=uuid.uuid4(),
+        author_character_id=author,
+        action=CommunicateAction(
+            character_id=author,
+            snapshot_id=uuid.uuid4(),
+            target_character_id=target,
+            topic=topic,
+        ),
+        idempotency_key=f"player:{uuid.uuid4()}",
+    )
+
+
+def test_quoted_attempt_becomes_the_actors_speech() -> None:
+    from worldsim.application.graphs.narrate import attempt_speech_facts
+
+    wren, ash = uuid.uuid4(), uuid.uuid4()
+    said = _communicate_intent(wren, ash, '"Is the mill open?"')
+    topic_only = _communicate_intent(ash, wren, "the mill")
+    facts = attempt_speech_facts(
+        [said, topic_only], {wren: "Wren", ash: "Ash"}, [str(wren), str(ash)]
+    )
+
+    assert facts == [
+        {
+            "key": f"speech:{said.id}",
+            "value": 'Wren says to Ash: "Is the mill open?"',
+            "speaker": str(wren),
+            "speaker_name": "Wren",
+            "utterance": "Is the mill open?",
+        }
+    ]
+
+
+def test_attempt_speech_needs_speaker_and_target_in_audience() -> None:
+    from worldsim.application.graphs.narrate import attempt_speech_facts
+
+    wren, ash, marlow = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    to_outsider = _communicate_intent(wren, marlow, '"Psst."')
+    assert attempt_speech_facts([to_outsider], {}, [str(wren), str(ash)]) == []
+
+
+def test_player_say_line_is_voiced_under_its_speaker() -> None:
+    from worldsim.application.graphs.narrate import (
+        _fact_view,
+        attempt_speech_facts,
+        render_user_prompt,
+    )
+
+    wren, ash = uuid.uuid4(), uuid.uuid4()
+    said = _communicate_intent(wren, ash, '"Is the mill open?"')
+    facts = [
+        {"key": "attempt:communicate", "value": 'Wren says to Ash: "Is the mill open?"'},
+        *attempt_speech_facts([said], {wren: "Wren", ash: "Ash"}, [str(wren), str(ash)]),
+    ]
+    prompt = render_user_prompt(
+        [str(wren), str(ash)], [_fact_view(f) for f in facts], "e1", "s1", 8
+    )
+    assert 'key "speech:1": [quoted speech — dialogue-eligible]' in prompt
+
+    def run(speaker: uuid.UUID) -> dict[str, Any]:
+        gateway = FakeGateway(profile=NARRATOR_FAKE_PROFILE)
+        gateway.enqueue_text(
+            json.dumps(
+                [
+                    {
+                        "kind": "dialogue",
+                        "text": '"Is the mill open?" Wren asks.',
+                        "cited_fact_keys": ["speech:1"],
+                        "speaker_id": str(speaker),
+                    }
+                ]
+            )
+        )
+        gateway.enqueue_text(json.dumps([_beat("Wren waits.", ["attempt:communicate"])]))
+        return asyncio.run(
+            invoke(
+                build_narration_graph(_deps(gateway)),
+                _invocation(uuid.uuid4(), audience_ids=[str(wren), str(ash)], visible_facts=facts),
+            )
+        )
+
+    voiced = run(wren)
+    assert voiced["repair_count"] == 0
+    beat = voiced["proposal"]["beats"][0]
+    assert beat["kind"] == "dialogue"
+    assert beat["speaker_id"] == str(wren)
+    assert beat["cited_fact_keys"] == [f"speech:{said.id}"]
+    # The player's words in another character's mouth are rejected.
+    assert run(ash)["repair_count"] == 1

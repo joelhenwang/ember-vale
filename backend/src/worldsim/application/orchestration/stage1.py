@@ -58,6 +58,7 @@ from worldsim.application.graphs.director import (
 from worldsim.application.graphs.narrate import (
     NARRATOR_PROMPT_VERSION,
     NarratorGraphDeps,
+    attempt_speech_facts,
     build_narration_graph,
     communication_facts,
     dedupe_narration_facts,
@@ -2435,6 +2436,7 @@ class Stage1Orchestrator:
             existing = await uow.scenes.narrations_for_event(event_id)
             observations = await uow.perception.observations_for_event(event_id)
             scene_reactions = await uow.scenes.reactions_for_scene(scene.id)
+            scene_intents = [await uow.scenes.get_intent(i) for i in scene.intent_ids]
             characters = await uow.characters.list_for_world(world_id)
             participants = [
                 str(p.character_id) for p in (await uow.scenes.get_scene(scene.id)).participants
@@ -2449,6 +2451,9 @@ class Stage1Orchestrator:
         ]
         facts = [{"key": key, "value": value} for key, value in dedupe_narration_facts(sourced)]
         names = {c.id: c.name for c in characters}
+        # Quoted communicate attempts (a player's "Say" line) are the actor's
+        # own speech: dialogue-eligible like quoted reactions.
+        facts.extend(attempt_speech_facts(scene_intents, names, participants))
         facts.extend(communication_facts(scene_reactions, names, participants))
         dnd_context: str | None = None
         dnd_sources: list[ManifestSource] = []
