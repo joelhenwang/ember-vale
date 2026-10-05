@@ -9,6 +9,7 @@ orchestrator's idempotent keys: repeats return stored reports.
 
 from __future__ import annotations
 
+import json
 from uuid import UUID
 
 from fastapi import APIRouter, Request, Response
@@ -373,6 +374,11 @@ async def advance(
     # contract unchanged.
     response.headers["X-Worldsim-Slot-Claim-Ms"] = str(slot_claim_ms)
     response.headers["X-Worldsim-Execution-Ms"] = str(execution_ms)
+    # Per-stage wall time of the beat (probe, director, decide, react,
+    # resolve, narrate, ...), compact JSON; empty on a duplicate replay.
+    response.headers["X-Worldsim-Phase-Timings"] = json.dumps(
+        report.timings_ms, separators=(",", ":"), sort_keys=True
+    )
     return api.Stage1AdvanceResponse(
         run_id=report.run_id,
         world_id=report.world_id,

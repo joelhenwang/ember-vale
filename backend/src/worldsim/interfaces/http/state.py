@@ -104,7 +104,13 @@ class AppState:
             return gateways[role]
 
         def _for_pin(role: str, pin: PinnedRuntime) -> ModelGateway:
-            return gateway_for_pin(role, pin.profile, pin.connection, env_gateway=gateways[role])
+            return gateway_for_pin(
+                role,
+                pin.profile,
+                pin.connection,
+                env_gateway=gateways[role],
+                reasoning=self.settings.provider.reasoning_for(role),
+            )
 
         return Stage1Orchestrator(
             factory,

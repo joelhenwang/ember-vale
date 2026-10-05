@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import importlib.metadata
 import sys
-from typing import Literal
+from typing import Literal, cast
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
@@ -25,6 +25,9 @@ Environment = Literal["local", "test"]
 ProviderProfile = Literal["fake", "openrouter"]
 #: Model-calling roles; selection.ROLE_NAMES re-exports this tuple.
 MODEL_ROLES = ("character", "reaction", "resolver", "narrator", "director", "summary")
+#: Hidden-reasoning budget sent to reasoning-capable models. "off" disables
+#: thinking; the others map to OpenRouter's reasoning effort levels.
+ReasoningLevel = Literal["off", "minimal", "low", "medium", "high"]
 
 _PUBLIC_BIND_HOSTS = frozenset({"0.0.0.0", "::", ""})
 
@@ -72,6 +75,12 @@ class ProviderSettings(BaseModel):
     #: WORLDSIM_PROVIDER__ROLE_MODELS__NARRATOR=mistralai/mistral-nemo.
     #: Roles left out use openrouter_model. Story pins still win.
     role_models: dict[str, str] = Field(default_factory=dict)
+    #: Reasoning for every role (WORLDSIM_PROVIDER__REASONING=off), with
+    #: optional per-role overrides (WORLDSIM_PROVIDER__ROLE_REASONING__RESOLVER=low).
+    #: Unset leaves the model's own default, which for hybrid models such
+    #: as DeepSeek V4 means thinking on every call.
+    reasoning: ReasoningLevel | None = None
+    role_reasoning: dict[str, ReasoningLevel] = Field(default_factory=dict)
     embedding_model: str = "test-embed"
     embedding_dim: int = Field(default=768, ge=1, le=4096)
 
@@ -89,6 +98,29 @@ class ProviderSettings(BaseModel):
         if empty:
             raise ValueError(f"empty model id for role(s) {empty} in role_models")
         return normalized
+
+    @field_validator("role_reasoning", mode="before")
+    @classmethod
+    def _known_reasoning_roles(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+        normalized = {
+            str(role).lower(): str(level).strip().lower()
+            for role, level in cast("dict[object, object]", value).items()
+        }
+        unknown = sorted(set(normalized) - set(MODEL_ROLES))
+        if unknown:
+            raise ValueError(
+                f"unknown role(s) in WORLDSIM_PROVIDER__ROLE_REASONING: {unknown}; "
+                f"expected any of {list(MODEL_ROLES)}"
+            )
+        return normalized
+
+    def reasoning_for(self, role: str) -> ReasoningLevel | None:
+        """Reasoning level for one role: its override, else the global level."""
+        if role in self.role_reasoning:
+            return self.role_reasoning[role]
+        return self.reasoning
 
     @field_validator("openrouter_base_url")
     @classmethod

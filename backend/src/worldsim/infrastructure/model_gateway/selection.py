@@ -80,6 +80,7 @@ def gateways_for_settings(
                     api_key=key,
                     base_url=settings.provider.openrouter_base_url,
                     client=client,
+                    reasoning=settings.provider.reasoning_for(role),
                 )
             )
             for role in ROLE_NAMES
@@ -124,6 +125,7 @@ def gateway_for_pin(
     *,
     env_gateway: ModelGateway | None = None,
     client: httpx.AsyncClient | None = None,
+    reasoning: str | None = None,
 ) -> ModelGateway:
     """Runtime gateway for a pinned revision; never mutates shared state.
 
@@ -131,7 +133,8 @@ def gateway_for_pin(
     and credential reference, through the same handling as environment
     selection. Fake pins copy the environment gateway scripted behavior
     under the pinned profile, so scripted tests keep working while the
-    executed model comes from the pin.
+    executed model comes from the pin. Reasoning is an environment
+    setting, so pinned stories get the same level as unpinned ones.
     """
     profile = profile_for_pin(role, pin, connection)
     if connection.adapter == AdapterKind.OPENROUTER:
@@ -149,6 +152,7 @@ def gateway_for_pin(
                 api_key=SecretStr(secret),
                 base_url=connection.endpoint,
                 client=client,
+                reasoning=reasoning,
             )
         )
     if isinstance(env_gateway, FakeGateway):

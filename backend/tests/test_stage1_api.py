@@ -302,6 +302,9 @@ def test_duplicate_and_stale_advance_stable(
     first = _advance(client, ids["world"], 1)
     second = _advance(client, ids["world"], 1)
     assert second.json()["duplicate"] is True
+    timings = json.loads(first.headers["X-Worldsim-Phase-Timings"])
+    assert {"decide", "scenes", "total"} <= set(timings)
+    assert json.loads(second.headers["X-Worldsim-Phase-Timings"]) == {}
     assert [s["event_id"] for s in second.json()["scenes"]] == [
         s["event_id"] for s in first.json()["scenes"]
     ]

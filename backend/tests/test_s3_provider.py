@@ -11,6 +11,7 @@ from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import SecretStr
 from test_stage1_api import ApiClient
 
 from worldsim.application.ports.model_gateway import (
@@ -24,7 +25,11 @@ from worldsim.application.ports.model_gateway import (
 from worldsim.domain.costs import PRICING_VERSION, compute_cost
 from worldsim.infrastructure.db.engine import create_engine
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
-from worldsim.infrastructure.model_gateway.profiles import FAKE_TEST_PROFILE
+from worldsim.infrastructure.model_gateway.openrouter import OpenRouterGateway
+from worldsim.infrastructure.model_gateway.profiles import (
+    FAKE_TEST_PROFILE,
+    OPENROUTER_CHAT_PROFILE,
+)
 from worldsim.infrastructure.model_gateway.retry import RetryingGateway
 from worldsim.infrastructure.model_gateway.selection import gateways_for_settings
 from worldsim.infrastructure.repositories.unit_of_work import create_unit_of_work
@@ -173,6 +178,47 @@ def test_role_model_overrides_reject_unknown_roles(
     monkeypatch.setenv("WORLDSIM_PROVIDER__ROLE_MODELS__NARRATER", "mistralai/mistral-nemo")
     with pytest.raises(ValueError, match="unknown role"):
         Settings()
+
+
+def test_reasoning_level_global_with_role_override(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WORLDSIM_PROVIDER__ACTIVE_PROFILE", "openrouter")
+    monkeypatch.setenv("WORLDSIM_PROVIDER__OPENROUTER_API_KEY", "sk-test-key")
+    monkeypatch.setenv("WORLDSIM_PROVIDER__REASONING", "off")
+    monkeypatch.setenv("WORLDSIM_PROVIDER__ROLE_REASONING__RESOLVER", "LOW")
+    settings = Settings()
+    assert settings.provider.reasoning_for("resolver") == "low"
+    assert settings.provider.reasoning_for("narrator") == "off"
+    gateways, _ = gateways_for_settings(settings)
+    resolver = gateways["resolver"]
+    assert isinstance(resolver, RetryingGateway)
+    assert isinstance(resolver._inner, OpenRouterGateway)
+    assert resolver._inner.reasoning == "low"
+
+
+def test_reasoning_level_rejects_unknown_roles_and_levels(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WORLDSIM_PROVIDER__ROLE_REASONING__RESOLVR", "low")
+    with pytest.raises(ValueError, match="unknown role"):
+        Settings()
+    monkeypatch.delenv("WORLDSIM_PROVIDER__ROLE_REASONING__RESOLVR")
+    monkeypatch.setenv("WORLDSIM_PROVIDER__REASONING", "maximum")
+    with pytest.raises(ValueError):
+        Settings()
+
+
+def test_openrouter_body_carries_reasoning_level() -> None:
+    def body(level: str | None) -> dict[str, Any]:
+        gateway = OpenRouterGateway(
+            OPENROUTER_CHAT_PROFILE, api_key=SecretStr("sk-test"), reasoning=level
+        )
+        return gateway._body(_request())
+
+    assert "reasoning" not in body(None)
+    assert body("off")["reasoning"] == {"enabled": False}
+    assert body("low")["reasoning"] == {"effort": "low"}
 
 
 def test_selection_rejects_openrouter_without_key(

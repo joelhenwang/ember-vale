@@ -71,8 +71,10 @@ class OpenRouterGateway:
         base_url: str = "https://openrouter.ai/api/v1",
         timeout_s: float = 30.0,
         client: httpx.AsyncClient | None = None,
+        reasoning: str | None = None,
     ) -> None:
         self.profile = profile
+        self.reasoning = reasoning
         self._api_key = api_key
         self._base_url = base_url.rstrip("/")
         self._timeout_s = timeout_s
@@ -109,6 +111,10 @@ class OpenRouterGateway:
             body["top_p"] = request.top_p
         if request.top_k is not None:
             body["top_k"] = request.top_k
+        if self.reasoning == "off":
+            body["reasoning"] = {"enabled": False}
+        elif self.reasoning is not None:
+            body["reasoning"] = {"effort": self.reasoning}
         return body
 
     async def complete(self, request: CompletionRequest) -> CompletionResult:

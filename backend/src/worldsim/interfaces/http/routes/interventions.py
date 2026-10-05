@@ -72,7 +72,13 @@ async def _interpret_runtime(request: Request, world_id: UUID) -> InterpretRunti
     if pin is None:
         return InterpretRuntime(env, None, None)
     return InterpretRuntime(
-        gateway_for_pin("director", pin.profile, pin.connection, env_gateway=env),
+        gateway_for_pin(
+            "director",
+            pin.profile,
+            pin.connection,
+            env_gateway=env,
+            reasoning=state.settings.provider.reasoning_for("director"),
+        ),
         pin,
         sampling_from_pin(pin),
     )
