@@ -11,6 +11,7 @@ from pydantic import TypeAdapter, ValidationError
 from worldsim.application.graphs.lenient import (
     fill_expected_versions,
     repair_detail,
+    unwrap_tagged,
     validate_lenient,
 )
 from worldsim.domain.commands import ActionIntent
@@ -93,3 +94,15 @@ def test_repair_detail_names_fields() -> None:
         ACTIONS.validate_json(json.dumps({"family": "communicate"}))
     detail = repair_detail(caught.value)
     assert "communicate." in detail and "Field required" in detail
+
+
+def test_director_nested_proposal_is_unwrapped() -> None:
+    # Live DeepSeek habit (playtest-002): the payload nested under its action.
+    nested = json.dumps({"propose_hook": {"title": "Late carts", "purpose": "Find them."}})
+    tags = frozenset({"propose_hook", "propose_arc", "noop"})
+    proposal = validate_lenient(DIRECTOR, unwrap_tagged(nested, tags, "action"))
+    assert (proposal.action, proposal.title) == ("propose_hook", "Late carts")
+    flat = '{"action": "noop", "reason": "busy"}'
+    assert unwrap_tagged(flat, tags, "action") == flat
+    two_keys = json.dumps({"propose_hook": {}, "reason": "x"})
+    assert unwrap_tagged(two_keys, tags, "action") == two_keys

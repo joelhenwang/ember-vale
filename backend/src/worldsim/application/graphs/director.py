@@ -22,7 +22,7 @@ from uuid import UUID
 from langgraph.graph import StateGraph
 from pydantic import TypeAdapter, ValidationError
 
-from worldsim.application.graphs.lenient import repair_detail, validate_lenient
+from worldsim.application.graphs.lenient import repair_detail, unwrap_tagged, validate_lenient
 from worldsim.application.graphs.state import GraphState
 from worldsim.application.ports.model_gateway import (
     CompletionRequest,
@@ -40,6 +40,7 @@ from worldsim.domain.director import DirectorProposal, validate_proposal
 DIRECTOR_PROMPT_VERSION = "director.v2"
 
 _PROPOSAL_ADAPTER: TypeAdapter[DirectorProposal] = TypeAdapter(DirectorProposal)
+_DIRECTOR_ACTIONS = frozenset({"propose_hook", "propose_arc", "noop"})
 
 
 class DirectorState(GraphState, total=False):
@@ -158,7 +159,9 @@ def build_director_graph(deps: DirectorGraphDeps) -> Any:
         raw: str | None = result.text
         while True:
             try:
-                proposal = validate_lenient(_PROPOSAL_ADAPTER, raw)
+                proposal = validate_lenient(
+                    _PROPOSAL_ADAPTER, unwrap_tagged(raw, _DIRECTOR_ACTIONS, "action")
+                )
             except ValidationError as exc:
                 errors.append(
                     f"attempt {repairs}: {exc.error_count()} schema errors ({repair_detail(exc)})"

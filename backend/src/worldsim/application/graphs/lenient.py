@@ -67,6 +67,23 @@ def validate_lenient[T](adapter: TypeAdapter[T], raw: str) -> T:
         return adapter.validate_python(document)
 
 
+def unwrap_tagged(raw: str, tags: frozenset[str], field: str) -> str:
+    """Flatten ``{"propose_hook": {...}}`` into ``{"action": "propose_hook", ...}``.
+
+    Some models answer a tagged choice by nesting the payload under the
+    tag instead of naming it in ``field``. Only an object with no
+    ``field`` and exactly one key, a known tag holding an object, is
+    rewritten; everything else passes through for normal validation.
+    """
+    document = _parse_object(raw)
+    if document is None or field in document or len(document) != 1:
+        return raw
+    ((tag, payload),) = document.items()
+    if tag not in tags or not isinstance(payload, dict):
+        return raw
+    return json.dumps({**cast("dict[str, Any]", payload), field: tag})
+
+
 def fill_expected_versions(raw: str, versions: Mapping[str, int]) -> str:
     """Set each effect's ``expected_versions`` from the server's versions.
 
