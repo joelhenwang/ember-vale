@@ -1,0 +1,266 @@
+{
+  "label": "reasoning-off",
+  "commit": "2391f8e",
+  "at": "2026-10-05T10:52:20.526Z",
+  "model": "deepseek/deepseek-v4-flash-0731",
+  "price_per_token_usd": {
+    "prompt": 1.52e-8,
+    "completion": 0.00000128
+  },
+  "world_id": "a9af24bb-f316-4094-a9b2-39eb321f6eec",
+  "est_usd_total": 0.001065,
+  "beats": [
+    {
+      "beat": 1,
+      "absolute_index": 1,
+      "wall_ms": 9510,
+      "execution_ms": 9472,
+      "timings_ms": {
+        "decide": 6265,
+        "director": 2442,
+        "narrate": 56,
+        "probe": 410,
+        "react": 0,
+        "resolve": 35,
+        "scenes": 165,
+        "total": 9445
+      },
+      "scenes": 2,
+      "quiet": true,
+      "narrated_scenes": 2,
+      "est_usd": 0.000448,
+      "roles": {
+        "director": {
+          "calls": 2,
+          "failed": 0,
+          "latency_ms_sum": 2322,
+          "latency_ms_max": 1399,
+          "prompt_tokens": 541,
+          "completion_tokens": 109,
+          "reasoning_tokens": 0,
+          "finish": {
+            "stop": 2
+          }
+        },
+        "character_decision": {
+          "calls": 3,
+          "failed": 0,
+          "latency_ms_sum": 8201,
+          "latency_ms_max": 4073,
+          "prompt_tokens": 8049,
+          "completion_tokens": 139,
+          "reasoning_tokens": 0,
+          "finish": {
+            "stop": 3
+          }
+        }
+      },
+      "calls": [
+        {
+          "role": "director",
+          "status": "succeeded",
+          "latency_ms": 1399,
+          "prompt_tokens": 258,
+          "completion_tokens": 82,
+          "reasoning_tokens": 0,
+          "max_tokens": 768,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "director",
+          "status": "succeeded",
+          "latency_ms": 923,
+          "prompt_tokens": 283,
+          "completion_tokens": 27,
+          "reasoning_tokens": 0,
+          "max_tokens": 768,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "character_decision",
+          "status": "succeeded",
+          "latency_ms": 2064,
+          "prompt_tokens": 2666,
+          "completion_tokens": 54,
+          "reasoning_tokens": 0,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "character_decision",
+          "status": "succeeded",
+          "latency_ms": 2064,
+          "prompt_tokens": 2668,
+          "completion_tokens": 31,
+          "reasoning_tokens": 0,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "character_decision",
+          "status": "succeeded",
+          "latency_ms": 4073,
+          "prompt_tokens": 2715,
+          "completion_tokens": 54,
+          "reasoning_tokens": 0,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        }
+      ]
+    },
+    {
+      "beat": 2,
+      "absolute_index": 2,
+      "wall_ms": 7091,
+      "execution_ms": 7063,
+      "timings_ms": {
+        "decide": 6689,
+        "director": 9,
+        "narrate": 41,
+        "probe": 146,
+        "react": 0,
+        "resolve": 30,
+        "scenes": 124,
+        "total": 7048
+      },
+      "scenes": 2,
+      "quiet": true,
+      "narrated_scenes": 2,
+      "est_usd": 0.000292,
+      "roles": {
+        "character_decision": {
+          "calls": 3,
+          "failed": 0,
+          "latency_ms_sum": 8431,
+          "latency_ms_max": 3777,
+          "prompt_tokens": 8282,
+          "completion_tokens": 130,
+          "reasoning_tokens": 0,
+          "finish": {
+            "stop": 3
+          }
+        }
+      },
+      "calls": [
+        {
+          "role": "character_decision",
+          "status": "succeeded",
+          "latency_ms": 2787,
+          "prompt_tokens": 2761,
+          "completion_tokens": 22,
+          "reasoning_tokens": 0,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "character_decision",
+          "status": "succeeded",
+          "latency_ms": 1867,
+          "prompt_tokens": 2735,
+          "completion_tokens": 54,
+          "reasoning_tokens": 0,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "character_decision",
+          "status": "succeeded",
+          "latency_ms": 3777,
+          "prompt_tokens": 2786,
+          "completion_tokens": 54,
+          "reasoning_tokens": 0,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        }
+      ]
+    },
+    {
+      "beat": 3,
+      "absolute_index": 3,
+      "wall_ms": 6606,
+      "execution_ms": 6575,
+      "timings_ms": {
+        "decide": 6154,
+        "director": 12,
+        "narrate": 38,
+        "probe": 154,
+        "react": 0,
+        "resolve": 35,
+        "scenes": 134,
+        "total": 6560
+      },
+      "scenes": 2,
+      "quiet": true,
+      "narrated_scenes": 2,
+      "est_usd": 0.000324,
+      "roles": {
+        "character_decision": {
+          "calls": 4,
+          "failed": 0,
+          "latency_ms_sum": 11171,
+          "latency_ms_max": 3192,
+          "prompt_tokens": 11322,
+          "completion_tokens": 119,
+          "reasoning_tokens": 0,
+          "finish": {
+            "stop": 4
+          }
+        }
+      },
+      "calls": [
+        {
+          "role": "character_decision",
+          "status": "succeeded",
+          "latency_ms": 3192,
+          "prompt_tokens": 2826,
+          "completion_tokens": 31,
+          "reasoning_tokens": 0,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "character_decision",
+          "status": "succeeded",
+          "latency_ms": 2275,
+          "prompt_tokens": 2810,
+          "completion_tokens": 21,
+          "reasoning_tokens": 0,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "character_decision",
+          "status": "succeeded",
+          "latency_ms": 2853,
+          "prompt_tokens": 2835,
+          "completion_tokens": 39,
+          "reasoning_tokens": 0,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "character_decision",
+          "status": "succeeded",
+          "latency_ms": 2851,
+          "prompt_tokens": 2851,
+          "completion_tokens": 28,
+          "reasoning_tokens": 0,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        }
+      ]
+    }
+  ]
+}
