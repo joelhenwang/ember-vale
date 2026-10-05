@@ -17,6 +17,7 @@ from typing import Any
 from uuid import UUID
 
 import httpx
+import pytest
 from test_stage1_api import ApiClient
 
 from worldsim.domain.characters import Character, CharacterCard
@@ -99,6 +100,7 @@ async def _seed_two() -> dict[str, UUID]:
         await engine.dispose()
 
 
+@pytest.mark.sim_gate  # multi-phase simulation (~15-60 s); CI runs it
 def test_detailed_macro_detailed_continuity(migrated_db: None) -> None:
     from fastapi.testclient import TestClient
 

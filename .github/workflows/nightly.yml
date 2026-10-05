@@ -1,30 +1,15 @@
-name: CI
+name: Nightly simulation gates
 
+# The long multi-phase simulations (sim_gate: seven- and thirty-day runs)
+# are too slow for every push; they run here once a night and on demand.
 on:
-  push:
-    branches: [main]
-  pull_request:
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
 
 jobs:
-  frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 24
-          cache: npm
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm run format:check
-      - run: npm test
-
-  backend:
+  sim-gates:
+    timeout-minutes: 45
     runs-on: ubuntu-latest
     services:
       db:
@@ -56,12 +41,4 @@ jobs:
           enable-cache: true
       - run: echo "WORLDSIM_EVIDENCE_DIR=$RUNNER_TEMP/evidence" >> "$GITHUB_ENV"
       - run: uv sync --frozen
-      - run: uv run ruff check .
-      - run: uv run ruff format --check .
-      # Strict for src; tests relax only private-access and unknown-type rules
-      # (pyrightconfig.json). Zero errors, no baseline.
-      - run: uv run basedpyright
-      # Routine suite in parallel: workers share nothing (each test clones
-      # its own database from a migrated template). The multi-phase
-      # sim_gate simulations (up to ~7 min each) run nightly instead.
-      - run: uv run pytest -n auto
+      - run: uv run pytest -m sim_gate -n auto --durations=15

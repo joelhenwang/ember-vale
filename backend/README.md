@@ -43,8 +43,15 @@ Run from `backend/` (CI runs exactly these, see `.github/workflows/ci.yml`):
 ```bash
 uv run ruff check . && uv run ruff format --check .
 uv run basedpyright        # zero errors; strict for src, relaxed private/unknown rules for tests
-uv run pytest              # fast suite; `-m "not soak"` adds the sim gates
+uv run pytest -n 8         # routine suite in parallel (~2.5 min; ~9 min serially)
+uv run pytest -m sim_gate -n 8   # multi-phase simulations (~8 min); CI runs these nightly
 ```
+
+While iterating, run the affected test files directly (`uv run pytest
+tests/test_x.py`); run the parallel routine suite before committing.
+Tests are parallel-safe: every database test clones its own scratch
+database from a migrated template, namespaced per xdist worker. More than
+about 8 workers is slower locally (the database becomes the bottleneck).
 
 Tests need Postgres with an explicit URL. Do not source the repo `.env`
 wholesale: it selects the live OpenRouter provider. Export only the URL:

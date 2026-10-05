@@ -221,6 +221,7 @@ def test_quota_exhaustion_falls_back_without_losing_canon(
     _run(_inner())
 
 
+@pytest.mark.sim_gate  # multi-phase simulation (~15-60 s); CI runs it
 def test_seven_days_survive_injected_failure(migrated_db: None) -> None:
     fired: list[str] = []
 

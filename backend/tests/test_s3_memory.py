@@ -161,6 +161,7 @@ def test_summary_citation_bumps_salience(mem: tuple[ApiClient, FakeGateway]) -> 
     assert highest == 2.0
 
 
+@pytest.mark.sim_gate  # multi-phase simulation (~15-60 s); CI runs it
 def test_promotion_digests_old_salient_sources(
     mem: tuple[ApiClient, FakeGateway],
 ) -> None:
@@ -214,6 +215,7 @@ def test_promotion_digests_old_salient_sources(
     assert asyncio.run(_sources_intact())
 
 
+@pytest.mark.sim_gate  # multi-phase simulation (~15-60 s); CI runs it
 def test_digest_reenters_assembly_with_fixed_score(
     mem: tuple[ApiClient, FakeGateway],
 ) -> None:
@@ -248,6 +250,7 @@ def test_digest_reenters_assembly_with_fixed_score(
     assert reasons.get("permitted"), reasons
 
 
+@pytest.mark.sim_gate  # multi-phase simulation (~15-60 s); CI runs it
 def test_promotion_total_cap_bounds_digests(
     mem: tuple[ApiClient, FakeGateway],
 ) -> None:
@@ -279,6 +282,7 @@ def test_promotion_total_cap_bounds_digests(
     assert asyncio.run(_audit()) == 1
 
 
+@pytest.mark.sim_gate  # multi-phase simulation (~15-60 s); CI runs it
 def test_promotion_off_flag_disables_digests(
     mem: tuple[ApiClient, FakeGateway],
 ) -> None:
