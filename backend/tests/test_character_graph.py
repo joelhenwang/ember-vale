@@ -13,6 +13,7 @@ from worldsim.application.graphs.character import (
     build_character_graph,
     fallback_intent,
     load_character_prompt,
+    pin_identity,
     precheck_action,
 )
 from worldsim.application.graphs.runtime import invoke
@@ -278,3 +279,39 @@ def test_fallback_helper_builds_wait() -> None:
     intent = fallback_intent(invocation, "reason")
     assert intent.action.family == "wait"  # type: ignore[comparison-overlap]
     assert intent.author_character_id == actor
+
+
+def test_placeholder_ids_are_pinned_without_repair() -> None:
+    actor, snapshot = uuid.uuid4(), uuid.uuid4()
+    gateway = FakeGateway(profile=CHARACTER_FAKE_PROFILE)
+    gateway.enqueue_text(
+        json.dumps(
+            {
+                "family": "observe",
+                "character_id": "ash-uuid-placeholder",
+                "snapshot_id": "00000000-0000-0000-0000-000000000000",
+                "focus": "the stalls",
+            }
+        )
+    )
+
+    result = asyncio.run(
+        invoke(
+            build_character_graph(_deps(gateway)),
+            _invocation(actor, "You are Ash.", snapshot=snapshot),
+        )
+    )
+
+    assert result["status"] == "proposed"
+    assert result["repair_count"] == 0
+    action = result["proposal"]["intent"]["action"]
+    assert action["character_id"] == str(actor)
+    assert action["snapshot_id"] == str(snapshot)
+
+
+def test_pin_identity_passes_non_objects_through() -> None:
+    actor, snapshot = uuid.uuid4(), uuid.uuid4()
+    assert pin_identity("{not json", actor, snapshot) == "{not json"
+    assert pin_identity("[1, 2]", actor, snapshot) == "[1, 2]"
+    pinned = json.loads(pin_identity('{"family": "wait"}', actor, snapshot))
+    assert pinned == {"family": "wait", "character_id": str(actor), "snapshot_id": str(snapshot)}

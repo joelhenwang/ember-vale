@@ -205,8 +205,11 @@ _verbs_state: dict[str, str] = {}
 def _route_for() -> Any:
     def _route(request: Any) -> str | None:
         prompt, system = request.prompt, request.system or ""
+        # The actor is whoever the identity section names; other names
+        # appear too (surroundings list who else is present).
+        is_wren = "<<untrusted:identity>>Wren" in prompt
         if "You decide" in system:
-            if "Wren" in prompt and "wren" in _verbs_state:
+            if is_wren and "wren" in _verbs_state:
                 kind = _verbs_state["wren"]
                 if kind == "spar":
                     return _action_json("spar", WREN_ID, target_character_id=ASH_ID)
@@ -224,7 +227,7 @@ def _route_for() -> Any:
                         item_instance_id=_verbs_state["item"],
                         target_character_id=ASH_ID,
                     )
-            return _wait_json(WREN_ID if "Wren" in prompt else ASH_ID)
+            return _wait_json(WREN_ID if is_wren else ASH_ID)
         if "You react" in system:
             return _wait_json(WREN_ID if "Wren" in prompt else ASH_ID)
         if "You resolve" in system:

@@ -18,7 +18,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 from langgraph.graph import StateGraph
@@ -104,6 +104,27 @@ def render_user_prompt(rendered_context: str) -> str:
         "Output exactly one JSON object matching the response schema. "
         "Keep it short. When in doubt, wait."
     )
+
+
+def pin_identity(raw: str, actor_id: UUID, snapshot_id: UUID) -> str:
+    """Model output with character_id and snapshot_id set to the real values.
+
+    The decision is always for this actor at this snapshot; letting the
+    model echo the ids only invited placeholders ("ash-uuid-placeholder",
+    the zero UUID) that cost a repair or were stored on the action.
+    Anything that is not a JSON object passes through unchanged so schema
+    validation still reports it.
+    """
+    try:
+        parsed: object = json.loads(raw)
+    except ValueError:
+        return raw
+    if not isinstance(parsed, dict):
+        return raw
+    pinned = cast("dict[str, Any]", parsed)
+    pinned["character_id"] = str(actor_id)
+    pinned["snapshot_id"] = str(snapshot_id)
+    return json.dumps(pinned)
 
 
 def precheck_action(
@@ -223,9 +244,13 @@ def build_character_graph(deps: CharacterGraphDeps) -> Any:
                 state, fallback_intent(_invocation_of(state), reason), True, reason, [], 0, None
             )
         raw: str | None = result.text
+        invocation = _invocation_of(state)
+        assert invocation.actor_id is not None
         while True:
             try:
-                action = _ACTION_ADAPTER.validate_json(raw)
+                action = _ACTION_ADAPTER.validate_json(
+                    pin_identity(raw, invocation.actor_id, invocation.snapshot_id)
+                )
             except ValidationError as exc:
                 errors.append(f"attempt {repairs}: {exc.error_count()} schema errors")
                 if repairs >= deps.repair_budget:

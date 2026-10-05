@@ -26,7 +26,7 @@ import json
 import logging
 import random
 import time
-from collections.abc import Callable, Generator, Mapping
+from collections.abc import Callable, Generator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from datetime import timedelta
@@ -226,6 +226,7 @@ from worldsim.domain.summaries import DailySummary, day_range, fallback_text
 from worldsim.domain.tasks import Lease
 from worldsim.domain.time import PHASES_PER_DAY, absolute_index, utcnow
 from worldsim.domain.tracing import ManifestSource
+from worldsim.domain.world import Location
 
 #: Resolved from this file like the prompt paths (and like
 #: interfaces/http/state.py), so loading works from any working directory.
@@ -308,6 +309,35 @@ ROLE_MAX_TOKEN_FLOORS: dict[str, int] = {"summary": 1024, "resolver": 1024, "dir
 def role_max_tokens(configured: int, role: str) -> int:
     """Configured cap raised to the role's floor, never above 4096."""
     return min(max(configured, ROLE_MAX_TOKEN_FLOORS.get(role, 0)), 4096)
+
+
+def surroundings_text(
+    place: Location,
+    place_names: Mapping[UUID, str],
+    characters: Sequence[Character],
+    viewer_id: UUID,
+) -> str:
+    """What a character perceives where they stand: the place, its routes
+    by name and id, and who else is visibly present (living, same place).
+
+    Ids are listed because move, communicate, spar and transfer must name
+    them; without them the only actions a model can form are wait and
+    observe.
+    """
+    routes = ", ".join(
+        f"{place_names.get(r.destination_location_id, 'unknown place')} "
+        f"(location_id {r.destination_location_id})"
+        for r in place.routes
+    )
+    present = ", ".join(
+        f"{c.name} (character_id {c.id})"
+        for c in sorted(characters, key=lambda c: c.id.hex)
+        if c.id != viewer_id and c.location_id == place.id and c.life_status == LifeStatus.ALIVE
+    )
+    return (
+        f"{place.name} {place.region}. Routes: {routes or 'none'}. "
+        f"Present here: {present or 'no one else'}."
+    )
 
 
 @contextmanager
@@ -1775,7 +1805,9 @@ class Stage1Orchestrator:
 
             relationships = await uow.relationships.list_for_character(world_id, character.id)
             digests = await uow.digests.list_for_owner(world_id, character.id)
-            names = {c.id: c.name for c in await uow.characters.list_for_world(world_id)}
+            everyone = await uow.characters.list_for_world(world_id)
+            place_names = {loc.id: loc.name for loc in await uow.locations.list_for_world(world_id)}
+        names = {c.id: c.name for c in everyone}
         candidates = [
             SourceCandidate(
                 source_id=f"card:{character.id}",
@@ -1791,10 +1823,7 @@ class Stage1Orchestrator:
                 source_id=f"place:{place.id}",
                 data_class="surroundings",
                 visibility=Visibility.PUBLIC,
-                text=(
-                    f"{place.name} {place.region}. Routes: "
-                    + ", ".join(str(r.destination_location_id) for r in place.routes)
-                ),
+                text=surroundings_text(place, place_names, everyone, character.id),
                 score=2.0,
             ),
             SourceCandidate(
@@ -1803,6 +1832,7 @@ class Stage1Orchestrator:
                 visibility=Visibility.PRIVATE,
                 owner_id=character.id,
                 text=(
+                    f"character_id {character.id}, snapshot_id {snapshot_id}, "
                     f"stamina {character.stamina}, mana {character.mana}, "
                     f"status {character.life_status.value}, "
                     f"conditions {','.join(character.conditions) or 'none'}"
