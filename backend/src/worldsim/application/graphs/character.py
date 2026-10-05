@@ -42,6 +42,7 @@ from worldsim.domain.commands import (
     CommunicateAction,
     MoveAction,
     SparAction,
+    TakeAction,
     TransferAction,
     WaitAction,
 )
@@ -50,7 +51,7 @@ from worldsim.domain.ids import derive_intent_id
 from worldsim.domain.scenes import Intent
 
 #: Versioned role prompt file (prompt lifecycle: repository file, versioned).
-CHARACTER_PROMPT_VERSION = "character_decision.v3"
+CHARACTER_PROMPT_VERSION = "character_decision.v4"
 
 _ACTION_ADAPTER: TypeAdapter[ActionIntent] = TypeAdapter(ActionIntent)
 
@@ -62,6 +63,8 @@ class CharacterState(GraphState, total=False):
     actor_alive: bool
     known_character_ids: list[str]
     location_ids: list[str]
+    carried_item_ids: list[str]
+    item_ids_here: list[str]
     system_prompt: str
     user_prompt: str
     raw_response: str | None
@@ -133,6 +136,8 @@ def precheck_action(
     *,
     known_character_ids: frozenset[str],
     location_ids: frozenset[str],
+    carried_item_ids: frozenset[str] | None = None,
+    item_ids_here: frozenset[str] | None = None,
 ) -> str | None:
     """Deterministic permission/knowledge precheck; reason or None when valid."""
     if isinstance(action, MoveAction):
@@ -157,6 +162,12 @@ def precheck_action(
     if isinstance(action, TransferAction):
         if str(action.target_character_id) not in known_character_ids:
             return f"unknown recipient: {action.target_character_id}"
+        if carried_item_ids is not None and str(action.item_instance_id) not in carried_item_ids:
+            return f"not carrying item: {action.item_instance_id}"
+        return None
+    if isinstance(action, TakeAction):
+        if item_ids_here is not None and str(action.item_instance_id) not in item_ids_here:
+            return f"no such item here: {action.item_instance_id}"
         return None
     return None
 
@@ -306,7 +317,15 @@ def build_character_graph(deps: CharacterGraphDeps) -> Any:
                 continue
             known = frozenset(str(v) for v in state.get("known_character_ids", []))
             locations = frozenset(str(v) for v in state.get("location_ids", []))
-            denial = precheck_action(action, known_character_ids=known, location_ids=locations)
+            carried_raw = state.get("carried_item_ids")
+            here_raw = state.get("item_ids_here")
+            denial = precheck_action(
+                action,
+                known_character_ids=known,
+                location_ids=locations,
+                carried_item_ids=frozenset(carried_raw) if carried_raw is not None else None,
+                item_ids_here=frozenset(here_raw) if here_raw is not None else None,
+            )
             if denial is not None:
                 reason = f"precheck rejected the proposal ({denial}); waiting"
                 return _decide_result(

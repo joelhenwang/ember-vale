@@ -15,6 +15,7 @@ from worldsim.domain.commands import (
     ObserveAction,
     RestAction,
     SparAction,
+    TakeAction,
     TransferAction,
     WaitAction,
 )
@@ -128,6 +129,11 @@ def check_transfer(character: Character, action: TransferAction, view: WorldView
         raise DomainError(ErrorCode.PRECONDITION_FAILED, "handoff needs shared ground")
 
 
+def check_take(character: Character) -> None:
+    """Picking up needs a living taker; whether the item is there settles later."""
+    require_alive(character)
+
+
 def check_intent(intent: ActionIntent, view: WorldView) -> None:
     """Dispatch one scripted intent to its feasibility check."""
     character = view.character(intent.character_id)
@@ -139,6 +145,9 @@ def check_intent(intent: ActionIntent, view: WorldView) -> None:
         return
     if isinstance(intent, TransferAction):
         check_transfer(character, intent, view)
+        return
+    if isinstance(intent, TakeAction):
+        check_take(character)
         return
     require_stage0_family(intent.family)
     match intent:

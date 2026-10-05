@@ -34,6 +34,7 @@ class ActionFamily(StrEnum):
     INTERACT = "interact"
     USE_ITEM = "use_item"
     TRANSFER = "transfer"
+    TAKE = "take"
     TRAIN = "train"
     WORK = "work"
     CRAFT = "craft"

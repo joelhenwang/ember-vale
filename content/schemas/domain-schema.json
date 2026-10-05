@@ -2418,6 +2418,41 @@
           "title": "NarrativeStatus",
           "type": "string"
         },
+        "PlacedItem": {
+          "additionalProperties": false,
+          "description": "An accepted item, with the id it will be created under.",
+          "properties": {
+            "description": {
+              "default": "",
+              "maxLength": 600,
+              "title": "Description",
+              "type": "string"
+            },
+            "id": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            },
+            "location_id": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            },
+            "name": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "location_id",
+            "id"
+          ],
+          "title": "PlacedItem",
+          "type": "object"
+        },
         "SpawnedNpc": {
           "additionalProperties": false,
           "description": "An accepted new character, with the id it will be created under.",
@@ -2483,6 +2518,17 @@
           ],
           "default": null
         },
+        "item": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlacedItem"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "npc": {
           "anyOf": [
             {
@@ -2509,6 +2555,35 @@
     },
     "DirectorProposal": {
       "$defs": {
+        "ItemSpec": {
+          "additionalProperties": false,
+          "description": "A one-off thing an opening leaves somewhere (a lost ledger, a locket).",
+          "properties": {
+            "description": {
+              "default": "",
+              "maxLength": 600,
+              "title": "Description",
+              "type": "string"
+            },
+            "location_id": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            },
+            "name": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "location_id"
+          ],
+          "title": "ItemSpec",
+          "type": "object"
+        },
         "NpcSpec": {
           "additionalProperties": false,
           "description": "A new character an opening needs: who, what they are like, where.",
@@ -2546,6 +2621,17 @@
           "pattern": "^(propose_hook|propose_arc|noop)$",
           "title": "Action",
           "type": "string"
+        },
+        "item": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ItemSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "npc": {
           "anyOf": [
@@ -3182,6 +3268,40 @@
           "title": "SparAction",
           "type": "object"
         },
+        "TakeAction": {
+          "additionalProperties": false,
+          "description": "Pick up one unheld item lying where the character stands.",
+          "properties": {
+            "character_id": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            },
+            "family": {
+              "const": "take",
+              "default": "take",
+              "title": "Family",
+              "type": "string"
+            },
+            "item_instance_id": {
+              "format": "uuid",
+              "title": "Item Instance Id",
+              "type": "string"
+            },
+            "snapshot_id": {
+              "format": "uuid",
+              "title": "Snapshot Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "character_id",
+            "snapshot_id",
+            "item_instance_id"
+          ],
+          "title": "TakeAction",
+          "type": "object"
+        },
         "TransferAction": {
           "additionalProperties": false,
           "description": "Stage 3 handoff: moves one owned item instance to a co-located character.",
@@ -3262,6 +3382,7 @@
               "observe": "#/$defs/ObserveAction",
               "rest": "#/$defs/RestAction",
               "spar": "#/$defs/SparAction",
+              "take": "#/$defs/TakeAction",
               "transfer": "#/$defs/TransferAction",
               "wait": "#/$defs/WaitAction"
             },
@@ -3291,6 +3412,9 @@
             },
             {
               "$ref": "#/$defs/TransferAction"
+            },
+            {
+              "$ref": "#/$defs/TakeAction"
             }
           ],
           "title": "Action"
@@ -3407,6 +3531,19 @@
       "additionalProperties": false,
       "description": "One item stack with exactly one holder (or none, lying where left).",
       "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 600,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
         "id": {
           "format": "uuid",
           "title": "Id",
@@ -3417,6 +3554,32 @@
           "minLength": 1,
           "title": "Item Key",
           "type": "string"
+        },
+        "location_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Location Id"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
         },
         "owner_id": {
           "anyOf": [
@@ -6572,6 +6735,40 @@
           "title": "SparAction",
           "type": "object"
         },
+        "TakeAction": {
+          "additionalProperties": false,
+          "description": "Pick up one unheld item lying where the character stands.",
+          "properties": {
+            "character_id": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            },
+            "family": {
+              "const": "take",
+              "default": "take",
+              "title": "Family",
+              "type": "string"
+            },
+            "item_instance_id": {
+              "format": "uuid",
+              "title": "Item Instance Id",
+              "type": "string"
+            },
+            "snapshot_id": {
+              "format": "uuid",
+              "title": "Snapshot Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "character_id",
+            "snapshot_id",
+            "item_instance_id"
+          ],
+          "title": "TakeAction",
+          "type": "object"
+        },
         "TransferAction": {
           "additionalProperties": false,
           "description": "Stage 3 handoff: moves one owned item instance to a co-located character.",
@@ -6652,6 +6849,7 @@
               "observe": "#/$defs/ObserveAction",
               "rest": "#/$defs/RestAction",
               "spar": "#/$defs/SparAction",
+              "take": "#/$defs/TakeAction",
               "transfer": "#/$defs/TransferAction",
               "wait": "#/$defs/WaitAction"
             },
@@ -6681,6 +6879,9 @@
             },
             {
               "$ref": "#/$defs/TransferAction"
+            },
+            {
+              "$ref": "#/$defs/TakeAction"
             }
           ],
           "title": "Action"

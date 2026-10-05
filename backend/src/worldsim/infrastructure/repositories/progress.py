@@ -174,7 +174,35 @@ class SqlAlchemyInventoryRepository:
             owner_id=row.owner_id,
             quantity=row.quantity,
             version=row.version,
+            location_id=row.location_id,
+            name=row.name,
+            description=row.description,
         )
+
+    async def list_for_world(self, world_id: UUID) -> list[ItemInstance]:
+        rows = (
+            await self._session.execute(
+                select(ItemInstanceRow)
+                .where(ItemInstanceRow.world_id == world_id)
+                .order_by(ItemInstanceRow.id)
+            )
+        ).scalars()
+        return [self._to_item(row) for row in rows]
+
+    async def list_at_location(self, world_id: UUID, location_id: UUID) -> list[ItemInstance]:
+        """Unheld items lying at one place."""
+        rows = (
+            await self._session.execute(
+                select(ItemInstanceRow)
+                .where(
+                    ItemInstanceRow.world_id == world_id,
+                    ItemInstanceRow.owner_id.is_(None),
+                    ItemInstanceRow.location_id == location_id,
+                )
+                .order_by(ItemInstanceRow.id)
+            )
+        ).scalars()
+        return [self._to_item(row) for row in rows]
 
     async def get_item(self, item_id: ItemInstanceId) -> ItemInstance:
         row = await self._session.get(ItemInstanceRow, item_id)
@@ -204,6 +232,9 @@ class SqlAlchemyInventoryRepository:
                 owner_id=item.owner_id,
                 quantity=item.quantity,
                 version=item.version,
+                location_id=item.location_id,
+                name=item.name,
+                description=item.description,
             )
         )
         await self._session.flush()
@@ -215,6 +246,7 @@ class SqlAlchemyInventoryRepository:
         if row.version != expected_version:
             raise version_conflict("item instance", item.id, expected_version, row.version)
         row.owner_id = item.owner_id
+        row.location_id = item.location_id
         row.quantity = item.quantity
         row.version = expected_version + 1
         await self._session.flush()

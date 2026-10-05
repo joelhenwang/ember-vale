@@ -27,6 +27,7 @@ from worldsim.domain.commands import (
     CommunicateAction,
     MoveAction,
     SparAction,
+    TakeAction,
     TransferAction,
 )
 from worldsim.domain.enums import ParticipantRole
@@ -45,6 +46,8 @@ def target_key(action: ActionIntent) -> str | None:
         return f"character:{action.target_character_id}"
     if isinstance(action, MoveAction):
         return f"location:{action.destination_location_id}"
+    if isinstance(action, TakeAction):
+        return f"item:{action.item_instance_id}"
     return None
 
 
@@ -77,6 +80,8 @@ def mutable_aggregates(intent: Intent) -> frozenset[str]:
         return frozenset({author})
     if isinstance(action, TransferAction):
         return frozenset({author, f"character:{action.target_character_id}"})
+    if isinstance(action, TakeAction):
+        return frozenset({author})
     if action.family == "rest":
         return frozenset({author})
     return frozenset()
@@ -84,7 +89,15 @@ def mutable_aggregates(intent: Intent) -> frozenset[str]:
 
 def _active(action: ActionIntent) -> bool:
     """Intents that reach into shared space (passive waits/rests do not)."""
-    return action.family in ("communicate", "move", "observe", "spar", "appeal", "transfer")
+    return action.family in (
+        "communicate",
+        "move",
+        "observe",
+        "spar",
+        "appeal",
+        "transfer",
+        "take",
+    )
 
 
 def _linked(first: Intent, second: Intent, locations: dict[str, str]) -> bool:

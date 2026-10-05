@@ -9,6 +9,10 @@ from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.characters import Character, CharacterCard
 from worldsim.domain.director import SPAWNED_CONFIG_KEY, DirectorDecision, SpawnedNpc
 from worldsim.domain.ids import WorldId, new_card_id
+from worldsim.domain.progress import ItemInstance
+
+#: Catalog key for one-off items a director opening places (named per instance).
+PLACED_ITEM_KEY = "found_object"
 
 
 async def accept_decision(
@@ -24,6 +28,17 @@ async def accept_decision(
     if decision.accepted:
         if decision.npc is not None:
             await _spawn(uow, world_id, decision.npc)
+        if decision.item is not None:
+            await uow.inventory.add_item(
+                ItemInstance(
+                    id=decision.item.id,
+                    world_id=world_id,
+                    item_key=PLACED_ITEM_KEY,
+                    location_id=decision.item.location_id,
+                    name=decision.item.name,
+                    description=decision.item.description or None,
+                )
+            )
         if decision.hook is not None:
             await uow.narrative.add_hook(
                 decision.hook.model_copy(update={"created_phase_index": last_absolute})
@@ -36,6 +51,7 @@ async def accept_decision(
             "hook_id": str(decision.hook.id) if decision.hook else None,
             "arc_id": str(decision.arc.id) if decision.arc else None,
             "npc_id": str(decision.npc.id) if decision.npc else None,
+            "item_id": str(decision.item.id) if decision.item else None,
         }
         await uow.commands.add(
             command_id=uuid4(),

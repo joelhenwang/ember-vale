@@ -108,6 +108,8 @@ async def move_item(
     uow: UnitOfWork, item: ItemInstance, to_owner_id: CharacterId | None
 ) -> ItemInstance:
     """Version-guarded holder change without audit or commit (see fold_claim)."""
-    return await uow.inventory.save_item(
-        item.model_copy(update={"owner_id": to_owner_id}), item.version
-    )
+    # Held items are with their holder, not lying anywhere.
+    update: dict[str, object] = {"owner_id": to_owner_id}
+    if to_owner_id is not None:
+        update["location_id"] = None
+    return await uow.inventory.save_item(item.model_copy(update=update), item.version)

@@ -107,6 +107,15 @@ class ItemInstanceRow(Base):
     )
     quantity: Mapped[int] = mapped_column(Integer, default=1)
     version: Mapped[int] = mapped_column(Integer, default=0)
+    location_id: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("location.id", name="fk_item_location"),
+        nullable=True,
+        default=None,
+        index=True,
+    )
+    name: Mapped[str | None] = mapped_column(String(128), nullable=True, default=None)
+    description: Mapped[str | None] = mapped_column(String(600), nullable=True, default=None)
 
     __table_args__ = (
         CheckConstraint("version >= 0", name="ck_item_version"),

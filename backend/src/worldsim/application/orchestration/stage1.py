@@ -122,6 +122,7 @@ from worldsim.domain.commands import (
     CommunicateAction,
     MoveAction,
     SparAction,
+    TakeAction,
     TransferAction,
 )
 from worldsim.domain.context import ContextEnvelope, ContextRequest, SourceCandidate
@@ -168,6 +169,7 @@ from worldsim.domain.ids import (
     new_summary_id,
 )
 from worldsim.domain.intentions import CharacterIntention, card_drives, extract_intention
+from worldsim.domain.items import ItemDefinition, load_item_definitions
 from worldsim.domain.knowledge import normalize
 from worldsim.domain.memory import (
     CITE_BUMP_KEY,
@@ -203,7 +205,7 @@ from worldsim.domain.perception import (
     PerceivedFact,
 )
 from worldsim.domain.phases import PhaseRun, PhaseSnapshot, SnapshotCharacter
-from worldsim.domain.progress import TRAINING_STAMINA_COST
+from worldsim.domain.progress import TRAINING_STAMINA_COST, ItemInstance
 from worldsim.domain.relationships import describe
 from worldsim.domain.rules.dnd import (
     DataTables,
@@ -317,11 +319,43 @@ def role_max_tokens(configured: int, role: str) -> int:
     return min(max(configured, ROLE_MAX_TOKEN_FLOORS.get(role, 0)), 4096)
 
 
+ITEM_CATALOG_PATH = Path(__file__).resolve().parents[5] / "content" / "definitions" / "items.json"
+_item_catalog_cache: dict[str, ItemDefinition] | None = None
+
+
+def _item_catalog() -> dict[str, ItemDefinition]:
+    global _item_catalog_cache
+    if _item_catalog_cache is None:
+        try:
+            _item_catalog_cache = load_item_definitions(ITEM_CATALOG_PATH)
+        except (OSError, ValueError):
+            _item_catalog_cache = {}
+    return _item_catalog_cache
+
+
+def item_label(item: ItemInstance) -> str:
+    """Display name: the item's own, else the catalog's, else its key."""
+    if item.name:
+        return item.name
+    known = _item_catalog().get(item.item_key)
+    return known.name if known is not None else item.item_key.replace("_", " ")
+
+
+def item_line(item: ItemInstance) -> str:
+    """Name, short description and id, as listed to a character."""
+    known = _item_catalog().get(item.item_key)
+    about = item.description or (known.description if known is not None else "")
+    count = f" x{item.quantity}" if item.quantity > 1 else ""
+    detail = f" — {about}" if about else ""
+    return f"{item_label(item)}{count}{detail} (item_id {item.id})"
+
+
 def surroundings_text(
     place: Location,
     place_names: Mapping[UUID, str],
     characters: Sequence[Character],
     viewer_id: UUID,
+    items_here: Sequence[ItemInstance] = (),
 ) -> str:
     """What a character perceives where they stand: the place, its routes
     by name and id, and who else is visibly present (living, same place).
@@ -341,9 +375,11 @@ def surroundings_text(
         if c.id != viewer_id and c.location_id == place.id and c.life_status == LifeStatus.ALIVE
     )
     where = f"{place.name}, {place.region}" if place.region else place.name
+    things = "; ".join(item_line(i) for i in items_here)
     return (
         f"You are at {where}. From here you can travel to: {routes or 'nowhere'}. "
         f"Present here: {present or 'no one else'}."
+        + (f" Things lying here: {things}." if things else "")
     )
 
 
@@ -538,7 +574,9 @@ def _summarize(
         return f"{who} appeals: {action.proposition}"
     if isinstance(action, TransferAction):
         target = names.get(action.target_character_id, "?")
-        return f"{who} gives {target} an item"
+        return f"{who} gives {target} {names.get(action.item_instance_id, 'an item')}"
+    if isinstance(action, TakeAction):
+        return f"{who} picks up {names.get(action.item_instance_id, 'something')}"
     family = action.family.value
     return f"{who} {family}s"
 
@@ -674,7 +712,13 @@ class Stage1Orchestrator:
             locations = await uow.locations.list_for_world(world_id)
             live_world = await uow.worlds.get(world_id)
         # Place names ride along so attempts read "Wren goes to the Market".
-        names = {c.id: c.name for c in characters} | {loc.id: loc.name for loc in locations}
+        async with self._factory() as uow:
+            world_items = await uow.inventory.list_for_world(world_id)
+        names = (
+            {c.id: c.name for c in characters}
+            | {loc.id: loc.name for loc in locations}
+            | {i.id: item_label(i) for i in world_items}
+        )
         # Simultaneous decisions: two characters heading for each other
         # would swap places; one waits so they meet.
         # Models name a destination, never a route id: fill the route from
@@ -1654,6 +1698,7 @@ class Stage1Orchestrator:
                 "spawns_left": spawns_left,
                 # Deterministic per hook, so a replayed beat names the same person.
                 "npc_id": str(uuid5(hook_id, "npc")),
+                "item_id": str(uuid5(hook_id, "item")),
             },
         )
         sampling = runtime.sampling
@@ -1839,6 +1884,14 @@ class Stage1Orchestrator:
             world_id, run_id, sealed.snapshot_id, character
         )
         sources, dropped = to_manifest_dict(included, excluded)
+        async with self._factory() as uow:
+            carried_ids = [
+                str(i.id) for i in await uow.inventory.list_for_owner(world_id, character.id)
+            ]
+            here_ids = [
+                str(i.id)
+                for i in await uow.inventory.list_at_location(world_id, character.location_id)
+            ]
         spec = ManifestSpec(
             role="character_decision",
             profile=runtime.profiles["character"],
@@ -1872,6 +1925,8 @@ class Stage1Orchestrator:
                 "actor_alive": True,
                 "known_character_ids": known,
                 "location_ids": place_ids,
+                "carried_item_ids": carried_ids,
+                "item_ids_here": here_ids,
             },
         )
         sampling = runtime.sampling
@@ -1964,6 +2019,8 @@ class Stage1Orchestrator:
             digests = await uow.digests.list_for_owner(world_id, character.id)
             intention = await uow.intentions.get(character.id)
             hooks = await uow.narrative.list_hooks_for_world(world_id)
+            items_here = await uow.inventory.list_at_location(world_id, character.location_id)
+            carried = await uow.inventory.list_for_owner(world_id, character.id)
             everyone = await uow.characters.list_for_world(world_id)
             place_names = {loc.id: loc.name for loc in await uow.locations.list_for_world(world_id)}
         names = {c.id: c.name for c in everyone}
@@ -1982,7 +2039,7 @@ class Stage1Orchestrator:
                 source_id=f"place:{place.id}",
                 data_class="surroundings",
                 visibility=Visibility.PUBLIC,
-                text=surroundings_text(place, place_names, everyone, character.id),
+                text=surroundings_text(place, place_names, everyone, character.id, items_here),
                 score=2.0,
             ),
             SourceCandidate(
@@ -1994,6 +2051,7 @@ class Stage1Orchestrator:
                     f"now {phase_label(now_index)}, "
                     f"character_id {character.id}, snapshot_id {snapshot_id}, "
                     f"stamina {character.stamina}, mana {character.mana}, "
+                    f"carrying {'; '.join(item_line(i) for i in carried) or 'nothing'}, "
                     f"status {character.life_status.value}, "
                     f"conditions {','.join(character.conditions) or 'none'}"
                 ),
@@ -2221,7 +2279,7 @@ class Stage1Orchestrator:
         """
         for intent in members:
             action = intent.action
-            if not isinstance(action, (SparAction, AppealAction, TransferAction)):
+            if not isinstance(action, (SparAction, AppealAction, TransferAction, TakeAction)):
                 continue
             async with self._factory() as uow:
                 try:
@@ -2259,6 +2317,8 @@ class Stage1Orchestrator:
                         None,
                         event_id,
                     )
+                elif isinstance(action, TakeAction):
+                    await self._settle_take(uow, intent, action)
                 else:
                     assert isinstance(action, TransferAction)
                     await self._settle_transfer(uow, intent, action)
@@ -2336,6 +2396,17 @@ class Stage1Orchestrator:
                 random_result=outcome[:512],
             )
         )
+
+    async def _settle_take(self, uow: Any, intent: Intent, action: TakeAction) -> None:
+        """Pick up an unheld item where the taker stands; gone already is a no-op."""
+        try:
+            item = await uow.inventory.get_item(action.item_instance_id)
+        except DomainError:
+            return
+        taker = await uow.characters.get(intent.author_character_id)
+        if item.owner_id is not None or item.location_id != taker.location_id:
+            return  # someone was quicker, or it was never here
+        await move_item(uow, item, taker.id)
 
     async def _settle_transfer(self, uow: Any, intent: Intent, action: TransferAction) -> None:
         """Ownership-checked handoff between co-located characters."""

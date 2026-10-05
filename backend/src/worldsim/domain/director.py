@@ -13,7 +13,14 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from worldsim.domain.ids import ArcId, CharacterId, HookId, LocationId, WorldId
+from worldsim.domain.ids import (
+    ArcId,
+    CharacterId,
+    HookId,
+    ItemInstanceId,
+    LocationId,
+    WorldId,
+)
 from worldsim.domain.narrative import NarrativeArc, NarrativeHook
 
 #: Phases between Director runs unless overridden in world config.
@@ -22,7 +29,7 @@ DIRECTOR_COOLDOWN_PHASES = 3
 MAX_ACTIVE_HOOKS = 3
 MAX_ACTIVE_ARCS = 2
 #: Powers a proposal may request. Anything else is rejected.
-SUPPORTED_POWERS = frozenset({"spawn_npc", "new_location"})
+SUPPORTED_POWERS = frozenset({"spawn_npc", "new_location", "place_item"})
 
 
 #: New characters the director may add to one story.
@@ -38,6 +45,22 @@ class NpcSpec(BaseModel):
     name: str = Field(min_length=1, max_length=64)
     description: str = Field(default="", max_length=600)
     location_id: LocationId
+
+
+class ItemSpec(BaseModel):
+    """A one-off thing an opening leaves somewhere (a lost ledger, a locket)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    name: str = Field(min_length=1, max_length=128)
+    description: str = Field(default="", max_length=600)
+    location_id: LocationId
+
+
+class PlacedItem(ItemSpec):
+    """An accepted item, with the id it will be created under."""
+
+    id: ItemInstanceId
 
 
 class SpawnedNpc(NpcSpec):
@@ -58,6 +81,7 @@ class DirectorProposal(BaseModel):
     participant_ids: list[CharacterId] = Field(default_factory=list)
     reason: str = Field(default="", max_length=512)
     npc: NpcSpec | None = None
+    item: ItemSpec | None = None
 
 
 class DirectorDecision(BaseModel):
@@ -69,6 +93,7 @@ class DirectorDecision(BaseModel):
     hook: NarrativeHook | None = None
     arc: NarrativeArc | None = None
     npc: SpawnedNpc | None = None
+    item: PlacedItem | None = None
     reason: str = Field(default="", max_length=512)
 
 
@@ -93,6 +118,7 @@ def validate_proposal(
     known_location_ids: frozenset[LocationId] = frozenset(),
     spawns_left: int = 0,
     npc_id: CharacterId | None = None,
+    item_id: ItemInstanceId | None = None,
 ) -> DirectorDecision:
     """Accept well-formed proposals inside privilege and budget; else reject."""
     if proposal.action == "noop":
@@ -117,8 +143,22 @@ def validate_proposal(
                 return DirectorDecision(accepted=False, reason=denial)
             assert proposal.npc is not None and npc_id is not None
             spawned = SpawnedNpc(**proposal.npc.model_dump(), id=npc_id)
+        placed: PlacedItem | None = None
+        if proposal.item is not None or "place_item" in proposal.requested_powers:
+            if proposal.item is None or item_id is None:
+                return DirectorDecision(
+                    accepted=False, reason="place_item needs an item: name, location_id"
+                )
+            if proposal.item.location_id not in known_location_ids:
+                return DirectorDecision(
+                    accepted=False,
+                    reason=f"item place is not a known location: {proposal.item.location_id}",
+                )
+            placed = PlacedItem(**proposal.item.model_dump(), id=item_id)
         participants = list(proposal.participant_ids)
         powers = list(proposal.requested_powers)
+        if placed is not None and "place_item" not in powers:
+            powers.append("place_item")
         if spawned is not None:
             # A hook naming nobody is heard by everyone; naming only the new
             # character would hide it from the cast it is meant to reach.
@@ -137,6 +177,7 @@ def validate_proposal(
                 participant_ids=participants,
             ),
             npc=spawned,
+            item=placed,
         )
     if active_arcs >= MAX_ACTIVE_ARCS:
         return DirectorDecision(accepted=False, reason="arc budget exhausted")

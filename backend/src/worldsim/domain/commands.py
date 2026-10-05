@@ -125,6 +125,13 @@ class TransferAction(ActionBase):
     target_character_id: CharacterId
 
 
+class TakeAction(ActionBase):
+    """Pick up one unheld item lying where the character stands."""
+
+    family: Literal[ActionFamily.TAKE] = ActionFamily.TAKE
+    item_instance_id: ItemInstanceId
+
+
 ActionIntent = Annotated[
     WaitAction
     | RestAction
@@ -133,6 +140,7 @@ ActionIntent = Annotated[
     | CommunicateAction
     | SparAction
     | AppealAction
-    | TransferAction,
+    | TransferAction
+    | TakeAction,
     Field(discriminator="family"),
 ]

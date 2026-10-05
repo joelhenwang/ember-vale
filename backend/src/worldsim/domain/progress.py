@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from worldsim.domain.ids import (
     CharacterId,
     ItemInstanceId,
+    LocationId,
     SkillId,
     WorldId,
 )
@@ -78,6 +79,12 @@ class ItemInstance(BaseModel):
     owner_id: CharacterId | None = None
     quantity: int = Field(default=1, ge=1)
     version: int = Field(default=0, ge=0)
+    #: Where an unheld item lies (None while someone carries it).
+    location_id: LocationId | None = None
+    #: Own name and description for one-off items (a lost locket) that are
+    #: not in the item catalog; catalog items leave these empty.
+    name: str | None = Field(default=None, max_length=128)
+    description: str | None = Field(default=None, max_length=600)
 
 
 def session_gain(sessions_awarded: int) -> int:
