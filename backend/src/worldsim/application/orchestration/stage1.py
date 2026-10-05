@@ -338,8 +338,9 @@ def surroundings_text(
         for c in sorted(characters, key=lambda c: c.id.hex)
         if c.id != viewer_id and c.location_id == place.id and c.life_status == LifeStatus.ALIVE
     )
+    where = f"{place.name}, {place.region}" if place.region else place.name
     return (
-        f"{place.name} {place.region}. Routes: {routes or 'none'}. "
+        f"You are at {where}. From here you can travel to: {routes or 'nowhere'}. "
         f"Present here: {present or 'no one else'}."
     )
 
@@ -523,7 +524,7 @@ def _summarize(
     fallback = names.get(author_id, "?") if author_id is not None else "?"
     who = names.get(action.character_id, fallback)
     if isinstance(action, MoveAction):
-        return f"{who} moves"
+        return f"{who} goes to {names.get(action.destination_location_id, 'another place')}"
     if isinstance(action, CommunicateAction):
         target = names.get(action.target_character_id, "?")
         return f"{who} says to {target}: {action.topic}"
@@ -668,7 +669,8 @@ class Stage1Orchestrator:
             characters = await uow.characters.list_for_world(world_id)
             locations = await uow.locations.list_for_world(world_id)
             live_world = await uow.worlds.get(world_id)
-        names = {c.id: c.name for c in characters}
+        # Place names ride along so attempts read "Wren goes to the Market".
+        names = {c.id: c.name for c in characters} | {loc.id: loc.name for loc in locations}
         # Simultaneous decisions: two characters heading for each other
         # would swap places; one waits so they meet.
         # Models name a destination, never a route id: fill the route from

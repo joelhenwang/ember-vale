@@ -20,7 +20,7 @@ from worldsim.application.orchestration.stage1 import (
 )
 from worldsim.application.ports.model_gateway import CompletionRequest
 from worldsim.domain.characters import Character
-from worldsim.domain.commands import CommunicateAction, WaitAction
+from worldsim.domain.commands import CommunicateAction, MoveAction, WaitAction
 from worldsim.domain.context import ContextRequest, SourceCandidate
 from worldsim.domain.enums import ParticipantRole, Visibility
 from worldsim.domain.intentions import card_drives, extract_intention
@@ -315,3 +315,13 @@ def test_open_hooks_reach_characters_as_local_talk(
     )
     assert "Word around the vale: A stranger at the market." in wren
     assert "Ash's debt" not in wren  # a hook for Ash only
+
+
+def test_moves_are_remembered_with_their_destination() -> None:
+    from worldsim.application.orchestration import stage1
+
+    wren, market, snap = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    move = MoveAction(character_id=wren, snapshot_id=snap, destination_location_id=market)
+    summarize = stage1._summarize  # pyright: ignore[reportPrivateUsage]
+    assert summarize(move, {wren: "Wren", market: "Market"}) == "Wren goes to Market"
+    assert summarize(move, {wren: "Wren"}) == "Wren goes to another place"

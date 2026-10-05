@@ -62,5 +62,6 @@ def test_surroundings_say_when_alone_and_without_routes() -> None:
 
     text = surroundings_text(cell, {}, [alone], alone.id)
 
-    assert "Routes: none." in text
+    assert "From here you can travel to: nowhere." in text
+    assert text.startswith("You are at Cell.")
     assert "Present here: no one else." in text

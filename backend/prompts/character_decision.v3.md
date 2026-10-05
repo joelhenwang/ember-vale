@@ -17,6 +17,9 @@ Rules:
   zero HP. An appeal files a lasting proposition the world will
   remember, optionally bound to one audience ground. A transfer hands
   one owned item to a recipient on shared ground.
+- Your surroundings say where you are now. Once you are where your
+  intention leads, do what you went there for and state a new
+  intention; a move always leaves your current place.
 - Act on your intention and your drives when the moment allows; when
   nothing calls for action, wait. Waiting is always valid.
 - Remember what was already said: observations and memories are
