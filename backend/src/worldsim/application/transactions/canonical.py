@@ -116,6 +116,10 @@ class CommitRequest:
     outbox: list[OutboxSpec] = field(default_factory=list)
     random: RandomEvidence | None = None
     scene_records: SceneRecords | None = None
+    #: Who the event is about and short structured facts (e.g. where it
+    #: happened) for read models such as the observatory feed.
+    participant_ids: list[UUID] = field(default_factory=list)
+    summary: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -178,6 +182,8 @@ class CanonicalTransaction:
                     absolute_index=request.absolute_index,
                     phase_run_id=request.phase_run_id,
                     source_command_id=request.command_id,
+                    participant_ids=list(request.participant_ids),
+                    summary=dict(request.summary),
                 )
             )
 

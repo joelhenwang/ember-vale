@@ -149,6 +149,17 @@ class GraphSettings(BaseModel):
     checkpoint_schema: str = Field(default="graph_state", min_length=1, max_length=63)
 
 
+class AutoplaySettings(BaseModel):
+    """Background runner for server-side autoplay (E5 observatory).
+
+    WORLDSIM_AUTOPLAY__ENABLED=false keeps the process from advancing any
+    story on its own; Play then has no effect until a runner is enabled.
+    """
+
+    enabled: bool = True
+    poll_seconds: float = Field(default=1.0, gt=0, le=60)
+
+
 class SecuritySettings(BaseModel):
     """Explicit override for non-loopback listeners."""
 
@@ -169,6 +180,7 @@ class Settings(BaseSettings):
     tracing: TracingSettings = TracingSettings()
     graphs: GraphSettings = GraphSettings()
     security: SecuritySettings = SecuritySettings()
+    autoplay: AutoplaySettings = AutoplaySettings()
 
     @model_validator(mode="after")
     def _reject_unsafe_combinations(self) -> Settings:

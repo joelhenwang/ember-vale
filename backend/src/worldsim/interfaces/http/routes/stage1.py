@@ -17,9 +17,7 @@ from pydantic import TypeAdapter
 
 from worldsim.application.capabilities import Capability, parse_role, require_capability
 from worldsim.application.commands.party import begin_adventure, create_character, link_member
-from worldsim.application.conditions import tick_conditions
-from worldsim.application.execution import guarded_timed, new_owner, phase_run_id, phase_scope
-from worldsim.application.orchestration.stage1 import Stage1Orchestrator, Stage1PhaseReport
+from worldsim.application.orchestration.stage1 import Stage1Orchestrator
 from worldsim.application.queries.suggestions import suggestions_for
 from worldsim.application.stories.guards import require_unarchived
 from worldsim.domain.commands import ActionIntent
@@ -29,6 +27,7 @@ from worldsim.domain.party import PartyMember
 from worldsim.domain.scenes import Intent, Reaction
 from worldsim.domain.time import absolute_index
 from worldsim.interfaces.http import schemas as api
+from worldsim.interfaces.http.beats import run_beat
 from worldsim.interfaces.http.routes.roles import effective_role
 from worldsim.interfaces.http.state import dnd_tables
 
@@ -341,33 +340,12 @@ async def advance(
             raise DomainError(ErrorCode.FORBIDDEN, "players substitute only themselves")
         player_intents[actor] = _ACTION_ADAPTER.validate_python(raw_action)
 
-    state = request.app.state.app_state
-    async with state.uow_factory()() as uow:
-        await require_unarchived(uow, body.world_id)
-    owner = new_owner("http")
-    orchestrator = _stage1(request)
-
-    async def _run() -> Stage1PhaseReport:
-        # The queue drains inside the beat (past its duplicate replay):
-        # effects apply pre-decision, attempts merge into the decision and
-        # complete only once their scenes commit.
-        await tick_conditions(factory, body.world_id, body.absolute_index)
-        return await orchestrator.advance_phase(
-            body.world_id,
-            body.absolute_index,
-            player_intents,
-            drain_queue=True,
-            submitter_id=viewer,
-        )
-
-    factory = state.uow_factory()
-    report, slot_claim_ms, execution_ms = await guarded_timed(
-        factory,
+    report, slot_claim_ms, execution_ms = await run_beat(
+        request.app.state.app_state,
         body.world_id,
-        phase_scope(body.absolute_index),
-        owner,
-        phase_run_id(body.world_id, body.absolute_index),
-        _run,
+        body.absolute_index,
+        player_intents,
+        submitter_id=viewer,
     )
     # Baseline timing only: slot-claim is the execution-slot wait (not run
     # admission), execution is the admitted beat. Headers keep the response

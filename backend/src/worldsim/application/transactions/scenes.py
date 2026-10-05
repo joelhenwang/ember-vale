@@ -71,8 +71,13 @@ def build_scene_commit(
     absolute_index: int,
     observations: list[ObservationSpec] | None = None,
     memories: list[MemorySpec] | None = None,
+    location_id: UUID | None = None,
 ) -> CommitRequest:
-    """Build the one atomic commit for a resolved scene."""
+    """Build the one atomic commit for a resolved scene.
+
+    The event records the scene's participants and, when known, where it
+    happened, so feeds can place it on the map without replaying scenes.
+    """
     payload: dict[str, object] = {
         "scene_id": str(scene.id),
         "intent_ids": sorted(str(i.id) for i in intents),
@@ -102,6 +107,8 @@ def build_scene_commit(
         observations=list(observations or []),
         memories=list(memories or []),
         outbox=[narration_spec(scene.id)],
+        participant_ids=sorted({p.character_id for p in scene.participants}, key=str),
+        summary={"location_id": str(location_id)} if location_id is not None else {},
         scene_records=SceneRecords(
             scene=scene,
             intents=list(intents),

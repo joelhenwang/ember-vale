@@ -7,19 +7,24 @@ process against durable state, requeues expired work, and reports.
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncGenerator, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
+from uuid import UUID
 
 from fastapi import FastAPI
 
 import worldsim
+from worldsim.application.autoplay import AutoplayRunner
+from worldsim.application.orchestration.stage1 import Stage1PhaseReport
 from worldsim.application.tasks.service import TaskService
 from worldsim.domain.errors import DomainError
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
 from worldsim.infrastructure.ops.logging import install
 from worldsim.infrastructure.settings import Settings
 from worldsim.interfaces.http.auth import ApiKeyMiddleware
+from worldsim.interfaces.http.beats import run_beat
 from worldsim.interfaces.http.errors import (
     RequestIdMiddleware,
     domain_error_handler,
@@ -28,6 +33,7 @@ from worldsim.interfaces.http.errors import (
 from worldsim.interfaces.http.routes import (
     activities,
     assets,
+    autoplay,
     health,
     interventions,
     knowledge,
@@ -64,8 +70,28 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         "tasks_requeued": report.tasks_requeued,
         "outbox_requeued": report.outbox_requeued,
     }
+    runner: AutoplayRunner | None = None
+    loop: asyncio.Task[None] | None = None
+    if state.settings.autoplay.enabled:
+        runner = AutoplayRunner(
+            factory,
+            lambda world_id, index: _autoplay_beat(state, world_id, index),
+            poll_seconds=state.settings.autoplay.poll_seconds,
+        )
+        loop = asyncio.create_task(runner.run_forever())
+    app.state.autoplay_runner = runner
     yield
+    if runner is not None and loop is not None:
+        await runner.stop()
+        await loop
     await state.engine.dispose()
+
+
+async def _autoplay_beat(state: AppState, world_id: UUID, index: int) -> Stage1PhaseReport:
+    report, _claim_ms, _execution_ms = await run_beat(
+        state, world_id, index, owner_prefix="autoplay"
+    )
+    return report
 
 
 def create_app(
@@ -109,4 +135,5 @@ def create_app(
     app.include_router(interventions.router, prefix="/api/v1")
     app.include_router(stories.router, prefix="/api/v1")
     app.include_router(library.router, prefix="/api/v1")
+    app.include_router(autoplay.router, prefix="/api/v1")
     return app

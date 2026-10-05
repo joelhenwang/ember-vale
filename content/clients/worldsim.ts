@@ -1045,6 +1045,26 @@ export interface CacheClearRequest {
   scope: string;
 }
 
+export interface AutoplayView {
+  beats_left: number;
+  beats_run: number;
+  delay_seconds: number;
+  last_seen_at?: string | null;
+  next_due_at?: string | null;
+  presence_grace_seconds?: number;
+  runner_enabled: boolean;
+  status: string;
+  stop_detail?: string | null;
+  stop_reason?: string | null;
+  version: number;
+  world_id: string;
+}
+
+export interface AutoplayPlayRequest {
+  beat_limit?: number;
+  delay_seconds?: number;
+}
+
 export type WatcherHeaders = {
   "X-Worldsim-Role": "watcher";
 };
@@ -1114,6 +1134,10 @@ export const ROUTES = {
   readStorySetup: "GET /api/v1/stories/{story_id}/setup",
   exportStorySetup: "GET /api/v1/stories/{story_id}/setup/export",
   readStoryProvider: "GET /api/v1/stories/{story_id}/provider",
+  readAutoplay: "GET /api/v1/stories/{story_id}/autoplay",
+  playAutoplay: "POST /api/v1/stories/{story_id}/autoplay/play",
+  pauseAutoplay: "POST /api/v1/stories/{story_id}/autoplay/pause",
+  reportAutoplayPresence: "POST /api/v1/stories/{story_id}/autoplay/presence",
   openStory: "POST /api/v1/stories/{story_id}/open",
   archiveStory: "POST /api/v1/stories/{story_id}/archive",
   unarchiveStory: "POST /api/v1/stories/{story_id}/unarchive",

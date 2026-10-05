@@ -8,6 +8,7 @@ from typing import Protocol, Self
 from worldsim.application.ports.repositories import (
     ActivityRepository,
     AssetRepository,
+    AutoplayRepository,
     CharacterRepository,
     CommandRepository,
     ConditionRepository,
@@ -90,6 +91,8 @@ class UnitOfWork(Protocol):
     def digests(self) -> DigestRepository: ...
     @property
     def roles(self) -> RoleRepository: ...
+    @property
+    def autoplay(self) -> AutoplayRepository: ...
     @property
     def progress(self) -> ProgressRepository: ...
     @property

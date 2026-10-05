@@ -418,6 +418,123 @@
         "title": "AttemptView",
         "type": "object"
       },
+      "AutoplayPlayRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "beat_limit": {
+            "default": 10,
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Beat Limit",
+            "type": "integer"
+          },
+          "delay_seconds": {
+            "default": 0,
+            "maximum": 600.0,
+            "minimum": 0.0,
+            "title": "Delay Seconds",
+            "type": "integer"
+          }
+        },
+        "title": "AutoplayPlayRequest",
+        "type": "object"
+      },
+      "AutoplayView": {
+        "additionalProperties": false,
+        "properties": {
+          "beats_left": {
+            "title": "Beats Left",
+            "type": "integer"
+          },
+          "beats_run": {
+            "title": "Beats Run",
+            "type": "integer"
+          },
+          "delay_seconds": {
+            "title": "Delay Seconds",
+            "type": "integer"
+          },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen At"
+          },
+          "next_due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Due At"
+          },
+          "presence_grace_seconds": {
+            "default": 60,
+            "title": "Presence Grace Seconds",
+            "type": "integer"
+          },
+          "runner_enabled": {
+            "title": "Runner Enabled",
+            "type": "boolean"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "stop_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop Detail"
+          },
+          "stop_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop Reason"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          },
+          "world_id": {
+            "format": "uuid",
+            "title": "World Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "world_id",
+          "status",
+          "delay_seconds",
+          "beats_left",
+          "beats_run",
+          "runner_enabled",
+          "version"
+        ],
+        "title": "AutoplayView",
+        "type": "object"
+      },
       "BeatView": {
         "additionalProperties": false,
         "properties": {
@@ -11020,6 +11137,189 @@
         "summary": "Archive Story",
         "tags": [
           "stories"
+        ]
+      }
+    },
+    "/api/v1/stories/{story_id}/autoplay": {
+      "get": {
+        "operationId": "get_autoplay_api_v1_stories__story_id__autoplay_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "story_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Story Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutoplayView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Autoplay",
+        "tags": [
+          "autoplay"
+        ]
+      }
+    },
+    "/api/v1/stories/{story_id}/autoplay/pause": {
+      "post": {
+        "operationId": "pause_route_api_v1_stories__story_id__autoplay_pause_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "story_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Story Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutoplayView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Pause Route",
+        "tags": [
+          "autoplay"
+        ]
+      }
+    },
+    "/api/v1/stories/{story_id}/autoplay/play": {
+      "post": {
+        "operationId": "play_autoplay_api_v1_stories__story_id__autoplay_play_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "story_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Story Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutoplayPlayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutoplayView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Play Autoplay",
+        "tags": [
+          "autoplay"
+        ]
+      }
+    },
+    "/api/v1/stories/{story_id}/autoplay/presence": {
+      "post": {
+        "description": "An observer is looking at this story; keeps autoplay from pausing.",
+        "operationId": "presence_route_api_v1_stories__story_id__autoplay_presence_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "story_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Story Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutoplayView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Presence Route",
+        "tags": [
+          "autoplay"
         ]
       }
     },

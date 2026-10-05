@@ -12,6 +12,7 @@ from uuid import UUID
 
 from worldsim.domain.activities import Activity, TravelRoute
 from worldsim.domain.assets import AssetRecord, ImageJob
+from worldsim.domain.autoplay import AutoplayState
 from worldsim.domain.characters import Character, CharacterCard
 from worldsim.domain.conditions import WorldCondition
 from worldsim.domain.costs import ModelCost
@@ -243,6 +244,12 @@ class CostRepository(Protocol):
     async def add(self, cost: ModelCost, world_id: UUID | None) -> None: ...
     async def get_for_call(self, call_id: UUID) -> ModelCost | None: ...
     async def total_for_world(self, world_id: UUID) -> float: ...
+
+
+class AutoplayRepository(Protocol):
+    async def get(self, world_id: UUID, *, for_update: bool = False) -> AutoplayState: ...
+    async def save(self, state: AutoplayState) -> AutoplayState: ...
+    async def due(self, now: datetime, limit: int = 50) -> list[UUID]: ...
 
 
 class RoleRepository(Protocol):

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ipaddress
+import os
 import socket
 from collections.abc import Iterator
 from typing import Any, cast
@@ -17,6 +18,10 @@ from fixtures.scenario import StageScenario
 from psycopg import Connection, connect
 
 from worldsim.infrastructure.settings import Settings
+
+# No background autoplay runner in test apps: it would poll every scratch
+# database each second. Autoplay tests drive AutoplayRunner.tick directly.
+os.environ.setdefault("WORLDSIM_AUTOPLAY__ENABLED", "false")
 
 
 @pytest.fixture

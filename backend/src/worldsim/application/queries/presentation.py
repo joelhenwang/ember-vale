@@ -139,7 +139,7 @@ async def chronicle(
                 title=title,
                 text=text,
                 participant_ids=list(event.participant_ids),
-                location_id=None,
+                location_id=_as_uuid(event.summary.get("location_id")),
                 scene_id=scene_id,
                 absolute_index=event.absolute_index,
             )

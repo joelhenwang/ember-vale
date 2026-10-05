@@ -13,6 +13,7 @@ from worldsim.infrastructure.repositories.activities import (
     SqlAlchemyRouteRepository,
 )
 from worldsim.infrastructure.repositories.assets import SqlAlchemyAssetRepository
+from worldsim.infrastructure.repositories.autoplay import SqlAlchemyAutoplayRepository
 from worldsim.infrastructure.repositories.characters import (
     SqlAlchemyCharacterRepository,
 )
@@ -88,6 +89,7 @@ class SqlAlchemyUnitOfWork:
         self._digests: SqlAlchemyDigestRepository | None = None
         self._summaries: SqlAlchemySummaryRepository | None = None
         self._roles: SqlAlchemyRoleRepository | None = None
+        self._autoplay: SqlAlchemyAutoplayRepository | None = None
         self._activities: SqlAlchemyActivityRepository | None = None
         self._routes: SqlAlchemyRouteRepository | None = None
         self._schedules: SqlAlchemyScheduleRepository | None = None
@@ -269,6 +271,12 @@ class SqlAlchemyUnitOfWork:
         return self._roles
 
     @property
+    def autoplay(self) -> SqlAlchemyAutoplayRepository:
+        if self._autoplay is None:
+            self._autoplay = SqlAlchemyAutoplayRepository(self._require_session())
+        return self._autoplay
+
+    @property
     def party(self) -> SqlAlchemyPartyRepository:
         if self._party is None:
             self._party = SqlAlchemyPartyRepository(self._require_session())
@@ -336,6 +344,7 @@ class SqlAlchemyUnitOfWork:
             self._narrative = None
             self._summaries = None
             self._roles = None
+            self._autoplay = None
             self._activities = None
             self._routes = None
             self._costs = None

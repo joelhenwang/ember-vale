@@ -24,6 +24,7 @@ class Base(DeclarativeBase):
 
 from worldsim.infrastructure.models import (  # noqa: E402
     assets,
+    autoplay,
     calls,
     characters,
     commands,
@@ -41,6 +42,7 @@ from worldsim.infrastructure.models import (  # noqa: E402
 
 __all__ = [
     "assets",
+    "autoplay",
     "calls",
     "characters",
     "commands",

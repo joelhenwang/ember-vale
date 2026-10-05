@@ -150,6 +150,8 @@ WANTED = (
     "StoryProviderView",
     "CacheScopeView",
     "CacheClearRequest",
+    "AutoplayView",
+    "AutoplayPlayRequest",
 )
 
 #: Routes emitted into the ROUTES map (method, openapi path, const name).
@@ -213,6 +215,10 @@ ROUTES = (
     ("get", "/api/v1/stories/{story_id}/setup", "readStorySetup"),
     ("get", "/api/v1/stories/{story_id}/setup/export", "exportStorySetup"),
     ("get", "/api/v1/stories/{story_id}/provider", "readStoryProvider"),
+    ("get", "/api/v1/stories/{story_id}/autoplay", "readAutoplay"),
+    ("post", "/api/v1/stories/{story_id}/autoplay/play", "playAutoplay"),
+    ("post", "/api/v1/stories/{story_id}/autoplay/pause", "pauseAutoplay"),
+    ("post", "/api/v1/stories/{story_id}/autoplay/presence", "reportAutoplayPresence"),
     ("post", "/api/v1/stories/{story_id}/open", "openStory"),
     ("post", "/api/v1/stories/{story_id}/archive", "archiveStory"),
     ("post", "/api/v1/stories/{story_id}/unarchive", "unarchiveStory"),

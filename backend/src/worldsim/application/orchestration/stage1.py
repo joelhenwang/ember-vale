@@ -1963,6 +1963,7 @@ class Stage1Orchestrator:
                 absolute_index=index,
                 observations=observations,
                 memories=memories,
+                location_id=sealed.locations.get(scene.participants[0].character_id),
             )
         )
         # A directed attempt is completed only now that its execution is

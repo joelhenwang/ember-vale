@@ -1037,3 +1037,30 @@ def test_player_say_line_is_narrated_as_the_players_dialogue(
     stored = _stored_citations(scene_id, spoken[0]["source_event_id"])
     intent_id = derive_intent_id(ids["world"], snapshots[1], ids["wren"])
     assert [b.cited_fact_keys for b in stored if b.kind == "dialogue"] == [[f"speech:{intent_id}"]]
+
+
+def test_chronicle_places_scene_events(api: tuple[ApiClient, FakeGateway, dict[str, UUID]]) -> None:
+    client, gateway, _ = api
+    ids = asyncio.run(_seed_two())
+    from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
+
+    snapshots = {1: derive_snapshot_id(derive_run_id(ids["world"], 1))}
+    gateway.route = _route_for(ids, snapshots)
+    assert _advance(client, ids["world"], 1).status_code == 200
+
+    feed = client.get(
+        "/api/v1/world/chronicle",
+        params={"world_id": str(ids["world"]), "after": 0, "limit": 50},
+        headers=_watcher(),
+    ).json()["entries"]
+    scenes = [e for e in feed if e["event_type"] == "action_resolved"]
+    places = {
+        p["id"]: set(p.get("occupant_ids", []))
+        for p in client.get(
+            "/api/v1/stage2/map", params={"world_id": str(ids["world"])}, headers=_watcher()
+        ).json()["places"]
+    }
+    assert len(scenes) == 2  # Wren at the Hearth, Ash at the Market
+    for entry in scenes:
+        (who,) = entry["participant_ids"]
+        assert who in places[entry["location_id"]]

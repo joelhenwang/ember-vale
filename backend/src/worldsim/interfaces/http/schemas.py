@@ -13,6 +13,12 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from worldsim.domain.autoplay import (
+    DEFAULT_BEAT_LIMIT,
+    MAX_BEAT_LIMIT,
+    MAX_DELAY_SECONDS,
+    PRESENCE_GRACE_SECONDS,
+)
 from worldsim.domain.enums import PhaseName
 
 
@@ -1515,3 +1521,27 @@ class StoryCreateResponse(BaseModel):
     character_id: UUID | None = None
     replayed: bool = False
     art_registered: int = 0
+
+
+class AutoplayView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    world_id: UUID
+    status: str
+    delay_seconds: int
+    beats_left: int
+    beats_run: int
+    stop_reason: str | None = None
+    stop_detail: str | None = None
+    next_due_at: datetime | None = None
+    last_seen_at: datetime | None = None
+    presence_grace_seconds: int = PRESENCE_GRACE_SECONDS
+    runner_enabled: bool
+    version: int
+
+
+class AutoplayPlayRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    delay_seconds: int = Field(default=0, ge=0, le=MAX_DELAY_SECONDS)
+    beat_limit: int = Field(default=DEFAULT_BEAT_LIMIT, ge=1, le=MAX_BEAT_LIMIT)
