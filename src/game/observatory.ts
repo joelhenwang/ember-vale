@@ -54,22 +54,65 @@ export function speedFor(delaySeconds: number): SpeedOption {
   return SPEEDS.find((s) => s.delaySeconds === delaySeconds) ?? SPEEDS[0]
 }
 
+/** A beat the server reports as open, and when this page first saw it. */
+export interface OpenBeat {
+  /** Server run state (created, snapshot_sealed, director_complete, ...). */
+  state: string | null
+  seenAtMs: number
+}
+
+/**
+ * What the open beat is doing, from the server's run state. Stages follow
+ * the beat pipeline: director, decisions, scenes (react, resolve, narrate),
+ * then the commit bookkeeping.
+ */
+export function beatStageLabel(state: string | null): string {
+  switch (state) {
+    case 'created':
+    case 'world_ticked':
+      return 'Time moves on'
+    case 'snapshot_sealed':
+      return 'The director looks for openings'
+    case 'director_complete':
+      return 'Characters are deciding'
+    case 'intents_complete':
+    case 'scenes_assembled':
+      return 'Scenes are playing out'
+    case 'scenes_committed':
+    case 'perception_complete':
+    case 'post_commit_queued':
+    case 'completed':
+      return 'Writing it into the chronicle'
+    case 'paused':
+      return 'The beat is paused'
+    case 'retryable_failed':
+      return 'The beat hit a problem'
+    default:
+      return 'A beat is unfolding'
+  }
+}
+
+function beatLine(beat: OpenBeat, nowMs: number): string {
+  const seconds = Math.max(0, Math.round((nowMs - beat.seenAtMs) / 1000))
+  return `${beatStageLabel(beat.state)}… ${seconds} s`
+}
+
 /** One honest sentence for the toolbar. */
 export function autoplayStatus(
   autoplay: AutoplayView | null,
-  beatOpen: boolean,
+  beat: OpenBeat | null,
   nowMs: number
 ): string {
   if (!autoplay) return 'Loading…'
   if (autoplay.status === 'playing') {
     if (!autoplay.runner_enabled) return 'Playing, but autoplay is switched off on this server'
-    if (beatOpen) return 'Playing · a beat is unfolding'
+    if (beat) return `Playing · ${beatLine(beat, nowMs)}`
     const due = autoplay.next_due_at ? Date.parse(autoplay.next_due_at) : NaN
     const left = Number.isNaN(due) ? 0 : Math.ceil((due - nowMs) / 1000)
     const beats = `${autoplay.beats_left} beat${autoplay.beats_left === 1 ? '' : 's'} left`
     return left > 1 ? `Playing · next beat in ${left} s · ${beats}` : `Playing · ${beats}`
   }
-  if (beatOpen) return 'Paused · finishing the current beat'
+  if (beat) return `Pausing after this beat · ${beatLine(beat, nowMs)}`
   switch (autoplay.stop_reason) {
     case 'beat_limit':
       return `Paused after ${autoplay.beats_run} beat${autoplay.beats_run === 1 ? '' : 's'}`

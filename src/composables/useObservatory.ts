@@ -23,7 +23,7 @@ import type {
   StoryDetail
 } from '../../content/clients/worldsim'
 import type { Role } from '../api/http'
-import { groupFeed, layoutTokens, mergeChronicle } from '../game/observatory'
+import { groupFeed, layoutTokens, mergeChronicle, type OpenBeat } from '../game/observatory'
 
 export interface ObservatoryApi {
   getRole(worldId: string): Promise<RoleGrantView | null>
@@ -61,6 +61,8 @@ export interface ObservatoryOptions {
   schedule?: (fn: () => void, ms: number) => () => void
   /** Whether the page is visible (presence only counts a looking viewer). */
   visible?: () => boolean
+  /** Clock for beat timing; injectable for tests. */
+  now?: () => number
 }
 
 function message(err: unknown, fallback: string): string {
@@ -81,6 +83,7 @@ const defaultSchedule = (fn: () => void, ms: number): (() => void) => {
 export function useObservatory(worldId: Ref<string>, options: ObservatoryOptions = {}) {
   const api = options.api ?? LIVE_API
   const schedule = options.schedule ?? defaultSchedule
+  const now = options.now ?? (() => Date.now())
   const visible =
     options.visible ??
     (() => typeof document === 'undefined' || document.visibilityState === 'visible')
@@ -92,6 +95,9 @@ export function useObservatory(worldId: Ref<string>, options: ObservatoryOptions
   const presentation = ref<PresentationResponse | null>(null)
   const entries = ref<ChronicleEntry[]>([])
   const autoplay = ref<AutoplayView | null>(null)
+  /** The open beat with the time this page first saw it (elapsed is honest-ish). */
+  const openBeat = ref<OpenBeat | null>(null)
+  let openRunId: string | null = null
   const loading = ref(true)
   const error = ref<string | null>(null)
   const actionError = ref<string | null>(null)
@@ -112,7 +118,7 @@ export function useObservatory(worldId: Ref<string>, options: ObservatoryOptions
       role.value !== 'player' &&
       (presentation.value?.capabilities.capabilities ?? []).includes('advance')
   )
-  const beatOpen = computed(() => Boolean(presentation.value?.open_run_id))
+  const beatOpen = computed(() => openBeat.value !== null)
   const playing = computed(() => autoplay.value?.status === 'playing')
   const tokens = computed(() =>
     presentation.value
@@ -138,11 +144,24 @@ export function useObservatory(worldId: Ref<string>, options: ObservatoryOptions
       ])
       presentation.value = view
       autoplay.value = state
+      trackOpenBeat(view)
       await readChronicle()
       error.value = null
     } catch (err) {
       error.value = message(err, 'Could not reach the world.')
     }
+  }
+
+  function trackOpenBeat(view: PresentationResponse): void {
+    const runId = view.open_run_id ?? null
+    if (!runId) {
+      openRunId = null
+      openBeat.value = null
+      return
+    }
+    const seenAtMs = runId === openRunId && openBeat.value ? openBeat.value.seenAtMs : now()
+    openRunId = runId
+    openBeat.value = { state: view.run_state ?? null, seenAtMs }
   }
 
   function planPoll(): void {
@@ -253,6 +272,7 @@ export function useObservatory(worldId: Ref<string>, options: ObservatoryOptions
     presentation,
     entries,
     autoplay,
+    openBeat,
     loading,
     error,
     actionError,

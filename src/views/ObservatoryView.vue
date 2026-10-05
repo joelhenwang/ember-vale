@@ -32,7 +32,7 @@ const now = ref(Date.now())
 let clock: ReturnType<typeof setInterval> | undefined
 
 const view = computed(() => obs.presentation.value)
-const status = computed(() => autoplayStatus(obs.autoplay.value, obs.beatOpen.value, now.value))
+const status = computed(() => autoplayStatus(obs.autoplay.value, obs.openBeat.value, now.value))
 const timeLabel = computed(() =>
   view.value ? beatTimeLabel(view.value.absolute_index) : 'Opening the world…'
 )

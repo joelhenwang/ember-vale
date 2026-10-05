@@ -231,6 +231,33 @@ describe('useObservatory', () => {
     expect(obs.presentation.value).not.toBeNull()
   })
 
+  it('keeps the first-seen time of an open beat while its stage advances', async () => {
+    const { api, setView } = fakeApi()
+    let clock = 1_000
+    const obs = useObservatory(ref('w'), {
+      api,
+      schedule: fakeTimers().schedule,
+      now: () => clock
+    })
+    setView(presentation({ open_run_id: 'r1', run_state: 'snapshot_sealed' }))
+    await obs.load()
+    expect(obs.openBeat.value).toEqual({ state: 'snapshot_sealed', seenAtMs: 1_000 })
+
+    clock = 9_000
+    setView(presentation({ open_run_id: 'r1', run_state: 'intents_complete' }))
+    await obs.refresh()
+    expect(obs.openBeat.value).toEqual({ state: 'intents_complete', seenAtMs: 1_000 })
+
+    setView(presentation({ open_run_id: 'r2', run_state: 'created' }))
+    await obs.refresh()
+    expect(obs.openBeat.value?.seenAtMs).toBe(9_000)
+
+    setView(presentation())
+    await obs.refresh()
+    expect(obs.openBeat.value).toBeNull()
+    expect(obs.beatOpen.value).toBe(false)
+  })
+
   it('stops scheduling after dispose', async () => {
     const { api } = fakeApi()
     const timers = fakeTimers()
