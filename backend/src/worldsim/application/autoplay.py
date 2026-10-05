@@ -161,10 +161,15 @@ class AutoplayRunner:
                 await uow.commit()
                 return None
             world = await uow.worlds.get(world_id)
+            # A beat left open (an earlier failure, a restart) is resumed
+            # rather than skipped: the next index would be refused anyway.
+            open_run = await uow.phases.find_open_run(world_id)
             await uow.autoplay.save(
                 state.model_copy(update={"next_due_at": now + timedelta(seconds=LEASE_SECONDS)})
             )
             await uow.commit()
+            if open_run is not None:
+                return open_run.absolute_index
             return absolute_index(world.day, world.phase) + 1
 
     async def _settle(
@@ -190,7 +195,13 @@ class AutoplayRunner:
             return
         except Exception as exc:
             detail = str(exc) if isinstance(exc, DomainError) else type(exc).__name__
-            _log.warning("autoplay beat %s failed for %s: %s", index, world_id, detail)
+            _log.warning(
+                "autoplay beat %s failed for %s: %s",
+                index,
+                world_id,
+                detail,
+                exc_info=not isinstance(exc, DomainError),
+            )
             await self._settle(
                 world_id, lambda s, _now: pause(s, StopReason.ERROR, f"beat {index}: {detail}")
             )

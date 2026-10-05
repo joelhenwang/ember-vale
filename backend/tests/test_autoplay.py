@@ -35,6 +35,7 @@ from worldsim.domain.autoplay import (
     play,
 )
 from worldsim.domain.errors import DomainError, ErrorCode
+from worldsim.domain.phases import PhaseRun
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
 from worldsim.infrastructure.model_gateway.profiles import FAKE_TEST_PROFILE
 from worldsim.infrastructure.settings import Settings
@@ -261,3 +262,33 @@ def test_play_rejects_out_of_range_settings(
     url = f"/api/v1/stories/{ids['world']}/autoplay/play"
     assert client.post(url, json={"beat_limit": 0}, headers=_watcher()).status_code == 422
     assert client.post(url, json={"delay_seconds": -1}, headers=_watcher()).status_code == 422
+
+
+def test_runner_resumes_a_beat_left_open(
+    autoplay_api: tuple[ApiClient, TestClient, FakeGateway, dict[str, UUID]],
+) -> None:
+    client, raw, _gw, ids = autoplay_api
+    world = ids["world"]
+    state = _state(raw)
+    stuck = _clock(raw, world) + 1
+
+    async def leave_open() -> None:
+        async with state.uow_factory()() as uow:
+            await uow.phases.create_run(
+                PhaseRun(id=uuid.uuid4(), world_id=world, absolute_index=stuck)
+            )
+            await uow.commit()
+
+    _on_app_loop(raw, leave_open)
+    client.post(f"/api/v1/stories/{world}/autoplay/play", json={}, headers=_watcher())
+    asked: list[int] = []
+
+    async def record(world_id: UUID, index: int) -> Stage1PhaseReport:
+        asked.append(index)
+        return Stage1PhaseReport(
+            run_id=uuid.uuid4(), world_id=world_id, absolute_index=index, snapshot_id=uuid.uuid4()
+        )
+
+    _drive(raw, advance=record)
+
+    assert asked == [stuck]

@@ -15,9 +15,10 @@ on the resolution; no chance draws exist in Stage 1.
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 from langgraph.graph import StateGraph
@@ -40,6 +41,8 @@ from worldsim.application.ports.model_gateway import (
     ModelUnavailableError,
 )
 from worldsim.domain.characters import Character
+from worldsim.domain.commands import MoveAction
+from worldsim.domain.effects import MoveEntityEffect
 from worldsim.domain.enums import ResolutionOutcome, ResolverKind
 from worldsim.domain.ids import derive_resolution_id
 from worldsim.domain.resolution import AmbiguityPacket, ResolverProposal
@@ -126,8 +129,15 @@ def render_user_prompt(packet: AmbiguityPacket) -> str:
     return "\n".join(lines)
 
 
-def proposal_effects_valid(proposal: ResolverProposal, packet: AmbiguityPacket) -> str | None:
-    """Effect validation: feasible types on allowed aggregates only."""
+def proposal_effects_valid(
+    proposal: ResolverProposal, packet: AmbiguityPacket, view: WorldView | None = None
+) -> str | None:
+    """Effect validation: feasible types on allowed aggregates only.
+
+    With a world view, moves must also start where the character stands
+    and end at a place that exists: the model cannot know location ids,
+    and an invented one would only fail later, inside the commit.
+    """
     allowed = {a.split(":", 1)[-1] for a in packet.allowed_aggregate_ids}
     for effect in proposal.effects:
         if effect.effect_type not in STAGE1_FEASIBLE_EFFECTS:
@@ -135,9 +145,64 @@ def proposal_effects_valid(proposal: ResolverProposal, packet: AmbiguityPacket) 
         touched = {str(i) for i in effect.affected_ids}
         if not touched <= allowed:
             return f"effect touches aggregates outside the envelope: {sorted(touched - allowed)}"
+        if view is not None and isinstance(effect, MoveEntityEffect):
+            denial = _move_denial(effect, view)
+            if denial is not None:
+                return denial
     if proposal.outcome not in packet.allowed_outcomes:
         return f"outcome outside the envelope: {proposal.outcome.value}"
     return None
+
+
+def _move_denial(effect: MoveEntityEffect, view: WorldView) -> str | None:
+    places = {loc.id for loc in view.locations}
+    if effect.to_location_id not in places:
+        return f"move to an unknown place: {effect.to_location_id}"
+    where = {c.id: c.location_id for c in view.characters}
+    for mover in effect.affected_ids:
+        if mover in where and where[mover] != effect.from_location_id:
+            return f"move must start where the character stands ({where[mover]})"
+    return None
+
+
+def fill_move_endpoints(raw: str, moves: Mapping[str, tuple[str, str]]) -> str:
+    """Set from/to of each move effect for a character who attempted a move.
+
+    The attempt already names the destination and the server knows where
+    the character stands; the model only decides whether the move happens.
+    """
+    try:
+        document: object = json.loads(raw)
+    except ValueError:
+        return raw
+    if not isinstance(document, dict):
+        return raw
+    effects = cast("dict[str, Any]", document).get("effects")
+    if not isinstance(effects, list):
+        return raw
+    for effect in cast("list[Any]", effects):
+        if not isinstance(effect, dict):
+            continue
+        item = cast("dict[str, Any]", effect)
+        affected = item.get("affected_ids")
+        if item.get("effect_type") != "move_entity" or not isinstance(affected, list):
+            continue
+        movers = [str(a) for a in cast("list[Any]", affected) if str(a) in moves]
+        if movers:
+            item["from_location_id"], item["to_location_id"] = moves[movers[0]]
+    return json.dumps(document)
+
+
+def _moves_of(state: ResolveState) -> dict[str, tuple[str, str]]:
+    """Attempted moves in this scene: actor -> (current place, destination)."""
+    where = {str(c.id): str(c.location_id) for c in _view_of(state).characters}
+    moves: dict[str, tuple[str, str]] = {}
+    for intent in _intents_of(state):
+        action = intent.action
+        actor = str(intent.author_character_id)
+        if isinstance(action, MoveAction) and actor in where:
+            moves[actor] = (where[actor], str(action.destination_location_id))
+    return moves
 
 
 def _view_of(state: ResolveState) -> WorldView:
@@ -300,7 +365,10 @@ def build_resolve_graph(deps: ResolverGraphDeps) -> Any:
         while True:
             try:
                 proposal = validate_lenient(
-                    _PROPOSAL_ADAPTER, fill_expected_versions(raw, _versions_of(state))
+                    _PROPOSAL_ADAPTER,
+                    fill_move_endpoints(
+                        fill_expected_versions(raw, _versions_of(state)), _moves_of(state)
+                    ),
                 )
             except ValidationError as exc:
                 errors.append(
@@ -342,7 +410,7 @@ def build_resolve_graph(deps: ResolverGraphDeps) -> Any:
                     )
                 raw = repaired.text
                 continue
-            denial = proposal_effects_valid(proposal, packet)
+            denial = proposal_effects_valid(proposal, packet, _view_of(state))
             if denial is not None:
                 errors.append(f"attempt {repairs}: {denial}")
                 if repairs >= deps.repair_budget:

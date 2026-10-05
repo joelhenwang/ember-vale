@@ -418,3 +418,80 @@ def test_seed_evidence_is_deterministic() -> None:
         first["proposal"]["resolution"]["random_seed"]
         == second["proposal"]["resolution"]["random_seed"]
     )
+
+
+def _talk_and_move(ids: dict[str, uuid.UUID]) -> list[dict[str, Any]]:
+    """Live shape from beat-latency playtest: one talks, the other walks off."""
+    return [
+        _intent_dict(
+            ids,
+            "ash",
+            _action(ids, "ash", "communicate", target_character_id=str(ids["wren"]), topic="go"),
+        ),
+        _intent_dict(
+            ids,
+            "wren",
+            _action(
+                ids,
+                "wren",
+                "move",
+                destination_location_id=str(ids["market"]),
+                route_id=str(ids["route"]),
+            ),
+        ),
+    ]
+
+
+def _placeholder_move(mover: uuid.UUID) -> str:
+    return json.dumps(
+        {
+            "outcome": "success",
+            "rationale": "Wren heads off while Ash talks.",
+            "effects": [
+                {
+                    "effect_type": "move_entity",
+                    "affected_ids": [str(mover)],
+                    "from_location_id": "00000000-0000-0000-0000-000000000000",
+                    "to_location_id": "11111111-1111-1111-1111-111111111111",
+                    "expected_versions": {},
+                    "schema_version": 1,
+                    "route_id": None,
+                }
+            ],
+        }
+    )
+
+
+def test_attempted_move_gets_real_endpoints_without_repair() -> None:
+    ids = _ids()
+    gateway = FakeGateway(profile=RESOLVER_FAKE_PROFILE)
+    gateway.enqueue_text(_placeholder_move(ids["wren"]))
+
+    result = asyncio.run(
+        invoke(build_resolve_graph(_deps(gateway)), _invocation(ids, _talk_and_move(ids)))
+    )
+
+    assert result["proposal"]["fallback"] is False
+    (move,) = [
+        e for e in result["proposal"]["resolution"]["effects"] if e["effect_type"] == "move_entity"
+    ]
+    assert move["from_location_id"] == str(ids["hearth"])
+    assert move["to_location_id"] == str(ids["market"])
+    assert move["expected_versions"] == {str(ids["wren"]): 0}
+    assert len(gateway.sent_requests) == 1
+
+
+def test_invented_move_is_repaired_never_committed() -> None:
+    ids = _ids()
+    gateway = FakeGateway(profile=RESOLVER_FAKE_PROFILE)
+    gateway.enqueue_text(_placeholder_move(ids["ash"]))  # Ash never asked to move
+    gateway.enqueue_text(_disclosure_proposal(ids, "success"))
+
+    result = asyncio.run(
+        invoke(build_resolve_graph(_deps(gateway)), _invocation(ids, _talk_and_move(ids)))
+    )
+
+    assert len(gateway.sent_requests) == 2
+    assert "unknown place" in gateway.sent_requests[1].prompt
+    effects = result["proposal"]["resolution"]["effects"]
+    assert not any("11111111" in json.dumps(e) for e in effects)
