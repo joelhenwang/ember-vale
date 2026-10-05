@@ -14,9 +14,10 @@ phase failure.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 from langgraph.graph import StateGraph
@@ -37,11 +38,26 @@ from worldsim.application.ports.model_gateway import (
 from worldsim.domain.director import DirectorProposal, validate_proposal
 
 #: Versioned director prompt file.
-DIRECTOR_PROMPT_VERSION = "director.v6"
+DIRECTOR_PROMPT_VERSION = "director.v7"
 
 _PROPOSAL_ADAPTER: TypeAdapter[DirectorProposal] = TypeAdapter(DirectorProposal)
 _DIRECTOR_ACTIONS = frozenset({"propose_hook", "propose_arc", "noop"})
 _DIRECTOR_WRAPPERS = frozenset({"proposal", "hook", "arc"})
+
+
+def _title_alias(raw: str) -> str:
+    """A proposal that calls its title ``name`` (seen live) keeps it as the title."""
+    try:
+        parsed: object = json.loads(raw)
+    except ValueError:
+        return raw
+    if not isinstance(parsed, dict):
+        return raw
+    document = cast("dict[str, Any]", parsed)
+    if "title" in document or not isinstance(document.get("name"), str):
+        return raw
+    document["title"] = document.pop("name")
+    return json.dumps(document)
 
 
 class DirectorState(GraphState, total=False):
@@ -169,7 +185,9 @@ def build_director_graph(deps: DirectorGraphDeps) -> Any:
             try:
                 proposal = validate_lenient(
                     _PROPOSAL_ADAPTER,
-                    normalize_tagged(raw, _DIRECTOR_ACTIONS, "action", _DIRECTOR_WRAPPERS),
+                    _title_alias(
+                        normalize_tagged(raw, _DIRECTOR_ACTIONS, "action", _DIRECTOR_WRAPPERS)
+                    ),
                 )
             except ValidationError as exc:
                 errors.append(

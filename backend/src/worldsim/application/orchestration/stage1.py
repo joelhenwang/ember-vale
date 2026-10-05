@@ -454,10 +454,13 @@ DIRECTOR_RECENT_EVENTS = 8
 _IDLE_FAMILIES = frozenset({ActionFamily.WAIT, ActionFamily.OBSERVE, ActionFamily.REST})
 
 
-async def _recent_happenings(uow: Any, world_id: UUID) -> tuple[list[str], int]:
-    """Latest scene narrations (oldest first) and how many recent beats were idle.
+async def _recent_happenings(uow: Any, world_id: UUID) -> tuple[list[str], int, int]:
+    """Latest scene narrations (oldest first) and two stall signals.
 
-    A beat is idle when every attempt in it was a wait, observe or rest.
+    Idle streak: recent beats where every attempt was a wait, observe or
+    rest. Talk streak: recent beats where nothing but conversation (and
+    idling) happened — no move, take, handover, spar or appeal — which is
+    how a loop of re-asked questions looks from outside.
     """
     high = await uow.events.max_sequence(world_id)
     events = await uow.events.list_range(world_id, max(0, high - 60), 60)
@@ -469,24 +472,35 @@ async def _recent_happenings(uow: Any, world_id: UUID) -> tuple[list[str], int]:
             text = " ".join(b.text for b in beats)
             lines.append(f"{phase_label(event.absolute_index)}: {text[:240]}")
     idle_by_index: dict[int, bool] = {}
+    talk_by_index: dict[int, bool] = {}
     for event in scenes:
         if event.phase_run_id is None:
             continue
         idle = idle_by_index.get(event.absolute_index, True)
+        talk = talk_by_index.get(event.absolute_index, True)
         for scene in await uow.scenes.list_for_run(event.phase_run_id):
             if scene.event_id != event.id:
                 continue
             for intent_id in scene.intent_ids:
                 intent = await uow.scenes.get_intent(intent_id)
-                if intent.action.family not in _IDLE_FAMILIES:
+                family = intent.action.family
+                if family not in _IDLE_FAMILIES:
                     idle = False
+                if family not in _IDLE_FAMILIES and family != ActionFamily.COMMUNICATE:
+                    talk = False
         idle_by_index[event.absolute_index] = idle
-    streak = 0
-    for index in sorted(idle_by_index, reverse=True):
-        if not idle_by_index[index]:
+        talk_by_index[event.absolute_index] = talk
+    return lines, _streak(idle_by_index), _streak(talk_by_index)
+
+
+def _streak(flags: Mapping[int, bool]) -> int:
+    """How many of the most recent beats in a row have the flag set."""
+    count = 0
+    for index in sorted(flags, reverse=True):
+        if not flags[index]:
             break
-        streak += 1
-    return lines, streak
+        count += 1
+    return count
 
 
 def director_summary(
@@ -498,6 +512,8 @@ def director_summary(
     recent: Sequence[str],
     quiet_streak: int,
     intentions: Mapping[UUID, str] | None = None,
+    *,
+    talk_streak: int = 0,
 ) -> str:
     """What the director sees: who is where (with ids), threads, recent events."""
     place = {loc.id: loc.name for loc in locations}
@@ -523,6 +539,8 @@ def director_summary(
         "Recent happenings, oldest first:",
         *([f"- {line}" for line in recent] or ["- nothing yet"]),
         f"Idle beats in a row: {quiet_streak} (every character only waited, watched or rested).",
+        f"Talk-only beats in a row: {talk_streak} (conversation, but nobody moved, took, "
+        "gave or did anything else).",
     ]
     return "\n".join(lines)
 
@@ -1640,7 +1658,7 @@ class Stage1Orchestrator:
             locations = await uow.locations.list_for_world(world_id)
             hooks = await uow.narrative.list_hooks_for_world(world_id)
             arcs = await uow.narrative.list_arcs_for_world(world_id)
-            recent, quiet_streak = await _recent_happenings(uow, world_id)
+            recent, quiet_streak, talk_streak = await _recent_happenings(uow, world_id)
             intentions = {
                 c.id: i.text
                 for c in characters
@@ -1667,7 +1685,15 @@ class Stage1Orchestrator:
         places_left = max(0, MAX_ADDED_PLACES - (added_raw if isinstance(added_raw, int) else 0))
         summary = (
             director_summary(
-                index, characters, locations, hooks, arcs, recent, quiet_streak, intentions
+                index,
+                characters,
+                locations,
+                hooks,
+                arcs,
+                recent,
+                quiet_streak,
+                intentions,
+                talk_streak=talk_streak,
             )
             + f"\nNew characters you may still add to this story: {spawns_left}."
             + f"\nNew places you may still add to this story: {places_left}."

@@ -101,9 +101,10 @@ def normalize_tagged(raw: str, tags: frozenset[str], field: str, wrappers: froze
     if document.get("type") == "json_object":
         del document["type"]
         changed = True
-    if field not in document and document.get("type") in tags:
-        document[field] = document.pop("type")
-        changed = True
+    for alias in ("type", "response", "kind"):
+        if field not in document and document.get(alias) in tags:
+            document[field] = document.pop(alias)
+            changed = True
     for wrapper in wrappers:
         inner = document.get(wrapper)
         if isinstance(inner, dict):

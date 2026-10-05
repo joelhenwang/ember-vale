@@ -133,3 +133,19 @@ def test_director_noop_typed_variants_normalize() -> None:
         assert validate_lenient(
             DIRECTOR, normalize_tagged(raw, tags, "action", frozenset())
         ).action == ("noop")
+
+
+def test_director_response_key_and_name_alias_normalize() -> None:
+    from worldsim.application.graphs import director as director_graph
+
+    tags = frozenset({"propose_hook", "propose_arc", "noop"})
+    alias = director_graph._title_alias  # pyright: ignore[reportPrivateUsage]
+    raw = '{"response": "noop", "reason": "busy"}'
+    assert validate_lenient(
+        DIRECTOR, normalize_tagged(raw, tags, "action", frozenset())
+    ).action == ("noop")
+    named = '{"type": "propose_hook", "name": "The Unlit Lantern", "purpose": "P"}'
+    proposal = validate_lenient(
+        DIRECTOR, alias(normalize_tagged(named, tags, "action", frozenset()))
+    )
+    assert proposal.title == "The Unlit Lantern"

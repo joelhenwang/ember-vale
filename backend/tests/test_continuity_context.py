@@ -359,3 +359,38 @@ def test_scenes_where_everyone_waits_are_marked_idle(
     ).json()["entries"]
     scenes = [e for e in feed if e["event_type"] == "action_resolved"]
     assert scenes and all(e["idle"] for e in scenes)
+
+
+def test_streak_counts_the_most_recent_run() -> None:
+    from worldsim.application.orchestration import stage1
+
+    streak = stage1._streak  # pyright: ignore[reportPrivateUsage]
+    assert streak({1: True, 2: False, 3: True, 4: True}) == 2
+    assert streak({1: True, 2: True, 3: False}) == 0
+    assert streak({}) == 0
+
+
+def test_director_is_told_when_only_talk_happens(
+    stage1_client: tuple[ApiClient, FakeGateway],
+) -> None:
+    client, gateway = stage1_client
+    ids = asyncio.run(_seed_two())
+    base = _route_for(ids, {})
+
+    def route(request: CompletionRequest) -> str | None:
+        system = request.system or ""
+        if "You direct" in system:
+            return json.dumps({"action": "noop", "reason": "watching"})
+        if "You decide" in system:
+            wren = "<<untrusted:identity>>Wren" in request.prompt
+            target = ids["ash"] if wren else ids["wren"]
+            return json.dumps(
+                {"family": "communicate", "target_character_id": str(target), "topic": "the tale"}
+            )
+        return base(request)
+
+    gateway.route = route
+    for index in range(1, 5):  # director runs at beats 1 and 4 (cooldown 3)
+        assert _advance(client, ids["world"], index).status_code == 200
+    director = [r.prompt for r in gateway.sent_requests if "You direct" in (r.system or "")]
+    assert "Talk-only beats in a row: 3" in director[-1]
