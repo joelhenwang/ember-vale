@@ -174,14 +174,25 @@ def test_held_slot_lease_is_renewed_during_long_work(
                 await uow.commit()
             expiries: list[Any] = []
 
+            async def _expiry() -> Any:
+                async with factory() as uow:
+                    task = await uow.tasks.get(captured["slot"].id)
+                assert task.lease is not None
+                return task.lease.expires_at
+
             async def _work() -> str:
-                slot = captured["slot"]
+                # Wait for two successive renewals instead of assuming one
+                # lands in a fixed sleep: under parallel test load a 0.05 s
+                # heartbeat can take far longer than 0.2 s to commit.
+                seen = captured["slot"].lease.expires_at
                 for _ in range(2):
-                    await asyncio.sleep(0.2)
-                    async with factory() as uow:
-                        task = await uow.tasks.get(slot.id)
-                    assert task.lease is not None
-                    expiries.append(task.lease.expires_at)
+                    deadline = asyncio.get_running_loop().time() + 5.0
+                    current = await _expiry()
+                    while current <= seen and asyncio.get_running_loop().time() < deadline:
+                        await asyncio.sleep(0.05)
+                        current = await _expiry()
+                    expiries.append(current)
+                    seen = current
                 return "done"
 
             owner = new_owner("t")

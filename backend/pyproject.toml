@@ -25,6 +25,7 @@ dev = [
   "pre-commit>=4.0",
   "psycopg[binary]>=3.2",
   "pytest-xdist>=3.8.0",
+  "pytest-timeout>=2.3",
 ]
 
 [build-system]
@@ -41,6 +42,10 @@ pythonpath = ["src"]
 # Gates: `pytest -m "not soak"` — adds sim_gate back (excludes only soak).
 # Soak: `pytest -m soak` — diagnostic, explicit investigations only.
 addopts = "-q -m 'not soak and not sim_gate'"
+# A stuck test fails with stack traces instead of hanging the run;
+# sim_gate simulations get 900 s (conftest), the thirty-day gate takes ~7 min.
+timeout = 120
+timeout_method = "thread"
 markers = [
   "sim_gate: multi-phase simulation gates (merge slices, orchestration/memory changes, releases)",
   "soak: diagnostic soak scenarios (explicit performance investigations or scheduled runs)",

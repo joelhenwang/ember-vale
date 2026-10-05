@@ -186,3 +186,10 @@ def migrated_db(monkeypatch: pytest.MonkeyPatch, _db_template: str) -> Iterator[
     )
     yield
     drop_scratch_database(Settings(), name)
+
+
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    """Long simulations get a longer per-test timeout than the 120 s default."""
+    for item in items:
+        if item.get_closest_marker("sim_gate") or item.get_closest_marker("soak"):
+            item.add_marker(pytest.mark.timeout(900))
