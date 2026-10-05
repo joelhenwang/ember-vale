@@ -3222,6 +3222,67 @@
           "title": "IntentStatus",
           "type": "string"
         },
+        "InteractAction": {
+          "additionalProperties": false,
+          "description": "A physical attempt described in words (heave the wheel, search the\nstall, mend the axle); the resolver judges whether it works.",
+          "properties": {
+            "attempt": {
+              "maxLength": 256,
+              "minLength": 1,
+              "title": "Attempt",
+              "type": "string"
+            },
+            "character_id": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            },
+            "family": {
+              "const": "interact",
+              "default": "interact",
+              "title": "Family",
+              "type": "string"
+            },
+            "item_instance_id": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Item Instance Id"
+            },
+            "snapshot_id": {
+              "format": "uuid",
+              "title": "Snapshot Id",
+              "type": "string"
+            },
+            "target_character_id": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Target Character Id"
+            }
+          },
+          "required": [
+            "character_id",
+            "snapshot_id",
+            "attempt"
+          ],
+          "title": "InteractAction",
+          "type": "object"
+        },
         "MoveAction": {
           "additionalProperties": false,
           "properties": {
@@ -3492,6 +3553,7 @@
             "mapping": {
               "appeal": "#/$defs/AppealAction",
               "communicate": "#/$defs/CommunicateAction",
+              "interact": "#/$defs/InteractAction",
               "move": "#/$defs/MoveAction",
               "observe": "#/$defs/ObserveAction",
               "rest": "#/$defs/RestAction",
@@ -3529,6 +3591,9 @@
             },
             {
               "$ref": "#/$defs/TakeAction"
+            },
+            {
+              "$ref": "#/$defs/InteractAction"
             }
           ],
           "title": "Action"
@@ -6681,6 +6746,67 @@
           "title": "CommunicateAction",
           "type": "object"
         },
+        "InteractAction": {
+          "additionalProperties": false,
+          "description": "A physical attempt described in words (heave the wheel, search the\nstall, mend the axle); the resolver judges whether it works.",
+          "properties": {
+            "attempt": {
+              "maxLength": 256,
+              "minLength": 1,
+              "title": "Attempt",
+              "type": "string"
+            },
+            "character_id": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            },
+            "family": {
+              "const": "interact",
+              "default": "interact",
+              "title": "Family",
+              "type": "string"
+            },
+            "item_instance_id": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Item Instance Id"
+            },
+            "snapshot_id": {
+              "format": "uuid",
+              "title": "Snapshot Id",
+              "type": "string"
+            },
+            "target_character_id": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Target Character Id"
+            }
+          },
+          "required": [
+            "character_id",
+            "snapshot_id",
+            "attempt"
+          ],
+          "title": "InteractAction",
+          "type": "object"
+        },
         "MoveAction": {
           "additionalProperties": false,
           "properties": {
@@ -6959,6 +7085,7 @@
             "mapping": {
               "appeal": "#/$defs/AppealAction",
               "communicate": "#/$defs/CommunicateAction",
+              "interact": "#/$defs/InteractAction",
               "move": "#/$defs/MoveAction",
               "observe": "#/$defs/ObserveAction",
               "rest": "#/$defs/RestAction",
@@ -6996,6 +7123,9 @@
             },
             {
               "$ref": "#/$defs/TakeAction"
+            },
+            {
+              "$ref": "#/$defs/InteractAction"
             }
           ],
           "title": "Action"

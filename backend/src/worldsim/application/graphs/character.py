@@ -40,6 +40,7 @@ from worldsim.domain.commands import (
     ActionIntent,
     AppealAction,
     CommunicateAction,
+    InteractAction,
     MoveAction,
     SparAction,
     TakeAction,
@@ -51,7 +52,7 @@ from worldsim.domain.ids import derive_intent_id
 from worldsim.domain.scenes import Intent
 
 #: Versioned role prompt file (prompt lifecycle: repository file, versioned).
-CHARACTER_PROMPT_VERSION = "character_decision.v5"
+CHARACTER_PROMPT_VERSION = "character_decision.v6"
 
 _ACTION_ADAPTER: TypeAdapter[ActionIntent] = TypeAdapter(ActionIntent)
 
@@ -168,6 +169,15 @@ def precheck_action(
     if isinstance(action, TakeAction):
         if item_ids_here is not None and str(action.item_instance_id) not in item_ids_here:
             return f"no such item here: {action.item_instance_id}"
+        return None
+    if isinstance(action, InteractAction):
+        partner = action.target_character_id
+        if partner is not None and str(partner) not in known_character_ids:
+            return f"unknown partner: {partner}"
+        item = action.item_instance_id
+        reachable = (carried_item_ids or frozenset()) | (item_ids_here or frozenset())
+        if item is not None and carried_item_ids is not None and str(item) not in reachable:
+            return f"item out of reach: {item}"
         return None
     return None
 

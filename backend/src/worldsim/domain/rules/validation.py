@@ -10,6 +10,7 @@ from worldsim.domain.characters import Character
 from worldsim.domain.commands import (
     ActionIntent,
     AppealAction,
+    InteractAction,
     MoveAction,
     ObserveAction,
     RestAction,
@@ -85,7 +86,7 @@ def plan_effects(intent: ActionIntent, view: WorldView) -> list[DomainEffect]:
                     )
                 )
             return effects
-        case SparAction() | AppealAction() | TransferAction() | TakeAction():
+        case SparAction() | AppealAction() | TransferAction() | TakeAction() | InteractAction():
             # Outcomes settle post-commit from live rows, not from planned
             # effects; the empty plan keeps the envelope determined.
             return []

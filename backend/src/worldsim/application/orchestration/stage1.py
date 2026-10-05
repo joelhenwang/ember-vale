@@ -120,6 +120,7 @@ from worldsim.domain.commands import (
     ActionIntent,
     AppealAction,
     CommunicateAction,
+    InteractAction,
     MoveAction,
     SparAction,
     TakeAction,
@@ -565,6 +566,14 @@ def _observation_line(index: int, key: str, value: str) -> str:
     return f"{phase_label(index)}: {key}: {value}"
 
 
+#: How a resolved physical attempt reads to those who saw it.
+_OUTCOME_WORDS = {
+    "success": "it works",
+    "partial": "it half works",
+    "failure": "it does not work",
+    "impossible": "it cannot be done",
+}
+
 #: Reactions that say nothing worth remembering ("Ash waits").
 _SILENT_REPLIES = frozenset({ActionFamily.WAIT, ActionFamily.OBSERVE, ActionFamily.REST})
 
@@ -601,6 +610,8 @@ def _summarize(
         return f"{who} gives {target} {names.get(action.item_instance_id, 'an item')}"
     if isinstance(action, TakeAction):
         return f"{who} picks up {names.get(action.item_instance_id, 'something')}"
+    if isinstance(action, InteractAction):
+        return f"{who} tries to {action.attempt.strip().rstrip('.')}"
     family = action.family.value
     return f"{who} {family}s"
 
@@ -2248,7 +2259,7 @@ class Stage1Orchestrator:
                 world_id, run_id, sealed, scene, members, runtime
             )
         observations, memories = self._perceive_scene(
-            world_id, sealed, scene, members, names, reactions
+            world_id, sealed, scene, members, names, reactions, resolution.outcome.value
         )
         # Only the aggregates this scene mutates enter the version check,
         # pinned to the versions the resolver just validated.
@@ -2681,14 +2692,19 @@ class Stage1Orchestrator:
         members: list[Intent],
         names: Mapping[UUID, str],
         reactions: Sequence[Reaction] = (),
+        outcome: str | None = None,
     ) -> tuple[list[ObservationSpec], list[MemorySpec]]:
         participant_ids = [p.character_id for p in scene.participants]
         events: list[tuple[UUID, ObservableEvent]] = []
         for intent in sorted(members, key=lambda i: str(i.id)):
+            summary = _summarize(intent.action, names, intent.author_character_id)
+            if isinstance(intent.action, InteractAction) and outcome:
+                # Everyone present sees whether the effort worked.
+                summary = f"{summary}: {_OUTCOME_WORDS.get(outcome, outcome)}"
             facts = [
                 PerceivedFact(
                     key=f"attempt:{intent.action.family.value}",
-                    value=_summarize(intent.action, names, intent.author_character_id),
+                    value=summary,
                     visibility=FactVisibility.SCENE,
                     channel=FactChannel.SIGHT,
                 )

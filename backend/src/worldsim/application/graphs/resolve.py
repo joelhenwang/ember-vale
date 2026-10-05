@@ -59,7 +59,7 @@ from worldsim.domain.scenes import Intent, Resolution
 from worldsim.domain.world import Location, World
 
 #: Versioned resolver prompt file.
-RESOLVER_PROMPT_VERSION = "resolver.v1"
+RESOLVER_PROMPT_VERSION = "resolver.v2"
 
 _PROPOSAL_ADAPTER: TypeAdapter[ResolverProposal] = TypeAdapter(ResolverProposal)
 
@@ -322,6 +322,7 @@ def build_resolve_graph(deps: ResolverGraphDeps) -> Any:
         intents = _intents_of(state)
         envelopes = [FeasibilityEnvelope.model_validate(e) for e in state.get("envelopes_json", [])]
         packet = build_packet(
+            view=_view_of(state),
             scene_id=UUID(scene_raw),
             world_id=UUID(world_raw),
             snapshot_id=UUID(snapshot_raw),

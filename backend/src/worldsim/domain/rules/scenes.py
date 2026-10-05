@@ -25,6 +25,7 @@ from worldsim.domain.commands import (
     ActionIntent,
     AppealAction,
     CommunicateAction,
+    InteractAction,
     MoveAction,
     SparAction,
     TakeAction,
@@ -48,6 +49,11 @@ def target_key(action: ActionIntent) -> str | None:
         return f"location:{action.destination_location_id}"
     if isinstance(action, TakeAction):
         return f"item:{action.item_instance_id}"
+    if isinstance(action, InteractAction):
+        if action.target_character_id is not None:
+            return f"character:{action.target_character_id}"
+        if action.item_instance_id is not None:
+            return f"item:{action.item_instance_id}"
     return None
 
 
@@ -82,6 +88,9 @@ def mutable_aggregates(intent: Intent) -> frozenset[str]:
         return frozenset({author, f"character:{action.target_character_id}"})
     if isinstance(action, TakeAction):
         return frozenset({author})
+    if isinstance(action, InteractAction):
+        partner = action.target_character_id
+        return frozenset({author, f"character:{partner}"} if partner else {author})
     if action.family == "rest":
         return frozenset({author})
     return frozenset()
@@ -97,6 +106,7 @@ def _active(action: ActionIntent) -> bool:
         "appeal",
         "transfer",
         "take",
+        "interact",
     )
 
 

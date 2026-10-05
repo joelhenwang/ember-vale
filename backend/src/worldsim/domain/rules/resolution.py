@@ -17,7 +17,15 @@ import uuid
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from worldsim.domain.commands import AppealAction, CommunicateAction, SparAction, TransferAction
+from worldsim.domain.commands import (
+    AppealAction,
+    CommunicateAction,
+    InteractAction,
+    MoveAction,
+    ObserveAction,
+    SparAction,
+    TransferAction,
+)
 from worldsim.domain.effects import DomainEffect
 from worldsim.domain.enums import EffectType, ResolutionOutcome
 from worldsim.domain.errors import DomainError
@@ -113,6 +121,22 @@ def build_envelope(
             allowed_aggregate_ids=aggregates,
             reason=f"infeasible: {exc}",
         )
+    if isinstance(intent.action, InteractAction):
+        partner = intent.action.target_character_id
+        return FeasibilityEnvelope(
+            intent_id=intent.id,
+            author_character_id=intent.author_character_id,
+            determined=False,
+            allowed_outcomes=[
+                ResolutionOutcome.SUCCESS,
+                ResolutionOutcome.PARTIAL,
+                ResolutionOutcome.FAILURE,
+            ],
+            allowed_aggregate_ids=sorted(
+                set(aggregates) | ({f"character:{partner}"} if partner else set())
+            ),
+            reason="a physical attempt needs the resolver",
+        )
     if isinstance(intent.action, CommunicateAction):
         return FeasibilityEnvelope(
             intent_id=intent.id,
@@ -168,6 +192,7 @@ def merge_determined(
 
 def build_packet(
     *,
+    view: WorldView | None = None,
     scene_id: uuid.UUID,
     world_id: uuid.UUID,
     snapshot_id: uuid.UUID,
@@ -189,7 +214,7 @@ def build_packet(
     for envelope in envelopes:
         determined.extend(envelope.candidate_effects)
     summaries = [
-        f"{intent.action.family.value} by {intent.author_character_id}"
+        describe_intent(intent, view) if view is not None else _bare(intent)
         for intent in sorted(intents, key=lambda i: str(i.id))
     ]
     return AmbiguityPacket(
@@ -203,6 +228,57 @@ def build_packet(
         determined_effects=determined,
         reason="scene needs model-assisted resolution",
     )
+
+
+def _bare(intent: Intent) -> str:
+    return f"{intent.action.family.value} by {intent.author_character_id}"
+
+
+def describe_intent(intent: Intent, view: WorldView) -> str:
+    """What the resolver needs to judge one attempt: who, doing what, to whom.
+
+    Names make the attempt judgeable; the ids stay because effects must
+    reference them. Speech topics and physical attempts are quoted as
+    given (the resolver is the only one deciding what happens).
+    """
+
+    def who(character_id: uuid.UUID | None) -> str:
+        if character_id is None:
+            return "someone"
+        try:
+            name = view.character(character_id).name
+        except DomainError:
+            name = "someone"
+        return f"{name} (character:{character_id})"
+
+    def where(location_id: uuid.UUID) -> str:
+        try:
+            return f"{view.location(location_id).name} (location {location_id})"
+        except DomainError:
+            return f"location {location_id}"
+
+    actor = who(intent.author_character_id)
+    action = intent.action
+    if isinstance(action, InteractAction):
+        text = f"{actor} tries to {action.attempt.strip()}"
+        if action.target_character_id is not None:
+            text += f", with or on {who(action.target_character_id)}"
+        if action.item_instance_id is not None:
+            text += f", using item {action.item_instance_id}"
+        return text
+    if isinstance(action, CommunicateAction):
+        return f"{actor} says to {who(action.target_character_id)}: {action.topic}"
+    if isinstance(action, MoveAction):
+        return f"{actor} moves to {where(action.destination_location_id)}"
+    if isinstance(action, SparAction):
+        return f"{actor} spars with {who(action.target_character_id)}"
+    if isinstance(action, TransferAction):
+        return f"{actor} gives item {action.item_instance_id} to {who(action.target_character_id)}"
+    if isinstance(action, AppealAction):
+        return f"{actor} appeals: {action.proposition}"
+    if isinstance(action, ObserveAction):
+        return f"{actor} observes {action.focus}"
+    return f"{actor} {action.family.value}s"
 
 
 def resolution_seed(scene_id: uuid.UUID, snapshot_id: uuid.UUID) -> int:

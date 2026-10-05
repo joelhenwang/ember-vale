@@ -132,6 +132,16 @@ class TakeAction(ActionBase):
     item_instance_id: ItemInstanceId
 
 
+class InteractAction(ActionBase):
+    """A physical attempt described in words (heave the wheel, search the
+    stall, mend the axle); the resolver judges whether it works."""
+
+    family: Literal[ActionFamily.INTERACT] = ActionFamily.INTERACT
+    attempt: str = Field(min_length=1, max_length=256)
+    target_character_id: CharacterId | None = None
+    item_instance_id: ItemInstanceId | None = None
+
+
 ActionIntent = Annotated[
     WaitAction
     | RestAction
@@ -141,6 +151,7 @@ ActionIntent = Annotated[
     | SparAction
     | AppealAction
     | TransferAction
-    | TakeAction,
+    | TakeAction
+    | InteractAction,
     Field(discriminator="family"),
 ]
