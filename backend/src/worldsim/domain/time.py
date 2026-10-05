@@ -43,6 +43,12 @@ def split_absolute(index: int) -> tuple[int, PhaseName]:
     return day + 1, PHASE_ORDER[offset]
 
 
+def phase_label(index: int) -> str:
+    """Reader-facing time for an absolute phase index: "Day 2, noon"."""
+    day, phase = split_absolute(max(0, index))
+    return f"Day {day}, {phase.value}"
+
+
 class FictionalTime(BaseModel):
     """Immutable fictional position; operational UTC time stays separate."""
 

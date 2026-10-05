@@ -45,6 +45,8 @@ from worldsim.domain.scenes import Intent, Reaction
 
 #: Versioned narrator prompt file.
 NARRATOR_PROMPT_VERSION = "narrator.v2"
+#: Facts that set the scene rather than report an event (no fallback beat).
+SETTING_FACT_KEYS = frozenset({"place"})
 
 _BEATS_ADAPTER: TypeAdapter[list[BeatProposal]] = TypeAdapter(list[BeatProposal])
 
@@ -668,9 +670,11 @@ def fallback_beats(
 
     Facts keep their original order so attempts (questions) come before
     the reactions (answers) that follow them. When the budget cuts facts
-    off, the earliest facts are kept.
+    off, the earliest facts are kept. Setting facts (``place``) frame the
+    scene for the model and are not events, so they get no beat here.
     """
-    facts = [_normalize_fallback_fact(f) for f in visible_facts[: max(beats_budget, 1)]]
+    events = [f for f in visible_facts if f.get("key") not in SETTING_FACT_KEYS]
+    facts = [_normalize_fallback_fact(f) for f in events[: max(beats_budget, 1)]]
     if not facts:
         return [
             NarrationBeat(

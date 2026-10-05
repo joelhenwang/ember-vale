@@ -50,7 +50,7 @@ from worldsim.domain.ids import derive_intent_id
 from worldsim.domain.scenes import Intent
 
 #: Versioned role prompt file (prompt lifecycle: repository file, versioned).
-CHARACTER_PROMPT_VERSION = "character_decision.v2"
+CHARACTER_PROMPT_VERSION = "character_decision.v3"
 
 _ACTION_ADAPTER: TypeAdapter[ActionIntent] = TypeAdapter(ActionIntent)
 
@@ -103,7 +103,7 @@ def render_user_prompt(rendered_context: str) -> str:
     return (
         f"{rendered_context}\n\n"
         "Output exactly one JSON object matching the response schema. "
-        "Keep it short. When in doubt, wait."
+        "Keep it short. Act on your intention when you can; waiting is always valid."
     )
 
 

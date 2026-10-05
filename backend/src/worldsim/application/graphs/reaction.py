@@ -42,7 +42,7 @@ from worldsim.domain.jsonvalues import json_list, json_object
 from worldsim.domain.scenes import Reaction
 
 #: Versioned reaction prompt file.
-REACTION_PROMPT_VERSION = "reaction.v1"
+REACTION_PROMPT_VERSION = "reaction.v2"
 
 _ACTION_ADAPTER: TypeAdapter[ActionIntent] = TypeAdapter(ActionIntent)
 

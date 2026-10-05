@@ -18,6 +18,7 @@ from worldsim.domain.conditions import WorldCondition
 from worldsim.domain.costs import ModelCost
 from worldsim.domain.enums import FocusSlot
 from worldsim.domain.events import CommittedEffect, WorldEvent
+from worldsim.domain.intentions import CharacterIntention
 from worldsim.domain.interventions import Intervention, InterventionStep
 from worldsim.domain.knowledge import Belief, Claim
 from worldsim.domain.macro import (
@@ -250,6 +251,11 @@ class AutoplayRepository(Protocol):
     async def get(self, world_id: UUID, *, for_update: bool = False) -> AutoplayState: ...
     async def save(self, state: AutoplayState) -> AutoplayState: ...
     async def due(self, now: datetime, limit: int = 50) -> list[UUID]: ...
+
+
+class IntentionRepository(Protocol):
+    async def get(self, character_id: UUID) -> CharacterIntention | None: ...
+    async def set(self, intention: CharacterIntention) -> None: ...
 
 
 class RoleRepository(Protocol):

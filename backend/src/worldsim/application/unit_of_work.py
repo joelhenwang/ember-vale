@@ -15,6 +15,7 @@ from worldsim.application.ports.repositories import (
     CostRepository,
     DigestRepository,
     EventRepository,
+    IntentionRepository,
     InterventionRepository,
     InventoryRepository,
     KnowledgeRepository,
@@ -93,6 +94,8 @@ class UnitOfWork(Protocol):
     def roles(self) -> RoleRepository: ...
     @property
     def autoplay(self) -> AutoplayRepository: ...
+    @property
+    def intentions(self) -> IntentionRepository: ...
     @property
     def progress(self) -> ProgressRepository: ...
     @property

@@ -52,6 +52,10 @@ class DataClass(str):
 
 
 #: Fixed render order; graphs may shorten but never reorder scope.
+#: Sections read as a story: entries are still chosen by score within the
+#: budget, then shown oldest first so the model reads events in order.
+CHRONOLOGICAL_SECTIONS: frozenset[str] = frozenset({"observations", "memories"})
+
 SECTION_ORDER: tuple[str, ...] = (
     DataClass.IDENTITY,
     DataClass.SURROUNDINGS,
@@ -109,6 +113,8 @@ class SourceCandidate(BaseModel):
     owner_id: CharacterId | None = None
     score: float = Field(default=0.0, ge=0.0)
     created_phase_index: int = Field(default=0, ge=0)
+    #: Order within one phase for chronological sections (attempt before reply).
+    ordinal: int = Field(default=0, ge=0)
 
 
 class ContextSection(BaseModel):

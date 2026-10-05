@@ -138,6 +138,7 @@ from worldsim.domain.effects import (
     SkillProgressEffect,
 )
 from worldsim.domain.enums import (
+    ActionFamily,
     ActivityKind,
     ActivityStatus,
     EventType,
@@ -164,6 +165,7 @@ from worldsim.domain.ids import (
     new_narration_id,
     new_summary_id,
 )
+from worldsim.domain.intentions import CharacterIntention, card_drives, extract_intention
 from worldsim.domain.knowledge import normalize
 from worldsim.domain.memory import (
     CITE_BUMP_KEY,
@@ -224,7 +226,7 @@ from worldsim.domain.rules.views import WorldView
 from worldsim.domain.scenes import Attempt, Intent, Reaction, Resolution, Scene
 from worldsim.domain.summaries import DailySummary, day_range, fallback_text
 from worldsim.domain.tasks import Lease
-from worldsim.domain.time import PHASES_PER_DAY, absolute_index, utcnow
+from worldsim.domain.time import PHASES_PER_DAY, absolute_index, phase_label, utcnow
 from worldsim.domain.tracing import ManifestSource
 from worldsim.domain.world import Location
 
@@ -401,6 +403,114 @@ def _config_int(config: dict[str, object], key: str, default: int) -> int:
     """World-config int with a recorded default; wrong types fall back."""
     raw = config.get(key)
     return int(raw) if isinstance(raw, int) else default
+
+
+#: Recent scene events the director reads, and beats counted for a stall.
+DIRECTOR_RECENT_EVENTS = 8
+#: Families that leave the world as it was.
+_IDLE_FAMILIES = frozenset({ActionFamily.WAIT, ActionFamily.OBSERVE, ActionFamily.REST})
+
+
+async def _recent_happenings(uow: Any, world_id: UUID) -> tuple[list[str], int]:
+    """Latest scene narrations (oldest first) and how many recent beats were idle.
+
+    A beat is idle when every attempt in it was a wait, observe or rest.
+    """
+    high = await uow.events.max_sequence(world_id)
+    events = await uow.events.list_range(world_id, max(0, high - 60), 60)
+    scenes = [e for e in events if e.event_type == EventType.ACTION_RESOLVED]
+    lines: list[str] = []
+    for event in scenes[-DIRECTOR_RECENT_EVENTS:]:
+        beats = await uow.scenes.narrations_for_event(event.id)
+        if beats:
+            text = " ".join(b.text for b in beats)
+            lines.append(f"{phase_label(event.absolute_index)}: {text[:240]}")
+    idle_by_index: dict[int, bool] = {}
+    for event in scenes:
+        if event.phase_run_id is None:
+            continue
+        idle = idle_by_index.get(event.absolute_index, True)
+        for scene in await uow.scenes.list_for_run(event.phase_run_id):
+            if scene.event_id != event.id:
+                continue
+            for intent_id in scene.intent_ids:
+                intent = await uow.scenes.get_intent(intent_id)
+                if intent.action.family not in _IDLE_FAMILIES:
+                    idle = False
+        idle_by_index[event.absolute_index] = idle
+    streak = 0
+    for index in sorted(idle_by_index, reverse=True):
+        if not idle_by_index[index]:
+            break
+        streak += 1
+    return lines, streak
+
+
+def director_summary(
+    index: int,
+    characters: Sequence[Character],
+    locations: Sequence[Location],
+    hooks: Sequence[Any],
+    arcs: Sequence[Any],
+    recent: Sequence[str],
+    quiet_streak: int,
+) -> str:
+    """What the director sees: who is where (with ids), threads, recent events."""
+    place = {loc.id: loc.name for loc in locations}
+    cast = "; ".join(
+        f"{c.name} (id {c.id}, at {place.get(c.location_id, 'somewhere')})"
+        for c in characters
+        if c.life_status == LifeStatus.ALIVE
+    )
+    places = ", ".join(f"{loc.name} (id {loc.id})" for loc in locations)
+    open_hooks = "; ".join(
+        f"{h.title}: {h.purpose}".strip(": ") for h in hooks if h.status != NarrativeStatus.CLOSED
+    )
+    open_arcs = "; ".join(a.title for a in arcs if a.status != NarrativeStatus.CLOSED)
+    lines = [
+        f"Phase {index} ({phase_label(index)}).",
+        f"Characters: {cast or 'none'}.",
+        f"Places: {places or 'none'}.",
+        f"Open hooks: {open_hooks or 'none'}.",
+        f"Open arcs: {open_arcs or 'none'}.",
+        "Recent happenings, oldest first:",
+        *([f"- {line}" for line in recent] or ["- nothing yet"]),
+        f"Idle beats in a row: {quiet_streak} (every character only waited, watched or rested).",
+    ]
+    return "\n".join(lines)
+
+
+async def _event_place_name(uow: Any, event_id: UUID) -> str | None:
+    """Name of the place a scene event recorded (None for older events)."""
+    event = await uow.events.get_event(event_id)
+    raw = event.summary.get("location_id")
+    if not raw:
+        return None
+    try:
+        place = await uow.locations.get(UUID(raw))
+    except (DomainError, ValueError):
+        return None
+    return str(place.name)
+
+
+def _observation_line(index: int, key: str, value: str) -> str:
+    """Time-labelled observation; attempt and reply lines are already prose."""
+    if key.startswith(("attempt:", "reply:")):
+        return f"{phase_label(index)}: {value}"
+    return f"{phase_label(index)}: {key}: {value}"
+
+
+#: Reactions that say nothing worth remembering ("Ash waits").
+_SILENT_REPLIES = frozenset({ActionFamily.WAIT, ActionFamily.OBSERVE, ActionFamily.REST})
+
+
+def _reply_summary(action: ActionIntent, names: Mapping[UUID, str], reactor: UUID) -> str:
+    """One-line reply text: speech reads as a reply, other acts as attempts."""
+    if isinstance(action, CommunicateAction):
+        who = names.get(reactor, "?")
+        target = names.get(action.target_character_id, "?")
+        return f"{who} replies to {target}: {action.topic}"
+    return _summarize(action, names, reactor)
 
 
 def _summarize(
@@ -1456,6 +1566,7 @@ class Stage1Orchestrator:
             locations = await uow.locations.list_for_world(world_id)
             hooks = await uow.narrative.list_hooks_for_world(world_id)
             arcs = await uow.narrative.list_arcs_for_world(world_id)
+            recent, quiet_streak = await _recent_happenings(uow, world_id)
         last_raw = config.get("director.last_absolute")
         last = int(last_raw) if isinstance(last_raw, int) else None
         cooldown_raw = config.get("director.cooldown_phases")
@@ -1469,16 +1580,7 @@ class Stage1Orchestrator:
         known = [c.id for c in characters if c.life_status == LifeStatus.ALIVE]
         active_hooks = sum(1 for h in hooks if h.status != NarrativeStatus.CLOSED)
         active_arcs = sum(1 for a in arcs if a.status != NarrativeStatus.CLOSED)
-        summary = (
-            f"Phase {index}. Characters: "
-            + ", ".join(c.name for c in characters)
-            + ". Places: "
-            + ", ".join(loc.name for loc in locations)
-            + ". Open hooks: "
-            + ", ".join(h.title for h in hooks if h.status != NarrativeStatus.CLOSED)
-            + ". Open arcs: "
-            + ", ".join(a.title for a in arcs if a.status != NarrativeStatus.CLOSED)
-        )
+        summary = director_summary(index, characters, locations, hooks, arcs, recent, quiet_streak)
         hook_id = new_hook_id()
         arc_id = new_arc_id()
         spec = ManifestSpec(
@@ -1749,6 +1851,7 @@ class Stage1Orchestrator:
         )
         result = await invoke(graph, invocation)
         intent = Intent.model_validate(result["proposal"]["intent"])
+        await self._remember_intention(world_id, character.id, result.get("raw_response"))
         await self._finish_task(task_run_id, owner, True)
         return intent
 
@@ -1783,6 +1886,23 @@ class Stage1Orchestrator:
             await uow.tasks.finish(task_id, owner, "succeeded" if ok else "dead_letter")
             await uow.commit()
 
+    async def _remember_intention(self, world_id: UUID, character_id: UUID, raw: object) -> None:
+        """Keep the character's newly stated intention (the newest replaces the old)."""
+        text = extract_intention(raw if isinstance(raw, str) else None)
+        if text is None:
+            return
+        async with self._factory() as uow:
+            _day, _phase, now_index = await uow.worlds.get_clock(world_id)
+            await uow.intentions.set(
+                CharacterIntention(
+                    character_id=character_id,
+                    world_id=world_id,
+                    text=text,
+                    set_phase_index=now_index,
+                )
+            )
+            await uow.commit()
+
     async def _context_for(
         self, world_id: UUID, run_id: UUID, snapshot_id: UUID, character: Character
     ) -> tuple[ContextEnvelope, list[ManifestSource], list[ManifestSource]]:
@@ -1805,6 +1925,8 @@ class Stage1Orchestrator:
 
             relationships = await uow.relationships.list_for_character(world_id, character.id)
             digests = await uow.digests.list_for_owner(world_id, character.id)
+            intention = await uow.intentions.get(character.id)
+            hooks = await uow.narrative.list_hooks_for_world(world_id)
             everyone = await uow.characters.list_for_world(world_id)
             place_names = {loc.id: loc.name for loc in await uow.locations.list_for_world(world_id)}
         names = {c.id: c.name for c in everyone}
@@ -1832,6 +1954,7 @@ class Stage1Orchestrator:
                 visibility=Visibility.PRIVATE,
                 owner_id=character.id,
                 text=(
+                    f"now {phase_label(now_index)}, "
                     f"character_id {character.id}, snapshot_id {snapshot_id}, "
                     f"stamina {character.stamina}, mana {character.mana}, "
                     f"status {character.life_status.value}, "
@@ -1840,6 +1963,47 @@ class Stage1Orchestrator:
                 score=2.0,
             ),
         ]
+        for number, drive in enumerate(card_drives(card.personality)):
+            candidates.append(
+                SourceCandidate(
+                    source_id=f"drive:{character.id}:{number}",
+                    data_class="goals",
+                    visibility=Visibility.PRIVATE,
+                    owner_id=character.id,
+                    text=drive,
+                    score=2.0,
+                )
+            )
+        for hook in hooks:
+            if hook.status == NarrativeStatus.CLOSED:
+                continue
+            if hook.participant_ids and character.id not in hook.participant_ids:
+                continue
+            candidates.append(
+                SourceCandidate(
+                    source_id=f"hook:{hook.id}",
+                    data_class="lore",
+                    visibility=Visibility.PUBLIC,
+                    text=f"Word around the vale: {hook.title}. {hook.purpose}".strip(),
+                    score=2.0,
+                    created_phase_index=hook.created_phase_index,
+                )
+            )
+        if intention is not None:
+            candidates.append(
+                SourceCandidate(
+                    source_id=f"intention:{character.id}",
+                    data_class="goals",
+                    visibility=Visibility.PRIVATE,
+                    owner_id=character.id,
+                    text=(
+                        f"Your current intention (since "
+                        f"{phase_label(intention.set_phase_index)}): {intention.text}"
+                    ),
+                    score=3.0,
+                    created_phase_index=intention.set_phase_index,
+                )
+            )
         for obs in observations:
             for fact in obs.facts:
                 candidates.append(
@@ -1848,11 +2012,12 @@ class Stage1Orchestrator:
                         data_class="observations",
                         visibility=Visibility.PRIVATE,
                         owner_id=character.id,
-                        text=f"{fact.key}: {fact.value}",
+                        text=_observation_line(obs.created_phase_index, fact.key, fact.value),
                         score=score_salience(
                             obs.salience, now_index - obs.created_phase_index, half_life
                         ),
                         created_phase_index=obs.created_phase_index,
+                        ordinal=1 if fact.key.startswith("reply:") else 0,
                     )
                 )
         for relationship in relationships:
@@ -1875,7 +2040,7 @@ class Stage1Orchestrator:
                     data_class="memories",
                     visibility=memory.visibility,
                     owner_id=character.id,
-                    text=memory.text,
+                    text=f"{phase_label(memory.created_phase_index)}: {memory.text}",
                     score=score_salience(
                         memory.salience, now_index - memory.created_phase_index, half_life
                     ),
@@ -1942,7 +2107,9 @@ class Stage1Orchestrator:
             resolution, live_versions = await self._resolve_scene(
                 world_id, run_id, sealed, scene, members, runtime
             )
-        observations, memories = self._perceive_scene(world_id, sealed, scene, members, names)
+        observations, memories = self._perceive_scene(
+            world_id, sealed, scene, members, names, reactions
+        )
         # Only the aggregates this scene mutates enter the version check,
         # pinned to the versions the resolver just validated.
         touched = {
@@ -2279,6 +2446,7 @@ class Stage1Orchestrator:
             )
         )
         result = await invoke(graph, invocation)
+        await self._remember_intention(world_id, reactor_id, result.get("raw_response"))
         if not result["proposal"]["reacted"]:
             return None
         return Reaction.model_validate(result["proposal"]["reaction"])
@@ -2354,9 +2522,10 @@ class Stage1Orchestrator:
         scene: Scene,
         members: list[Intent],
         names: Mapping[UUID, str],
+        reactions: Sequence[Reaction] = (),
     ) -> tuple[list[ObservationSpec], list[MemorySpec]]:
         participant_ids = [p.character_id for p in scene.participants]
-        events: list[tuple[Intent, ObservableEvent]] = []
+        events: list[tuple[UUID, ObservableEvent]] = []
         for intent in sorted(members, key=lambda i: str(i.id)):
             facts = [
                 PerceivedFact(
@@ -2376,7 +2545,7 @@ class Stage1Orchestrator:
                 )
             events.append(
                 (
-                    intent,
+                    intent.id,
                     ObservableEvent(
                         event_id=uuid4(),
                         world_id=world_id,
@@ -2387,25 +2556,59 @@ class Stage1Orchestrator:
                     ),
                 )
             )
+        # Replies are perceived like the attempts they answer: without them
+        # a character remembers asking but never what was said back.
+        for reaction in sorted(reactions, key=lambda r: str(r.id)):
+            reactor = reaction.reactor_character_id
+            if reaction.action.family in _SILENT_REPLIES or reactor not in sealed.locations:
+                continue
+            key = f"reply:{reaction.action.family.value}"
+            reply_disclosures: list[Disclosure] = []
+            if isinstance(reaction.action, CommunicateAction):
+                reply_disclosures.append(
+                    Disclosure(fact_key=key, recipient_ids=[reaction.action.target_character_id])
+                )
+            events.append(
+                (
+                    reaction.id,
+                    ObservableEvent(
+                        event_id=uuid4(),
+                        world_id=world_id,
+                        location_id=sealed.locations[reactor],
+                        participant_ids=participant_ids,
+                        facts=[
+                            PerceivedFact(
+                                key=key,
+                                value=_reply_summary(reaction.action, names, reactor),
+                                visibility=FactVisibility.SCENE,
+                                channel=FactChannel.SIGHT,
+                            )
+                        ],
+                        disclosures=reply_disclosures,
+                    ),
+                )
+            )
         observations: list[tuple[UUID, PerceivedFact, UUID]] = []
         for observer in sorted(set(participant_ids) | set(sealed.locations)):
             observer_place = sealed.locations.get(observer)
-            for intent, event in events:
+            for source_id, event in events:
                 for fact in permitted_facts(event, observer, observer_place):
-                    observations.append((observer, fact, intent.id))
+                    observations.append((observer, fact, source_id))
         specs = [
             observation_spec(observer, [fact], source_id=source_id)
             for observer, fact, source_id in observations
         ]
         memories: list[MemorySpec] = []
         for participant in sorted(set(participant_ids)):
+            own_intents = {i.id for i in members if i.author_character_id == participant}
+            seen_by_participant = [
+                index
+                for index, (observer, _fact, _source) in enumerate(observations)
+                if observer == participant
+            ]
             own = next(
-                (
-                    index
-                    for index, (observer, _fact, _source) in enumerate(observations)
-                    if observer == participant
-                ),
-                None,
+                (i for i in seen_by_participant if observations[i][2] in own_intents),
+                seen_by_participant[0] if seen_by_participant else None,
             )
             own_summary = next(
                 (
@@ -2474,13 +2677,22 @@ class Stage1Orchestrator:
             ]
             roster = await uow.party.list_for_world(world_id)
             config = await uow.worlds.get_config(world_id)
+            place_name = await _event_place_name(uow, event_id)
         if existing:
             return "skipped"
         structured = config.get(NARRATION_MODE_KEY) == NARRATION_MODE_STRUCTURED
+        # Reply observations are the characters' memory of reactions; the
+        # narrator gets those reactions as citable reaction:<n> facts below.
         sourced = [
-            (fact.key, fact.value, obs.source_id) for obs in observations for fact in obs.facts
+            (fact.key, fact.value, obs.source_id)
+            for obs in observations
+            for fact in obs.facts
+            if not fact.key.startswith("reply:")
         ]
         facts = [{"key": key, "value": value} for key, value in dedupe_narration_facts(sourced)]
+        # Where the scene happens, so the narrator does not set it elsewhere.
+        if place_name:
+            facts.insert(0, {"key": "place", "value": f"The scene takes place at {place_name}."})
         names = {c.id: c.name for c in characters}
         # Quoted communicate attempts (a player's "Say" line) are the actor's
         # own speech: dialogue-eligible like quoted reactions.

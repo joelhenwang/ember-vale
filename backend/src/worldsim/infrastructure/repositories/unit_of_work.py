@@ -22,6 +22,7 @@ from worldsim.infrastructure.repositories.conditions import SqlAlchemyConditionR
 from worldsim.infrastructure.repositories.costs import SqlAlchemyCostRepository
 from worldsim.infrastructure.repositories.digests import SqlAlchemyDigestRepository
 from worldsim.infrastructure.repositories.events import SqlAlchemyEventRepository
+from worldsim.infrastructure.repositories.intentions import SqlAlchemyIntentionRepository
 from worldsim.infrastructure.repositories.interventions import SqlAlchemyInterventionRepository
 from worldsim.infrastructure.repositories.knowledge import SqlAlchemyKnowledgeRepository
 from worldsim.infrastructure.repositories.lineage import SqlAlchemyLineageRepository
@@ -90,6 +91,7 @@ class SqlAlchemyUnitOfWork:
         self._summaries: SqlAlchemySummaryRepository | None = None
         self._roles: SqlAlchemyRoleRepository | None = None
         self._autoplay: SqlAlchemyAutoplayRepository | None = None
+        self._intentions: SqlAlchemyIntentionRepository | None = None
         self._activities: SqlAlchemyActivityRepository | None = None
         self._routes: SqlAlchemyRouteRepository | None = None
         self._schedules: SqlAlchemyScheduleRepository | None = None
@@ -277,6 +279,12 @@ class SqlAlchemyUnitOfWork:
         return self._autoplay
 
     @property
+    def intentions(self) -> SqlAlchemyIntentionRepository:
+        if self._intentions is None:
+            self._intentions = SqlAlchemyIntentionRepository(self._require_session())
+        return self._intentions
+
+    @property
     def party(self) -> SqlAlchemyPartyRepository:
         if self._party is None:
             self._party = SqlAlchemyPartyRepository(self._require_session())
@@ -345,6 +353,7 @@ class SqlAlchemyUnitOfWork:
             self._summaries = None
             self._roles = None
             self._autoplay = None
+            self._intentions = None
             self._activities = None
             self._routes = None
             self._costs = None

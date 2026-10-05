@@ -14,6 +14,7 @@ import hashlib
 
 from worldsim.domain.context import (
     CHARS_PER_TOKEN,
+    CHRONOLOGICAL_SECTIONS,
     SECTION_ORDER,
     TRUNCATION_MARKER,
     ContextEnvelope,
@@ -94,6 +95,7 @@ def assemble(
         entries: list[str] = []
         truncated: list[str] = []
         used = 0
+        chosen: list[tuple[SourceCandidate, str]] = []
         for candidate in _ranked(by_section[name]):
             entry = delimit(candidate.data_class, candidate.text)
             room = budget - used
@@ -112,7 +114,7 @@ def assemble(
             if len(entry) > room:
                 entry = entry[:room] + TRUNCATION_MARKER
                 truncated.append(candidate.source_id)
-            entries.append(entry)
+            chosen.append((candidate, entry))
             used += len(entry)
             included.append(
                 ManifestSource(
@@ -124,6 +126,9 @@ def assemble(
                     reason="permitted",
                 )
             )
+        if name in CHRONOLOGICAL_SECTIONS:
+            chosen.sort(key=lambda pair: (pair[0].created_phase_index, pair[0].ordinal))
+        entries = [entry for _candidate, entry in chosen]
         instruction = _SECTION_INSTRUCTIONS[name]
         body = "\n".join([instruction, *entries])
         sections.append(
