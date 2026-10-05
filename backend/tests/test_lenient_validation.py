@@ -149,3 +149,14 @@ def test_director_response_key_and_name_alias_normalize() -> None:
         DIRECTOR, alias(normalize_tagged(named, tags, "action", frozenset()))
     )
     assert proposal.title == "The Unlit Lantern"
+
+
+def test_director_payload_under_response_or_payload_normalizes() -> None:
+    tags = frozenset({"propose_hook", "propose_arc", "noop"})
+    wrappers = frozenset({"proposal", "hook", "arc", "response", "payload"})
+    for raw in (
+        '{"response": {"action": "propose_hook", "title": "T", "purpose": "P"}}',
+        '{"type": "json_object", "payload": {"action": "noop", "reason": "busy"}}',
+    ):
+        proposal = validate_lenient(DIRECTOR, normalize_tagged(raw, tags, "action", wrappers))
+        assert proposal.action in ("propose_hook", "noop")

@@ -42,7 +42,7 @@ DIRECTOR_PROMPT_VERSION = "director.v7"
 
 _PROPOSAL_ADAPTER: TypeAdapter[DirectorProposal] = TypeAdapter(DirectorProposal)
 _DIRECTOR_ACTIONS = frozenset({"propose_hook", "propose_arc", "noop"})
-_DIRECTOR_WRAPPERS = frozenset({"proposal", "hook", "arc"})
+_DIRECTOR_WRAPPERS = frozenset({"proposal", "hook", "arc", "response", "payload"})
 
 
 def _title_alias(raw: str) -> str:

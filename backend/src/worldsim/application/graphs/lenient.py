@@ -102,7 +102,8 @@ def normalize_tagged(raw: str, tags: frozenset[str], field: str, wrappers: froze
         del document["type"]
         changed = True
     for alias in ("type", "response", "kind"):
-        if field not in document and document.get(alias) in tags:
+        value = document.get(alias)
+        if field not in document and isinstance(value, str) and value in tags:
             document[field] = document.pop(alias)
             changed = True
     for wrapper in wrappers:
