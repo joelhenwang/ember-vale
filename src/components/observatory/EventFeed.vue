@@ -68,6 +68,11 @@ function body(entry: ChronicleEntry): string {
       </p>
       <article v-for="beat in beats" :key="beat.index" class="ef__beat">
         <h3>{{ beat.label }}</h3>
+        <p v-if="beat.quiet" class="ef__quiet">
+          A quiet stretch: everyone waited or rested{{
+            beat.quiet.beats > 1 ? ` (${beat.quiet.beats} beats)` : ''
+          }}.
+        </p>
         <button
           v-for="entry in beat.entries"
           :key="entry.event_id"
@@ -145,6 +150,12 @@ function body(entry: ChronicleEntry): string {
   text-transform: uppercase;
   color: var(--gold);
   background: var(--surface-2);
+}
+.ef__quiet {
+  padding: 4px 10px 8px;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--ink-3);
 }
 .ef__entry {
   display: grid;

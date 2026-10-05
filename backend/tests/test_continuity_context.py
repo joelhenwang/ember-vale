@@ -325,3 +325,37 @@ def test_moves_are_remembered_with_their_destination() -> None:
     summarize = stage1._summarize  # pyright: ignore[reportPrivateUsage]
     assert summarize(move, {wren: "Wren", market: "Market"}) == "Wren goes to Market"
     assert summarize(move, {wren: "Wren"}) == "Wren goes to another place"
+
+
+def test_director_sees_each_characters_intention() -> None:
+    world = uuid.uuid4()
+    hearth = Location(id=uuid.uuid4(), world_id=world, name="Hearth")
+    ash = Character(
+        id=uuid.uuid4(),
+        world_id=world,
+        name="Ash",
+        card_version=1,
+        location_id=hearth.id,
+        stamina=80,
+        mana=40,
+    )
+    summary = director_summary(
+        5, [ash], [hearth], [], [], [], 3, {ash.id: "wait for Bramble to come back"}
+    )
+    assert f"Ash (id {ash.id}, at Hearth, intends: wait for Bramble to come back)" in summary
+
+
+def test_scenes_where_everyone_waits_are_marked_idle(
+    stage1_client: tuple[ApiClient, FakeGateway],
+) -> None:
+    client, gateway = stage1_client
+    ids = asyncio.run(_seed_two())
+    gateway.route = _route_for(ids, {})  # both characters wait
+    assert _advance(client, ids["world"], 1).status_code == 200
+    feed = client.get(
+        "/api/v1/world/chronicle",
+        params={"world_id": str(ids["world"]), "after": 0, "limit": 50},
+        headers={"X-Worldsim-Role": "watcher"},
+    ).json()["entries"]
+    scenes = [e for e in feed if e["event_type"] == "action_resolved"]
+    assert scenes and all(e["idle"] for e in scenes)

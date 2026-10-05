@@ -144,6 +144,29 @@ describe('feed', () => {
     expect(beats[1].label).toBe('Day 1 · Sunrise')
   })
 
+  it('folds consecutive idle beats into one quiet stretch', () => {
+    const idle = (seq: number, index: number): ChronicleEntry => ({
+      ...entry(seq, index),
+      idle: true
+    })
+    const beats = groupFeed([
+      entry(1, 3),
+      idle(2, 4),
+      idle(3, 5),
+      idle(4, 6),
+      entry(5, 7),
+      idle(6, 8)
+    ])
+    expect(beats.map((b) => [b.index, b.quiet?.beats ?? 0])).toEqual([
+      [8, 1],
+      [7, 0],
+      [6, 3],
+      [3, 0]
+    ])
+    expect(beats[2].label).toBe('Day 1 · Afternoon – Day 1 · Dusk')
+    expect(beats[2].entries).toEqual([])
+  })
+
   it('merges pages by event id in source order', () => {
     const merged = mergeChronicle([entry(1, 1), entry(2, 1)], [entry(2, 1), entry(3, 2)])
     expect(merged.map((e) => e.sequence)).toEqual([1, 2, 3])

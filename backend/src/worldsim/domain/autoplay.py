@@ -117,13 +117,19 @@ def is_due(state: AutoplayState, now: datetime) -> bool:
     )
 
 
-def beat_committed(state: AutoplayState, now: datetime) -> AutoplayState:
-    """Count a beat this runner committed; pause at the limit."""
+def beat_committed(state: AutoplayState, now: datetime, *, quiet: bool = False) -> AutoplayState:
+    """Count a beat this runner committed; pause at the limit.
+
+    A quiet beat (nobody did more than wait) is not worth watching, so the
+    next one follows at once instead of after the chosen pause. It still
+    counts toward the beat limit, which is the spend guard.
+    """
     left = max(0, state.beats_left - 1)
     after = state.model_copy(update={"beats_left": left, "beats_run": state.beats_run + 1})
     if left == 0:
         return pause(after, StopReason.BEAT_LIMIT)
-    return after.model_copy(update={"next_due_at": now + timedelta(seconds=state.delay_seconds)})
+    delay = 0 if quiet else state.delay_seconds
+    return after.model_copy(update={"next_due_at": now + timedelta(seconds=delay)})
 
 
 def retry_later(state: AutoplayState, now: datetime, seconds: int) -> AutoplayState:

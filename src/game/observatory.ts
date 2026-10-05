@@ -186,9 +186,20 @@ export interface FeedBeat {
   index: number
   label: string
   entries: ChronicleEntry[]
+  /** Set when this item folds beats where everyone only waited or rested. */
+  quiet?: { from: number; to: number; beats: number }
 }
 
-/** Readable events grouped per beat, newest beat first, in-beat order kept. */
+/** A beat in which every scene was idle (waiting or resting only). */
+function isIdle(beat: FeedBeat): boolean {
+  return beat.entries.length > 0 && beat.entries.every((e) => e.idle === true)
+}
+
+/**
+ * Readable events grouped per beat, newest beat first, in-beat order kept.
+ * Consecutive beats where everyone only waited fold into one quiet item,
+ * so a night of waiting reads as one line instead of five.
+ */
 export function groupFeed(entries: ChronicleEntry[]): FeedBeat[] {
   const groups = new Map<number, ChronicleEntry[]>()
   for (const entry of entries) {
@@ -197,13 +208,28 @@ export function groupFeed(entries: ChronicleEntry[]): FeedBeat[] {
     list.push(entry)
     groups.set(entry.absolute_index, list)
   }
-  return [...groups.entries()]
+  const beats = [...groups.entries()]
     .map(([index, list]) => ({
       index,
       label: beatTimeLabel(index),
       entries: [...list].sort((a, b) => a.sequence - b.sequence)
     }))
     .sort((a, b) => b.index - a.index)
+  const folded: FeedBeat[] = []
+  for (const beat of beats) {
+    const last = folded[folded.length - 1]
+    if (isIdle(beat) && last?.quiet && last.quiet.from === beat.index + 1) {
+      last.quiet = { from: beat.index, to: last.quiet.to, beats: last.quiet.beats + 1 }
+      last.label = `${beatTimeLabel(beat.index)} – ${beatTimeLabel(last.quiet.to)}`
+      continue
+    }
+    if (isIdle(beat)) {
+      folded.push({ ...beat, entries: [], quiet: { from: beat.index, to: beat.index, beats: 1 } })
+      continue
+    }
+    folded.push(beat)
+  }
+  return folded
 }
 
 /** Merge a new chronicle page into what is shown, by event id. */

@@ -913,6 +913,8 @@ class ChronicleEntry(BaseModel):
     scene_id: UUID | None = None
     absolute_index: int
     revision: int = 0
+    #: Everyone in the scene only waited or rested (feeds fold these together).
+    idle: bool = False
 
 
 class ChronicleResponse(BaseModel):

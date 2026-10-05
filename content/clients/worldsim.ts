@@ -575,6 +575,7 @@ export interface ChronicleEntry {
   absolute_index: number;
   event_id: string;
   event_type: string;
+  idle?: boolean;
   location_id?: string | null;
   participant_ids?: string[];
   revision?: number;

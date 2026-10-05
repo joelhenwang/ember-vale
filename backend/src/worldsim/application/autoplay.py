@@ -210,4 +210,4 @@ class AutoplayRunner:
             # Someone else committed this index (a manual step); go again.
             await self._settle(world_id, lambda s, now: retry_later(s, now, 0))
             return
-        await self._settle(world_id, beat_committed)
+        await self._settle(world_id, lambda s, now: beat_committed(s, now, quiet=report.quiet))

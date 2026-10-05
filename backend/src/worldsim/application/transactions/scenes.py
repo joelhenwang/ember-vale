@@ -58,6 +58,20 @@ def observation_spec(
     )
 
 
+#: Families that leave the world as it was: a scene of only these is idle.
+IDLE_FAMILIES = frozenset({"wait", "rest"})
+
+
+def _event_summary(location_id: UUID | None, intents: list[Intent]) -> dict[str, str]:
+    """Where the scene happened, and whether everyone in it only waited or rested."""
+    summary: dict[str, str] = {}
+    if location_id is not None:
+        summary["location_id"] = str(location_id)
+    if intents and all(i.action.family.value in IDLE_FAMILIES for i in intents):
+        summary["idle"] = "1"
+    return summary
+
+
 def build_scene_commit(
     *,
     command_id: UUID,
@@ -108,7 +122,7 @@ def build_scene_commit(
         memories=list(memories or []),
         outbox=[narration_spec(scene.id)],
         participant_ids=sorted({p.character_id for p in scene.participants}, key=str),
-        summary={"location_id": str(location_id)} if location_id is not None else {},
+        summary=_event_summary(location_id, intents),
         scene_records=SceneRecords(
             scene=scene,
             intents=list(intents),

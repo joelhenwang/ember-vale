@@ -143,6 +143,7 @@ async def chronicle(
                 location_id=_as_uuid(event.summary.get("location_id")),
                 scene_id=scene_id,
                 absolute_index=event.absolute_index,
+                idle=event.summary.get("idle") == "1",
             )
         )
     high = await uow.events.max_sequence(world_id)

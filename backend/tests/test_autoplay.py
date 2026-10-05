@@ -292,3 +292,11 @@ def test_runner_resumes_a_beat_left_open(
     _drive(raw, advance=record)
 
     assert asked == [stuck]
+
+
+def test_quiet_beat_skips_the_pause_but_still_counts() -> None:
+    state = play(AutoplayState(world_id=uuid.uuid4()), now=T0, delay_seconds=60, beat_limit=3)
+    quiet = beat_committed(state, T0, quiet=True)
+    assert is_due(quiet, T0) and quiet.beats_left == 2
+    busy = beat_committed(quiet, T0)
+    assert not is_due(busy, T0 + timedelta(seconds=59)) and busy.beats_left == 1

@@ -497,11 +497,15 @@ def director_summary(
     arcs: Sequence[Any],
     recent: Sequence[str],
     quiet_streak: int,
+    intentions: Mapping[UUID, str] | None = None,
 ) -> str:
     """What the director sees: who is where (with ids), threads, recent events."""
     place = {loc.id: loc.name for loc in locations}
+    plans = intentions or {}
     cast = "; ".join(
-        f"{c.name} (id {c.id}, at {place.get(c.location_id, 'somewhere')})"
+        f"{c.name} (id {c.id}, at {place.get(c.location_id, 'somewhere')}"
+        + (f", intends: {plans[c.id]}" if c.id in plans else "")
+        + ")"
         for c in characters
         if c.life_status == LifeStatus.ALIVE
     )
@@ -1637,6 +1641,11 @@ class Stage1Orchestrator:
             hooks = await uow.narrative.list_hooks_for_world(world_id)
             arcs = await uow.narrative.list_arcs_for_world(world_id)
             recent, quiet_streak = await _recent_happenings(uow, world_id)
+            intentions = {
+                c.id: i.text
+                for c in characters
+                if (i := await uow.intentions.get(c.id)) is not None
+            }
         last_raw = config.get("director.last_absolute")
         last = int(last_raw) if isinstance(last_raw, int) else None
         cooldown_raw = config.get("director.cooldown_phases")
@@ -1657,7 +1666,9 @@ class Stage1Orchestrator:
         added_raw = config.get(ADDED_PLACES_CONFIG_KEY)
         places_left = max(0, MAX_ADDED_PLACES - (added_raw if isinstance(added_raw, int) else 0))
         summary = (
-            director_summary(index, characters, locations, hooks, arcs, recent, quiet_streak)
+            director_summary(
+                index, characters, locations, hooks, arcs, recent, quiet_streak, intentions
+            )
             + f"\nNew characters you may still add to this story: {spawns_left}."
             + f"\nNew places you may still add to this story: {places_left}."
         )
