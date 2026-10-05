@@ -23,6 +23,11 @@ from uuid import UUID
 from langgraph.graph import StateGraph
 from pydantic import TypeAdapter, ValidationError
 
+from worldsim.application.graphs.lenient import (
+    fill_expected_versions,
+    repair_detail,
+    validate_lenient,
+)
 from worldsim.application.graphs.state import GraphState
 from worldsim.application.ports.model_gateway import (
     CompletionRequest,
@@ -183,6 +188,14 @@ def _proposal(resolution: Resolution, *, fallback: bool, reason: str) -> dict[st
     }
 
 
+def _versions_of(state: ResolveState) -> dict[str, int]:
+    """Aggregate versions the server read for this scene (key: aggregate id)."""
+    raw = state.get("expected_versions")
+    if not isinstance(raw, dict):
+        return {}
+    return {str(k).split(":", 1)[-1]: int(v) for k, v in raw.items()}
+
+
 def build_resolve_graph(deps: ResolverGraphDeps) -> Any:
     """Compile the hybrid resolution graph around injected dependencies."""
 
@@ -286,9 +299,13 @@ def build_resolve_graph(deps: ResolverGraphDeps) -> Any:
         raw: str | None = result.text
         while True:
             try:
-                proposal = _PROPOSAL_ADAPTER.validate_json(raw)
+                proposal = validate_lenient(
+                    _PROPOSAL_ADAPTER, fill_expected_versions(raw, _versions_of(state))
+                )
             except ValidationError as exc:
-                errors.append(f"attempt {repairs}: {exc.error_count()} schema errors")
+                errors.append(
+                    f"attempt {repairs}: {exc.error_count()} schema errors ({repair_detail(exc)})"
+                )
                 if repairs >= deps.repair_budget:
                     return _fallback_result(
                         state,

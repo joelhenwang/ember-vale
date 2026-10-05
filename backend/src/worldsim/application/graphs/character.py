@@ -24,6 +24,7 @@ from uuid import UUID
 from langgraph.graph import StateGraph
 from pydantic import TypeAdapter, ValidationError
 
+from worldsim.application.graphs.lenient import repair_detail, validate_lenient
 from worldsim.application.graphs.state import GraphInvocation, GraphState
 from worldsim.application.ports.model_gateway import (
     CompletionRequest,
@@ -248,11 +249,14 @@ def build_character_graph(deps: CharacterGraphDeps) -> Any:
         assert invocation.actor_id is not None
         while True:
             try:
-                action = _ACTION_ADAPTER.validate_json(
-                    pin_identity(raw, invocation.actor_id, invocation.snapshot_id)
+                action = validate_lenient(
+                    _ACTION_ADAPTER,
+                    pin_identity(raw, invocation.actor_id, invocation.snapshot_id),
                 )
             except ValidationError as exc:
-                errors.append(f"attempt {repairs}: {exc.error_count()} schema errors")
+                errors.append(
+                    f"attempt {repairs}: {exc.error_count()} schema errors ({repair_detail(exc)})"
+                )
                 if repairs >= deps.repair_budget:
                     reason = f"unrepairable model output ({len(errors)} attempts); waiting"
                     return _decide_result(

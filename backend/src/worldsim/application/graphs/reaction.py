@@ -24,6 +24,7 @@ from langgraph.graph import StateGraph
 from pydantic import TypeAdapter, ValidationError
 
 from worldsim.application.graphs.character import precheck_action
+from worldsim.application.graphs.lenient import repair_detail, validate_lenient
 from worldsim.application.graphs.state import GraphState
 from worldsim.application.ports.model_gateway import (
     CompletionRequest,
@@ -243,9 +244,11 @@ def build_reaction_graph(deps: ReactionGraphDeps) -> Any:
         raw: str | None = result.text
         while True:
             try:
-                action = _ACTION_ADAPTER.validate_json(raw)
+                action = validate_lenient(_ACTION_ADAPTER, raw)
             except ValidationError as exc:
-                errors.append(f"attempt {repairs}: {exc.error_count()} schema errors")
+                errors.append(
+                    f"attempt {repairs}: {exc.error_count()} schema errors ({repair_detail(exc)})"
+                )
                 if repairs >= repairs_allowed:
                     return _no_reaction(
                         f"unrepairable reaction output ({len(errors)} attempts)", errors, repairs

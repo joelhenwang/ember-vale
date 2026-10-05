@@ -22,6 +22,7 @@ from uuid import UUID
 from langgraph.graph import StateGraph
 from pydantic import TypeAdapter, ValidationError
 
+from worldsim.application.graphs.lenient import repair_detail, validate_lenient
 from worldsim.application.graphs.state import GraphState
 from worldsim.application.ports.model_gateway import (
     CompletionRequest,
@@ -157,9 +158,11 @@ def build_director_graph(deps: DirectorGraphDeps) -> Any:
         raw: str | None = result.text
         while True:
             try:
-                proposal = _PROPOSAL_ADAPTER.validate_json(raw)
+                proposal = validate_lenient(_PROPOSAL_ADAPTER, raw)
             except ValidationError as exc:
-                errors.append(f"attempt {repairs}: {exc.error_count()} schema errors")
+                errors.append(
+                    f"attempt {repairs}: {exc.error_count()} schema errors ({repair_detail(exc)})"
+                )
                 if repairs >= deps.repair_budget:
                     return _noop(
                         f"unrepairable director output ({len(errors)} attempts)",
