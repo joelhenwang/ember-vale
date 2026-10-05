@@ -17,6 +17,7 @@ import { useStoryProvider } from '../composables/useStoryProvider'
 import { selectSeat } from '../api/worldsim'
 import type { Role } from '../api/http'
 import { phaseLabel } from '../game/format'
+import { inputLimit, topicFor, type SpeechMode } from '../game/playerSpeech'
 
 const route = useRoute()
 const router = useRouter()
@@ -202,17 +203,22 @@ watch(
 
 const submitAsk = usePlayerAsk((intents) => story.advance(intents), askText)
 
+// Say sends the exact words (quoted: voiced as your character's dialogue);
+// About sends a topic the narrator describes in its own words.
+const speechMode = ref<SpeechMode>('say')
+
 async function askQuestion(): Promise<void> {
   const actor = controlledId.value
   const target = askTarget.value
   if (!actor || !target) return
-  await submitAsk((topic) => ({
+  const mode = speechMode.value
+  await submitAsk((text) => ({
     [actor]: {
       family: 'communicate',
       character_id: actor,
       snapshot_id: NIL_SNAPSHOT,
       target_character_id: target,
-      topic
+      topic: topicFor(text, mode)
     }
   }))
 }
@@ -482,6 +488,16 @@ function loadBeatDetails(eventIds: string[]): void {
             Your words file with the next committed beat — the cast's reactions, the resolution and
             the narration follow.
           </p>
+          <div class="play__modes" role="radiogroup" aria-label="How to speak">
+            <label>
+              <input v-model="speechMode" type="radio" value="say" />
+              Say — your exact words, spoken aloud
+            </label>
+            <label>
+              <input v-model="speechMode" type="radio" value="about" />
+              Talk about — a topic the narrator describes
+            </label>
+          </div>
           <div class="play__travel">
             <label>
               To
@@ -492,17 +508,25 @@ function loadBeatDetails(eventIds: string[]): void {
               </select>
             </label>
             <label>
-              Say
+              {{ speechMode === 'say' ? 'Say' : 'About' }}
               <input
                 v-model="askText"
                 type="text"
-                maxlength="256"
-                placeholder="Ask something in your own words." />
+                :maxlength="inputLimit(speechMode)"
+                :placeholder="
+                  speechMode === 'say' ? 'What you say, word for word.' : 'What you talk about.'
+                " />
             </label>
             <MenuButton
               :disabled="!askText.trim() || !askTarget || !beatReady"
               @click="askQuestion()">
-              {{ story.advancing.value ? 'Committing beat…' : 'Ask with the next beat' }}
+              {{
+                story.advancing.value
+                  ? 'Committing beat…'
+                  : speechMode === 'say'
+                    ? 'Say it with the next beat'
+                    : 'Bring it up with the next beat'
+              }}
             </MenuButton>
           </div>
         </section>
@@ -809,6 +833,17 @@ function loadBeatDetails(eventIds: string[]): void {
 .play__cast em {
   font-size: 12px;
   color: #1f4d3f;
+}
+.play__modes {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+.play__modes label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 .play__travel {
   display: grid;
