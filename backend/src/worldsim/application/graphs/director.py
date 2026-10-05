@@ -37,7 +37,7 @@ from worldsim.application.ports.model_gateway import (
 from worldsim.domain.director import DirectorProposal, validate_proposal
 
 #: Versioned director prompt file.
-DIRECTOR_PROMPT_VERSION = "director.v2"
+DIRECTOR_PROMPT_VERSION = "director.v3"
 
 _PROPOSAL_ADAPTER: TypeAdapter[DirectorProposal] = TypeAdapter(DirectorProposal)
 _DIRECTOR_ACTIONS = frozenset({"propose_hook", "propose_arc", "noop"})
@@ -57,6 +57,9 @@ class DirectorState(GraphState, total=False):
     hook_id: str
     arc_id: str
     world_id: str
+    location_ids: list[str]
+    spawns_left: int
+    npc_id: str
     system_prompt: str
     user_prompt: str
     raw_response: str | None
@@ -229,6 +232,9 @@ def build_director_graph(deps: DirectorGraphDeps) -> Any:
             arcs_raw,
             UUID(hook_raw),
             UUID(arc_raw),
+            known_location_ids=frozenset(UUID(str(v)) for v in state.get("location_ids", [])),
+            spawns_left=int(state.get("spawns_left", 0)),
+            npc_id=UUID(npc_raw) if (npc_raw := state.get("npc_id")) else None,
         )
         return {
             "proposal": proposal.model_dump(mode="json"),

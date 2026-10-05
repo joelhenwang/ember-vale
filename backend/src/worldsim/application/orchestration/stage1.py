@@ -32,7 +32,7 @@ from dataclasses import dataclass, field, replace
 from datetime import timedelta
 from pathlib import Path
 from typing import Any, Protocol, cast
-from uuid import UUID, uuid4
+from uuid import UUID, uuid4, uuid5
 
 from sqlalchemy.exc import IntegrityError
 
@@ -127,6 +127,8 @@ from worldsim.domain.commands import (
 from worldsim.domain.context import ContextEnvelope, ContextRequest, SourceCandidate
 from worldsim.domain.director import (
     DIRECTOR_COOLDOWN_PHASES,
+    MAX_SPAWNED_NPCS,
+    SPAWNED_CONFIG_KEY,
     DirectorDecision,
     should_trigger,
 )
@@ -666,7 +668,9 @@ class Stage1Orchestrator:
         await self._set_state(run_id, PhaseRunState.INTENTS_COMPLETE)
         quiet = is_quiet_phase(intent.action.family for intent in intents)
         async with self._factory() as uow:
-            characters = await uow.characters.list_for_world(world_id)
+            characters = [
+                c for c in await uow.characters.list_for_world(world_id) if c.id in sealed.locations
+            ]
             locations = await uow.locations.list_for_world(world_id)
             live_world = await uow.worlds.get(world_id)
         # Place names ride along so attempts read "Wren goes to the Market".
@@ -1600,7 +1604,14 @@ class Stage1Orchestrator:
         known = [c.id for c in characters if c.life_status == LifeStatus.ALIVE]
         active_hooks = sum(1 for h in hooks if h.status != NarrativeStatus.CLOSED)
         active_arcs = sum(1 for a in arcs if a.status != NarrativeStatus.CLOSED)
-        summary = director_summary(index, characters, locations, hooks, arcs, recent, quiet_streak)
+        spawned_raw = config.get(SPAWNED_CONFIG_KEY)
+        spawns_left = max(
+            0, MAX_SPAWNED_NPCS - (spawned_raw if isinstance(spawned_raw, int) else 0)
+        )
+        summary = (
+            director_summary(index, characters, locations, hooks, arcs, recent, quiet_streak)
+            + f"\nNew characters you may still add to this story: {spawns_left}."
+        )
         hook_id = new_hook_id()
         arc_id = new_arc_id()
         spec = ManifestSpec(
@@ -1639,6 +1650,10 @@ class Stage1Orchestrator:
                 "hook_id": str(hook_id),
                 "arc_id": str(arc_id),
                 "world_id": str(world_id),
+                "location_ids": [str(loc.id) for loc in locations],
+                "spawns_left": spawns_left,
+                # Deterministic per hook, so a replayed beat names the same person.
+                "npc_id": str(uuid5(hook_id, "npc")),
             },
         )
         sampling = runtime.sampling
@@ -1695,10 +1710,12 @@ class Stage1Orchestrator:
     ) -> list[Intent]:
         """Concurrent character decisions after the snapshot seal (barrier)."""
         async with self._factory() as uow:
+            # Only characters sealed in this phase's snapshot decide: one the
+            # director just added acts from the next beat.
             characters = [
                 c
                 for c in await uow.characters.list_for_world(world_id)
-                if c.life_status == LifeStatus.ALIVE
+                if c.life_status == LifeStatus.ALIVE and c.id in sealed.locations
             ]
             locations = await uow.locations.list_for_world(world_id)
         known = [str(c.id) for c in characters]

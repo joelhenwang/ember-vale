@@ -3,15 +3,17 @@
 The Director proposes opportunities, never outcomes. A deterministic
 trigger decides whether the model runs at all; a deterministic
 validator decides whether its proposal lands. Requested powers
-beyond the supported set (new NPCs, new locations) are rejected,
-and permanent change (harm, death, rules) is not expressible.
+beyond the supported set are rejected, and permanent change (harm,
+death, rules) is not expressible. A hook may bring one new character
+into the world (``spawn_npc`` with an ``npc`` description), within a
+per-story limit, so openings can name someone characters can meet.
 """
 
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from worldsim.domain.ids import ArcId, CharacterId, HookId, WorldId
+from worldsim.domain.ids import ArcId, CharacterId, HookId, LocationId, WorldId
 from worldsim.domain.narrative import NarrativeArc, NarrativeHook
 
 #: Phases between Director runs unless overridden in world config.
@@ -21,6 +23,27 @@ MAX_ACTIVE_HOOKS = 3
 MAX_ACTIVE_ARCS = 2
 #: Powers a proposal may request. Anything else is rejected.
 SUPPORTED_POWERS = frozenset({"spawn_npc", "new_location"})
+
+
+#: New characters the director may add to one story.
+MAX_SPAWNED_NPCS = 3
+SPAWNED_CONFIG_KEY = "director.spawned_npcs"
+
+
+class NpcSpec(BaseModel):
+    """A new character an opening needs: who, what they are like, where."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    name: str = Field(min_length=1, max_length=64)
+    description: str = Field(default="", max_length=600)
+    location_id: LocationId
+
+
+class SpawnedNpc(NpcSpec):
+    """An accepted new character, with the id it will be created under."""
+
+    id: CharacterId
 
 
 class DirectorProposal(BaseModel):
@@ -34,6 +57,7 @@ class DirectorProposal(BaseModel):
     requested_powers: list[str] = Field(default_factory=list)
     participant_ids: list[CharacterId] = Field(default_factory=list)
     reason: str = Field(default="", max_length=512)
+    npc: NpcSpec | None = None
 
 
 class DirectorDecision(BaseModel):
@@ -44,6 +68,7 @@ class DirectorDecision(BaseModel):
     accepted: bool
     hook: NarrativeHook | None = None
     arc: NarrativeArc | None = None
+    npc: SpawnedNpc | None = None
     reason: str = Field(default="", max_length=512)
 
 
@@ -64,6 +89,10 @@ def validate_proposal(
     active_arcs: int,
     hook_id: HookId,
     arc_id: ArcId,
+    *,
+    known_location_ids: frozenset[LocationId] = frozenset(),
+    spawns_left: int = 0,
+    npc_id: CharacterId | None = None,
 ) -> DirectorDecision:
     """Accept well-formed proposals inside privilege and budget; else reject."""
     if proposal.action == "noop":
@@ -81,6 +110,22 @@ def validate_proposal(
     if proposal.action == "propose_hook":
         if active_hooks >= MAX_ACTIVE_HOOKS:
             return DirectorDecision(accepted=False, reason="hook budget exhausted")
+        spawned: SpawnedNpc | None = None
+        if proposal.npc is not None or "spawn_npc" in proposal.requested_powers:
+            denial = _spawn_denial(proposal.npc, known_location_ids, spawns_left, npc_id)
+            if denial is not None:
+                return DirectorDecision(accepted=False, reason=denial)
+            assert proposal.npc is not None and npc_id is not None
+            spawned = SpawnedNpc(**proposal.npc.model_dump(), id=npc_id)
+        participants = list(proposal.participant_ids)
+        powers = list(proposal.requested_powers)
+        if spawned is not None:
+            # A hook naming nobody is heard by everyone; naming only the new
+            # character would hide it from the cast it is meant to reach.
+            if participants:
+                participants.append(spawned.id)
+            if "spawn_npc" not in powers:
+                powers.append("spawn_npc")
         return DirectorDecision(
             accepted=True,
             hook=NarrativeHook(
@@ -88,9 +133,10 @@ def validate_proposal(
                 world_id=world_id,
                 title=proposal.title.strip(),
                 purpose=proposal.purpose,
-                requested_powers=list(proposal.requested_powers),
-                participant_ids=list(proposal.participant_ids),
+                requested_powers=powers,
+                participant_ids=participants,
             ),
+            npc=spawned,
         )
     if active_arcs >= MAX_ACTIVE_ARCS:
         return DirectorDecision(accepted=False, reason="arc budget exhausted")
@@ -103,3 +149,18 @@ def validate_proposal(
             purpose=proposal.purpose,
         ),
     )
+
+
+def _spawn_denial(
+    npc: NpcSpec | None,
+    known_location_ids: frozenset[LocationId],
+    spawns_left: int,
+    npc_id: CharacterId | None,
+) -> str | None:
+    if npc is None:
+        return "spawn_npc needs an npc: name, description, location_id"
+    if npc_id is None or spawns_left <= 0:
+        return "no new characters left for this story"
+    if npc.location_id not in known_location_ids:
+        return f"npc place is not a known location: {npc.location_id}"
+    return None
