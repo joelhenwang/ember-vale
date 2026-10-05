@@ -1918,7 +1918,7 @@
           "type": "string"
         },
         "topic": {
-          "maxLength": 256,
+          "maxLength": 400,
           "minLength": 1,
           "title": "Topic",
           "type": "string"
@@ -3160,7 +3160,7 @@
               "type": "string"
             },
             "topic": {
-              "maxLength": 256,
+              "maxLength": 400,
               "minLength": 1,
               "title": "Topic",
               "type": "string"
@@ -6731,7 +6731,7 @@
               "type": "string"
             },
             "topic": {
-              "maxLength": 256,
+              "maxLength": 400,
               "minLength": 1,
               "title": "Topic",
               "type": "string"

@@ -394,3 +394,12 @@ def test_director_is_told_when_only_talk_happens(
         assert _advance(client, ids["world"], index).status_code == 200
     director = [r.prompt for r in gateway.sent_requests if "You direct" in (r.system or "")]
     assert "Talk-only beats in a row: 3" in director[-1]
+
+
+def test_long_lines_are_clipped_to_fit_an_observation() -> None:
+    from worldsim.application.orchestration import stage1
+
+    clip = stage1._clip  # pyright: ignore[reportPrivateUsage]
+    assert clip("short") == "short"
+    long = "x" * 700
+    assert len(clip(long)) == 512 and clip(long).endswith("…")

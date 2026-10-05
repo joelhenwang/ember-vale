@@ -566,6 +566,15 @@ def _observation_line(index: int, key: str, value: str) -> str:
     return f"{phase_label(index)}: {key}: {value}"
 
 
+#: Observation facts hold at most 512 characters.
+_FACT_CHARS = 512
+
+
+def _clip(text: str, limit: int = _FACT_CHARS) -> str:
+    """Fit a perceived line into an observation fact, marking any cut."""
+    return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
+
+
 #: How a resolved physical attempt reads to those who saw it.
 _OUTCOME_WORDS = {
     "success": "it works",
@@ -2704,7 +2713,7 @@ class Stage1Orchestrator:
             facts = [
                 PerceivedFact(
                     key=f"attempt:{intent.action.family.value}",
-                    value=summary,
+                    value=_clip(summary),
                     visibility=FactVisibility.SCENE,
                     channel=FactChannel.SIGHT,
                 )
@@ -2753,7 +2762,7 @@ class Stage1Orchestrator:
                         facts=[
                             PerceivedFact(
                                 key=key,
-                                value=_reply_summary(reaction.action, names, reactor),
+                                value=_clip(_reply_summary(reaction.action, names, reactor)),
                                 visibility=FactVisibility.SCENE,
                                 channel=FactChannel.SIGHT,
                             )

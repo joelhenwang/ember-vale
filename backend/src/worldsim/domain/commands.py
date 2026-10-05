@@ -98,7 +98,8 @@ class CommunicateAction(ActionBase):
 
     family: Literal[ActionFamily.COMMUNICATE] = ActionFamily.COMMUNICATE
     target_character_id: CharacterId
-    topic: str = Field(min_length=1, max_length=256)
+    #: What is said or talked about; quoted words are spoken lines.
+    topic: str = Field(min_length=1, max_length=400)
 
 
 class SparAction(ActionBase):

@@ -9,7 +9,7 @@
 
 export type SpeechMode = 'say' | 'about'
 
-/** Backend limit for a communicate topic (schemas: max_length=256). */
+/** What a player may send as one line (the backend accepts up to 400). */
 export const TOPIC_MAX = 256
 
 const QUOTE_PAIRS: Record<string, string> = { '"': '"', "'": "'", '“': '”', '‘': '’' }

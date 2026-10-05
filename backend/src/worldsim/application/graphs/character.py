@@ -52,7 +52,7 @@ from worldsim.domain.ids import derive_intent_id
 from worldsim.domain.scenes import Intent
 
 #: Versioned role prompt file (prompt lifecycle: repository file, versioned).
-CHARACTER_PROMPT_VERSION = "character_decision.v6"
+CHARACTER_PROMPT_VERSION = "character_decision.v7"
 
 _ACTION_ADAPTER: TypeAdapter[ActionIntent] = TypeAdapter(ActionIntent)
 
