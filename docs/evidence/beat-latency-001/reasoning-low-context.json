@@ -1,0 +1,476 @@
+{
+  "label": "reasoning-low-context",
+  "commit": "0778097",
+  "at": "2026-10-05T12:02:01.124Z",
+  "model": "deepseek/deepseek-v4-flash-0731",
+  "price_per_token_usd": {
+    "prompt": 1.52e-8,
+    "completion": 0.00000128
+  },
+  "world_id": "65ad21a8-4f4c-4bd4-b6eb-b2cc2de2a56b",
+  "est_usd_total": 0.013958,
+  "beats": [
+    {
+      "beat": 1,
+      "absolute_index": 1,
+      "wall_ms": 73976,
+      "execution_ms": 73935,
+      "timings_ms": {
+        "decide": 8255,
+        "director": 19786,
+        "narrate": 25771,
+        "probe": 513,
+        "react": 6818,
+        "resolve": 12557,
+        "scenes": 45213,
+        "total": 73907
+      },
+      "scenes": 1,
+      "quiet": false,
+      "narrated_scenes": 1,
+      "est_usd": 0.003877,
+      "roles": {
+        "director": {
+          "calls": 1,
+          "failed": 1,
+          "latency_ms_sum": 19721,
+          "latency_ms_max": 19721,
+          "prompt_tokens": 258,
+          "completion_tokens": 768,
+          "reasoning_tokens": 768,
+          "finish": {
+            "length": 1
+          }
+        },
+        "character_decision": {
+          "calls": 2,
+          "failed": 0,
+          "latency_ms_sum": 10922,
+          "latency_ms_max": 8128,
+          "prompt_tokens": 5499,
+          "completion_tokens": 224,
+          "reasoning_tokens": 60,
+          "finish": {
+            "stop": 2
+          }
+        },
+        "reaction": {
+          "calls": 2,
+          "failed": 0,
+          "latency_ms_sum": 8507,
+          "latency_ms_max": 6703,
+          "prompt_tokens": 5836,
+          "completion_tokens": 363,
+          "reasoning_tokens": 190,
+          "finish": {
+            "stop": 2
+          }
+        },
+        "resolver": {
+          "calls": 1,
+          "failed": 0,
+          "latency_ms_sum": 12501,
+          "latency_ms_max": 12501,
+          "prompt_tokens": 3498,
+          "completion_tokens": 663,
+          "reasoning_tokens": 613,
+          "finish": {
+            "stop": 1
+          }
+        },
+        "narrator": {
+          "calls": 1,
+          "failed": 0,
+          "latency_ms_sum": 25690,
+          "latency_ms_max": 25690,
+          "prompt_tokens": 1177,
+          "completion_tokens": 818,
+          "reasoning_tokens": 553,
+          "finish": {
+            "stop": 1
+          }
+        }
+      },
+      "calls": [
+        {
+          "role": "director",
+          "status": "failed",
+          "latency_ms": 19721,
+          "prompt_tokens": 258,
+          "completion_tokens": 768,
+          "reasoning_tokens": 768,
+          "max_tokens": 768,
+          "finish_reason": "length",
+          "error_code": "malformed"
+        },
+        {
+          "role": "character_decision",
+          "status": "succeeded",
+          "latency_ms": 8128,
+          "prompt_tokens": 2750,
+          "completion_tokens": 112,
+          "reasoning_tokens": 60,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "character_decision",
+          "status": "succeeded",
+          "latency_ms": 2794,
+          "prompt_tokens": 2749,
+          "completion_tokens": 112,
+          "reasoning_tokens": 0,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "reaction",
+          "status": "succeeded",
+          "latency_ms": 6703,
+          "prompt_tokens": 2885,
+          "completion_tokens": 148,
+          "reasoning_tokens": 79,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "reaction",
+          "status": "succeeded",
+          "latency_ms": 1804,
+          "prompt_tokens": 2951,
+          "completion_tokens": 215,
+          "reasoning_tokens": 111,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "resolver",
+          "status": "succeeded",
+          "latency_ms": 12501,
+          "prompt_tokens": 3498,
+          "completion_tokens": 663,
+          "reasoning_tokens": 613,
+          "max_tokens": 1024,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "narrator",
+          "status": "succeeded",
+          "latency_ms": 25690,
+          "prompt_tokens": 1177,
+          "completion_tokens": 818,
+          "reasoning_tokens": 553,
+          "max_tokens": 1024,
+          "finish_reason": "stop",
+          "error_code": null
+        }
+      ]
+    },
+    {
+      "beat": 2,
+      "absolute_index": 2,
+      "wall_ms": 106559,
+      "execution_ms": 106540,
+      "timings_ms": {
+        "decide": 19379,
+        "director": 16876,
+        "narrate": 22529,
+        "probe": 2287,
+        "react": 12976,
+        "resolve": 32330,
+        "scenes": 67883,
+        "total": 106522
+      },
+      "scenes": 1,
+      "quiet": false,
+      "narrated_scenes": 1,
+      "est_usd": 0.005172,
+      "roles": {
+        "director": {
+          "calls": 1,
+          "failed": 0,
+          "latency_ms_sum": 16817,
+          "latency_ms_max": 16817,
+          "prompt_tokens": 280,
+          "completion_tokens": 357,
+          "reasoning_tokens": 332,
+          "finish": {
+            "stop": 1
+          }
+        },
+        "character_decision": {
+          "calls": 2,
+          "failed": 0,
+          "latency_ms_sum": 23615,
+          "latency_ms_max": 19285,
+          "prompt_tokens": 5692,
+          "completion_tokens": 926,
+          "reasoning_tokens": 737,
+          "finish": {
+            "stop": 2
+          }
+        },
+        "reaction": {
+          "calls": 2,
+          "failed": 1,
+          "latency_ms_sum": 24676,
+          "latency_ms_max": 12904,
+          "prompt_tokens": 5905,
+          "completion_tokens": 785,
+          "reasoning_tokens": 673,
+          "finish": {
+            "length": 1,
+            "stop": 1
+          }
+        },
+        "resolver": {
+          "calls": 1,
+          "failed": 1,
+          "latency_ms_sum": 32289,
+          "latency_ms_max": 32289,
+          "prompt_tokens": 3498,
+          "completion_tokens": 1024,
+          "reasoning_tokens": 1024,
+          "finish": {
+            "length": 1
+          }
+        },
+        "narrator": {
+          "calls": 1,
+          "failed": 0,
+          "latency_ms_sum": 22464,
+          "latency_ms_max": 22464,
+          "prompt_tokens": 1067,
+          "completion_tokens": 753,
+          "reasoning_tokens": 227,
+          "finish": {
+            "stop": 1
+          }
+        }
+      },
+      "calls": [
+        {
+          "role": "director",
+          "status": "succeeded",
+          "latency_ms": 16817,
+          "prompt_tokens": 280,
+          "completion_tokens": 357,
+          "reasoning_tokens": 332,
+          "max_tokens": 768,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "character_decision",
+          "status": "succeeded",
+          "latency_ms": 4330,
+          "prompt_tokens": 2832,
+          "completion_tokens": 432,
+          "reasoning_tokens": 308,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "character_decision",
+          "status": "succeeded",
+          "latency_ms": 19285,
+          "prompt_tokens": 2860,
+          "completion_tokens": 494,
+          "reasoning_tokens": 429,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "reaction",
+          "status": "failed",
+          "latency_ms": 12904,
+          "prompt_tokens": 2960,
+          "completion_tokens": 512,
+          "reasoning_tokens": 470,
+          "max_tokens": 512,
+          "finish_reason": "length",
+          "error_code": "malformed"
+        },
+        {
+          "role": "reaction",
+          "status": "succeeded",
+          "latency_ms": 11772,
+          "prompt_tokens": 2945,
+          "completion_tokens": 273,
+          "reasoning_tokens": 203,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "resolver",
+          "status": "failed",
+          "latency_ms": 32289,
+          "prompt_tokens": 3498,
+          "completion_tokens": 1024,
+          "reasoning_tokens": 1024,
+          "max_tokens": 1024,
+          "finish_reason": "length",
+          "error_code": "malformed"
+        },
+        {
+          "role": "narrator",
+          "status": "succeeded",
+          "latency_ms": 22464,
+          "prompt_tokens": 1067,
+          "completion_tokens": 753,
+          "reasoning_tokens": 227,
+          "max_tokens": 1024,
+          "finish_reason": "stop",
+          "error_code": null
+        }
+      ]
+    },
+    {
+      "beat": 3,
+      "absolute_index": 3,
+      "wall_ms": 90696,
+      "execution_ms": 90679,
+      "timings_ms": {
+        "decide": 13529,
+        "director": 7,
+        "narrate": 20969,
+        "probe": 555,
+        "react": 19344,
+        "resolve": 36145,
+        "scenes": 76486,
+        "total": 90665
+      },
+      "scenes": 1,
+      "quiet": false,
+      "narrated_scenes": 1,
+      "est_usd": 0.004909,
+      "roles": {
+        "character_decision": {
+          "calls": 2,
+          "failed": 0,
+          "latency_ms_sum": 20566,
+          "latency_ms_max": 13441,
+          "prompt_tokens": 5852,
+          "completion_tokens": 902,
+          "reasoning_tokens": 731,
+          "finish": {
+            "stop": 2
+          }
+        },
+        "reaction": {
+          "calls": 2,
+          "failed": 1,
+          "latency_ms_sum": 22379,
+          "latency_ms_max": 19281,
+          "prompt_tokens": 6114,
+          "completion_tokens": 689,
+          "reasoning_tokens": 621,
+          "finish": {
+            "stop": 1,
+            "length": 1
+          }
+        },
+        "resolver": {
+          "calls": 1,
+          "failed": 1,
+          "latency_ms_sum": 36095,
+          "latency_ms_max": 36095,
+          "prompt_tokens": 3512,
+          "completion_tokens": 1024,
+          "reasoning_tokens": 1024,
+          "finish": {
+            "length": 1
+          }
+        },
+        "narrator": {
+          "calls": 1,
+          "failed": 1,
+          "latency_ms_sum": 20924,
+          "latency_ms_max": 20924,
+          "prompt_tokens": 1066,
+          "completion_tokens": 1024,
+          "reasoning_tokens": 1077,
+          "finish": {
+            "length": 1
+          }
+        }
+      },
+      "calls": [
+        {
+          "role": "character_decision",
+          "status": "succeeded",
+          "latency_ms": 13441,
+          "prompt_tokens": 2935,
+          "completion_tokens": 308,
+          "reasoning_tokens": 251,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "character_decision",
+          "status": "succeeded",
+          "latency_ms": 7125,
+          "prompt_tokens": 2917,
+          "completion_tokens": 594,
+          "reasoning_tokens": 480,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "reaction",
+          "status": "succeeded",
+          "latency_ms": 3098,
+          "prompt_tokens": 3053,
+          "completion_tokens": 177,
+          "reasoning_tokens": 109,
+          "max_tokens": 512,
+          "finish_reason": "stop",
+          "error_code": null
+        },
+        {
+          "role": "reaction",
+          "status": "failed",
+          "latency_ms": 19281,
+          "prompt_tokens": 3061,
+          "completion_tokens": 512,
+          "reasoning_tokens": 512,
+          "max_tokens": 512,
+          "finish_reason": "length",
+          "error_code": "malformed"
+        },
+        {
+          "role": "resolver",
+          "status": "failed",
+          "latency_ms": 36095,
+          "prompt_tokens": 3512,
+          "completion_tokens": 1024,
+          "reasoning_tokens": 1024,
+          "max_tokens": 1024,
+          "finish_reason": "length",
+          "error_code": "malformed"
+        },
+        {
+          "role": "narrator",
+          "status": "failed",
+          "latency_ms": 20924,
+          "prompt_tokens": 1066,
+          "completion_tokens": 1024,
+          "reasoning_tokens": 1077,
+          "max_tokens": 1024,
+          "finish_reason": "length",
+          "error_code": "malformed"
+        }
+      ]
+    }
+  ]
+}
