@@ -84,6 +84,38 @@ def unwrap_tagged(raw: str, tags: frozenset[str], field: str) -> str:
     return json.dumps({**cast("dict[str, Any]", payload), field: tag})
 
 
+def normalize_tagged(raw: str, tags: frozenset[str], field: str, wrappers: frozenset[str]) -> str:
+    """Bring common shape variants of a tagged object back to ``{field: tag, ...}``.
+
+    Seen live from json-mode models (playtest-005): ``"type": "json_object"``
+    echoed from the request, the tag under ``"type"`` instead of ``field``,
+    and the payload nested under a wrapper key (``"proposal"``, ``"hook"``)
+    or under the tag itself. Only those shapes are rewritten; anything
+    else is left for validation and repair.
+    """
+    raw = unwrap_tagged(raw, tags, field)
+    document = _parse_object(raw)
+    if document is None:
+        return raw
+    changed = False
+    if document.get("type") == "json_object":
+        del document["type"]
+        changed = True
+    if field not in document and document.get("type") in tags:
+        document[field] = document.pop("type")
+        changed = True
+    for wrapper in wrappers:
+        inner = document.get(wrapper)
+        if isinstance(inner, dict):
+            del document[wrapper]
+            for key, value in cast("dict[str, Any]", inner).items():
+                document.setdefault(key, value)
+            changed = True
+    if not changed:
+        return raw
+    return unwrap_tagged(json.dumps(document), tags, field)
+
+
 def fill_expected_versions(raw: str, versions: Mapping[str, int]) -> str:
     """Set each effect's ``expected_versions`` from the server's versions.
 

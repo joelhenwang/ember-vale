@@ -10,6 +10,7 @@ from pydantic import TypeAdapter, ValidationError
 
 from worldsim.application.graphs.lenient import (
     fill_expected_versions,
+    normalize_tagged,
     repair_detail,
     unwrap_tagged,
     validate_lenient,
@@ -106,3 +107,29 @@ def test_director_nested_proposal_is_unwrapped() -> None:
     assert unwrap_tagged(flat, tags, "action") == flat
     two_keys = json.dumps({"propose_hook": {}, "reason": "x"})
     assert unwrap_tagged(two_keys, tags, "action") == two_keys
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        # Every live shape from playtest-005.
+        '{"type": "json_object", "proposal": '
+        '{"action": "propose_hook", "title": "T", "purpose": "P"}}',
+        '{"type": "json_object", "action": "propose_hook", "hook": {"title": "T", "purpose": "P"}}',
+        '{"type": "propose_hook", "title": "T", "purpose": "P"}',
+        '{"propose_hook": {"title": "T", "purpose": "P"}}',
+    ],
+)
+def test_director_shape_variants_normalize(raw: str) -> None:
+    tags = frozenset({"propose_hook", "propose_arc", "noop"})
+    wrappers = frozenset({"proposal", "hook", "arc"})
+    proposal = validate_lenient(DIRECTOR, normalize_tagged(raw, tags, "action", wrappers))
+    assert (proposal.action, proposal.title, proposal.purpose) == ("propose_hook", "T", "P")
+
+
+def test_director_noop_typed_variants_normalize() -> None:
+    tags = frozenset({"propose_hook", "propose_arc", "noop"})
+    for raw in ('{"type": "noop", "reason": "busy"}', '{"type": "json_object", "action": "noop"}'):
+        assert validate_lenient(
+            DIRECTOR, normalize_tagged(raw, tags, "action", frozenset())
+        ).action == ("noop")
