@@ -222,6 +222,7 @@ from worldsim.domain.rules.meetups import resolve_meetups
 from worldsim.domain.rules.perception import permitted_facts
 from worldsim.domain.rules.phases import is_quiet_phase
 from worldsim.domain.rules.resources import rest_recovery, restore, spend
+from worldsim.domain.rules.routes import with_route
 from worldsim.domain.rules.scenes import assemble_scenes
 from worldsim.domain.rules.views import WorldView
 from worldsim.domain.scenes import Attempt, Intent, Reaction, Resolution, Scene
@@ -670,6 +671,19 @@ class Stage1Orchestrator:
         names = {c.id: c.name for c in characters}
         # Simultaneous decisions: two characters heading for each other
         # would swap places; one waits so they meet.
+        # Models name a destination, never a route id: fill the route from
+        # where each character stands, or every autonomous move fails.
+        places = {loc.id: loc for loc in locations}
+        intents = [
+            i.model_copy(
+                update={
+                    "action": with_route(
+                        i.action, sealed.locations.get(i.author_character_id), places
+                    )
+                }
+            )
+            for i in intents
+        ]
         intents = resolve_meetups(intents, sealed.locations, names)
         view = WorldView(world=live_world, characters=characters, locations=locations)
         scenes = assemble_scenes(
@@ -2453,7 +2467,12 @@ class Stage1Orchestrator:
         await self._remember_intention(world_id, reactor_id, result.get("raw_response"))
         if not result["proposal"]["reacted"]:
             return None
-        return Reaction.model_validate(result["proposal"]["reaction"])
+        reaction = Reaction.model_validate(result["proposal"]["reaction"])
+        async with self._factory() as uow:
+            places = {loc.id: loc for loc in await uow.locations.list_for_world(world_id)}
+        return reaction.model_copy(
+            update={"action": with_route(reaction.action, sealed.locations.get(reactor_id), places)}
+        )
 
     async def _resolve_scene(
         self,

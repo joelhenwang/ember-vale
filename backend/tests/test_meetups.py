@@ -13,11 +13,17 @@ from fastapi.testclient import TestClient
 from test_stage1_api import MIGRATIONS, SEED_DIR, ApiClient, _advance, _route_for, _seed_two
 
 from worldsim.application.ports.model_gateway import CompletionRequest
+from worldsim.domain.characters import Character, CharacterCard
 from worldsim.domain.commands import MoveAction, ObserveAction, WaitAction
+from worldsim.domain.ids import new_card_id, new_character_id, new_location_id, new_world_id
 from worldsim.domain.rules.meetups import resolve_meetups
+from worldsim.domain.rules.routes import with_route
 from worldsim.domain.scenes import Intent
+from worldsim.domain.world import Location, Route, World
+from worldsim.infrastructure.db.engine import create_engine
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
 from worldsim.infrastructure.model_gateway.profiles import FAKE_TEST_PROFILE
+from worldsim.infrastructure.repositories.unit_of_work import create_unit_of_work
 from worldsim.infrastructure.settings import Settings
 from worldsim.interfaces.http.app import create_app
 
@@ -139,3 +145,107 @@ def test_beat_with_crossing_decisions_files_one_wait_and_watch(
         families += [(i["detail"]["family"], i["detail"].get("focus")) for i in detail["intents"]]
     assert sorted(f for f, _ in families) == ["move", "observe"]
     assert any(focus and focus.startswith("watching for") for _, focus in families)
+
+
+def test_with_route_fills_the_shortest_route_only_for_routeless_moves() -> None:
+    world = uuid.uuid4()
+    fast, slow = uuid.uuid4(), uuid.uuid4()
+    hearth = Location(
+        id=HEARTH,
+        world_id=world,
+        name="Hearth",
+        routes=[
+            Route(id=slow, destination_location_id=MARKET, duration_phases=2, stamina_cost=5),
+            Route(id=fast, destination_location_id=MARKET, duration_phases=1, stamina_cost=8),
+        ],
+    )
+    places = {HEARTH: hearth}
+    actor = uuid.uuid4()
+    routeless = MoveAction(character_id=actor, snapshot_id=SNAP, destination_location_id=MARKET)
+    filled = with_route(routeless, HEARTH, places)
+    assert isinstance(filled, MoveAction) and filled.route_id == fast
+    chosen = routeless.model_copy(update={"route_id": slow})
+    assert with_route(chosen, HEARTH, places) == chosen
+    nowhere = MoveAction(character_id=actor, snapshot_id=SNAP, destination_location_id=MILL)
+    assert with_route(nowhere, HEARTH, places) == nowhere
+    wait = WaitAction(character_id=actor, snapshot_id=SNAP)
+    assert with_route(wait, HEARTH, places) == wait
+
+
+async def _seed_connected() -> dict[str, uuid.UUID]:
+    """Two places joined both ways; Wren at the Hearth, Ash at the Market."""
+    engine = create_engine(Settings())
+    try:
+        async with create_unit_of_work(engine) as uow:
+            wid = new_world_id()
+            await uow.worlds.add(World(id=wid, name="Roads", seed_version="s1-test"))
+            hearth, market = new_location_id(), new_location_id()
+            for here, there, name in ((hearth, market, "Hearth"), (market, hearth, "Market")):
+                await uow.locations.add(
+                    Location(
+                        id=here,
+                        world_id=wid,
+                        name=name,
+                        routes=[
+                            Route(
+                                id=uuid.uuid4(),
+                                destination_location_id=there,
+                                duration_phases=1,
+                                stamina_cost=5,
+                            )
+                        ],
+                    )
+                )
+            wren, ash = new_character_id(), new_character_id()
+            for cid, name, place in ((wren, "Wren", hearth), (ash, "Ash", market)):
+                await uow.characters.add_identity(cid, wid, name)
+                await uow.characters.add_card(
+                    CharacterCard(id=new_card_id(), character_id=cid, name=name, version=1)
+                )
+                await uow.characters.add_state(
+                    Character(
+                        id=cid,
+                        world_id=wid,
+                        name=name,
+                        card_version=1,
+                        location_id=place,
+                        stamina=80,
+                        mana=40,
+                    )
+                )
+                await uow.versions.ensure(cid, wid, "character")
+            await uow.versions.ensure(wid, wid, "world")
+            await uow.commit()
+            return {"world": wid, "wren": wren, "ash": ash, "hearth": hearth, "market": market}
+    finally:
+        await engine.dispose()
+
+
+def test_a_decided_move_actually_moves_and_crossers_meet(
+    stage1_client: tuple[ApiClient, FakeGateway],
+) -> None:
+    client, gateway = stage1_client
+    ids = asyncio.run(_seed_connected())
+    base = _route_for(ids, {})
+
+    def route(request: CompletionRequest) -> str | None:
+        if "You decide" in (request.system or ""):
+            wren = "<<untrusted:identity>>Wren" in request.prompt
+            to = ids["market"] if wren else ids["hearth"]
+            return json.dumps({"family": "move", "destination_location_id": str(to)})
+        if "You resolve" in (request.system or ""):
+            return json.dumps({"outcome": "success", "effects": [], "rationale": "ok"})
+        return base(request)
+
+    gateway.route = route
+    assert _advance(client, ids["world"], 1).status_code == 200
+    occupants = {
+        p["name"]: set(p.get("occupants", []))
+        for p in client.get(
+            "/api/v1/stage2/map",
+            params={"world_id": str(ids["world"])},
+            headers={"X-Worldsim-Role": "watcher"},
+        ).json()["places"]
+    }
+    # Ash (or Wren) waits; the other travels: both end up in one place.
+    assert {"Wren", "Ash"} in occupants.values()
