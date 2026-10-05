@@ -218,6 +218,7 @@ from worldsim.domain.rules.dnd import (
     weapon_attack_bonus,
 )
 from worldsim.domain.rules.dnd.data import dict_field, entry, str_field, table
+from worldsim.domain.rules.meetups import resolve_meetups
 from worldsim.domain.rules.perception import permitted_facts
 from worldsim.domain.rules.phases import is_quiet_phase
 from worldsim.domain.rules.resources import rest_recovery, restore, spend
@@ -667,6 +668,9 @@ class Stage1Orchestrator:
             locations = await uow.locations.list_for_world(world_id)
             live_world = await uow.worlds.get(world_id)
         names = {c.id: c.name for c in characters}
+        # Simultaneous decisions: two characters heading for each other
+        # would swap places; one waits so they meet.
+        intents = resolve_meetups(intents, sealed.locations, names)
         view = WorldView(world=live_world, characters=characters, locations=locations)
         scenes = assemble_scenes(
             intents,
