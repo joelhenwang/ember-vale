@@ -2417,6 +2417,41 @@
           ],
           "title": "NarrativeStatus",
           "type": "string"
+        },
+        "SpawnedNpc": {
+          "additionalProperties": false,
+          "description": "An accepted new character, with the id it will be created under.",
+          "properties": {
+            "description": {
+              "default": "",
+              "maxLength": 600,
+              "title": "Description",
+              "type": "string"
+            },
+            "id": {
+              "format": "uuid",
+              "title": "Id",
+              "type": "string"
+            },
+            "location_id": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            },
+            "name": {
+              "maxLength": 64,
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "location_id",
+            "id"
+          ],
+          "title": "SpawnedNpc",
+          "type": "object"
         }
       },
       "additionalProperties": false,
@@ -2448,6 +2483,17 @@
           ],
           "default": null
         },
+        "npc": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SpawnedNpc"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "reason": {
           "default": "",
           "maxLength": 512,
@@ -2462,6 +2508,37 @@
       "type": "object"
     },
     "DirectorProposal": {
+      "$defs": {
+        "NpcSpec": {
+          "additionalProperties": false,
+          "description": "A new character an opening needs: who, what they are like, where.",
+          "properties": {
+            "description": {
+              "default": "",
+              "maxLength": 600,
+              "title": "Description",
+              "type": "string"
+            },
+            "location_id": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            },
+            "name": {
+              "maxLength": 64,
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "location_id"
+          ],
+          "title": "NpcSpec",
+          "type": "object"
+        }
+      },
       "additionalProperties": false,
       "description": "One model-proposed opportunity (or an explicit no-op).",
       "properties": {
@@ -2469,6 +2546,17 @@
           "pattern": "^(propose_hook|propose_arc|noop)$",
           "title": "Action",
           "type": "string"
+        },
+        "npc": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NpcSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "participant_ids": {
           "items": {
