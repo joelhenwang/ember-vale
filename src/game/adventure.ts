@@ -421,3 +421,24 @@ export function leadChips(
 function escapeRegex(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
+
+/** The light over a scene at each part of the day (CSS colour for an overlay, or none). */
+export function phaseLight(phase: string | null | undefined): string | null {
+  switch ((phase ?? '').toLowerCase()) {
+    case 'dawn':
+      return 'rgba(214, 140, 160, 0.30)'
+    case 'sunrise':
+      return 'rgba(240, 170, 110, 0.22)'
+    case 'sunset':
+      return 'rgba(230, 120, 60, 0.30)'
+    case 'dusk':
+      return 'rgba(150, 80, 110, 0.38)'
+    case 'evening':
+      return 'rgba(70, 55, 120, 0.45)'
+    case 'night':
+    case 'midnight':
+      return 'rgba(20, 30, 70, 0.62)'
+    default:
+      return null
+  }
+}

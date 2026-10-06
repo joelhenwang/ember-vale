@@ -5,6 +5,7 @@ import {
   buildLog,
   cardDrives,
   isFresh,
+  phaseLight,
   leadChips,
   inSentence,
   doIntent,
@@ -314,5 +315,13 @@ describe('lead chips', () => {
     expect(article[0].intent).toMatchObject({ attempt: 'look into a stray dog' })
     expect(inSentence('The Old Mill')).toBe('the Old Mill')
     expect(inSentence('Old Mill')).toBe('Old Mill')
+  })
+})
+
+describe('phase light', () => {
+  it('darkens toward night and leaves the day clear', () => {
+    expect(phaseLight('noon')).toBeNull()
+    expect(phaseLight('night')).toContain('0.62')
+    expect(phaseLight(undefined)).toBeNull()
   })
 })

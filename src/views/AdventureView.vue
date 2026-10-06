@@ -20,6 +20,7 @@ import {
   doIntent,
   doPrompt,
   isFresh,
+  phaseLight,
   leadChips,
   type LeadChip,
   levelProgress,
@@ -133,6 +134,7 @@ const intro = computed(() => {
   })
 })
 const drives = computed(() => cardDrives(card.value?.personality))
+const light = computed(() => phaseLight(adv.presentation.value?.phase))
 const rumours = computed(() => adv.presentation.value?.rumours ?? [])
 const settled = computed(() => adv.presentation.value?.settled ?? [])
 const journey = computed(() => adv.presentation.value?.journey ?? null)
@@ -341,6 +343,11 @@ onMounted(() => {
     <div v-else class="adv__grid">
       <section class="adv__stage ev-card">
         <div class="scene" :style="sceneStyle">
+          <div
+            v-if="light"
+            class="scene__light"
+            :style="{ background: light }"
+            aria-hidden="true" />
           <div class="scene__shade" />
           <div class="scene__body">
             <div class="scene__where">
@@ -705,6 +712,12 @@ onMounted(() => {
   background-repeat: no-repeat;
   transition: background-position 1.2s ease;
   border-bottom: 1px solid var(--line);
+}
+.scene__light {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: multiply;
+  transition: background 2s ease;
 }
 .scene__shade {
   position: absolute;
