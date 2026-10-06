@@ -44,9 +44,11 @@ from worldsim.domain.narration import BeatProposal, NarrationBeat
 from worldsim.domain.scenes import Intent, Reaction
 
 #: Versioned narrator prompt file.
-NARRATOR_PROMPT_VERSION = "narrator.v2"
+NARRATOR_PROMPT_VERSION = "narrator.v3"
+#: What the audience last saw of these people: continuity, never news.
+RECAP_FACT_KEY = "previously"
 #: Facts that set the scene rather than report an event (no fallback beat).
-SETTING_FACT_KEYS = frozenset({"place"})
+SETTING_FACT_KEYS = frozenset({"place", "pronouns", RECAP_FACT_KEY})
 
 _BEATS_ADAPTER: TypeAdapter[list[BeatProposal]] = TypeAdapter(list[BeatProposal])
 
@@ -271,6 +273,8 @@ def _render_fact_line(fact: Mapping[str, str], shown_key: str | None = None) -> 
         )
     if speaker:
         return f'- key "{shown}": [attributed summary \u2014 narration-only] {value}'
+    if key == RECAP_FACT_KEY:
+        return f'- key "{shown}": [recap \u2014 already seen; continuity only] {value}'
     return f'- key "{shown}": {value}'
 
 
@@ -572,6 +576,8 @@ def beats_valid(
             return f"unsupported facts cited: {sorted(unknown)}"
         if not proposal.cited_fact_keys:
             return "every beat must cite at least one visible fact"
+        if set(proposal.cited_fact_keys) == {RECAP_FACT_KEY}:
+            return "a beat cannot rest on the recap alone: cite what happens now"
         if (
             speech_keys is not None
             and proposal.kind == NarrationKind.DIALOGUE
@@ -964,6 +970,7 @@ def _fallback(
 
 __all__ = [
     "NARRATOR_PROMPT_VERSION",
+    "RECAP_FACT_KEY",
     "NarrateState",
     "NarratorGraphDeps",
     "beats_valid",

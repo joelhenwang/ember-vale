@@ -58,6 +58,8 @@ from worldsim.application.graphs.director import (
 )
 from worldsim.application.graphs.narrate import (
     NARRATOR_PROMPT_VERSION,
+    RECAP_FACT_KEY,
+    SETTING_FACT_KEYS,
     NarratorGraphDeps,
     attempt_speech_facts,
     build_narration_graph,
@@ -463,6 +465,17 @@ def identity_text(card: CharacterCard) -> str:
     return f"{named}. {card.appearance} {card.personality} {card.background}".strip()
 
 
+def pronoun_line(characters: Sequence[Character], pronouns: Mapping[UUID, str]) -> str:
+    """How to refer to each person in a scene; unstated means name or they/them."""
+    parts = [
+        f"{c.name}: {pronouns[c.id]}"
+        if c.id in pronouns
+        else f"{c.name}: not stated (use the name or they/them)"
+        for c in sorted(characters, key=lambda c: c.name)
+    ]
+    return "Pronouns — " + "; ".join(parts) + "."
+
+
 async def _pronouns_of(uow: Any, characters: Sequence[Character]) -> dict[UUID, str]:
     """Stated pronouns of these characters (unstated ones are left out)."""
     found: dict[UUID, str] = {}
@@ -713,6 +726,42 @@ def _place_suggestion(
         f'\nSuggested: add "{name}" — for example "place": {{"name": "{name}", '
         f'"connect_to": "{origin.id}"}} (reached from {origin.name}).'
     )
+
+
+#: A recap older than this many phases is no longer "just now".
+PREVIOUSLY_MAX_AGE = 3
+#: How much of the earlier narration the recap carries.
+PREVIOUSLY_CHARS = 320
+#: Fallback narration with nothing in it; not worth recalling.
+_NOTHING_OF_NOTE = "Nothing of note occurs."
+
+
+async def _previously(uow: Any, world_id: UUID, event_id: UUID) -> str | None:
+    """The last narrated scene that shared someone with this one, if recent.
+
+    Gives the narrator continuity: without it every beat re-introduces
+    the room ("The quiet of Hearth settles around you") as if new.
+    """
+    event = await uow.events.get_event(event_id)
+    people = set(event.participant_ids)
+    if not people:
+        return None
+    high = await uow.events.max_sequence(world_id)
+    window = await uow.events.list_range(world_id, max(0, high - 40), 40)
+    for prior in reversed(window):
+        if prior.event_type != EventType.ACTION_RESOLVED or prior.id == event_id:
+            continue
+        if prior.absolute_index >= event.absolute_index:
+            continue  # this beat's other scenes happen alongside, not before
+        if event.absolute_index - prior.absolute_index > PREVIOUSLY_MAX_AGE:
+            return None
+        if not people & set(prior.participant_ids):
+            continue
+        beats = await uow.scenes.narrations_for_event(prior.id)
+        text = " ".join(b.text for b in beats if b.text != _NOTHING_OF_NOTE).strip()
+        if text:
+            return f"{phase_label(prior.absolute_index)}: {_clip(text, PREVIOUSLY_CHARS)}"
+    return None
 
 
 async def _event_place_name(uow: Any, event_id: UUID) -> str | None:
@@ -3265,6 +3314,7 @@ class Stage1Orchestrator:
             config = await uow.worlds.get_config(world_id)
             place_name = await _event_place_name(uow, event_id)
             place_names = {loc.id: loc.name for loc in await uow.locations.list_for_world(world_id)}
+            previously = await _previously(uow, world_id, event_id)
         if existing:
             return "skipped"
         structured = config.get(NARRATION_MODE_KEY) == NARRATION_MODE_STRUCTURED
@@ -3282,7 +3332,10 @@ class Stage1Orchestrator:
         # and where each participant is by its end: a meeting scene starts
         # where the traveller set out and ends where the others wait.
         ends = whereabouts(characters, participants, place_names)
-        for key, value in reversed(scene_place_facts(place_name, ends)):
+        setting = scene_place_facts(place_name, ends)
+        if previously is not None:
+            setting.append((RECAP_FACT_KEY, previously))
+        for key, value in reversed(setting):
             facts.insert(0, {"key": key, "value": value})
         # Quoted communicate attempts (a player's "Say" line) are the actor's
         # own speech: dialogue-eligible like quoted reactions.
@@ -3295,6 +3348,14 @@ class Stage1Orchestrator:
             speaker = fact.get("speaker")
             if speaker and UUID(str(speaker)) in speaker_pronouns:
                 fact["speaker_pronouns"] = speaker_pronouns[UUID(str(speaker))]
+        # Everyone in the scene, not just speakers: a guess from the name
+        # drifted ("her" one beat, "he" the next).
+        in_scene = [c for c in characters if str(c.id) in participants]
+        if in_scene:
+            at = next(
+                (i for i, f in enumerate(facts) if f["key"] not in SETTING_FACT_KEYS), len(facts)
+            )
+            facts.insert(at, {"key": "pronouns", "value": pronoun_line(in_scene, speaker_pronouns)})
         dnd_context: str | None = None
         dnd_sources: list[ManifestSource] = []
         if roster:

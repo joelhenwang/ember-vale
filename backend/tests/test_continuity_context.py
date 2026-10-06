@@ -403,3 +403,105 @@ def test_long_lines_are_clipped_to_fit_an_observation() -> None:
     assert clip("short") == "short"
     long = "x" * 700
     assert len(clip(long)) == 512 and clip(long).endswith("…")
+
+
+def test_recap_is_labelled_rejected_alone_and_never_a_fallback_beat() -> None:
+    from worldsim.application.graphs.narrate import (
+        RECAP_FACT_KEY,
+        _render_fact_line,  # pyright: ignore[reportPrivateUsage]
+        beats_valid,
+        fallback_beats,
+    )
+    from worldsim.domain.enums import NarrationKind
+    from worldsim.domain.narration import BeatProposal
+
+    recap = {"key": RECAP_FACT_KEY, "value": "Day 1, dawn: Wren tried the crate."}
+    assert "[recap — already seen; continuity only]" in _render_fact_line(recap)
+
+    def beat(*keys: str) -> BeatProposal:
+        return BeatProposal(
+            kind=NarrationKind.NARRATION, text="Again at the crate.", cited_fact_keys=list(keys)
+        )
+
+    visible = frozenset({RECAP_FACT_KEY, "attempt:interact"})
+
+    def check(*keys: str) -> str | None:
+        return beats_valid(
+            [beat(*keys)], visible_keys=visible, audience_ids=frozenset(), beats_budget=3
+        )
+
+    assert check(RECAP_FACT_KEY) is not None
+    assert check(RECAP_FACT_KEY, "attempt:interact") is None
+
+    beats = fallback_beats(
+        world_id=uuid.uuid4(),
+        scene_id=None,
+        event_id=uuid.uuid4(),
+        visible_facts=[recap, {"key": "attempt:interact", "value": "Wren lifts the crate"}],
+        beats_budget=3,
+    )
+    assert [b.text for b in beats] == ["Wren lifts the crate"]
+
+
+def test_narrator_hears_what_came_just_before(
+    stage1_client: tuple[ApiClient, FakeGateway],
+) -> None:
+    client, gateway = stage1_client
+    ids = asyncio.run(_seed_two())
+    base = _route_for(ids, {})
+
+    def route(request: CompletionRequest) -> str | None:
+        if "You decide" in (request.system or ""):
+            return json.dumps({"family": "observe", "focus": "the room"})
+        return base(request)
+
+    gateway.route = route
+    assert _advance(client, ids["world"], 1).status_code == 200
+    first = [r.prompt for r in gateway.sent_requests if "You narrate" in (r.system or "")]
+    assert first and not any('key "previously"' in p for p in first)
+    before = len(gateway.sent_requests)
+    assert _advance(client, ids["world"], 2).status_code == 200
+    second = [r.prompt for r in gateway.sent_requests[before:] if "You narrate" in (r.system or "")]
+    recaps = [p for p in second if 'key "previously": [recap' in p]
+    assert recaps, "the second beat should recall the first"
+    assert all("Day 1, sunrise: " in p for p in recaps)  # the first beat, labelled
+
+
+def test_pronoun_line_states_or_says_how_to_refer() -> None:
+    from worldsim.application.orchestration.stage1 import pronoun_line
+
+    world, place = uuid.uuid4(), uuid.uuid4()
+
+    def person(name: str) -> Character:
+        return Character(
+            id=uuid.uuid4(),
+            world_id=world,
+            name=name,
+            card_version=1,
+            location_id=place,
+            stamina=80,
+            mana=40,
+        )
+
+    wren, mira = person("Wren"), person("Mira")
+    assert pronoun_line([wren, mira], {mira.id: "she/her"}) == (
+        "Pronouns — Mira: she/her; Wren: not stated (use the name or they/them)."
+    )
+
+
+def test_narrator_is_told_how_to_refer_to_everyone_in_the_scene(
+    stage1_client: tuple[ApiClient, FakeGateway],
+) -> None:
+    client, gateway = stage1_client
+    ids = asyncio.run(_seed_two())
+    base = _route_for(ids, {})
+
+    def route(request: CompletionRequest) -> str | None:
+        if "You decide" in (request.system or ""):
+            return json.dumps({"family": "observe", "focus": "the room"})
+        return base(request)
+
+    gateway.route = route
+    assert _advance(client, ids["world"], 1).status_code == 200
+    narrator = [r.prompt for r in gateway.sent_requests if "You narrate" in (r.system or "")]
+    assert any('key "pronouns": Pronouns — Wren: not stated' in p for p in narrator)
