@@ -107,3 +107,10 @@ def test_suggestion_names_the_place_and_where_it_joins() -> None:
     assert '"name": "Old Mill"' in text and f'"connect_to": "{market.id}"' in text
     assert suggest([("old mill", 4)], people, [hearth, market], places_left=0) == ""
     assert suggest([], people, [hearth, market], places_left=2) == ""
+
+
+def test_landmarks_people_plan_to_visit_count_as_places() -> None:
+    from worldsim.domain.rules.mentions import unmapped_places
+
+    said = ["Let's go see the peddler by the fountain.", "I'll show you the way to the fountain."]
+    assert unmapped_places(said, ["Hearth", "Market"]) == [("fountain", 2)]

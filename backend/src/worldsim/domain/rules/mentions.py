@@ -23,6 +23,8 @@ PLACE_NOUNS = frozenset(
         "crossroads", "square", "keep", "castle", "manor", "library", "workshop",
         "warehouse", "camp", "hut", "cottage", "lighthouse", "graveyard",
         "cemetery", "field", "fields", "pasture", "spring", "falls", "glade",
+        "fountain", "plaza", "gate", "gates", "pier", "hall", "garden", "gardens",
+        "bathhouse", "guildhall", "watchtower", "ford", "hill", "meadow",
     }
 )  # fmt: skip
 #: Words that may sit in front of a place noun as part of its name.

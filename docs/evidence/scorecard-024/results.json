@@ -1,0 +1,147 @@
+{
+  "meta": {
+    "commit": "f79df02",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T08:31:21+00:00",
+    "wall_seconds": 91,
+    "est_usd_total": 0.027978734800000002,
+    "scenarios": [
+      "meet_up",
+      "named_place"
+    ]
+  },
+  "results": {
+    "meet_up": {
+      "ids": {
+        "world": "37e83f05-14fc-46be-8191-d4d3b3730c9d",
+        "place:Hearth": "b9d39e63-b149-42d4-b095-4f736d462f4b",
+        "place:Market": "9ea9bf26-4a22-4831-942d-661d8f59803e",
+        "wren": "66852bfd-746f-44f5-ae38-d96d0054d500",
+        "ash": "e5e2b486-71d2-4576-a9d9-7b0ed4acfca6"
+      },
+      "beat_seconds": [
+        5.687000000034459,
+        8.297000000020489,
+        9.436999999918044,
+        12.422000000020489,
+        8.859000000054948,
+        10.5,
+        3.922000000020489,
+        1.7179999999934807
+      ],
+      "error": null,
+      "score": {
+        "calls": 42,
+        "failed_calls": 0,
+        "repairs": 0,
+        "repairs_by_role": {},
+        "repair_rate": 0.0,
+        "est_usd": 0.0116926956,
+        "action_mix": {
+          "wait": 5,
+          "move": 2,
+          "communicate": 9
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 2,
+        "longest_talk_streak": 4,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 0,
+        "hooks": [],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Hearth"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": false,
+        "goal_detail": "Wren at Market, Ash at Hearth"
+      }
+    },
+    "named_place": {
+      "ids": {
+        "world": "4701ae9b-8148-430e-b21d-74730c6102eb",
+        "place:Hearth": "9855e9fe-0407-4893-a557-1cc8375f59ca",
+        "place:Market": "35fc1c98-73e9-4d6f-a68a-fb4718d36991",
+        "wren": "c49ea0c7-3bfd-4c22-b0ad-4aa5043c8121",
+        "ash": "02ef66dd-ae91-48a8-b0fe-b077da180885"
+      },
+      "beat_seconds": [
+        16.09299999999348,
+        8.609000000054948,
+        7.422000000020489,
+        11.375,
+        10.219000000040978,
+        6.609000000054948,
+        22.344000000040978,
+        8.219000000040978
+      ],
+      "error": null,
+      "score": {
+        "calls": 49,
+        "failed_calls": 0,
+        "repairs": 3,
+        "repairs_by_role": {
+          "narrator": 3
+        },
+        "repair_rate": 0.061224489795918366,
+        "est_usd": 0.016286039199999998,
+        "action_mix": {
+          "communicate": 4,
+          "move": 4,
+          "observe": 3,
+          "interact": 4,
+          "wait": 1
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 4,
+        "moves_done": 4,
+        "interact_success": 4,
+        "hooks": [
+          {
+            "title": "The Mill's Locked Door",
+            "powers": "new_location"
+          },
+          {
+            "title": "The Mill's Wheel is Jammed",
+            "powers": ""
+          },
+          {
+            "title": "The Trail into the Woods",
+            "powers": "new_location"
+          }
+        ],
+        "final_places": {
+          "Wren": "Old Mill",
+          "Ash": "Old Mill"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Old Mill",
+          "Woods"
+        ],
+        "items": {
+          "Old brass key": {
+            "holder": "Wren",
+            "place": null
+          },
+          "Uncle's grain sacks": {
+            "holder": "Wren",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "added Old Mill; there at the end: Wren, Ash"
+      }
+    }
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "meta": {
+    "commit": "f79df02",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T08:33:08+00:00",
+    "wall_seconds": 89,
+    "est_usd_total": 0.0138562918,
+    "scenarios": [
+      "meet_up"
+    ]
+  },
+  "results": {
+    "meet_up": {
+      "ids": {
+        "world": "622b9238-446a-4980-94fc-372361690261",
+        "place:Hearth": "744d5950-0606-4d76-b718-9633975a5a1c",
+        "place:Market": "c738840f-8036-45f9-8712-2d3b59e87f47",
+        "wren": "b6980c11-84e3-4dfa-b6f1-cead87bbbcef",
+        "ash": "9126b963-6246-48ff-8484-b6183f179609"
+      },
+      "beat_seconds": [
+        15.391000000061467,
+        9.969000000040978,
+        15.125,
+        12.0,
+        9.311999999918044,
+        6.280999999959022,
+        14.827999999979511,
+        5.967999999993481
+      ],
+      "error": null,
+      "score": {
+        "calls": 49,
+        "failed_calls": 0,
+        "repairs": 1,
+        "repairs_by_role": {
+          "narrator": 1
+        },
+        "repair_rate": 0.02040816326530612,
+        "est_usd": 0.0138562918,
+        "action_mix": {
+          "wait": 2,
+          "move": 5,
+          "communicate": 8,
+          "observe": 1
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 3,
+        "moves_tried": 5,
+        "moves_done": 5,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "Whispering Stones at the East Ridge",
+            "powers": "new_location"
+          }
+        ],
+        "final_places": {
+          "Wren": "Quarry",
+          "Ash": "Quarry"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Quarry"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "Wren at Quarry, Ash at Quarry"
+      }
+    }
+  }
+}

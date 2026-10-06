@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "commit": "f79df02",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T08:34:32+00:00",
+    "wall_seconds": 80,
+    "est_usd_total": 0.0125695124,
+    "scenarios": [
+      "meet_up"
+    ]
+  },
+  "results": {
+    "meet_up": {
+      "ids": {
+        "world": "43409644-5977-48d7-a590-ee712e2635b8",
+        "place:Hearth": "a8d4b157-36ae-4c30-b6c7-0726b6c9399c",
+        "place:Market": "3cad9e27-a40f-4596-9941-0168edd61c94",
+        "wren": "9fa5ae59-ec21-4f41-a1b9-ccb99da945dd",
+        "ash": "7ebd587a-4f02-4016-b9f9-ac0d3468719a"
+      },
+      "beat_seconds": [
+        9.35999999998603,
+        17.79700000002049,
+        11.312000000034459,
+        9.109000000054948,
+        8.875,
+        7.10999999998603,
+        8.327999999979511,
+        7.655999999959022
+      ],
+      "error": null,
+      "score": {
+        "calls": 49,
+        "failed_calls": 0,
+        "repairs": 0,
+        "repairs_by_role": {},
+        "repair_rate": 0.0,
+        "est_usd": 0.0125695124,
+        "action_mix": {
+          "wait": 3,
+          "move": 2,
+          "communicate": 10,
+          "observe": 1
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 3,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 0,
+        "hooks": [],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Hearth"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": false,
+        "goal_detail": "Wren at Market, Ash at Hearth"
+      }
+    }
+  }
+}
