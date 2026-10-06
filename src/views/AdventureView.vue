@@ -18,6 +18,7 @@ import {
   barFraction,
   cardDrives,
   doIntent,
+  doPrompt,
   isFresh,
   levelProgress,
   prologue,
@@ -150,7 +151,10 @@ const sayTarget = computed(
 const placeholder = computed(() =>
   mode.value === 'say'
     ? `What do you say to ${sayTarget.value?.name ?? 'them'}?`
-    : 'What do you do? — search the stalls, mend the cart, follow the stranger…'
+    : doPrompt(
+        rumours.value[0]?.title ?? null,
+        adv.present.value.map((c) => c.name)
+      )
 )
 const ready = computed(() => !adv.acting.value && adv.alive.value && text.value.trim().length > 0)
 

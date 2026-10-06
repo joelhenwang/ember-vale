@@ -335,3 +335,10 @@ export function turnChanges(before: Glimpse, after: Glimpse): TurnChange[] {
   }
   return out
 }
+
+/** A "What do you do?" prompt grounded in the moment: a lead to follow or someone near. */
+export function doPrompt(rumour: string | null, nearby: string[]): string {
+  if (rumour) return `What do you do? — look into “${rumour}”, or anything else…`
+  if (nearby.length) return `What do you do? — help ${nearby[0]}, look around, set out…`
+  return 'What do you do? — search the stalls, mend the cart, follow the stranger…'
+}

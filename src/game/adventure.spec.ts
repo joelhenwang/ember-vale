@@ -6,6 +6,7 @@ import {
   cardDrives,
   isFresh,
   doIntent,
+  doPrompt,
   firstSentence,
   prologue,
   quickChips,
@@ -266,5 +267,13 @@ describe('turn feedback', () => {
 
   it('is quiet when nothing changed', () => {
     expect(turnChanges(at({}), at({}))).toEqual([])
+  })
+})
+
+describe('composer prompt', () => {
+  it('points at a lead, then at someone near, then at the world', () => {
+    expect(doPrompt('The Old Mill', ['Ash'])).toContain('“The Old Mill”')
+    expect(doPrompt(null, ['Ash'])).toContain('help Ash')
+    expect(doPrompt(null, [])).toContain('search the stalls')
   })
 })
