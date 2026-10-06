@@ -42,6 +42,7 @@ from worldsim.domain.enums import NarrationKind, ReactionStatus
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.ids import new_narration_id
 from worldsim.domain.narration import BeatProposal, NarrationBeat
+from worldsim.domain.rules.repeats import overlap
 from worldsim.domain.scenes import Intent, Reaction
 
 #: Versioned narrator prompt file.
@@ -527,6 +528,37 @@ def speech_eligible_keys(facts: list[dict[str, str]]) -> frozenset[str]:
     return frozenset(f["key"] for f in facts if f.get("speaker") and f.get("utterance"))
 
 
+#: A narration sentence sharing this much of a recap sentence's words is a retelling.
+RETOLD_OVERLAP = 0.7
+_SENTENCE = re.compile(r"(?<=[.!?])\s+")
+
+
+def drop_retold(proposals: list[BeatProposal], recap: str | None) -> list[BeatProposal]:
+    """Drop narration sentences that copy the recap, and beats left empty.
+
+    Playtest: a beat opened "The low fire at Hearth still crackles as the
+    newcomer, Wren, takes a step forward", nearly word for word the last
+    beat's opening, despite the prompt. Dialogue is left alone (quotes are
+    checked elsewhere); a narration that would lose every beat keeps all.
+    """
+    if not recap:
+        return proposals
+    told = [line for line in _SENTENCE.split(recap.split(": ", 1)[-1]) if line.strip()]
+    kept: list[BeatProposal] = []
+    for proposal in proposals:
+        if proposal.kind == NarrationKind.DIALOGUE:
+            kept.append(proposal)
+            continue
+        fresh = [
+            line
+            for line in _SENTENCE.split(proposal.text)
+            if line.strip() and not any(overlap(line, old) >= RETOLD_OVERLAP for old in told)
+        ]
+        if fresh:
+            kept.append(proposal.model_copy(update={"text": " ".join(fresh)}))
+    return kept or proposals
+
+
 def drop_recap_only(proposals: list[BeatProposal]) -> list[BeatProposal]:
     """Drop beats that only retell the recap, when anything else remains.
 
@@ -938,6 +970,8 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
                         state, world_id, scene_id, event_id, facts, budget, errors, repairs, None
                     )
                 continue
+            recap = next((f["value"] for f in facts if f["key"] == RECAP_FACT_KEY), None)
+            proposals = drop_retold(proposals, recap)
             beats = stamp_beats(proposals, world_id=world_id, scene_id=scene_id, event_id=event_id)
             return _narrated(state, beats, False, "valid", errors, repairs, raw)
 

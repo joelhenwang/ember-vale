@@ -622,3 +622,29 @@ def test_a_character_who_only_talks_is_told_so(
         if "only talked" in r.prompt and "You decide" not in (r.system or "")
     ]
     assert not reacting
+
+
+def test_narration_that_retells_the_recap_loses_that_sentence() -> None:
+    from worldsim.application.graphs.narrate import drop_retold
+    from worldsim.domain.enums import NarrationKind
+    from worldsim.domain.narration import BeatProposal
+
+    recap = (
+        "Day 1, sunrise: The low fire at Hearth crackles, and the newcomer Wren steps forward, "
+        "voice carrying a traveler's ease. Wren names Old Bram."
+    )
+    copied = BeatProposal(
+        kind=NarrationKind.NARRATION,
+        text=(
+            "The low fire at Hearth still crackles as the newcomer Wren steps forward, "
+            "carrying a traveler's ease. Tobin asks the way to the mill road."
+        ),
+        cited_fact_keys=["attempt:interact"],
+    )
+    only_copy = copied.model_copy(
+        update={"text": "The low fire at Hearth crackles as the newcomer Wren steps forward."}
+    )
+    kept = drop_retold([copied, only_copy], recap)
+    assert [b.text for b in kept] == ["Tobin asks the way to the mill road."]
+    assert drop_retold([only_copy], recap) == [only_copy]  # never empty the narration
+    assert drop_retold([copied], None) == [copied]

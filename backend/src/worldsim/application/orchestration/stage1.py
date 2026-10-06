@@ -38,7 +38,7 @@ from uuid import UUID, uuid4, uuid5
 
 from sqlalchemy.exc import IntegrityError
 
-from worldsim.application.commands.director import accept_decision
+from worldsim.application.commands.director import accept_decision, open_place
 from worldsim.application.commands.inventory import move_item
 from worldsim.application.commands.knowledge import fold_claim
 from worldsim.application.commands.party import recruit_companion
@@ -140,6 +140,7 @@ from worldsim.domain.director import (
     MAX_ADDED_PLACES,
     MAX_SPAWNED_NPCS,
     SPAWNED_CONFIG_KEY,
+    AddedPlace,
     DirectorDecision,
     should_trigger,
 )
@@ -821,6 +822,9 @@ def _place_suggestion(
     )
 
 
+#: Mentions after which a place someone sets out for opens (see _open_wanted_place).
+OPEN_PLACE_MENTIONS = 3
+
 #: How far back (phases) answered exchanges count, and how many are shown.
 ANSWERED_WINDOW_PHASES = 10
 ANSWERED_SHOWN = 3
@@ -1019,6 +1023,77 @@ class Stage1Orchestrator:
             profiles[role] = gateway.profile
         return PhaseRuntime(sampling=sampling, gateways=gateways, profiles=profiles, pin=pin)
 
+    async def _open_wanted_place(
+        self, world_id: UUID, player_intents: Mapping[UUID, ActionIntent] | None
+    ) -> None:
+        """Open a place people keep naming once someone sets out for it.
+
+        Playtest: everyone talked of the mill road, Wren agreed to walk
+        there, the player set out, and nobody could go: the director saw
+        "mill road (4 mentions)" and chose to wait. A place mentioned at
+        least OPEN_PLACE_MENTIONS times that the player's action this beat,
+        or someone's intention, heads for now opens beside them, so the
+        move can happen in the same beat. Within the story's place budget.
+        """
+        async with self._factory() as uow:
+            config = await uow.worlds.get_config(world_id)
+            added = config.get(ADDED_PLACES_CONFIG_KEY)
+            if (added if isinstance(added, int) else 0) >= MAX_ADDED_PLACES:
+                return
+            locations = await uow.locations.list_for_world(world_id)
+            characters = await uow.characters.list_for_world(world_id)
+            hooks = await uow.narrative.list_hooks_for_world(world_id)
+            _recent, _quiet, _talk, said = await _recent_happenings(uow, world_id)
+            intentions = {
+                c.id: i.text
+                for c in characters
+                if (i := await uow.intentions.get(c.id)) is not None
+            }
+        attempts = {
+            cid: action.attempt
+            for cid, action in (player_intents or {}).items()
+            if isinstance(action, InteractAction)
+        }
+        # The player's own words first, then what characters mean to do.
+        wanting = [*attempts.items(), *intentions.items()]
+        if not wanting:
+            return
+        known = [loc.name for loc in locations] + sorted(
+            {loc.region for loc in locations if loc.region}
+        )
+        people = [c.name for c in characters]
+        talk = [*said, *intentions.values(), *(h.purpose for h in hooks), *attempts.values()]
+        read: dict[str, list[str]] | None = None
+        if self._local_models is not None:
+            async with self._factory() as uow:
+                read = await uow.mentions.places_for(MENTION_MODEL, talk)
+        counts = {
+            name.lower(): count
+            for name, count in unmapped_places(talk, known, limit=20, read=read, people=people)
+        }
+        where = {c.id: c.location_id for c in characters}
+        for character_id, text in wanting:
+            for phrase, _n in unmapped_places([text], known, limit=3, read=read, people=people):
+                if counts.get(phrase.lower(), 0) < OPEN_PLACE_MENTIONS:
+                    continue
+                origin = where.get(character_id)
+                if origin is None:
+                    continue
+                name = " ".join(w if w.endswith("'s") else w.capitalize() for w in phrase.split())
+                place = AddedPlace(
+                    id=uuid5(world_id, f"opened:{phrase.lower()}"),
+                    name=name,
+                    connect_to=origin,
+                    travel_phases=1,
+                )
+                async with self._factory() as uow:
+                    await open_place(uow, world_id, place)
+                    await uow.commit()
+                _phase_log.info(
+                    "opened %s for %s (%d mentions)", name, character_id, counts[phrase.lower()]
+                )
+                return
+
     async def _ground_player_moves(
         self, world_id: UUID, player_intents: Mapping[UUID, ActionIntent] | None
     ) -> Mapping[UUID, ActionIntent] | None:
@@ -1079,6 +1154,7 @@ class Stage1Orchestrator:
         self._fire("before_probe")
         with _timed(timings, "probe"):
             await self._probe_gate(runtime)
+        await self._open_wanted_place(world_id, player_intents)
         player_intents = await self._ground_player_moves(world_id, player_intents)
         if self._narration is not None and index > 0:
             await self._narrate_leftovers(world_id, derive_run_id(world_id, index - 1), runtime)

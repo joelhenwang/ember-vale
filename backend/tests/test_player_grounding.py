@@ -36,6 +36,9 @@ REACHABLE = {MARKET: "Market", MILL: "Old Mill"}
         ("search the market stalls", None),  # no direction: an attempt here
         ("go to the market or to the old mill", None),  # two places: too unclear
         ("go to the forge", None),  # not one route away
+        ("set out with Wren down the old mill road", MILL),  # roads are walked down
+        ("walk along the old mill race", MILL),
+        ("pick up the market basket", None),  # "up" alone is not travel
     ],
 )
 def test_destination_needs_a_direction_and_one_reachable_place(

@@ -16,7 +16,7 @@ from uuid import UUID
 from worldsim.domain.commands import InteractAction, MoveAction
 
 #: Words that put a place after them as a destination.
-_TOWARD = r"(?:to|toward|towards|into|for|back to|over to|down to|up to)"
+_TOWARD = r"(?:to|toward|towards|into|for|back to|over to|down to|up to|down|along)"
 
 
 def destination_named(attempt: str, reachable: Mapping[UUID, str]) -> UUID | None:

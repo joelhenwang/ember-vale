@@ -87,6 +87,14 @@ async def accept_decision(
 ROUTE_STAMINA_PER_PHASE = 5
 
 
+async def open_place(uow: UnitOfWork, world_id: WorldId, place: AddedPlace) -> None:
+    """Add a place outside a director proposal (one people set out for), art queued."""
+    await _add_place(uow, world_id, place)
+    await queue_image(
+        uow, world_id, AssetKind.BACKGROUND, place.id, await world_style_pack(uow, world_id)
+    )
+
+
 async def _add_place(uow: UnitOfWork, world_id: WorldId, place: AddedPlace) -> None:
     """Create the opening's new place, joined both ways to the place it connects to."""
     origin = await uow.locations.get(place.connect_to)
