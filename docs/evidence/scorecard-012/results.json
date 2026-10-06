@@ -1,0 +1,341 @@
+{
+  "meta": {
+    "commit": "f0106a5",
+    "provider": "venice",
+    "model": "venice-uncensored-1-2",
+    "beats": 8,
+    "at": "2026-10-06T03:49:54+00:00",
+    "wall_seconds": 174,
+    "est_usd_total": 0.31168640000000003,
+    "scenarios": [
+      "strangers",
+      "lost_item",
+      "stuck_task",
+      "meet_up",
+      "named_place"
+    ]
+  },
+  "results": {
+    "strangers": {
+      "ids": {
+        "world": "fb2b5a95-46ed-4e00-a11b-d66e887871c8",
+        "place:Hearth": "3de4cf31-7faf-409e-bf46-05f454430460",
+        "place:Market": "4daec7b1-80d8-4485-9663-2f47a563db5a",
+        "wren": "bebdd263-9281-4ace-a7a8-afc46a2854c9",
+        "ash": "924ee31a-b8a5-4150-a807-645bdfe13c9f"
+      },
+      "beat_seconds": [
+        14.344000000040978,
+        24.640999999945052,
+        20.140999999945052,
+        21.719000000040978,
+        31.484000000054948,
+        20.93700000003446,
+        36.45299999997951
+      ],
+      "error": "stopped before beat 8: spend cap reached",
+      "score": {
+        "calls": 63,
+        "failed_calls": 0,
+        "repairs": 4,
+        "repairs_by_role": {
+          "resolver": 4
+        },
+        "repair_rate": 0.06349206349206349,
+        "est_usd": 0.061625900000000004,
+        "action_mix": {
+          "move": 2,
+          "communicate": 14,
+          "wait": 1
+        },
+        "repetition_rate": 0.42857142857142855,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 6,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "Market Day",
+            "powers": ""
+          },
+          {
+            "title": "Market Stalls and Bargains",
+            "powers": "spawn_npc"
+          },
+          {
+            "title": "Merchant Elias's Exotic Goods",
+            "powers": ""
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Merchant Elias": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": false,
+        "goal_detail": "repeated questions 43% (pass \u2264 20%)"
+      }
+    },
+    "lost_item": {
+      "ids": {
+        "world": "2dbfc332-6d44-408f-b366-68f5061bb99d",
+        "place:Hearth": "0eb7344f-cff5-4d9f-8f6e-e87c416e422a",
+        "place:Market": "ba02418d-fe15-453d-933a-9bf086959128",
+        "wren": "81f9e385-fb7e-4d17-9b9d-650def4f2727",
+        "ash": "1362aea5-568e-497e-8e0e-71a010706c36",
+        "item:purse": "e17bc9ec-e940-4735-8a3d-e32150e2e020"
+      },
+      "beat_seconds": [
+        15.23499999998603,
+        35.45299999997951,
+        20.906000000075437,
+        26.311999999918044,
+        26.70299999997951,
+        24.656000000075437,
+        23.92200000002049
+      ],
+      "error": "stopped before beat 8: spend cap reached",
+      "score": {
+        "calls": 63,
+        "failed_calls": 0,
+        "repairs": 4,
+        "repairs_by_role": {
+          "narrator": 1,
+          "resolver": 3
+        },
+        "repair_rate": 0.06349206349206349,
+        "est_usd": 0.05533660000000001,
+        "action_mix": {
+          "take": 1,
+          "move": 2,
+          "communicate": 12,
+          "wait": 5
+        },
+        "repetition_rate": 0.6666666666666666,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 5,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "Market Stall Opening",
+            "powers": "spawn_npc"
+          },
+          {
+            "title": "Spice Merchant's Special Offer",
+            "powers": ""
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Hearth",
+          "Spice Merchant": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {
+          "Lost purse": {
+            "holder": "Ash",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "purse held by Ash"
+      }
+    },
+    "stuck_task": {
+      "ids": {
+        "world": "dc1d2f8a-c7e6-479e-aeeb-deb6f13e03d5",
+        "place:Hearth": "dae0bced-2cb2-4ebd-896d-976e1639263e",
+        "place:Market": "a35826d0-2dd5-4a62-84d0-bfeffb596e45",
+        "wren": "60638449-1b8f-4c99-9805-278b1892cd16",
+        "ash": "84549977-0ceb-4e6d-ab57-129363a5634b",
+        "marg": "eaa67caf-ff8e-4243-8125-39f87d9ae208"
+      },
+      "beat_seconds": [
+        22.5,
+        32.75,
+        42.98499999998603,
+        41.09400000004098,
+        20.54700000002049
+      ],
+      "error": "stopped before beat 6: spend cap reached",
+      "score": {
+        "calls": 89,
+        "failed_calls": 0,
+        "repairs": 4,
+        "repairs_by_role": {
+          "resolver": 3,
+          "narrator": 1
+        },
+        "repair_rate": 0.0449438202247191,
+        "est_usd": 0.0890175,
+        "action_mix": {
+          "wait": 3,
+          "interact": 6,
+          "observe": 3,
+          "communicate": 7
+        },
+        "repetition_rate": 0.5714285714285714,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 0,
+        "moves_done": 0,
+        "interact_success": 4,
+        "hooks": [
+          {
+            "title": "Market Stall Opening",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Old Marg": "Market",
+          "Stallkeeper": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "4 successful physical attempt(s)"
+      }
+    },
+    "meet_up": {
+      "ids": {
+        "world": "c534e4cb-86a7-4f09-93aa-6f8311d82238",
+        "place:Hearth": "17412505-e9d9-4cd6-ac50-8666435cf0c3",
+        "place:Market": "54503f96-ecea-4c20-a227-16f83c8bca43",
+        "wren": "87af864e-838f-4383-b735-6c35ea14d679",
+        "ash": "d4340d9d-f097-4114-8f06-bb2d1c7372aa"
+      },
+      "beat_seconds": [
+        11.530999999959022,
+        29.29700000002049,
+        19.530999999959022,
+        26.31299999996554,
+        21.76500000001397,
+        24.218999999924563,
+        25.063000000081956
+      ],
+      "error": "stopped before beat 8: spend cap reached",
+      "score": {
+        "calls": 64,
+        "failed_calls": 0,
+        "repairs": 5,
+        "repairs_by_role": {
+          "resolver": 5
+        },
+        "repair_rate": 0.078125,
+        "est_usd": 0.0599331,
+        "action_mix": {
+          "wait": 7,
+          "move": 1,
+          "communicate": 9
+        },
+        "repetition_rate": 0.6666666666666666,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 6,
+        "moves_tried": 1,
+        "moves_done": 1,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "Wren's Delayed Arrival",
+            "powers": ""
+          },
+          {
+            "title": "Market Stallholder's Concern",
+            "powers": "spawn_npc"
+          },
+          {
+            "title": "Market Stallholder's Concern",
+            "powers": ""
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Market Stallholder": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "Wren at Market, Ash at Market"
+      }
+    },
+    "named_place": {
+      "ids": {
+        "world": "17e379a6-5341-467c-86a0-9eb66d9a6d6a",
+        "place:Hearth": "4102ca3b-db75-4e40-8ee7-196d623f0873",
+        "place:Market": "b53a88ba-557f-456b-b9b3-13ba955a67f2",
+        "wren": "9d9554be-abb4-4db1-ae1d-786a9fcc486f",
+        "ash": "4d880f03-c3c2-41a2-87ea-bfd35ce182c8"
+      },
+      "beat_seconds": [
+        26.57900000002701,
+        21.45299999997951,
+        18.765999999945052,
+        18.60999999998603,
+        18.25,
+        13.10999999998603,
+        15.35999999998603,
+        10.030999999959022
+      ],
+      "error": null,
+      "score": {
+        "calls": 51,
+        "failed_calls": 0,
+        "repairs": 2,
+        "repairs_by_role": {
+          "resolver": 2
+        },
+        "repair_rate": 0.0392156862745098,
+        "est_usd": 0.0457733,
+        "action_mix": {
+          "communicate": 11,
+          "move": 4,
+          "observe": 1
+        },
+        "repetition_rate": 0.7272727272727273,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 5,
+        "moves_tried": 4,
+        "moves_done": 4,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "The Old Mill's Path",
+            "powers": "new_location"
+          }
+        ],
+        "final_places": {
+          "Wren": "Old Mill",
+          "Ash": "Hearth"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Old Mill"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "added Old Mill; there at the end: Wren"
+      }
+    }
+  }
+}
