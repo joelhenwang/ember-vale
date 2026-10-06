@@ -72,6 +72,8 @@ export const ADVANCE_TIMEOUT_MS = 600000
 export const STAGE_POLL_MS = 1500
 /** Between turns: late narration and other players' changes still arrive. */
 export const IDLE_POLL_MS = 12000
+/** While a picture is being painted (~16 s each), look for it this often. */
+export const PICTURE_POLL_MS = 4000
 
 export interface AdventureOptions {
   api?: AdventureApi
@@ -140,7 +142,13 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
   const mapAssetId = computed(() => presentation.value?.manifest.asset_id ?? null)
   const log = computed(() =>
     me.value
-      ? buildLog({ entries: entries.value, beats: beats.value, me: me.value, hereId: hereId.value })
+      ? buildLog({
+          entries: entries.value,
+          beats: beats.value,
+          me: me.value,
+          hereId: hereId.value,
+          pictures: presentation.value?.scene_art ?? []
+        })
       : []
   )
   const chips = computed(() => quickChips(suggestions.value))
@@ -148,6 +156,9 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
   const stage = computed(() => beatStageLabel(runState.value))
   const nextIndex = computed(() => (presentation.value?.absolute_index ?? 0) + 1)
   const alive = computed(() => (self.value?.life_status ?? 'alive') === 'alive')
+  const painting = computed(() =>
+    (presentation.value?.scene_art ?? []).some((a) => a.status === 'pending')
+  )
 
   async function readChronicle(): Promise<void> {
     // Re-read from the first scene still waiting for its words, so late
@@ -237,7 +248,9 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
       // read again soon, so its words replace the placeholder quickly.
       acting.value || entries.value.some((e) => e.scene_id && !e.text)
         ? STAGE_POLL_MS
-        : IDLE_POLL_MS
+        : painting.value
+          ? PICTURE_POLL_MS
+          : IDLE_POLL_MS
     )
   }
 
@@ -341,6 +354,8 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
     act,
     wait,
     onVisible,
-    dispose
+    dispose,
+    opts,
+    painting
   }
 }

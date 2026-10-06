@@ -3841,6 +3841,40 @@
         "title": "OperationsStatus",
         "type": "object"
       },
+      "PaintSceneRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "caption": {
+            "anyOf": [
+              {
+                "maxLength": 400,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caption"
+          },
+          "prompt": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "world_id": {
+            "format": "uuid",
+            "title": "World Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "world_id",
+          "prompt"
+        ],
+        "title": "PaintSceneRequest",
+        "type": "object"
+      },
       "ParticipantView": {
         "additionalProperties": false,
         "properties": {
@@ -4074,6 +4108,74 @@
         ],
         "title": "PhaseName",
         "type": "string"
+      },
+      "PictureCharacter": {
+        "additionalProperties": false,
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "has_face": {
+            "title": "Has Face",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "has_face"
+        ],
+        "title": "PictureCharacter",
+        "type": "object"
+      },
+      "PictureSuggestion": {
+        "additionalProperties": false,
+        "description": "What \"Paint this scene\" offers before the player edits it.",
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "caption": {
+            "title": "Caption",
+            "type": "string"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/PictureCharacter"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "place": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Place"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prompt",
+          "caption",
+          "available"
+        ],
+        "title": "PictureSuggestion",
+        "type": "object"
       },
       "PlaceArtView": {
         "additionalProperties": false,
@@ -4341,6 +4443,13 @@
               }
             ],
             "title": "Run State"
+          },
+          "scene_art": {
+            "items": {
+              "$ref": "#/components/schemas/SceneArtView"
+            },
+            "title": "Scene Art",
+            "type": "array"
           },
           "settled": {
             "items": {
@@ -5411,6 +5520,55 @@
           "run_id"
         ],
         "title": "RunIdRequest",
+        "type": "object"
+      },
+      "SceneArtView": {
+        "additionalProperties": false,
+        "description": "A painted moment of a scene; ``asset_id`` once the painting is done.",
+        "properties": {
+          "asset_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
+          "caption": {
+            "title": "Caption",
+            "type": "string"
+          },
+          "moment": {
+            "title": "Moment",
+            "type": "string"
+          },
+          "picture_id": {
+            "format": "uuid",
+            "title": "Picture Id",
+            "type": "string"
+          },
+          "scene_id": {
+            "format": "uuid",
+            "title": "Scene Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "picture_id",
+          "scene_id",
+          "moment",
+          "caption",
+          "status"
+        ],
+        "title": "SceneArtView",
         "type": "object"
       },
       "SceneDetail": {
@@ -12711,6 +12869,112 @@
         "summary": "Get Presentation",
         "tags": [
           "world"
+        ]
+      }
+    },
+    "/api/v1/world/scenes/{scene_id}/picture-suggestion": {
+      "get": {
+        "operationId": "picture_suggestion_api_v1_world_scenes__scene_id__picture_suggestion_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scene_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Scene Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "world_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "World Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PictureSuggestion"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Picture Suggestion",
+        "tags": [
+          "pictures"
+        ]
+      }
+    },
+    "/api/v1/world/scenes/{scene_id}/pictures": {
+      "post": {
+        "operationId": "paint_scene_api_v1_world_scenes__scene_id__pictures_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scene_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Scene Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaintSceneRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SceneArtView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Paint Scene",
+        "tags": [
+          "pictures"
         ]
       }
     },

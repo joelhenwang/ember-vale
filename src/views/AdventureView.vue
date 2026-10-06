@@ -12,6 +12,8 @@ import IconArrowRight from '../components/icons/IconArrowRight.vue'
 import IconFeather from '../components/icons/IconFeather.vue'
 import IconClock from '../components/icons/IconClock.vue'
 import IconSatchel from '../components/icons/IconSatchel.vue'
+import IconImage from '../components/icons/IconImage.vue'
+import PaintSceneDialog from '../components/story/PaintSceneDialog.vue'
 import { assetUrl } from '../api/worldsim'
 import { useAdventure } from '../composables/useAdventure'
 import {
@@ -39,6 +41,8 @@ import type { SuggestionView } from '../../content/clients/worldsim'
 
 const route = useRoute()
 const storyId = computed(() => String(route.params.storyId ?? ''))
+/** The scene whose "Paint this scene" dialog is open. */
+const paintingScene = ref<string | null>(null)
 const adv = useAdventure(storyId)
 
 type Mode = 'do' | 'say'
@@ -408,6 +412,29 @@ onMounted(() => {
                   <span>{{ line.text }}</span>
                 </div>
               </template>
+              <template v-else-if="line.kind === 'paint'">
+                <button
+                  type="button"
+                  class="log__paint"
+                  title="Paint a picture of this scene"
+                  @click="paintingScene = line.paintScene ?? null">
+                  <IconImage :size="14" /> Paint this scene
+                </button>
+              </template>
+              <template v-else-if="line.kind === 'picture' && line.picture">
+                <figure class="log__picture">
+                  <img
+                    v-if="line.picture.status === 'ready' && line.picture.asset_id"
+                    :src="assetUrl(storyId, line.picture.asset_id)"
+                    :alt="line.picture.caption"
+                    loading="lazy" />
+                  <div v-else class="log__picture-wait" role="status">
+                    <IconImage :size="22" />
+                    <span>Painting this moment…</span>
+                  </div>
+                  <figcaption>{{ line.picture.caption }}</figcaption>
+                </figure>
+              </template>
               <template v-else-if="line.kind === 'elsewhere'">
                 <span class="log__elsewhere">
                   Meanwhile{{
@@ -631,6 +658,12 @@ onMounted(() => {
         </section>
       </aside>
     </div>
+    <PaintSceneDialog
+      :world-id="storyId"
+      :scene-id="paintingScene"
+      :opts="adv.opts.value"
+      @close="paintingScene = null"
+      @painted="adv.onVisible()" />
   </main>
 </template>
 
@@ -860,6 +893,72 @@ button.who:hover > span {
   line-height: 1.6;
   color: var(--ink);
   max-width: 68ch;
+}
+.log__paint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: -4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  color: var(--muted);
+  opacity: 0.75;
+  transition:
+    opacity 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+.log__paint:hover,
+.log__paint:focus-visible {
+  opacity: 1;
+  color: var(--teal-ink);
+  border-color: var(--line);
+  background: #fbf6e9;
+}
+.log__picture {
+  margin: 6px 0 4px;
+  max-width: 640px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fbf6e9;
+  box-shadow: 0 6px 18px rgba(46, 39, 24, 0.12);
+}
+.log__picture img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.log__picture-wait {
+  aspect-ratio: 16 / 9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--muted);
+  font-style: italic;
+  background: linear-gradient(110deg, #f3ead3 30%, #fbf6e9 50%, #f3ead3 70%);
+  background-size: 250% 100%;
+  animation: shimmer 2.2s linear infinite;
+}
+.log__picture figcaption {
+  padding: 8px 14px 10px;
+  font-size: 14.5px;
+  font-style: italic;
+  color: var(--ink-2);
+}
+@keyframes shimmer {
+  to {
+    background-position: -150% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .log__picture-wait {
+    animation: none;
+  }
 }
 .log__line--pending .log__prose {
   color: var(--muted);

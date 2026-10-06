@@ -18,6 +18,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from worldsim.domain.time import utcnow
 
 SUPPORTED_SAMPLING = ("temperature", "top_p", "top_k")
+#: The single operator whose preferences a local install reads.
+LOCAL_OPERATOR = "local"
 
 
 class AdapterKind(StrEnum):
@@ -111,6 +113,9 @@ class ImagePrefs(BaseModel):
     style_scale: float = Field(default=1.0, ge=0.0, le=2.0)
     portrait_ratio: ImageRatio | None = None
     place_ratio: ImageRatio | None = None
+    scene_ratio: ImageRatio | None = None
+    #: Paint key moments (arrivals, first meetings, settled rumours) by itself.
+    scene_moments: bool = True
 
     @field_validator("steps")
     @classmethod

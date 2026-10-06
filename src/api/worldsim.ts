@@ -40,6 +40,9 @@ import type {
   ProviderTestRequest,
   ProviderTestView,
   PreferencesPatchRequest,
+  PaintSceneRequest,
+  PictureSuggestion,
+  SceneArtView,
   PreferencesView,
   RoleGrantView,
   RoleSelectRequest,
@@ -620,6 +623,34 @@ export function previewImages(
   return apiFetch<{ images: ImagePreviewItem[] }>('/settings/images/preview', {
     ...opts,
     timeoutMs: opts.timeoutMs ?? 40_000 + body.count * 60_000,
+    method: 'POST',
+    body
+  })
+}
+
+/* Scene pictures ------------------------------------------------------------ */
+
+export function getPictureSuggestion(
+  worldId: string,
+  sceneId: string,
+  opts: CallOptions = {}
+): Promise<PictureSuggestion> {
+  // Plain words for the scene (who, what happens, where) for the player to edit.
+  const query = `?world_id=${encodeURIComponent(worldId)}`
+  return apiFetch<PictureSuggestion>(`/world/scenes/${sceneId}/picture-suggestion${query}`, {
+    ...opts,
+    method: 'GET'
+  })
+}
+
+export function paintScene(
+  sceneId: string,
+  body: PaintSceneRequest,
+  opts: CallOptions = {}
+): Promise<SceneArtView> {
+  // Queued; the picture shows in the story once painted (~16 s on an idle machine).
+  return apiFetch<SceneArtView>(`/world/scenes/${sceneId}/pictures`, {
+    ...opts,
     method: 'POST',
     body
   })

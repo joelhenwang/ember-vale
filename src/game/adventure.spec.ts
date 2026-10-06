@@ -59,7 +59,48 @@ describe('adventure log', () => {
       ['time', 'Day 1 · Sunrise', false],
       ['narration', 'The fire cracks.', false],
       ['dialogue', '"Morning," says Ash.', false],
-      ['dialogue', '"Hello."', true]
+      ['dialogue', '"Hello."', true],
+      ['paint', '', false]
+    ])
+  })
+
+  it('offers to paint scenes you were in, and shows their pictures under them', () => {
+    const picture = (id: string, scene: string, status: string) => ({
+      picture_id: id,
+      scene_id: scene,
+      moment: 'meeting',
+      caption: `caption ${id}`,
+      status,
+      asset_id: status === 'ready' ? `a-${id}` : null
+    })
+    const log = buildLog({
+      entries: [
+        entry({ sequence: 1, scene_id: 's1', participant_ids: [ME, 'ash'] }),
+        // Nearby but not yours: told, but not offered for painting.
+        entry({ sequence: 2, scene_id: 's2', location_id: HERE, participant_ids: ['ash'] }),
+        // Still being written: no button until it has words.
+        entry({ sequence: 3, scene_id: 's3', participant_ids: [ME] })
+      ],
+      beats: {
+        s1: [beat('b1', 'narration', 'Ash waves.')],
+        s2: [beat('b2', 'narration', 'Ash sweeps.')]
+      },
+      me: ME,
+      hereId: HERE,
+      pictures: [
+        picture('p1', 's1', 'ready'),
+        picture('p2', 's1', 'pending'),
+        picture('p3', 's1', 'failed')
+      ]
+    })
+    expect(log.map((l) => [l.kind, l.paintScene ?? l.picture?.picture_id ?? null])).toEqual([
+      ['time', null],
+      ['narration', null],
+      ['paint', 's1'],
+      ['picture', 'p1'],
+      ['picture', 'p2'],
+      ['narration', null],
+      ['pending', null]
     ])
   })
 

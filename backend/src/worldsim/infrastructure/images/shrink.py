@@ -19,6 +19,7 @@ MAX_SIDE: dict[AssetKind, int] = {
     AssetKind.PORTRAIT: 512,
     AssetKind.BACKGROUND: 1280,
     AssetKind.MAP: 1600,
+    AssetKind.SCENE: 1280,
 }
 
 

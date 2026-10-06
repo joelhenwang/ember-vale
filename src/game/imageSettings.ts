@@ -25,6 +25,8 @@ export interface ImagePrefs {
   style_scale: number
   portrait_ratio: ImageRatio | null
   place_ratio: ImageRatio | null
+  scene_ratio: ImageRatio | null
+  scene_moments: boolean
 }
 
 export const PREFERRED_CHECKPOINT = 'krea2Anime_v15_bf16'
@@ -42,7 +44,9 @@ export const DEFAULT_IMAGE_PREFS: ImagePrefs = {
   style: 'kreanima-lora-r32',
   style_scale: 1,
   portrait_ratio: null,
-  place_ratio: null
+  place_ratio: null,
+  scene_ratio: null,
+  scene_moments: true
 }
 
 export const IMAGE_RATIOS: readonly ImageRatio[] = [

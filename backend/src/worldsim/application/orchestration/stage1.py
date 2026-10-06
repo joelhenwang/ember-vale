@@ -92,6 +92,7 @@ from worldsim.application.graphs.summary import (
     load_digest_prompt,
     load_summary_prompt,
 )
+from worldsim.application.images import world_style_pack
 from worldsim.application.interventions import (
     apply_batch,
     claim_for_boundary,
@@ -100,6 +101,7 @@ from worldsim.application.interventions import (
 )
 from worldsim.application.orchestration.background import BackgroundNarration
 from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
+from worldsim.application.pictures import queue_moment
 from worldsim.application.ports.local_models import LocalModels, LocalModelsUnavailable
 from worldsim.application.ports.model_gateway import ModelGateway, ModelProfile
 from worldsim.application.settings.resolution import (
@@ -261,6 +263,7 @@ from worldsim.domain.rules.routes import with_route
 from worldsim.domain.rules.scenes import assemble_scenes
 from worldsim.domain.rules.views import WorldView
 from worldsim.domain.scenes import Attempt, Intent, Reaction, Resolution, Scene
+from worldsim.domain.settings import LOCAL_OPERATOR
 from worldsim.domain.summaries import DailySummary, day_range, fallback_text
 from worldsim.domain.tasks import Lease
 from worldsim.domain.time import PHASES_PER_DAY, absolute_index, phase_label, utcnow
@@ -982,11 +985,14 @@ class Stage1Orchestrator:
         pin_gateway_factory: PinGatewayFactory | None = None,
         local_models: LocalModels | None = None,
         narration: BackgroundNarration | None = None,
+        paint_moments: bool = False,
     ) -> None:
         self._factory = uow_factory
         #: When set, a beat returns once its scenes commit and narration
         #: finishes behind it (party scenes still narrate in line).
         self._narration = narration
+        #: Queue key-moment scene pictures (only with a live image service).
+        self._paint_moments = paint_moments
         #: Embeddings for recall by relevance; None keeps recency and salience only.
         self._local_models = local_models
         self._canonical = canonical
@@ -1326,6 +1332,10 @@ class Stage1Orchestrator:
         await self._set_state(run_id, PhaseRunState.SCENES_COMMITTED)
         self._fire("after_scenes_committed")
         await self._set_state(run_id, PhaseRunState.COMPLETED)
+        player = runtime.controlled_character_id
+        if self._paint_moments and player is not None and outcomes:
+            with _timed(timings, "moments"):
+                await self._queue_moment(world_id, index, player, [o.scene_id for o in outcomes])
         if index % PHASES_PER_DAY == PHASES_PER_DAY - 1:
 
             async def _day_end() -> None:
@@ -1356,6 +1366,28 @@ class Stage1Orchestrator:
             quiet=quiet,
             timings_ms=timings,
         )
+
+    async def _queue_moment(
+        self, world_id: UUID, index: int, player: UUID, scene_ids: list[UUID]
+    ) -> None:
+        """Queue a picture of this beat's key moment, if it had one.
+
+        Pictures are decoration: a failure here is logged, never raised,
+        so a turn always completes.
+        """
+        try:
+            async with self._factory() as uow:
+                prefs = (await uow.settings.get_preferences(LOCAL_OPERATOR)).images
+                if not (prefs.enabled and prefs.scene_moments):
+                    return
+                scenes = [await uow.scenes.get_scene(scene_id) for scene_id in scene_ids]
+                style_pack = await world_style_pack(uow, world_id)
+                if await queue_moment(uow, world_id, index, player, scenes, style_pack):
+                    await uow.commit()
+        except Exception:
+            _phase_log.exception(
+                "queueing a moment picture failed", extra={"world_id": str(world_id)}
+            )
 
     async def _narrate_leftovers(self, world_id: UUID, run_id: UUID, runtime: PhaseRuntime) -> None:
         """Narrate committed scenes of an earlier beat still without words.

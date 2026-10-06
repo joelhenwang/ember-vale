@@ -658,6 +658,35 @@ export interface PlaceArtView {
   location_id: string;
 }
 
+export interface SceneArtView {
+  asset_id?: string | null;
+  caption: string;
+  moment: string;
+  picture_id: string;
+  scene_id: string;
+  status: string;
+}
+
+export interface PictureCharacter {
+  character_id: string;
+  has_face: boolean;
+  name: string;
+}
+
+export interface PictureSuggestion {
+  available: boolean;
+  caption: string;
+  characters?: PictureCharacter[];
+  place?: string | null;
+  prompt: string;
+}
+
+export interface PaintSceneRequest {
+  caption?: string | null;
+  prompt: string;
+  world_id: string;
+}
+
 export interface PresentationResponse {
   absolute_index: number;
   activities?: ActivityView[];
@@ -674,6 +703,7 @@ export interface PresentationResponse {
   revision: number;
   rumours?: RumourView[];
   run_state?: string | null;
+  scene_art?: SceneArtView[];
   settled?: RumourView[];
   threads?: string[];
   world_id: string;

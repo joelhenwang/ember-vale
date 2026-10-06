@@ -8,6 +8,7 @@ MAX_JOB_ATTEMPTS, so a broken prompt never loops forever.
 from __future__ import annotations
 
 import asyncio
+import base64
 import logging
 from collections.abc import Callable
 from pathlib import Path
@@ -19,10 +20,16 @@ from worldsim.application.images import (
     load_style_pack,
     subject_text,
 )
-from worldsim.application.ports.images import ImageGenerationError, ImageGenerator, ImageRequest
+from worldsim.application.pictures import character_card, newest_asset, suggest
+from worldsim.application.ports.images import (
+    CharacterCard,
+    ImageGenerationError,
+    ImageGenerator,
+    ImageRequest,
+)
 from worldsim.application.ports.storage import StoragePort
 from worldsim.application.unit_of_work import UnitOfWork
-from worldsim.domain.assets import ImageJob, JobStatus
+from worldsim.domain.assets import AssetKind, ImageJob, JobStatus
 from worldsim.domain.errors import DomainError
 from worldsim.domain.settings import ImagePrefs
 from worldsim.infrastructure.assets.fixture import FixtureImageGateway
@@ -107,8 +114,13 @@ class ImageJobRunner:
 
     async def _request_for(self, job: ImageJob, prefs: ImagePrefs) -> ImageRequest:
         pack = load_style_pack(self._packs_dir, job.style_pack_version)
-        async with self._factory() as uow:
-            subject = await subject_text(uow, job)
+        characters: tuple[str, ...] = ()
+        references: tuple[str, ...] = ()
+        if job.kind == AssetKind.SCENE:
+            subject, characters, references = await self._scene_parts(job)
+        else:
+            async with self._factory() as uow:
+                subject = await subject_text(uow, job)
         prompt, ratio = compose_prompt(pack, job.kind, subject)
         return image_request(
             prompt,
@@ -118,7 +130,56 @@ class ImageJobRunner:
             pixel=self._pixel if pack.pixel_art else None,
             # Stable per job: a retried job asks for the same picture.
             stable_seed=job.id.int % 2**31,
+            characters=characters,
+            references=references,
         )
+
+    async def _scene_parts(self, job: ImageJob) -> tuple[str, tuple[str, ...], tuple[str, ...]]:
+        """A scene picture's words, its people's faces, and its place's art.
+
+        Each person with a portrait is registered with the image service
+        (once per portrait version) and drawn as a reference; people
+        without one yet are still described in the words.
+        """
+        if job.subject_id is None:
+            raise ValueError("a scene job needs its picture")
+        cards: list[CharacterCard] = []
+        place_art: tuple[str, ...] = ()
+        async with self._factory() as uow:
+            picture = await uow.pictures.get(job.subject_id)
+            words = (
+                picture.prompt
+                or (
+                    await suggest(
+                        uow,
+                        picture.world_id,
+                        picture.scene_id,
+                        picture.character_ids[0] if picture.character_ids else None,
+                    )
+                ).prompt
+            )
+            for character_id in picture.character_ids:
+                portrait = await newest_asset(
+                    uow, picture.world_id, AssetKind.PORTRAIT, character_id
+                )
+                if portrait is None:
+                    continue
+                image = await self._storage.read(portrait.content_ref)
+                cards.append(
+                    await character_card(
+                        uow, picture.world_id, character_id, image, portrait.subject_visual_version
+                    )
+                )
+            if picture.location_id is not None:
+                art = await newest_asset(
+                    uow, picture.world_id, AssetKind.BACKGROUND, picture.location_id
+                )
+                if art is not None:
+                    data = base64.b64encode(await self._storage.read(art.content_ref)).decode()
+                    place_art = (f"data:{art.mime};base64,{data}",)
+        for card in cards:
+            await self._generator.ensure_character(card)
+        return words, tuple(card.id for card in cards), place_art
 
     async def run_forever(self) -> None:
         while not self._stopping.is_set():

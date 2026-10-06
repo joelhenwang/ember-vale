@@ -28,6 +28,10 @@ class ImageRequest:
     turbo: bool = True
     steps: int | None = None
     style_scale: float = 1.0
+    #: Registered characters (service ids) drawn with their reference faces.
+    characters: tuple[str, ...] = ()
+    #: Extra reference images (data URLs), e.g. the place's own art.
+    references: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -45,5 +49,22 @@ class ImageGenerationError(Exception):
     """The provider could not make the image (unreachable, rejected, loading)."""
 
 
+@dataclass(frozen=True)
+class CharacterCard:
+    """A character as the image service keeps it: a face to draw again."""
+
+    #: The service's id (lowercase a-z, 0-9, _ and -; at most 40 characters).
+    id: str
+    name: str
+    #: Its first clause becomes the character's short phrase.
+    description: str
+    #: The reference picture (the character's portrait).
+    image: bytes
+
+
 class ImageGenerator(Protocol):
     async def generate(self, request: ImageRequest) -> GeneratedImage: ...
+
+    async def ensure_character(self, card: CharacterCard) -> None:
+        """Register the character unless the service already has it."""
+        ...

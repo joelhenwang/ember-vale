@@ -38,6 +38,7 @@ from worldsim.domain.narrative import NarrativeArc, NarrativeHook
 from worldsim.domain.party import Monster, PartyMember
 from worldsim.domain.perception import Observation, RecentMemory
 from worldsim.domain.phases import PhaseRun, PhaseSnapshot
+from worldsim.domain.pictures import ScenePicture
 from worldsim.domain.presets import (
     EditorDraft,
     EditorPublication,
@@ -275,6 +276,13 @@ class MentionRepository(Protocol):
         self, model: str, lines: Sequence[str], places: Sequence[Sequence[str]]
     ) -> None: ...
     async def places_for(self, model: str, lines: Sequence[str]) -> dict[str, list[str]]: ...
+
+
+class PictureRepository(Protocol):
+    async def add(self, picture: ScenePicture) -> None: ...
+    async def get(self, picture_id: UUID) -> ScenePicture: ...
+    async def list_for_world(self, world_id: UUID) -> list[ScenePicture]: ...
+    async def latest_moment_index(self, world_id: UUID) -> int | None: ...
 
 
 class CostRepository(Protocol):

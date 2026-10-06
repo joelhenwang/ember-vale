@@ -29,6 +29,7 @@ from worldsim.application.ports.repositories import (
     PartyRepository,
     PerceptionRepository,
     PhaseRepository,
+    PictureRepository,
     PresetRepository,
     ProgressRepository,
     RecallRepository,
@@ -96,6 +97,8 @@ class UnitOfWork(Protocol):
     def recall(self) -> RecallRepository: ...
     @property
     def mentions(self) -> MentionRepository: ...
+    @property
+    def pictures(self) -> PictureRepository: ...
     @property
     def roles(self) -> RoleRepository: ...
     @property

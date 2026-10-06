@@ -7,13 +7,19 @@
  * action families, so the server validates it like any other intent.
  */
 
-import type { BeatView, ChronicleEntry, SuggestionView } from '../../content/clients/worldsim'
+import type {
+  BeatView,
+  ChronicleEntry,
+  SceneArtView,
+  SuggestionView
+} from '../../content/clients/worldsim'
 import { QUIET_TYPES, beatTimeLabel } from './observatory'
 
 /** Placeholder snapshot: the server binds the beat's own snapshot. */
 export const NIL_SNAPSHOT = '00000000-0000-0000-0000-000000000000'
 
-export type LogKind = 'time' | 'narration' | 'dialogue' | 'elsewhere' | 'pending'
+export type LogKind =
+  'time' | 'narration' | 'dialogue' | 'elsewhere' | 'pending' | 'picture' | 'paint'
 
 export interface LogLine {
   key: string
@@ -25,6 +31,10 @@ export interface LogLine {
   mine?: boolean
   /** Elsewhere lines: where it happened. */
   placeId?: string | null
+  /** Paint lines: the scene (one the player took part in) that can be painted. */
+  paintScene?: string | null
+  /** Picture lines: the painted moment (or the one being painted). */
+  picture?: SceneArtView
 }
 
 export interface LogInput {
@@ -35,6 +45,8 @@ export interface LogInput {
   me: string
   /** Where the player's character is now. */
   hereId: string | null
+  /** Painted moments, shown under their scene. */
+  pictures?: SceneArtView[]
 }
 
 /** Whether the player saw this happen (took part, or it happened where they are). */
@@ -67,7 +79,7 @@ function linesFor(entry: ChronicleEntry, beats: BeatView[] | undefined, me: stri
  * player saw are told in full; others become one "elsewhere" line, and
  * idle moments elsewhere are left out entirely.
  */
-export function buildLog({ entries, beats, me, hereId }: LogInput): LogLine[] {
+export function buildLog({ entries, beats, me, hereId, pictures = [] }: LogInput): LogLine[] {
   const shown = [...entries]
     .filter((e) => !QUIET_TYPES.has(e.event_type))
     .sort((a, b) => a.sequence - b.sequence)
@@ -85,7 +97,23 @@ export function buildLog({ entries, beats, me, hereId }: LogInput): LogLine[] {
       })
     }
     if (near) {
-      out.push(...linesFor(entry, entry.scene_id ? beats[entry.scene_id] : undefined, me))
+      const lines = linesFor(entry, entry.scene_id ? beats[entry.scene_id] : undefined, me)
+      const sceneId = entry.scene_id ?? null
+      out.push(...lines)
+      const told = lines.every((l) => l.kind !== 'pending')
+      if (sceneId && told && entry.participant_ids?.includes(me)) {
+        out.push({ key: `paint:${sceneId}`, kind: 'paint', text: '', paintScene: sceneId })
+      }
+      for (const picture of pictures) {
+        if (sceneId && picture.scene_id === sceneId && picture.status !== 'failed') {
+          out.push({
+            key: `pic:${picture.picture_id}`,
+            kind: 'picture',
+            text: picture.caption,
+            picture
+          })
+        }
+      }
     } else if (entry.text || entry.title) {
       out.push({
         key: entry.event_id,

@@ -18,6 +18,8 @@ class AssetKind(StrEnum):
     MAP = "map"
     BACKGROUND = "background"
     PORTRAIT = "portrait"
+    #: A painted moment of a scene (subject: its ScenePicture).
+    SCENE = "scene"
 
 
 class AssetStatus(StrEnum):

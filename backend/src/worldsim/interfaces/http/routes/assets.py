@@ -160,7 +160,13 @@ async def read_asset_bytes(asset_id: UUID, request: Request, world_id: UUID) -> 
         asset = await uow.assets.get_asset(asset_id)
         if asset.world_id is not None and asset.world_id != world_id:
             raise DomainError(ErrorCode.NOT_FOUND, "asset is not in this world")
-        if not is_omniscient(parsed):
+        if not is_omniscient(parsed) and asset.kind == AssetKind.SCENE:
+            # A painted scene shows what happened there: its people only.
+            picture = await uow.pictures.get(asset.subject_id) if asset.subject_id else None
+            scene = await uow.scenes.get_scene(picture.scene_id) if picture else None
+            if scene is None or viewer not in {p.character_id for p in scene.participants}:
+                raise DomainError(ErrorCode.FORBIDDEN, "asset is outside player perspective")
+        elif not is_omniscient(parsed):
             allowed = asset.kind in (AssetKind.MAP, AssetKind.BACKGROUND) or (
                 asset.subject_id is not None
                 and await _visible_to(uow, world_id, viewer, asset.subject_id)

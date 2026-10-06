@@ -9,13 +9,17 @@ as the operator chose it in image preferences. See krea2-studio docs/API.md.
 from __future__ import annotations
 
 import asyncio
+import base64
+import io
 import json
 from dataclasses import dataclass, field
 from typing import Any
 
 import httpx
+from PIL import Image
 
 from worldsim.application.ports.images import (
+    CharacterCard,
     GeneratedImage,
     ImageGenerationError,
     ImageRequest,
@@ -82,7 +86,44 @@ class KreaImageGenerator:
             body["detail_scale"] = request.detail_scale
         if request.steps is not None:
             body["steps"] = request.steps
+        if request.characters:
+            body["characters"] = list(request.characters)
+        if request.references:
+            body["references"] = list(request.references)
         return body
+
+    async def ensure_character(self, card: CharacterCard) -> None:
+        """Register a character once; an id the service already has is kept.
+
+        Ids carry the portrait's version, so a redrawn portrait registers
+        anew instead of reusing an old face.
+        """
+        client = self._client or httpx.AsyncClient(timeout=self._timeout_s)
+        try:
+            try:
+                known = await client.get(f"{self._base_url}/v1/characters/{card.id}")
+                if known.status_code == 200:
+                    return
+                created = await client.post(
+                    f"{self._base_url}/v1/characters",
+                    json={
+                        "id": card.id,
+                        "name": card.name,
+                        "description": card.description,
+                        "images": [base64.b64encode(_png(card.image)).decode()],
+                    },
+                )
+            except httpx.HTTPError as exc:
+                raise ImageGenerationError(f"krea unreachable: {exc}") from exc
+        finally:
+            if self._client is None:
+                await client.aclose()
+        if created.status_code == 400 and "already exists" in created.text:
+            return  # registered by a concurrent job
+        if created.status_code != 200:
+            raise ImageGenerationError(
+                f"krea character HTTP {created.status_code}: {created.text[:300]}"
+            )
 
     async def generate(self, request: ImageRequest) -> GeneratedImage:
         client = self._client or httpx.AsyncClient(timeout=self._timeout_s)
@@ -176,6 +217,17 @@ def _total_seconds(header: str) -> float | None:
         return None
     total = (timings or {}).get("total_s")
     return float(total) if isinstance(total, (int, float)) else None
+
+
+def _png(data: bytes) -> bytes:
+    """Stored portraits are WebP; the service is sent PNG, which it always reads."""
+    try:
+        with Image.open(io.BytesIO(data)) as source:
+            out = io.BytesIO()
+            source.convert("RGB").save(out, format="PNG")
+            return out.getvalue()
+    except (OSError, ValueError):
+        return data
 
 
 def _size(header: str) -> tuple[int, int]:

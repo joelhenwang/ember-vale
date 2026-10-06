@@ -1025,6 +1025,32 @@
               "default": null,
               "title": "Portrait Ratio"
             },
+            "scene_moments": {
+              "default": true,
+              "title": "Scene Moments",
+              "type": "boolean"
+            },
+            "scene_ratio": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "1:1",
+                    "16:9",
+                    "9:16",
+                    "3:2",
+                    "2:3",
+                    "4:3",
+                    "3:4"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Scene Ratio"
+            },
             "seed": {
               "default": 0,
               "maximum": 2147483647,

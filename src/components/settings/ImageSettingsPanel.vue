@@ -117,6 +117,10 @@ const portraitRatio = computed({
   get: () => form.value.portrait_ratio ?? '',
   set: (v: string) => (form.value.portrait_ratio = (v || null) as ImageRatio | null)
 })
+const sceneRatio = computed({
+  get: () => form.value.scene_ratio ?? '',
+  set: (v: string) => (form.value.scene_ratio = (v || null) as ImageRatio | null)
+})
 const placeRatio = computed({
   get: () => form.value.place_ratio ?? '',
   set: (v: string) => (form.value.place_ratio = (v || null) as ImageRatio | null)
@@ -230,6 +234,11 @@ const progress = computed(() => Math.min(0.95, elapsed.value / Math.max(1, expec
         v-model="form.enabled"
         label="Paint new art while I play"
         hint="Off pauses painting: new portraits and places wait in a queue and are painted once you turn it back on." />
+      <ToggleSwitch
+        v-model="form.scene_moments"
+        :disabled="!form.enabled"
+        label="Paint key moments in the story"
+        hint="Arriving somewhere new, meeting someone for the first time, settling a rumour: a picture appears under that scene, with everyone's own face. At most one every few turns. Any scene can still be painted by hand." />
     </section>
 
     <!-- model & style -------------------------------------------------------- -->
@@ -339,6 +348,16 @@ const progress = computed(() => Math.min(0.95, elapsed.value / Math.max(1, expec
           <span class="field__label">Place shape</span>
           <StudioSelect v-model="placeRatio" :options="ratioOptions" aria-label="Place shape" />
           <span class="field__hint">Scenery for places. The style pack draws them wide.</span>
+        </label>
+        <label class="field">
+          <span class="field__label">Story picture shape</span>
+          <StudioSelect
+            v-model="sceneRatio"
+            :options="ratioOptions"
+            aria-label="Story picture shape" />
+          <span class="field__hint"
+            >Painted moments in the story. The style pack draws them wide.</span
+          >
         </label>
         <div class="field">
           <span class="field__label">Seed</span>

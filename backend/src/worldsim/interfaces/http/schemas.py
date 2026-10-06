@@ -987,6 +987,51 @@ class PlaceArtView(BaseModel):
     asset_id: UUID
 
 
+class SceneArtView(BaseModel):
+    """A painted moment of a scene; ``asset_id`` once the painting is done."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    picture_id: UUID
+    scene_id: UUID
+    #: arrival, meeting, settled or manual.
+    moment: str
+    caption: str
+    #: pending (being painted), ready or failed.
+    status: str
+    asset_id: UUID | None = None
+
+
+class PictureCharacter(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    character_id: UUID
+    name: str
+    #: Has a portrait, so the picture keeps their face.
+    has_face: bool
+
+
+class PictureSuggestion(BaseModel):
+    """What "Paint this scene" offers before the player edits it."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    prompt: str
+    caption: str
+    characters: list[PictureCharacter] = Field(default_factory=list)
+    place: str | None = None
+    #: False when the server has no image machine (painting is refused).
+    available: bool
+
+
+class PaintSceneRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    world_id: UUID
+    prompt: str = Field(min_length=1, max_length=2000)
+    caption: str | None = Field(default=None, max_length=400)
+
+
 class JourneyView(BaseModel):
     """The player character's journey so far and the renown it has earned."""
 
@@ -1028,6 +1073,7 @@ class PresentationResponse(BaseModel):
     journey: JourneyView | None = None
     #: Scene art per place, for places that have their own.
     place_art: list[PlaceArtView] = Field(default_factory=list)
+    scene_art: list[SceneArtView] = Field(default_factory=list)
 
 
 class JobRequest(BaseModel):

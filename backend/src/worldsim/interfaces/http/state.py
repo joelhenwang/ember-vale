@@ -131,6 +131,7 @@ class AppState:
             pin_gateway_factory=_for_pin,
             local_models=self.local_models(),
             narration=self.narration,
+            paint_moments=self.images() is not None,
         )
 
     def local_models(self) -> LocalModelsClient | None:

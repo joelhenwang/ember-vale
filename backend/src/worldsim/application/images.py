@@ -29,6 +29,10 @@ _RATIOS: dict[str, float] = {
     "4:3": 4 / 3,
     "3:4": 3 / 4,
 }
+#: Which pack wording each kind uses, best first (packs name scenes differently).
+_WORDING_FOR: dict[AssetKind, tuple[str, ...]] = {
+    AssetKind.SCENE: ("scene", "event", "background"),
+}
 #: Prompt text kept per subject; the provider reads at most 512 tokens.
 _SUBJECT_CHARS = 700
 
@@ -111,6 +115,8 @@ def image_request(
     *,
     pixel: str | None = None,
     stable_seed: int | None = None,
+    characters: tuple[str, ...] = (),
+    references: tuple[str, ...] = (),
 ) -> ImageRequest:
     """One provider request from a composed prompt and the operator's choices.
 
@@ -120,6 +126,7 @@ def image_request(
     chosen_ratio = {
         AssetKind.PORTRAIT: prefs.portrait_ratio,
         AssetKind.BACKGROUND: prefs.place_ratio,
+        AssetKind.SCENE: prefs.scene_ratio,
     }.get(kind)
     seed = {"stable": stable_seed, "random": None, "fixed": prefs.seed}[prefs.seed_mode]
     return ImageRequest(
@@ -135,12 +142,15 @@ def image_request(
         detail_scale=prefs.detail_scale,
         turbo=prefs.turbo,
         steps=prefs.steps,
+        characters=characters,
+        references=references,
     )
 
 
 def compose_prompt(pack: StylePack, kind: AssetKind, subject: str) -> tuple[str, str]:
     """(prompt, provider ratio) for one job."""
-    wording = pack.kinds.get(kind.value) or pack.kinds.get("portrait")
+    names = _WORDING_FOR.get(kind, (kind.value, "portrait"))
+    wording = next((pack.kinds[n] for n in names if n in pack.kinds), None)
     if wording is None:
         raise ValueError(f"style pack {pack.version} has no {kind.value} wording")
     return f"{subject} {wording.positive}", provider_ratio(wording.aspect)

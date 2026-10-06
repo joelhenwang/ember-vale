@@ -132,7 +132,36 @@ async def presentation(
             for place, asset in backgrounds.items()
             if place in visible_locations
         ],
+        scene_art=await _scene_art(uow, world_id, viewer, omniscient),
     )
+
+
+#: Pictures listed per snapshot (the newest; older ones scroll away).
+SCENE_ART_SHOWN = 40
+
+
+async def _scene_art(
+    uow: UnitOfWork, world_id: UUID, viewer: UUID | None, omniscient: bool
+) -> list[api.SceneArtView]:
+    """Scene pictures the viewer was in (all, for watchers), oldest first."""
+    shown: list[api.SceneArtView] = []
+    for picture in (await uow.pictures.list_for_world(world_id))[-SCENE_ART_SHOWN:]:
+        if not omniscient:
+            scene = await uow.scenes.get_scene(picture.scene_id)
+            if viewer not in {p.character_id for p in scene.participants}:
+                continue
+        job = await uow.assets.get_job(picture.job_id)
+        shown.append(
+            api.SceneArtView(
+                picture_id=picture.id,
+                scene_id=picture.scene_id,
+                moment=picture.moment.value,
+                caption=picture.caption,
+                status=job.status.value,
+                asset_id=job.result_asset_id,
+            )
+        )
+    return shown
 
 
 async def _journey(
