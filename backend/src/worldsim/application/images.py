@@ -12,10 +12,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID
 
+from worldsim.application.ports.images import ImageRequest
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.assets import DEFAULT_STYLE_PACK, AssetKind, ImageJob
 from worldsim.domain.ids import new_job_id
 from worldsim.domain.jsonvalues import json_object
+from worldsim.domain.settings import ImagePrefs
 
 #: Krea 2 Studio aspect ratios, as width / height.
 _RATIOS: dict[str, float] = {
@@ -99,6 +101,41 @@ async def subject_text(uow: UnitOfWork, job: ImageJob) -> str:
         places = ", ".join(loc.name for loc in await uow.locations.list_for_world(world.id))
         return _clip(f"Map of {world.name}, showing {places}.")
     raise ValueError(f"nothing to draw for a {job.kind.value} job without a subject")
+
+
+def image_request(
+    prompt: str,
+    ratio: str,
+    kind: AssetKind,
+    prefs: ImagePrefs,
+    *,
+    pixel: str | None = None,
+    stable_seed: int | None = None,
+) -> ImageRequest:
+    """One provider request from a composed prompt and the operator's choices.
+
+    Pixel packs draw with the pixel LoRA instead of a style; the ratio
+    preference for portraits and places wins over the pack's own shape.
+    """
+    chosen_ratio = {
+        AssetKind.PORTRAIT: prefs.portrait_ratio,
+        AssetKind.BACKGROUND: prefs.place_ratio,
+    }.get(kind)
+    seed = {"stable": stable_seed, "random": None, "fixed": prefs.seed}[prefs.seed_mode]
+    return ImageRequest(
+        prompt=prompt,
+        ratio=chosen_ratio or ratio,
+        style=None if pixel else prefs.style,
+        style_scale=prefs.style_scale,
+        pixel=pixel,
+        seed=seed,
+        checkpoint=prefs.checkpoint,
+        mode=prefs.mode,
+        detail=prefs.detail,
+        detail_scale=prefs.detail_scale,
+        turbo=prefs.turbo,
+        steps=prefs.steps,
+    )
 
 
 def compose_prompt(pack: StylePack, kind: AssetKind, subject: str) -> tuple[str, str]:

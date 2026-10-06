@@ -14,6 +14,7 @@ from worldsim.domain.settings import (
     AdapterKind,
     ApplicationPreferences,
     GameplayDefaults,
+    ImagePrefs,
     LocalProfile,
     ProviderConnection,
     ProviderProfileRevision,
@@ -62,6 +63,7 @@ class SqlAlchemySettingsRepository:
             gameplay=GameplayDefaults.model_validate(row.gameplay),
             accessibility=AccessibilityPrefs.model_validate(row.accessibility),
             profile=LocalProfile.model_validate(row.profile),
+            images=ImagePrefs.model_validate(row.images or {}),
             version=row.version,
         )
 
@@ -176,6 +178,7 @@ class SqlAlchemySettingsRepository:
                 gameplay=prefs.gameplay.model_dump(mode="json"),
                 accessibility=prefs.accessibility.model_dump(mode="json"),
                 profile=prefs.profile.model_dump(mode="json"),
+                images=prefs.images.model_dump(mode="json"),
                 version=expected_version + 1,
             )
             self._session.add(row)
@@ -190,6 +193,7 @@ class SqlAlchemySettingsRepository:
         row.gameplay = prefs.gameplay.model_dump(mode="json")
         row.accessibility = prefs.accessibility.model_dump(mode="json")
         row.profile = prefs.profile.model_dump(mode="json")
+        row.images = prefs.images.model_dump(mode="json")
         row.version = expected_version + 1
         await self._session.flush()
         return prefs.model_copy(update={"version": expected_version + 1})

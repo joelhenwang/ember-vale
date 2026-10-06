@@ -192,7 +192,9 @@ class ImageSettings(BaseModel):
     provider: Literal["fixture", "krea"] = "fixture"
     krea_base_url: str = ""
     krea_timeout_s: float = Field(default=180.0, gt=0, le=900)
-    #: Style LoRA for painted packs (GET /v1/styles); pixel packs use krea_pixel.
+    #: Unused: the style, checkpoint and other drawing choices live in the
+    #: image preferences (Settings > Image generation). Kept so older .env
+    #: files that set it still load.
     krea_style: str = "kreanima-lora-r32"
     krea_pixel: Literal["32", "64", "128"] = "64"
     poll_seconds: float = Field(default=2.0, gt=0, le=60)

@@ -60,6 +60,7 @@ class ApplicationPreferencesRow(Base):
     gameplay: Mapped[dict[str, Any]] = mapped_column(JSONB)
     accessibility: Mapped[dict[str, Any]] = mapped_column(JSONB)
     profile: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    images: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     version: Mapped[int] = mapped_column(Integer, default=0)
 
     __table_args__ = (CheckConstraint("version >= 0", name="ck_prefs_version"),)

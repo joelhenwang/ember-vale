@@ -939,6 +939,150 @@
           "title": "GameplayDefaults",
           "type": "object"
         },
+        "ImagePrefs": {
+          "additionalProperties": false,
+          "description": "How portraits and place art are drawn (Krea 2 Studio fields).\n\nRead by the image runner for every job, so a change applies to the\nnext picture without a restart. ``None`` leaves a field to the service\nor, for ratios, to the style pack.",
+          "properties": {
+            "checkpoint": {
+              "anyOf": [
+                {
+                  "maxLength": 128,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": "krea2Anime_v15_bf16",
+              "title": "Checkpoint"
+            },
+            "detail": {
+              "default": true,
+              "title": "Detail",
+              "type": "boolean"
+            },
+            "detail_scale": {
+              "default": 1.0,
+              "maximum": 2.0,
+              "minimum": 0.0,
+              "title": "Detail Scale",
+              "type": "number"
+            },
+            "enabled": {
+              "default": true,
+              "title": "Enabled",
+              "type": "boolean"
+            },
+            "mode": {
+              "default": "fast",
+              "enum": [
+                "draft",
+                "fast",
+                "full"
+              ],
+              "title": "Mode",
+              "type": "string"
+            },
+            "place_ratio": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "1:1",
+                    "16:9",
+                    "9:16",
+                    "3:2",
+                    "2:3",
+                    "4:3",
+                    "3:4"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Place Ratio"
+            },
+            "portrait_ratio": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "1:1",
+                    "16:9",
+                    "9:16",
+                    "3:2",
+                    "2:3",
+                    "4:3",
+                    "3:4"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Portrait Ratio"
+            },
+            "seed": {
+              "default": 0,
+              "maximum": 2147483647,
+              "minimum": 0,
+              "title": "Seed",
+              "type": "integer"
+            },
+            "seed_mode": {
+              "default": "stable",
+              "enum": [
+                "stable",
+                "random",
+                "fixed"
+              ],
+              "title": "Seed Mode",
+              "type": "string"
+            },
+            "steps": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Steps"
+            },
+            "style": {
+              "anyOf": [
+                {
+                  "maxLength": 128,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": "kreanima-lora-r32",
+              "title": "Style"
+            },
+            "style_scale": {
+              "default": 1.0,
+              "maximum": 2.0,
+              "minimum": 0.0,
+              "title": "Style Scale",
+              "type": "number"
+            },
+            "turbo": {
+              "default": true,
+              "title": "Turbo",
+              "type": "boolean"
+            }
+          },
+          "title": "ImagePrefs",
+          "type": "object"
+        },
         "LocalProfile": {
           "additionalProperties": false,
           "properties": {
@@ -966,6 +1110,9 @@
         },
         "gameplay": {
           "$ref": "#/$defs/GameplayDefaults"
+        },
+        "images": {
+          "$ref": "#/$defs/ImagePrefs"
         },
         "operator": {
           "default": "local",

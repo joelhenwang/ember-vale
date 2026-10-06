@@ -13,12 +13,18 @@ from collections.abc import Callable
 from pathlib import Path
 from uuid import UUID
 
-from worldsim.application.images import compose_prompt, load_style_pack, subject_text
+from worldsim.application.images import (
+    compose_prompt,
+    image_request,
+    load_style_pack,
+    subject_text,
+)
 from worldsim.application.ports.images import ImageGenerationError, ImageGenerator, ImageRequest
 from worldsim.application.ports.storage import StoragePort
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.assets import ImageJob, JobStatus
 from worldsim.domain.errors import DomainError
+from worldsim.domain.settings import ImagePrefs
 from worldsim.infrastructure.assets.fixture import FixtureImageGateway
 from worldsim.infrastructure.images.shrink import shrink
 
@@ -33,8 +39,8 @@ class ImageJobRunner:
         storage: StoragePort,
         packs_dir: Path,
         *,
-        style: str | None = None,
         pixel: str = "64",
+        operator: str = "local",
         poll_seconds: float = 2.0,
         world_id: UUID | None = None,
     ) -> None:
@@ -42,8 +48,9 @@ class ImageJobRunner:
         self._generator = generator
         self._storage = storage
         self._packs_dir = packs_dir
-        self._style = style
         self._pixel = pixel
+        #: Whose image preferences shape every request.
+        self._operator = operator
         self._poll_seconds = poll_seconds
         #: Work only this world's jobs (None: every world).
         self._world_id = world_id
@@ -51,19 +58,20 @@ class ImageJobRunner:
         self._stopping = asyncio.Event()
 
     async def run_once(self) -> bool:
-        """Work one pending job; False when there was none."""
+        """Work one pending job; False when there was none (or images are off)."""
         async with self._factory() as uow:
-            pending = await uow.assets.list_pending_jobs(1, self._world_id)
+            prefs = (await uow.settings.get_preferences(self._operator)).images
+            pending = await uow.assets.list_pending_jobs(1, self._world_id) if prefs.enabled else []
         if not pending:
             return False
-        await self._work(pending[0])
+        await self._work(pending[0], prefs)
         return True
 
-    async def _work(self, job: ImageJob) -> None:
+    async def _work(self, job: ImageJob, prefs: ImagePrefs) -> None:
         if await self._already_drawn(job):
             return
         try:
-            request = await self._request_for(job)
+            request = await self._request_for(job, prefs)
             image = await self._generator.generate(request)
         except (ImageGenerationError, ValueError, OSError, DomainError) as exc:
             _log.warning("image job %s failed: %s", job.id, exc)
@@ -97,18 +105,19 @@ class ImageJobRunner:
             await uow.commit()
         return True
 
-    async def _request_for(self, job: ImageJob) -> ImageRequest:
+    async def _request_for(self, job: ImageJob, prefs: ImagePrefs) -> ImageRequest:
         pack = load_style_pack(self._packs_dir, job.style_pack_version)
         async with self._factory() as uow:
             subject = await subject_text(uow, job)
         prompt, ratio = compose_prompt(pack, job.kind, subject)
-        return ImageRequest(
-            prompt=prompt,
-            ratio=ratio,
-            style=None if pack.pixel_art else self._style,
+        return image_request(
+            prompt,
+            ratio,
+            job.kind,
+            prefs,
             pixel=self._pixel if pack.pixel_art else None,
             # Stable per job: a retried job asks for the same picture.
-            seed=job.id.int % 2**31,
+            stable_seed=job.id.int % 2**31,
         )
 
     async def run_forever(self) -> None:

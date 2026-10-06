@@ -39,6 +39,8 @@ import type {
   ProviderProfileView,
   ProviderTestRequest,
   ProviderTestView,
+  PreferencesPatchRequest,
+  PreferencesView,
   RoleGrantView,
   RoleSelectRequest,
   SceneDetail,
@@ -563,6 +565,61 @@ export function testProvider(
   const body: ProviderTestRequest = { live: false }
   return apiFetch<ProviderTestView>(`/settings/providers/${connectionId}/test`, {
     ...opts,
+    method: 'POST',
+    body
+  })
+}
+
+/* Operator preferences and image generation ------------------------------ */
+
+export function getPreferences(opts: CallOptions = {}): Promise<PreferencesView> {
+  return apiFetch<PreferencesView>('/settings/preferences', { ...opts, method: 'GET' })
+}
+
+export function savePreferences(
+  body: PreferencesPatchRequest,
+  opts: CallOptions = {}
+): Promise<PreferencesView> {
+  // expected_version guards concurrent edits (VERSION_CONFLICT on mismatch).
+  return apiFetch<PreferencesView>('/settings/preferences', { ...opts, method: 'PATCH', body })
+}
+
+export interface ImageServiceView {
+  provider: string
+  configured: boolean
+  reachable: boolean
+  loaded: boolean
+  checkpoint: string | null
+  queued: number
+  checkpoints: string[]
+  styles: Array<{ id: string; label: string }>
+  ratios: string[]
+  steps: number[]
+  error: string | null
+}
+
+export interface ImagePreviewItem {
+  data_url: string
+  seed: number | null
+  width: number
+  height: number
+  seconds: number | null
+}
+
+export function getImageService(opts: CallOptions = {}): Promise<ImageServiceView> {
+  // Reads the image service's health and catalog; never draws anything.
+  return apiFetch<ImageServiceView>('/settings/images/service', { ...opts, method: 'GET' })
+}
+
+export function previewImages(
+  body: { prompt: string; ratio: string; count: number; images?: Record<string, unknown> },
+  opts: CallOptions = {}
+): Promise<{ images: ImagePreviewItem[] }> {
+  // Draws with unsaved choices; nothing is stored. ~12 s per image, more with a
+  // busy queue, Turbo off or a checkpoint switch (~35 s once), so wait long.
+  return apiFetch<{ images: ImagePreviewItem[] }>('/settings/images/preview', {
+    ...opts,
+    timeoutMs: opts.timeoutMs ?? 40_000 + body.count * 60_000,
     method: 'POST',
     body
   })

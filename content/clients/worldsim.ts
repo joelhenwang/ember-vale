@@ -959,6 +959,7 @@ export interface EditorDraftCompleteRequest {
 export interface PreferencesView {
   accessibility?: Record<string, unknown>;
   gameplay?: Record<string, unknown>;
+  images?: Record<string, unknown>;
   operator: string;
   profile?: Record<string, unknown>;
   version: number;
@@ -968,6 +969,7 @@ export interface PreferencesPatchRequest {
   accessibility?: Record<string, unknown> | null;
   expected_version: number;
   gameplay?: Record<string, unknown> | null;
+  images?: Record<string, unknown> | null;
   profile?: Record<string, unknown> | null;
 }
 

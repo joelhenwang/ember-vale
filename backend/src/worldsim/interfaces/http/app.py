@@ -20,7 +20,6 @@ from worldsim.application.autoplay import AutoplayRunner
 from worldsim.application.orchestration.stage1 import Stage1PhaseReport
 from worldsim.application.tasks.service import TaskService
 from worldsim.domain.errors import DomainError
-from worldsim.infrastructure.images.krea import KreaImageGenerator
 from worldsim.infrastructure.images.runner import ImageJobRunner
 from worldsim.infrastructure.local_models.indexer import MentionReader, RecallIndexer
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
@@ -39,6 +38,7 @@ from worldsim.interfaces.http.routes import (
     assets,
     autoplay,
     health,
+    image_settings,
     interventions,
     knowledge,
     library,
@@ -105,16 +105,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
 def _image_runner(state: AppState) -> ImageJobRunner | None:
     """The Krea job runner, when images are switched on."""
-    images = state.settings.images
-    if images.provider != "krea":
+    images, generator = state.settings.images, state.images()
+    if generator is None:
         return None
     content = state.seed_dir.parent.parent
     return ImageJobRunner(
         state.uow_factory(),
-        KreaImageGenerator(images.krea_base_url, timeout_s=images.krea_timeout_s),
+        generator,
         LocalStorage(content / "assets"),
         content / "visual-styles",
-        style=images.krea_style,
         pixel=images.krea_pixel,
         poll_seconds=images.poll_seconds,
     )
@@ -179,6 +178,7 @@ def create_app(
     app.include_router(progress.router, prefix="/api/v1")
     app.include_router(roles.router, prefix="/api/v1")
     app.include_router(settings_routes.router, prefix="/api/v1")
+    app.include_router(image_settings.router, prefix="/api/v1")
     app.include_router(stage2.router, prefix="/api/v1")
     app.include_router(macro.router, prefix="/api/v1")
     app.include_router(assets.router, prefix="/api/v1")

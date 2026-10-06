@@ -7,11 +7,13 @@
   append-only profile revisions, so stories keep the revision they pinned.
   Connection tests probe the SAVED connection's endpoint (reachability
   only; no credential is sent and no text is generated). Image generation
-  has no backend adapter in this build and says so. The other sidebar
-  entries remain honest placeholders.
+  edits the operator's image preferences (Krea 2 Studio fields) and can
+  paint previews; see ImageSettingsPanel. The other sidebar entries remain
+  honest placeholders.
 
-  State and requests live in useProviderSettings; validation and request
-  shaping in src/game/providerSettings.ts.
+  State and requests live in useProviderSettings / useImageSettings;
+  validation and request shaping in src/game/providerSettings.ts and
+  src/game/imageSettings.ts.
 -->
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -39,10 +41,13 @@ import {
 } from '../game/providerSettings'
 import type { Adapter } from '../game/providerSettings'
 import { NEW_CONNECTION, useProviderSettings } from '../composables/useProviderSettings'
+import { useImageSettings } from '../composables/useImageSettings'
+import ImageSettingsPanel from '../components/settings/ImageSettingsPanel.vue'
 
 /* sections ------------------------------------------------------------- */
 const sections = [
   { key: 'ai-connections', label: 'AI connections', icon: IconBranch },
+  { key: 'images', label: 'Image generation', icon: IconImage },
   { key: 'generation', label: 'Generation defaults', icon: IconGear },
   { key: 'appearance', label: 'Appearance & accessibility', icon: IconMonitor },
   { key: 'storage', label: 'Storage & saves', icon: IconDatabase },
@@ -61,14 +66,16 @@ const SECTION_BLURB: Record<string, string> = {
   advanced:
     'Prompt overrides, telemetry and offline models. Most players never visit. Screen pending.'
 }
-/** Placeholder copy for every section except the wired one. */
-const sectionBlurb = computed(() =>
-  active.value === 'ai-connections' ? '' : (SECTION_BLURB[active.value] ?? '')
-)
+/** Placeholder copy for the sections that have no screen yet. */
+const sectionBlurb = computed(() => SECTION_BLURB[active.value] ?? '')
 
 /* storyteller connections ------------------------------------------------ */
 const s = useProviderSettings()
-onMounted(() => void s.load())
+const img = useImageSettings()
+onMounted(() => {
+  void s.load()
+  void img.load()
+})
 
 const connectionOptions = computed(() => [
   ...s.connections.value.map((c) => ({ value: c.id, label: c.name })),
@@ -126,7 +133,8 @@ function testedAt(iso: string | undefined): string {
 const savedFlash = ref(false)
 let flashTimer: ReturnType<typeof setTimeout> | undefined
 async function save(): Promise<void> {
-  if (await s.save()) {
+  const ok = active.value === 'images' ? await img.save() : await s.save()
+  if (ok) {
     savedFlash.value = true
     clearTimeout(flashTimer)
     flashTimer = setTimeout(() => (savedFlash.value = false), 1400)
@@ -140,7 +148,7 @@ onBeforeUnmount(() => clearTimeout(flashTimer))
     <header class="settings__head">
       <PageIntro
         title="Settings"
-        sub="Storyteller connections you can pin when you begin a story. Stories keep the revision they started with." />
+        sub="The storyteller AI, how pictures are painted, and other choices for the whole game." />
       <span class="settings__rule" aria-hidden="true"></span>
     </header>
 
@@ -304,16 +312,24 @@ onBeforeUnmount(() => clearTimeout(flashTimer))
                 </p>
               </FieldRow>
             </ConnectionCard>
-
-            <ConnectionCard
-              class="settings__card"
-              :icon="IconImage"
-              title="Image generation"
-              status="unavailable"
-              caption="Scene and character art uses the bundled illustrations for now. Generating new
-                images needs a server-side image adapter, which this build does not include yet." />
           </div>
         </template>
+
+        <div
+          v-else-if="active === 'images'"
+          id="settings-panel-images"
+          role="tabpanel"
+          aria-labelledby="settings-tab-images">
+          <h2 class="settings__section">Image generation</h2>
+          <p class="settings__section-sub">
+            How portraits and place art are painted. Changes apply to the next picture, no restart
+            needed.
+          </p>
+          <p v-if="img.loading.value" class="ev-info settings__card">
+            <IconInfo :size="14" /> Loading image settings…
+          </p>
+          <ImageSettingsPanel v-else :s="img" />
+        </div>
 
         <!-- other sections: honest placeholders until their screens exist -->
         <section
@@ -342,6 +358,22 @@ onBeforeUnmount(() => clearTimeout(flashTimer))
           :disabled="!s.dirty.value || !s.valid.value || s.saving.value"
           @click="save">
           {{ s.saving.value ? 'Saving…' : 'Save connection' }}
+        </button>
+      </template>
+    </SaveBar>
+    <SaveBar
+      v-else-if="active === 'images'"
+      :dirty="img.dirty.value"
+      :saved="savedFlash"
+      secondary-label="Discard"
+      @secondary="img.discard()">
+      <template #end>
+        <button
+          type="button"
+          class="cta cta--foot"
+          :disabled="!img.dirty.value || !img.valid.value || img.saving.value"
+          @click="save">
+          {{ img.saving.value ? 'Saving…' : 'Save image settings' }}
         </button>
       </template>
     </SaveBar>

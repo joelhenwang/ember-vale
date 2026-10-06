@@ -25,6 +25,7 @@ from worldsim.application.tracing.service import TraceService
 from worldsim.application.transactions.canonical import CanonicalTransaction
 from worldsim.domain.rules.dnd import DataTables, load_data
 from worldsim.infrastructure.db.engine import create_engine
+from worldsim.infrastructure.images.krea import KreaImageGenerator
 from worldsim.infrastructure.local_models.client import LocalModelsClient
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
 from worldsim.infrastructure.model_gateway.profiles import (
@@ -70,6 +71,8 @@ class AppState:
     _local_models: LocalModelsClient | None = None
     #: Narration still running after its beat returned, per story.
     narration: BackgroundNarration | None = None
+    #: The image service client (Krea), when images are switched on.
+    _images: KreaImageGenerator | None = None
 
     def uow_factory(self) -> Callable[[], SqlAlchemyUnitOfWork]:
         engine = self.engine
@@ -136,6 +139,13 @@ class AppState:
             local = self.settings.local_models
             self._local_models = LocalModelsClient(local.url, timeout_s=local.timeout_s)
         return self._local_models
+
+    def images(self) -> KreaImageGenerator | None:
+        """The image service client, when WORLDSIM_IMAGES__PROVIDER=krea."""
+        images = self.settings.images
+        if self._images is None and images.provider == "krea" and images.krea_base_url:
+            self._images = KreaImageGenerator(images.krea_base_url, timeout_s=images.krea_timeout_s)
+        return self._images
 
 
 MIGRATIONS_DIR = Path("backend/migrations")

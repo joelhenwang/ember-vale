@@ -10,9 +10,10 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import StrEnum
+from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from worldsim.domain.time import utcnow
 
@@ -74,6 +75,51 @@ class LocalProfile(BaseModel):
     avatar: str = Field(default="J", max_length=8)
 
 
+#: Aspect ratios the image service draws (krea2-studio docs/API.md).
+IMAGE_RATIOS = ("1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4")
+ImageRatio = Literal["1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4"]
+#: Sampling steps the service accepts.
+IMAGE_STEPS = (4, 6, 8, 10, 12, 16, 20)
+
+
+class ImagePrefs(BaseModel):
+    """How portraits and place art are drawn (Krea 2 Studio fields).
+
+    Read by the image runner for every job, so a change applies to the
+    next picture without a restart. ``None`` leaves a field to the service
+    or, for ratios, to the style pack.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    #: Off leaves new jobs queued (nothing is drawn) until switched back on.
+    enabled: bool = True
+    #: Shared by everyone using the service: switching costs ~30-35 s once.
+    checkpoint: str | None = Field(default="krea2Anime_v15_bf16", max_length=128)
+    mode: Literal["draft", "fast", "full"] = "fast"
+    #: stable: one seed per subject (a retry redraws the same picture).
+    seed_mode: Literal["stable", "random", "fixed"] = "stable"
+    seed: int = Field(default=0, ge=0, le=2**31 - 1)
+    #: The detail LoRA (snofs); a strength other than 1.0 costs ~+4 s.
+    detail: bool = True
+    detail_scale: float = Field(default=1.0, ge=0.0, le=2.0)
+    #: The 4-step Turbo LoRA; off is ~2x slower (8 steps by default).
+    turbo: bool = True
+    steps: int | None = Field(default=None)
+    #: Style LoRA for painted packs; None draws without one.
+    style: str | None = Field(default="kreanima-lora-r32", max_length=128)
+    style_scale: float = Field(default=1.0, ge=0.0, le=2.0)
+    portrait_ratio: ImageRatio | None = None
+    place_ratio: ImageRatio | None = None
+
+    @field_validator("steps")
+    @classmethod
+    def _known_steps(cls, steps: int | None) -> int | None:
+        if steps is not None and steps not in IMAGE_STEPS:
+            raise ValueError(f"steps must be one of {IMAGE_STEPS}")
+        return steps
+
+
 class ApplicationPreferences(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -81,4 +127,5 @@ class ApplicationPreferences(BaseModel):
     gameplay: GameplayDefaults = Field(default_factory=GameplayDefaults)
     accessibility: AccessibilityPrefs = Field(default_factory=AccessibilityPrefs)
     profile: LocalProfile = Field(default_factory=LocalProfile)
+    images: ImagePrefs = Field(default_factory=ImagePrefs)
     version: int = Field(default=0, ge=0)

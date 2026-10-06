@@ -85,7 +85,14 @@ def test_krea_client_sends_fields_and_reads_headers() -> None:
 
     image = asyncio.run(run())
     assert seen == [
-        {"prompt": "a tavern", "ratio": "16:9", "style": "kreanima-lora-r32", "seed": 7}
+        {
+            "prompt": "a tavern",
+            "ratio": "16:9",
+            "mode": "fast",
+            "turbo": True,
+            "style": "kreanima-lora-r32",
+            "seed": 7,
+        }
     ]
     assert (image.width, image.height, image.seed, image.data) == (1360, 768, 7, PNG)
 
@@ -152,7 +159,6 @@ def _work(world_id: UUID, painter: _Painter, root: Path) -> list[ImageJob]:
                 painter,
                 LocalStorage(root),
                 PACKS,
-                style="kreanima-lora-r32",
                 world_id=world_id,
             )
             while await runner.run_once():

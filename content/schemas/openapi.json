@@ -2262,6 +2262,213 @@
         "title": "HookView",
         "type": "object"
       },
+      "ImagePreviewItem": {
+        "additionalProperties": false,
+        "properties": {
+          "data_url": {
+            "title": "Data Url",
+            "type": "string"
+          },
+          "height": {
+            "title": "Height",
+            "type": "integer"
+          },
+          "seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seconds"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "width": {
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "data_url",
+          "width",
+          "height"
+        ],
+        "title": "ImagePreviewItem",
+        "type": "object"
+      },
+      "ImagePreviewRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "default": 1,
+            "maximum": 4.0,
+            "minimum": 1.0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "images": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Images"
+          },
+          "prompt": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "ratio": {
+            "default": "1:1",
+            "title": "Ratio",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "title": "ImagePreviewRequest",
+        "type": "object"
+      },
+      "ImagePreviewView": {
+        "additionalProperties": false,
+        "properties": {
+          "images": {
+            "items": {
+              "$ref": "#/components/schemas/ImagePreviewItem"
+            },
+            "title": "Images",
+            "type": "array"
+          }
+        },
+        "required": [
+          "images"
+        ],
+        "title": "ImagePreviewView",
+        "type": "object"
+      },
+      "ImageServiceView": {
+        "additionalProperties": false,
+        "description": "The image service as the server sees it: configured, up, and its catalog.",
+        "properties": {
+          "checkpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkpoint"
+          },
+          "checkpoints": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Checkpoints",
+            "type": "array"
+          },
+          "configured": {
+            "title": "Configured",
+            "type": "boolean"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "loaded": {
+            "default": false,
+            "title": "Loaded",
+            "type": "boolean"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "queued": {
+            "default": 0,
+            "title": "Queued",
+            "type": "integer"
+          },
+          "ratios": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Ratios",
+            "type": "array"
+          },
+          "reachable": {
+            "default": false,
+            "title": "Reachable",
+            "type": "boolean"
+          },
+          "steps": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Steps",
+            "type": "array"
+          },
+          "styles": {
+            "items": {
+              "$ref": "#/components/schemas/ImageStyleView"
+            },
+            "title": "Styles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "provider",
+          "configured"
+        ],
+        "title": "ImageServiceView",
+        "type": "object"
+      },
+      "ImageStyleView": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "ImageStyleView",
+        "type": "object"
+      },
       "IntentView": {
         "additionalProperties": false,
         "properties": {
@@ -3922,6 +4129,18 @@
             ],
             "title": "Gameplay"
           },
+          "images": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Images"
+          },
           "profile": {
             "anyOf": [
               {
@@ -3952,6 +4171,11 @@
           "gameplay": {
             "additionalProperties": true,
             "title": "Gameplay",
+            "type": "object"
+          },
+          "images": {
+            "additionalProperties": true,
+            "title": "Images",
             "type": "object"
           },
           "operator": {
@@ -8770,6 +8994,68 @@
           }
         },
         "summary": "Clear Cache",
+        "tags": [
+          "settings"
+        ]
+      }
+    },
+    "/api/v1/settings/images/preview": {
+      "post": {
+        "operationId": "image_preview_api_v1_settings_images_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImagePreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImagePreviewView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Image Preview",
+        "tags": [
+          "settings"
+        ]
+      }
+    },
+    "/api/v1/settings/images/service": {
+      "get": {
+        "operationId": "image_service_api_v1_settings_images_service_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageServiceView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Image Service",
         "tags": [
           "settings"
         ]

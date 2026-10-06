@@ -22,6 +22,7 @@ from worldsim.domain.settings import (
     AdapterKind,
     ApplicationPreferences,
     GameplayDefaults,
+    ImagePrefs,
     LocalProfile,
     ProviderConnection,
     ProviderProfileRevision,
@@ -55,6 +56,7 @@ def _prefs_view(prefs: ApplicationPreferences) -> api.PreferencesView:
         gameplay=prefs.gameplay.model_dump(mode="json"),
         accessibility=prefs.accessibility.model_dump(mode="json"),
         profile=prefs.profile.model_dump(mode="json"),
+        images=prefs.images.model_dump(mode="json"),
         version=prefs.version,
     )
 
@@ -119,6 +121,7 @@ async def save_preferences(
                         ("gameplay", body.gameplay),
                         ("accessibility", body.accessibility),
                         ("profile", body.profile),
+                        ("images", body.images),
                     )
                     if value is not None
                 }
@@ -135,6 +138,8 @@ def _prefs_section(key: str, value: dict[str, Any]) -> Any:
         return GameplayDefaults.model_validate(value)
     if key == "accessibility":
         return AccessibilityPrefs.model_validate(value)
+    if key == "images":
+        return ImagePrefs.model_validate(value)
     return LocalProfile.model_validate(value)
 
 

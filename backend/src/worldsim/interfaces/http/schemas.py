@@ -1411,6 +1411,7 @@ class PreferencesView(BaseModel):
     gameplay: dict[str, Any] = Field(default_factory=dict)
     accessibility: dict[str, Any] = Field(default_factory=dict)
     profile: dict[str, Any] = Field(default_factory=dict)
+    images: dict[str, Any] = Field(default_factory=dict)
     version: int
 
 
@@ -1420,6 +1421,7 @@ class PreferencesPatchRequest(BaseModel):
     gameplay: dict[str, Any] | None = None
     accessibility: dict[str, Any] | None = None
     profile: dict[str, Any] | None = None
+    images: dict[str, Any] | None = None
     expected_version: int = Field(ge=0)
 
 
@@ -1596,3 +1598,55 @@ class AutoplayPlayRequest(BaseModel):
 
     delay_seconds: int = Field(default=0, ge=0, le=MAX_DELAY_SECONDS)
     beat_limit: int = Field(default=DEFAULT_BEAT_LIMIT, ge=1, le=MAX_BEAT_LIMIT)
+
+
+class ImageStyleView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    id: str
+    label: str
+
+
+class ImageServiceView(BaseModel):
+    """The image service as the server sees it: configured, up, and its catalog."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    provider: str
+    configured: bool
+    reachable: bool = False
+    loaded: bool = False
+    #: The checkpoint loaded right now (shared by every client).
+    checkpoint: str | None = None
+    queued: int = 0
+    checkpoints: list[str] = Field(default_factory=list)
+    styles: list[ImageStyleView] = Field(default_factory=list)
+    ratios: list[str] = Field(default_factory=list)
+    steps: list[int] = Field(default_factory=list)
+    error: str | None = None
+
+
+class ImagePreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    prompt: str = Field(min_length=1, max_length=2000)
+    ratio: str = "1:1"
+    count: int = Field(default=1, ge=1, le=4)
+    #: Unsaved image preferences to try; the saved ones when absent.
+    images: dict[str, Any] | None = None
+
+
+class ImagePreviewItem(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    data_url: str
+    seed: int | None = None
+    width: int
+    height: int
+    seconds: float | None = None
+
+
+class ImagePreviewView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    images: list[ImagePreviewItem]
