@@ -21,6 +21,7 @@ from worldsim.domain.effects import (
     AdvanceClockEffect,
     DeityOverrideEffect,
     DomainEffect,
+    HookSettledEffect,
     ItemFoundEffect,
     MoveEntityEffect,
     ResourceAdjustedEffect,
@@ -312,6 +313,13 @@ class CanonicalTransaction:
                         description=effect.description.strip() or None,
                     )
                 )
+            elif isinstance(effect, HookSettledEffect):
+                # Only an open rumour of this world; a closed one stays as it ended.
+                hook = await uow.narrative.get_hook(effect.hook_id)
+                if hook.world_id == request.world_id:
+                    await uow.narrative.close_hook(
+                        effect.hook_id, effect.ending.strip(), request.absolute_index
+                    )
             elif isinstance(effect, DeityOverrideEffect):
                 target = _primary_target(effect, request.world_id)
                 current = characters.get(target)

@@ -91,7 +91,7 @@ class EventEffectRow(Base):
         CheckConstraint(
             "effect_type IN ('advance_clock','move_entity','resource_adjusted',"
             "'record_observation','record_memory','skill_progress','deity_override',"
-            "'item_found')",
+            "'item_found','hook_settled')",
             name="ck_effect_type",
         ),
         CheckConstraint("schema_version >= 1", name="ck_effect_schema"),

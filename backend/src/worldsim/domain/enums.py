@@ -86,6 +86,7 @@ class EffectType(StrEnum):
     RECORD_MEMORY = "record_memory"
     SKILL_PROGRESS = "skill_progress"
     ITEM_FOUND = "item_found"
+    HOOK_SETTLED = "hook_settled"
     DEITY_OVERRIDE = "deity_override"
 
 

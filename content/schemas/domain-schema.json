@@ -347,6 +347,58 @@
           "title": "DeityOverrideEffect",
           "type": "object"
         },
+        "HookSettledEffect": {
+          "additionalProperties": false,
+          "description": "A successful attempt that plainly finishes an open rumour's matter.\n\nThe resolver may settle at most one per scene, only when an attempt\nsucceeded; the rumour closes with this ending and the scene that did it.",
+          "properties": {
+            "affected_ids": {
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Affected Ids",
+              "type": "array"
+            },
+            "effect_type": {
+              "const": "hook_settled",
+              "default": "hook_settled",
+              "title": "Effect Type",
+              "type": "string"
+            },
+            "ending": {
+              "maxLength": 240,
+              "minLength": 1,
+              "title": "Ending",
+              "type": "string"
+            },
+            "expected_versions": {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "title": "Expected Versions",
+              "type": "object"
+            },
+            "hook_id": {
+              "format": "uuid",
+              "title": "Hook Id",
+              "type": "string"
+            },
+            "schema_version": {
+              "const": 1,
+              "default": 1,
+              "title": "Schema Version",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "affected_ids",
+            "hook_id",
+            "ending"
+          ],
+          "title": "HookSettledEffect",
+          "type": "object"
+        },
         "ItemFoundEffect": {
           "additionalProperties": false,
           "description": "A thing a successful attempt got its actor: the pouch, a key, a coin.\n\nThe resolver may grant one per scene, only to the author of an attempt\nthat succeeded; it lands in that character's inventory.",
@@ -751,6 +803,7 @@
               "mapping": {
                 "advance_clock": "#/$defs/AdvanceClockEffect",
                 "deity_override": "#/$defs/DeityOverrideEffect",
+                "hook_settled": "#/$defs/HookSettledEffect",
                 "item_found": "#/$defs/ItemFoundEffect",
                 "move_entity": "#/$defs/MoveEntityEffect",
                 "record_memory": "#/$defs/MemoryRecordedEffect",
@@ -784,6 +837,9 @@
               },
               {
                 "$ref": "#/$defs/ItemFoundEffect"
+              },
+              {
+                "$ref": "#/$defs/HookSettledEffect"
               }
             ]
           },
@@ -1589,6 +1645,58 @@
           "title": "DeityOverrideEffect",
           "type": "object"
         },
+        "HookSettledEffect": {
+          "additionalProperties": false,
+          "description": "A successful attempt that plainly finishes an open rumour's matter.\n\nThe resolver may settle at most one per scene, only when an attempt\nsucceeded; the rumour closes with this ending and the scene that did it.",
+          "properties": {
+            "affected_ids": {
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Affected Ids",
+              "type": "array"
+            },
+            "effect_type": {
+              "const": "hook_settled",
+              "default": "hook_settled",
+              "title": "Effect Type",
+              "type": "string"
+            },
+            "ending": {
+              "maxLength": 240,
+              "minLength": 1,
+              "title": "Ending",
+              "type": "string"
+            },
+            "expected_versions": {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "title": "Expected Versions",
+              "type": "object"
+            },
+            "hook_id": {
+              "format": "uuid",
+              "title": "Hook Id",
+              "type": "string"
+            },
+            "schema_version": {
+              "const": 1,
+              "default": 1,
+              "title": "Schema Version",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "affected_ids",
+            "hook_id",
+            "ending"
+          ],
+          "title": "HookSettledEffect",
+          "type": "object"
+        },
         "ItemFoundEffect": {
           "additionalProperties": false,
           "description": "A thing a successful attempt got its actor: the pouch, a key, a coin.\n\nThe resolver may grant one per scene, only to the author of an attempt\nthat succeeded; it lands in that character's inventory.",
@@ -1966,6 +2074,7 @@
             "mapping": {
               "advance_clock": "#/$defs/AdvanceClockEffect",
               "deity_override": "#/$defs/DeityOverrideEffect",
+              "hook_settled": "#/$defs/HookSettledEffect",
               "item_found": "#/$defs/ItemFoundEffect",
               "move_entity": "#/$defs/MoveEntityEffect",
               "record_memory": "#/$defs/MemoryRecordedEffect",
@@ -1999,6 +2108,9 @@
             },
             {
               "$ref": "#/$defs/ItemFoundEffect"
+            },
+            {
+              "$ref": "#/$defs/HookSettledEffect"
             }
           ],
           "title": "Effect"
@@ -7867,6 +7979,58 @@
           "title": "DeityOverrideEffect",
           "type": "object"
         },
+        "HookSettledEffect": {
+          "additionalProperties": false,
+          "description": "A successful attempt that plainly finishes an open rumour's matter.\n\nThe resolver may settle at most one per scene, only when an attempt\nsucceeded; the rumour closes with this ending and the scene that did it.",
+          "properties": {
+            "affected_ids": {
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Affected Ids",
+              "type": "array"
+            },
+            "effect_type": {
+              "const": "hook_settled",
+              "default": "hook_settled",
+              "title": "Effect Type",
+              "type": "string"
+            },
+            "ending": {
+              "maxLength": 240,
+              "minLength": 1,
+              "title": "Ending",
+              "type": "string"
+            },
+            "expected_versions": {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "title": "Expected Versions",
+              "type": "object"
+            },
+            "hook_id": {
+              "format": "uuid",
+              "title": "Hook Id",
+              "type": "string"
+            },
+            "schema_version": {
+              "const": 1,
+              "default": 1,
+              "title": "Schema Version",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "affected_ids",
+            "hook_id",
+            "ending"
+          ],
+          "title": "HookSettledEffect",
+          "type": "object"
+        },
         "ItemFoundEffect": {
           "additionalProperties": false,
           "description": "A thing a successful attempt got its actor: the pouch, a key, a coin.\n\nThe resolver may grant one per scene, only to the author of an attempt\nthat succeeded; it lands in that character's inventory.",
@@ -8269,6 +8433,7 @@
               "mapping": {
                 "advance_clock": "#/$defs/AdvanceClockEffect",
                 "deity_override": "#/$defs/DeityOverrideEffect",
+                "hook_settled": "#/$defs/HookSettledEffect",
                 "item_found": "#/$defs/ItemFoundEffect",
                 "move_entity": "#/$defs/MoveEntityEffect",
                 "record_memory": "#/$defs/MemoryRecordedEffect",
@@ -8302,6 +8467,9 @@
               },
               {
                 "$ref": "#/$defs/ItemFoundEffect"
+              },
+              {
+                "$ref": "#/$defs/HookSettledEffect"
               }
             ]
           },
@@ -8512,6 +8680,58 @@
             "character_id"
           ],
           "title": "DeityOverrideEffect",
+          "type": "object"
+        },
+        "HookSettledEffect": {
+          "additionalProperties": false,
+          "description": "A successful attempt that plainly finishes an open rumour's matter.\n\nThe resolver may settle at most one per scene, only when an attempt\nsucceeded; the rumour closes with this ending and the scene that did it.",
+          "properties": {
+            "affected_ids": {
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Affected Ids",
+              "type": "array"
+            },
+            "effect_type": {
+              "const": "hook_settled",
+              "default": "hook_settled",
+              "title": "Effect Type",
+              "type": "string"
+            },
+            "ending": {
+              "maxLength": 240,
+              "minLength": 1,
+              "title": "Ending",
+              "type": "string"
+            },
+            "expected_versions": {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "title": "Expected Versions",
+              "type": "object"
+            },
+            "hook_id": {
+              "format": "uuid",
+              "title": "Hook Id",
+              "type": "string"
+            },
+            "schema_version": {
+              "const": 1,
+              "default": 1,
+              "title": "Schema Version",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "affected_ids",
+            "hook_id",
+            "ending"
+          ],
+          "title": "HookSettledEffect",
           "type": "object"
         },
         "ItemFoundEffect": {
@@ -8903,6 +9123,7 @@
               "mapping": {
                 "advance_clock": "#/$defs/AdvanceClockEffect",
                 "deity_override": "#/$defs/DeityOverrideEffect",
+                "hook_settled": "#/$defs/HookSettledEffect",
                 "item_found": "#/$defs/ItemFoundEffect",
                 "move_entity": "#/$defs/MoveEntityEffect",
                 "record_memory": "#/$defs/MemoryRecordedEffect",
@@ -8936,6 +9157,9 @@
               },
               {
                 "$ref": "#/$defs/ItemFoundEffect"
+              },
+              {
+                "$ref": "#/$defs/HookSettledEffect"
               }
             ]
           },
@@ -10960,6 +11184,7 @@
                 "mapping": {
                   "advance_clock": "#/$defs/AdvanceClockEffect",
                   "deity_override": "#/$defs/DeityOverrideEffect",
+                  "hook_settled": "#/$defs/HookSettledEffect",
                   "item_found": "#/$defs/ItemFoundEffect",
                   "move_entity": "#/$defs/MoveEntityEffect",
                   "record_memory": "#/$defs/MemoryRecordedEffect",
@@ -10993,6 +11218,9 @@
                 },
                 {
                   "$ref": "#/$defs/ItemFoundEffect"
+                },
+                {
+                  "$ref": "#/$defs/HookSettledEffect"
                 }
               ],
               "title": "Effect"
@@ -11133,6 +11361,58 @@
           ],
           "title": "EventType",
           "type": "string"
+        },
+        "HookSettledEffect": {
+          "additionalProperties": false,
+          "description": "A successful attempt that plainly finishes an open rumour's matter.\n\nThe resolver may settle at most one per scene, only when an attempt\nsucceeded; the rumour closes with this ending and the scene that did it.",
+          "properties": {
+            "affected_ids": {
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Affected Ids",
+              "type": "array"
+            },
+            "effect_type": {
+              "const": "hook_settled",
+              "default": "hook_settled",
+              "title": "Effect Type",
+              "type": "string"
+            },
+            "ending": {
+              "maxLength": 240,
+              "minLength": 1,
+              "title": "Ending",
+              "type": "string"
+            },
+            "expected_versions": {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "title": "Expected Versions",
+              "type": "object"
+            },
+            "hook_id": {
+              "format": "uuid",
+              "title": "Hook Id",
+              "type": "string"
+            },
+            "schema_version": {
+              "const": 1,
+              "default": 1,
+              "title": "Schema Version",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "affected_ids",
+            "hook_id",
+            "ending"
+          ],
+          "title": "HookSettledEffect",
+          "type": "object"
         },
         "ItemFoundEffect": {
           "additionalProperties": false,

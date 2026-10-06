@@ -59,7 +59,7 @@ from worldsim.domain.scenes import Intent, Resolution
 from worldsim.domain.world import Location, World
 
 #: Versioned resolver prompt file.
-RESOLVER_PROMPT_VERSION = "resolver.v3"
+RESOLVER_PROMPT_VERSION = "resolver.v4"
 
 _PROPOSAL_ADAPTER: TypeAdapter[ResolverProposal] = TypeAdapter(ResolverProposal)
 
@@ -75,6 +75,8 @@ class ResolveState(GraphState, total=False):
     surroundings: list[str]
     #: Item names each character carries, so a find is never a duplicate.
     carried: dict[str, list[str]]
+    #: Rumours still open, the only ones a scene may settle.
+    open_hook_ids: list[str]
     envelopes_json: list[dict[str, Any]]
     packet_json: dict[str, Any] | None
     system_prompt: str
@@ -203,6 +205,42 @@ def keep_fair_finds(
                 item["affected_ids"] = [owner]
                 kept.append(item)
                 granted = True
+            continue
+        kept.append(effect)
+    doc["effects"] = kept
+    return json.dumps(doc)
+
+
+def keep_fair_settles(raw: str, actors: frozenset[str], open_hooks: frozenset[str]) -> str:
+    """At most one hook_settled, for an open rumour, by an actor, on success.
+
+    Anything else is dropped rather than repaired: settling is a payoff the
+    rules can withhold without failing the scene.
+    """
+    try:
+        document: object = json.loads(raw)
+    except ValueError:
+        return raw
+    if not isinstance(document, dict):
+        return raw
+    doc = cast("dict[str, Any]", document)
+    effects = doc.get("effects")
+    if not isinstance(effects, list):
+        return raw
+    success = doc.get("outcome") == "success"
+    kept: list[Any] = []
+    settled = False
+    for effect in cast("list[Any]", effects):
+        if isinstance(effect, dict) and effect.get("effect_type") == "hook_settled":
+            settle = cast("dict[str, Any]", effect)
+            hook = str(settle.get("hook_id", ""))
+            ending = str(settle.get("ending", "")).strip()
+            who = [str(a) for a in cast("list[Any]", settle.get("affected_ids") or [])]
+            actor = next((a for a in who if a in actors), next(iter(sorted(actors)), ""))
+            if success and not settled and hook in open_hooks and ending and actor:
+                settle["affected_ids"] = [actor]
+                kept.append(settle)
+                settled = True
             continue
         kept.append(effect)
     doc["effects"] = kept
@@ -434,15 +472,23 @@ def build_resolve_graph(deps: ResolverGraphDeps) -> Any:
             try:
                 proposal = validate_lenient(
                     _PROPOSAL_ADAPTER,
-                    keep_fair_finds(
-                        fill_move_endpoints(
-                            fill_expected_versions(raw, _versions_of(state)), _moves_of(state)
+                    fill_expected_versions(
+                        keep_fair_settles(
+                            keep_fair_finds(
+                                fill_move_endpoints(
+                                    fill_expected_versions(raw, _versions_of(state)),
+                                    _moves_of(state),
+                                ),
+                                _finders_of(state),
+                                {
+                                    owner: frozenset(n.casefold() for n in names)
+                                    for owner, names in (state.get("carried") or {}).items()
+                                },
+                            ),
+                            _finders_of(state),
+                            frozenset(state.get("open_hook_ids") or []),
                         ),
-                        _finders_of(state),
-                        {
-                            owner: frozenset(n.casefold() for n in names)
-                            for owner, names in (state.get("carried") or {}).items()
-                        },
+                        _versions_of(state),
                     ),
                 )
             except ValidationError as exc:

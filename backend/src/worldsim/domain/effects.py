@@ -113,6 +113,18 @@ class ItemFoundEffect(EffectBase):
     description: str = Field(default="", max_length=240)
 
 
+class HookSettledEffect(EffectBase):
+    """A successful attempt that plainly finishes an open rumour's matter.
+
+    The resolver may settle at most one per scene, only when an attempt
+    succeeded; the rumour closes with this ending and the scene that did it.
+    """
+
+    effect_type: Literal[EffectType.HOOK_SETTLED] = EffectType.HOOK_SETTLED
+    hook_id: UUID
+    ending: str = Field(min_length=1, max_length=240)
+
+
 DomainEffect = Annotated[
     AdvanceClockEffect
     | MoveEntityEffect
@@ -121,6 +133,7 @@ DomainEffect = Annotated[
     | MemoryRecordedEffect
     | SkillProgressEffect
     | DeityOverrideEffect
-    | ItemFoundEffect,
+    | ItemFoundEffect
+    | HookSettledEffect,
     Field(discriminator="effect_type"),
 ]

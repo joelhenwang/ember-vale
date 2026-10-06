@@ -413,7 +413,7 @@ def scene_surroundings(
         )
     for hook in hooks:
         if hook.status != NarrativeStatus.CLOSED:
-            notes.append(f"Word around the vale: {hook.title}. {hook.purpose}".strip())
+            notes.append(f"Open rumour (hook_id {hook.id}): {hook.title}. {hook.purpose}".strip())
     return notes
 
 
@@ -3222,6 +3222,7 @@ class Stage1Orchestrator:
                 "locations_json": [loc.model_dump(mode="json") for loc in locations],
                 "expected_versions": live_versions,
                 "surroundings": notes,
+                "open_hook_ids": [str(h.id) for h in hooks if h.status != NarrativeStatus.CLOSED],
                 "carried": {
                     str(c.id): [item_label(i) for i in items if i.owner_id == c.id]
                     for c in characters

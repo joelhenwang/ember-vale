@@ -460,7 +460,8 @@ def score(
         (world,),
     ).fetchone()[0]
     hooks = conn.execute(
-        "select title, requested_powers from narrative_hook where world_id = %s", (world,)
+        "select title, requested_powers, status, ending from narrative_hook where world_id = %s",
+        (world,),
     ).fetchall()
     all_places = [
         row[0] for row in conn.execute("select name from location where world_id = %s", (world,))
@@ -497,7 +498,8 @@ def score(
         "moves_tried": moves_tried,
         "moves_done": moves_done,
         "interact_success": interact_success,
-        "hooks": [{"title": t, "powers": p} for t, p in hooks],
+        "hooks": [{"title": t, "powers": p, "status": st, "ending": e} for t, p, st, e in hooks],
+        "settled": sum(1 for _t, _p, st, _e in hooks if st == "closed"),
         "final_places": final_places,
         "all_places": all_places,
         "items": items,
@@ -521,8 +523,8 @@ def next_out_dir() -> Path:
 def report(out: Path, meta: dict[str, Any], results: dict[str, Any]) -> str:
     rows = [
         "| Scenario | Goal | Beats | s/beat | Repairs | Repeats | Moves done/tried "
-        "| Talk streak | Idle streak | ~$ |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+        "| Talk streak | Idle streak | Settled | ~$ |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for key, r in results.items():
         s = r["score"]
@@ -532,10 +534,11 @@ def report(out: Path, meta: dict[str, Any], results: dict[str, Any]) -> str:
             f"| {len(secs)} | {sum(secs) / len(secs) if secs else 0:.0f} "
             f"| {s['repairs']}/{s['calls']} | {s['repetition_rate']:.0%} "
             f"| {s['moves_done']}/{s['moves_tried']} | {s['longest_talk_streak']} "
-            f"| {s['longest_idle_streak']} | {s['est_usd']:.3f} |"
+            f"| {s['longest_idle_streak']} | {s.get('settled', 0)}/{len(s['hooks'])} "
+            f"| {s['est_usd']:.3f} |"
         )
         if r.get("error"):
-            rows.append(f"| {key} error | {r['error']} | | | | | | | | |")
+            rows.append(f"| {key} error | {r['error']} | | | | | | | | | |")
     table = "\n".join(rows)
     text = (
         f"# Story scorecard {out.name}\n\n"
