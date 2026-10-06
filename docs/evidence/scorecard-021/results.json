@@ -1,0 +1,85 @@
+{
+  "meta": {
+    "commit": "150da3d",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T07:29:15+00:00",
+    "wall_seconds": 174,
+    "est_usd_total": 0.0151797105,
+    "scenarios": [
+      "named_place"
+    ]
+  },
+  "results": {
+    "named_place": {
+      "ids": {
+        "world": "c80b5348-f73e-4090-9fde-92619a074952",
+        "place:Hearth": "dec1bc5e-9991-48e7-9f84-7046a7f2c388",
+        "place:Market": "a90ed11e-5b2d-45a1-8fca-152b0886bf41",
+        "wren": "63c79d5e-0078-4191-bf77-1871c9b8d50a",
+        "ash": "3d0072cd-a4a1-401c-92eb-cccc3cb9f8cd"
+      },
+      "beat_seconds": [
+        21.57799999997951,
+        6.422000000020489,
+        5.577999999979511,
+        23.015999999945052,
+        15.5,
+        20.593999999924563,
+        33.81200000003446,
+        46.67200000002049
+      ],
+      "error": null,
+      "score": {
+        "calls": 62,
+        "failed_calls": 0,
+        "repairs": 3,
+        "repairs_by_role": {
+          "director": 1,
+          "resolver": 1,
+          "narrator": 1
+        },
+        "repair_rate": 0.04838709677419355,
+        "est_usd": 0.0151797105,
+        "action_mix": {
+          "communicate": 6,
+          "move": 5,
+          "observe": 2,
+          "wait": 4,
+          "interact": 3
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 1,
+        "moves_tried": 5,
+        "moves_done": 5,
+        "interact_success": 3,
+        "hooks": [
+          {
+            "title": "The Mill Road Is Blocked",
+            "powers": "new_location"
+          },
+          {
+            "title": "A Path Through the Woods",
+            "powers": "new_location,spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Old Mill",
+          "Old Bram": "Woods"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Old Mill",
+          "Woods"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "added Old Mill; there at the end: Ash"
+      }
+    }
+  }
+}

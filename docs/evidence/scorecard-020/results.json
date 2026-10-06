@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "commit": "150da3d",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T07:26:17+00:00",
+    "wall_seconds": 112,
+    "est_usd_total": 0.0158322865,
+    "scenarios": [
+      "named_place"
+    ]
+  },
+  "results": {
+    "named_place": {
+      "ids": {
+        "world": "0215423f-71d5-4f2c-b267-f0ce7dea481b",
+        "place:Hearth": "9f132779-3396-45d9-87a7-e241d177fab9",
+        "place:Market": "69a00ad9-e61b-4bd8-ab77-25215601f2b6",
+        "wren": "e29af99d-a460-4e1d-b053-80dd9a4ea29c",
+        "ash": "e1849dc9-121e-44ca-9818-84ffa29fe325"
+      },
+      "beat_seconds": [
+        23.828000000095926,
+        5.312000000034459,
+        11.827999999979511,
+        12.922000000020489,
+        13.609000000054948,
+        10.65700000000652,
+        14.608999999938533,
+        18.89000000001397
+      ],
+      "error": null,
+      "score": {
+        "calls": 55,
+        "failed_calls": 0,
+        "repairs": 1,
+        "repairs_by_role": {
+          "narrator": 1
+        },
+        "repair_rate": 0.01818181818181818,
+        "est_usd": 0.0158322865,
+        "action_mix": {
+          "communicate": 7,
+          "move": 4,
+          "observe": 4,
+          "interact": 1,
+          "wait": 1
+        },
+        "repetition_rate": 0.14285714285714285,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 2,
+        "moves_tried": 4,
+        "moves_done": 4,
+        "interact_success": 1,
+        "hooks": [
+          {
+            "title": "A message from the mill",
+            "powers": "new_location"
+          },
+          {
+            "title": "The jammed wheel hides something",
+            "powers": ""
+          },
+          {
+            "title": "Uncle Rowan's empty stall",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Marta the herb-seller": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Old Mill"
+        ],
+        "items": {},
+        "goal_passed": false,
+        "goal_detail": "added Old Mill; there at the end: nobody"
+      }
+    }
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "commit": "150da3d",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T07:24:19+00:00",
+    "wall_seconds": 135,
+    "est_usd_total": 0.018909022900000003,
+    "scenarios": [
+      "named_place"
+    ]
+  },
+  "results": {
+    "named_place": {
+      "ids": {
+        "world": "f59d8946-8fde-42c4-82a6-4371cea0771c",
+        "place:Hearth": "08485604-0a72-4228-a971-671af3189a47",
+        "place:Market": "7fb2cfe8-9c47-45ce-87a8-43271b4eeda8",
+        "wren": "fcd684c9-94a6-4881-81d7-0bb6a13303cf",
+        "ash": "9edc3ec9-694f-46b8-bf50-3fd20b948b80"
+      },
+      "beat_seconds": [
+        14.702999999979511,
+        4.766000000061467,
+        7.969000000040978,
+        11.265999999945052,
+        16.95400000002701,
+        41.82799999997951,
+        21.93700000003446,
+        14.687000000034459
+      ],
+      "error": null,
+      "score": {
+        "calls": 69,
+        "failed_calls": 0,
+        "repairs": 1,
+        "repairs_by_role": {
+          "reaction": 1
+        },
+        "repair_rate": 0.014492753623188406,
+        "est_usd": 0.018909022900000003,
+        "action_mix": {
+          "observe": 2,
+          "move": 6,
+          "wait": 4,
+          "communicate": 8
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 1,
+        "moves_tried": 6,
+        "moves_done": 5,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "The Way to the Old Mill",
+            "powers": "new_location"
+          },
+          {
+            "title": "A stranger asks for the mill",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Old Mill",
+          "Ash": "Old Mill",
+          "Maren": "Old Mill"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Old Mill"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "added Old Mill; there at the end: Wren, Ash, Maren"
+      }
+    }
+  }
+}
