@@ -359,6 +359,11 @@ export function doPrompt(rumour: string | null, nearby: string[]): string {
   return 'What do you do? — search the stalls, mend the cart, follow the stranger…'
 }
 
+/** A title mid-sentence: "A stray dog" -> "a stray dog" (names keep their capitals). */
+export function inSentence(title: string): string {
+  return /^(A|An|The) /.test(title) ? title.charAt(0).toLowerCase() + title.slice(1) : title
+}
+
 /** A ready-made next move grounded in a rumour the player has heard. */
 export interface LeadChip {
   key: string
@@ -383,13 +388,17 @@ export function leadChips(
     chips.push({
       key: `ask:${someone.character_id}:${lead.title}`,
       label: `Ask ${someone.name} about “${lead.title}”`,
-      intent: sayIntent(me, someone.character_id, `What do you know about ${lead.title}?`)
+      intent: sayIntent(
+        me,
+        someone.character_id,
+        `What do you know about ${inSentence(lead.title)}?`
+      )
     })
   }
   chips.push({
     key: `lead:${lead.title}`,
     label: `Look into “${lead.title}”`,
-    intent: doIntent(me, `look into ${lead.title}`)
+    intent: doIntent(me, `look into ${inSentence(lead.title)}`)
   })
   return chips
 }

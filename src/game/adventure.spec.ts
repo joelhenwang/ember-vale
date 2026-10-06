@@ -6,6 +6,7 @@ import {
   cardDrives,
   isFresh,
   leadChips,
+  inSentence,
   doIntent,
   doPrompt,
   firstSentence,
@@ -293,7 +294,11 @@ describe('lead chips', () => {
       'Look into “The Old Mill”'
     ])
     expect(chips[0].intent).toMatchObject({ family: 'communicate', target_character_id: 'ash' })
-    expect(chips[1].intent).toMatchObject({ family: 'interact', attempt: 'look into The Old Mill' })
+    expect(chips[1].intent).toMatchObject({ family: 'interact', attempt: 'look into the Old Mill' })
     expect(leadChips(ME, [], [])).toEqual([])
+    const article = leadChips(ME, [{ title: 'A stray dog' }], [])
+    expect(article[0].intent).toMatchObject({ attempt: 'look into a stray dog' })
+    expect(inSentence('The Old Mill')).toBe('the Old Mill')
+    expect(inSentence('Old Mill')).toBe('Old Mill')
   })
 })
