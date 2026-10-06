@@ -403,6 +403,13 @@ def scene_surroundings(
     return notes
 
 
+#: Character budgets per context section for decisions. The 2,000-char
+#: default dropped 15-24 observations per call by beat 12 of a play
+#: session (manifests), losing what was said a few beats earlier;
+#: continuity sections get room, the rest keep the default.
+DECISION_SECTION_BUDGETS = {"observations": 6000, "memories": 3000, "lore": 3000, "goals": 2500}
+
+
 #: How long (in phases, ten a day) characters still talk of a settled rumour.
 SETTLED_MEMORY_PHASES = 20
 
@@ -2475,6 +2482,7 @@ class Stage1Orchestrator:
             phase_run_id=run_id,
             snapshot_id=snapshot_id,
             purpose="decide next intent",
+            section_budgets=DECISION_SECTION_BUDGETS,
         )
         envelope, included, excluded = assemble(request, candidates)
         return envelope, included, excluded
