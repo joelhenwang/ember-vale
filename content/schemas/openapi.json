@@ -2846,6 +2846,61 @@
         "title": "JobView",
         "type": "object"
       },
+      "JourneyView": {
+        "additionalProperties": false,
+        "description": "The player character's journey so far and the renown it has earned.",
+        "properties": {
+          "deeds": {
+            "title": "Deeds",
+            "type": "integer"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "level_floor": {
+            "title": "Level Floor",
+            "type": "integer"
+          },
+          "next_level_at": {
+            "title": "Next Level At",
+            "type": "integer"
+          },
+          "people": {
+            "title": "People",
+            "type": "integer"
+          },
+          "places": {
+            "title": "Places",
+            "type": "integer"
+          },
+          "renown": {
+            "title": "Renown",
+            "type": "integer"
+          },
+          "settled": {
+            "title": "Settled",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "places",
+          "people",
+          "deeds",
+          "settled",
+          "renown",
+          "level",
+          "title",
+          "level_floor",
+          "next_level_at"
+        ],
+        "title": "JourneyView",
+        "type": "object"
+      },
       "LineageLinkView": {
         "additionalProperties": false,
         "properties": {
@@ -3958,6 +4013,16 @@
           "day": {
             "title": "Day",
             "type": "integer"
+          },
+          "journey": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JourneyView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "latest_run_id": {
             "anyOf": [

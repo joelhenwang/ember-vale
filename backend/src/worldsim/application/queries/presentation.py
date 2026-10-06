@@ -18,6 +18,7 @@ from worldsim.application.capabilities import capabilities_for, is_omniscient
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.activities import Activity
 from worldsim.domain.enums import NarrativeStatus, UserRole, Visibility
+from worldsim.domain.journey import Journey, level_floor, level_for, title_for
 from worldsim.domain.narrative import NarrativeHook
 from worldsim.domain.time import absolute_index
 from worldsim.domain.world import Location
@@ -77,6 +78,11 @@ async def presentation(
             if maps:
                 manifest = manifest.model_copy(update={"asset_id": maps[0].id})
     recent = await uow.events.list_range(world_id, max(0, high - 1), 1)
+    journey = (
+        await _journey(uow, world_id, viewer, hooks)
+        if viewer is not None and not omniscient
+        else None
+    )
     return api.PresentationResponse(
         world_id=world_id,
         day=world.day,
@@ -119,6 +125,34 @@ async def presentation(
             if hook.status == NarrativeStatus.CLOSED
             and (omniscient or not hook.participant_ids or viewer in hook.participant_ids)
         ][:4],
+        journey=journey,
+    )
+
+
+async def _journey(
+    uow: UnitOfWork, world_id: UUID, viewer: UUID, hooks: list[NarrativeHook]
+) -> api.JourneyView:
+    """The player's journey from the record, with renown and level."""
+    places, people, deeds = await uow.scenes.journey_counts(world_id, viewer)
+    settled = sum(
+        1
+        for hook in hooks
+        if hook.status == NarrativeStatus.CLOSED
+        and (not hook.participant_ids or viewer in hook.participant_ids)
+    )
+    # The place you start in counts as seen, even before any scene.
+    so_far = Journey(places=max(places, 1), people=people, deeds=deeds, settled=settled)
+    level = level_for(so_far.renown)
+    return api.JourneyView(
+        places=so_far.places,
+        people=so_far.people,
+        deeds=so_far.deeds,
+        settled=so_far.settled,
+        renown=so_far.renown,
+        level=level,
+        title=title_for(level),
+        level_floor=level_floor(level),
+        next_level_at=level_floor(level + 1),
     )
 
 

@@ -10,7 +10,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from pydantic import TypeAdapter
-from sqlalchemy import select, update
+from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from worldsim.domain.commands import ActionIntent
@@ -152,6 +152,41 @@ class SqlAlchemySceneRepository:
             .all()
         )
         return list(rows)
+
+    async def journey_counts(self, world_id: UUID, character_id: UUID) -> tuple[int, int, int]:
+        """(places, people, deeds) from the scenes this character took part in.
+
+        Deeds are their own physical attempts (interact, take, transfer,
+        appeal, spar) the resolver judged a success or partial success.
+        """
+        row = (
+            await self._session.execute(
+                text(
+                    """
+                    with mine as (
+                        select s.id, s.event_id from scene s
+                        join scene_participant p on p.scene_id = s.id
+                        where s.world_id = :w and p.character_id = :c
+                    )
+                    select
+                      (select count(distinct e.summary->>'location_id') from mine
+                         join world_event e on e.id = mine.event_id
+                         where e.summary->>'location_id' is not null),
+                      (select count(distinct p2.character_id) from mine
+                         join scene_participant p2 on p2.scene_id = mine.id
+                         where p2.character_id <> :c),
+                      (select count(distinct a.scene_id) from attempt a
+                         join character_intent i on i.id = a.intent_id
+                         join resolution r on r.scene_id = a.scene_id
+                         where i.world_id = :w and i.author_character_id = :c
+                           and i.family in ('interact','take','transfer','appeal','spar')
+                           and r.outcome in ('success','partial'))
+                    """
+                ),
+                {"w": world_id, "c": character_id},
+            )
+        ).one()
+        return int(row[0] or 0), int(row[1] or 0), int(row[2] or 0)
 
     async def save_narration(self, beat: NarrationBeat) -> None:
         self._session.add(

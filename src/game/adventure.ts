@@ -225,6 +225,11 @@ export function sceneFocus(anchor: { x: number; y: number } | null): Record<stri
   }
 }
 
+/** How far through the current level, 0..1. */
+export function levelProgress(renown: number, floor: number, next: number): number {
+  return next > floor ? Math.min(1, Math.max(0, (renown - floor) / (next - floor))) : 1
+}
+
 /** Fraction for a stat bar; stats run 0..100. */
 export function barFraction(value: unknown): number {
   const n = typeof value === 'number' && Number.isFinite(value) ? value : 0
@@ -261,9 +266,13 @@ export interface Glimpse {
   rumours: string[]
   /** Rumour titles settled (closed with an ending). */
   settled?: string[]
+  /** Renown and its level title. */
+  renown?: number
+  level?: number
+  title?: string
 }
 
-export type ChangeTone = 'gain' | 'loss' | 'news'
+export type ChangeTone = 'gain' | 'loss' | 'news' | 'level'
 
 export interface TurnChange {
   text: string
@@ -317,6 +326,12 @@ export function turnChanges(before: Glimpse, after: Glimpse): TurnChange[] {
   }
   for (const title of after.rumours) {
     if (!before.rumours.includes(title)) out.push({ text: `New rumour: ${title}`, tone: 'news' })
+  }
+  if (before.renown !== undefined && after.renown !== undefined && after.renown > before.renown) {
+    out.push({ text: `+${after.renown - before.renown} renown`, tone: 'gain' })
+  }
+  if ((after.level ?? 0) > (before.level ?? after.level ?? 0)) {
+    out.push({ text: `Now known as: ${after.title ?? `level ${after.level}`}`, tone: 'level' })
   }
   return out
 }

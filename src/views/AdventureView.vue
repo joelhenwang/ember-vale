@@ -19,6 +19,7 @@ import {
   cardDrives,
   doIntent,
   isFresh,
+  levelProgress,
   prologue,
   trimPlaceLead,
   turnChanges,
@@ -59,7 +60,10 @@ function glimpse(): Glimpse {
     ),
     present: adv.present.value.map((c) => c.name),
     rumours: (adv.presentation.value?.rumours ?? []).map((r) => r.title),
-    settled: (adv.presentation.value?.settled ?? []).map((r) => r.title)
+    settled: (adv.presentation.value?.settled ?? []).map((r) => r.title),
+    renown: journey.value?.renown,
+    level: journey.value?.level,
+    title: journey.value?.title
   }
 }
 /** Run one turn: remember the world as it was, then say what changed. */
@@ -117,6 +121,12 @@ const intro = computed(() => {
 const drives = computed(() => cardDrives(card.value?.personality))
 const rumours = computed(() => adv.presentation.value?.rumours ?? [])
 const settled = computed(() => adv.presentation.value?.settled ?? [])
+const journey = computed(() => adv.presentation.value?.journey ?? null)
+const levelFill = computed(() =>
+  journey.value
+    ? levelProgress(journey.value.renown, journey.value.level_floor, journey.value.next_level_at)
+    : 0
+)
 const nowIndex = computed(() => adv.presentation.value?.absolute_index ?? 0)
 const elapsed = computed(() =>
   startedAt.value ? Math.max(0, Math.round((now.value - startedAt.value) / 1000)) : 0
@@ -482,6 +492,20 @@ onMounted(() => {
               <p v-if="card?.pronouns">{{ card.pronouns }}</p>
               <p>{{ adv.here.value?.name ?? 'On the road' }}</p>
             </div>
+          </div>
+          <div v-if="journey" class="renown" :title="`${journey.renown} renown`">
+            <div class="renown__head">
+              <b>{{ journey.title }}</b>
+              <span>Level {{ journey.level }}</span>
+            </div>
+            <div class="renown__bar"><i :style="{ width: `${levelFill * 100}%` }" /></div>
+            <p class="renown__counts">
+              {{ journey.places }} place{{ journey.places === 1 ? '' : 's' }} · {{ journey.people }}
+              {{ journey.people === 1 ? 'person' : 'people' }} met · {{ journey.deeds }} deed{{
+                journey.deeds === 1 ? '' : 's'
+              }}
+              · {{ journey.settled }} settled
+            </p>
           </div>
           <div class="bars">
             <div class="bar bar--stamina">
@@ -874,6 +898,19 @@ button.who:hover > span {
   border-color: #d7a99c;
   background: #f8ece6;
 }
+.badge--level {
+  color: #fff8e6;
+  border-color: #b8913f;
+  background: linear-gradient(90deg, #a07a2f, #d0a64e);
+  font-weight: 600;
+  box-shadow: 0 0 0 0 rgba(208, 166, 78, 0.6);
+  animation: levelup 1.6s ease-out 2;
+}
+@keyframes levelup {
+  70% {
+    box-shadow: 0 0 0 10px rgba(208, 166, 78, 0);
+  }
+}
 .badge--news {
   color: var(--gold);
   border-color: var(--gold-soft);
@@ -1088,6 +1125,40 @@ button.who:hover > span {
 .sheet__head p {
   color: var(--muted);
   font-size: 14px;
+}
+.renown {
+  margin-top: 12px;
+}
+.renown__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 14px;
+}
+.renown__head b {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--gold);
+}
+.renown__head span {
+  color: var(--muted);
+}
+.renown__bar {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--line-soft);
+  overflow: hidden;
+  margin: 4px 0 3px;
+}
+.renown__bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #b8913f, #e4bf68);
+  transition: width 1s ease;
+}
+.renown__counts {
+  font-size: 12.5px;
+  color: var(--muted);
 }
 .bars {
   margin: 14px 0 6px;

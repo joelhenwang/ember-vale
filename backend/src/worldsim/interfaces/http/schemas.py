@@ -978,6 +978,22 @@ class RumourView(BaseModel):
     since_index: int = 0
 
 
+class JourneyView(BaseModel):
+    """The player character's journey so far and the renown it has earned."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    places: int
+    people: int
+    deeds: int
+    settled: int
+    renown: int
+    level: int
+    title: str
+    level_floor: int
+    next_level_at: int
+
+
 class PresentationResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -999,6 +1015,8 @@ class PresentationResponse(BaseModel):
     rumours: list[RumourView] = Field(default_factory=list)
     #: Recently settled ones, with their endings as purpose.
     settled: list[RumourView] = Field(default_factory=list)
+    #: The viewing player's journey (players only).
+    journey: JourneyView | None = None
 
 
 class JobRequest(BaseModel):

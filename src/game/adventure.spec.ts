@@ -15,6 +15,7 @@ import {
   suggestionIntent,
   trimPlaceLead,
   turnChanges,
+  levelProgress,
   type Glimpse
 } from './adventure'
 
@@ -249,6 +250,18 @@ describe('turn feedback', () => {
       at({ rumours: [], settled: ['A Market-stall Puzzle'] })
     )
     expect(changes).toEqual([{ text: 'Settled: A Market-stall Puzzle', tone: 'gain' }])
+  })
+
+  it('marks renown gained and a new level', () => {
+    const changes = turnChanges(
+      at({ renown: 8, level: 1, title: 'Newcomer' }),
+      at({ renown: 11, level: 2, title: 'Familiar face' })
+    )
+    expect(changes).toEqual([
+      { text: '+3 renown', tone: 'gain' },
+      { text: 'Now known as: Familiar face', tone: 'level' }
+    ])
+    expect(levelProgress(11, 10, 30)).toBeCloseTo(0.05)
   })
 
   it('is quiet when nothing changed', () => {

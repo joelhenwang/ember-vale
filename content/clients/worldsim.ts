@@ -641,12 +641,25 @@ export interface RumourView {
   title: string;
 }
 
+export interface JourneyView {
+  deeds: number;
+  level: number;
+  level_floor: number;
+  next_level_at: number;
+  people: number;
+  places: number;
+  renown: number;
+  settled: number;
+  title: string;
+}
+
 export interface PresentationResponse {
   absolute_index: number;
   activities?: ActivityView[];
   capabilities: PresentationCapabilities;
   cast?: CastEntry[];
   day: number;
+  journey?: JourneyView | null;
   latest_run_id?: string | null;
   manifest: MapManifestView;
   open_run_id?: string | null;
