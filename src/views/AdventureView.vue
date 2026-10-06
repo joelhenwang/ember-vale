@@ -4,7 +4,7 @@
  * who is with you, read the story as it happens, and act in your own
  * words; every action runs one beat in which the whole world answers.
  */
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import WorldMap from '../components/observatory/WorldMap.vue'
 import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
@@ -274,13 +274,17 @@ watch(canSay, (yes) => {
   if (!yes && mode.value === 'say') mode.value = 'do'
 })
 
+let clock: ReturnType<typeof setInterval> | undefined
+onUnmounted(() => {
+  if (clock !== undefined) clearInterval(clock)
+})
 onMounted(() => {
   void adv.load().then(() => {
     // Portraits load after the first layout and push the end out of view.
     void scrollToEnd()
     setTimeout(() => void scrollToEnd(), 600)
   })
-  setInterval(() => (now.value = Date.now()), 1000)
+  clock = setInterval(() => (now.value = Date.now()), 1000)
 })
 </script>
 
