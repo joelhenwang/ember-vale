@@ -177,7 +177,8 @@ class SqlAlchemySceneRepository:
                       (select count(distinct p2.character_id) from mine
                          join scene_participant p2 on p2.scene_id = mine.id
                          where p2.character_id <> :c),
-                      (select count(distinct coalesce(lower(i.intent->>'attempt'), a.scene_id::text))
+                      (select count(distinct coalesce(
+                           lower(i.intent->'action'->>'attempt'), a.scene_id::text))
                          from attempt a
                          join character_intent i on i.id = a.intent_id
                          join resolution r on r.scene_id = a.scene_id

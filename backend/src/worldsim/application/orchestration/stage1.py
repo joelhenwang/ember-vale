@@ -927,9 +927,14 @@ class Stage1Orchestrator:
         )
         await self._set_state(run_id, PhaseRunState.SCENES_ASSEMBLED)
         outcomes: list[SceneOutcome] = []
+        budgets: list[bool] = []
         with _timed(timings, "scenes"):
+            # Scenes commit one after another (event sequence numbers and
+            # version checks are ordered); their narration, written after
+            # the commits and reading only, then runs for all scenes at once.
             for scene in scenes:
                 over_budget = await self._over_budget(world_id, run_id)
+                budgets.append(over_budget)
                 outcomes.append(
                     await self._commit_scene(
                         world_id,
@@ -943,8 +948,24 @@ class Stage1Orchestrator:
                         over_budget,
                         runtime=runtime,
                         timings=timings,
+                        narrate=False,
                     )
                 )
+            self._fire("before_narration")
+            # Party scenes narrate one at a time: their narration applies
+            # combat and recruit tags (monsters, hit points), which is not
+            # safe to run side by side.
+            async with self._factory() as uow:
+                party = bool(await uow.party.list_for_world(world_id))
+            jobs = [
+                self._narrate_outcome(world_id, run_id, scene, outcome, quiet, budget, runtime)
+                for scene, outcome, budget in zip(scenes, outcomes, budgets, strict=True)
+            ]
+            with _timed(timings, "narrate"):
+                if party:
+                    outcomes = [await job for job in jobs]
+                else:
+                    outcomes = list(await asyncio.gather(*jobs))
         await self._set_state(run_id, PhaseRunState.SCENES_COMMITTED)
         self._fire("after_scenes_committed")
         await self._set_state(run_id, PhaseRunState.COMPLETED)
@@ -2411,8 +2432,13 @@ class Stage1Orchestrator:
         *,
         runtime: PhaseRuntime,
         timings: dict[str, int] | None = None,
+        narrate: bool = True,
     ) -> SceneOutcome:
-        """React, resolve, commit, and narrate one scene (sequential barrier)."""
+        """React, resolve, commit, and narrate one scene (sequential barrier).
+
+        With ``narrate=False`` the scene is committed and settled only; the
+        caller narrates it later (see _narrate_outcome), alongside others.
+        """
         stage_ms: dict[str, int] = timings if timings is not None else {}
         members = [i for i in intents if i.id in scene.intent_ids]
         attempts = [
@@ -2469,11 +2495,36 @@ class Stage1Orchestrator:
         ]
         if directed_outcomes:
             await record_attempts(self._factory, directed_outcomes)
+        if resolution.outcome == ResolutionOutcome.SUCCESS:
+            await self._settle_scene_verbs(world_id, run_id, index, scene, members, result.event_id)
+        outcome = SceneOutcome(
+            scene_id=scene.id,
+            event_id=result.event_id,
+            resolution_outcome=resolution.outcome.value,
+            narration="pending",
+        )
+        if not narrate:
+            return outcome
         self._fire("before_narration")
         with _timed(stage_ms, "narrate"):
-            narration = await self._narrate_scene(
-                world_id, run_id, scene, result.event_id, quiet, over_budget, runtime=runtime
+            return await self._narrate_outcome(
+                world_id, run_id, scene, outcome, quiet, over_budget, runtime
             )
+
+    async def _narrate_outcome(
+        self,
+        world_id: UUID,
+        run_id: UUID,
+        scene: Scene,
+        outcome: SceneOutcome,
+        quiet: bool,
+        over_budget: bool,
+        runtime: PhaseRuntime,
+    ) -> SceneOutcome:
+        """Narrate one committed scene and report how its words were made."""
+        narration = await self._narrate_scene(
+            world_id, run_id, scene, outcome.event_id, quiet, over_budget, runtime=runtime
+        )
         # The narration source is persisted atomically with its beats
         # inside _narrate_scene; "skipped" writes nothing. When beats
         # pre-existed, report the recorded source when known instead of
@@ -2483,14 +2534,7 @@ class Stage1Orchestrator:
                 stored = await uow.scenes.get_scene(scene.id)
                 if stored.narration_status is not None:
                     narration = stored.narration_status
-        if resolution.outcome == ResolutionOutcome.SUCCESS:
-            await self._settle_scene_verbs(world_id, run_id, index, scene, members, result.event_id)
-        return SceneOutcome(
-            scene_id=scene.id,
-            event_id=result.event_id,
-            resolution_outcome=resolution.outcome.value,
-            narration=narration,
-        )
+        return replace(outcome, narration=narration)
 
     async def _settle_scene_verbs(
         self,
