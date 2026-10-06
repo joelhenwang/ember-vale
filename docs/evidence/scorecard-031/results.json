@@ -1,0 +1,406 @@
+{
+  "meta": {
+    "commit": "0538128",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 12,
+    "at": "2026-10-06T13:07:40+00:00",
+    "wall_seconds": 248,
+    "est_usd_total": 0.1762482357,
+    "scenarios": [
+      "strangers",
+      "lost_item",
+      "stuck_task",
+      "meet_up",
+      "named_place"
+    ]
+  },
+  "results": {
+    "strangers": {
+      "ids": {
+        "world": "3d7ac36b-0763-4cc2-9ceb-3b612df21458",
+        "place:Hearth": "bc173e7b-17e2-41f7-b3ca-d3be692debb8",
+        "place:Market": "920cc559-ba7c-4dab-9b6c-ca6b051fecab",
+        "wren": "79823436-7c47-4e64-afb9-70c7f1c9ccef",
+        "ash": "85ce3615-21a7-4a99-ab59-39a0a8d02841"
+      },
+      "beat_seconds": [
+        16.469000000040978,
+        11.141000000061467,
+        12.202999999979511,
+        18.375,
+        25.17200000002049,
+        17.0,
+        21.15700000000652,
+        17.719000000040978,
+        42.21900000004098,
+        17.359000000054948,
+        27.51500000001397,
+        20.765999999945052
+      ],
+      "error": null,
+      "score": {
+        "calls": 159,
+        "failed_calls": 0,
+        "repairs": 5,
+        "repairs_by_role": {
+          "reaction": 2,
+          "narrator": 3
+        },
+        "repair_rate": 0.031446540880503145,
+        "est_usd": 0.058149730000000004,
+        "action_mix": {
+          "communicate": 24,
+          "move": 5,
+          "observe": 3,
+          "interact": 4,
+          "wait": 4
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 3,
+        "moves_tried": 5,
+        "moves_done": 5,
+        "interact_success": 4,
+        "hooks": [
+          {
+            "title": "Market stall needs a hand",
+            "powers": "spawn_npc",
+            "status": "closed",
+            "ending": "The stall's crates were all carried to the stack before the pies cooled, and the stallkeeper paid the helpers with coins and warm pies."
+          },
+          {
+            "title": "Pedlar begins packing up at the Hearth",
+            "powers": "spawn_npc",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 1,
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Hearth",
+          "Marta": "Hearth",
+          "Yarin": "Hearth"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "repeated questions 0% (pass \u2264 20%)"
+      }
+    },
+    "lost_item": {
+      "ids": {
+        "world": "8342876c-fb96-4e98-b4ad-45829b01daa3",
+        "place:Hearth": "87c3a39b-1733-411d-bab2-f7ecec8ee13d",
+        "place:Market": "4ff336be-845e-4b4b-9358-68f759bc9841",
+        "wren": "12bd180c-5e34-4cdf-9f1f-c60efd06aa5f",
+        "ash": "87e8d74d-5889-42a3-888a-ca50e191a7a9",
+        "item:purse": "fee6bacb-7fd5-4bde-98e6-797851f44e96"
+      },
+      "beat_seconds": [
+        14.733999999938533,
+        10.515999999945052,
+        8.5,
+        8.09299999999348,
+        10.21799999999348,
+        8.827999999979511,
+        17.90700000000652,
+        11.811999999918044,
+        16.265999999945052,
+        14.827999999979511,
+        12.0,
+        8.905999999959022
+      ],
+      "error": null,
+      "score": {
+        "calls": 75,
+        "failed_calls": 0,
+        "repairs": 3,
+        "repairs_by_role": {
+          "narrator": 2,
+          "director": 1
+        },
+        "repair_rate": 0.04,
+        "est_usd": 0.024197558200000004,
+        "action_mix": {
+          "take": 2,
+          "move": 5,
+          "communicate": 8,
+          "observe": 7,
+          "wait": 2
+        },
+        "repetition_rate": 0.25,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 2,
+        "moves_tried": 5,
+        "moves_done": 5,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "The Ledger Dispute at the Market",
+            "powers": "place_item",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 0,
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Hearth"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {
+          "Market Steward's Ledger": {
+            "holder": "Ash",
+            "place": null
+          },
+          "Lost purse": {
+            "holder": "Wren",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "purse held by Wren"
+      }
+    },
+    "stuck_task": {
+      "ids": {
+        "world": "63636f3c-b862-4f1f-9246-8bdbbc8cdf0e",
+        "place:Hearth": "c3e352d6-b43e-4f68-9a9d-c8ccdd82a4b9",
+        "place:Market": "10b2f43a-834d-4fcc-b608-f0e7aa4aa1c2",
+        "wren": "afa2b1e0-d347-485a-80fa-ab78084c1915",
+        "ash": "eaa15f63-60d0-4f50-891e-56fa011afe8e",
+        "marg": "deba0fb6-3ae7-47a4-aa37-fd36a5214d06"
+      },
+      "beat_seconds": [
+        20.25,
+        12.64000000001397,
+        20.07799999997951,
+        24.468999999924563,
+        20.56299999996554,
+        20.875,
+        15.51500000001397,
+        19.531000000075437,
+        15.780999999959022,
+        18.25,
+        12.781000000075437,
+        10.687000000034459
+      ],
+      "error": null,
+      "score": {
+        "calls": 138,
+        "failed_calls": 0,
+        "repairs": 8,
+        "repairs_by_role": {
+          "resolver": 4,
+          "narrator": 3,
+          "reaction": 1
+        },
+        "repair_rate": 0.057971014492753624,
+        "est_usd": 0.044820071600000004,
+        "action_mix": {
+          "observe": 10,
+          "interact": 5,
+          "communicate": 9,
+          "take": 1,
+          "move": 6,
+          "wait": 5
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 1,
+        "moves_tried": 6,
+        "moves_done": 6,
+        "interact_success": 5,
+        "hooks": [
+          {
+            "title": "The cart driver's vanished purse",
+            "powers": "place_item",
+            "status": "closed",
+            "ending": "Old Marg and the others catch up to the cart driver and return the purse, which he takes with relieved thanks, his coin purse and coppers all accounted for."
+          },
+          {
+            "title": "A summons from the Keep",
+            "powers": "new_location",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 1,
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Old Marg": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Keep"
+        ],
+        "items": {
+          "Coin purse": {
+            "holder": null,
+            "place": "Market"
+          },
+          "Coin purse with coppers": {
+            "holder": "Old Marg",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "5 successful physical attempt(s)"
+      }
+    },
+    "meet_up": {
+      "ids": {
+        "world": "465e112a-b237-4951-a12d-028b29d8b3ca",
+        "place:Hearth": "bff68ec6-520a-4a8f-9abf-bb31a005d3b6",
+        "place:Market": "49213b94-f35e-4905-bcff-7cc17eadab2a",
+        "wren": "0d619802-8b4d-4679-8c5c-e493866827a9",
+        "ash": "220534de-c83e-435e-ba9a-c7c0d9af1f45"
+      },
+      "beat_seconds": [
+        11.593999999924563,
+        11.545999999972992,
+        11.672000000020489,
+        18.219000000040978,
+        15.797000000020489,
+        12.296999999904074,
+        10.640999999945052,
+        13.702999999979511,
+        20.15700000000652,
+        14.703000000095926,
+        7.312000000034459,
+        9.811999999918044
+      ],
+      "error": null,
+      "score": {
+        "calls": 78,
+        "failed_calls": 0,
+        "repairs": 3,
+        "repairs_by_role": {
+          "director": 1,
+          "character_decision": 1,
+          "narrator": 1
+        },
+        "repair_rate": 0.038461538461538464,
+        "est_usd": 0.025771976000000002,
+        "action_mix": {
+          "wait": 3,
+          "move": 5,
+          "communicate": 14,
+          "observe": 2
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 4,
+        "moves_tried": 5,
+        "moves_done": 5,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "The crier's tower stands open at dawn",
+            "powers": "new_location",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 0,
+        "final_places": {
+          "Wren": "Tower",
+          "Ash": "Tower"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Tower"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "Wren at Tower, Ash at Tower"
+      }
+    },
+    "named_place": {
+      "ids": {
+        "world": "60b874db-b52e-436a-a78c-6af7d8b2d456",
+        "place:Hearth": "ce64f043-9635-4dd5-b9c4-abd172baa113",
+        "place:Market": "a33f6f89-d369-45cf-8fcb-77da3b0909a7",
+        "wren": "c58f0e0a-fd33-4a22-987b-de81df33067e",
+        "ash": "98eae943-943e-4f79-ae20-ba26590003ef"
+      },
+      "beat_seconds": [
+        16.43700000003446,
+        5.593999999924563,
+        6.827999999979511,
+        11.547000000020489,
+        4.734000000054948,
+        14.922000000020489,
+        13.405999999959022,
+        11.172000000020489,
+        27.18700000003446,
+        13.577999999979511,
+        11.702999999979511,
+        11.047000000020489
+      ],
+      "error": null,
+      "score": {
+        "calls": 74,
+        "failed_calls": 0,
+        "repairs": 2,
+        "repairs_by_role": {
+          "director": 1,
+          "daily_summary": 1
+        },
+        "repair_rate": 0.02702702702702703,
+        "est_usd": 0.023308899900000003,
+        "action_mix": {
+          "communicate": 7,
+          "move": 2,
+          "wait": 4,
+          "observe": 6,
+          "interact": 5
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 2,
+        "longest_talk_streak": 2,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 5,
+        "hooks": [
+          {
+            "title": "Uncle's mill stands empty",
+            "powers": "new_location",
+            "status": "closed",
+            "ending": "The sluice gate lifts free and the mill wheel turns again, the old mill stirring back to life as the river flows."
+          },
+          {
+            "title": "River rising at the mill race",
+            "powers": "",
+            "status": "closed",
+            "ending": "The tangle is hauled clear of the race and the water runs free again, easing the river's threat to the wheelhouse."
+          }
+        ],
+        "settled": 2,
+        "final_places": {
+          "Wren": "Old Mill",
+          "Ash": "Old Mill"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Old Mill"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "added Old Mill; there at the end: Wren, Ash"
+      }
+    }
+  }
+}
