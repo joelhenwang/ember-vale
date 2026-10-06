@@ -278,7 +278,8 @@ def _render_fact_line(fact: Mapping[str, str], shown_key: str | None = None) -> 
     return f'- key "{shown}": {value}'
 
 
-NARRATOR_TOKENS_PER_BEAT = 128
+#: 128 cut off one live narration in forty at the cap (p90 used 825 of 1024).
+NARRATOR_TOKENS_PER_BEAT = 192
 TRUNCATED_DENIAL = "output truncated at the token limit"
 
 
@@ -553,6 +554,64 @@ def drop_recap_only(proposals: list[BeatProposal]) -> list[BeatProposal]:
     """
     kept = [p for p in proposals if set(p.cited_fact_keys) != {RECAP_FACT_KEY}]
     return kept or proposals
+
+
+def _quotes(text: str, quote: str) -> bool:
+    """Whether beat text carries the cited utterance (the validator's own test)."""
+    normalized = _normalize_quote(quote)
+    return not normalized or bool(
+        re.search(r"(?<!\w)" + re.escape(normalized) + r"(?!\w)", _normalize_quote(text))
+    )
+
+
+_QUOTE_MARKS = re.compile(r"[\"“”]")
+
+
+def soften_dialogue(
+    proposals: list[BeatProposal],
+    speech_keys: frozenset[str] | None,
+    utterances: Mapping[str, str] | None,
+    speaker_names: Mapping[str, str] | None = None,
+) -> list[BeatProposal]:
+    """Repair two common dialogue slips in place instead of asking again.
+
+    A dialogue beat that cites quoted speech plus other facts keeps only
+    the speech citations. One that reports its cited speech instead of
+    quoting it ("Ash answers that the market is quiet": no quote marks,
+    the speaker named) becomes narration, which may paraphrase. Together
+    these were half of all narrator repairs. Other words in a speaker's
+    mouth, or a dialogue beat citing no speech at all, are left for the
+    validator: softening them would invent or misattribute speech.
+    """
+    if speech_keys is None:
+        return proposals
+    out: list[BeatProposal] = []
+    for proposal in proposals:
+        if proposal.kind != NarrationKind.DIALOGUE:
+            out.append(proposal)
+            continue
+        speech = [k for k in proposal.cited_fact_keys if k in speech_keys]
+        if not speech:
+            out.append(proposal)
+            continue
+        if len(speech) < len(proposal.cited_fact_keys):
+            proposal = proposal.model_copy(update={"cited_fact_keys": speech})
+        names = [n for k in speech if (n := (speaker_names or {}).get(k))]
+        reported = (
+            not _QUOTE_MARKS.search(proposal.text)
+            and bool(names)
+            and all(n.casefold() in proposal.text.casefold() for n in names)
+        )
+        if (
+            utterances is not None
+            and reported
+            and not all(_quotes(proposal.text, utterances[k]) for k in speech if k in utterances)
+        ):
+            proposal = proposal.model_copy(
+                update={"kind": NarrationKind.NARRATION, "speaker_id": None}
+            )
+        out.append(proposal)
+    return out
 
 
 def beats_valid(
@@ -867,7 +926,12 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
                         state, world_id, scene_id, event_id, facts, budget, errors, repairs, None
                     )
                 continue
-            proposals = drop_recap_only(resolve_citations(proposals, aliases))
+            proposals = soften_dialogue(
+                drop_recap_only(resolve_citations(proposals, aliases)),
+                speech_keys,
+                fact_utterances,
+                {f["key"]: f["speaker_name"] for f in facts if f.get("speaker_name")},
+            )
             denial = beats_valid(
                 proposals,
                 visible_keys=visible_keys,

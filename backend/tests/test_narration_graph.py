@@ -11,6 +11,7 @@ import pytest
 
 from worldsim.application.graphs.narrate import (
     NARRATOR_PROMPT_VERSION,
+    NARRATOR_TOKENS_PER_BEAT,
     NarratorGraphDeps,
     build_narration_graph,
     load_narrator_prompt,
@@ -1640,7 +1641,7 @@ def test_dialogue_quote_whole_word_passes() -> None:
 def test_narrator_max_tokens_fits_beat_budget() -> None:
     from worldsim.application.graphs.narrate import narrator_max_tokens
 
-    assert narrator_max_tokens(512, 8) == 1024
+    assert narrator_max_tokens(512, 8) == NARRATOR_TOKENS_PER_BEAT * 8
     assert narrator_max_tokens(2048, 8) == 2048
     assert narrator_max_tokens(512, 2) == 512
     assert narrator_max_tokens(512, 64) == 4096
@@ -1663,7 +1664,7 @@ def test_truncated_output_gets_shorter_beats_repair() -> None:
     assert result["repair_count"] == 1
     assert "output truncated at the token limit" in result["validation_errors"][0]
     initial, repair = gateway.sent_requests
-    assert initial.max_tokens == repair.max_tokens == 1024
+    assert initial.max_tokens == repair.max_tokens == NARRATOR_TOKENS_PER_BEAT * 8
     assert "fewer, shorter beats" in repair.prompt
     assert "exactly matching the response schema" not in repair.prompt
 
@@ -1885,3 +1886,34 @@ def test_player_say_line_is_voiced_under_its_speaker() -> None:
     assert beat["cited_fact_keys"] == [f"speech:{said.id}"]
     # The player's words in another character's mouth are rejected.
     assert run(ash)["repair_count"] == 1
+
+
+def test_dialogue_slips_are_softened_not_repaired() -> None:
+    from worldsim.application.graphs.narrate import soften_dialogue
+    from worldsim.domain.narration import BeatProposal
+
+    speaker = uuid.uuid4()
+
+    def beat(text: str, *keys: str) -> BeatProposal:
+        return BeatProposal(
+            kind=NarrationKind.DIALOGUE, text=text, cited_fact_keys=list(keys), speaker_id=speaker
+        )
+
+    speech = frozenset({"reaction:1"})
+    quotes = {"reaction:1": "Heave on three!"}
+    extra, reported, other_words, attempt_only = soften_dialogue(
+        [
+            beat('"Heave on three!" Ash calls.', "reaction:1", "attempt:communicate"),
+            beat("Ash says they should heave together.", "reaction:1"),
+            beat("Glad to see you.", "reaction:1"),
+            beat('"Let us go," says Ash.', "attempt:communicate"),
+        ],
+        speech,
+        quotes,
+        {"reaction:1": "Ash"},
+    )
+    assert extra.kind == NarrationKind.DIALOGUE and extra.cited_fact_keys == ["reaction:1"]
+    assert reported.kind == NarrationKind.NARRATION and reported.speaker_id is None
+    # Other words in Ash's mouth, or an attempt as speech: left for the validator.
+    assert other_words.kind == NarrationKind.DIALOGUE
+    assert attempt_only.kind == NarrationKind.DIALOGUE
