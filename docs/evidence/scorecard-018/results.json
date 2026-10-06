@@ -1,0 +1,352 @@
+{
+  "meta": {
+    "commit": "4de0533",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T07:12:46+00:00",
+    "wall_seconds": 147,
+    "est_usd_total": 0.0920474304,
+    "scenarios": [
+      "strangers",
+      "lost_item",
+      "stuck_task",
+      "meet_up",
+      "named_place"
+    ]
+  },
+  "results": {
+    "strangers": {
+      "ids": {
+        "world": "0f90030d-6617-4332-a4a9-5d38c16adf6d",
+        "place:Hearth": "3ac01d77-d04c-4dd4-aee4-71a17c8da534",
+        "place:Market": "a581595d-1784-4dbf-b7bf-a9d8b261672e",
+        "wren": "ed42ab72-44c8-4923-b19f-b809a197f075",
+        "ash": "70fbf532-62a0-419f-b13c-caf60eb232cf"
+      },
+      "beat_seconds": [
+        11.734000000054948,
+        8.297000000020489,
+        5.797000000020489,
+        10.780999999959022,
+        13.579000000027008,
+        15.219000000040978,
+        19.905999999959022,
+        19.344000000040978
+      ],
+      "error": null,
+      "score": {
+        "calls": 72,
+        "failed_calls": 0,
+        "repairs": 2,
+        "repairs_by_role": {
+          "narrator": 1,
+          "resolver": 1
+        },
+        "repair_rate": 0.027777777777777776,
+        "est_usd": 0.0195265973,
+        "action_mix": {
+          "communicate": 7,
+          "move": 2,
+          "observe": 4,
+          "interact": 5,
+          "wait": 2
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 5,
+        "hooks": [
+          {
+            "title": "The Empty Stall at the Market",
+            "powers": ""
+          },
+          {
+            "title": "A Letter for the Stall's Owner",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Bram": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {
+          "Ledger box contents": {
+            "holder": "Wren",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "repeated questions 0% (pass \u2264 20%)"
+      }
+    },
+    "lost_item": {
+      "ids": {
+        "world": "bcfadd9f-5e7c-4cfe-a093-0654b1ec0785",
+        "place:Hearth": "d352b081-a8a0-4bdf-8988-2b2a3eb91d5e",
+        "place:Market": "f4ca0050-6110-4ff3-80ae-f454d4b0b081",
+        "wren": "8a38f43d-eb2c-43fe-9d1b-056c716ed0ab",
+        "ash": "e536e1ed-b73b-4112-b1ba-6a246f2179ff",
+        "item:purse": "78dfc15d-c17e-4187-9a3e-5546bf8a38ee"
+      },
+      "beat_seconds": [
+        6.5,
+        5.969000000040978,
+        10.016000000061467,
+        11.202999999979511,
+        8.047000000020489,
+        7.76500000001397,
+        11.984000000054948,
+        7.98499999998603
+      ],
+      "error": null,
+      "score": {
+        "calls": 47,
+        "failed_calls": 0,
+        "repairs": 0,
+        "repairs_by_role": {},
+        "repair_rate": 0.0,
+        "est_usd": 0.0117757806,
+        "action_mix": {
+          "observe": 2,
+          "take": 1,
+          "move": 3,
+          "communicate": 9,
+          "wait": 1
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 2,
+        "moves_tried": 3,
+        "moves_done": 3,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "The Lost Purse's Owner",
+            "powers": ""
+          },
+          {
+            "title": "Traveler's Rest",
+            "powers": ""
+          }
+        ],
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Hearth"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {
+          "Lost purse": {
+            "holder": "Ash",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "purse held by Ash"
+      }
+    },
+    "stuck_task": {
+      "ids": {
+        "world": "924f41d9-f0b5-46f5-acd6-c0bec751a8fd",
+        "place:Hearth": "eb847e65-4fca-4433-a25c-e3c54077f649",
+        "place:Market": "9db7a69c-3d9c-402f-b583-acb72a4812a8",
+        "wren": "dc074c03-13c0-4784-831f-911554d80c59",
+        "ash": "7bdc4254-23ad-44a6-95b6-409d4dc38410",
+        "marg": "7a1353f2-47ef-498b-951c-eacb70a19df1"
+      },
+      "beat_seconds": [
+        11.312000000034459,
+        13.562000000034459,
+        13.5,
+        23.155999999959022,
+        17.64000000001397,
+        28.234000000054948,
+        19.25,
+        19.406000000075437
+      ],
+      "error": null,
+      "score": {
+        "calls": 143,
+        "failed_calls": 0,
+        "repairs": 4,
+        "repairs_by_role": {
+          "resolver": 3,
+          "narrator": 1
+        },
+        "repair_rate": 0.027972027972027972,
+        "est_usd": 0.0348549655,
+        "action_mix": {
+          "observe": 12,
+          "wait": 5,
+          "communicate": 9,
+          "interact": 2,
+          "move": 3
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 2,
+        "moves_tried": 3,
+        "moves_done": 2,
+        "interact_success": 2,
+        "hooks": [
+          {
+            "title": "A Stranger's Broken Cart",
+            "powers": "spawn_npc"
+          },
+          {
+            "title": "The Mill's Load of Grief",
+            "powers": "new_location"
+          },
+          {
+            "title": "A Knocked-Over Lantern at the Mill",
+            "powers": ""
+          }
+        ],
+        "final_places": {
+          "Wren": "Mill",
+          "Ash": "Market",
+          "Old Marg": "Market",
+          "Corbin": "Mill"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Mill"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "2 successful physical attempt(s)"
+      }
+    },
+    "meet_up": {
+      "ids": {
+        "world": "e6b88bf6-319d-45bd-922e-b439f29b1993",
+        "place:Hearth": "c38cd6e0-aa8d-49be-9f70-786684609459",
+        "place:Market": "fa92fd92-017b-4216-b232-02857acd82a7",
+        "wren": "eeb3fdae-ac3f-4d77-8ab5-443690e6da3f",
+        "ash": "419f78f2-c45d-411a-b3e1-2c2e162944a5"
+      },
+      "beat_seconds": [
+        7.952999999979511,
+        8.73499999998603,
+        9.828000000095926,
+        10.0,
+        7.51500000001397,
+        10.46799999999348,
+        9.702999999979511,
+        7.907000000006519
+      ],
+      "error": null,
+      "score": {
+        "calls": 49,
+        "failed_calls": 0,
+        "repairs": 0,
+        "repairs_by_role": {},
+        "repair_rate": 0.0,
+        "est_usd": 0.012223734,
+        "action_mix": {
+          "wait": 2,
+          "move": 4,
+          "communicate": 10
+        },
+        "repetition_rate": 0.2,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 2,
+        "moves_tried": 4,
+        "moves_done": 3,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "The trader's crate of old tomes",
+            "powers": ""
+          },
+          {
+            "title": "The trader's final offer",
+            "powers": ""
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "Wren at Market, Ash at Market"
+      }
+    },
+    "named_place": {
+      "ids": {
+        "world": "47d9291d-2f95-421c-bbd9-3c87b668c2f0",
+        "place:Hearth": "00a137bd-6a6b-483a-a602-5af05346ebb3",
+        "place:Market": "30a2ab2a-b6fc-4d1b-a314-492248d1bebd",
+        "wren": "bb2221a8-1a4a-4e8a-9cbb-9f249ce49c52",
+        "ash": "388c0bdf-6919-43b1-b357-ee0b5c94b9bc"
+      },
+      "beat_seconds": [
+        13.047000000020489,
+        10.640999999945052,
+        6.954000000027008,
+        8.828000000095926,
+        11.14000000001397,
+        7.969000000040978,
+        9.953000000095926,
+        9.562000000034459
+      ],
+      "error": null,
+      "score": {
+        "calls": 51,
+        "failed_calls": 0,
+        "repairs": 2,
+        "repairs_by_role": {
+          "director": 1,
+          "narrator": 1
+        },
+        "repair_rate": 0.0392156862745098,
+        "est_usd": 0.013666353000000001,
+        "action_mix": {
+          "wait": 5,
+          "communicate": 9,
+          "move": 2
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 4,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "A light in the mill window",
+            "powers": "new_location"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Old Mill"
+        ],
+        "items": {},
+        "goal_passed": false,
+        "goal_detail": "added Old Mill; there at the end: nobody"
+      }
+    }
+  }
+}
