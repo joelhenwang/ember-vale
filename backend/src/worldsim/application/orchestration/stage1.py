@@ -2960,6 +2960,10 @@ class Stage1Orchestrator:
                 "locations_json": [loc.model_dump(mode="json") for loc in locations],
                 "expected_versions": live_versions,
                 "surroundings": notes,
+                "carried": {
+                    str(c.id): [item_label(i) for i in items if i.owner_id == c.id]
+                    for c in characters
+                },
             },
         )
         sampling = runtime.sampling

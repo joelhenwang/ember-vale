@@ -73,6 +73,8 @@ class ResolveState(GraphState, total=False):
     expected_versions: dict[str, int]
     #: Who and what is at each actor's place, and open rumours (plain lines).
     surroundings: list[str]
+    #: Item names each character carries, so a find is never a duplicate.
+    carried: dict[str, list[str]]
     envelopes_json: list[dict[str, Any]]
     packet_json: dict[str, Any] | None
     system_prompt: str
@@ -169,7 +171,9 @@ def _move_denial(effect: MoveEntityEffect, view: WorldView) -> str | None:
     return None
 
 
-def keep_fair_finds(raw: str, finders: frozenset[str]) -> str:
+def keep_fair_finds(
+    raw: str, finders: frozenset[str], carried: Mapping[str, frozenset[str]] | None = None
+) -> str:
     """At most one item_found, for an attempt's author, and only on success.
 
     Anything else is dropped rather than repaired: a find is a reward the
@@ -192,7 +196,10 @@ def keep_fair_finds(raw: str, finders: frozenset[str]) -> str:
         if isinstance(effect, dict) and effect.get("effect_type") == "item_found":
             item = cast("dict[str, Any]", effect)
             owner = str(item.get("owner_character_id", ""))
-            if success and not granted and owner in finders:
+            name = str(item.get("name", "")).strip().casefold()
+            # Already in their pack: a second scene "found" the same purse.
+            has_it = name in (carried or {}).get(owner, frozenset())
+            if success and not granted and owner in finders and not has_it:
                 item["affected_ids"] = [owner]
                 kept.append(item)
                 granted = True
@@ -432,6 +439,10 @@ def build_resolve_graph(deps: ResolverGraphDeps) -> Any:
                             fill_expected_versions(raw, _versions_of(state)), _moves_of(state)
                         ),
                         _finders_of(state),
+                        {
+                            owner: frozenset(n.casefold() for n in names)
+                            for owner, names in (state.get("carried") or {}).items()
+                        },
                     ),
                 )
             except ValidationError as exc:

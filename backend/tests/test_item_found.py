@@ -118,3 +118,11 @@ def test_the_resolver_knows_who_and_what_is_at_hand(
     mine = next(p for p in prompts if "search the hearth" in p)
     assert "Around them:" in mine
     assert "At Hearth: Wren; lying here: nothing; carried here: nothing." in mine
+
+
+def test_a_thing_already_carried_is_not_found_again() -> None:
+    raw = json.dumps({"outcome": "success", "effects": [_find("wren", "Worn Leather Purse")]})
+    kept = json.loads(
+        keep_fair_finds(raw, frozenset({"wren"}), {"wren": frozenset({"worn leather purse"})})
+    )["effects"]
+    assert kept == []
