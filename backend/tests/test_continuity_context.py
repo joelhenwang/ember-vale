@@ -22,7 +22,7 @@ from worldsim.application.ports.model_gateway import CompletionRequest
 from worldsim.domain.characters import Character
 from worldsim.domain.commands import CommunicateAction, MoveAction, WaitAction
 from worldsim.domain.context import ContextRequest, SourceCandidate
-from worldsim.domain.enums import ParticipantRole, Visibility
+from worldsim.domain.enums import NarrativeStatus, ParticipantRole, Visibility
 from worldsim.domain.intentions import card_drives, extract_intention
 from worldsim.domain.narrative import NarrativeHook
 from worldsim.domain.scenes import Intent, Reaction, Scene, SceneParticipant
@@ -505,3 +505,64 @@ def test_narrator_is_told_how_to_refer_to_everyone_in_the_scene(
     assert _advance(client, ids["world"], 1).status_code == 200
     narrator = [r.prompt for r in gateway.sent_requests if "You narrate" in (r.system or "")]
     assert any('key "pronouns": Pronouns — Wren: not stated' in p for p in narrator)
+
+
+def test_spread_keeps_ends_and_spaces_the_rest() -> None:
+    from worldsim.application.orchestration.stage1 import spread
+
+    assert spread(list(range(10)), 4) == [0, 3, 6, 9]
+    assert spread([1, 2], 6) == [1, 2]
+    assert spread([1, 2, 3], 1) == [3]
+
+
+def test_director_summary_keeps_settled_matters_and_earlier_story() -> None:
+    world = uuid.uuid4()
+    hearth = Location(id=uuid.uuid4(), world_id=world, name="Hearth")
+    settled = NarrativeHook(
+        id=uuid.uuid4(),
+        world_id=world,
+        title="The lost purse",
+        purpose="Someone dropped a purse.",
+        status=NarrativeStatus.CLOSED,
+        ending="Tomas has it back.",
+    )
+    summary = director_summary(
+        12,
+        [],
+        [hearth],
+        [settled],
+        [],
+        ["Day 2, dawn: Wren waits."],
+        0,
+        earlier=["Day 1, dawn: Ash arrives."],
+    )
+    assert "Settled so far:\n- The lost purse: Tomas has it back." in summary
+    assert "Story so far, before the recent happenings:\n- Day 1, dawn: Ash arrives." in summary
+    assert summary.index("Story so far") < summary.index("Recent happenings")
+
+
+def test_director_hears_the_story_before_its_recent_window(
+    stage1_client: tuple[ApiClient, FakeGateway],
+) -> None:
+    client, gateway = stage1_client
+    ids = asyncio.run(_seed_two())
+    base = _route_for(ids, {})
+
+    def route(request: CompletionRequest) -> str | None:
+        system = request.system or ""
+        if "You direct" in system:
+            return json.dumps({"action": "noop", "reason": "watching"})
+        if "You decide" in system:
+            wren = "<<untrusted:identity>>Wren" in request.prompt
+            target = ids["ash"] if wren else ids["wren"]
+            return json.dumps(
+                {"family": "communicate", "target_character_id": str(target), "topic": "the tale"}
+            )
+        return base(request)
+
+    gateway.route = route
+    for index in range(1, 11):  # director runs at beats 1, 4, 7 and 10
+        assert _advance(client, ids["world"], index).status_code == 200
+    director = [r.prompt for r in gateway.sent_requests if "You direct" in (r.system or "")]
+    assert "Story so far" not in director[0]  # nothing before the window yet
+    assert "Story so far, before the recent happenings:\n- Day 1, " in director[-1]

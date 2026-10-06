@@ -633,6 +633,58 @@ async def _recent_happenings(uow: Any, world_id: UUID) -> tuple[list[str], int, 
     return lines, _streak(idle_by_index), _streak(talk_by_index), said
 
 
+#: Lines of story-so-far the director gets from before its recent window.
+STORY_SO_FAR_LINES = 6
+#: How far back (in events) the story-so-far looks.
+STORY_SO_FAR_EVENTS = 240
+
+
+def spread[T](items: Sequence[T], count: int) -> list[T]:
+    """Up to ``count`` items evenly across the sequence, first and last kept."""
+    if len(items) <= count:
+        return list(items)
+    if count <= 1:
+        return [items[-1]] if count == 1 else []
+    step = (len(items) - 1) / (count - 1)
+    return [items[round(i * step)] for i in range(count)]
+
+
+#: Attempts that are not news for a story-so-far.
+_IDLE_ATTEMPTS = ("attempt:wait", "attempt:observe", "attempt:rest")
+
+
+async def _story_so_far(uow: Any, world_id: UUID) -> list[str]:
+    """What happened before the director's recent window, spread through time.
+
+    One line per scene where someone did something, made of its attempts
+    ("Ash says to Old Marg: one more heave; Old Marg tries to free the
+    wheel: it half works"). Narration openings were mostly scenery, and
+    older events carry no idle flag, so attempts decide. The recent
+    window already shows the latest scenes in full, so they are left out.
+    """
+    high = await uow.events.max_sequence(world_id)
+    events: list[WorldEvent] = await uow.events.list_range(
+        world_id, max(0, high - STORY_SO_FAR_EVENTS), STORY_SO_FAR_EVENTS
+    )
+    scenes = [e for e in events if e.event_type == EventType.ACTION_RESOLVED]
+    told: list[tuple[int, str]] = []
+    for event in scenes[:-DIRECTOR_RECENT_EVENTS]:
+        if event.summary.get("idle") == "1":
+            continue
+        seen: list[str] = []
+        for obs in await uow.perception.observations_for_event(event.id):
+            for fact in obs.facts:
+                if (
+                    fact.key.startswith("attempt:")
+                    and not fact.key.startswith(_IDLE_ATTEMPTS)
+                    and fact.value not in seen
+                ):
+                    seen.append(fact.value)
+        if seen:
+            told.append((event.absolute_index, _clip("; ".join(seen), 200)))
+    return [f"{phase_label(index)}: {line}" for index, line in spread(told, STORY_SO_FAR_LINES)]
+
+
 def _streak(flags: Mapping[int, bool]) -> int:
     """How many of the most recent beats in a row have the flag set."""
     count = 0
@@ -654,8 +706,9 @@ def director_summary(
     intentions: Mapping[UUID, str] | None = None,
     *,
     talk_streak: int = 0,
+    earlier: Sequence[str] = (),
 ) -> str:
-    """What the director sees: who is where (with ids), threads, recent events."""
+    """What the director sees: who is where (with ids), threads, the story so far."""
     place = {loc.id: loc.name for loc in locations}
     plans = intentions or {}
     cast = "; ".join(
@@ -672,12 +725,24 @@ def director_summary(
         if h.status != NarrativeStatus.CLOSED
     )
     open_arcs = "; ".join(a.title for a in arcs if a.status != NarrativeStatus.CLOSED)
+    # Settled matters stay in view so they are not proposed all over again.
+    settled = [
+        f"- {h.title}: {h.ending}".strip()
+        for h in hooks
+        if h.status == NarrativeStatus.CLOSED and getattr(h, "ending", None)
+    ][-STORY_SO_FAR_LINES:]
     lines = [
         f"Phase {index} ({phase_label(index)}).",
         f"Characters: {cast or 'none'}.",
         f"Places: {places or 'none'}.",
         f"Open hooks: {open_hooks or 'none'}.",
         f"Open arcs: {open_arcs or 'none'}.",
+        *(["Settled so far:", *settled] if settled else []),
+        *(
+            ["Story so far, before the recent happenings:", *[f"- {e}" for e in earlier]]
+            if earlier
+            else []
+        ),
         "Recent happenings, oldest first:",
         *([f"- {line}" for line in recent] or ["- nothing yet"]),
         f"Idle beats in a row: {quiet_streak} (every character only waited, watched or rested).",
@@ -1966,6 +2031,7 @@ class Stage1Orchestrator:
             hooks = await uow.narrative.list_hooks_for_world(world_id)
             arcs = await uow.narrative.list_arcs_for_world(world_id)
             recent, quiet_streak, talk_streak, said = await _recent_happenings(uow, world_id)
+            earlier = await _story_so_far(uow, world_id)
             intentions = {
                 c.id: i.text
                 for c in characters
@@ -2015,6 +2081,7 @@ class Stage1Orchestrator:
                 quiet_streak,
                 intentions,
                 talk_streak=talk_streak,
+                earlier=earlier,
             )
             + f"\nNew characters you may still add to this story: {spawns_left}."
             + f"\nNew places you may still add to this story: {places_left}."
