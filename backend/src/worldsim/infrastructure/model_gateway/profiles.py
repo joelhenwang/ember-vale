@@ -86,6 +86,15 @@ OPENROUTER_CHAT_PROFILE = ModelProfile(
     capabilities=["chat", "json_mode", "temperature", "top_p", "top_k"],
 )
 
+VENICE_CHAT_PROFILE = ModelProfile(
+    name="venice",
+    version="chat-v1",
+    adapter="venice",
+    model_id="venice-uncensored-1-2",
+    max_context_tokens=128000,
+    capabilities=["chat", "json_mode", "temperature", "top_p", "top_k"],
+)
+
 OPENROUTER_EMBED_PROFILE = ModelProfile(
     name="openrouter",
     version="embed-v1",
@@ -106,6 +115,7 @@ PROFILES: dict[tuple[str, str], ModelProfile] = {
         NARRATOR_FAKE_PROFILE,
         OPENROUTER_CHAT_PROFILE,
         OPENROUTER_EMBED_PROFILE,
+        VENICE_CHAT_PROFILE,
     )
 }
 

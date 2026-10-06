@@ -154,11 +154,11 @@ async def read_story_provider(story_id: UUID, request: Request) -> api.StoryProv
         else:
             pin_error = None
     provider = state.settings.provider
-    if provider.active_profile == "openrouter":
+    if provider.active_profile in ("openrouter", "venice"):
         environment = api.StoryProviderEnvironmentView(
             active_profile=str(provider.active_profile),
-            adapter="openrouter",
-            model_id=provider.openrouter_model,
+            adapter=str(provider.active_profile),
+            model_id=provider.default_model(),
         )
     else:
         environment = api.StoryProviderEnvironmentView(

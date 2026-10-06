@@ -38,6 +38,13 @@ OPERATOR = "local"
 SUPPORTED_BY_ADAPTER: dict[str, list[str]] = {
     "fake": ["temperature", "top_p", "top_k"],
     "openrouter": ["temperature", "top_p", "top_k"],
+    "venice": ["temperature", "top_p", "top_k"],
+}
+#: Model a new connection's first profile revision starts from.
+DEFAULT_MODEL_BY_ADAPTER: dict[AdapterKind, str] = {
+    AdapterKind.FAKE: "fake-echo",
+    AdapterKind.OPENROUTER: "openrouter/auto",
+    AdapterKind.VENICE: "venice-uncensored-1-2",
 }
 CACHE_SCOPES = ("image_derived",)
 
@@ -169,7 +176,7 @@ async def create_provider(
                 id=uuid4(),
                 connection_id=connection.id,
                 revision=revision_number,
-                model_id="fake-echo" if adapter == AdapterKind.FAKE else "openrouter/auto",
+                model_id=DEFAULT_MODEL_BY_ADAPTER[adapter],
                 capabilities=list(SUPPORTED_BY_ADAPTER[adapter.value]),
                 created_at=utcnow(),
             )
@@ -289,7 +296,7 @@ async def read_capabilities(connection_id: UUID, request: Request) -> api.Provid
     async with state.uow_factory()() as uow:
         connection = await uow.settings.get_connection(connection_id)
     supported = SUPPORTED_BY_ADAPTER[connection.adapter.value]
-    models = ["fake-echo"] if connection.adapter == AdapterKind.FAKE else ["openrouter/auto"]
+    models = [DEFAULT_MODEL_BY_ADAPTER[connection.adapter]]
     return api.ProviderCapabilitiesView(
         connection_id=connection_id,
         adapter=connection.adapter.value,

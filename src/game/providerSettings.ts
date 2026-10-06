@@ -19,17 +19,28 @@ import type {
  * Pure helpers only; the composable owns requests and timing.
  */
 
-export type Adapter = 'openrouter' | 'fake'
+export type Adapter = 'openrouter' | 'venice' | 'fake'
 
 export const ADAPTER_LABELS: Record<Adapter, string> = {
   openrouter: 'OpenRouter',
+  venice: 'Venice',
   fake: 'Offline stand-in (no model calls)'
 }
 
 export const DEFAULT_ENDPOINT = 'https://openrouter.ai/api/v1'
 export const DEFAULT_CREDENTIAL_ENV = 'WORLDSIM_PROVIDER__OPENROUTER_API_KEY'
+/** Where each live adapter's endpoint and key variable start. */
+export const ADAPTER_DEFAULTS: Record<Adapter, { endpoint: string; credentialEnv: string }> = {
+  openrouter: { endpoint: DEFAULT_ENDPOINT, credentialEnv: DEFAULT_CREDENTIAL_ENV },
+  venice: {
+    endpoint: 'https://api.venice.ai/api/v1',
+    credentialEnv: 'WORLDSIM_PROVIDER__VENICE_API_KEY'
+  },
+  fake: { endpoint: DEFAULT_ENDPOINT, credentialEnv: '' }
+}
 export const DEFAULT_MODEL: Record<Adapter, string> = {
   openrouter: 'openrouter/auto',
+  venice: 'venice-uncensored-1-2',
   fake: 'fake-echo'
 }
 
@@ -66,8 +77,8 @@ export function emptyForm(): ProviderForm {
   }
 }
 
-function asAdapter(raw: string): Adapter {
-  return raw === 'fake' ? 'fake' : 'openrouter'
+export function asAdapter(raw: string): Adapter {
+  return raw === 'fake' || raw === 'venice' ? raw : 'openrouter'
 }
 
 /** The generated client types float fields as `unknown`; read numbers only. */

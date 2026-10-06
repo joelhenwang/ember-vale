@@ -558,6 +558,20 @@ def _commit() -> str:
     ).stdout.strip()
 
 
+def venice_prices(model: str, base_url: str, key: str) -> tuple[float, float]:
+    """Per-token USD prices from Venice's model list (published per million)."""
+    request = urllib.request.Request(
+        f"{base_url.rstrip('/')}/models?type=text", headers={"Authorization": f"Bearer {key}"}
+    )
+    with urllib.request.urlopen(request, timeout=30) as resp:
+        data = json.loads(resp.read().decode("utf-8"))["data"]
+    entry = next((m for m in data if m["id"] == model), None)
+    if entry is None:
+        raise SystemExit(f"no Venice pricing for {model}")
+    pricing = entry["model_spec"]["pricing"]
+    return float(pricing["input"]["usd"]) / 1e6, float(pricing["output"]["usd"]) / 1e6
+
+
 def openrouter_prices(model: str) -> tuple[float, float]:
     with urllib.request.urlopen("https://openrouter.ai/api/v1/models", timeout=30) as resp:
         data = json.loads(resp.read().decode("utf-8"))["data"]
@@ -578,10 +592,17 @@ async def main_async(args: argparse.Namespace) -> int:
     from worldsim.interfaces.http.state import build_state
 
     settings = Settings()
-    if settings.provider.active_profile != "openrouter":
+    provider = settings.provider
+    if provider.active_profile not in ("openrouter", "venice"):
         raise SystemExit("the scorecard measures the live model; .env selects no live provider")
-    model = settings.provider.openrouter_model
-    prices = openrouter_prices(model)
+    model = provider.default_model()
+    if provider.active_profile == "venice":
+        assert provider.venice_api_key is not None
+        prices = venice_prices(
+            model, provider.venice_base_url, provider.venice_api_key.get_secret_value()
+        )
+    else:
+        prices = openrouter_prices(model)
     chosen = [s for s in SCENARIOS if not args.only or s.key in args.only.split(",")]
     state = build_state(settings, migrations_dir=REPO / "backend" / "migrations")
     dsn = to_sync_url(os.environ["WORLDSIM_DATABASE__URL"])
@@ -627,6 +648,7 @@ async def main_async(args: argparse.Namespace) -> int:
     commit = args.code_label or await asyncio.to_thread(_commit)
     meta = {
         "commit": commit,
+        "provider": provider.active_profile,
         "model": model,
         "beats": args.beats,
         "at": datetime.now(UTC).isoformat(timespec="seconds"),
@@ -646,6 +668,11 @@ def main() -> int:
     parser.add_argument("--beats", type=int, default=8)
     parser.add_argument("--max-usd", type=float, default=0.20)
     parser.add_argument("--only", default="", help="comma-separated scenario keys")
+    parser.add_argument(
+        "--provider",
+        choices=("openrouter", "venice"),
+        help="override WORLDSIM_PROVIDER__ACTIVE_PROFILE from .env for this run",
+    )
     parser.add_argument("--keep-db", action="store_true", help="keep the scratch database")
     parser.add_argument(
         "--code-label",
@@ -659,6 +686,8 @@ def main() -> int:
     # Results carry characters like "≤"; the Windows console default is cp1252.
     sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
     load_live_env()
+    if args.provider:
+        os.environ["WORLDSIM_PROVIDER__ACTIVE_PROFILE"] = args.provider
     name = scratch_database()
     print(f"scratch database {name}")
     scored = False

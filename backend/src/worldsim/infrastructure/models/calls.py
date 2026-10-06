@@ -32,7 +32,7 @@ class ModelProfileRow(Base):
     capabilities: Mapped[list[str]] = mapped_column(JSONB, default=list)
 
     __table_args__ = (
-        CheckConstraint("adapter IN ('fake','openrouter')", name="ck_profile_adapter"),
+        CheckConstraint("adapter IN ('fake','openrouter','venice')", name="ck_profile_adapter"),
         CheckConstraint("max_context_tokens >= 1", name="ck_profile_context"),
     )
 

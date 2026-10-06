@@ -22,7 +22,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 import worldsim
 
 Environment = Literal["local", "test"]
-ProviderProfile = Literal["fake", "openrouter"]
+ProviderProfile = Literal["fake", "openrouter", "venice"]
 #: Model-calling roles; selection.ROLE_NAMES re-exports this tuple.
 MODEL_ROLES = ("character", "reaction", "resolver", "narrator", "director", "summary")
 #: Hidden-reasoning budget sent to reasoning-capable models. "off" disables
@@ -71,9 +71,13 @@ class ProviderSettings(BaseModel):
     openrouter_api_key: SecretStr | None = None
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     openrouter_model: str = "openrouter/auto"
+    #: Venice (OpenAI-compatible): WORLDSIM_PROVIDER__ACTIVE_PROFILE=venice.
+    venice_api_key: SecretStr | None = None
+    venice_base_url: str = "https://api.venice.ai/api/v1"
+    venice_model: str = "venice-uncensored-1-2"
     #: Optional per-role model overrides, e.g.
     #: WORLDSIM_PROVIDER__ROLE_MODELS__NARRATOR=mistralai/mistral-nemo.
-    #: Roles left out use openrouter_model. Story pins still win.
+    #: Roles left out use the active provider's model. Story pins still win.
     role_models: dict[str, str] = Field(default_factory=dict)
     #: Reasoning for every role (WORLDSIM_PROVIDER__REASONING=off), with
     #: optional per-role overrides (WORLDSIM_PROVIDER__ROLE_REASONING__RESOLVER=low).
@@ -122,16 +126,22 @@ class ProviderSettings(BaseModel):
             return self.role_reasoning[role]
         return self.reasoning
 
-    @field_validator("openrouter_base_url")
+    @field_validator("openrouter_base_url", "venice_base_url")
     @classmethod
     def _require_http_base_url(cls, value: str) -> str:
         parsed = urlparse(value)
         if parsed.scheme not in ("http", "https") or not parsed.hostname:
             raise ValueError(
                 "invalid provider base URL; set WORLDSIM_PROVIDER__OPENROUTER_BASE_URL "
-                "to an http(s) URL"
+                "or WORLDSIM_PROVIDER__VENICE_BASE_URL to an http(s) URL"
             )
         return value
+
+    def default_model(self) -> str:
+        """The active provider's model for roles without an override."""
+        if self.active_profile == "venice":
+            return self.venice_model
+        return self.openrouter_model
 
 
 class TracingSettings(BaseModel):
@@ -201,6 +211,14 @@ class Settings(BaseSettings):
             raise ValueError(
                 "openrouter profile selected without credentials: set "
                 "WORLDSIM_PROVIDER__OPENROUTER_API_KEY or use the fake profile"
+            )
+        if self.provider.active_profile == "venice" and (
+            self.provider.venice_api_key is None
+            or not self.provider.venice_api_key.get_secret_value()
+        ):
+            raise ValueError(
+                "venice profile selected without credentials: set "
+                "WORLDSIM_PROVIDER__VENICE_API_KEY or use the fake profile"
             )
         return self
 

@@ -31,7 +31,13 @@ import IconImage from '../components/icons/IconImage.vue'
 import IconLock from '../components/icons/IconLock.vue'
 import IconCheck from '../components/icons/IconCheck.vue'
 import IconInfo from '../components/icons/IconInfo.vue'
-import { ADAPTER_LABELS, DEFAULT_MODEL, type Adapter } from '../game/providerSettings'
+import {
+  ADAPTER_DEFAULTS,
+  ADAPTER_LABELS,
+  DEFAULT_MODEL,
+  asAdapter
+} from '../game/providerSettings'
+import type { Adapter } from '../game/providerSettings'
 import { NEW_CONNECTION, useProviderSettings } from '../composables/useProviderSettings'
 
 /* sections ------------------------------------------------------------- */
@@ -78,11 +84,17 @@ function selectConnection(id: string): void {
   if (id !== s.selected.value) s.select(id)
 }
 function setAdapter(value: string): void {
-  const adapter: Adapter = value === 'fake' ? 'fake' : 'openrouter'
-  const previousDefault = DEFAULT_MODEL[s.form.value.adapter]
-  s.form.value.adapter = adapter
-  // Swap the model only while it is still the previous adapter's default.
-  if (s.form.value.modelId === previousDefault) s.form.value.modelId = DEFAULT_MODEL[adapter]
+  const adapter = asAdapter(value)
+  const form = s.form.value
+  const previous = form.adapter
+  form.adapter = adapter
+  // Swap each value only while it is still the previous adapter's default.
+  if (form.modelId === DEFAULT_MODEL[previous]) form.modelId = DEFAULT_MODEL[adapter]
+  if (adapter === 'fake') return
+  if (form.endpoint === ADAPTER_DEFAULTS[previous].endpoint)
+    form.endpoint = ADAPTER_DEFAULTS[adapter].endpoint
+  if (form.credentialEnv === ADAPTER_DEFAULTS[previous].credentialEnv || !form.credentialEnv)
+    form.credentialEnv = ADAPTER_DEFAULTS[adapter].credentialEnv
 }
 
 /** Credential note for the saved connection; unsaved edits are unknown. */

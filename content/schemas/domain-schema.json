@@ -6524,7 +6524,8 @@
         "AdapterKind": {
           "enum": [
             "fake",
-            "openrouter"
+            "openrouter",
+            "venice"
           ],
           "title": "AdapterKind",
           "type": "string"

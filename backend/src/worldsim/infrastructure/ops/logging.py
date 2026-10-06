@@ -29,6 +29,11 @@ def secret_values(settings: Settings) -> list[str]:
             else ""
         ),
         (
+            settings.provider.venice_api_key.get_secret_value()
+            if settings.provider.venice_api_key is not None
+            else ""
+        ),
+        (
             settings.tracing.langsmith_api_key.get_secret_value()
             if settings.tracing.langsmith_api_key is not None
             else ""

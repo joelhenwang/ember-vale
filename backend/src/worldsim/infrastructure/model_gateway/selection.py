@@ -29,8 +29,10 @@ from worldsim.infrastructure.model_gateway.profiles import (
     RESOLVER_FAKE_PROFILE,
     STAGE0_DEFAULT_BEAT,
     SUMMARY_FAKE_PROFILE,
+    VENICE_CHAT_PROFILE,
 )
 from worldsim.infrastructure.model_gateway.retry import RetryingGateway
+from worldsim.infrastructure.model_gateway.venice import VeniceGateway
 from worldsim.infrastructure.settings import MODEL_ROLES, Settings
 
 ROLE_NAMES = MODEL_ROLES
@@ -63,24 +65,29 @@ def gateways_for_settings(
             {role: fake_factory() for role in ROLE_NAMES},
             dict(FAKE_PROFILES),
         )
-    if settings.provider.active_profile == "openrouter":
-        key = settings.provider.openrouter_api_key
-        assert key is not None, "settings reject openrouter without credentials"
-        overrides = settings.provider.role_models
+    provider = settings.provider
+    if provider.active_profile in ("openrouter", "venice"):
+        venice = provider.active_profile == "venice"
+        key = provider.venice_api_key if venice else provider.openrouter_api_key
+        assert key is not None, "settings reject a live profile without credentials"
+        base_url = provider.venice_base_url if venice else provider.openrouter_base_url
+        adapter = VeniceGateway if venice else OpenRouterGateway
+        chat_profile = VENICE_CHAT_PROFILE if venice else OPENROUTER_CHAT_PROFILE
+        overrides = provider.role_models
         profiles = {
-            role: OPENROUTER_CHAT_PROFILE.model_copy(
-                update={"model_id": overrides.get(role, settings.provider.openrouter_model)}
+            role: chat_profile.model_copy(
+                update={"model_id": overrides.get(role, provider.default_model())}
             )
             for role in ROLE_NAMES
         }
         gateways: dict[str, ModelGateway] = {
             role: RetryingGateway(
-                OpenRouterGateway(
+                adapter(
                     profiles[role],
                     api_key=key,
-                    base_url=settings.provider.openrouter_base_url,
+                    base_url=base_url,
                     client=client,
-                    reasoning=settings.provider.reasoning_for(role),
+                    reasoning=provider.reasoning_for(role),
                 )
             )
             for role in ROLE_NAMES
@@ -107,6 +114,8 @@ def profile_for_pin(
     """
     if connection.adapter == AdapterKind.OPENROUTER:
         base = OPENROUTER_CHAT_PROFILE
+    elif connection.adapter == AdapterKind.VENICE:
+        base = VENICE_CHAT_PROFILE
     else:
         base = FAKE_PROFILES[role]
     return base.model_copy(
@@ -137,7 +146,7 @@ def gateway_for_pin(
     setting, so pinned stories get the same level as unpinned ones.
     """
     profile = profile_for_pin(role, pin, connection)
-    if connection.adapter == AdapterKind.OPENROUTER:
+    if connection.adapter in (AdapterKind.OPENROUTER, AdapterKind.VENICE):
         raw = (connection.credential_env or "").strip()
         secret = os.environ.get(raw) if raw else None
         if not secret:
@@ -146,8 +155,9 @@ def gateway_for_pin(
                 f"pinned provider {connection.name!r} has no credential configured",
                 {"connection_id": str(connection.id)},
             )
+        adapter = VeniceGateway if connection.adapter == AdapterKind.VENICE else OpenRouterGateway
         return RetryingGateway(
-            OpenRouterGateway(
+            adapter(
                 profile,
                 api_key=SecretStr(secret),
                 base_url=connection.endpoint,

@@ -10,7 +10,7 @@ from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
-AdapterName = Literal["fake", "openrouter"]
+AdapterName = Literal["fake", "openrouter", "venice"]
 
 
 class ModelGatewayError(Exception):

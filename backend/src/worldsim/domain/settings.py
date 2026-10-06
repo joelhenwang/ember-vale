@@ -22,6 +22,7 @@ SUPPORTED_SAMPLING = ("temperature", "top_p", "top_k")
 class AdapterKind(StrEnum):
     FAKE = "fake"
     OPENROUTER = "openrouter"
+    VENICE = "venice"
 
 
 class ProviderConnection(BaseModel):
