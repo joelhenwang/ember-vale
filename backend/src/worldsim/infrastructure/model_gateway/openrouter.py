@@ -25,6 +25,7 @@ from worldsim.application.ports.model_gateway import (
     ModelTimeoutError,
     ModelUnavailableError,
     ProbeResult,
+    unfence_json,
 )
 from worldsim.domain.jsonvalues import json_list, json_object
 
@@ -137,7 +138,12 @@ class OpenRouterGateway:
             except httpx.HTTPError as exc:
                 raise ModelUnavailableError(f"openrouter transport failed: {exc}") from exc
             latency_ms = max(0, int((time.monotonic() - started) * 1000))
-            return self._read_completion(response, latency_ms)
+            result = self._read_completion(response, latency_ms)
+            if request.json_mode:
+                # Some providers behind OpenRouter fence JSON (```json ... ```)
+                # even in JSON mode; every caller would otherwise repair it.
+                result = result.model_copy(update={"text": unfence_json(result.text)})
+            return result
         finally:
             await self._close_owned(client)
 

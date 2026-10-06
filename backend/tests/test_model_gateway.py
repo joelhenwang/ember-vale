@@ -255,3 +255,24 @@ def test_hedge_waits_are_per_role_unless_set() -> None:
     assert hedge_after("narrator", None) == 7.0
     assert hedge_after("character", 12.0) == 12.0  # one value for every role
     assert hedge_after("resolver", 0.0) == 0.0  # off
+
+
+def test_openrouter_strips_a_json_fence_only_in_json_mode() -> None:
+    fenced = '```json\n{"family": "wait"}\n```'
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        del request
+        return httpx.Response(
+            200,
+            json={
+                "model": "deepseek/deepseek-v4-flash",
+                "choices": [{"message": {"content": fenced}, "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": 3, "completion_tokens": 4},
+            },
+        )
+
+    gateway = _mocked_gateway(handler)
+    as_json = asyncio.run(gateway.complete(CompletionRequest(prompt="hi", json_mode=True)))
+    assert as_json.text == '{"family": "wait"}'
+    as_text = asyncio.run(gateway.complete(CompletionRequest(prompt="hi")))
+    assert as_text.text == fenced

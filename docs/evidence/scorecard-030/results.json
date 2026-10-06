@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "commit": "31aceea",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 6,
+    "at": "2026-10-06T12:57:55+00:00",
+    "wall_seconds": 87,
+    "est_usd_total": 0.0129381144,
+    "scenarios": [
+      "lost_item"
+    ]
+  },
+  "results": {
+    "lost_item": {
+      "ids": {
+        "world": "560a4cc0-9632-457a-94ad-987dcb10f476",
+        "place:Hearth": "b518cb94-dd54-4882-815d-bd7cceb4dd3a",
+        "place:Market": "52d75605-7916-457e-87ab-43189c7c42db",
+        "wren": "cb9f4fc6-d847-48da-a488-8dad6ca16659",
+        "ash": "e2233c74-c9cb-4e93-9c69-d86727904415",
+        "item:purse": "da22c6eb-27a6-4d4c-b319-d500f4b62abd"
+      },
+      "beat_seconds": [
+        11.75,
+        17.390999999945052,
+        15.172000000020489,
+        18.85999999998603,
+        13.312999999965541,
+        10.28200000000652
+      ],
+      "error": null,
+      "score": {
+        "calls": 47,
+        "failed_calls": 0,
+        "repairs": 5,
+        "repairs_by_role": {
+          "narrator": 2,
+          "character_decision": 3
+        },
+        "repair_rate": 0.10638297872340426,
+        "est_usd": 0.0129381144,
+        "action_mix": {
+          "take": 1,
+          "move": 3,
+          "communicate": 6,
+          "interact": 2,
+          "wait": 2
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 3,
+        "moves_done": 3,
+        "interact_success": 2,
+        "hooks": [
+          {
+            "title": "The Baker's Urgent Order",
+            "powers": "new_location,spawn_npc",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 0,
+        "final_places": {
+          "Wren": "Bakery",
+          "Ash": "Bakery",
+          "Marta": "Hearth"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Bakery"
+        ],
+        "items": {
+          "Lost purse": {
+            "holder": "Ash",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "purse held by Ash"
+      }
+    }
+  }
+}

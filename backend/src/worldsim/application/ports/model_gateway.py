@@ -133,3 +133,22 @@ class ModelGateway(Protocol):
     async def complete(self, request: CompletionRequest) -> CompletionResult: ...
     async def embed(self, request: EmbeddingRequest) -> EmbeddingResult: ...
     async def probe(self) -> ProbeResult: ...
+
+
+def unfence_json(raw: str) -> str:
+    """Strip one complete standalone fence around a JSON document.
+
+    Only an opening ``` (optionally tagged ```json) line plus a
+    closing ``` line with exactly one document between them is
+    unwrapped. Anything else — an unclosed fence, commentary around the
+    fence, or a labeled opener — is returned untouched so the existing
+    validation/repair path handles it.
+    """
+    lines = raw.strip().splitlines()
+    if len(lines) < 3:
+        return raw
+    if lines[0].strip().lower() not in ("```", "```json"):
+        return raw
+    if lines[-1].strip() != "```":
+        return raw
+    return "\n".join(lines[1:-1])

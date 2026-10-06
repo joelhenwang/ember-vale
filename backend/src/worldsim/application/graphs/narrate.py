@@ -35,6 +35,7 @@ from worldsim.application.ports.model_gateway import (
     ModelRefusalError,
     ModelTimeoutError,
     ModelUnavailableError,
+    unfence_json,
 )
 from worldsim.domain.commands import CommunicateAction, MoveAction
 from worldsim.domain.enums import NarrationKind, ReactionStatus
@@ -95,25 +96,6 @@ def render_system_prompt(template: str) -> str:
     """Fill the response-schema placeholder (the only placeholder)."""
     schema_json = json.dumps(_BEATS_ADAPTER.json_schema(), indent=2, sort_keys=True)
     return template.replace("{{RESPONSE_SCHEMA}}", schema_json)
-
-
-def unfence_json(raw: str) -> str:
-    """Strip one complete standalone fence around a JSON document.
-
-    Only an opening ``` (optionally tagged ```json) line plus a
-    closing ``` line with exactly one document between them is
-    unwrapped. Anything else — an unclosed fence, commentary around the
-    fence, or a labeled opener — is returned untouched so the existing
-    validation/repair path handles it.
-    """
-    lines = raw.strip().splitlines()
-    if len(lines) < 3:
-        return raw
-    if lines[0].strip().lower() not in ("```", "```json"):
-        return raw
-    if lines[-1].strip() != "```":
-        return raw
-    return "\n".join(lines[1:-1])
 
 
 def _fact_view(raw: Any) -> dict[str, str]:

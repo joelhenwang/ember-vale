@@ -1,0 +1,448 @@
+{
+  "meta": {
+    "commit": "31aceea",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 12,
+    "at": "2026-10-06T12:55:53+00:00",
+    "wall_seconds": 474,
+    "est_usd_total": 0.21324780299999999,
+    "scenarios": [
+      "strangers",
+      "lost_item",
+      "stuck_task",
+      "meet_up",
+      "named_place"
+    ]
+  },
+  "results": {
+    "strangers": {
+      "ids": {
+        "world": "c5320f81-84f6-4a70-95ed-f5e6b05a4842",
+        "place:Hearth": "f99d8a88-6aa0-4c05-b3c9-12692cfe35fe",
+        "place:Market": "9158c756-d49d-4d6f-a662-196cf1ec0d5a",
+        "wren": "754ced65-395f-445e-9570-f15371ab8be2",
+        "ash": "a4c26e24-87e3-451b-84d4-3a80ea6e8083"
+      },
+      "beat_seconds": [
+        58.98399999993853,
+        34.79700000002049,
+        44.625,
+        51.90700000000652,
+        32.5,
+        31.844000000040978,
+        15.578000000095926,
+        15.344000000040978,
+        24.67099999997299,
+        13.906000000075437,
+        12.09299999999348,
+        20.640999999945052
+      ],
+      "error": null,
+      "score": {
+        "calls": 81,
+        "failed_calls": 0,
+        "repairs": 2,
+        "repairs_by_role": {
+          "character_decision": 1,
+          "resolver": 1
+        },
+        "repair_rate": 0.024691358024691357,
+        "est_usd": 0.0284502888,
+        "action_mix": {
+          "interact": 4,
+          "communicate": 15,
+          "observe": 4,
+          "move": 1
+        },
+        "repetition_rate": 0.13333333333333333,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 5,
+        "moves_tried": 1,
+        "moves_done": 1,
+        "interact_success": 4,
+        "hooks": [
+          {
+            "title": "The Stray Satchel",
+            "powers": "place_item",
+            "status": "closed",
+            "ending": "The satchel's owner is identified as courier M.K., who left it behind in haste; the letters and key are now safely accounted for."
+          },
+          {
+            "title": "The Old Well's Echo",
+            "powers": "new_location",
+            "status": "proposed",
+            "ending": ""
+          },
+          {
+            "title": "A Lost Voice from the Well",
+            "powers": "",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 1,
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Well"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Well"
+        ],
+        "items": {
+          "Stray satchel": {
+            "holder": null,
+            "place": "Hearth"
+          },
+          "Brass key": {
+            "holder": "Wren",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "repeated questions 13% (pass \u2264 20%)"
+      }
+    },
+    "lost_item": {
+      "ids": {
+        "world": "93b9be91-9e28-4680-9d7a-4edf91988527",
+        "place:Hearth": "4b28d114-a611-4912-8e3b-4fbc78d85590",
+        "place:Market": "ee296b2f-23cd-41f8-8f57-3fdfe83c4ca3",
+        "wren": "255d2ea5-6247-4134-b2e7-7afde660d250",
+        "ash": "07afa910-63f2-4120-8d71-8b876684014d",
+        "item:purse": "6ac8c2b3-d18d-4142-8dfb-32dedb431d44"
+      },
+      "beat_seconds": [
+        35.32799999997951,
+        54.79599999997299,
+        61.23400000005495,
+        75.46799999999348,
+        31.81200000003446,
+        19.531000000075437,
+        40.85900000005495,
+        28.719000000040978,
+        51.15700000000652,
+        25.0,
+        23.625,
+        25.92200000002049
+      ],
+      "error": null,
+      "score": {
+        "calls": 202,
+        "failed_calls": 0,
+        "repairs": 21,
+        "repairs_by_role": {
+          "reaction": 4,
+          "character_decision": 11,
+          "narrator": 4,
+          "resolver": 2
+        },
+        "repair_rate": 0.10396039603960396,
+        "est_usd": 0.07195780660000001,
+        "action_mix": {
+          "observe": 3,
+          "wait": 4,
+          "take": 1,
+          "move": 7,
+          "communicate": 23,
+          "interact": 4,
+          "transfer": 1
+        },
+        "repetition_rate": 0.043478260869565216,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 1,
+        "moves_tried": 7,
+        "moves_done": 7,
+        "interact_success": 4,
+        "hooks": [
+          {
+            "title": "The Hearth's Empty Larder",
+            "powers": "spawn_npc",
+            "status": "proposed",
+            "ending": ""
+          },
+          {
+            "title": "The Keep Needs a Runner",
+            "powers": "new_location,spawn_npc",
+            "status": "closed",
+            "ending": "The sealed note reaches the Keep, and the anxious folk there finally get word from the market."
+          },
+          {
+            "title": "The Note from the Hill",
+            "powers": "new_location",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 1,
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Keep",
+          "Merry": "Market",
+          "Bailiff's Messenger": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Hill",
+          "Keep"
+        ],
+        "items": {
+          "Lost purse": {
+            "holder": "Merry",
+            "place": null
+          },
+          "Sealed note": {
+            "holder": "Ash",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "purse held by Merry"
+      }
+    },
+    "stuck_task": {
+      "ids": {
+        "world": "baaa5e55-525f-4f7a-bc1c-bc5aaf18bf6f",
+        "place:Hearth": "e7980949-a6f3-48b2-b2ae-73543cf722d2",
+        "place:Market": "6bf4e065-9cc3-4e18-99c2-80298967a6e3",
+        "wren": "28fe85fb-6afa-47e2-a598-a1140aa3c2ea",
+        "ash": "f479985f-2e08-4ce6-9f58-016b61b82b27",
+        "marg": "4ae727a6-426b-4068-99c2-2e15ac76e33d"
+      },
+      "beat_seconds": [
+        58.48399999993853,
+        44.578000000095926,
+        60.42200000002049,
+        55.64000000001397,
+        32.45299999997951,
+        15.827999999979511,
+        19.280999999959022,
+        19.843999999924563,
+        31.48499999998603,
+        20.25,
+        25.671999999904074,
+        34.29700000002049
+      ],
+      "error": null,
+      "score": {
+        "calls": 195,
+        "failed_calls": 0,
+        "repairs": 14,
+        "repairs_by_role": {
+          "character_decision": 9,
+          "narrator": 3,
+          "reaction": 2
+        },
+        "repair_rate": 0.07179487179487179,
+        "est_usd": 0.0602958046,
+        "action_mix": {
+          "wait": 13,
+          "communicate": 20,
+          "interact": 4,
+          "move": 4,
+          "observe": 6
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 2,
+        "longest_talk_streak": 1,
+        "moves_tried": 4,
+        "moves_done": 4,
+        "interact_success": 4,
+        "hooks": [
+          {
+            "title": "A Peculiar Morning Bargain",
+            "powers": "spawn_npc",
+            "status": "closed",
+            "ending": "The cart's wheel came free with a groan, and the flour sacks were rolled to Hilda's stall before the market bell."
+          },
+          {
+            "title": "The Flour Cart at the East Gate",
+            "powers": "new_location",
+            "status": "closed",
+            "ending": "The flour sacks are safe on the cart's right side, and Wren and Ash can now report to Hilda that her goods are accounted for."
+          }
+        ],
+        "settled": 2,
+        "final_places": {
+          "Wren": "East Gate",
+          "Ash": "East Gate",
+          "Old Marg": "East Gate",
+          "Hilda": "East Gate"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "East Gate"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "4 successful physical attempt(s)"
+      }
+    },
+    "meet_up": {
+      "ids": {
+        "world": "a8a986d0-a31a-4500-bf53-13c194810de8",
+        "place:Hearth": "0a652a1f-14a8-46ad-b7a4-4bbfadb7cd1d",
+        "place:Market": "4e6cbe10-18ce-4b40-a31f-52c9573c866e",
+        "wren": "508d0375-868e-4989-90bf-bab591aea34f",
+        "ash": "33ed6126-f659-4349-bf22-51a118116f75"
+      },
+      "beat_seconds": [
+        50.67099999997299,
+        46.625,
+        41.76599999994505,
+        68.46900000004098,
+        33.51500000001397,
+        22.89000000001397,
+        19.640999999945052,
+        10.453000000095926,
+        23.32799999997951,
+        13.687999999965541,
+        14.452999999979511,
+        20.281000000075437
+      ],
+      "error": null,
+      "score": {
+        "calls": 86,
+        "failed_calls": 0,
+        "repairs": 9,
+        "repairs_by_role": {
+          "resolver": 1,
+          "character_decision": 6,
+          "reaction": 1,
+          "narrator": 1
+        },
+        "repair_rate": 0.10465116279069768,
+        "est_usd": 0.0264130202,
+        "action_mix": {
+          "wait": 3,
+          "move": 4,
+          "communicate": 11,
+          "interact": 4,
+          "observe": 2
+        },
+        "repetition_rate": 0.09090909090909091,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 3,
+        "moves_tried": 4,
+        "moves_done": 3,
+        "interact_success": 4,
+        "hooks": [
+          {
+            "title": "Stranger at the Western Gate",
+            "powers": "new_location",
+            "status": "proposed",
+            "ending": ""
+          },
+          {
+            "title": "Miller's grain price",
+            "powers": "new_location",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 0,
+        "final_places": {
+          "Wren": "Mill",
+          "Ash": "Mill"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Western Gate",
+          "Mill"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "Wren at Mill, Ash at Mill"
+      }
+    },
+    "named_place": {
+      "ids": {
+        "world": "f3c13a6c-819b-4b09-a755-995fa35c566b",
+        "place:Hearth": "f5d05ac3-a7f6-4732-8e48-f17e1781ec93",
+        "place:Market": "d161b6e3-1870-4c18-98eb-6665a4451749",
+        "wren": "53e1102d-9ccc-4e0a-a831-829d657ee3ab",
+        "ash": "52a03065-17f6-45cd-a3ba-bdf462dcc31d"
+      },
+      "beat_seconds": [
+        63.936999999918044,
+        28.32799999997951,
+        27.280999999959022,
+        51.81200000003446,
+        41.34299999999348,
+        31.96799999999348,
+        17.04700000002049,
+        25.71799999999348,
+        24.54599999997299,
+        18.07799999997951,
+        9.734000000054948,
+        10.688000000081956
+      ],
+      "error": null,
+      "score": {
+        "calls": 88,
+        "failed_calls": 0,
+        "repairs": 12,
+        "repairs_by_role": {
+          "character_decision": 7,
+          "resolver": 3,
+          "reaction": 1,
+          "narrator": 1
+        },
+        "repair_rate": 0.13636363636363635,
+        "est_usd": 0.026130882799999998,
+        "action_mix": {
+          "move": 2,
+          "communicate": 4,
+          "observe": 9,
+          "wait": 1,
+          "interact": 8
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 1,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 8,
+        "hooks": [
+          {
+            "title": "Uncle's Urgent Message",
+            "powers": "new_location",
+            "status": "proposed",
+            "ending": ""
+          },
+          {
+            "title": "Uncle's Trapdoor Needs Lifting",
+            "powers": "",
+            "status": "closed",
+            "ending": "With Ash's lever still wedged under the edge, Wren's final heave pops the trapdoor open, revealing a dark storeroom below."
+          },
+          {
+            "title": "Uncle's Heavy Burden",
+            "powers": "new_location",
+            "status": "closed",
+            "ending": "With Wren's careful search and Ash's keen eye, they lifted the beam off Uncle and helped him to his feet, the mill's timbers groaning but holding."
+          }
+        ],
+        "settled": 2,
+        "final_places": {
+          "Wren": "Old Mill",
+          "Ash": "Old Mill"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Old Mill",
+          "Keep"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "added Old Mill; there at the end: Wren, Ash"
+      }
+    }
+  }
+}
