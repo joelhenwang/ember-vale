@@ -87,7 +87,8 @@ class ProviderSettings(BaseModel):
     role_reasoning: dict[str, ReasoningLevel] = Field(default_factory=dict)
     #: Seconds before a slow live call gets a twin request (first answer
     #: wins); 0 turns hedging off. Only slow calls pay for a duplicate.
-    hedge_after_s: float = Field(default=10.0, ge=0, le=120)
+    #: Unset uses per-role waits (ROLE_HEDGE_AFTER_S); a value applies to all.
+    hedge_after_s: float | None = Field(default=None, ge=0, le=120)
     #: OpenRouter provider routing: "throughput" sends each call to the
     #: fastest provider serving the model; "price" to the cheapest; unset
     #: keeps OpenRouter's default balancing.

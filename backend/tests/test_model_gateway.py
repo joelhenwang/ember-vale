@@ -246,3 +246,12 @@ def test_openrouter_usage_reads_cached_prompt_tokens() -> None:
     }
     bare = OpenRouterGateway._usage_of({"usage": {"prompt_tokens": 5}})  # pyright: ignore[reportPrivateUsage]
     assert bare["cached_tokens"] == 0
+
+
+def test_hedge_waits_are_per_role_unless_set() -> None:
+    from worldsim.infrastructure.model_gateway.selection import hedge_after
+
+    assert hedge_after("character", None) == 4.0
+    assert hedge_after("narrator", None) == 7.0
+    assert hedge_after("character", 12.0) == 12.0  # one value for every role
+    assert hedge_after("resolver", 0.0) == 0.0  # off

@@ -92,7 +92,7 @@ def gateways_for_settings(
                         reasoning=provider.reasoning_for(role),
                         sort=None if venice else provider.openrouter_sort,
                     ),
-                    provider.hedge_after_s,
+                    hedge_after(role, provider.hedge_after_s),
                 )
             )
             for role in ROLE_NAMES
@@ -105,6 +105,27 @@ def gateways_for_settings(
         },
         dict(FAKE_PROFILES),
     )
+
+
+#: Per-role hedge waits. Live calls one at a time answer in ~1 s (p90
+#: ~2 s, scripts/routing_eval.py), but in play 9-12% of decisions,
+#: reactions and director calls took over 4 s and 3-5% over 10 s. Roles
+#: that write more (narrator, resolver) normally take longer.
+ROLE_HEDGE_AFTER_S: dict[str, float] = {
+    "character": 4.0,
+    "reaction": 4.0,
+    "director": 5.0,
+    "resolver": 7.0,
+    "narrator": 7.0,
+    "summary": 10.0,
+}
+
+
+def hedge_after(role: str, configured: float | None) -> float:
+    """Seconds before a twin request for this role; 0 means never."""
+    if configured is not None:
+        return configured
+    return ROLE_HEDGE_AFTER_S.get(role, 10.0)
 
 
 def hedged(gateway: ModelGateway, after_s: float) -> ModelGateway:
