@@ -143,6 +143,14 @@ def _goal_meet_up(s: dict[str, Any]) -> tuple[bool, str]:
     return together, f"Wren at {places.get('Wren')}, Ash at {places.get('Ash')}"
 
 
+def _goal_named_place(s: dict[str, Any]) -> tuple[bool, str]:
+    mills = [name for name in s["all_places"] if "mill" in name.lower()]
+    there = [who for who, place in s["final_places"].items() if place in mills]
+    if not mills:
+        return False, "no mill was added"
+    return bool(there), f"added {mills[0]}; there at the end: {', '.join(there) or 'nobody'}"
+
+
 SCENARIOS: list[Scenario] = [
     Scenario(
         key="strangers",
@@ -199,6 +207,21 @@ SCENARIOS: list[Scenario] = [
             Person("ash", "Ash", "Market", ASH, intention="wait for Wren at the Market"),
         ],
         goal=_goal_meet_up,
+    ),
+    Scenario(
+        key="named_place",
+        title="Wren wants to visit the old mill, which is not on the map",
+        people=[
+            Person(
+                "wren",
+                "Wren",
+                "Market",
+                WREN + "\nWants: to visit her uncle, the miller, at the old mill.",
+                intention="find the way to the old mill and see my uncle",
+            ),
+            Person("ash", "Ash", "Market", ASH),
+        ],
+        goal=_goal_named_place,
     ),
 ]
 
@@ -435,6 +458,9 @@ def score(
     hooks = conn.execute(
         "select title, requested_powers from narrative_hook where world_id = %s", (world,)
     ).fetchall()
+    all_places = [
+        row[0] for row in conn.execute("select name from location where world_id = %s", (world,))
+    ]
     final_places = dict(
         conn.execute(
             "select c.name, l.name from character_state cs"
@@ -469,6 +495,7 @@ def score(
         "interact_success": interact_success,
         "hooks": [{"title": t, "powers": p} for t, p in hooks],
         "final_places": final_places,
+        "all_places": all_places,
         "items": items,
     }
     passed, why = scenario.goal(stats)

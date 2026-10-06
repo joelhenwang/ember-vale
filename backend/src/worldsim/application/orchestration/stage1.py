@@ -226,6 +226,7 @@ from worldsim.domain.rules.dnd import (
 )
 from worldsim.domain.rules.dnd.data import dict_field, entry, str_field, table
 from worldsim.domain.rules.meetups import resolve_meetups
+from worldsim.domain.rules.mentions import unmapped_places
 from worldsim.domain.rules.perception import permitted_facts
 from worldsim.domain.rules.phases import is_quiet_phase
 from worldsim.domain.rules.resources import rest_recovery, restore, spend
@@ -455,7 +456,7 @@ DIRECTOR_RECENT_EVENTS = 8
 _IDLE_FAMILIES = frozenset({ActionFamily.WAIT, ActionFamily.OBSERVE, ActionFamily.REST})
 
 
-async def _recent_happenings(uow: Any, world_id: UUID) -> tuple[list[str], int, int]:
+async def _recent_happenings(uow: Any, world_id: UUID) -> tuple[list[str], int, int, list[str]]:
     """Latest scene narrations (oldest first) and two stall signals.
 
     Idle streak: recent beats where every attempt was a wait, observe or
@@ -474,6 +475,7 @@ async def _recent_happenings(uow: Any, world_id: UUID) -> tuple[list[str], int, 
             lines.append(f"{phase_label(event.absolute_index)}: {text[:240]}")
     idle_by_index: dict[int, bool] = {}
     talk_by_index: dict[int, bool] = {}
+    said: list[str] = []  # speech and attempts, for places mentioned but not mapped
     for event in scenes:
         if event.phase_run_id is None:
             continue
@@ -485,13 +487,17 @@ async def _recent_happenings(uow: Any, world_id: UUID) -> tuple[list[str], int, 
             for intent_id in scene.intent_ids:
                 intent = await uow.scenes.get_intent(intent_id)
                 family = intent.action.family
+                if isinstance(intent.action, CommunicateAction):
+                    said.append(intent.action.topic)
+                elif isinstance(intent.action, InteractAction):
+                    said.append(intent.action.attempt)
                 if family not in _IDLE_FAMILIES:
                     idle = False
                 if family not in _IDLE_FAMILIES and family != ActionFamily.COMMUNICATE:
                     talk = False
         idle_by_index[event.absolute_index] = idle
         talk_by_index[event.absolute_index] = talk
-    return lines, _streak(idle_by_index), _streak(talk_by_index)
+    return lines, _streak(idle_by_index), _streak(talk_by_index), said
 
 
 def _streak(flags: Mapping[int, bool]) -> int:
@@ -1678,7 +1684,7 @@ class Stage1Orchestrator:
             locations = await uow.locations.list_for_world(world_id)
             hooks = await uow.narrative.list_hooks_for_world(world_id)
             arcs = await uow.narrative.list_arcs_for_world(world_id)
-            recent, quiet_streak, talk_streak = await _recent_happenings(uow, world_id)
+            recent, quiet_streak, talk_streak, said = await _recent_happenings(uow, world_id)
             intentions = {
                 c.id: i.text
                 for c in characters
@@ -1703,6 +1709,10 @@ class Stage1Orchestrator:
         )
         added_raw = config.get(ADDED_PLACES_CONFIG_KEY)
         places_left = max(0, MAX_ADDED_PLACES - (added_raw if isinstance(added_raw, int) else 0))
+        unmapped = unmapped_places(
+            [*said, *intentions.values(), *(h.purpose for h in hooks)],
+            [loc.name for loc in locations],
+        )
         summary = (
             director_summary(
                 index,
@@ -1717,6 +1727,15 @@ class Stage1Orchestrator:
             )
             + f"\nNew characters you may still add to this story: {spawns_left}."
             + f"\nNew places you may still add to this story: {places_left}."
+            + "\nPlaces mentioned but not on the map: "
+            + (
+                "; ".join(
+                    f"{name} ({count} mention{'s' if count > 1 else ''})"
+                    for name, count in unmapped
+                )
+                or "none"
+            )
+            + "."
         )
         hook_id = new_hook_id()
         arc_id = new_arc_id()

@@ -38,7 +38,7 @@ from worldsim.application.ports.model_gateway import (
 from worldsim.domain.director import DirectorProposal, validate_proposal
 
 #: Versioned director prompt file.
-DIRECTOR_PROMPT_VERSION = "director.v7"
+DIRECTOR_PROMPT_VERSION = "director.v8"
 
 _PROPOSAL_ADAPTER: TypeAdapter[DirectorProposal] = TypeAdapter(DirectorProposal)
 _DIRECTOR_ACTIONS = frozenset({"propose_hook", "propose_arc", "noop"})
