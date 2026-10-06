@@ -552,8 +552,17 @@ async def _apply_effect_step(
             factory, world_id, index, step, intervention_id, characters
         )
     except DomainError as error:
-        await _mark_step(factory, step, StepStatus.FAILED, str(error))
-        return
+        # A racing applier may have just committed this step's effect (the
+        # loser then trips the unique constraint): one more pass adopts the
+        # recorded effect through its per-step receipt instead of failing a
+        # step that in fact succeeded.
+        try:
+            activity_id, event_id = await _run_effect(
+                factory, world_id, index, step, intervention_id, characters
+            )
+        except DomainError:
+            await _mark_failed_unless_completed(factory, step, str(error))
+            return
     await _mark_completed(factory, step, activity_id, event_id)
 
 
@@ -665,6 +674,20 @@ async def record_attempts(
         async with factory() as uow:
             current = await uow.interventions.get_intervention(intervention_id)
         await _finish_intervention(factory, current)
+
+
+async def _mark_failed_unless_completed(
+    factory: Callable[[], UnitOfWork], step: InterventionStep, reason: str
+) -> None:
+    """Record a failure, but never over a step a rival applier completed."""
+    try:
+        await _mark_step(factory, step, StepStatus.FAILED, reason)
+    except DomainError as exc:
+        if exc.code is not ErrorCode.VERSION_CONFLICT:
+            raise
+        current = await _read_step(factory, step.intervention_id, step.seq)
+        if current is None or current.status != StepStatus.COMPLETED:
+            raise
 
 
 async def _mark_step(
