@@ -59,7 +59,7 @@ jobs:
           src="target/${{ matrix.target }}/release/ember-vale-launcher"
           [ -f "$src.exe" ] && src="$src.exe"
           cp "$src" "../dist/${{ matrix.asset }}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.asset }}
           path: dist/${{ matrix.asset }}
@@ -72,7 +72,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
