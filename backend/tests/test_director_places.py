@@ -15,8 +15,10 @@ from test_stage1_api import MIGRATIONS, SEED_DIR, ApiClient, _advance, _route_fo
 
 from worldsim.application.ports.model_gateway import CompletionRequest
 from worldsim.domain.director import DirectorDecision, DirectorProposal, validate_proposal
+from worldsim.infrastructure.db.engine import create_engine
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
 from worldsim.infrastructure.model_gateway.profiles import FAKE_TEST_PROFILE
+from worldsim.infrastructure.repositories.unit_of_work import create_unit_of_work
 from worldsim.infrastructure.settings import Settings
 from worldsim.interfaces.http.app import create_app
 
@@ -86,6 +88,15 @@ def stage1_client(migrated_db: None) -> Iterator[tuple[ApiClient, FakeGateway]]:
         yield ApiClient(raw), gateway
 
 
+async def _pending_jobs(world_id: Any) -> list[Any]:
+    engine = create_engine(Settings())
+    try:
+        async with create_unit_of_work(engine) as uow:
+            return await uow.assets.list_pending_jobs(50, world_id)
+    finally:
+        await engine.dispose()
+
+
 def test_added_place_is_on_the_map_and_reachable(
     stage1_client: tuple[ApiClient, FakeGateway],
 ) -> None:
@@ -120,6 +131,10 @@ def test_added_place_is_on_the_map_and_reachable(
     }
     forge = places["Old Forge"]
     assert "Hob" in forge["occupants"]
+    # The new place and the new person each get an image queued.
+    jobs = asyncio.run(_pending_jobs(ids["world"]))
+    assert {(job.kind.value, str(job.subject_id)) for job in jobs} >= {("background", forge["id"])}
+    assert sum(job.kind.value == "portrait" for job in jobs) == 1
     assert {r["to_location_id"] for r in forge["routes"]} == {str(ids["hearth"])}
     assert forge["id"] in {r["to_location_id"] for r in places["Hearth"]["routes"]}
 

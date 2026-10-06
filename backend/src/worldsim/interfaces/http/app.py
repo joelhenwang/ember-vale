@@ -20,9 +20,12 @@ from worldsim.application.autoplay import AutoplayRunner
 from worldsim.application.orchestration.stage1 import Stage1PhaseReport
 from worldsim.application.tasks.service import TaskService
 from worldsim.domain.errors import DomainError
+from worldsim.infrastructure.images.krea import KreaImageGenerator
+from worldsim.infrastructure.images.runner import ImageJobRunner
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
 from worldsim.infrastructure.ops.logging import install
 from worldsim.infrastructure.settings import Settings
+from worldsim.infrastructure.storage.local import LocalStorage
 from worldsim.interfaces.http.auth import ApiKeyMiddleware
 from worldsim.interfaces.http.beats import run_beat
 from worldsim.interfaces.http.errors import (
@@ -80,11 +83,34 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         )
         loop = asyncio.create_task(runner.run_forever())
     app.state.autoplay_runner = runner
+    images = _image_runner(state)
+    images_loop = asyncio.create_task(images.run_forever()) if images is not None else None
+    app.state.image_runner = images
     yield
     if runner is not None and loop is not None:
         await runner.stop()
         await loop
+    if images is not None and images_loop is not None:
+        await images.stop()
+        await images_loop
     await state.engine.dispose()
+
+
+def _image_runner(state: AppState) -> ImageJobRunner | None:
+    """The Krea job runner, when images are switched on."""
+    images = state.settings.images
+    if images.provider != "krea":
+        return None
+    content = state.seed_dir.parent.parent
+    return ImageJobRunner(
+        state.uow_factory(),
+        KreaImageGenerator(images.krea_base_url, timeout_s=images.krea_timeout_s),
+        LocalStorage(content / "assets"),
+        content / "visual-styles",
+        style=images.krea_style,
+        pixel=images.krea_pixel,
+        poll_seconds=images.poll_seconds,
+    )
 
 
 async def _autoplay_beat(state: AppState, world_id: UUID, index: int) -> Stage1PhaseReport:

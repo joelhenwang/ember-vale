@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from uuid import uuid4, uuid5
 
+from worldsim.application.images import queue_image, world_style_pack
 from worldsim.application.transactions.canonical import canonical_input_hash
 from worldsim.application.unit_of_work import UnitOfWork
+from worldsim.domain.assets import AssetKind
 from worldsim.domain.characters import Character, CharacterCard
 from worldsim.domain.director import (
     ADDED_PLACES_CONFIG_KEY,
@@ -33,10 +35,13 @@ async def accept_decision(
     """Persist accepted rows, audit the command, and advance the cooldown."""
     await uow.worlds.put_config(world_id, "director.last_absolute", last_absolute)
     if decision.accepted:
+        style_pack = await world_style_pack(uow, world_id)
         if decision.place is not None:
             await _add_place(uow, world_id, decision.place)
+            await queue_image(uow, world_id, AssetKind.BACKGROUND, decision.place.id, style_pack)
         if decision.npc is not None:
             await _spawn(uow, world_id, decision.npc)
+            await queue_image(uow, world_id, AssetKind.PORTRAIT, decision.npc.id, style_pack)
         if decision.item is not None:
             await uow.inventory.add_item(
                 ItemInstance(

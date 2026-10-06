@@ -165,6 +165,27 @@ class SqlAlchemyAssetRepository:
         ).scalar_one_or_none()
         return self._to_job(row) if row is not None else None
 
+    async def list_pending_jobs(self, limit: int, world_id: UUID | None = None) -> list[ImageJob]:
+        """Pending jobs, fewest attempts first so one stuck job cannot starve others."""
+        query = select(ImageJobRow).where(ImageJobRow.status == JobStatus.PENDING.value)
+        if world_id is not None:
+            query = query.where(ImageJobRow.world_id == world_id)
+        rows = (
+            await self._session.execute(
+                query.order_by(ImageJobRow.attempt_count, ImageJobRow.id).limit(limit)
+            )
+        ).scalars()
+        return [self._to_job(row) for row in rows]
+
+    async def style_pack_for_world(self, world_id: UUID) -> str | None:
+        return (
+            await self._session.execute(
+                select(ImageJobRow.style_pack_version)
+                .where(ImageJobRow.world_id == world_id)
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+
     async def save_job(self, job: ImageJob, expected_version: int) -> ImageJob:
         row = await self._session.get(ImageJobRow, job.id)
         if row is None:

@@ -18,11 +18,13 @@ from uuid import UUID, uuid4
 
 from sqlalchemy.exc import IntegrityError
 
+from worldsim.application.images import queue_image
 from worldsim.application.library.builtins import WORLD_PRESET_ID
 from worldsim.application.orchestration.stage1 import UnitOfWorkFactory
 from worldsim.application.stories.validation import validate_draft
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.activities import TravelRoute
+from worldsim.domain.assets import AssetKind
 from worldsim.domain.characters import Character, CharacterCard
 from worldsim.domain.enums import EventType, LifeStatus, PhaseName, PhaseRunState, UserRole
 from worldsim.domain.errors import DomainError, ErrorCode
@@ -322,6 +324,7 @@ async def _instantiate(
             )
         )
         runtime_characters[member.instance_key] = character_id
+        await queue_image(uow, world_id, AssetKind.PORTRAIT, character_id)
     await uow.versions.ensure(world_id, world_id, "world")
     for location_id in location_ids.values():
         await uow.versions.ensure(location_id, world_id, "location")

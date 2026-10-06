@@ -42,6 +42,9 @@ services:
       WORLDSIM_SECURITY__API_KEY: "${WORLDSIM_SECURITY__API_KEY:-}"
     ports:
       - "${API_PORT:-8101}:8000"
+    volumes:
+      # Generated portraits and place art outlive container rebuilds.
+      - generated-embervale:/app/content/assets/generated
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/live')\""]
       interval: 10s
@@ -51,3 +54,4 @@ services:
 
 volumes:
   pgdata-embervale:
+  generated-embervale:

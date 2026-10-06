@@ -32,6 +32,8 @@ class JobStatus(StrEnum):
 
 #: Generation attempts per job before it fails terminally.
 MAX_JOB_ATTEMPTS = 3
+#: Style pack for worlds that never chose one (content/visual-styles).
+DEFAULT_STYLE_PACK = "anime-saga-v1"
 
 
 class AssetRecord(BaseModel):

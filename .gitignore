@@ -10,3 +10,5 @@ __pycache__
 .pytest_cache
 .ruff_cache
 .journey-artifact.json
+# Images made by the image provider at runtime
+content/assets/generated/

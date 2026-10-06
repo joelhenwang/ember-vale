@@ -170,6 +170,22 @@ class AutoplaySettings(BaseModel):
     poll_seconds: float = Field(default=1.0, gt=0, le=60)
 
 
+class ImageSettings(BaseModel):
+    """Portraits and place art (Krea 2 Studio, see krea2-studio docs/API.md).
+
+    WORLDSIM_IMAGES__PROVIDER=krea starts a runner that works pending
+    image jobs; the default "fixture" leaves them pending.
+    """
+
+    provider: Literal["fixture", "krea"] = "fixture"
+    krea_base_url: str = ""
+    krea_timeout_s: float = Field(default=180.0, gt=0, le=900)
+    #: Style LoRA for painted packs (GET /v1/styles); pixel packs use krea_pixel.
+    krea_style: str = "kreanima-lora-r32"
+    krea_pixel: Literal["32", "64", "128"] = "64"
+    poll_seconds: float = Field(default=2.0, gt=0, le=60)
+
+
 class SecuritySettings(BaseModel):
     """Explicit override for non-loopback listeners."""
 
@@ -191,6 +207,7 @@ class Settings(BaseSettings):
     graphs: GraphSettings = GraphSettings()
     security: SecuritySettings = SecuritySettings()
     autoplay: AutoplaySettings = AutoplaySettings()
+    images: ImageSettings = ImageSettings()
 
     @model_validator(mode="after")
     def _reject_unsafe_combinations(self) -> Settings:
@@ -212,6 +229,13 @@ class Settings(BaseSettings):
                 "openrouter profile selected without credentials: set "
                 "WORLDSIM_PROVIDER__OPENROUTER_API_KEY or use the fake profile"
             )
+        if self.images.provider == "krea":
+            parsed = urlparse(self.images.krea_base_url)
+            if parsed.scheme not in ("http", "https") or not parsed.hostname:
+                raise ValueError(
+                    "krea images selected without a service: set "
+                    "WORLDSIM_IMAGES__KREA_BASE_URL to an http(s) URL"
+                )
         if self.provider.active_profile == "venice" and (
             self.provider.venice_api_key is None
             or not self.provider.venice_api_key.get_secret_value()
