@@ -51,6 +51,7 @@ from worldsim.interfaces.http.routes import (
     stage1,
     stage2,
     stories,
+    story_prompts,
     world,
 )
 from worldsim.interfaces.http.routes import (
@@ -181,6 +182,7 @@ def create_app(
     app.include_router(settings_routes.router, prefix="/api/v1")
     app.include_router(image_settings.router, prefix="/api/v1")
     app.include_router(pictures.router, prefix="/api/v1")
+    app.include_router(story_prompts.router, prefix="/api/v1")
     app.include_router(stage2.router, prefix="/api/v1")
     app.include_router(macro.router, prefix="/api/v1")
     app.include_router(assets.router, prefix="/api/v1")

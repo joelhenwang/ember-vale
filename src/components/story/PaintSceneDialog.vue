@@ -118,6 +118,17 @@ async function paint(): Promise<void> {
           :maxlength="PROMPT_MAX"
           :disabled="busy"
           autofocus />
+        <p v-if="offer.added_before || offer.added_after" class="paint-dlg__added">
+          From Story settings, also added:
+          <template v-if="offer.added_before">
+            before “<b>{{ offer.added_before }}</b
+            >”</template
+          ><template v-if="offer.added_before && offer.added_after">, </template>
+          <template v-if="offer.added_after"
+            >after “<b>{{ offer.added_after }}</b
+            >”</template
+          >.
+        </p>
         <p class="paint-dlg__meta">
           <span>{{ prompt.length }} / {{ PROMPT_MAX }}</span>
           <button v-if="edited" type="button" class="paint-dlg__reset" @click="reset">
@@ -227,6 +238,15 @@ async function paint(): Promise<void> {
   color: var(--teal-ink);
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+.paint-dlg__added {
+  font-size: 13.5px;
+  color: var(--ink-3);
+  line-height: 1.45;
+}
+.paint-dlg__added b {
+  font-weight: 600;
+  color: var(--ink-2);
 }
 .paint-dlg__hint {
   font-size: 14px;

@@ -100,6 +100,7 @@ from worldsim.application.interventions import (
     record_attempts,
 )
 from worldsim.application.orchestration.background import BackgroundNarration
+from worldsim.application.orchestration.framing import frame_gateways
 from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
 from worldsim.application.pictures import queue_moment
 from worldsim.application.ports.local_models import LocalModels, LocalModelsUnavailable
@@ -1012,6 +1013,7 @@ class Stage1Orchestrator:
         """Resolve sampling plus gateway selection once per phase run."""
         async with self._factory() as uow:
             pin = await resolve_pin(uow, world_id)
+            words = await uow.story_prompts.get(world_id)
         sampling = sampling_from_pin(pin) if pin is not None else SamplingParams()
         gateways: dict[str, ModelGateway] = {}
         profiles: dict[str, ModelProfile] = {}
@@ -1019,6 +1021,7 @@ class Stage1Orchestrator:
             for role, profile in self._profiles.items():
                 gateways[role] = self._gateways(role)
                 profiles[role] = cast(ModelProfile, profile)
+            gateways = frame_gateways(gateways, words.llm_prefix, words.llm_suffix)
             return PhaseRuntime(sampling=sampling, gateways=gateways, profiles=profiles, pin=None)
         if self._pin_gateways is None:
             raise DomainError(
@@ -1030,6 +1033,7 @@ class Stage1Orchestrator:
             gateway = self._pin_gateways(role, pin)
             gateways[role] = gateway
             profiles[role] = gateway.profile
+        gateways = frame_gateways(gateways, words.llm_prefix, words.llm_suffix)
         return PhaseRuntime(sampling=sampling, gateways=gateways, profiles=profiles, pin=pin)
 
     async def _open_wanted_place(

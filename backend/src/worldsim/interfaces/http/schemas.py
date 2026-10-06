@@ -1022,6 +1022,9 @@ class PictureSuggestion(BaseModel):
     place: str | None = None
     #: False when the server has no image machine (painting is refused).
     available: bool
+    #: Story settings words added before and after the prompt when painting.
+    added_before: str = ""
+    added_after: str = ""
 
 
 class PaintSceneRequest(BaseModel):
@@ -1696,3 +1699,46 @@ class ImagePreviewView(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     images: list[ImagePreviewItem]
+
+
+class CharacterPromptView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    character_id: UUID
+    name: str
+    prefix: str = ""
+    suffix: str = ""
+    portrait_asset_id: UUID | None = None
+
+
+class StoryPromptsView(BaseModel):
+    """The player's words added to this story's prompts."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    world_id: UUID
+    llm_prefix: str = ""
+    llm_suffix: str = ""
+    image_prefix: str = ""
+    image_suffix: str = ""
+    version: int
+    characters: list[CharacterPromptView] = Field(default_factory=list)
+
+
+class CharacterPromptUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    character_id: UUID
+    prefix: str = Field(default="", max_length=400)
+    suffix: str = Field(default="", max_length=400)
+
+
+class StoryPromptsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    llm_prefix: str = Field(default="", max_length=2000)
+    llm_suffix: str = Field(default="", max_length=2000)
+    image_prefix: str = Field(default="", max_length=400)
+    image_suffix: str = Field(default="", max_length=400)
+    characters: list[CharacterPromptUpdate] = Field(default_factory=list)
+    expected_version: int = Field(ge=0)

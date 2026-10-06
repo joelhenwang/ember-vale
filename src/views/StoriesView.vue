@@ -156,6 +156,7 @@ onMounted(async () => {
             @continue="openStory(s)"
             @configure="openSetup(s)"
             @saves="openStory(s)"
+            @settings="router.push({ name: 'story-settings', params: { storyId: s.id } })"
             @archive="toggleArchive(s, $event)" />
         </div>
 

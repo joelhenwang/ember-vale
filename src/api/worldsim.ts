@@ -43,6 +43,8 @@ import type {
   PaintSceneRequest,
   PictureSuggestion,
   SceneArtView,
+  StoryPromptsUpdate,
+  StoryPromptsView,
   PreferencesView,
   RoleGrantView,
   RoleSelectRequest,
@@ -652,6 +654,28 @@ export function paintScene(
   return apiFetch<SceneArtView>(`/world/scenes/${sceneId}/pictures`, {
     ...opts,
     method: 'POST',
+    body
+  })
+}
+
+/* Story settings: the player's words around this story's prompts --------- */
+
+export function getStoryPrompts(
+  worldId: string,
+  opts: CallOptions = {}
+): Promise<StoryPromptsView> {
+  return apiFetch<StoryPromptsView>(`/stories/${worldId}/prompts`, { ...opts, method: 'GET' })
+}
+
+export function saveStoryPrompts(
+  worldId: string,
+  body: StoryPromptsUpdate,
+  opts: CallOptions = {}
+): Promise<StoryPromptsView> {
+  // expected_version guards concurrent edits (VERSION_CONFLICT on mismatch).
+  return apiFetch<StoryPromptsView>(`/stories/${worldId}/prompts`, {
+    ...opts,
+    method: 'PUT',
     body
   })
 }

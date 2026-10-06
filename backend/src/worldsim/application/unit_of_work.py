@@ -39,6 +39,7 @@ from worldsim.application.ports.repositories import (
     SceneRepository,
     ScheduleRepository,
     SettingsRepository,
+    StoryPromptRepository,
     StoryRepository,
     SummaryRepository,
     TaskRepository,
@@ -99,6 +100,8 @@ class UnitOfWork(Protocol):
     def mentions(self) -> MentionRepository: ...
     @property
     def pictures(self) -> PictureRepository: ...
+    @property
+    def story_prompts(self) -> StoryPromptRepository: ...
     @property
     def roles(self) -> RoleRepository: ...
     @property

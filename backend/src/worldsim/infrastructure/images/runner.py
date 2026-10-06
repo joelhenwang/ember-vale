@@ -16,6 +16,7 @@ from uuid import UUID
 
 from worldsim.application.images import (
     compose_prompt,
+    image_additions,
     image_request,
     load_style_pack,
     subject_text,
@@ -116,14 +117,19 @@ class ImageJobRunner:
         pack = load_style_pack(self._packs_dir, job.style_pack_version)
         characters: tuple[str, ...] = ()
         references: tuple[str, ...] = ()
+        people: list[UUID] = []
         if job.kind == AssetKind.SCENE:
-            subject, characters, references = await self._scene_parts(job)
+            subject, characters, references, people = await self._scene_parts(job)
         else:
             async with self._factory() as uow:
                 subject = await subject_text(uow, job)
-        prompt, ratio = compose_prompt(pack, job.kind, subject)
+            if job.kind == AssetKind.PORTRAIT and job.subject_id is not None:
+                people = [job.subject_id]
+        async with self._factory() as uow:
+            added = await image_additions(uow, job.world_id, people)
+        prompt, ratio = compose_prompt(pack, job.kind, added.subject(subject))
         return image_request(
-            prompt,
+            added.whole(prompt),
             ratio,
             job.kind,
             prefs,
@@ -134,7 +140,9 @@ class ImageJobRunner:
             references=references,
         )
 
-    async def _scene_parts(self, job: ImageJob) -> tuple[str, tuple[str, ...], tuple[str, ...]]:
+    async def _scene_parts(
+        self, job: ImageJob
+    ) -> tuple[str, tuple[str, ...], tuple[str, ...], list[UUID]]:
         """A scene picture's words, its people's faces, and its place's art.
 
         Each person with a portrait is registered with the image service
@@ -179,7 +187,7 @@ class ImageJobRunner:
                     place_art = (f"data:{art.mime};base64,{data}",)
         for card in cards:
             await self._generator.ensure_character(card)
-        return words, tuple(card.id for card in cards), place_art
+        return words, tuple(card.id for card in cards), place_art, picture.character_ids
 
     async def run_forever(self) -> None:
         while not self._stopping.is_set():

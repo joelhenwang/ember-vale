@@ -674,6 +674,8 @@ export interface PictureCharacter {
 }
 
 export interface PictureSuggestion {
+  added_after?: string;
+  added_before?: string;
   available: boolean;
   caption: string;
   characters?: PictureCharacter[];
@@ -685,6 +687,39 @@ export interface PaintSceneRequest {
   caption?: string | null;
   prompt: string;
   world_id: string;
+}
+
+export interface StoryPromptsView {
+  characters?: CharacterPromptView[];
+  image_prefix?: string;
+  image_suffix?: string;
+  llm_prefix?: string;
+  llm_suffix?: string;
+  version: number;
+  world_id: string;
+}
+
+export interface CharacterPromptView {
+  character_id: string;
+  name: string;
+  portrait_asset_id?: string | null;
+  prefix?: string;
+  suffix?: string;
+}
+
+export interface StoryPromptsUpdate {
+  characters?: CharacterPromptUpdate[];
+  expected_version: number;
+  image_prefix?: string;
+  image_suffix?: string;
+  llm_prefix?: string;
+  llm_suffix?: string;
+}
+
+export interface CharacterPromptUpdate {
+  character_id: string;
+  prefix?: string;
+  suffix?: string;
 }
 
 export interface PresentationResponse {

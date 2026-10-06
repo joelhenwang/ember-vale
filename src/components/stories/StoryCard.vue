@@ -30,6 +30,7 @@ const emit = defineEmits<{
   continue: []
   configure: []
   saves: []
+  settings: []
   archive: [archived: boolean]
 }>()
 
@@ -141,6 +142,7 @@ function menuArchive(): void {
       </div>
 
       <div class="scard__saveswrap">
+        <button type="button" class="scard__saves" @click="emit('settings')">Story settings</button>
         <button type="button" class="scard__saves" @click="emit('saves')">
           View story & saves <IconArrowRight :size="13" />
         </button>
@@ -370,7 +372,10 @@ function menuArchive(): void {
   margin-top: 12px;
   padding-top: 10px;
   border-top: 1px solid #eadfc4;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 22px;
 }
 .scard__saves {
   display: inline-flex;

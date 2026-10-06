@@ -54,7 +54,7 @@ export function isIdempotencyConflict(err: unknown): boolean {
 }
 
 export interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'
+  method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
   body?: unknown
   /** Preserved across retries of the same user operation; fresh per operation. */
   idempotencyKey?: string

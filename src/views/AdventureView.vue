@@ -331,6 +331,9 @@ onMounted(() => {
       <nav class="adv__links">
         <RouterLink :to="{ name: 'story-watch', params: { storyId } }">World map</RouterLink>
         <RouterLink :to="{ name: 'story-play', params: { storyId } }">Story room</RouterLink>
+        <RouterLink :to="{ name: 'story-settings', params: { storyId } }"
+          >Story settings</RouterLink
+        >
       </nav>
     </header>
 

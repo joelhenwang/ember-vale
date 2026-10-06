@@ -849,6 +849,75 @@
         "title": "CharacterDetail",
         "type": "object"
       },
+      "CharacterPromptUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "prefix": {
+            "default": "",
+            "maxLength": 400,
+            "title": "Prefix",
+            "type": "string"
+          },
+          "suffix": {
+            "default": "",
+            "maxLength": 400,
+            "title": "Suffix",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id"
+        ],
+        "title": "CharacterPromptUpdate",
+        "type": "object"
+      },
+      "CharacterPromptView": {
+        "additionalProperties": false,
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "portrait_asset_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Portrait Asset Id"
+          },
+          "prefix": {
+            "default": "",
+            "title": "Prefix",
+            "type": "string"
+          },
+          "suffix": {
+            "default": "",
+            "title": "Suffix",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name"
+        ],
+        "title": "CharacterPromptView",
+        "type": "object"
+      },
       "CharacterSummary": {
         "additionalProperties": false,
         "description": "Stage 1 character listing (owned by S1-API-001).",
@@ -4138,6 +4207,16 @@
         "additionalProperties": false,
         "description": "What \"Paint this scene\" offers before the player edits it.",
         "properties": {
+          "added_after": {
+            "default": "",
+            "title": "Added After",
+            "type": "string"
+          },
+          "added_before": {
+            "default": "",
+            "title": "Added Before",
+            "type": "string"
+          },
           "available": {
             "title": "Available",
             "type": "boolean"
@@ -6386,6 +6465,100 @@
           "expected_version"
         ],
         "title": "StoryPatchRequest",
+        "type": "object"
+      },
+      "StoryPromptsUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterPromptUpdate"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "expected_version": {
+            "minimum": 0.0,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "image_prefix": {
+            "default": "",
+            "maxLength": 400,
+            "title": "Image Prefix",
+            "type": "string"
+          },
+          "image_suffix": {
+            "default": "",
+            "maxLength": 400,
+            "title": "Image Suffix",
+            "type": "string"
+          },
+          "llm_prefix": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Llm Prefix",
+            "type": "string"
+          },
+          "llm_suffix": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Llm Suffix",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_version"
+        ],
+        "title": "StoryPromptsUpdate",
+        "type": "object"
+      },
+      "StoryPromptsView": {
+        "additionalProperties": false,
+        "description": "The player's words added to this story's prompts.",
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterPromptView"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "image_prefix": {
+            "default": "",
+            "title": "Image Prefix",
+            "type": "string"
+          },
+          "image_suffix": {
+            "default": "",
+            "title": "Image Suffix",
+            "type": "string"
+          },
+          "llm_prefix": {
+            "default": "",
+            "title": "Llm Prefix",
+            "type": "string"
+          },
+          "llm_suffix": {
+            "default": "",
+            "title": "Llm Suffix",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          },
+          "world_id": {
+            "format": "uuid",
+            "title": "World Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "world_id",
+          "version"
+        ],
+        "title": "StoryPromptsView",
         "type": "object"
       },
       "StoryProviderEnvironmentView": {
@@ -12164,6 +12337,100 @@
           }
         },
         "summary": "Unarchive Story",
+        "tags": [
+          "stories"
+        ]
+      }
+    },
+    "/api/v1/stories/{world_id}/prompts": {
+      "get": {
+        "operationId": "read_story_prompts_api_v1_stories__world_id__prompts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "world_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "World Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoryPromptsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Story Prompts",
+        "tags": [
+          "stories"
+        ]
+      },
+      "put": {
+        "operationId": "save_story_prompts_api_v1_stories__world_id__prompts_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "world_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "World Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoryPromptsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoryPromptsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Story Prompts",
         "tags": [
           "stories"
         ]

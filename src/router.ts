@@ -73,6 +73,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Adventure — Ember Vale' }
   },
   {
+    path: '/stories/:storyId/settings',
+    name: 'story-settings',
+    component: () => import('./views/StorySettingsView.vue'),
+    meta: { title: 'Story settings — Ember Vale' }
+  },
+  {
     path: '/stories/:storyId/watch',
     name: 'story-watch',
     component: () => import('./views/ObservatoryView.vue'),

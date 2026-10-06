@@ -12,13 +12,14 @@ from uuid import UUID
 from fastapi import APIRouter, Request
 
 from worldsim.application.capabilities import is_omniscient, parse_role
-from worldsim.application.images import world_style_pack
+from worldsim.application.images import image_additions, world_style_pack
 from worldsim.application.pictures import newest_asset, queue_picture, suggest
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.assets import AssetKind
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.pictures import PictureMoment
 from worldsim.domain.scenes import Scene
+from worldsim.domain.story_prompts import framed
 from worldsim.interfaces.http import schemas as api
 from worldsim.interfaces.http.routes.roles import effective_role
 
@@ -58,7 +59,10 @@ async def picture_suggestion(
         place = None
         if offer.location_id is not None:
             place = (await uow.locations.get(offer.location_id)).name
+        added = await image_additions(uow, world_id, offer.character_ids)
     return api.PictureSuggestion(
+        added_before=framed(added.story_prefix, added.people_prefix, ""),
+        added_after=framed(added.people_suffix, added.story_suffix, ""),
         prompt=offer.prompt,
         caption=offer.caption,
         characters=people,

@@ -8,6 +8,7 @@ provider they stay pending, which is how a missing provider shows.
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID
@@ -18,6 +19,7 @@ from worldsim.domain.assets import DEFAULT_STYLE_PACK, AssetKind, ImageJob
 from worldsim.domain.ids import new_job_id
 from worldsim.domain.jsonvalues import json_object
 from worldsim.domain.settings import ImagePrefs
+from worldsim.domain.story_prompts import framed
 
 #: Krea 2 Studio aspect ratios, as width / height.
 _RATIOS: dict[str, float] = {
@@ -183,3 +185,40 @@ async def queue_image(
 async def world_style_pack(uow: UnitOfWork, world_id: UUID) -> str:
     """The pack a world's images were first queued with, else the default."""
     return await uow.assets.style_pack_for_world(world_id) or DEFAULT_STYLE_PACK
+
+
+@dataclass(frozen=True)
+class Additions:
+    """The player's words around one image prompt (Story settings).
+
+    Character additions sit right around what is drawn; the story's go
+    around everything, style wording included.
+    """
+
+    story_prefix: str = ""
+    story_suffix: str = ""
+    people_prefix: str = ""
+    people_suffix: str = ""
+
+    def subject(self, text: str) -> str:
+        return framed(self.people_prefix, text, self.people_suffix)
+
+    def whole(self, prompt: str) -> str:
+        return framed(self.story_prefix, prompt, self.story_suffix)
+
+
+async def image_additions(
+    uow: UnitOfWork, world_id: UUID | None, character_ids: Sequence[UUID] = ()
+) -> Additions:
+    """The story's image additions and those of the characters drawn."""
+    if world_id is None:
+        return Additions()
+    story = await uow.story_prompts.get(world_id)
+    people = await uow.story_prompts.characters(world_id)
+    chosen = [people[c] for c in character_ids if c in people]
+    return Additions(
+        story_prefix=story.image_prefix.strip(),
+        story_suffix=story.image_suffix.strip(),
+        people_prefix=" ".join(p.prefix.strip() for p in chosen if p.prefix.strip()),
+        people_suffix=" ".join(p.suffix.strip() for p in chosen if p.suffix.strip()),
+    )

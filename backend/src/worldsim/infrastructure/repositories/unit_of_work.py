@@ -52,6 +52,9 @@ from worldsim.infrastructure.repositories.scenes import SqlAlchemySceneRepositor
 from worldsim.infrastructure.repositories.schedules import SqlAlchemyScheduleRepository
 from worldsim.infrastructure.repositories.settings import SqlAlchemySettingsRepository
 from worldsim.infrastructure.repositories.stories import SqlAlchemyStoryRepository
+from worldsim.infrastructure.repositories.story_prompts import (
+    SqlAlchemyStoryPromptRepository,
+)
 from worldsim.infrastructure.repositories.summaries import SqlAlchemySummaryRepository
 from worldsim.infrastructure.repositories.tasks import SqlAlchemyTaskRepository
 from worldsim.infrastructure.repositories.traces import SqlAlchemyTraceRepository
@@ -94,6 +97,7 @@ class SqlAlchemyUnitOfWork:
         self._recall: SqlAlchemyRecallRepository | None = None
         self._mentions: SqlAlchemyMentionRepository | None = None
         self._pictures: SqlAlchemyPictureRepository | None = None
+        self._story_prompts: SqlAlchemyStoryPromptRepository | None = None
         self._summaries: SqlAlchemySummaryRepository | None = None
         self._roles: SqlAlchemyRoleRepository | None = None
         self._autoplay: SqlAlchemyAutoplayRepository | None = None
@@ -291,6 +295,12 @@ class SqlAlchemyUnitOfWork:
         return self._pictures
 
     @property
+    def story_prompts(self) -> SqlAlchemyStoryPromptRepository:
+        if self._story_prompts is None:
+            self._story_prompts = SqlAlchemyStoryPromptRepository(self._require_session())
+        return self._story_prompts
+
+    @property
     def roles(self) -> SqlAlchemyRoleRepository:
         if self._roles is None:
             self._roles = SqlAlchemyRoleRepository(self._require_session())
@@ -385,6 +395,7 @@ class SqlAlchemyUnitOfWork:
             self._recall = None
             self._mentions = None
             self._pictures = None
+            self._story_prompts = None
             self._schedules = None
             self._outbox = None
             self._perception = None

@@ -57,6 +57,9 @@ class ApiClient:
     def patch(self, url: str, **kwargs: Any) -> httpx.Response:
         return cast(httpx.Response, self._raw_any().patch(url, **kwargs))
 
+    def put(self, url: str, **kwargs: Any) -> httpx.Response:
+        return cast(httpx.Response, self._raw_any().put(url, **kwargs))
+
     def delete(self, url: str, **kwargs: Any) -> httpx.Response:
         return cast(httpx.Response, self._raw_any().delete(url, **kwargs))
 
