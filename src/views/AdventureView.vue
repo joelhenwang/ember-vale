@@ -279,8 +279,12 @@ watch(canSay, (yes) => {
 })
 
 let clock: ReturnType<typeof setInterval> | undefined
+function onVisibility(): void {
+  if (document.visibilityState === 'visible') adv.onVisible()
+}
 onUnmounted(() => {
   if (clock !== undefined) clearInterval(clock)
+  document.removeEventListener('visibilitychange', onVisibility)
 })
 onMounted(() => {
   void adv.load().then(() => {
@@ -289,6 +293,7 @@ onMounted(() => {
     setTimeout(() => void scrollToEnd(), 600)
   })
   clock = setInterval(() => (now.value = Date.now()), 1000)
+  document.addEventListener('visibilitychange', onVisibility)
 })
 </script>
 

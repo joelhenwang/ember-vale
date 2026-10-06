@@ -293,6 +293,11 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
     return me.value ? act(waitIntent(me.value)) : Promise.resolve(false)
   }
 
+  /** A tab coming back into view catches up at once (hidden tabs poll slowly). */
+  function onVisible(): void {
+    if (!acting.value) void refresh().then(planPoll)
+  }
+
   function dispose(): void {
     disposed = true
     cancelPoll?.()
@@ -331,6 +336,7 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
     refresh,
     act,
     wait,
+    onVisible,
     dispose
   }
 }
