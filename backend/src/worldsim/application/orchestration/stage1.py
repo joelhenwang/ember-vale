@@ -248,6 +248,13 @@ from worldsim.domain.rules.meetups import resolve_meetups
 from worldsim.domain.rules.mentions import MENTION_MODEL, unmapped_places
 from worldsim.domain.rules.perception import permitted_facts
 from worldsim.domain.rules.phases import is_quiet_phase
+from worldsim.domain.rules.repeats import (
+    Exchange,
+    answered_exchanges,
+    repeated,
+    retry_note,
+    settled_note,
+)
 from worldsim.domain.rules.resources import rest_recovery, restore, spend
 from worldsim.domain.rules.routes import with_route
 from worldsim.domain.rules.scenes import assemble_scenes
@@ -813,6 +820,10 @@ def _place_suggestion(
         f'"connect_to": "{origin.id}"}} (reached from {origin.name}).'
     )
 
+
+#: How far back (phases) answered exchanges count, and how many are shown.
+ANSWERED_WINDOW_PHASES = 10
+ANSWERED_SHOWN = 3
 
 #: A recap older than this many phases is no longer "just now".
 PREVIOUSLY_MAX_AGE = 3
@@ -2471,72 +2482,136 @@ class Stage1Orchestrator:
             )
             await self._finish_task(task_run_id, owner, True)
             return intent
-        envelope, included, excluded = await self._context_for(
-            world_id, run_id, sealed.snapshot_id, character, deciding=True
-        )
-        sources, dropped = to_manifest_dict(included, excluded)
-        async with self._factory() as uow:
-            carried_ids = [
-                str(i.id) for i in await uow.inventory.list_for_owner(world_id, character.id)
-            ]
-            here_ids = [
-                str(i.id)
-                for i in await uow.inventory.list_at_location(world_id, character.location_id)
-            ]
-        spec = ManifestSpec(
-            role="character_decision",
-            profile=runtime.profiles["character"],
-            prompt_version=CHARACTER_PROMPT_VERSION,
-            world_id=world_id,
-            phase_run_id=run_id,
-            task_run_id=task_run_id,
-            actor_id=character.id,
-            sources=sources,
-            budgets={},
-            tokens={"total": envelope.total_estimated_tokens},
-            dropped=dropped,
-            pin_profile_id=runtime.pin_id,
-            pin_profile_revision=runtime.pin_revision,
-        )
-        traced = TracedGateway(runtime.gateways["character"], self._traces, spec)
-        invocation = GraphInvocation(
-            graph_name="character-decision",
-            graph_version="v1",
-            task_run_id=task_run_id,
-            world_id=world_id,
-            phase_run_id=run_id,
-            snapshot_id=sealed.snapshot_id,
-            actor_id=character.id,
-            context_manifest_id=envelope.manifest_id,
-            role="character_decision",
-            profile_version=traced.profile.version,
-            prompt_version=CHARACTER_PROMPT_VERSION,
-            input={
-                "rendered_context": envelope.rendered,
-                "actor_alive": True,
-                "known_character_ids": known,
-                "location_ids": place_ids,
-                "carried_item_ids": carried_ids,
-                "item_ids_here": here_ids,
-            },
-        )
-        sampling = runtime.sampling
-        graph = build_character_graph(
-            CharacterGraphDeps(
-                gateway=traced,
-                profile=runtime.profiles["character"],
-                system_template=load_character_prompt(),
-                temperature=sampling.temperature,
-                top_p=sampling.top_p,
-                top_k=sampling.top_k,
-                max_tokens=sampling.max_tokens,
+        answered = await self._answered(world_id, character)
+
+        async def _attempt(task_id: UUID, extra_goal: str | None) -> dict[str, Any]:
+            task_run_id = task_id
+            envelope, included, excluded = await self._context_for(
+                world_id,
+                run_id,
+                sealed.snapshot_id,
+                character,
+                deciding=True,
+                answered=answered,
+                extra_goal=extra_goal,
             )
-        )
-        result = await invoke(graph, invocation)
+            sources, dropped = to_manifest_dict(included, excluded)
+            async with self._factory() as uow:
+                carried_ids = [
+                    str(i.id) for i in await uow.inventory.list_for_owner(world_id, character.id)
+                ]
+                here_ids = [
+                    str(i.id)
+                    for i in await uow.inventory.list_at_location(world_id, character.location_id)
+                ]
+            spec = ManifestSpec(
+                role="character_decision",
+                profile=runtime.profiles["character"],
+                prompt_version=CHARACTER_PROMPT_VERSION,
+                world_id=world_id,
+                phase_run_id=run_id,
+                task_run_id=task_run_id,
+                actor_id=character.id,
+                sources=sources,
+                budgets={},
+                tokens={"total": envelope.total_estimated_tokens},
+                dropped=dropped,
+                pin_profile_id=runtime.pin_id,
+                pin_profile_revision=runtime.pin_revision,
+            )
+            traced = TracedGateway(runtime.gateways["character"], self._traces, spec)
+            invocation = GraphInvocation(
+                graph_name="character-decision",
+                graph_version="v1",
+                task_run_id=task_run_id,
+                world_id=world_id,
+                phase_run_id=run_id,
+                snapshot_id=sealed.snapshot_id,
+                actor_id=character.id,
+                context_manifest_id=envelope.manifest_id,
+                role="character_decision",
+                profile_version=traced.profile.version,
+                prompt_version=CHARACTER_PROMPT_VERSION,
+                input={
+                    "rendered_context": envelope.rendered,
+                    "actor_alive": True,
+                    "known_character_ids": known,
+                    "location_ids": place_ids,
+                    "carried_item_ids": carried_ids,
+                    "item_ids_here": here_ids,
+                },
+            )
+            sampling = runtime.sampling
+            graph = build_character_graph(
+                CharacterGraphDeps(
+                    gateway=traced,
+                    profile=runtime.profiles["character"],
+                    system_template=load_character_prompt(),
+                    temperature=sampling.temperature,
+                    top_p=sampling.top_p,
+                    top_k=sampling.top_k,
+                    max_tokens=sampling.max_tokens,
+                )
+            )
+            return await invoke(graph, invocation)
+
+        result = await _attempt(task_run_id, None)
         intent = Intent.model_validate(result["proposal"]["intent"])
+        again = await self._repeats_answered(intent, answered)
+        if again is not None:
+            # Said and answered already: one more try with the answer in
+            # view. The second answer stands, repeat or not.
+            retry_id = derive_task_id(run_id, "character:again", character.id)
+            await self._track_task(world_id, retry_id, owner)
+            result = await _attempt(retry_id, again)
+            intent = Intent.model_validate(result["proposal"]["intent"])
+            await self._finish_task(retry_id, owner, True)
         await self._remember_intention(world_id, character.id, result.get("raw_response"))
         await self._finish_task(task_run_id, owner, True)
         return intent
+
+    async def _answered(self, world_id: UUID, character: Character) -> list[Exchange]:
+        """This character's recently answered exchanges, newest first."""
+        async with self._factory() as uow:
+            _day, _phase, now_index = await uow.worlds.get_clock(world_id)
+            observations = await uow.perception.observations_for_observer(
+                character.id,
+                100000,
+                since_phase_index=max(0, now_index - ANSWERED_WINDOW_PHASES),
+                min_salience=MAX_SALIENCE + 1,
+            )
+        lines = sorted(
+            (
+                (obs.created_phase_index, 1 if fact.key.startswith("reply:") else 0, fact.value)
+                for obs in observations
+                for fact in obs.facts
+                if fact.key in ("attempt:communicate", "reply:communicate")
+            ),
+            key=lambda line: (line[0], line[1]),
+        )
+        return answered_exchanges([(phase, value) for phase, _o, value in lines], character.name)
+
+    async def _repeats_answered(self, intent: Intent, answered: Sequence[Exchange]) -> str | None:
+        """A retry note when a spoken decision repeats an answered exchange."""
+        action = intent.action
+        if not isinstance(action, CommunicateAction) or not answered:
+            return None
+        line = action.topic.strip().strip('"')
+        similarity: dict[int, float] | None = None
+        if self._local_models is not None:
+            try:
+                found = await self._local_models.embed(
+                    [line, *(e.said for e in answered)], "document"
+                )
+                first, *rest = found.vectors
+                similarity = {
+                    i: sum(a * b for a, b in zip(first, vec, strict=True))
+                    for i, vec in enumerate(rest)
+                }
+            except LocalModelsUnavailable:
+                similarity = None
+        exchange = repeated(line, answered, similarity)
+        return None if exchange is None else retry_note(line, exchange)
 
     async def _track_task(self, world_id: UUID, task_id: UUID, owner: str) -> None:
         """Audit-only task row for a character decision (recovery stays with commits)."""
@@ -2594,6 +2669,8 @@ class Stage1Orchestrator:
         character: Character,
         *,
         deciding: bool = False,
+        answered: Sequence[Exchange] = (),
+        extra_goal: str | None = None,
     ) -> tuple[ContextEnvelope, list[ManifestSource], list[ManifestSource]]:
         """Perspective candidates for one character (filters before ranking).
 
@@ -2708,6 +2785,28 @@ class Stage1Orchestrator:
                     text=f"Word around the vale: {hook.title}. {hook.purpose}".strip(),
                     score=2.0,
                     created_phase_index=hook.created_phase_index,
+                )
+            )
+        if answered:
+            candidates.append(
+                SourceCandidate(
+                    source_id=f"answered:{character.id}",
+                    data_class="goals",
+                    visibility=Visibility.PRIVATE,
+                    owner_id=character.id,
+                    text=settled_note(answered[:ANSWERED_SHOWN]),
+                    score=2.5,
+                )
+            )
+        if extra_goal is not None:
+            candidates.append(
+                SourceCandidate(
+                    source_id=f"again:{character.id}",
+                    data_class="goals",
+                    visibility=Visibility.PRIVATE,
+                    owner_id=character.id,
+                    text=extra_goal,
+                    score=4.0,
                 )
             )
         note = streak_note(families, intention.text if intention is not None else None)
