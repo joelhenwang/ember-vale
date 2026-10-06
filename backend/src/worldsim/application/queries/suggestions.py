@@ -82,6 +82,20 @@ async def suggestions_for(uow: UnitOfWork, character_id: UUID) -> list[api.Sugge
                     target_character_id=other.id,
                 )
             )
+    # What you carry can change hands: one chip per item for whoever is first here.
+    carried = await uow.inventory.list_for_owner(world_id, character.id)
+    if others:
+        for item in carried[:3]:
+            suggestions.append(
+                api.SuggestionView(
+                    id=f"give:{item.id.hex}:{others[0].id.hex}",
+                    family="transfer",
+                    title=f"Give the {item_label(item)} to {others[0].name}",
+                    subtitle=item_description(item)[:120],
+                    target_character_id=others[0].id,
+                    item_instance_id=item.id,
+                )
+            )
     for item in await uow.inventory.list_at_location(world_id, character.location_id):
         if item.owner_id is not None:
             continue

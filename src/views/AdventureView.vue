@@ -1123,7 +1123,8 @@ button.who:hover > span {
   background: #efe3c3;
   transform: translateY(-1px);
 }
-.chip--take {
+.chip--take,
+.chip--transfer {
   border-color: var(--gold-soft);
   color: var(--gold);
 }

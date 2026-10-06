@@ -154,3 +154,46 @@ def test_no_spar_offered_without_seated_sheets(
     families = {s["family"] for s in offered}
     assert "communicate" in families  # Ash is here to talk to
     assert "spar" not in families
+
+
+def test_carried_items_can_be_given_to_someone_here(
+    stage1_client: tuple[ApiClient, FakeGateway],
+) -> None:
+    from worldsim.domain.progress import ItemInstance
+
+    client, _ = stage1_client
+    ids = asyncio.run(_seed_connected())
+    locket = uuid.uuid4()
+
+    async def set_scene() -> None:
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                ash = await uow.characters.get(ids["ash"])
+                await uow.characters.save_state(
+                    ash.model_copy(update={"location_id": ids["hearth"]}), ash.version
+                )
+                await uow.inventory.add_item(
+                    ItemInstance(
+                        id=locket,
+                        world_id=ids["world"],
+                        item_key="placed_item",
+                        owner_id=ids["wren"],
+                        name="Silver locket",
+                    )
+                )
+                await uow.commit()
+        finally:
+            await engine.dispose()
+
+    asyncio.run(set_scene())
+    wren = str(ids["wren"])
+    offered = client.get(
+        "/api/v1/stage1/suggestions",
+        params={"character_id": wren},
+        headers={"X-Worldsim-Role": "player", "X-Worldsim-Character": wren},
+    ).json()
+    give = [s for s in offered if s["family"] == "transfer"]
+    assert [(s["title"], s["item_instance_id"], s["target_character_id"]) for s in give] == [
+        ("Give the Silver locket to Ash", str(locket), str(ids["ash"]))
+    ]

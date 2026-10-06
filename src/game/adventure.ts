@@ -187,6 +187,15 @@ export function suggestionIntent(me: string, s: SuggestionView, words?: string):
       return s.item_instance_id
         ? { ...base(me), family: 'take', item_instance_id: s.item_instance_id }
         : null
+    case 'transfer':
+      return s.item_instance_id && s.target_character_id
+        ? {
+            ...base(me),
+            family: 'transfer',
+            item_instance_id: s.item_instance_id,
+            target_character_id: s.target_character_id
+          }
+        : null
     case 'spar':
       return s.target_character_id
         ? { ...base(me), family: 'spar', target_character_id: s.target_character_id }
@@ -204,7 +213,14 @@ export function suggestionIntent(me: string, s: SuggestionView, words?: string):
 
 /** Chips shown under the composer: one click acts, no typing needed. */
 export function quickChips(suggestions: SuggestionView[]): SuggestionView[] {
-  const order: Record<string, number> = { take: 0, move: 1, observe: 2, spar: 3, rest: 4 }
+  const order: Record<string, number> = {
+    take: 0,
+    transfer: 1,
+    move: 2,
+    observe: 3,
+    spar: 4,
+    rest: 5
+  }
   return suggestions
     .filter((s) => s.family in order)
     .sort((a, b) => order[a.family] - order[b.family])

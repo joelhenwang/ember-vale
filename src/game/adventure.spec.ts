@@ -138,6 +138,12 @@ describe('adventure actions', () => {
       family: 'take',
       item_instance_id: 'i1'
     })
+    expect(
+      suggestionIntent(
+        ME,
+        s({ family: 'transfer', item_instance_id: 'i1', target_character_id: 'ash' })
+      )
+    ).toMatchObject({ family: 'transfer', item_instance_id: 'i1', target_character_id: 'ash' })
     expect(suggestionIntent(ME, s({ family: 'communicate', target_character_id: 'ash' }))).toBe(
       null
     )
