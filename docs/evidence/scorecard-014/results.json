@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "commit": "e402d90",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T06:00:09+00:00",
+    "wall_seconds": 215,
+    "est_usd_total": 0.0145765882,
+    "scenarios": [
+      "lost_item"
+    ]
+  },
+  "results": {
+    "lost_item": {
+      "ids": {
+        "world": "5a116c77-e09a-4a64-81ce-a81c790a5160",
+        "place:Hearth": "b2a8c03d-777a-4f2e-acf1-78c7ffee9e69",
+        "place:Market": "c6caf3e1-70e1-4401-a429-b7b543306309",
+        "wren": "bf667c58-d10e-44d2-b04f-26a3090b3067",
+        "ash": "3ae87f89-5115-43cf-813f-60c8f92ac5f9",
+        "item:purse": "5e0cc903-c724-49c5-9368-6e38ad0ea191"
+      },
+      "beat_seconds": [
+        18.905999999959022,
+        22.04700000002049,
+        26.32799999997951,
+        29.280999999959022,
+        39.67200000002049,
+        11.5,
+        28.68799999996554,
+        37.73399999993853
+      ],
+      "error": null,
+      "score": {
+        "calls": 50,
+        "failed_calls": 0,
+        "repairs": 2,
+        "repairs_by_role": {
+          "narrator": 2
+        },
+        "repair_rate": 0.04,
+        "est_usd": 0.0145765882,
+        "action_mix": {
+          "take": 1,
+          "move": 6,
+          "communicate": 7,
+          "wait": 1,
+          "observe": 1
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 6,
+        "moves_done": 6,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "A Crate Gone Astray",
+            "powers": ""
+          },
+          {
+            "title": "A Purse with a Story",
+            "powers": ""
+          }
+        ],
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {
+          "Lost purse": {
+            "holder": "Ash",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "purse held by Ash"
+      }
+    }
+  }
+}

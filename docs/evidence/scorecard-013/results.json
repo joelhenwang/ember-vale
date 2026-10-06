@@ -1,0 +1,335 @@
+{
+  "meta": {
+    "commit": "e402d90",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T05:56:04+00:00",
+    "wall_seconds": 407,
+    "est_usd_total": 0.11117341759999999,
+    "scenarios": [
+      "strangers",
+      "lost_item",
+      "stuck_task",
+      "meet_up",
+      "named_place"
+    ]
+  },
+  "results": {
+    "strangers": {
+      "ids": {
+        "world": "c4bbe03e-9225-4dca-9611-73531f0cea48",
+        "place:Hearth": "4553b8a6-66b7-433e-bb50-52ddc9f861a1",
+        "place:Market": "f6ebf2f0-267f-4cce-a45f-cc47b7372125",
+        "wren": "67a84332-c750-4210-b289-727fc46b1830",
+        "ash": "dddf634e-13ea-48e3-b612-8a4d3aa0dd1a"
+      },
+      "beat_seconds": [
+        37.67200000002049,
+        25.60999999998603,
+        36.18700000003446,
+        28.875,
+        58.01500000001397,
+        52.96900000004098,
+        17.67200000002049,
+        26.95299999997951
+      ],
+      "error": null,
+      "score": {
+        "calls": 85,
+        "failed_calls": 0,
+        "repairs": 3,
+        "repairs_by_role": {
+          "resolver": 1,
+          "character_decision": 1,
+          "narrator": 1
+        },
+        "repair_rate": 0.03529411764705882,
+        "est_usd": 0.023431129999999998,
+        "action_mix": {
+          "communicate": 8,
+          "move": 4,
+          "interact": 4,
+          "observe": 3,
+          "wait": 4
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 2,
+        "moves_tried": 4,
+        "moves_done": 4,
+        "interact_success": 4,
+        "hooks": [
+          {
+            "title": "The first customers at the Market",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Hearth",
+          "Mara": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "repeated questions 0% (pass \u2264 20%)"
+      }
+    },
+    "lost_item": {
+      "ids": {
+        "world": "93d473e6-e082-4216-bb70-69ebe3a5d66a",
+        "place:Hearth": "273b8e38-5e06-43a6-92d3-ffdabc5f327d",
+        "place:Market": "16cb8d0e-c55f-435d-accf-3d6018c8eee5",
+        "wren": "ce87d4a3-ebfb-4242-92b8-97c763898c26",
+        "ash": "15e05a1b-0a03-4de5-85c8-089c0340ab49",
+        "item:purse": "106aa61c-4740-40c7-ae83-a8b85f020d94"
+      },
+      "beat_seconds": [
+        46.04700000002049,
+        50.21900000004098,
+        53.65599999995902,
+        22.530999999959022,
+        32.85999999998603,
+        45.938000000081956,
+        41.28099999995902,
+        40.68700000003446
+      ],
+      "error": null,
+      "score": {
+        "calls": 89,
+        "failed_calls": 0,
+        "repairs": 3,
+        "repairs_by_role": {
+          "resolver": 2,
+          "narrator": 1
+        },
+        "repair_rate": 0.033707865168539325,
+        "est_usd": 0.0267068592,
+        "action_mix": {
+          "interact": 2,
+          "move": 1,
+          "communicate": 12,
+          "wait": 3,
+          "take": 2,
+          "observe": 3
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 2,
+        "moves_tried": 1,
+        "moves_done": 1,
+        "interact_success": 2,
+        "hooks": [
+          {
+            "title": "The first cart of the season",
+            "powers": "spawn_npc"
+          },
+          {
+            "title": "The spring route",
+            "powers": "new_location"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Bram": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Spring"
+        ],
+        "items": {
+          "Lost purse": {
+            "holder": null,
+            "place": "Market"
+          }
+        },
+        "goal_passed": false,
+        "goal_detail": "purse held by nobody"
+      }
+    },
+    "stuck_task": {
+      "ids": {
+        "world": "a713b8e3-fd52-4526-9c3e-ce51dff59e74",
+        "place:Hearth": "3065f906-7597-433b-87a2-4a6b51a3705e",
+        "place:Market": "a7bda0cf-859a-42a8-81cd-1920f370488e",
+        "wren": "5fa890f4-5764-488e-8810-e89ab5486209",
+        "ash": "b4f7d0e6-b173-42ad-a5f5-7f03b20dabc5",
+        "marg": "125139d9-eeff-47c0-a76e-acd1d9964dfd"
+      },
+      "beat_seconds": [
+        57.96899999992456,
+        57.93799999996554,
+        43.40599999995902,
+        46.01500000001397,
+        56.313000000081956,
+        35.93799999996554,
+        52.811999999918044,
+        55.936999999918044
+      ],
+      "error": null,
+      "score": {
+        "calls": 97,
+        "failed_calls": 0,
+        "repairs": 5,
+        "repairs_by_role": {
+          "resolver": 3,
+          "narrator": 2
+        },
+        "repair_rate": 0.05154639175257732,
+        "est_usd": 0.0307233892,
+        "action_mix": {
+          "observe": 4,
+          "interact": 8,
+          "communicate": 12
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 3,
+        "moves_tried": 0,
+        "moves_done": 0,
+        "interact_success": 8,
+        "hooks": [
+          {
+            "title": "Fox diggings at the orchard edge",
+            "powers": "new_location"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Old Marg": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Orchard"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "8 successful physical attempt(s)"
+      }
+    },
+    "meet_up": {
+      "ids": {
+        "world": "c54bc372-2594-4ea8-a98b-df8596282a23",
+        "place:Hearth": "0b9a1c10-b8aa-4a6e-a39e-8a98563e213d",
+        "place:Market": "49ef47e0-194a-477b-9c5c-489d39c6eacc",
+        "wren": "5dd5f689-df33-4bc9-8a55-6a02d5dffe86",
+        "ash": "32b9516a-27fb-4d7b-aec9-ee2d44b50315"
+      },
+      "beat_seconds": [
+        31.375,
+        27.469000000040978,
+        32.78200000000652,
+        40.796999999904074,
+        32.64099999994505,
+        21.79599999997299,
+        21.358999999938533,
+        30.93799999996554
+      ],
+      "error": null,
+      "score": {
+        "calls": 49,
+        "failed_calls": 0,
+        "repairs": 0,
+        "repairs_by_role": {},
+        "repair_rate": 0.0,
+        "est_usd": 0.0151143978,
+        "action_mix": {
+          "wait": 3,
+          "move": 3,
+          "communicate": 10
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 4,
+        "moves_tried": 3,
+        "moves_done": 3,
+        "interact_success": 0,
+        "hooks": [],
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Hearth"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "Wren at Hearth, Ash at Hearth"
+      }
+    },
+    "named_place": {
+      "ids": {
+        "world": "8cb07a97-d982-44ef-b51f-c792a0de2018",
+        "place:Hearth": "b5f580b6-bb97-4164-804a-c6842698edf6",
+        "place:Market": "e425ba1e-7070-47a8-8425-204977ccf049",
+        "wren": "4c15e004-321b-457d-bdc8-e56673aad269",
+        "ash": "c8a58f25-21ca-41fa-97cc-df01eb971e24"
+      },
+      "beat_seconds": [
+        59.10900000005495,
+        22.406000000075437,
+        32.67200000002049,
+        26.89000000001397,
+        30.64000000001397,
+        33.06200000003446,
+        25.469000000040978,
+        38.17200000002049
+      ],
+      "error": null,
+      "score": {
+        "calls": 53,
+        "failed_calls": 0,
+        "repairs": 2,
+        "repairs_by_role": {
+          "narrator": 1,
+          "resolver": 1
+        },
+        "repair_rate": 0.03773584905660377,
+        "est_usd": 0.0151976414,
+        "action_mix": {
+          "communicate": 8,
+          "move": 3,
+          "observe": 3,
+          "interact": 2
+        },
+        "repetition_rate": 0.125,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 3,
+        "moves_done": 3,
+        "interact_success": 2,
+        "hooks": [
+          {
+            "title": "A Word for the Miller's Kin",
+            "powers": "new_location"
+          },
+          {
+            "title": "The wheel-house hums",
+            "powers": ""
+          }
+        ],
+        "final_places": {
+          "Wren": "Old Mill",
+          "Ash": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Old Mill"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "added Old Mill; there at the end: Wren"
+      }
+    }
+  }
+}
