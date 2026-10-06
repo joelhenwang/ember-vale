@@ -12,3 +12,7 @@ __pycache__
 .journey-artifact.json
 # Images made by the image provider at runtime
 content/assets/generated/
+
+# Launcher build output and per-player choices
+launcher/target/
+launcher/launcher.toml
