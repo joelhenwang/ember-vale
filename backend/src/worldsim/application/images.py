@@ -88,7 +88,8 @@ async def subject_text(uow: UnitOfWork, job: ImageJob) -> str:
         character = await uow.characters.get(job.subject_id)
         card = await uow.characters.get_card(character.id, character.card_version)
         looks = card.appearance or card.personality
-        return _clip(f"Portrait of {card.name}, head and shoulders. {looks}")
+        named = f"{card.name} ({card.pronouns})" if card.pronouns else card.name
+        return _clip(f"Portrait of {named}, head and shoulders. {looks}")
     if job.kind == AssetKind.BACKGROUND and job.subject_id is not None:
         place = await uow.locations.get(job.subject_id)
         region = f", in {place.region}" if place.region else ""
