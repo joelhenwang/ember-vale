@@ -1,0 +1,341 @@
+{
+  "meta": {
+    "commit": "7f916bc",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T12:10:18+00:00",
+    "wall_seconds": 132,
+    "est_usd_total": 0.0883430296,
+    "scenarios": [
+      "strangers",
+      "lost_item",
+      "stuck_task",
+      "meet_up",
+      "named_place"
+    ]
+  },
+  "results": {
+    "strangers": {
+      "ids": {
+        "world": "5114e7c0-adad-4ff8-bbc5-ebb2670cf1f2",
+        "place:Hearth": "708749c2-f2c2-4a82-a3f1-5603069de0fa",
+        "place:Market": "97a41ba7-6678-4873-a469-779166633783",
+        "wren": "5e8b0ebb-0f94-4de8-877b-ea7368db4185",
+        "ash": "a1b559e9-b99e-4dd5-8017-733c2335d538"
+      },
+      "beat_seconds": [
+        11.09299999999348,
+        10.405999999959022,
+        13.718999999924563,
+        23.344000000040978,
+        7.547000000020489,
+        6.297000000020489,
+        10.766000000061467,
+        8.59299999999348
+      ],
+      "error": null,
+      "score": {
+        "calls": 76,
+        "failed_calls": 0,
+        "repairs": 1,
+        "repairs_by_role": {
+          "narrator": 1
+        },
+        "repair_rate": 0.013157894736842105,
+        "est_usd": 0.022016513,
+        "action_mix": {
+          "observe": 6,
+          "communicate": 11,
+          "wait": 3,
+          "move": 3
+        },
+        "repetition_rate": 0.09090909090909091,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 3,
+        "moves_tried": 3,
+        "moves_done": 3,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "The Singing Kettle",
+            "powers": "spawn_npc"
+          },
+          {
+            "title": "The well's strange murmur",
+            "powers": "new_location"
+          },
+          {
+            "title": "The Tinker's Own Tale",
+            "powers": ""
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Old Bram": "Well"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Well"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "repeated questions 9% (pass \u2264 20%)"
+      }
+    },
+    "lost_item": {
+      "ids": {
+        "world": "e81e86a2-2bd9-4655-a7be-1dd2355115a4",
+        "place:Hearth": "9656165f-3682-4434-8274-a11458a8e59b",
+        "place:Market": "0c01921c-4e96-40dc-bdbc-cb838323ee28",
+        "wren": "19612e78-eef3-4fa3-a950-73d95fd6099c",
+        "ash": "bde0ab40-aa62-417a-9a76-4c0502bb532c",
+        "item:purse": "6076fa60-f230-4f65-95b1-ed90cf694c9f"
+      },
+      "beat_seconds": [
+        6.797000000020489,
+        6.5,
+        6.670999999972992,
+        9.0,
+        5.907000000006519,
+        7.625,
+        2.609000000054948,
+        1.8440000000409782
+      ],
+      "error": null,
+      "score": {
+        "calls": 42,
+        "failed_calls": 0,
+        "repairs": 1,
+        "repairs_by_role": {
+          "narrator": 1
+        },
+        "repair_rate": 0.023809523809523808,
+        "est_usd": 0.0094734098,
+        "action_mix": {
+          "take": 1,
+          "move": 4,
+          "communicate": 7,
+          "wait": 4
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 2,
+        "longest_talk_streak": 2,
+        "moves_tried": 4,
+        "moves_done": 4,
+        "interact_success": 0,
+        "hooks": [],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Hearth"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {
+          "Lost purse": {
+            "holder": "Ash",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "purse held by Ash"
+      }
+    },
+    "stuck_task": {
+      "ids": {
+        "world": "0741b6bb-5948-4863-b774-10c6e88b9db0",
+        "place:Hearth": "8a2c37fb-9949-4633-953b-829a31ff5fca",
+        "place:Market": "19351430-f3ff-4d52-9bf6-71d5d1f15fc8",
+        "wren": "079c950b-4fee-445c-a99b-c77796dc4fe4",
+        "ash": "0fea15d2-c771-4142-a1b3-088ea3777fbc",
+        "marg": "7e95b46a-bf0c-4d18-bfc3-99ef8c7f3d02"
+      },
+      "beat_seconds": [
+        14.390999999945052,
+        18.156000000075437,
+        15.14000000001397,
+        25.484000000054948,
+        22.29700000002049,
+        12.766000000061467,
+        10.14000000001397,
+        12.812000000034459
+      ],
+      "error": null,
+      "score": {
+        "calls": 121,
+        "failed_calls": 0,
+        "repairs": 3,
+        "repairs_by_role": {
+          "narrator": 2,
+          "resolver": 1
+        },
+        "repair_rate": 0.024793388429752067,
+        "est_usd": 0.032782801,
+        "action_mix": {
+          "communicate": 12,
+          "interact": 3,
+          "move": 7,
+          "observe": 3,
+          "wait": 6
+        },
+        "repetition_rate": 0.08333333333333333,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 7,
+        "moves_done": 7,
+        "interact_success": 3,
+        "hooks": [
+          {
+            "title": "The Empty Stall at the Market",
+            "powers": "spawn_npc"
+          },
+          {
+            "title": "The Mill's Silence",
+            "powers": "new_location"
+          }
+        ],
+        "final_places": {
+          "Wren": "Mill",
+          "Ash": "Hearth",
+          "Old Marg": "Market",
+          "Tomas the Miller": "Mill"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Mill"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "3 successful physical attempt(s)"
+      }
+    },
+    "meet_up": {
+      "ids": {
+        "world": "6469f469-50f1-4a87-abc0-b00482a49f12",
+        "place:Hearth": "a316e60a-2e9c-4c10-abc5-dcbc568eef77",
+        "place:Market": "c39e63da-10e2-48a9-bb51-2837a16bb21c",
+        "wren": "349b7939-ea82-488e-845f-41175a07792f",
+        "ash": "170a34d8-e712-4726-ba8d-67c65d5055ac"
+      },
+      "beat_seconds": [
+        8.125,
+        12.093999999924563,
+        6.937999999965541,
+        11.530999999959022,
+        7.795999999972992,
+        8.390999999945052,
+        3.859000000054948,
+        3.937000000034459
+      ],
+      "error": null,
+      "score": {
+        "calls": 44,
+        "failed_calls": 0,
+        "repairs": 2,
+        "repairs_by_role": {
+          "narrator": 2
+        },
+        "repair_rate": 0.045454545454545456,
+        "est_usd": 0.010934122800000001,
+        "action_mix": {
+          "wait": 5,
+          "move": 3,
+          "communicate": 5,
+          "observe": 3
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 3,
+        "longest_talk_streak": 2,
+        "moves_tried": 3,
+        "moves_done": 3,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "The hum at the old well",
+            "powers": "new_location"
+          }
+        ],
+        "final_places": {
+          "Wren": "Old Well",
+          "Ash": "Hearth"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Old Well"
+        ],
+        "items": {},
+        "goal_passed": false,
+        "goal_detail": "Wren at Old Well, Ash at Hearth"
+      }
+    },
+    "named_place": {
+      "ids": {
+        "world": "0aa5f3c1-b0e7-4a03-b0e2-75e68e959222",
+        "place:Hearth": "eebd68cc-5ae1-4f42-8218-46033f8549db",
+        "place:Market": "4c264d43-587f-4df4-9e31-5345909ca196",
+        "wren": "22d342c5-ce06-4b88-8976-4935ec782126",
+        "ash": "01bae0ea-e836-4f8f-835f-cc691da648b7"
+      },
+      "beat_seconds": [
+        11.219000000040978,
+        9.672000000020489,
+        7.187999999965541,
+        10.75,
+        6.765999999945052,
+        6.469000000040978,
+        10.875,
+        9.905999999959022
+      ],
+      "error": null,
+      "score": {
+        "calls": 50,
+        "failed_calls": 0,
+        "repairs": 0,
+        "repairs_by_role": {},
+        "repair_rate": 0.0,
+        "est_usd": 0.013136183000000001,
+        "action_mix": {
+          "wait": 2,
+          "move": 2,
+          "interact": 7,
+          "communicate": 5
+        },
+        "repetition_rate": 0.2,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 2,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 7,
+        "hooks": [
+          {
+            "title": "Uncle's Urgent Errand",
+            "powers": "new_location"
+          }
+        ],
+        "final_places": {
+          "Wren": "Old Mill",
+          "Ash": "Old Mill"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Old Mill"
+        ],
+        "items": {
+          "Wrench from toolbox": {
+            "holder": "Wren",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "added Old Mill; there at the end: Wren, Ash"
+      }
+    }
+  }
+}
