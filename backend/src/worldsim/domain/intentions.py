@@ -57,3 +57,33 @@ def card_drives(personality: str) -> list[str]:
 
 
 __all__ = ["CharacterIntention", "card_drives", "extract_intention"]
+
+
+#: How many of a character's own latest turns a streak note looks at.
+STREAK_TURNS = 3
+_TALK = frozenset({"communicate"})
+_IDLE = frozenset({"wait", "observe", "rest"})
+
+
+def streak_note(families: list[str], intention: str | None) -> str | None:
+    """A nudge when a character's own last turns were all talk or all idling.
+
+    Characters coordinating a job ("heave on three") kept telling each
+    other to do it, turn after turn, and nobody did: only 3% of their
+    choices acted on the world. Families are newest first.
+    """
+    recent = families[:STREAK_TURNS]
+    if len(recent) < STREAK_TURNS:
+        return None
+    if all(f in _TALK for f in recent):
+        return (
+            f"You have only talked for your last {STREAK_TURNS} turns. Talking about a job "
+            "does not do it: if something needs doing, do it now (interact, move, take or "
+            "transfer), or talk about something new."
+        )
+    if intention and all(f in _IDLE for f in recent):
+        return (
+            f"You have waited or watched for your last {STREAK_TURNS} turns while you mean "
+            f"to: {intention} Act on it now if you can."
+        )
+    return None

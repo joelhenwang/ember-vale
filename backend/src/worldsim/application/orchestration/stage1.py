@@ -176,7 +176,13 @@ from worldsim.domain.ids import (
     new_narration_id,
     new_summary_id,
 )
-from worldsim.domain.intentions import CharacterIntention, card_drives, extract_intention
+from worldsim.domain.intentions import (
+    STREAK_TURNS,
+    CharacterIntention,
+    card_drives,
+    extract_intention,
+    streak_note,
+)
 from worldsim.domain.items import ItemDefinition, load_item_definitions
 from worldsim.domain.knowledge import normalize
 from worldsim.domain.memory import (
@@ -2335,7 +2341,7 @@ class Stage1Orchestrator:
             await self._finish_task(task_run_id, owner, True)
             return intent
         envelope, included, excluded = await self._context_for(
-            world_id, run_id, sealed.snapshot_id, character
+            world_id, run_id, sealed.snapshot_id, character, deciding=True
         )
         sources, dropped = to_manifest_dict(included, excluded)
         async with self._factory() as uow:
@@ -2450,9 +2456,19 @@ class Stage1Orchestrator:
             await uow.commit()
 
     async def _context_for(
-        self, world_id: UUID, run_id: UUID, snapshot_id: UUID, character: Character
+        self,
+        world_id: UUID,
+        run_id: UUID,
+        snapshot_id: UUID,
+        character: Character,
+        *,
+        deciding: bool = False,
     ) -> tuple[ContextEnvelope, list[ManifestSource], list[ManifestSource]]:
-        """Perspective candidates for one character (filters before ranking)."""
+        """Perspective candidates for one character (filters before ranking).
+
+        ``deciding`` (a turn, not a reply) adds a note when the character's
+        own last turns were all talk or all idling.
+        """
         async with self._factory() as uow:
             card = await uow.characters.get_card(character.id, character.card_version)
             place = await uow.locations.get(character.location_id)
@@ -2472,6 +2488,9 @@ class Stage1Orchestrator:
             relationships = await uow.relationships.list_for_character(world_id, character.id)
             digests = await uow.digests.list_for_owner(world_id, character.id)
             intention = await uow.intentions.get(character.id)
+            families = (
+                await uow.scenes.recent_families(character.id, STREAK_TURNS) if deciding else []
+            )
             hooks = await uow.narrative.list_hooks_for_world(world_id)
             items_here = await uow.inventory.list_at_location(world_id, character.location_id)
             carried = await uow.inventory.list_for_owner(world_id, character.id)
@@ -2558,6 +2577,18 @@ class Stage1Orchestrator:
                     text=f"Word around the vale: {hook.title}. {hook.purpose}".strip(),
                     score=2.0,
                     created_phase_index=hook.created_phase_index,
+                )
+            )
+        note = streak_note(families, intention.text if intention is not None else None)
+        if note is not None:
+            candidates.append(
+                SourceCandidate(
+                    source_id=f"streak:{character.id}",
+                    data_class="goals",
+                    visibility=Visibility.PRIVATE,
+                    owner_id=character.id,
+                    text=note,
+                    score=3.5,
                 )
             )
         if intention is not None:

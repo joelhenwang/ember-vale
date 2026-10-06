@@ -574,3 +574,51 @@ def test_director_hears_the_story_before_its_recent_window(
     director = [r.prompt for r in gateway.sent_requests if "You direct" in (r.system or "")]
     assert "Story so far" not in director[0]  # nothing before the window yet
     assert "Story so far, before the recent happenings:\n- Day 1, " in director[-1]
+
+
+def test_streak_note_for_talk_or_idling() -> None:
+    from worldsim.domain.intentions import streak_note
+
+    talk = ["communicate"] * 3
+    assert "only talked for your last 3 turns" in (streak_note(talk, None) or "")
+    assert streak_note(["communicate", "interact", "communicate"], None) is None
+    assert streak_note(["communicate"] * 2, None) is None  # too early to tell
+    idle = ["wait", "observe", "wait"]
+    assert streak_note(idle, None) is None  # nothing in mind: waiting is fine
+    assert "while you mean to: fix the wheel" in (streak_note(idle, "fix the wheel") or "")
+
+
+def test_a_character_who_only_talks_is_told_so(
+    stage1_client: tuple[ApiClient, FakeGateway],
+) -> None:
+    client, gateway = stage1_client
+    ids = asyncio.run(_seed_two())
+    base = _route_for(ids, {})
+
+    def route(request: CompletionRequest) -> str | None:
+        if "You decide" in (request.system or ""):
+            wren = "<<untrusted:identity>>Wren" in request.prompt
+            target = ids["ash"] if wren else ids["wren"]
+            return json.dumps(
+                {"family": "communicate", "target_character_id": str(target), "topic": "heave"}
+            )
+        return base(request)
+
+    gateway.route = route
+    before = 0
+    for index in range(1, 5):
+        before = len(gateway.sent_requests)
+        assert _advance(client, ids["world"], index).status_code == 200
+    wren = [
+        r.prompt
+        for r in gateway.sent_requests[before:]
+        if "You decide" in (r.system or "") and "<<untrusted:identity>>Wren" in r.prompt
+    ]
+    assert wren and "You have only talked for your last 3 turns." in wren[0]
+    # Reactions are replies: never told to stop talking.
+    reacting = [
+        r
+        for r in gateway.sent_requests
+        if "only talked" in r.prompt and "You decide" not in (r.system or "")
+    ]
+    assert not reacting

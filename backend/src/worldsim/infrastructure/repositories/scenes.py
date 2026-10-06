@@ -192,6 +192,17 @@ class SqlAlchemySceneRepository:
         ).one()
         return int(row[0] or 0), int(row[1] or 0), int(row[2] or 0)
 
+    async def recent_families(self, character_id: UUID, limit: int) -> list[str]:
+        """This character's latest action families, newest first."""
+        rows = await self._session.execute(
+            text(
+                "select family from character_intent where author_character_id = :c "
+                "order by created_at desc limit :n"
+            ),
+            {"c": character_id, "n": limit},
+        )
+        return [str(row[0]) for row in rows]
+
     async def save_narration(self, beat: NarrationBeat) -> None:
         self._session.add(
             NarrationRow(
