@@ -978,6 +978,15 @@ class RumourView(BaseModel):
     since_index: int = 0
 
 
+class PlaceArtView(BaseModel):
+    """A place's own scene art (newest background asset)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    location_id: UUID
+    asset_id: UUID
+
+
 class JourneyView(BaseModel):
     """The player character's journey so far and the renown it has earned."""
 
@@ -1017,6 +1026,8 @@ class PresentationResponse(BaseModel):
     settled: list[RumourView] = Field(default_factory=list)
     #: The viewing player's journey (players only).
     journey: JourneyView | None = None
+    #: Scene art per place, for places that have their own.
+    place_art: list[PlaceArtView] = Field(default_factory=list)
 
 
 class JobRequest(BaseModel):

@@ -101,6 +101,7 @@ WANTED = (
     "CastEntry",
     "RumourView",
     "JourneyView",
+    "PlaceArtView",
     "PresentationResponse",
     "AssetView",
     "EnsureStarterRequest",

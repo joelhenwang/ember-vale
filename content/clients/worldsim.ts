@@ -653,6 +653,11 @@ export interface JourneyView {
   title: string;
 }
 
+export interface PlaceArtView {
+  asset_id: string;
+  location_id: string;
+}
+
 export interface PresentationResponse {
   absolute_index: number;
   activities?: ActivityView[];
@@ -664,6 +669,7 @@ export interface PresentationResponse {
   manifest: MapManifestView;
   open_run_id?: string | null;
   phase: string;
+  place_art?: PlaceArtView[];
   recent_event_id?: string | null;
   revision: number;
   rumours?: RumourView[];

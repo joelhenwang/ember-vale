@@ -58,6 +58,7 @@ async def presentation(
         or any(c.id == viewer and c.location_id == location.id for c in characters)
     }
     portraits = await _newest_by_subject(uow, world_id, "portrait")
+    backgrounds = await _newest_by_subject(uow, world_id, "background")
     cast = [
         api.CastEntry(
             character_id=character.id,
@@ -126,6 +127,11 @@ async def presentation(
             and (omniscient or not hook.participant_ids or viewer in hook.participant_ids)
         ][:4],
         journey=journey,
+        place_art=[
+            api.PlaceArtView(location_id=place, asset_id=asset)
+            for place, asset in backgrounds.items()
+            if place in visible_locations
+        ],
     )
 
 

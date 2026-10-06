@@ -94,6 +94,17 @@ const timeLabel = computed(() =>
   adv.presentation.value ? beatTimeLabel(adv.presentation.value.absolute_index) : ''
 )
 const sceneStyle = computed(() => {
+  // The place's own art when it has some; else a close-up of the world map.
+  const own = (adv.presentation.value?.place_art ?? []).find(
+    (a) => a.location_id === adv.hereId.value
+  )
+  if (own) {
+    return {
+      backgroundImage: `url("${assetUrl(storyId.value, own.asset_id)}")`,
+      backgroundSize: 'cover',
+      backgroundPosition: '50% 40%'
+    }
+  }
   const art = adv.mapAssetId.value ? assetUrl(storyId.value, adv.mapAssetId.value) : null
   return art ? { backgroundImage: `url("${art}")`, ...sceneFocus(adv.anchor.value) } : {}
 })

@@ -3868,6 +3868,28 @@
         "title": "PhaseName",
         "type": "string"
       },
+      "PlaceArtView": {
+        "additionalProperties": false,
+        "description": "A place's own scene art (newest background asset).",
+        "properties": {
+          "asset_id": {
+            "format": "uuid",
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "location_id": {
+            "format": "uuid",
+            "title": "Location Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "location_id",
+          "asset_id"
+        ],
+        "title": "PlaceArtView",
+        "type": "object"
+      },
       "PreferencesPatchRequest": {
         "additionalProperties": false,
         "properties": {
@@ -4054,6 +4076,13 @@
           "phase": {
             "title": "Phase",
             "type": "string"
+          },
+          "place_art": {
+            "items": {
+              "$ref": "#/components/schemas/PlaceArtView"
+            },
+            "title": "Place Art",
+            "type": "array"
           },
           "recent_event_id": {
             "anyOf": [

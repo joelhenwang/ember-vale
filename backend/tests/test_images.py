@@ -270,3 +270,30 @@ def test_generated_art_is_stored_at_display_size() -> None:
     assert (small.mime, small.width, small.height) == ("image/webp", 512, 512)
     assert len(small.data) < len(big.data)
     assert shrink(GeneratedImage(PNG, "image/png", 1, 1), AssetKind.PORTRAIT).data == PNG
+
+
+def test_painted_place_art_reaches_the_presentation(client: ApiClient, tmp_path: Path) -> None:
+    from worldsim.application.images import queue_image
+
+    world_id = _story(client)
+
+    async def queue_background() -> UUID:
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                place = (await uow.locations.list_for_world(world_id))[0]
+                await queue_image(uow, world_id, AssetKind.BACKGROUND, place.id)
+                await uow.commit()
+                return place.id
+        finally:
+            await engine.dispose()
+
+    place_id = asyncio.run(queue_background())
+    # Built-in places ship curated backgrounds; either way the place has art.
+    _work(world_id, _Painter(), tmp_path)
+    art = client.get(
+        "/api/v1/world/presentation",
+        params={"world_id": str(world_id)},
+        headers={"X-Worldsim-Role": "watcher"},
+    ).json()["place_art"]
+    assert str(place_id) in [a["location_id"] for a in art]
