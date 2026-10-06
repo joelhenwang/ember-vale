@@ -6,6 +6,7 @@ compares an expected optimistic version and bumps on success.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import datetime
 from typing import Protocol
 from uuid import UUID
@@ -31,7 +32,7 @@ from worldsim.domain.macro import (
     MacroInterruption,
     MacroPeriodRun,
 )
-from worldsim.domain.memory import MemoryDigest
+from worldsim.domain.memory import MemoryDigest, RecallSource
 from worldsim.domain.narration import NarrationBeat
 from worldsim.domain.narrative import NarrativeArc, NarrativeHook
 from worldsim.domain.party import Monster, PartyMember
@@ -246,6 +247,26 @@ class DigestRepository(Protocol):
     async def add(self, digest: MemoryDigest) -> None: ...
     async def count_versions(self, world_id: UUID, owner_id: UUID, day: int) -> int: ...
     async def list_for_owner(self, world_id: UUID, owner_id: UUID) -> list[MemoryDigest]: ...
+
+
+class RecallRepository(Protocol):
+    async def unindexed(self, model: str, limit: int) -> list[RecallSource]: ...
+    async def store(
+        self, model: str, sources: Sequence[RecallSource], vectors: Sequence[Sequence[float]]
+    ) -> None: ...
+    async def similarities(
+        self, owner_id: UUID, model: str, query: Sequence[float], source_ids: Sequence[str]
+    ) -> dict[str, float]: ...
+    async def nearest_before(
+        self,
+        owner_id: UUID,
+        model: str,
+        query: Sequence[float],
+        before_phase_index: int,
+        exclude: Sequence[str],
+        min_similarity: float,
+        limit: int,
+    ) -> list[tuple[RecallSource, float]]: ...
 
 
 class CostRepository(Protocol):

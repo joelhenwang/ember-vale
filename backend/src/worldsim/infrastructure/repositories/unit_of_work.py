@@ -41,6 +41,7 @@ from worldsim.infrastructure.repositories.progress import (
     SqlAlchemyInventoryRepository,
     SqlAlchemyProgressRepository,
 )
+from worldsim.infrastructure.repositories.recall import SqlAlchemyRecallRepository
 from worldsim.infrastructure.repositories.relationships import (
     SqlAlchemyRelationshipRepository,
 )
@@ -88,6 +89,7 @@ class SqlAlchemyUnitOfWork:
         self._conditions: SqlAlchemyConditionRepository | None = None
         self._narrative: SqlAlchemyNarrativeRepository | None = None
         self._digests: SqlAlchemyDigestRepository | None = None
+        self._recall: SqlAlchemyRecallRepository | None = None
         self._summaries: SqlAlchemySummaryRepository | None = None
         self._roles: SqlAlchemyRoleRepository | None = None
         self._autoplay: SqlAlchemyAutoplayRepository | None = None
@@ -267,6 +269,12 @@ class SqlAlchemyUnitOfWork:
         return self._digests
 
     @property
+    def recall(self) -> SqlAlchemyRecallRepository:
+        if self._recall is None:
+            self._recall = SqlAlchemyRecallRepository(self._require_session())
+        return self._recall
+
+    @property
     def roles(self) -> SqlAlchemyRoleRepository:
         if self._roles is None:
             self._roles = SqlAlchemyRoleRepository(self._require_session())
@@ -358,6 +366,7 @@ class SqlAlchemyUnitOfWork:
             self._routes = None
             self._costs = None
             self._digests = None
+            self._recall = None
             self._schedules = None
             self._outbox = None
             self._perception = None

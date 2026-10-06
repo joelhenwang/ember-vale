@@ -24,6 +24,7 @@ from worldsim.application.tracing.service import TraceService
 from worldsim.application.transactions.canonical import CanonicalTransaction
 from worldsim.domain.rules.dnd import DataTables, load_data
 from worldsim.infrastructure.db.engine import create_engine
+from worldsim.infrastructure.local_models.client import LocalModelsClient
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
 from worldsim.infrastructure.model_gateway.profiles import (
     STAGE0_DEFAULT_BEAT,
@@ -64,6 +65,8 @@ class AppState:
     migrations_dir: Path
     gateway_factory: Callable[[], FakeGateway]
     exporter: TraceExporter
+    #: One client per process so its failure back-off is shared.
+    _local_models: LocalModelsClient | None = None
 
     def uow_factory(self) -> Callable[[], SqlAlchemyUnitOfWork]:
         engine = self.engine
@@ -120,7 +123,15 @@ class AppState:
             _for_role,
             profiles,
             pin_gateway_factory=_for_pin,
+            local_models=self.local_models(),
         )
+
+    def local_models(self) -> LocalModelsClient | None:
+        """The local model service client, when one is configured."""
+        if self._local_models is None and self.settings.local_models.url:
+            local = self.settings.local_models
+            self._local_models = LocalModelsClient(local.url, timeout_s=local.timeout_s)
+        return self._local_models
 
 
 MIGRATIONS_DIR = Path("backend/migrations")

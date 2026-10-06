@@ -82,3 +82,43 @@ def observation_hash(facts: list[dict[str, str]]) -> str:
 def memory_hash(text: str) -> str:
     """Canonical hash over memory text; matches migration 0019."""
     return content_hash(text)
+
+
+#: Recall by relevance. Similarity to "what is going on now" lifts an
+#: observation or memory on top of its decayed salience, so what bears
+#: on the moment wins a crowded budget, and an old row can come back.
+RELEVANCE_WEIGHT_KEY = "memory.retrieval.relevance_weight"
+DEFAULT_RELEVANCE_WEIGHT = 0.6
+#: Cosine below LOW counts as unrelated, above HIGH as fully on point.
+#: From embeddinggemma's spread on 80 real decisions (scripts/recall_eval.py,
+#: 2026-10-06): p10 0.39, p50 0.63, p90 0.78.
+RELEVANCE_LOW = 0.45
+RELEVANCE_HIGH = 0.80
+#: Rows older than the recent window come back only this close (top quarter).
+RECALL_OLD_MIN_SIMILARITY = 0.70
+RECALL_OLD_LIMIT = 4
+
+
+class RecallSource(BaseModel):
+    """One embeddable context source: an observation fact or a memory."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    source_id: str = Field(min_length=1, max_length=160)
+    world_id: UUID
+    owner_character_id: UUID
+    created_phase_index: int = Field(ge=0)
+    text: str = Field(min_length=1, max_length=2000)
+
+
+def recall_text(key: str | None, value: str) -> str:
+    """What gets embedded: the prose line, without its time label."""
+    if key is None or key.startswith(("attempt:", "reply:")):
+        return value
+    return f"{key}: {value}"
+
+
+def relevance(similarity: float) -> float:
+    """Cosine similarity mapped onto 0..1."""
+    span = RELEVANCE_HIGH - RELEVANCE_LOW
+    return min(1.0, max(0.0, (similarity - RELEVANCE_LOW) / span))

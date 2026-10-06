@@ -22,6 +22,7 @@ from worldsim.application.tasks.service import TaskService
 from worldsim.domain.errors import DomainError
 from worldsim.infrastructure.images.krea import KreaImageGenerator
 from worldsim.infrastructure.images.runner import ImageJobRunner
+from worldsim.infrastructure.local_models.indexer import RecallIndexer
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
 from worldsim.infrastructure.ops.logging import install
 from worldsim.infrastructure.settings import Settings
@@ -86,7 +87,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     images = _image_runner(state)
     images_loop = asyncio.create_task(images.run_forever()) if images is not None else None
     app.state.image_runner = images
+    recall = _recall_indexer(state)
+    recall_loop = asyncio.create_task(recall.run_forever()) if recall is not None else None
     yield
+    if recall is not None and recall_loop is not None:
+        await recall.stop()
+        await recall_loop
     if runner is not None and loop is not None:
         await runner.stop()
         await loop
@@ -110,6 +116,20 @@ def _image_runner(state: AppState) -> ImageJobRunner | None:
         style=images.krea_style,
         pixel=images.krea_pixel,
         poll_seconds=images.poll_seconds,
+    )
+
+
+def _recall_indexer(state: AppState) -> RecallIndexer | None:
+    """Embeds new observations and memories, when a local model service is set."""
+    models = state.local_models()
+    if models is None:
+        return None
+    local = state.settings.local_models
+    return RecallIndexer(
+        state.uow_factory(),
+        models,
+        batch=local.index_batch,
+        poll_seconds=local.index_poll_seconds,
     )
 
 

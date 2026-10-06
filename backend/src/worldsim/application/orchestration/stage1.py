@@ -96,6 +96,7 @@ from worldsim.application.interventions import (
     record_attempts,
 )
 from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
+from worldsim.application.ports.local_models import LocalModels, LocalModelsUnavailable
 from worldsim.application.ports.model_gateway import ModelGateway, ModelProfile
 from worldsim.application.settings.resolution import (
     PinnedRuntime,
@@ -185,6 +186,7 @@ from worldsim.domain.memory import (
     DEFAULT_PROMOTION_MIN_AGE,
     DEFAULT_PROMOTION_THRESHOLD,
     DEFAULT_RECENT_PHASES,
+    DEFAULT_RELEVANCE_WEIGHT,
     DEFAULT_SALIENCE_FLOOR,
     DIGEST_SCORE,
     HALF_LIFE_PHASES_KEY,
@@ -194,9 +196,13 @@ from worldsim.domain.memory import (
     PROMOTION_MAX_TOTAL_KEY,
     PROMOTION_MIN_AGE_KEY,
     PROMOTION_THRESHOLD_KEY,
+    RECALL_OLD_LIMIT,
+    RECALL_OLD_MIN_SIMILARITY,
     RECENT_PHASES_KEY,
+    RELEVANCE_WEIGHT_KEY,
     SALIENCE_FLOOR_KEY,
     MemoryDigest,
+    relevance,
     score_salience,
 )
 from worldsim.domain.narration import NarrationBeat
@@ -722,6 +728,26 @@ async def _event_place_name(uow: Any, event_id: UUID) -> str | None:
     return str(place.name)
 
 
+def _recall_focus(
+    character: Character,
+    place: str,
+    present: list[str],
+    intention: str | None,
+    carried: list[str],
+    latest: list[str],
+) -> str:
+    """What is going on for one character now, as a recall query."""
+    parts = [f"{character.name} is at {place}."]
+    if present:
+        parts.append(f"With {', '.join(present)}.")
+    if intention:
+        parts.append(f"Means to: {intention}")
+    if carried:
+        parts.append(f"Carrying {', '.join(carried)}.")
+    parts.extend(latest)
+    return " ".join(parts)[:2000]
+
+
 def _observation_line(index: int, key: str, value: str) -> str:
     """Time-labelled observation; attempt and reply lines are already prose."""
     if key.startswith(("attempt:", "reply:")):
@@ -801,8 +827,11 @@ class Stage1Orchestrator:
         profiles: Mapping[str, object],
         fault_hook: Callable[[str], None] | None = None,
         pin_gateway_factory: PinGatewayFactory | None = None,
+        local_models: LocalModels | None = None,
     ) -> None:
         self._factory = uow_factory
+        #: Embeddings for recall by relevance; None keeps recency and salience only.
+        self._local_models = local_models
         self._canonical = canonical
         self._tasks = tasks
         self._traces = traces
@@ -2475,6 +2504,24 @@ class Stage1Orchestrator:
                     created_phase_index=digest.created_phase_index,
                 )
             )
+        if self._local_models is not None:
+            focus = _recall_focus(
+                character,
+                place.name,
+                [c.name for c in everyone if c.location_id == place.id and c.id != character.id],
+                intention.text if intention is not None else None,
+                [item_label(i) for i in carried],
+                [c.text for c in candidates if c.data_class == "observations"][-3:],
+            )
+            candidates = await self._recall_by_relevance(
+                character.id,
+                candidates,
+                focus,
+                since=since,
+                now_index=now_index,
+                half_life=half_life,
+                weight=_config_float(config, RELEVANCE_WEIGHT_KEY, DEFAULT_RELEVANCE_WEIGHT),
+            )
         request = ContextRequest(
             role="character_decision",
             actor_id=character.id,
@@ -2486,6 +2533,64 @@ class Stage1Orchestrator:
         )
         envelope, included, excluded = assemble(request, candidates)
         return envelope, included, excluded
+
+    async def _recall_by_relevance(
+        self,
+        owner_id: UUID,
+        candidates: list[SourceCandidate],
+        focus: str,
+        *,
+        since: int,
+        now_index: int,
+        half_life: int,
+        weight: float,
+    ) -> list[SourceCandidate]:
+        """Lift what bears on the moment; bring back close older rows.
+
+        Recency and salience still set the base score; similarity to the
+        focus adds up to ``weight`` on top. Anything not yet indexed, or
+        a local service that is off, leaves the scores as they were.
+        """
+        assert self._local_models is not None
+        try:
+            found = await self._local_models.embed([focus], "query")
+        except LocalModelsUnavailable:
+            return candidates
+        query, model = found.vectors[0], found.model
+        recallable = [c.source_id for c in candidates if c.source_id.startswith(("obs:", "mem:"))]
+        async with self._factory() as uow:
+            similar = await uow.recall.similarities(owner_id, model, query, recallable)
+            older = await uow.recall.nearest_before(
+                owner_id,
+                model,
+                query,
+                since,
+                recallable,
+                RECALL_OLD_MIN_SIMILARITY,
+                RECALL_OLD_LIMIT,
+            )
+        lifted = [
+            c.model_copy(update={"score": c.score + weight * relevance(similar[c.source_id])})
+            if c.source_id in similar
+            else c
+            for c in candidates
+        ]
+        for source, similarity in older:
+            lifted.append(
+                SourceCandidate(
+                    source_id=source.source_id,
+                    data_class="memories"
+                    if source.source_id.startswith("mem:")
+                    else "observations",
+                    visibility=Visibility.PRIVATE,
+                    owner_id=owner_id,
+                    text=f"{phase_label(source.created_phase_index)}: {source.text}",
+                    score=score_salience(1.0, now_index - source.created_phase_index, half_life)
+                    + weight * relevance(similarity),
+                    created_phase_index=source.created_phase_index,
+                )
+            )
+        return lifted
 
     async def _commit_scene(
         self,

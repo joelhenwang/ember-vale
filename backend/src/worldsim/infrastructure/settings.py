@@ -193,6 +193,28 @@ class ImageSettings(BaseModel):
     poll_seconds: float = Field(default=2.0, gt=0, le=60)
 
 
+class LocalModelSettings(BaseModel):
+    """The local model service (local-models/ at the repo root).
+
+    WORLDSIM_LOCAL_MODELS__URL=http://host.docker.internal:8102 turns on
+    recall by relevance and its background indexer; empty leaves both off
+    and decisions use recency and salience alone.
+    """
+
+    url: str = ""
+    #: A single query embedding takes ~25 ms; anything slower is a sick service.
+    timeout_s: float = Field(default=2.0, gt=0, le=30)
+    index_batch: int = Field(default=32, ge=1, le=256)
+    index_poll_seconds: float = Field(default=5.0, gt=0, le=600)
+
+    @field_validator("url")
+    @classmethod
+    def _http_or_empty(cls, value: str) -> str:
+        if value and urlparse(value).scheme not in ("http", "https"):
+            raise ValueError("WORLDSIM_LOCAL_MODELS__URL must be an http(s) URL or empty")
+        return value
+
+
 class SecuritySettings(BaseModel):
     """Explicit override for non-loopback listeners."""
 
@@ -215,6 +237,7 @@ class Settings(BaseSettings):
     security: SecuritySettings = SecuritySettings()
     autoplay: AutoplaySettings = AutoplaySettings()
     images: ImageSettings = ImageSettings()
+    local_models: LocalModelSettings = LocalModelSettings()
 
     @model_validator(mode="after")
     def _reject_unsafe_combinations(self) -> Settings:

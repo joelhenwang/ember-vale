@@ -30,6 +30,7 @@ from worldsim.application.ports.repositories import (
     PhaseRepository,
     PresetRepository,
     ProgressRepository,
+    RecallRepository,
     RelationshipRepository,
     RoleRepository,
     RouteRepository,
@@ -90,6 +91,8 @@ class UnitOfWork(Protocol):
     def costs(self) -> CostRepository: ...
     @property
     def digests(self) -> DigestRepository: ...
+    @property
+    def recall(self) -> RecallRepository: ...
     @property
     def roles(self) -> RoleRepository: ...
     @property
