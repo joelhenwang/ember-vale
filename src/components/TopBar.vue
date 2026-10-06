@@ -180,4 +180,33 @@ const avatarUrl = useGameImage(menuState.player.avatarSlot)
 .profile__chev {
   color: #6c5f45;
 }
+
+/* Narrow screens: the nav becomes a swipeable strip; labels give way. */
+@media (max-width: 820px) {
+  .topbar__inner {
+    padding: 0 12px;
+    gap: 8px;
+  }
+  .nav {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    white-space: nowrap;
+  }
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+  .help span,
+  .profile__name,
+  .profile__chev,
+  .vr {
+    display: none;
+  }
+}
+@media (max-width: 560px) {
+  .brand__name {
+    display: none;
+  }
+}
 </style>

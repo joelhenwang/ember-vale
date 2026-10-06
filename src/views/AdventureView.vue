@@ -1113,15 +1113,44 @@ button.who:hover > span {
 }
 
 @media (max-width: 960px) {
+  .adv {
+    padding: 8px 8px 16px;
+  }
   .adv__grid {
     grid-template-columns: 1fr;
   }
+  /* The story fills the screen with the composer always in reach. */
   .adv__stage {
-    height: auto;
-    min-height: 0;
+    height: calc(100dvh - 120px);
+    min-height: 420px;
+  }
+  .scene {
+    height: 118px;
+  }
+  .scene__place {
+    font-size: 26px;
+  }
+  .who img,
+  .who > span {
+    width: 40px;
+    height: 40px;
   }
   .log {
-    max-height: 60vh;
+    padding: 12px 14px 8px;
+  }
+  .log__prose {
+    font-size: 16.5px;
+  }
+  .log__bubble {
+    max-width: 85%;
+  }
+  .composer__chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .chip {
+    flex: none;
   }
   .adv__links {
     display: none;
