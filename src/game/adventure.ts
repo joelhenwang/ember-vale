@@ -377,12 +377,19 @@ export interface LeadChip {
  */
 export function leadChips(
   me: string,
-  rumours: { title: string }[],
-  present: { character_id: string; name: string }[]
+  rumours: { title: string; purpose?: string }[],
+  present: { character_id: string; name: string }[],
+  places: { id: string; name: string }[] = [],
+  hereId: string | null = null
 ): LeadChip[] {
   const lead = rumours[0]
   if (!lead) return []
   const chips: LeadChip[] = []
+  // A rumour that names somewhere else is followed by going there.
+  const told = `${lead.title} ${lead.purpose ?? ''}`.toLowerCase()
+  const there = places.find(
+    (p) => p.id !== hereId && new RegExp(`\\b${escapeRegex(p.name.toLowerCase())}\\b`).test(told)
+  )
   const someone = present[0]
   if (someone) {
     chips.push({
@@ -395,10 +402,22 @@ export function leadChips(
       )
     })
   }
+  if (there) {
+    chips.push({
+      key: `go:${there.id}:${lead.title}`,
+      label: `Head to the ${there.name} — “${lead.title}”`,
+      intent: { ...base(me), family: 'move', destination_location_id: there.id }
+    })
+    return chips
+  }
   chips.push({
     key: `lead:${lead.title}`,
     label: `Look into “${lead.title}”`,
     intent: doIntent(me, `look into ${inSentence(lead.title)}`)
   })
   return chips
+}
+
+function escapeRegex(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }

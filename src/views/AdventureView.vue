@@ -142,7 +142,9 @@ const levelFill = computed(() =>
     : 0
 )
 const leads = computed(() =>
-  adv.me.value ? leadChips(adv.me.value, rumours.value, adv.present.value) : []
+  adv.me.value
+    ? leadChips(adv.me.value, rumours.value, adv.present.value, adv.places.value, adv.hereId.value)
+    : []
 )
 const nowIndex = computed(() => adv.presentation.value?.absolute_index ?? 0)
 const elapsed = computed(() =>

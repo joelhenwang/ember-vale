@@ -296,6 +296,20 @@ describe('lead chips', () => {
     expect(chips[0].intent).toMatchObject({ family: 'communicate', target_character_id: 'ash' })
     expect(chips[1].intent).toMatchObject({ family: 'interact', attempt: 'look into the Old Mill' })
     expect(leadChips(ME, [], [])).toEqual([])
+    const elsewhere = leadChips(
+      ME,
+      [{ title: "The Peddler's Lost Crate", purpose: 'Missing from a stall at the Market.' }],
+      [],
+      [
+        { id: 'hearth', name: 'Hearth' },
+        { id: 'market', name: 'Market' }
+      ],
+      'hearth'
+    )
+    expect(elsewhere.map((c) => c.label)).toEqual([
+      "Head to the Market — “The Peddler's Lost Crate”"
+    ])
+    expect(elsewhere[0].intent).toMatchObject({ family: 'move', destination_location_id: 'market' })
     const article = leadChips(ME, [{ title: 'A stray dog' }], [])
     expect(article[0].intent).toMatchObject({ attempt: 'look into a stray dog' })
     expect(inSentence('The Old Mill')).toBe('the Old Mill')
