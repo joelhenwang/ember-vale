@@ -20,6 +20,8 @@ import {
   doIntent,
   doPrompt,
   isFresh,
+  leadChips,
+  type LeadChip,
   levelProgress,
   prologue,
   trimPlaceLead,
@@ -139,6 +141,9 @@ const levelFill = computed(() =>
     ? levelProgress(journey.value.renown, journey.value.level_floor, journey.value.next_level_at)
     : 0
 )
+const leads = computed(() =>
+  adv.me.value ? leadChips(adv.me.value, rumours.value, adv.present.value) : []
+)
 const nowIndex = computed(() => adv.presentation.value?.absolute_index ?? 0)
 const elapsed = computed(() =>
   startedAt.value ? Math.max(0, Math.round((now.value - startedAt.value) / 1000)) : 0
@@ -195,6 +200,16 @@ async function chip(s: SuggestionView): Promise<void> {
   if (!intent) return
   echo.value = { kind: 'do', text: `You ${s.title.charAt(0).toLowerCase()}${s.title.slice(1)}.` }
   await turn(() => adv.act(intent))
+  echo.value = null
+}
+
+async function followLead(lead: LeadChip): Promise<void> {
+  if (adv.acting.value) return
+  echo.value =
+    lead.intent.family === 'communicate'
+      ? { kind: 'say', text: String(lead.intent.topic ?? '') }
+      : { kind: 'do', text: `You ${lead.label.charAt(0).toLowerCase()}${lead.label.slice(1)}.` }
+  await turn(() => adv.act(lead.intent))
   echo.value = null
 }
 
@@ -485,7 +500,16 @@ onMounted(() => {
               </button>
             </div>
           </div>
-          <div v-if="adv.chips.value.length" class="composer__chips">
+          <div v-if="adv.chips.value.length || leads.length" class="composer__chips">
+            <button
+              v-for="lead in leads"
+              :key="lead.key"
+              type="button"
+              class="chip chip--lead"
+              :disabled="adv.acting.value || !adv.alive.value"
+              @click="followLead(lead)">
+              {{ lead.label }}
+            </button>
             <button
               v-for="s in adv.chips.value"
               :key="s.id"
@@ -1102,6 +1126,11 @@ button.who:hover > span {
 .chip--take {
   border-color: var(--gold-soft);
   color: var(--gold);
+}
+.chip--lead {
+  border-color: var(--gold-soft);
+  background: #fbf1d8;
+  color: #7a5a1e;
 }
 .chip--move {
   border-color: #a9c2b8;

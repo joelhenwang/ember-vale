@@ -342,3 +342,38 @@ export function doPrompt(rumour: string | null, nearby: string[]): string {
   if (nearby.length) return `What do you do? — help ${nearby[0]}, look around, set out…`
   return 'What do you do? — search the stalls, mend the cart, follow the stranger…'
 }
+
+/** A ready-made next move grounded in a rumour the player has heard. */
+export interface LeadChip {
+  key: string
+  label: string
+  intent: Intent
+}
+
+/**
+ * Leads from rumours: ask someone here about the newest one, and look into
+ * it yourself. Deterministic, so they cost nothing and never invent facts.
+ */
+export function leadChips(
+  me: string,
+  rumours: { title: string }[],
+  present: { character_id: string; name: string }[]
+): LeadChip[] {
+  const lead = rumours[0]
+  if (!lead) return []
+  const chips: LeadChip[] = []
+  const someone = present[0]
+  if (someone) {
+    chips.push({
+      key: `ask:${someone.character_id}:${lead.title}`,
+      label: `Ask ${someone.name} about “${lead.title}”`,
+      intent: sayIntent(me, someone.character_id, `What do you know about ${lead.title}?`)
+    })
+  }
+  chips.push({
+    key: `lead:${lead.title}`,
+    label: `Look into “${lead.title}”`,
+    intent: doIntent(me, `look into ${lead.title}`)
+  })
+  return chips
+}

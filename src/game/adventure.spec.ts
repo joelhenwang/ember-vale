@@ -5,6 +5,7 @@ import {
   buildLog,
   cardDrives,
   isFresh,
+  leadChips,
   doIntent,
   doPrompt,
   firstSentence,
@@ -275,5 +276,18 @@ describe('composer prompt', () => {
     expect(doPrompt('The Old Mill', ['Ash'])).toContain('“The Old Mill”')
     expect(doPrompt(null, ['Ash'])).toContain('help Ash')
     expect(doPrompt(null, [])).toContain('search the stalls')
+  })
+})
+
+describe('lead chips', () => {
+  it('asks someone here about the newest rumour and looks into it', () => {
+    const chips = leadChips(ME, [{ title: 'The Old Mill' }], [{ character_id: 'ash', name: 'Ash' }])
+    expect(chips.map((c) => c.label)).toEqual([
+      'Ask Ash about “The Old Mill”',
+      'Look into “The Old Mill”'
+    ])
+    expect(chips[0].intent).toMatchObject({ family: 'communicate', target_character_id: 'ash' })
+    expect(chips[1].intent).toMatchObject({ family: 'interact', attempt: 'look into The Old Mill' })
+    expect(leadChips(ME, [], [])).toEqual([])
   })
 })
