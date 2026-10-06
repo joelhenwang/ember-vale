@@ -433,9 +433,7 @@ def scene_place_facts(start: str | None, ends: Mapping[str, str]) -> list[tuple[
     finals = set(ends.values())
     if len(finals) == 1 and start and next(iter(finals)) != start:
         end = next(iter(finals))
-        facts.append(
-            ("place", f"The way runs from {start} to {end}; it ends with everyone at {end}.")
-        )
+        facts.append(("place", f"The scene takes place at {end}."))
     elif start:
         facts.append(("place", f"The scene takes place at {start}."))
     # Only when people end up apart is it worth saying where each one is;

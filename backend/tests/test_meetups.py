@@ -255,7 +255,8 @@ def test_a_meeting_scene_is_set_where_it_ends() -> None:
     from worldsim.application.orchestration.stage1 import scene_place_facts
 
     met = dict(scene_place_facts("Hearth", {"Wren": "Market", "Ash": "Market"}))
-    assert met["place"] == "The way runs from Hearth to Market; it ends with everyone at Market."
+    # Where it ends, plainly: framings of the walk came back word for word.
+    assert met["place"] == "The scene takes place at Market."
     assert "whereabouts" not in met  # together: the place fact says it
     apart = dict(scene_place_facts("Hearth", {"Wren": "Hearth", "Ash": "Market"}))
     assert apart["place"] == "The scene takes place at Hearth."
