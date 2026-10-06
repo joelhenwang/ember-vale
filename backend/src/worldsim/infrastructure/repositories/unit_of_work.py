@@ -28,6 +28,7 @@ from worldsim.infrastructure.repositories.knowledge import SqlAlchemyKnowledgeRe
 from worldsim.infrastructure.repositories.lineage import SqlAlchemyLineageRepository
 from worldsim.infrastructure.repositories.locations import SqlAlchemyLocationRepository
 from worldsim.infrastructure.repositories.macro import SqlAlchemyMacroRepository
+from worldsim.infrastructure.repositories.mentions import SqlAlchemyMentionRepository
 from worldsim.infrastructure.repositories.monsters import SqlAlchemyMonsterRepository
 from worldsim.infrastructure.repositories.narrative import SqlAlchemyNarrativeRepository
 from worldsim.infrastructure.repositories.outbox import SqlAlchemyOutboxRepository
@@ -90,6 +91,7 @@ class SqlAlchemyUnitOfWork:
         self._narrative: SqlAlchemyNarrativeRepository | None = None
         self._digests: SqlAlchemyDigestRepository | None = None
         self._recall: SqlAlchemyRecallRepository | None = None
+        self._mentions: SqlAlchemyMentionRepository | None = None
         self._summaries: SqlAlchemySummaryRepository | None = None
         self._roles: SqlAlchemyRoleRepository | None = None
         self._autoplay: SqlAlchemyAutoplayRepository | None = None
@@ -275,6 +277,12 @@ class SqlAlchemyUnitOfWork:
         return self._recall
 
     @property
+    def mentions(self) -> SqlAlchemyMentionRepository:
+        if self._mentions is None:
+            self._mentions = SqlAlchemyMentionRepository(self._require_session())
+        return self._mentions
+
+    @property
     def roles(self) -> SqlAlchemyRoleRepository:
         if self._roles is None:
             self._roles = SqlAlchemyRoleRepository(self._require_session())
@@ -367,6 +375,7 @@ class SqlAlchemyUnitOfWork:
             self._costs = None
             self._digests = None
             self._recall = None
+            self._mentions = None
             self._schedules = None
             self._outbox = None
             self._perception = None

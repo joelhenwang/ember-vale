@@ -22,7 +22,7 @@ from worldsim.application.tasks.service import TaskService
 from worldsim.domain.errors import DomainError
 from worldsim.infrastructure.images.krea import KreaImageGenerator
 from worldsim.infrastructure.images.runner import ImageJobRunner
-from worldsim.infrastructure.local_models.indexer import RecallIndexer
+from worldsim.infrastructure.local_models.indexer import MentionReader, RecallIndexer
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
 from worldsim.infrastructure.ops.logging import install
 from worldsim.infrastructure.settings import Settings
@@ -87,12 +87,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     images = _image_runner(state)
     images_loop = asyncio.create_task(images.run_forever()) if images is not None else None
     app.state.image_runner = images
-    recall = _recall_indexer(state)
-    recall_loop = asyncio.create_task(recall.run_forever()) if recall is not None else None
+    local_loops = [(job, asyncio.create_task(job.run_forever())) for job in _local_jobs(state)]
     yield
-    if recall is not None and recall_loop is not None:
-        await recall.stop()
-        await recall_loop
+    for job, task in local_loops:
+        await job.stop()
+        await task
     if runner is not None and loop is not None:
         await runner.stop()
         await loop
@@ -119,18 +118,21 @@ def _image_runner(state: AppState) -> ImageJobRunner | None:
     )
 
 
-def _recall_indexer(state: AppState) -> RecallIndexer | None:
-    """Embeds new observations and memories, when a local model service is set."""
+def _local_jobs(state: AppState) -> list[RecallIndexer | MentionReader]:
+    """Background work for the local model service, when one is set."""
     models = state.local_models()
     if models is None:
-        return None
+        return []
     local = state.settings.local_models
-    return RecallIndexer(
-        state.uow_factory(),
-        models,
-        batch=local.index_batch,
-        poll_seconds=local.index_poll_seconds,
-    )
+    return [
+        RecallIndexer(
+            state.uow_factory(),
+            models,
+            batch=local.index_batch,
+            poll_seconds=local.index_poll_seconds,
+        ),
+        MentionReader(state.uow_factory(), models, poll_seconds=local.index_poll_seconds),
+    ]
 
 
 async def _autoplay_beat(state: AppState, world_id: UUID, index: int) -> Stage1PhaseReport:

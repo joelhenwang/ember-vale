@@ -22,6 +22,7 @@ from worldsim.application.ports.repositories import (
     LineageRepository,
     LocationRepository,
     MacroRepository,
+    MentionRepository,
     MonsterRepository,
     NarrativeRepository,
     OutboxRepository,
@@ -93,6 +94,8 @@ class UnitOfWork(Protocol):
     def digests(self) -> DigestRepository: ...
     @property
     def recall(self) -> RecallRepository: ...
+    @property
+    def mentions(self) -> MentionRepository: ...
     @property
     def roles(self) -> RoleRepository: ...
     @property

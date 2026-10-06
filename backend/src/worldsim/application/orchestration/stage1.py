@@ -235,7 +235,7 @@ from worldsim.domain.rules.dnd import (
 from worldsim.domain.rules.dnd.data import dict_field, entry, str_field, table
 from worldsim.domain.rules.grounding import grounded_move
 from worldsim.domain.rules.meetups import resolve_meetups
-from worldsim.domain.rules.mentions import unmapped_places
+from worldsim.domain.rules.mentions import MENTION_MODEL, unmapped_places
 from worldsim.domain.rules.perception import permitted_facts
 from worldsim.domain.rules.phases import is_quiet_phase
 from worldsim.domain.rules.resources import rest_recovery, restore, spend
@@ -1941,9 +1941,19 @@ class Stage1Orchestrator:
         )
         added_raw = config.get(ADDED_PLACES_CONFIG_KEY)
         places_left = max(0, MAX_ADDED_PLACES - (added_raw if isinstance(added_raw, int) else 0))
+        talk = [*said, *intentions.values(), *(h.purpose for h in hooks)]
+        read: dict[str, list[str]] | None = None
+        if self._local_models is not None:
+            # Place spans the background reader cached; unread lines use the noun list.
+            async with self._factory() as uow:
+                read = await uow.mentions.places_for(MENTION_MODEL, talk)
         unmapped = unmapped_places(
-            [*said, *intentions.values(), *(h.purpose for h in hooks)],
-            [loc.name for loc in locations],
+            talk,
+            # The region ("Ember Vale") is where everything is, not a missing place.
+            [loc.name for loc in locations]
+            + sorted({loc.region for loc in locations if loc.region}),
+            read=read,
+            people=[c.name for c in characters],
         )
         summary = (
             director_summary(

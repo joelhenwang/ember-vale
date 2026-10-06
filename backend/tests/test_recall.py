@@ -29,9 +29,10 @@ from worldsim.domain.characters import Character
 from worldsim.domain.context import SourceCandidate
 from worldsim.domain.enums import Visibility
 from worldsim.domain.memory import recall_text, relevance
+from worldsim.domain.rules.mentions import MENTION_MODEL, unmapped_places
 from worldsim.infrastructure.db.engine import create_engine
 from worldsim.infrastructure.local_models.client import BACKOFF_S, LocalModelsClient
-from worldsim.infrastructure.local_models.indexer import RecallIndexer
+from worldsim.infrastructure.local_models.indexer import MentionReader, RecallIndexer
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
 from worldsim.infrastructure.model_gateway.profiles import FAKE_TEST_PROFILE
 from worldsim.infrastructure.settings import Settings
@@ -66,7 +67,14 @@ class FakeLocalModels:
     async def extract(
         self, texts: list[str], labels: dict[str, str], threshold: float = 0.5
     ) -> list[list[Span]]:
-        return [[] for _ in texts]
+        self.calls.append(("query", ["extract", *texts]))
+        found: list[list[Span]] = []
+        for line in texts:
+            start = line.find("north road")
+            found.append(
+                [Span("place", "the north road", start - 4, start + 10, 0.9)] if start >= 0 else []
+            )
+        return found
 
 
 def test_relevance_maps_cosine_onto_zero_to_one() -> None:
@@ -298,3 +306,37 @@ def test_decisions_ask_for_recall_with_the_moment(
     queries = [texts[0] for kind, texts in models.calls if kind == "query"]
     assert any(q.startswith("Wren is at Hearth.") for q in queries)
     assert any(q.startswith("Ash is at Market.") for q in queries)
+
+
+def test_mention_reader_caches_place_spans_for_the_director(migrated_db: None) -> None:
+    models = FakeLocalModels()
+    ids = asyncio.run(_seed_two())
+    line = "Take the north road before the bell — Café owners say it’s open."
+    plain = "Wait here a while."
+
+    async def scenario() -> tuple[int, int, dict[str, list[str]]]:
+        state = _state(models)
+        try:
+            async with state.engine.begin() as conn:
+                for who, words in ((ids["wren"], line), (ids["ash"], plain)):
+                    await conn.execute(
+                        text(
+                            "INSERT INTO character_intention "
+                            "(character_id, world_id, text, set_phase_index, updated_at) "
+                            "VALUES (:c, :w, :t, 0, now())"
+                        ),
+                        {"c": who, "w": ids["world"], "t": words},
+                    )
+            reader = MentionReader(state.uow_factory(), models)
+            first = await reader.run_once()
+            again = await reader.run_once()
+            async with state.uow_factory()() as uow:
+                cached = await uow.mentions.places_for(MENTION_MODEL, [line, plain, "never seen"])
+            return first, again, cached
+        finally:
+            await state.engine.dispose()
+
+    first, again, cached = asyncio.run(scenario())
+    assert first >= 2 and again == 0  # each line is read once
+    assert cached == {line: ["the north road"], plain: []}  # SQL and Python hashes agree
+    assert dict(unmapped_places([line, plain], ["Market"], read=cached)) == {"north road": 1}

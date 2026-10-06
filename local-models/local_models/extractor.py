@@ -1,6 +1,6 @@
 """Entity spans with GLiNER2.5 (fastino/gliner2.5-multi-v1) on the CPU.
 
-About 230 ms per line on a Core Ultra 7 255U. The library's own
+About 160 ms per line in batches of 8 on a Core Ultra 7 255U. The library's own
 ``quantize=True`` is about eight times slower on this CPU, so it stays
 off. Labels can carry a description, which GLiNER reads as a hint.
 """
@@ -25,30 +25,32 @@ class Extractor:
         self, texts: list[str], labels: dict[str, str], threshold: float
     ) -> list[dict[str, list[dict[str, Any]]]]:
         """Per text: label -> spans with text, start, end and confidence."""
-        out: list[dict[str, list[dict[str, Any]]]] = []
         with self._lock:
-            for text in texts:
-                found = self._model.extract_entities(
-                    text,
-                    labels,
-                    threshold=threshold,
-                    include_confidence=True,
-                    include_spans=True,
-                )
-                entities = found.get("entities", {}) if isinstance(found, dict) else {}
-                out.append(
-                    {
-                        label: [
-                            {
-                                "text": span["text"],
-                                "start": int(span["start"]),
-                                "end": int(span["end"]),
-                                "confidence": round(float(span["confidence"]), 3),
-                            }
-                            for span in spans
-                            if isinstance(span, dict)
-                        ]
-                        for label, spans in entities.items()
-                    }
-                )
+            # Batches of 8: ~160 ms per line against ~210 one at a time.
+            found_all = self._model.batch_extract_entities(
+                texts,
+                labels,
+                batch_size=8,
+                threshold=threshold,
+                include_confidence=True,
+                include_spans=True,
+            )
+        out: list[dict[str, list[dict[str, Any]]]] = []
+        for found in found_all:
+            entities = found.get("entities", {}) if isinstance(found, dict) else {}
+            out.append(
+                {
+                    label: [
+                        {
+                            "text": span["text"],
+                            "start": int(span["start"]),
+                            "end": int(span["end"]),
+                            "confidence": round(float(span["confidence"]), 3),
+                        }
+                        for span in spans
+                        if isinstance(span, dict)
+                    ]
+                    for label, spans in entities.items()
+                }
+            )
         return out

@@ -50,15 +50,16 @@ class LocalModelsClient:
         self._transport = transport
         self._timeout = timeout_s
         self._clock = clock
-        self._down_until = 0.0
+        #: Per endpoint, so extraction being off never blocks embeddings.
+        self._down_until: dict[str, float] = {}
 
     async def _post(self, path: str, body: dict[str, Any], limit_s: float) -> bytes:
-        if self._clock() < self._down_until:
+        if self._clock() < self._down_until.get(path, 0.0):
             raise LocalModelsUnavailable(f"{path}: backing off after a failure")
         try:
             return await self._send(path, body, limit_s)
         except LocalModelsUnavailable:
-            self._down_until = self._clock() + BACKOFF_S
+            self._down_until[path] = self._clock() + BACKOFF_S
             raise
 
     async def _send(self, path: str, body: dict[str, Any], limit_s: float) -> bytes:

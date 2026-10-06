@@ -8,7 +8,7 @@ calls it at `host.docker.internal`.
 | Endpoint | Model | Where it runs | Speed (Core Ultra 7 255U) |
 |---|---|---|---|
 | `POST /embed` | embeddinggemma-300m, OpenVINO int8 | CPU (iGPU opt-in) | ~22 ms per query, ~1.1 s per 32 documents |
-| `POST /extract` | GLiNER2.5 multi (fastino/gliner2.5-multi-v1) | CPU (PyTorch) | ~230 ms per line |
+| `POST /extract` | GLiNER2.5 multi (fastino/gliner2.5-multi-v1) | CPU (PyTorch) | ~160 ms per line in batches of 8 |
 | `GET /health` | — | — | — |
 
 ## Set up once
@@ -31,9 +31,12 @@ uv run python -m local_models.server --port 8102
 
 Then set `WORLDSIM_LOCAL_MODELS__URL=http://host.docker.internal:8102`
 in the repo `.env` and rebuild the API (`docker compose up -d --build api`).
-The API embeds new observations and memories in the background and ranks
-decision context by relevance. If the service stops, decisions carry on
-with recency and salience alone.
+The API works with it in the background, never inside a beat:
+
+- It embeds new observations and memories, so decision context is ranked by relevance.
+- It reads new speech, attempts, intentions and rumours with GLiNER, so the director learns which places people talk about that aren't on the map. GLiNER drops the noun list's false friends ("keep an eye", "forge mark") and adds names the list can't build ("the wheelwright's shop", "the north road").
+
+If the service stops, decisions fall back to recency and salience, and the director falls back to the noun list.
 
 | Variable | Default | Meaning |
 |---|---|---|

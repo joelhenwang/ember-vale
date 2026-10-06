@@ -114,3 +114,30 @@ def test_landmarks_people_plan_to_visit_count_as_places() -> None:
 
     said = ["Let's go see the peddler by the fountain.", "I'll show you the way to the fountain."]
     assert unmapped_places(said, ["Hearth", "Market"]) == [("fountain", 2)]
+
+
+def test_model_read_lines_drop_verbs_and_add_named_roads() -> None:
+    keep = "Keep an eye on the cart until I return."
+    forge = "Ask Bram about the forge mark on the coin."
+    road = "Ash, does the north road stay open in rain?"
+    ridge = "What was on that ridge you don't want me to know about?"
+    read = {
+        keep: [],
+        forge: [],
+        road: ["the north road"],
+        ridge: ["that ridge"],
+    }
+    found = dict(unmapped_places([keep, forge, road, ridge], ["Market"], read=read))
+    assert found == {"north road": 1, "ridge": 1}
+    # Unread lines keep the noun list, false friends and all.
+    assert dict(unmapped_places([keep], ["Market"])) == {"keep": 1}
+
+
+def test_model_spans_that_are_people_or_bare_nouns_are_not_places() -> None:
+    line = (
+        "Let's find the stall and ask Old Marta about the shelf by Dryden's mill, "
+        "and the chip on the coin's edge."
+    )
+    read = {line: ["stall", "Old Marta", "shelf", "Dryden's mill", "the coin's edge"]}
+    found = unmapped_places([line], ["Market"], read=read, people=["Old Marta"])
+    assert found == [("Dryden's mill", 1)]
