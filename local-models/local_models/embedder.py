@@ -1,15 +1,18 @@
 """Sentence embeddings from an OpenVINO IR export of embeddinggemma.
 
-One compiled model per device. "AUTO" compiles CPU and GPU and routes
-by batch size: a single query is fastest on the CPU (about 22 ms on a
-Core Ultra 7 255U), a batch of documents on the integrated GPU (about
-0.47 s for 32 against 1.1 s on the CPU). The NPU is left out on purpose:
-it needs static shapes, so every text pads to full length, and it came
-out both slower and less faithful (top-5 agreement 0.80 against 0.97).
+"AUTO" (the default) is the CPU: about 22 ms per query on a Core Ultra
+7 255U, plenty for the few rows a beat adds. "CPU+GPU" also compiles
+for the integrated GPU and sends batches there. That is opt-in: fp16 on
+the iGPU zeroed short rows in padded batches, fp32 is only ~20% faster
+than the CPU, and the driver can fail with CL_OUT_OF_RESOURCES; after
+any GPU failure the GPU is dropped and the CPU finishes the work. The
+NPU is left out: it needs static shapes, so every text pads to full
+length, and it came out slower and less faithful (top-5 0.80 vs 0.97).
 """
 
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from dataclasses import dataclass
@@ -19,6 +22,7 @@ from typing import Literal
 import numpy as np
 
 Kind = Literal["query", "document"]
+log = logging.getLogger("local_models.embedder")
 
 #: embeddinggemma's task prompts; queries and documents embed differently.
 PREFIXES: dict[str, str] = {
@@ -54,13 +58,14 @@ class Embedder:
         model = core.read_model(model_dir / "openvino_model.xml")
         self._tokenizer = AutoTokenizer.from_pretrained(model_dir)
         self._inputs = [port.get_any_name() for port in model.inputs]
-        wanted = ["CPU", "GPU"] if device.upper() == "AUTO" else [device.upper()]
+        choice = device.upper()
+        wanted = {"AUTO": ["CPU"], "CPU+GPU": ["CPU", "GPU"]}.get(choice, [choice])
         config = {"CACHE_DIR": str(cache_dir)} if cache_dir else {}
         self._compiled: dict[str, _Compiled] = {}
         self.compile_seconds: dict[str, float] = {}
         for name in wanted:
             if name not in available:
-                if device.upper() == "AUTO":
+                if choice == "CPU+GPU" and name == "GPU":
                     continue
                 raise RuntimeError(f"device {name} not available (have {sorted(available)})")
             started = time.perf_counter()
@@ -99,7 +104,7 @@ class Embedder:
         vectors = np.zeros((len(prefixed), 0), dtype=np.float32)
         for start in range(0, len(order), BATCH):
             picked = order[start : start + BATCH]
-            chunk = self._infer(device, [prefixed[i] for i in picked])
+            chunk = self._infer_or_fall_back(device, [prefixed[i] for i in picked])
             if vectors.shape[1] == 0:
                 vectors = np.zeros((len(prefixed), chunk.shape[1]), dtype=np.float32)
             vectors[picked] = chunk
@@ -112,6 +117,17 @@ class Embedder:
         if any(not np.isfinite(n) or n < 1e-6 for n in norms):
             raise RuntimeError("embedding model returned an empty vector")
         return vectors / norms[:, None]
+
+    def _infer_or_fall_back(self, device: str, chunk: list[str]) -> np.ndarray:
+        try:
+            return self._infer(device, chunk)
+        except RuntimeError:
+            if device == "CPU" or "CPU" not in self._compiled:
+                raise
+            # A GPU error can leave the driver unusable: stop using it.
+            log.exception("embedding on %s failed; using the CPU from now on", device)
+            self._compiled.pop(device, None)
+            return self._infer("CPU", chunk)
 
     def _infer(self, device: str, chunk: list[str]) -> np.ndarray:
         target = self._compiled[device]

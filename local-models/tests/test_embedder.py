@@ -21,7 +21,7 @@ LONG = (
 
 @pytest.fixture(scope="module")
 def auto() -> Embedder:
-    return Embedder(MODEL, "AUTO")
+    return Embedder(MODEL, "CPU+GPU")
 
 
 @pytest.fixture(scope="module")

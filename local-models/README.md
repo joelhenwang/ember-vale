@@ -7,7 +7,7 @@ calls it at `host.docker.internal`.
 
 | Endpoint | Model | Where it runs | Speed (Core Ultra 7 255U) |
 |---|---|---|---|
-| `POST /embed` | embeddinggemma-300m, OpenVINO int8 | CPU for 1–3 texts, iGPU for batches | ~22 ms per query, ~0.47 s per 32 documents |
+| `POST /embed` | embeddinggemma-300m, OpenVINO int8 | CPU (iGPU opt-in) | ~22 ms per query, ~1.1 s per 32 documents |
 | `POST /extract` | GLiNER2.5 multi (fastino/gliner2.5-multi-v1) | CPU (PyTorch) | ~230 ms per line |
 | `GET /health` | — | — | — |
 
@@ -37,7 +37,7 @@ with recency and salience alone.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `LOCAL_MODELS_DEVICE` | `AUTO` | `AUTO` (CPU for queries, GPU for batches), `CPU` or `GPU` |
+| `LOCAL_MODELS_DEVICE` | `AUTO` | `AUTO` (the CPU), `CPU+GPU` (batches on the iGPU), `CPU` or `GPU` |
 | `LOCAL_MODELS_EMBED_DIR` | `models/embeddinggemma-300m-int8` | OpenVINO IR folder |
 | `LOCAL_MODELS_EXTRACT` | `1` | `0` skips loading GLiNER |
 
@@ -56,6 +56,7 @@ Against full-precision PyTorch on 400 real observation lines:
 | int8, NPU | 29 ms | 0.93 s | 0.80 |
 | int4, any | 22–34 ms | 0.45–1.2 s | 0.88–0.93 |
 
+- The iGPU is opt-in. Its fp16 numbers above hide a fault: short rows padded beside long ones came back as all-zero vectors. In fp32 it is only about 20% faster than the CPU (541 ms against 659 ms for a mixed batch of 32). Under load the driver also failed with `CL_OUT_OF_RESOURCES`, and the GPU stayed broken until restart. Indexing adds a few rows per beat, so the CPU is plenty. With `CPU+GPU`, any GPU failure drops the GPU and the CPU finishes the batch.
 - The NPU needs fixed input shapes, so every text pads to full length. That makes it slower and less faithful here.
 - int4 loses quality for no speed gain.
 - GLiNER's own `quantize=True` is about 8× slower on this CPU.

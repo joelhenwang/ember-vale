@@ -6,7 +6,7 @@ service at host.docker.internal instead of loading models itself.
 
 Environment:
     LOCAL_MODELS_EMBED_DIR   OpenVINO IR folder (default models/embeddinggemma-300m-int8)
-    LOCAL_MODELS_DEVICE      AUTO (CPU for queries, GPU for batches), CPU or GPU
+    LOCAL_MODELS_DEVICE      AUTO (the CPU), CPU+GPU (batches on the iGPU), CPU or GPU
     LOCAL_MODELS_EXTRACT     1 to load GLiNER2.5 for /extract, 0 to skip it
 """
 
