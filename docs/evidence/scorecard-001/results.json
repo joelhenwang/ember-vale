@@ -1,0 +1,259 @@
+{
+  "meta": {
+    "commit": "21124fc",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T00:09:40+00:00",
+    "wall_seconds": 658,
+    "est_usd_total": 0.1279444952,
+    "scenarios": [
+      "strangers",
+      "lost_item",
+      "stuck_task",
+      "meet_up"
+    ]
+  },
+  "results": {
+    "strangers": {
+      "ids": {
+        "world": "6a557c7e-13d2-48c0-868c-b28be1464f62",
+        "place:Hearth": "08d42864-b56e-4324-8cca-20e12af20742",
+        "place:Market": "9539513c-7d01-4382-a167-95e3cfc93e7a",
+        "wren": "eef45a5c-e43a-4092-9d21-31a65416b7a2",
+        "ash": "ee2f5819-1c36-4161-94d6-1b5ff68d3e80"
+      },
+      "beat_seconds": [
+        37.26599999994505,
+        16.593999999924563,
+        41.15700000000652,
+        51.71799999999348,
+        61.40599999995902,
+        140.14099999994505,
+        65.53100000007544,
+        108.31299999996554
+      ],
+      "error": null,
+      "score": {
+        "calls": 97,
+        "failed_calls": 0,
+        "repairs": 5,
+        "repairs_by_role": {
+          "resolver": 2,
+          "narrator": 3
+        },
+        "repair_rate": 0.05154639175257732,
+        "est_usd": 0.0355162176,
+        "action_mix": {
+          "communicate": 15,
+          "move": 2,
+          "wait": 3,
+          "interact": 3,
+          "observe": 1
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 3,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 2,
+        "hooks": [
+          {
+            "title": "The Market\u2019s First Cart",
+            "powers": "spawn_npc"
+          },
+          {
+            "title": "The miller's second buyer",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Mira": "Market",
+          "Bram": "Market"
+        },
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "repeated questions 0% (pass \u2264 20%)"
+      }
+    },
+    "lost_item": {
+      "ids": {
+        "world": "d1e6289b-9e9e-455e-aab6-3e2594440b90",
+        "place:Hearth": "7fc7f195-66f5-45b8-a28a-481f4d0eeb76",
+        "place:Market": "621620bc-6439-4af7-9896-89f71b596f32",
+        "wren": "ef450732-694a-427b-a5f4-4e5c10fbe359",
+        "ash": "c3b26980-1cfc-40a8-b974-e5ba977e7e25",
+        "item:purse": "02a05fb5-aa12-48f8-8df6-965c36d33e19"
+      },
+      "beat_seconds": [
+        26.81200000003446,
+        66.75,
+        76.09400000004098,
+        100.26600000006147,
+        67.60999999998603,
+        46.32799999997951,
+        38.17200000002049,
+        50.93799999996554
+      ],
+      "error": null,
+      "score": {
+        "calls": 86,
+        "failed_calls": 0,
+        "repairs": 3,
+        "repairs_by_role": {
+          "resolver": 3
+        },
+        "repair_rate": 0.03488372093023256,
+        "est_usd": 0.027343896800000003,
+        "action_mix": {
+          "observe": 11,
+          "move": 1,
+          "communicate": 8,
+          "take": 2,
+          "wait": 1
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 2,
+        "moves_tried": 1,
+        "moves_done": 1,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "A Lost Satchel of Seeds",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Sable the Seed-Seller": "Market"
+        },
+        "items": {
+          "Lost purse": {
+            "holder": "Wren",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "purse held by Wren"
+      }
+    },
+    "stuck_task": {
+      "ids": {
+        "world": "86e6d17f-52d3-413f-9ea4-3588a7274b87",
+        "place:Hearth": "fdeabfd5-5cbc-4d9e-b462-319f9fbc6e26",
+        "place:Market": "4445592f-162f-4034-bf4c-c8c77fdb96aa",
+        "wren": "9cb10090-d929-4080-8332-111b2ab7c60d",
+        "ash": "b5ed58bc-97b8-48a5-bd20-f2304b59057b",
+        "marg": "699a2062-ca76-4610-bbf7-3a32a665a573"
+      },
+      "beat_seconds": [
+        45.10900000005495,
+        80.875,
+        73.5,
+        92.90599999995902,
+        104.48399999993853,
+        101.92200000002049,
+        72.5,
+        85.78099999995902
+      ],
+      "error": null,
+      "score": {
+        "calls": 148,
+        "failed_calls": 0,
+        "repairs": 8,
+        "repairs_by_role": {
+          "resolver": 3,
+          "narrator": 4,
+          "reaction": 1
+        },
+        "repair_rate": 0.05405405405405406,
+        "est_usd": 0.048912392,
+        "action_mix": {
+          "observe": 6,
+          "interact": 7,
+          "wait": 2,
+          "communicate": 16
+        },
+        "repetition_rate": 0.0625,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 0,
+        "moves_done": 0,
+        "interact_success": 6,
+        "hooks": [
+          {
+            "title": "Strange goods at the edge of the Market",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Old Marg": "Market",
+          "Petra": "Market"
+        },
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "6 successful physical attempt(s)"
+      }
+    },
+    "meet_up": {
+      "ids": {
+        "world": "392da7b0-c5b3-46f5-8120-efc233b17a21",
+        "place:Hearth": "8c4ea539-d96c-4bbd-b838-21a92dd99606",
+        "place:Market": "ee27ad64-cc88-4ca6-bea2-e16779add0f1",
+        "wren": "38b01585-7e8b-4e48-9cc0-a785846c94b8",
+        "ash": "772cf340-d2ba-427f-83ac-ddca9bc3d90d"
+      },
+      "beat_seconds": [
+        25.68700000003446,
+        27.48499999998603,
+        23.016000000061467,
+        55.82799999997951,
+        18.968999999924563,
+        74.15700000000652,
+        60.436999999918044,
+        56.78099999995902
+      ],
+      "error": null,
+      "score": {
+        "calls": 53,
+        "failed_calls": 0,
+        "repairs": 4,
+        "repairs_by_role": {
+          "resolver": 3,
+          "reaction": 1
+        },
+        "repair_rate": 0.07547169811320754,
+        "est_usd": 0.016171988800000002,
+        "action_mix": {
+          "wait": 1,
+          "move": 3,
+          "communicate": 12
+        },
+        "repetition_rate": 0.08333333333333333,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 3,
+        "moves_tried": 3,
+        "moves_done": 3,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "Smuggler's Cache",
+            "powers": ""
+          }
+        ],
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Hearth"
+        },
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "Wren at Hearth, Ash at Hearth"
+      }
+    }
+  }
+}

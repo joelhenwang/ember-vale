@@ -47,6 +47,13 @@ uv run pytest -n 8         # routine suite in parallel (~2.5 min; ~9 min seriall
 uv run pytest -m sim_gate -n 8   # multi-phase simulations (~8 min); CI runs these nightly
 ```
 
+Story quality is measured separately, on the live model: `uv run python
+scripts/scorecard.py --live` runs four fixed scenarios (strangers meeting, a
+lost item, a stuck task, a meet-up) for 8 beats each in a scratch database and
+writes `docs/evidence/scorecard-NNN/` (repairs, repeated questions, moves that
+land, idle/talk streaks, a pass/fail goal per scenario). About $0.13 a run;
+`--max-usd` caps it. Compare a change by running it before and after.
+
 While iterating, run the affected test files directly (`uv run pytest
 tests/test_x.py`); run the parallel routine suite before committing.
 Tests are parallel-safe: every database test clones its own scratch
