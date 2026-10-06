@@ -335,6 +335,7 @@ async def run_scenario(
     beats: int,
     spend: Spend,
     refresh_spend: Callable[[], Awaitable[None]],
+    provider_dead: Callable[[UUID], Awaitable[bool]],
 ) -> dict[str, Any]:
     from worldsim.interfaces.http.beats import run_beat
 
@@ -354,6 +355,9 @@ async def run_scenario(
             break
         times.append(time.monotonic() - started)
         await refresh_spend()  # across all scenarios: one shared cap
+        if index == 1 and await provider_dead(world):
+            error = "every model call in beat 1 failed (provider down or key out of credit)"
+            break
     return {"ids": ids, "beat_seconds": times, "error": error}
 
 
@@ -595,9 +599,21 @@ async def main_async(args: argparse.Namespace) -> int:
     async def refresh_spend() -> None:
         spend.spent = await asyncio.to_thread(spent_so_far)
 
+    def _all_failed(world: UUID) -> bool:
+        with connect(dsn) as conn:
+            row = conn.execute(
+                "select count(*), count(*) filter (where status <> 'succeeded')"
+                " from model_call where world_id = %s",
+                (str(world),),
+            ).fetchone()
+        return bool(row and row[0] > 0 and row[0] == row[1])
+
+    async def provider_dead(world: UUID) -> bool:
+        return await asyncio.to_thread(_all_failed, world)
+
     started = time.monotonic()
     runs = await asyncio.gather(
-        *(run_scenario(state, s, args.beats, spend, refresh_spend) for s in chosen)
+        *(run_scenario(state, s, args.beats, spend, refresh_spend, provider_dead) for s in chosen)
     )
     results: dict[str, Any] = {}
     with connect(dsn) as conn:
