@@ -205,6 +205,7 @@ class SqlAlchemyTraceRepository:
             "finish_reason": completion.finish_reason,
             "response_id": completion.response_id,
             "attempts": list(completion.attempts),
+            "cached_tokens": completion.cached_tokens,
         }
         await self._session.flush()
 

@@ -433,6 +433,14 @@ def test_recap_is_labelled_rejected_alone_and_never_a_fallback_beat() -> None:
     assert check(RECAP_FACT_KEY) is not None
     assert check(RECAP_FACT_KEY, "attempt:interact") is None
 
+    from worldsim.application.graphs.narrate import drop_recap_only
+
+    # A recap-only beat beside real ones is dropped, not sent back for repair.
+    kept = drop_recap_only([beat(RECAP_FACT_KEY), beat("attempt:interact")])
+    assert [b.cited_fact_keys for b in kept] == [["attempt:interact"]]
+    # With nothing else, it stays for the validator to reject.
+    assert len(drop_recap_only([beat(RECAP_FACT_KEY)])) == 1
+
     beats = fallback_beats(
         world_id=uuid.uuid4(),
         scene_id=None,

@@ -77,6 +77,7 @@ class StoredCompletion(BaseModel):
     finish_reason: str | None = Field(default=None, max_length=64)
     response_id: str | None = Field(default=None, max_length=128)
     attempts: list[dict[str, Any]] = Field(default_factory=list)
+    cached_tokens: int = Field(default=0, ge=0)
 
 
 @dataclass(frozen=True)

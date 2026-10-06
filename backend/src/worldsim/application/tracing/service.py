@@ -245,6 +245,7 @@ class TraceService:
             finish_reason=result.finish_reason,
             response_id=result.response_id,
             attempts=list(result.attempts),
+            cached_tokens=result.cached_tokens,
         )
         finished = call.model_copy(
             update={

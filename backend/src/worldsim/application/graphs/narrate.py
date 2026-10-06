@@ -544,6 +544,17 @@ def speech_eligible_keys(facts: list[dict[str, str]]) -> frozenset[str]:
     return frozenset(f["key"] for f in facts if f.get("speaker") and f.get("utterance"))
 
 
+def drop_recap_only(proposals: list[BeatProposal]) -> list[BeatProposal]:
+    """Drop beats that only retell the recap, when anything else remains.
+
+    Such a beat narrates the past as if new; dropping it loses nothing and
+    spares a repair call (about one narration in sixteen wrote one). A
+    narration made only of recap beats is left for the validator to reject.
+    """
+    kept = [p for p in proposals if set(p.cited_fact_keys) != {RECAP_FACT_KEY}]
+    return kept or proposals
+
+
 def beats_valid(
     proposals: list[BeatProposal],
     *,
@@ -856,7 +867,7 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
                         state, world_id, scene_id, event_id, facts, budget, errors, repairs, None
                     )
                 continue
-            proposals = resolve_citations(proposals, aliases)
+            proposals = drop_recap_only(resolve_citations(proposals, aliases))
             denial = beats_valid(
                 proposals,
                 visible_keys=visible_keys,

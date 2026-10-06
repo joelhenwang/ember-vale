@@ -223,3 +223,26 @@ def test_ports_import_only_contracts() -> None:
                 if not _allowed(node.module or ""):
                     violations.append(f"{path.name}: from {node.module}")
     assert violations == []
+
+
+def test_openrouter_usage_reads_cached_prompt_tokens() -> None:
+    from worldsim.infrastructure.model_gateway.openrouter import OpenRouterGateway
+
+    usage = OpenRouterGateway._usage_of(  # pyright: ignore[reportPrivateUsage]
+        {
+            "usage": {
+                "prompt_tokens": 1200,
+                "completion_tokens": 80,
+                "prompt_tokens_details": {"cached_tokens": 1024},
+                "completion_tokens_details": {"reasoning_tokens": 0},
+            }
+        }
+    )
+    assert usage == {
+        "prompt_tokens": 1200,
+        "completion_tokens": 80,
+        "reasoning_tokens": 0,
+        "cached_tokens": 1024,
+    }
+    bare = OpenRouterGateway._usage_of({"usage": {"prompt_tokens": 5}})  # pyright: ignore[reportPrivateUsage]
+    assert bare["cached_tokens"] == 0

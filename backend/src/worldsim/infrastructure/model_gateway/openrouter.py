@@ -145,13 +145,21 @@ class OpenRouterGateway:
     def _usage_of(payload: dict[str, Any]) -> dict[str, int]:
         usage = json_object(payload.get("usage"))
         if usage is None:
-            return {"prompt_tokens": 0, "completion_tokens": 0, "reasoning_tokens": 0}
+            return {
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "reasoning_tokens": 0,
+                "cached_tokens": 0,
+            }
         details = json_object(usage.get("completion_tokens_details"))
         reasoning = details.get("reasoning_tokens") if details is not None else 0
+        prompt_details = json_object(usage.get("prompt_tokens_details"))
+        cached = prompt_details.get("cached_tokens") if prompt_details is not None else 0
         return {
             "prompt_tokens": int(usage.get("prompt_tokens", 0) or 0),
             "completion_tokens": int(usage.get("completion_tokens", 0) or 0),
             "reasoning_tokens": int(reasoning or 0),
+            "cached_tokens": int(cached or 0),
         }
 
     @staticmethod
@@ -291,6 +299,7 @@ class OpenRouterGateway:
             profile_version=self.profile.version,
             latency_ms=latency_ms,
             reasoning_tokens=usage["reasoning_tokens"],
+            cached_tokens=usage["cached_tokens"],
             finish_reason=choice.get("finish_reason")
             if isinstance(choice.get("finish_reason"), str)
             else None,
