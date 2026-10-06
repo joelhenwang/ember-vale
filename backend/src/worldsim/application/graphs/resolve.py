@@ -166,7 +166,8 @@ def _move_denial(effect: MoveEntityEffect, view: WorldView) -> str | None:
 
 
 def fill_move_endpoints(raw: str, moves: Mapping[str, tuple[str, str]]) -> str:
-    """Set from/to of each move effect for a character who attempted a move.
+    """Set from/to of each move effect for a character who attempted a move,
+    and drop move effects for characters who attempted none.
 
     The attempt already names the destination and the server knows where
     the character stands; the model only decides whether the move happens.
@@ -180,16 +181,25 @@ def fill_move_endpoints(raw: str, moves: Mapping[str, tuple[str, str]]) -> str:
     effects = cast("dict[str, Any]", document).get("effects")
     if not isinstance(effects, list):
         return raw
+    kept: list[Any] = []
     for effect in cast("list[Any]", effects):
         if not isinstance(effect, dict):
+            kept.append(effect)
             continue
         item = cast("dict[str, Any]", effect)
         affected = item.get("affected_ids")
         if item.get("effect_type") != "move_entity" or not isinstance(affected, list):
+            kept.append(item)
             continue
         movers = [str(a) for a in cast("list[Any]", affected) if str(a) in moves]
-        if movers:
-            item["from_location_id"], item["to_location_id"] = moves[movers[0]]
+        if not movers:
+            # A move for someone who never tried to go anywhere ("from market
+            # to market" for a character who only spoke) cost a whole repair
+            # call; it changes nothing the scene asked for, so drop it.
+            continue
+        item["from_location_id"], item["to_location_id"] = moves[movers[0]]
+        kept.append(item)
+    cast("dict[str, Any]", document)["effects"] = kept
     return json.dumps(document)
 
 

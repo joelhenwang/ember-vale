@@ -481,7 +481,8 @@ def test_attempted_move_gets_real_endpoints_without_repair() -> None:
     assert len(gateway.sent_requests) == 1
 
 
-def test_invented_move_is_repaired_never_committed() -> None:
+def test_invented_move_is_dropped_never_committed() -> None:
+    """A move for someone who never asked to move is dropped, without a repair call."""
     ids = _ids()
     gateway = FakeGateway(profile=RESOLVER_FAKE_PROFILE)
     gateway.enqueue_text(_placeholder_move(ids["ash"]))  # Ash never asked to move
@@ -491,7 +492,6 @@ def test_invented_move_is_repaired_never_committed() -> None:
         invoke(build_resolve_graph(_deps(gateway)), _invocation(ids, _talk_and_move(ids)))
     )
 
-    assert len(gateway.sent_requests) == 2
-    assert "unknown place" in gateway.sent_requests[1].prompt
+    assert len(gateway.sent_requests) == 1
     effects = result["proposal"]["resolution"]["effects"]
     assert not any("11111111" in json.dumps(e) for e in effects)

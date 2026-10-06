@@ -104,3 +104,22 @@ def test_player_walks_where_their_words_go(stage1_client: tuple[ApiClient, FakeG
 
     assert asyncio.run(where()) == ids["market"]
     assert any(json.dumps(words)[1:-1] in prompt for prompt in narrator_prompts)
+
+
+def test_resolver_moves_only_those_who_tried_to_move() -> None:
+    from worldsim.application.graphs.resolve import fill_move_endpoints
+
+    raw = json.dumps(
+        {
+            "outcome": "success",
+            "effects": [
+                {"effect_type": "record_observation", "affected_ids": ["ash"]},
+                {"effect_type": "move_entity", "affected_ids": ["wren"], "to_location_id": "x"},
+                {"effect_type": "move_entity", "affected_ids": ["ash"], "to_location_id": "market"},
+            ],
+        }
+    )
+    out = json.loads(fill_move_endpoints(raw, {"wren": ("hearth-id", "market-id")}))
+    assert [e["effect_type"] for e in out["effects"]] == ["record_observation", "move_entity"]
+    assert out["effects"][1]["from_location_id"] == "hearth-id"
+    assert out["effects"][1]["to_location_id"] == "market-id"
