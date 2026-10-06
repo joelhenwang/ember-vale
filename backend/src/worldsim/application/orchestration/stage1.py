@@ -575,6 +575,25 @@ def director_summary(
     return "\n".join(lines)
 
 
+def _suggested_place(
+    unmapped: Sequence[tuple[str, int]],
+    characters: Sequence[Character],
+    locations: Sequence[Location],
+    places_left: int,
+) -> tuple[str, Location] | None:
+    """The most-mentioned unmapped place, named, and the place it joins.
+
+    It connects from where most living characters stand.
+    """
+    if not unmapped or places_left <= 0 or not locations:
+        return None
+    name = " ".join(w if w.endswith("'s") else w.capitalize() for w in unmapped[0][0].split())
+    crowd = Counter(c.location_id for c in characters if c.life_status == LifeStatus.ALIVE)
+    by_id = {loc.id: loc for loc in locations}
+    origin = next((by_id[p] for p, _n in crowd.most_common() if p in by_id), locations[0])
+    return name, origin
+
+
 def _place_suggestion(
     unmapped: Sequence[tuple[str, int]],
     characters: Sequence[Character],
@@ -586,14 +605,11 @@ def _place_suggestion(
     Playtest scorecards showed the director acknowledging such a place
     ("The Mill Door Stands Open") yet spawning a character instead of
     adding it; spelling out the fields makes adding it the easy path.
-    It connects from where most living characters stand.
     """
-    if not unmapped or places_left <= 0 or not locations:
+    suggested = _suggested_place(unmapped, characters, locations, places_left)
+    if suggested is None:
         return ""
-    name = " ".join(w if w.endswith("'s") else w.capitalize() for w in unmapped[0][0].split())
-    crowd = Counter(c.location_id for c in characters if c.life_status == LifeStatus.ALIVE)
-    by_id = {loc.id: loc for loc in locations}
-    origin = next((by_id[p] for p, _n in crowd.most_common() if p in by_id), locations[0])
+    name, origin = suggested
     return (
         f'\nSuggested: add "{name}" — for example "place": {{"name": "{name}", '
         f'"connect_to": "{origin.id}"}} (reached from {origin.name}).'
@@ -1786,6 +1802,7 @@ class Stage1Orchestrator:
             + "."
             + _place_suggestion(unmapped, characters, locations, places_left)
         )
+        suggested = _suggested_place(unmapped, characters, locations, places_left)
         hook_id = new_hook_id()
         arc_id = new_arc_id()
         spec = ManifestSpec(
@@ -1832,6 +1849,15 @@ class Stage1Orchestrator:
                 "place_id": str(uuid5(hook_id, "place")),
                 "places_left": places_left,
                 "place_names": [loc.name for loc in locations],
+                **(
+                    {
+                        "unmapped_place": suggested[0],
+                        "unmapped_from": str(suggested[1].id),
+                        "unmapped_from_name": suggested[1].name,
+                    }
+                    if suggested
+                    else {}
+                ),
             },
         )
         sampling = runtime.sampling

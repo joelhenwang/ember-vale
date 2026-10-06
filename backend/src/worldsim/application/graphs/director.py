@@ -15,6 +15,7 @@ phase failure.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
@@ -80,6 +81,10 @@ class DirectorState(GraphState, total=False):
     place_id: str
     places_left: int
     place_names: list[str]
+    #: The most-mentioned place not on the map, when one may still be added.
+    unmapped_place: str
+    unmapped_from: str
+    unmapped_from_name: str
     system_prompt: str
     user_prompt: str
     raw_response: str | None
@@ -109,6 +114,35 @@ def prompt_path() -> Path:
 def load_director_prompt() -> str:
     """Read the versioned director prompt (fails loudly when missing)."""
     return prompt_path().read_text(encoding="utf-8")
+
+
+def overlooks_place(proposal: DirectorProposal, place: str) -> bool:
+    """True when an opening is about an unmapped place yet does not add it.
+
+    Scorecard-005: the director answered a mill the characters kept
+    naming with "The miller's son needs a message carried" and no
+    new_location, so nobody could ever reach the mill.
+    """
+    if proposal.action == "noop" or "new_location" in proposal.requested_powers:
+        return False
+    words = place.split()
+    if not words:
+        return False
+    noun = re.escape(words[-1].lower())
+    return re.search(rf"\b{noun}s?\b", f"{proposal.title} {proposal.purpose}".lower()) is not None
+
+
+def _place_feedback(state: DirectorState) -> str:
+    place = state.get("unmapped_place", "")
+    origin = state.get("unmapped_from", "")
+    origin_name = state.get("unmapped_from_name", "")
+    return (
+        f'Your previous proposal is about "{place}", which is not on the map, '
+        "so no one could go there. Propose it again with requested_powers "
+        f'including "new_location" and "place": {{"name": "{place}", '
+        f'"connect_to": "{origin}"}} (reached from {origin_name}). '
+        "Output exactly one JSON object matching the response schema."
+    )
 
 
 def render_user_prompt(world_summary: str) -> str:
@@ -181,6 +215,8 @@ def build_director_graph(deps: DirectorGraphDeps) -> Any:
                 "provider_failed": True,
             }
         raw: str | None = result.text
+        #: A schema-valid proposal kept while asking for its missing place.
+        overlooked: tuple[DirectorProposal, str | None] | None = None
         while True:
             try:
                 proposal = validate_lenient(
@@ -193,6 +229,9 @@ def build_director_graph(deps: DirectorGraphDeps) -> Any:
                 errors.append(
                     f"attempt {repairs}: {exc.error_count()} schema errors ({repair_detail(exc)})"
                 )
+                if overlooked is not None:
+                    # The place repair failed; the first proposal still stands.
+                    return _validate(state, overlooked[0], errors, repairs, overlooked[1])
                 if repairs >= deps.repair_budget:
                     return _noop(
                         f"unrepairable director output ({len(errors)} attempts)",
@@ -226,7 +265,42 @@ def build_director_graph(deps: DirectorGraphDeps) -> Any:
                     return _noop(f"repair call failed ({type(exc).__name__})", errors, repairs)
                 raw = repaired.text
                 continue
-            return _validate(state, proposal, errors, repairs, raw)
+            place = state.get("unmapped_place", "")
+            if (
+                place
+                and overlooked is None
+                and repairs < deps.repair_budget
+                and overlooks_place(proposal, place)
+            ):
+                errors.append(f"attempt {repairs}: opening about {place} without new_location")
+                repairs += 1
+                overlooked = (proposal, raw)
+                try:
+                    repaired = await deps.gateway.complete(
+                        CompletionRequest(
+                            prompt=f"{user}\n\n{_place_feedback(state)}",
+                            system=system,
+                            max_tokens=deps.max_tokens,
+                            temperature=deps.temperature,
+                            top_p=deps.top_p,
+                            top_k=deps.top_k,
+                            json_mode=True,
+                        )
+                    )
+                except (
+                    ModelTimeoutError,
+                    ModelRateLimitedError,
+                    ModelUnavailableError,
+                    ModelRefusalError,
+                    ModelMalformedError,
+                ):
+                    return _validate(state, proposal, errors, repairs, raw)
+                raw = repaired.text
+                continue
+            validated = _validate(state, proposal, errors, repairs, raw)
+            if overlooked is not None and validated["status"] == "rejected":
+                return _validate(state, overlooked[0], errors, repairs, overlooked[1])
+            return validated
 
     def _validate(
         state: DirectorState,

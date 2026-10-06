@@ -1,0 +1,354 @@
+{
+  "meta": {
+    "commit": "1676706",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T02:33:02+00:00",
+    "wall_seconds": 597,
+    "est_usd_total": 0.152396708,
+    "scenarios": [
+      "strangers",
+      "lost_item",
+      "stuck_task",
+      "meet_up",
+      "named_place"
+    ]
+  },
+  "results": {
+    "strangers": {
+      "ids": {
+        "world": "c986c81e-2a08-436d-8a39-ee94a7e762f7",
+        "place:Hearth": "5ea2fbf6-a084-4572-9b28-245ebf93149d",
+        "place:Market": "92a443b9-61f2-4fde-b360-e1e93514843d",
+        "wren": "72fbc21f-9916-4788-9ee3-f994894bd4bb",
+        "ash": "0fb9de17-27f8-49f8-b6af-e7116e8183ea"
+      },
+      "beat_seconds": [
+        39.09399999992456,
+        27.640999999945052,
+        65.68799999996554,
+        41.53200000000652,
+        43.64100000006147,
+        51.42099999997299,
+        49.875,
+        54.57799999997951
+      ],
+      "error": null,
+      "score": {
+        "calls": 93,
+        "failed_calls": 0,
+        "repairs": 8,
+        "repairs_by_role": {
+          "resolver": 4,
+          "narrator": 2,
+          "reaction": 2
+        },
+        "repair_rate": 0.08602150537634409,
+        "est_usd": 0.0326072648,
+        "action_mix": {
+          "communicate": 17,
+          "move": 2,
+          "observe": 2,
+          "interact": 1,
+          "wait": 1
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 4,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 1,
+        "hooks": [
+          {
+            "title": "Market Day Rumor",
+            "powers": "spawn_npc"
+          },
+          {
+            "title": "The Lantern's Secret",
+            "powers": "new_location"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Mira": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Bridge"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "repeated questions 0% (pass \u2264 20%)"
+      }
+    },
+    "lost_item": {
+      "ids": {
+        "world": "f29fc15c-a1e8-40c6-b149-701c582ae8ea",
+        "place:Hearth": "c27017b7-626f-4a75-9b7f-1c5084afe227",
+        "place:Market": "edf45d57-7e9c-4016-bf55-997c881bfbde",
+        "wren": "1a43d25a-e520-4f58-b562-03446c5c0086",
+        "ash": "0a7c267c-2c01-4b95-82c3-227a57bc59d3",
+        "item:purse": "d5fd3c06-658d-4c48-bb82-2ab60ef02721"
+      },
+      "beat_seconds": [
+        34.89000000001397,
+        53.32900000002701,
+        42.03099999995902,
+        31.875,
+        61.20299999997951,
+        33.53200000000652,
+        58.76600000006147,
+        47.375
+      ],
+      "error": null,
+      "score": {
+        "calls": 90,
+        "failed_calls": 0,
+        "repairs": 5,
+        "repairs_by_role": {
+          "narrator": 3,
+          "resolver": 2
+        },
+        "repair_rate": 0.05555555555555555,
+        "est_usd": 0.0300049072,
+        "action_mix": {
+          "observe": 3,
+          "move": 1,
+          "communicate": 9,
+          "wait": 3,
+          "interact": 5,
+          "take": 1,
+          "transfer": 1
+        },
+        "repetition_rate": 0.2222222222222222,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 2,
+        "moves_tried": 1,
+        "moves_done": 1,
+        "interact_success": 5,
+        "hooks": [
+          {
+            "title": "Market Day Needs Hands",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Old Thistle": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {
+          "Lost purse": {
+            "holder": "Ash",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "purse held by Ash"
+      }
+    },
+    "stuck_task": {
+      "ids": {
+        "world": "a690ef18-2fe8-4e12-a198-2968d5a69b5d",
+        "place:Hearth": "c733a3a9-2495-4698-a14e-3736a0ca6906",
+        "place:Market": "60ddd205-f8ce-4ed3-8c26-75a6f493671d",
+        "wren": "bf3c0d4e-f838-40c1-89a9-3cebdbc7eb25",
+        "ash": "5ebf2f25-a237-4cd6-9b83-09547b0dd953",
+        "marg": "92c09ced-5b4e-4a7e-9e47-e0f663b35c8f"
+      },
+      "beat_seconds": [
+        42.65599999995902,
+        64.09299999999348,
+        78.68799999996554,
+        105.90599999995902,
+        96.03100000007544,
+        36.57799999997951,
+        76.92200000002049,
+        95.07800000009593
+      ],
+      "error": null,
+      "score": {
+        "calls": 131,
+        "failed_calls": 0,
+        "repairs": 10,
+        "repairs_by_role": {
+          "resolver": 4,
+          "reaction": 1,
+          "narrator": 4,
+          "director": 1
+        },
+        "repair_rate": 0.07633587786259542,
+        "est_usd": 0.0469550008,
+        "action_mix": {
+          "observe": 9,
+          "interact": 3,
+          "communicate": 13,
+          "wait": 5,
+          "move": 2
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 2,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 3,
+        "hooks": [
+          {
+            "title": "The Missing Cartload",
+            "powers": "spawn_npc"
+          },
+          {
+            "title": "Square's Lantern Lit",
+            "powers": "new_location,spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Market",
+          "Old Marg": "Hearth",
+          "Bram": "Market",
+          "Corbin the Watchman": "Square"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Square"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "3 successful physical attempt(s)"
+      }
+    },
+    "meet_up": {
+      "ids": {
+        "world": "5b58f46f-8305-4544-a4f0-ed765b71d8ce",
+        "place:Hearth": "6de73adb-09dc-48a3-befa-6754c6bac1aa",
+        "place:Market": "5ebe95d1-f025-4069-9e84-5383ff9351c9",
+        "wren": "39d894cc-7f42-4c0a-b9b1-4629dd91a83b",
+        "ash": "1c2c453a-83c2-42e4-969e-9053fa8f1ba1"
+      },
+      "beat_seconds": [
+        29.280999999959022,
+        39.56299999996554,
+        46.40599999995902,
+        50.15600000007544,
+        53.32799999997951,
+        34.936999999918044,
+        37.10999999998603,
+        33.54700000002049
+      ],
+      "error": null,
+      "score": {
+        "calls": 87,
+        "failed_calls": 0,
+        "repairs": 5,
+        "repairs_by_role": {
+          "reaction": 1,
+          "resolver": 2,
+          "director": 1,
+          "narrator": 1
+        },
+        "repair_rate": 0.05747126436781609,
+        "est_usd": 0.028067367200000002,
+        "action_mix": {
+          "wait": 2,
+          "move": 3,
+          "communicate": 14,
+          "interact": 1,
+          "observe": 2,
+          "rest": 1
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 2,
+        "moves_tried": 3,
+        "moves_done": 3,
+        "interact_success": 1,
+        "hooks": [
+          {
+            "title": "The Market's First Customer",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Old Merta": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "Wren at Market, Ash at Market"
+      }
+    },
+    "named_place": {
+      "ids": {
+        "world": "966fc278-6386-4f22-9692-d055f21965df",
+        "place:Hearth": "d7fcee06-c269-4584-a917-97920fac2de9",
+        "place:Market": "e3b486db-18c8-4d70-80ad-a94a0fabf87d",
+        "wren": "e0237f39-6324-4ea0-bffa-44364340461a",
+        "ash": "212e3c58-f4c3-4514-8e76-ef891db415a6"
+      },
+      "beat_seconds": [
+        34.59299999999348,
+        25.84299999999348,
+        22.07799999997951,
+        43.48400000005495,
+        24.93799999996554,
+        37.35999999998603,
+        29.20400000002701,
+        24.530999999959022
+      ],
+      "error": null,
+      "score": {
+        "calls": 50,
+        "failed_calls": 0,
+        "repairs": 1,
+        "repairs_by_role": {
+          "resolver": 1
+        },
+        "repair_rate": 0.02,
+        "est_usd": 0.014762168,
+        "action_mix": {
+          "communicate": 9,
+          "move": 4,
+          "wait": 1,
+          "interact": 1,
+          "observe": 1
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 2,
+        "moves_tried": 4,
+        "moves_done": 4,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "The miller's son needs a message carried",
+            "powers": ""
+          }
+        ],
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Hearth"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": false,
+        "goal_detail": "no mill was added"
+      }
+    }
+  }
+}
