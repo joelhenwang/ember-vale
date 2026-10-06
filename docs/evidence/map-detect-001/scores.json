@@ -1,0 +1,1695 @@
+{
+  "anthropic/claude-sonnet-5.5": {
+    "cost_usd": 0.0873,
+    "maps": {
+      "map-1": {
+        "found": 10,
+        "total": 10,
+        "named": 10,
+        "kind_right": 10,
+        "median_off": 1.6,
+        "invented": [
+          "Saltreach docks",
+          "Main river",
+          "Rocky islet",
+          "Bridge by Saltreach",
+          "Rocky hills in southwest",
+          "Road from Saltreach to Aldermoor",
+          "Farm fields near Aldermoor",
+          "Farm fields by Oakhollow"
+        ],
+        "predicted": 36,
+        "rows": [
+          {
+            "truth": "Aldermoor",
+            "found": true,
+            "as": "Aldermoor",
+            "kind": "city",
+            "off": 0.4
+          },
+          {
+            "truth": "Saltreach",
+            "found": true,
+            "as": "Saltreach",
+            "kind": "port",
+            "off": 4.0
+          },
+          {
+            "truth": "Brindle",
+            "found": true,
+            "as": "Brindle",
+            "kind": "village",
+            "off": 0.4
+          },
+          {
+            "truth": "Oakhollow",
+            "found": true,
+            "as": "Oakhollow",
+            "kind": "village",
+            "off": 0.9
+          },
+          {
+            "truth": "Warden's Gate",
+            "found": true,
+            "as": "Warden's Gate",
+            "kind": "fort",
+            "off": 1.6
+          },
+          {
+            "truth": "Duskfall",
+            "found": true,
+            "as": "Duskfall",
+            "kind": "mine",
+            "off": 0.7
+          },
+          {
+            "truth": "Sunken Keep",
+            "found": true,
+            "as": "Sunken Keep",
+            "kind": "ruin",
+            "off": 2.6
+          },
+          {
+            "truth": "Thornwood",
+            "found": true,
+            "as": "Thornwood",
+            "kind": "forest",
+            "off": 3.2
+          },
+          {
+            "truth": "Greyspine",
+            "found": true,
+            "as": "Greyspine",
+            "kind": "mountains",
+            "off": 2.4
+          },
+          {
+            "truth": "Ashwater",
+            "found": true,
+            "as": "Ashwater",
+            "kind": "river",
+            "off": 1.1
+          }
+        ]
+      },
+      "map-2": {
+        "found": 10,
+        "total": 11,
+        "named": null,
+        "kind_right": 7,
+        "median_off": 1.2,
+        "invented": [
+          "road southwest to farms",
+          "small pond"
+        ],
+        "predicted": 23,
+        "rows": [
+          {
+            "truth": "castle city",
+            "found": true,
+            "as": "walled castle city",
+            "kind": "city",
+            "off": 1.0
+          },
+          {
+            "truth": "harbour town",
+            "found": true,
+            "as": "harbour town",
+            "kind": "port",
+            "off": 1.4
+          },
+          {
+            "truth": "northern village",
+            "found": true,
+            "as": "northeast village",
+            "kind": "village",
+            "off": 0.3
+          },
+          {
+            "truth": "south-west village",
+            "found": true,
+            "as": "southwest farming hamlet",
+            "kind": "farm",
+            "off": 0.3
+          },
+          {
+            "truth": "fortified gate",
+            "found": true,
+            "as": "north gatehouse fort",
+            "kind": "fort",
+            "off": 0.7
+          },
+          {
+            "truth": "cave",
+            "found": true,
+            "as": "mountain cave entrance",
+            "kind": "cave",
+            "off": 0.5
+          },
+          {
+            "truth": "ruined tower",
+            "found": false
+          },
+          {
+            "truth": "northern forest",
+            "found": true,
+            "as": "northern pine forest",
+            "kind": "forest",
+            "off": 4.1
+          },
+          {
+            "truth": "eastern mountains",
+            "found": true,
+            "as": "mountain waterfall stream",
+            "kind": "river",
+            "off": 7.9
+          },
+          {
+            "truth": "river",
+            "found": true,
+            "as": "main river",
+            "kind": "river",
+            "off": 2.9
+          },
+          {
+            "truth": "swamp",
+            "found": true,
+            "as": "ruined tower in swamp",
+            "kind": "ruin",
+            "off": 1.2
+          }
+        ]
+      },
+      "map-3": {
+        "found": 8,
+        "total": 8,
+        "named": null,
+        "kind_right": 8,
+        "median_off": 1.3,
+        "invented": [
+          "Waterfall on cliff",
+          "Snowy mountains",
+          "Farm fields",
+          "Dirt road network",
+          "Mountain path to fortress"
+        ],
+        "predicted": 23,
+        "rows": [
+          {
+            "truth": "lakeside village",
+            "found": true,
+            "as": "Harbor town",
+            "kind": "port",
+            "off": 1.6
+          },
+          {
+            "truth": "hilltop monastery",
+            "found": true,
+            "as": "Hilltop monastery",
+            "kind": "monastery",
+            "off": 0.6
+          },
+          {
+            "truth": "woodcutters' camp",
+            "found": true,
+            "as": "Lumber camp",
+            "kind": "camp",
+            "off": 3.1
+          },
+          {
+            "truth": "stone bridge",
+            "found": true,
+            "as": "Stone arch bridge",
+            "kind": "bridge",
+            "off": 0.6
+          },
+          {
+            "truth": "watchtower",
+            "found": true,
+            "as": "Hilltop watchtower",
+            "kind": "tower",
+            "off": 2.0
+          },
+          {
+            "truth": "mountain pass checkpoint",
+            "found": true,
+            "as": "Mountain fortress wall with gate",
+            "kind": "fort",
+            "off": 1.0
+          },
+          {
+            "truth": "abandoned mine",
+            "found": true,
+            "as": "Mine entrance in cliff",
+            "kind": "mine",
+            "off": 1.3
+          },
+          {
+            "truth": "tribal encampment",
+            "found": true,
+            "as": "Tribal teepee camp",
+            "kind": "tribe",
+            "off": 1.0
+          }
+        ]
+      },
+      "map-4": {
+        "found": 11,
+        "total": 11,
+        "named": 11,
+        "kind_right": 10,
+        "median_off": 1.2,
+        "invented": [
+          "Ochre Clans palisade arena",
+          "Ochre Mountains",
+          "Farmland",
+          "River",
+          "Small wooded islet",
+          "Sea"
+        ],
+        "predicted": 25,
+        "rows": [
+          {
+            "truth": "Corvane",
+            "found": true,
+            "as": "Corvane",
+            "kind": "city",
+            "off": 3.2
+          },
+          {
+            "truth": "Gullsend",
+            "found": true,
+            "as": "Gullsend",
+            "kind": "port",
+            "off": 1.0
+          },
+          {
+            "truth": "Tidemark",
+            "found": true,
+            "as": "Tidemark",
+            "kind": "port",
+            "off": 2.5
+          },
+          {
+            "truth": "Pell",
+            "found": true,
+            "as": "Pell",
+            "kind": "village",
+            "off": 1.2
+          },
+          {
+            "truth": "Ochre Clans",
+            "found": true,
+            "as": "Ochre Clans",
+            "kind": "camp",
+            "off": 0.7
+          },
+          {
+            "truth": "Hollow Isle",
+            "found": true,
+            "as": "Hollow Isle",
+            "kind": "island",
+            "off": 0.5
+          },
+          {
+            "truth": "Farpoint",
+            "found": true,
+            "as": "Farpoint",
+            "kind": "lighthouse",
+            "off": 0.5
+          },
+          {
+            "truth": "Blackreef",
+            "found": true,
+            "as": "Blackreef",
+            "kind": "fort",
+            "off": 1.0
+          },
+          {
+            "truth": "Saltmarket",
+            "found": true,
+            "as": "Saltmarket",
+            "kind": "port",
+            "off": 3.4
+          },
+          {
+            "truth": "Ixquel",
+            "found": true,
+            "as": "Ixquel",
+            "kind": "island",
+            "off": 3.4
+          },
+          {
+            "truth": "Witchmire",
+            "found": true,
+            "as": "Witchmire",
+            "kind": "swamp",
+            "off": 4.3
+          }
+        ]
+      },
+      "map-5": {
+        "found": 10,
+        "total": 10,
+        "named": 10,
+        "kind_right": 10,
+        "median_off": 2.0,
+        "invented": [],
+        "predicted": 13,
+        "rows": [
+          {
+            "truth": "the Hearth",
+            "found": true,
+            "as": "the Hearth",
+            "kind": "inn",
+            "off": 2.5
+          },
+          {
+            "truth": "Market square",
+            "found": true,
+            "as": "Market square",
+            "kind": "market",
+            "off": 1.1
+          },
+          {
+            "truth": "Mill",
+            "found": true,
+            "as": "Mill",
+            "kind": "mill",
+            "off": 2.4
+          },
+          {
+            "truth": "Chapel",
+            "found": true,
+            "as": "Chapel",
+            "kind": "chapel",
+            "off": 2.0
+          },
+          {
+            "truth": "Smithy",
+            "found": true,
+            "as": "Smithy",
+            "kind": "smithy",
+            "off": 2.2
+          },
+          {
+            "truth": "Old Bram's farm",
+            "found": true,
+            "as": "Old Bram's farm",
+            "kind": "farm",
+            "off": 1.5
+          },
+          {
+            "truth": "stone cairn",
+            "found": true,
+            "as": "Stone cairn",
+            "kind": "landmark",
+            "off": 0.5
+          },
+          {
+            "truth": "Sheep Track",
+            "found": true,
+            "as": "Sheep Track",
+            "kind": "path",
+            "off": 7.4
+          },
+          {
+            "truth": "Mill Road",
+            "found": true,
+            "as": "Mill Road",
+            "kind": "road",
+            "off": 1.3
+          },
+          {
+            "truth": "Whispering Wood",
+            "found": true,
+            "as": "Whispering Wood",
+            "kind": "forest",
+            "off": 1.4
+          }
+        ]
+      }
+    }
+  },
+  "google/gemini-3.8-flash": {
+    "cost_usd": 0.0413,
+    "maps": {
+      "map-1": {
+        "found": 10,
+        "total": 10,
+        "named": 10,
+        "kind_right": 10,
+        "median_off": 1.2,
+        "invented": [
+          "Saltreach bridge"
+        ],
+        "predicted": 18,
+        "rows": [
+          {
+            "truth": "Aldermoor",
+            "found": true,
+            "as": "Aldermoor",
+            "kind": "city",
+            "off": 0.2
+          },
+          {
+            "truth": "Saltreach",
+            "found": true,
+            "as": "Saltreach",
+            "kind": "port",
+            "off": 2.6
+          },
+          {
+            "truth": "Brindle",
+            "found": true,
+            "as": "Brindle",
+            "kind": "village",
+            "off": 0.4
+          },
+          {
+            "truth": "Oakhollow",
+            "found": true,
+            "as": "Oakhollow",
+            "kind": "village",
+            "off": 1.2
+          },
+          {
+            "truth": "Warden's Gate",
+            "found": true,
+            "as": "Warden's Gate",
+            "kind": "gate",
+            "off": 0.7
+          },
+          {
+            "truth": "Duskfall",
+            "found": true,
+            "as": "Duskfall",
+            "kind": "cave",
+            "off": 1.6
+          },
+          {
+            "truth": "Sunken Keep",
+            "found": true,
+            "as": "Sunken Keep",
+            "kind": "ruin",
+            "off": 2.1
+          },
+          {
+            "truth": "Thornwood",
+            "found": true,
+            "as": "Thornwood",
+            "kind": "forest",
+            "off": 0.8
+          },
+          {
+            "truth": "Greyspine",
+            "found": true,
+            "as": "Greyspine",
+            "kind": "mountains",
+            "off": 7.6
+          },
+          {
+            "truth": "Ashwater",
+            "found": true,
+            "as": "Ashwater",
+            "kind": "river",
+            "off": 0.5
+          }
+        ]
+      },
+      "map-2": {
+        "found": 11,
+        "total": 11,
+        "named": null,
+        "kind_right": 10,
+        "median_off": 0.9,
+        "invented": [],
+        "predicted": 17,
+        "rows": [
+          {
+            "truth": "castle city",
+            "found": true,
+            "as": "walled capital city",
+            "kind": "city",
+            "off": 0.5
+          },
+          {
+            "truth": "harbour town",
+            "found": true,
+            "as": "coastal port town",
+            "kind": "port",
+            "off": 0.9
+          },
+          {
+            "truth": "northern village",
+            "found": true,
+            "as": "northern village",
+            "kind": "village",
+            "off": 0.4
+          },
+          {
+            "truth": "south-west village",
+            "found": true,
+            "as": "southern farming hamlet",
+            "kind": "farm",
+            "off": 0.8
+          },
+          {
+            "truth": "fortified gate",
+            "found": true,
+            "as": "fortified gatehouse",
+            "kind": "gate",
+            "off": 0.4
+          },
+          {
+            "truth": "cave",
+            "found": true,
+            "as": "mountain cave",
+            "kind": "cave",
+            "off": 0.5
+          },
+          {
+            "truth": "ruined tower",
+            "found": true,
+            "as": "swamp ruins",
+            "kind": "ruin",
+            "off": 1.5
+          },
+          {
+            "truth": "northern forest",
+            "found": true,
+            "as": "great northern forest",
+            "kind": "forest",
+            "off": 2.1
+          },
+          {
+            "truth": "eastern mountains",
+            "found": true,
+            "as": "snow-capped mountains",
+            "kind": "mountains",
+            "off": 6.8
+          },
+          {
+            "truth": "river",
+            "found": true,
+            "as": "valley river",
+            "kind": "river",
+            "off": 3.2
+          },
+          {
+            "truth": "swamp",
+            "found": true,
+            "as": "sunken swamp",
+            "kind": "swamp",
+            "off": 5.3
+          }
+        ]
+      },
+      "map-3": {
+        "found": 8,
+        "total": 8,
+        "named": null,
+        "kind_right": 8,
+        "median_off": 1.4,
+        "invented": [
+          "Farmland"
+        ],
+        "predicted": 15,
+        "rows": [
+          {
+            "truth": "lakeside village",
+            "found": true,
+            "as": "Port Town",
+            "kind": "port",
+            "off": 1.0
+          },
+          {
+            "truth": "hilltop monastery",
+            "found": true,
+            "as": "Hilltop Monastery",
+            "kind": "monastery",
+            "off": 0.3
+          },
+          {
+            "truth": "woodcutters' camp",
+            "found": true,
+            "as": "Lumber Camp",
+            "kind": "camp",
+            "off": 1.4
+          },
+          {
+            "truth": "stone bridge",
+            "found": true,
+            "as": "Great Stone Bridge",
+            "kind": "bridge",
+            "off": 1.5
+          },
+          {
+            "truth": "watchtower",
+            "found": true,
+            "as": "Watchtower",
+            "kind": "tower",
+            "off": 2.1
+          },
+          {
+            "truth": "mountain pass checkpoint",
+            "found": true,
+            "as": "Mountain Pass Gate",
+            "kind": "gate",
+            "off": 0.6
+          },
+          {
+            "truth": "abandoned mine",
+            "found": true,
+            "as": "Cliffside Mine",
+            "kind": "mine",
+            "off": 2.5
+          },
+          {
+            "truth": "tribal encampment",
+            "found": true,
+            "as": "Nomad Camp",
+            "kind": "camp",
+            "off": 0.6
+          }
+        ]
+      },
+      "map-4": {
+        "found": 11,
+        "total": 11,
+        "named": 11,
+        "kind_right": 11,
+        "median_off": 0.7,
+        "invented": [],
+        "predicted": 11,
+        "rows": [
+          {
+            "truth": "Corvane",
+            "found": true,
+            "as": "Corvane",
+            "kind": "city",
+            "off": 1.5
+          },
+          {
+            "truth": "Gullsend",
+            "found": true,
+            "as": "Gullsend",
+            "kind": "village",
+            "off": 3.8
+          },
+          {
+            "truth": "Tidemark",
+            "found": true,
+            "as": "Tidemark",
+            "kind": "port",
+            "off": 1.5
+          },
+          {
+            "truth": "Pell",
+            "found": true,
+            "as": "Pell",
+            "kind": "village",
+            "off": 0.3
+          },
+          {
+            "truth": "Ochre Clans",
+            "found": true,
+            "as": "Ochre Clans",
+            "kind": "camp",
+            "off": 2.3
+          },
+          {
+            "truth": "Hollow Isle",
+            "found": true,
+            "as": "Hollow Isle",
+            "kind": "island",
+            "off": 0.2
+          },
+          {
+            "truth": "Farpoint",
+            "found": true,
+            "as": "Farpoint",
+            "kind": "lighthouse",
+            "off": 0.3
+          },
+          {
+            "truth": "Blackreef",
+            "found": true,
+            "as": "Blackreef",
+            "kind": "castle",
+            "off": 0.5
+          },
+          {
+            "truth": "Saltmarket",
+            "found": true,
+            "as": "Saltmarket",
+            "kind": "town",
+            "off": 3.5
+          },
+          {
+            "truth": "Ixquel",
+            "found": true,
+            "as": "Ixquel",
+            "kind": "temple",
+            "off": 0.7
+          },
+          {
+            "truth": "Witchmire",
+            "found": true,
+            "as": "Witchmire",
+            "kind": "swamp",
+            "off": 0.6
+          }
+        ]
+      },
+      "map-5": {
+        "found": 10,
+        "total": 10,
+        "named": 9,
+        "kind_right": 10,
+        "median_off": 1.7,
+        "invented": [],
+        "predicted": 11,
+        "rows": [
+          {
+            "truth": "the Hearth",
+            "found": true,
+            "as": "the Hearth",
+            "kind": "inn",
+            "off": 1.7
+          },
+          {
+            "truth": "Market square",
+            "found": true,
+            "as": "Market square",
+            "kind": "market",
+            "off": 1.7
+          },
+          {
+            "truth": "Mill",
+            "found": true,
+            "as": "Mill",
+            "kind": "mill",
+            "off": 2.5
+          },
+          {
+            "truth": "Chapel",
+            "found": true,
+            "as": "Chapel",
+            "kind": "chapel",
+            "off": 0.5
+          },
+          {
+            "truth": "Smithy",
+            "found": true,
+            "as": "Smithy",
+            "kind": "smithy",
+            "off": 1.3
+          },
+          {
+            "truth": "Old Bram's farm",
+            "found": true,
+            "as": "Old Bram's farm",
+            "kind": "farm",
+            "off": 1.3
+          },
+          {
+            "truth": "stone cairn",
+            "found": true,
+            "as": "cairn",
+            "kind": "landmark",
+            "off": 0.4
+          },
+          {
+            "truth": "Sheep Track",
+            "found": true,
+            "as": "Sheep Track",
+            "kind": "path",
+            "off": 1.0
+          },
+          {
+            "truth": "Mill Road",
+            "found": true,
+            "as": "Mill Road",
+            "kind": "road",
+            "off": 3.4
+          },
+          {
+            "truth": "Whispering Wood",
+            "found": true,
+            "as": "Whispering Wood",
+            "kind": "forest",
+            "off": 1.8
+          }
+        ]
+      }
+    }
+  },
+  "openai/gpt-5-mini": {
+    "cost_usd": 0.0312,
+    "maps": {
+      "map-1": {
+        "found": 5,
+        "total": 10,
+        "named": 10,
+        "kind_right": 5,
+        "median_off": 5.4,
+        "invented": [
+          "Rocky islet with watchtower (southwest coast)",
+          "Coastal sea (western coast)",
+          "Bridge (west mouth, near Saltreach)"
+        ],
+        "predicted": 21,
+        "rows": [
+          {
+            "truth": "Aldermoor",
+            "found": true,
+            "as": "Aldermoor",
+            "kind": "city",
+            "off": 2.5
+          },
+          {
+            "truth": "Saltreach",
+            "found": false,
+            "as": "Saltreach",
+            "kind": "port",
+            "off": 6.4
+          },
+          {
+            "truth": "Brindle",
+            "found": false,
+            "as": "Brindle",
+            "kind": "village",
+            "off": 9.7
+          },
+          {
+            "truth": "Oakhollow",
+            "found": false,
+            "as": "Oakhollow",
+            "kind": "village",
+            "off": 8.9
+          },
+          {
+            "truth": "Warden's Gate",
+            "found": false,
+            "as": "Warden's Gate",
+            "kind": "gate",
+            "off": 10.1
+          },
+          {
+            "truth": "Duskfall",
+            "found": true,
+            "as": "Duskfall",
+            "kind": "cave",
+            "off": 5.4
+          },
+          {
+            "truth": "Sunken Keep",
+            "found": false,
+            "as": "Sunken Keep",
+            "kind": "ruin",
+            "off": 7.3
+          },
+          {
+            "truth": "Thornwood",
+            "found": true,
+            "as": "Thornwood",
+            "kind": "forest",
+            "off": 7.0
+          },
+          {
+            "truth": "Greyspine",
+            "found": true,
+            "as": "Greyspine",
+            "kind": "mountains",
+            "off": 13.9
+          },
+          {
+            "truth": "Ashwater",
+            "found": true,
+            "as": "Ashwater",
+            "kind": "river",
+            "off": 3.0
+          }
+        ]
+      },
+      "map-2": {
+        "found": 10,
+        "total": 11,
+        "named": null,
+        "kind_right": 4,
+        "median_off": 4.0,
+        "invented": [
+          "Bridge west of city (crosses river toward port)",
+          "Main road south of city",
+          "Small rocky island / off-shore rocks",
+          "Scattered farms south of city",
+          "Coastal cliffs and headland west of port",
+          "Hills / rocky outcrops along southern coast"
+        ],
+        "predicted": 28,
+        "rows": [
+          {
+            "truth": "castle city",
+            "found": true,
+            "as": "Main southern city gate",
+            "kind": "gate",
+            "off": 0.6
+          },
+          {
+            "truth": "harbour town",
+            "found": true,
+            "as": "Harbor lighthouse / tower",
+            "kind": "lighthouse",
+            "off": 3.4
+          },
+          {
+            "truth": "northern village",
+            "found": true,
+            "as": "Village / farms northeast of city",
+            "kind": "village",
+            "off": 4.0
+          },
+          {
+            "truth": "south-west village",
+            "found": true,
+            "as": "Cluster of farms / hamlet southwest of city",
+            "kind": "village",
+            "off": 2.0
+          },
+          {
+            "truth": "fortified gate",
+            "found": false
+          },
+          {
+            "truth": "cave",
+            "found": true,
+            "as": "Cave entrance in the mountains",
+            "kind": "cave",
+            "off": 5.0
+          },
+          {
+            "truth": "ruined tower",
+            "found": true,
+            "as": "Marsh / swamp area southeast of city",
+            "kind": "swamp",
+            "off": 5.0
+          },
+          {
+            "truth": "northern forest",
+            "found": true,
+            "as": "Small checkpoint / tollhouse on northern road (near forest edge)",
+            "kind": "checkpoint",
+            "off": 10.1
+          },
+          {
+            "truth": "eastern mountains",
+            "found": true,
+            "as": "Eastern mountain range",
+            "kind": "mountains",
+            "off": 3.5
+          },
+          {
+            "truth": "river",
+            "found": true,
+            "as": "Bridge east of city (river crossing)",
+            "kind": "bridge",
+            "off": 4.6
+          },
+          {
+            "truth": "swamp",
+            "found": true,
+            "as": "Ruined tower / keep in the swamp",
+            "kind": "ruin",
+            "off": 1.7
+          }
+        ]
+      },
+      "map-3": {
+        "found": 7,
+        "total": 8,
+        "named": null,
+        "kind_right": 5,
+        "median_off": 2.0,
+        "invented": [
+          "Harbor market",
+          "Harbor inn",
+          "Mountain river",
+          "Stone bridge",
+          "Nomad tent camp",
+          "Outlying farms",
+          "Rolling hills"
+        ],
+        "predicted": 25,
+        "rows": [
+          {
+            "truth": "lakeside village",
+            "found": true,
+            "as": "Harbor town",
+            "kind": "port",
+            "off": 2.0
+          },
+          {
+            "truth": "hilltop monastery",
+            "found": true,
+            "as": "Hilltop monastery",
+            "kind": "monastery",
+            "off": 2.0
+          },
+          {
+            "truth": "woodcutters' camp",
+            "found": true,
+            "as": "Forest path",
+            "kind": "path",
+            "off": 2.5
+          },
+          {
+            "truth": "stone bridge",
+            "found": true,
+            "as": "Watermill",
+            "kind": "mill",
+            "off": 0.6
+          },
+          {
+            "truth": "watchtower",
+            "found": true,
+            "as": "Lone watchtower",
+            "kind": "tower",
+            "off": 4.3
+          },
+          {
+            "truth": "mountain pass checkpoint",
+            "found": true,
+            "as": "Northern gate",
+            "kind": "gate",
+            "off": 1.7
+          },
+          {
+            "truth": "abandoned mine",
+            "found": true,
+            "as": "Cliff mine",
+            "kind": "mine",
+            "off": 3.9
+          },
+          {
+            "truth": "tribal encampment",
+            "found": false
+          }
+        ]
+      },
+      "map-4": {
+        "found": 7,
+        "total": 11,
+        "named": 11,
+        "kind_right": 6,
+        "median_off": 3.0,
+        "invented": [
+          "mountains near Ochre Clans"
+        ],
+        "predicted": 18,
+        "rows": [
+          {
+            "truth": "Corvane",
+            "found": false,
+            "as": "Corvane",
+            "kind": "city",
+            "off": 10.0
+          },
+          {
+            "truth": "Gullsend",
+            "found": true,
+            "as": "Gullsend",
+            "kind": "port",
+            "off": 2.3
+          },
+          {
+            "truth": "Tidemark",
+            "found": true,
+            "as": "Tidemark",
+            "kind": "town",
+            "off": 1.1
+          },
+          {
+            "truth": "Pell",
+            "found": true,
+            "as": "Pell",
+            "kind": "port",
+            "off": 5.2
+          },
+          {
+            "truth": "Ochre Clans",
+            "found": false,
+            "as": "Ochre Clans",
+            "kind": "tribe",
+            "off": 14.0
+          },
+          {
+            "truth": "Hollow Isle",
+            "found": true,
+            "as": "Hollow Isle",
+            "kind": "island",
+            "off": 3.0
+          },
+          {
+            "truth": "Farpoint",
+            "found": false,
+            "as": "Farpoint",
+            "kind": "lighthouse",
+            "off": 10.8
+          },
+          {
+            "truth": "Blackreef",
+            "found": true,
+            "as": "Blackreef",
+            "kind": "castle",
+            "off": 4.9
+          },
+          {
+            "truth": "Saltmarket",
+            "found": true,
+            "as": "Saltmarket",
+            "kind": "market",
+            "off": 4.1
+          },
+          {
+            "truth": "Ixquel",
+            "found": false,
+            "as": "Ixquel",
+            "kind": "temple",
+            "off": 7.8
+          },
+          {
+            "truth": "Witchmire",
+            "found": true,
+            "as": "Witchmire",
+            "kind": "swamp",
+            "off": 1.1
+          }
+        ]
+      },
+      "map-5": {
+        "found": 9,
+        "total": 10,
+        "named": 9,
+        "kind_right": 9,
+        "median_off": 4.3,
+        "invented": [
+          "village around Market square",
+          "stone road bridge over the river"
+        ],
+        "predicted": 14,
+        "rows": [
+          {
+            "truth": "the Hearth",
+            "found": false,
+            "as": "the Hearth",
+            "kind": "inn",
+            "off": 12.1
+          },
+          {
+            "truth": "Market square",
+            "found": true,
+            "as": "Market square",
+            "kind": "market",
+            "off": 5.3
+          },
+          {
+            "truth": "Mill",
+            "found": true,
+            "as": "Mill",
+            "kind": "mill",
+            "off": 3.5
+          },
+          {
+            "truth": "Chapel",
+            "found": true,
+            "as": "Chapel",
+            "kind": "chapel",
+            "off": 4.3
+          },
+          {
+            "truth": "Smithy",
+            "found": true,
+            "as": "Smithy",
+            "kind": "smithy",
+            "off": 3.0
+          },
+          {
+            "truth": "Old Bram's farm",
+            "found": true,
+            "as": "Old Bram's farm",
+            "kind": "farm",
+            "off": 3.0
+          },
+          {
+            "truth": "stone cairn",
+            "found": true,
+            "as": "Hilltop cairn (stone landmark)",
+            "kind": "landmark",
+            "off": 2.5
+          },
+          {
+            "truth": "Sheep Track",
+            "found": true,
+            "as": "Sheep Track",
+            "kind": "path",
+            "off": 5.9
+          },
+          {
+            "truth": "Mill Road",
+            "found": true,
+            "as": "Mill Road",
+            "kind": "road",
+            "off": 5.2
+          },
+          {
+            "truth": "Whispering Wood",
+            "found": true,
+            "as": "Whispering Wood",
+            "kind": "forest",
+            "off": 9.0
+          }
+        ]
+      }
+    }
+  },
+  "qwen/qwen3-vl-235b-a22b-instruct": {
+    "cost_usd": 0.0084,
+    "maps": {
+      "map-1": {
+        "found": 10,
+        "total": 10,
+        "named": 9,
+        "kind_right": 10,
+        "median_off": 2.3,
+        "invented": [
+          "Sea",
+          "Fields"
+        ],
+        "predicted": 35,
+        "rows": [
+          {
+            "truth": "Aldermoor",
+            "found": true,
+            "as": "Alderimoor",
+            "kind": "city",
+            "off": 0.5
+          },
+          {
+            "truth": "Saltreach",
+            "found": true,
+            "as": "Saltreach",
+            "kind": "port",
+            "off": 2.7
+          },
+          {
+            "truth": "Brindle",
+            "found": true,
+            "as": "Brindle",
+            "kind": "village",
+            "off": 1.0
+          },
+          {
+            "truth": "Oakhollow",
+            "found": true,
+            "as": "Oakhollow",
+            "kind": "village",
+            "off": 3.1
+          },
+          {
+            "truth": "Warden's Gate",
+            "found": true,
+            "as": "Warden's Gate",
+            "kind": "gate",
+            "off": 1.1
+          },
+          {
+            "truth": "Duskfall",
+            "found": true,
+            "as": "Duskfall",
+            "kind": "cave",
+            "off": 2.3
+          },
+          {
+            "truth": "Sunken Keep",
+            "found": true,
+            "as": "Sunken Keep",
+            "kind": "ruin",
+            "off": 2.3
+          },
+          {
+            "truth": "Thornwood",
+            "found": true,
+            "as": "Thornwood",
+            "kind": "forest",
+            "off": 1.1
+          },
+          {
+            "truth": "Greyspine",
+            "found": true,
+            "as": "Greyspine",
+            "kind": "mountains",
+            "off": 8.7
+          },
+          {
+            "truth": "Ashwater",
+            "found": true,
+            "as": "Ashwater",
+            "kind": "river",
+            "off": 1.1
+          }
+        ]
+      },
+      "map-2": {
+        "found": 10,
+        "total": 11,
+        "named": null,
+        "kind_right": 6,
+        "median_off": 0.8,
+        "invented": [
+          "Main Road to Capital",
+          "Southern Pond"
+        ],
+        "predicted": 34,
+        "rows": [
+          {
+            "truth": "castle city",
+            "found": true,
+            "as": "Royal Capital City",
+            "kind": "city",
+            "off": 0.5
+          },
+          {
+            "truth": "harbour town",
+            "found": true,
+            "as": "Coastal Port Town",
+            "kind": "port",
+            "off": 1.3
+          },
+          {
+            "truth": "northern village",
+            "found": true,
+            "as": "Northern Farmstead Village",
+            "kind": "village",
+            "off": 0.6
+          },
+          {
+            "truth": "south-west village",
+            "found": true,
+            "as": "Southern Farmstead Village",
+            "kind": "village",
+            "off": 0.0
+          },
+          {
+            "truth": "fortified gate",
+            "found": true,
+            "as": "Mountain Fortress",
+            "kind": "fort",
+            "off": 0.5
+          },
+          {
+            "truth": "cave",
+            "found": true,
+            "as": "Mountain Cave Entrance",
+            "kind": "cave",
+            "off": 0.6
+          },
+          {
+            "truth": "ruined tower",
+            "found": false
+          },
+          {
+            "truth": "northern forest",
+            "found": true,
+            "as": "Monastery in Northern Forest",
+            "kind": "monastery",
+            "off": 5.0
+          },
+          {
+            "truth": "eastern mountains",
+            "found": true,
+            "as": "Mountain Pass",
+            "kind": "path",
+            "off": 8.5
+          },
+          {
+            "truth": "river",
+            "found": true,
+            "as": "Checkpoint near Mountain Fortress",
+            "kind": "checkpoint",
+            "off": 9.6
+          },
+          {
+            "truth": "swamp",
+            "found": true,
+            "as": "Ruined Castle in Swamp",
+            "kind": "ruin",
+            "off": 0.8
+          }
+        ]
+      },
+      "map-3": {
+        "found": 8,
+        "total": 8,
+        "named": null,
+        "kind_right": 6,
+        "median_off": 2.1,
+        "invented": [
+          "Farm Fields"
+        ],
+        "predicted": 30,
+        "rows": [
+          {
+            "truth": "lakeside village",
+            "found": true,
+            "as": "Lakeside Port",
+            "kind": "port",
+            "off": 2.1
+          },
+          {
+            "truth": "hilltop monastery",
+            "found": true,
+            "as": "Mountain Castle",
+            "kind": "castle",
+            "off": 1.4
+          },
+          {
+            "truth": "woodcutters' camp",
+            "found": true,
+            "as": "Forest Village",
+            "kind": "village",
+            "off": 1.5
+          },
+          {
+            "truth": "stone bridge",
+            "found": true,
+            "as": "River Bridge",
+            "kind": "bridge",
+            "off": 1.0
+          },
+          {
+            "truth": "watchtower",
+            "found": true,
+            "as": "Watchtower",
+            "kind": "tower",
+            "off": 2.3
+          },
+          {
+            "truth": "mountain pass checkpoint",
+            "found": true,
+            "as": "Mountain Fort",
+            "kind": "fort",
+            "off": 1.1
+          },
+          {
+            "truth": "abandoned mine",
+            "found": true,
+            "as": "Mine Entrance",
+            "kind": "mine",
+            "off": 2.1
+          },
+          {
+            "truth": "tribal encampment",
+            "found": true,
+            "as": "Tribal Camp",
+            "kind": "camp",
+            "off": 2.1
+          }
+        ]
+      },
+      "map-4": {
+        "found": 9,
+        "total": 11,
+        "named": 11,
+        "kind_right": 9,
+        "median_off": 2.0,
+        "invented": [
+          "Sea",
+          "Mountains",
+          "River"
+        ],
+        "predicted": 17,
+        "rows": [
+          {
+            "truth": "Corvane",
+            "found": true,
+            "as": "Corvane",
+            "kind": "city",
+            "off": 2.3
+          },
+          {
+            "truth": "Gullsend",
+            "found": true,
+            "as": "Gullsend",
+            "kind": "port",
+            "off": 3.2
+          },
+          {
+            "truth": "Tidemark",
+            "found": false,
+            "as": "Tidemark",
+            "kind": "town",
+            "off": 7.0
+          },
+          {
+            "truth": "Pell",
+            "found": true,
+            "as": "Pell",
+            "kind": "village",
+            "off": 1.1
+          },
+          {
+            "truth": "Ochre Clans",
+            "found": false,
+            "as": "Ochre Clans",
+            "kind": "tribe",
+            "off": 9.0
+          },
+          {
+            "truth": "Hollow Isle",
+            "found": true,
+            "as": "Hollow Isle",
+            "kind": "island",
+            "off": 1.7
+          },
+          {
+            "truth": "Farpoint",
+            "found": true,
+            "as": "Farpoint",
+            "kind": "lighthouse",
+            "off": 1.2
+          },
+          {
+            "truth": "Blackreef",
+            "found": true,
+            "as": "Blackreef",
+            "kind": "castle",
+            "off": 4.0
+          },
+          {
+            "truth": "Saltmarket",
+            "found": true,
+            "as": "Saltmarket",
+            "kind": "town",
+            "off": 3.0
+          },
+          {
+            "truth": "Ixquel",
+            "found": true,
+            "as": "Ixquel",
+            "kind": "ruin",
+            "off": 2.0
+          },
+          {
+            "truth": "Witchmire",
+            "found": true,
+            "as": "Witchmire",
+            "kind": "swamp",
+            "off": 2.0
+          }
+        ]
+      },
+      "map-5": {
+        "found": 10,
+        "total": 10,
+        "named": 9,
+        "kind_right": 8,
+        "median_off": 3.0,
+        "invented": [],
+        "predicted": 13,
+        "rows": [
+          {
+            "truth": "the Hearth",
+            "found": true,
+            "as": "the Hearth",
+            "kind": "settlement",
+            "off": 3.2
+          },
+          {
+            "truth": "Market square",
+            "found": true,
+            "as": "Market square",
+            "kind": "market",
+            "off": 2.8
+          },
+          {
+            "truth": "Mill",
+            "found": true,
+            "as": "Mill",
+            "kind": "mill",
+            "off": 3.0
+          },
+          {
+            "truth": "Chapel",
+            "found": true,
+            "as": "Chapel",
+            "kind": "chapel",
+            "off": 1.0
+          },
+          {
+            "truth": "Smithy",
+            "found": true,
+            "as": "Smithy",
+            "kind": "smithy",
+            "off": 2.6
+          },
+          {
+            "truth": "Old Bram's farm",
+            "found": true,
+            "as": "Old Bram's farm",
+            "kind": "farm",
+            "off": 2.8
+          },
+          {
+            "truth": "stone cairn",
+            "found": true,
+            "as": "Hills",
+            "kind": "hills",
+            "off": 5.2
+          },
+          {
+            "truth": "Sheep Track",
+            "found": true,
+            "as": "Sheep Track",
+            "kind": "path",
+            "off": 3.5
+          },
+          {
+            "truth": "Mill Road",
+            "found": true,
+            "as": "Mill Road",
+            "kind": "road",
+            "off": 4.1
+          },
+          {
+            "truth": "Whispering Wood",
+            "found": true,
+            "as": "Whispering Wood",
+            "kind": "forest",
+            "off": 0.0
+          }
+        ]
+      }
+    }
+  }
+}

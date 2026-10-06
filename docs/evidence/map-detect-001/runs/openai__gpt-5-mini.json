@@ -1,0 +1,798 @@
+{
+  "model": "openai/gpt-5-mini",
+  "prompt": "This is a fantasy world map. List every place a traveller could go to or through:\n- settlements: city, town, village, port, camp, tribe\n- sites: castle, fort, checkpoint, gate, tower, lighthouse, temple, monastery, chapel, inn,\n  market, smithy, mill, farm, ruin, dungeon, cave, mine, bridge, landmark\n- areas: forest, mountains, hills, swamp, lake, river, road, path, sea, island\n\nFor each place give:\n- \"name\": the label written on the map for it, if there is one; otherwise a short description\n- \"kind\": one word from the lists above\n- \"point\": [x, y], the centre of the place's drawing (not of its label), as integers from 0 to\n  1000 across the image's width (x) and height (y); [0, 0] is the top-left corner\n\nAnswer with JSON only: {\"places\": [{\"name\": \"...\", \"kind\": \"...\", \"point\": [x, y]}]}",
+  "maps": {
+    "map-1": {
+      "seconds": 34.5,
+      "cost_usd": 0.008489,
+      "usage": {
+        "prompt_tokens": 2140,
+        "completion_tokens": 3977,
+        "total_tokens": 6117,
+        "cost": 0.008489,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.008489,
+          "upstream_inference_prompt_cost": 0.000535,
+          "upstream_inference_completions_cost": 0.007954
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 3520,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "raw": "{\"places\":[{\"name\":\"Saltreach\",\"kind\":\"port\",\"point\":[110,260]},{\"name\":\"Lighthouse on Saltreach headland\",\"kind\":\"lighthouse\",\"point\":[80,150]},{\"name\":\"Rocky islet with watchtower (southwest coast)\",\"kind\":\"island\",\"point\":[90,680]},{\"name\":\"Aldermoor\",\"kind\":\"city\",\"point\":[500,270]},{\"name\":\"Ashwater\",\"kind\":\"river\",\"point\":[680,280]},{\"name\":\"Warden's Gate\",\"kind\":\"gate\",\"point\":[700,350]},{\"name\":\"Brindle\",\"kind\":\"village\",\"point\":[755,470]},{\"name\":\"Oakhollow\",\"kind\":\"village\",\"point\":[400,500]},{\"name\":\"Thornwood\",\"kind\":\"forest\",\"point\":[520,120]},{\"name\":\"Greyspine\",\"kind\":\"mountains\",\"point\":[930,120]},{\"name\":\"Duskfall\",\"kind\":\"cave\",\"point\":[920,430]},{\"name\":\"Sunken Keep\",\"kind\":\"ruin\",\"point\":[540,665]},{\"name\":\"Marshlands around the Sunken Keep\",\"kind\":\"swamp\",\"point\":[520,620]},{\"name\":\"Coastal sea (western coast)\",\"kind\":\"sea\",\"point\":[80,360]},{\"name\":\"Bridge (west mouth, near Saltreach)\",\"kind\":\"bridge\",\"point\":[260,330]},{\"name\":\"Bridge (southern river junction)\",\"kind\":\"bridge\",\"point\":[500,340]},{\"name\":\"Bridge (east, near Warden's Gate)\",\"kind\":\"bridge\",\"point\":[700,300]},{\"name\":\"Main road network around Aldermoor\",\"kind\":\"road\",\"point\":[520,380]},{\"name\":\"Farmlands near Oakhollow\",\"kind\":\"farm\",\"point\":[420,540]},{\"name\":\"Farmlands near Brindle\",\"kind\":\"farm\",\"point\":[720,520]},{\"name\":\"Ruined castle remnants in the swamp (part of Sunken Keep)\",\"kind\":\"ruin\",\"point\":[545,655]}]}",
+      "places": [
+        {
+          "name": "Saltreach",
+          "kind": "port",
+          "x": 11.0,
+          "y": 26.0
+        },
+        {
+          "name": "Lighthouse on Saltreach headland",
+          "kind": "lighthouse",
+          "x": 8.0,
+          "y": 15.0
+        },
+        {
+          "name": "Rocky islet with watchtower (southwest coast)",
+          "kind": "island",
+          "x": 9.0,
+          "y": 68.0
+        },
+        {
+          "name": "Aldermoor",
+          "kind": "city",
+          "x": 50.0,
+          "y": 27.0
+        },
+        {
+          "name": "Ashwater",
+          "kind": "river",
+          "x": 68.0,
+          "y": 28.0
+        },
+        {
+          "name": "Warden's Gate",
+          "kind": "gate",
+          "x": 70.0,
+          "y": 35.0
+        },
+        {
+          "name": "Brindle",
+          "kind": "village",
+          "x": 75.5,
+          "y": 47.0
+        },
+        {
+          "name": "Oakhollow",
+          "kind": "village",
+          "x": 40.0,
+          "y": 50.0
+        },
+        {
+          "name": "Thornwood",
+          "kind": "forest",
+          "x": 52.0,
+          "y": 12.0
+        },
+        {
+          "name": "Greyspine",
+          "kind": "mountains",
+          "x": 93.0,
+          "y": 12.0
+        },
+        {
+          "name": "Duskfall",
+          "kind": "cave",
+          "x": 92.0,
+          "y": 43.0
+        },
+        {
+          "name": "Sunken Keep",
+          "kind": "ruin",
+          "x": 54.0,
+          "y": 66.5
+        },
+        {
+          "name": "Marshlands around the Sunken Keep",
+          "kind": "swamp",
+          "x": 52.0,
+          "y": 62.0
+        },
+        {
+          "name": "Coastal sea (western coast)",
+          "kind": "sea",
+          "x": 8.0,
+          "y": 36.0
+        },
+        {
+          "name": "Bridge (west mouth, near Saltreach)",
+          "kind": "bridge",
+          "x": 26.0,
+          "y": 33.0
+        },
+        {
+          "name": "Bridge (southern river junction)",
+          "kind": "bridge",
+          "x": 50.0,
+          "y": 34.0
+        },
+        {
+          "name": "Bridge (east, near Warden's Gate)",
+          "kind": "bridge",
+          "x": 70.0,
+          "y": 30.0
+        },
+        {
+          "name": "Main road network around Aldermoor",
+          "kind": "road",
+          "x": 52.0,
+          "y": 38.0
+        },
+        {
+          "name": "Farmlands near Oakhollow",
+          "kind": "farm",
+          "x": 42.0,
+          "y": 54.0
+        },
+        {
+          "name": "Farmlands near Brindle",
+          "kind": "farm",
+          "x": 72.0,
+          "y": 52.0
+        },
+        {
+          "name": "Ruined castle remnants in the swamp (part of Sunken Keep)",
+          "kind": "ruin",
+          "x": 54.5,
+          "y": 65.5
+        }
+      ],
+      "error": null
+    },
+    "map-2": {
+      "seconds": 25.4,
+      "cost_usd": 0.006163,
+      "usage": {
+        "prompt_tokens": 2140,
+        "completion_tokens": 2814,
+        "total_tokens": 4954,
+        "cost": 0.006163,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.006163,
+          "upstream_inference_prompt_cost": 0.000535,
+          "upstream_inference_completions_cost": 0.005628
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2176,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "raw": "{\"places\":[{\"name\":\"Central walled city with castle\",\"kind\":\"city\",\"point\":[500,380]},{\"name\":\"Main southern city gate\",\"kind\":\"gate\",\"point\":[500,460]},{\"name\":\"Northern road fort / gatehouse\",\"kind\":\"fort\",\"point\":[500,220]},{\"name\":\"Bridge west of city (crosses river toward port)\",\"kind\":\"bridge\",\"point\":[310,380]},{\"name\":\"Bridge east of city (river crossing)\",\"kind\":\"bridge\",\"point\":[640,360]},{\"name\":\"Main road south of city\",\"kind\":\"road\",\"point\":[500,620]},{\"name\":\"Road to the north / forest track\",\"kind\":\"road\",\"point\":[500,180]},{\"name\":\"Coastal port town with docks\",\"kind\":\"port\",\"point\":[170,410]},{\"name\":\"Harbor lighthouse / tower\",\"kind\":\"lighthouse\",\"point\":[120,360]},{\"name\":\"Harbor market (port district)\",\"kind\":\"market\",\"point\":[190,410]},{\"name\":\"Coastal sea (offshore)\",\"kind\":\"sea\",\"point\":[50,400]},{\"name\":\"Small rocky island / off-shore rocks\",\"kind\":\"island\",\"point\":[70,140]},{\"name\":\"Large northern forest\",\"kind\":\"forest\",\"point\":[500,90]},{\"name\":\"Small forest lake (in northern woods)\",\"kind\":\"lake\",\"point\":[520,120]},{\"name\":\"Village / farms northeast of city\",\"kind\":\"village\",\"point\":[690,170]},{\"name\":\"Cluster of farms / hamlet southwest of city\",\"kind\":\"village\",\"point\":[250,720]},{\"name\":\"Scattered farms south of city\",\"kind\":\"farm\",\"point\":[380,640]},{\"name\":\"Eastern mountain range\",\"kind\":\"mountains\",\"point\":[900,300]},{\"name\":\"Cave entrance in the mountains\",\"kind\":\"cave\",\"point\":[900,300]},{\"name\":\"Waterfall where mountain river descends\",\"kind\":\"landmark\",\"point\":[800,300]},{\"name\":\"Mountain river flowing from the range through the map\",\"kind\":\"river\",\"point\":[660,360]},{\"name\":\"Marsh / swamp area southeast of city\",\"kind\":\"swamp\",\"point\":[700,700]},{\"name\":\"Ruined tower / keep in the swamp\",\"kind\":\"ruin\",\"point\":[700,720]},{\"name\":\"Small stone bridge into the swamp\",\"kind\":\"bridge\",\"point\":[620,600]},{\"name\":\"Old ruined causeway / minor ruins near swamp edge\",\"kind\":\"ruin\",\"point\":[760,660]},{\"name\":\"Small checkpoint / tollhouse on northern road (near forest edge)\",\"kind\":\"checkpoint\",\"point\":[480,260]},{\"name\":\"Coastal cliffs and headland west of port\",\"kind\":\"landmark\",\"point\":[160,300]},{\"name\":\"Hills / rocky outcrops along southern coast\",\"kind\":\"hills\",\"point\":[200,820]}]}",
+      "places": [
+        {
+          "name": "Central walled city with castle",
+          "kind": "city",
+          "x": 50.0,
+          "y": 38.0
+        },
+        {
+          "name": "Main southern city gate",
+          "kind": "gate",
+          "x": 50.0,
+          "y": 46.0
+        },
+        {
+          "name": "Northern road fort / gatehouse",
+          "kind": "fort",
+          "x": 50.0,
+          "y": 22.0
+        },
+        {
+          "name": "Bridge west of city (crosses river toward port)",
+          "kind": "bridge",
+          "x": 31.0,
+          "y": 38.0
+        },
+        {
+          "name": "Bridge east of city (river crossing)",
+          "kind": "bridge",
+          "x": 64.0,
+          "y": 36.0
+        },
+        {
+          "name": "Main road south of city",
+          "kind": "road",
+          "x": 50.0,
+          "y": 62.0
+        },
+        {
+          "name": "Road to the north / forest track",
+          "kind": "road",
+          "x": 50.0,
+          "y": 18.0
+        },
+        {
+          "name": "Coastal port town with docks",
+          "kind": "port",
+          "x": 17.0,
+          "y": 41.0
+        },
+        {
+          "name": "Harbor lighthouse / tower",
+          "kind": "lighthouse",
+          "x": 12.0,
+          "y": 36.0
+        },
+        {
+          "name": "Harbor market (port district)",
+          "kind": "market",
+          "x": 19.0,
+          "y": 41.0
+        },
+        {
+          "name": "Coastal sea (offshore)",
+          "kind": "sea",
+          "x": 5.0,
+          "y": 40.0
+        },
+        {
+          "name": "Small rocky island / off-shore rocks",
+          "kind": "island",
+          "x": 7.0,
+          "y": 14.0
+        },
+        {
+          "name": "Large northern forest",
+          "kind": "forest",
+          "x": 50.0,
+          "y": 9.0
+        },
+        {
+          "name": "Small forest lake (in northern woods)",
+          "kind": "lake",
+          "x": 52.0,
+          "y": 12.0
+        },
+        {
+          "name": "Village / farms northeast of city",
+          "kind": "village",
+          "x": 69.0,
+          "y": 17.0
+        },
+        {
+          "name": "Cluster of farms / hamlet southwest of city",
+          "kind": "village",
+          "x": 25.0,
+          "y": 72.0
+        },
+        {
+          "name": "Scattered farms south of city",
+          "kind": "farm",
+          "x": 38.0,
+          "y": 64.0
+        },
+        {
+          "name": "Eastern mountain range",
+          "kind": "mountains",
+          "x": 90.0,
+          "y": 30.0
+        },
+        {
+          "name": "Cave entrance in the mountains",
+          "kind": "cave",
+          "x": 90.0,
+          "y": 30.0
+        },
+        {
+          "name": "Waterfall where mountain river descends",
+          "kind": "landmark",
+          "x": 80.0,
+          "y": 30.0
+        },
+        {
+          "name": "Mountain river flowing from the range through the map",
+          "kind": "river",
+          "x": 66.0,
+          "y": 36.0
+        },
+        {
+          "name": "Marsh / swamp area southeast of city",
+          "kind": "swamp",
+          "x": 70.0,
+          "y": 70.0
+        },
+        {
+          "name": "Ruined tower / keep in the swamp",
+          "kind": "ruin",
+          "x": 70.0,
+          "y": 72.0
+        },
+        {
+          "name": "Small stone bridge into the swamp",
+          "kind": "bridge",
+          "x": 62.0,
+          "y": 60.0
+        },
+        {
+          "name": "Old ruined causeway / minor ruins near swamp edge",
+          "kind": "ruin",
+          "x": 76.0,
+          "y": 66.0
+        },
+        {
+          "name": "Small checkpoint / tollhouse on northern road (near forest edge)",
+          "kind": "checkpoint",
+          "x": 48.0,
+          "y": 26.0
+        },
+        {
+          "name": "Coastal cliffs and headland west of port",
+          "kind": "landmark",
+          "x": 16.0,
+          "y": 30.0
+        },
+        {
+          "name": "Hills / rocky outcrops along southern coast",
+          "kind": "hills",
+          "x": 20.0,
+          "y": 82.0
+        }
+      ],
+      "error": null
+    },
+    "map-3": {
+      "seconds": 31.1,
+      "cost_usd": 0.005925,
+      "usage": {
+        "prompt_tokens": 2140,
+        "completion_tokens": 2695,
+        "total_tokens": 4835,
+        "cost": 0.005925,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.005925,
+          "upstream_inference_prompt_cost": 0.000535,
+          "upstream_inference_completions_cost": 0.00539
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2240,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "raw": "{\"places\":[{\"name\":\"Harbor town\",\"kind\":\"port\",\"point\":[240,700]},{\"name\":\"Harbor market\",\"kind\":\"market\",\"point\":[280,690]},{\"name\":\"Harbor chapel\",\"kind\":\"chapel\",\"point\":[260,660]},{\"name\":\"Harbor inn\",\"kind\":\"inn\",\"point\":[300,720]},{\"name\":\"Fishing islet\",\"kind\":\"island\",\"point\":[140,740]},{\"name\":\"Coastal bay\",\"kind\":\"sea\",\"point\":[220,660]},{\"name\":\"Pine forest\",\"kind\":\"forest\",\"point\":[420,360]},{\"name\":\"Logging camp\",\"kind\":\"camp\",\"point\":[380,320]},{\"name\":\"Hilltop monastery\",\"kind\":\"monastery\",\"point\":[150,120]},{\"name\":\"Snowy mountains\",\"kind\":\"mountains\",\"point\":[720,80]},{\"name\":\"Mountain fortress\",\"kind\":\"castle\",\"point\":[700,140]},{\"name\":\"Northern gate\",\"kind\":\"gate\",\"point\":[680,170]},{\"name\":\"Cliff mine\",\"kind\":\"mine\",\"point\":[880,160]},{\"name\":\"Mountain river\",\"kind\":\"river\",\"point\":[560,360]},{\"name\":\"Stone bridge\",\"kind\":\"bridge\",\"point\":[520,430]},{\"name\":\"Waterfalls\",\"kind\":\"landmark\",\"point\":[580,220]},{\"name\":\"Watermill\",\"kind\":\"mill\",\"point\":[540,560]},{\"name\":\"River cave\",\"kind\":\"cave\",\"point\":[600,560]},{\"name\":\"Lone watchtower\",\"kind\":\"tower\",\"point\":[820,420]},{\"name\":\"Nomad tent camp\",\"kind\":\"camp\",\"point\":[820,640]},{\"name\":\"Outlying farms\",\"kind\":\"farm\",\"point\":[340,740]},{\"name\":\"Main road\",\"kind\":\"road\",\"point\":[480,480]},{\"name\":\"Forest path\",\"kind\":\"path\",\"point\":[360,440]},{\"name\":\"Rolling hills\",\"kind\":\"hills\",\"point\":[700,540]},{\"name\":\"Outer islet\",\"kind\":\"island\",\"point\":[70,720]}]}",
+      "places": [
+        {
+          "name": "Harbor town",
+          "kind": "port",
+          "x": 24.0,
+          "y": 70.0
+        },
+        {
+          "name": "Harbor market",
+          "kind": "market",
+          "x": 28.0,
+          "y": 69.0
+        },
+        {
+          "name": "Harbor chapel",
+          "kind": "chapel",
+          "x": 26.0,
+          "y": 66.0
+        },
+        {
+          "name": "Harbor inn",
+          "kind": "inn",
+          "x": 30.0,
+          "y": 72.0
+        },
+        {
+          "name": "Fishing islet",
+          "kind": "island",
+          "x": 14.0,
+          "y": 74.0
+        },
+        {
+          "name": "Coastal bay",
+          "kind": "sea",
+          "x": 22.0,
+          "y": 66.0
+        },
+        {
+          "name": "Pine forest",
+          "kind": "forest",
+          "x": 42.0,
+          "y": 36.0
+        },
+        {
+          "name": "Logging camp",
+          "kind": "camp",
+          "x": 38.0,
+          "y": 32.0
+        },
+        {
+          "name": "Hilltop monastery",
+          "kind": "monastery",
+          "x": 15.0,
+          "y": 12.0
+        },
+        {
+          "name": "Snowy mountains",
+          "kind": "mountains",
+          "x": 72.0,
+          "y": 8.0
+        },
+        {
+          "name": "Mountain fortress",
+          "kind": "castle",
+          "x": 70.0,
+          "y": 14.0
+        },
+        {
+          "name": "Northern gate",
+          "kind": "gate",
+          "x": 68.0,
+          "y": 17.0
+        },
+        {
+          "name": "Cliff mine",
+          "kind": "mine",
+          "x": 88.0,
+          "y": 16.0
+        },
+        {
+          "name": "Mountain river",
+          "kind": "river",
+          "x": 56.0,
+          "y": 36.0
+        },
+        {
+          "name": "Stone bridge",
+          "kind": "bridge",
+          "x": 52.0,
+          "y": 43.0
+        },
+        {
+          "name": "Waterfalls",
+          "kind": "landmark",
+          "x": 58.0,
+          "y": 22.0
+        },
+        {
+          "name": "Watermill",
+          "kind": "mill",
+          "x": 54.0,
+          "y": 56.0
+        },
+        {
+          "name": "River cave",
+          "kind": "cave",
+          "x": 60.0,
+          "y": 56.0
+        },
+        {
+          "name": "Lone watchtower",
+          "kind": "tower",
+          "x": 82.0,
+          "y": 42.0
+        },
+        {
+          "name": "Nomad tent camp",
+          "kind": "camp",
+          "x": 82.0,
+          "y": 64.0
+        },
+        {
+          "name": "Outlying farms",
+          "kind": "farm",
+          "x": 34.0,
+          "y": 74.0
+        },
+        {
+          "name": "Main road",
+          "kind": "road",
+          "x": 48.0,
+          "y": 48.0
+        },
+        {
+          "name": "Forest path",
+          "kind": "path",
+          "x": 36.0,
+          "y": 44.0
+        },
+        {
+          "name": "Rolling hills",
+          "kind": "hills",
+          "x": 70.0,
+          "y": 54.0
+        },
+        {
+          "name": "Outer islet",
+          "kind": "island",
+          "x": 7.0,
+          "y": 72.0
+        }
+      ],
+      "error": null
+    },
+    "map-4": {
+      "seconds": 32.6,
+      "cost_usd": 0.005983,
+      "usage": {
+        "prompt_tokens": 2140,
+        "completion_tokens": 2724,
+        "total_tokens": 4864,
+        "cost": 0.005983,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.005983,
+          "upstream_inference_prompt_cost": 0.000535,
+          "upstream_inference_completions_cost": 0.005448
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 2368,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "raw": "{\"places\":[{\"name\":\"Corvane\",\"kind\":\"city\",\"point\":[370,520]},{\"name\":\"Gullsend\",\"kind\":\"port\",\"point\":[110,220]},{\"name\":\"Tidemark\",\"kind\":\"town\",\"point\":[490,230]},{\"name\":\"Saltmarket\",\"kind\":\"market\",\"point\":[720,310]},{\"name\":\"Farpoint\",\"kind\":\"lighthouse\",\"point\":[900,280]},{\"name\":\"Ochre Clans\",\"kind\":\"tribe\",\"point\":[300,110]},{\"name\":\"Witchmire\",\"kind\":\"swamp\",\"point\":[730,120]},{\"name\":\"Hollow Isle\",\"kind\":\"island\",\"point\":[580,510]},{\"name\":\"Hollow Isle cave\",\"kind\":\"cave\",\"point\":[585,520]},{\"name\":\"Blackreef\",\"kind\":\"castle\",\"point\":[200,780]},{\"name\":\"Pell\",\"kind\":\"port\",\"point\":[610,760]},{\"name\":\"Ixquel\",\"kind\":\"temple\",\"point\":[880,820]},{\"name\":\"shipwreck at Blackreef rocks\",\"kind\":\"ruin\",\"point\":[260,820]},{\"name\":\"Central sea\",\"kind\":\"sea\",\"point\":[540,540]},{\"name\":\"coastal road (Saltmarket–Farpoint–Tidemark)\",\"kind\":\"road\",\"point\":[760,260]},{\"name\":\"river from Witchmire\",\"kind\":\"river\",\"point\":[650,200]},{\"name\":\"mountains near Ochre Clans\",\"kind\":\"mountains\",\"point\":[230,70]},{\"name\":\"Saltmarket docks\",\"kind\":\"port\",\"point\":[700,330]}]}",
+      "places": [
+        {
+          "name": "Corvane",
+          "kind": "city",
+          "x": 37.0,
+          "y": 52.0
+        },
+        {
+          "name": "Gullsend",
+          "kind": "port",
+          "x": 11.0,
+          "y": 22.0
+        },
+        {
+          "name": "Tidemark",
+          "kind": "town",
+          "x": 49.0,
+          "y": 23.0
+        },
+        {
+          "name": "Saltmarket",
+          "kind": "market",
+          "x": 72.0,
+          "y": 31.0
+        },
+        {
+          "name": "Farpoint",
+          "kind": "lighthouse",
+          "x": 90.0,
+          "y": 28.0
+        },
+        {
+          "name": "Ochre Clans",
+          "kind": "tribe",
+          "x": 30.0,
+          "y": 11.0
+        },
+        {
+          "name": "Witchmire",
+          "kind": "swamp",
+          "x": 73.0,
+          "y": 12.0
+        },
+        {
+          "name": "Hollow Isle",
+          "kind": "island",
+          "x": 58.0,
+          "y": 51.0
+        },
+        {
+          "name": "Hollow Isle cave",
+          "kind": "cave",
+          "x": 58.5,
+          "y": 52.0
+        },
+        {
+          "name": "Blackreef",
+          "kind": "castle",
+          "x": 20.0,
+          "y": 78.0
+        },
+        {
+          "name": "Pell",
+          "kind": "port",
+          "x": 61.0,
+          "y": 76.0
+        },
+        {
+          "name": "Ixquel",
+          "kind": "temple",
+          "x": 88.0,
+          "y": 82.0
+        },
+        {
+          "name": "shipwreck at Blackreef rocks",
+          "kind": "ruin",
+          "x": 26.0,
+          "y": 82.0
+        },
+        {
+          "name": "Central sea",
+          "kind": "sea",
+          "x": 54.0,
+          "y": 54.0
+        },
+        {
+          "name": "coastal road (Saltmarket–Farpoint–Tidemark)",
+          "kind": "road",
+          "x": 76.0,
+          "y": 26.0
+        },
+        {
+          "name": "river from Witchmire",
+          "kind": "river",
+          "x": 65.0,
+          "y": 20.0
+        },
+        {
+          "name": "mountains near Ochre Clans",
+          "kind": "mountains",
+          "x": 23.0,
+          "y": 7.0
+        },
+        {
+          "name": "Saltmarket docks",
+          "kind": "port",
+          "x": 70.0,
+          "y": 33.0
+        }
+      ],
+      "error": null
+    },
+    "map-5": {
+      "seconds": 19.1,
+      "cost_usd": 0.004647,
+      "usage": {
+        "prompt_tokens": 2140,
+        "completion_tokens": 2056,
+        "total_tokens": 4196,
+        "cost": 0.004647,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.004647,
+          "upstream_inference_prompt_cost": 0.000535,
+          "upstream_inference_completions_cost": 0.004112
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1728,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "raw": "{\"places\":[{\"name\":\"Old Bram's farm\",\"kind\":\"farm\",\"point\":[150,140]},{\"name\":\"Chapel\",\"kind\":\"chapel\",\"point\":[560,140]},{\"name\":\"Sheep Track\",\"kind\":\"path\",\"point\":[820,160]},{\"name\":\"Hilltop cairn (stone landmark)\",\"kind\":\"landmark\",\"point\":[900,80]},{\"name\":\"the Hearth\",\"kind\":\"inn\",\"point\":[520,420]},{\"name\":\"Smithy\",\"kind\":\"smithy\",\"point\":[700,420]},{\"name\":\"Market square\",\"kind\":\"market\",\"point\":[500,520]},{\"name\":\"village around Market square\",\"kind\":\"village\",\"point\":[520,520]},{\"name\":\"Mill\",\"kind\":\"mill\",\"point\":[200,560]},{\"name\":\"stone road bridge over the river\",\"kind\":\"bridge\",\"point\":[420,700]},{\"name\":\"Mill Road\",\"kind\":\"road\",\"point\":[560,760]},{\"name\":\"River (the stream that powers the mill)\",\"kind\":\"river\",\"point\":[300,660]},{\"name\":\"Whispering Wood\",\"kind\":\"forest\",\"point\":[820,820]},{\"name\":\"rolling hills around the sheep track\",\"kind\":\"hills\",\"point\":[840,120]}]}",
+      "places": [
+        {
+          "name": "Old Bram's farm",
+          "kind": "farm",
+          "x": 15.0,
+          "y": 14.0
+        },
+        {
+          "name": "Chapel",
+          "kind": "chapel",
+          "x": 56.0,
+          "y": 14.0
+        },
+        {
+          "name": "Sheep Track",
+          "kind": "path",
+          "x": 82.0,
+          "y": 16.0
+        },
+        {
+          "name": "Hilltop cairn (stone landmark)",
+          "kind": "landmark",
+          "x": 90.0,
+          "y": 8.0
+        },
+        {
+          "name": "the Hearth",
+          "kind": "inn",
+          "x": 52.0,
+          "y": 42.0
+        },
+        {
+          "name": "Smithy",
+          "kind": "smithy",
+          "x": 70.0,
+          "y": 42.0
+        },
+        {
+          "name": "Market square",
+          "kind": "market",
+          "x": 50.0,
+          "y": 52.0
+        },
+        {
+          "name": "village around Market square",
+          "kind": "village",
+          "x": 52.0,
+          "y": 52.0
+        },
+        {
+          "name": "Mill",
+          "kind": "mill",
+          "x": 20.0,
+          "y": 56.0
+        },
+        {
+          "name": "stone road bridge over the river",
+          "kind": "bridge",
+          "x": 42.0,
+          "y": 70.0
+        },
+        {
+          "name": "Mill Road",
+          "kind": "road",
+          "x": 56.0,
+          "y": 76.0
+        },
+        {
+          "name": "River (the stream that powers the mill)",
+          "kind": "river",
+          "x": 30.0,
+          "y": 66.0
+        },
+        {
+          "name": "Whispering Wood",
+          "kind": "forest",
+          "x": 82.0,
+          "y": 82.0
+        },
+        {
+          "name": "rolling hills around the sheep track",
+          "kind": "hills",
+          "x": 84.0,
+          "y": 12.0
+        }
+      ],
+      "error": null
+    }
+  },
+  "cost_usd": 0.0312
+}

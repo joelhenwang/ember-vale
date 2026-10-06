@@ -1,0 +1,211 @@
+<title>Map Place Finding</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a surveyor's report. Verdict, scoreboard, then one map at a time with a tab per model. */
+:root {
+  --bg: #eef0ec;
+  --sheet: #f8f9f6;
+  --ink: #1d2a2b;
+  --muted: #5c6b6a;
+  --line: #c9d1cc;
+  --accent: #1f6f78;
+  --accent-soft: #d6e8e7;
+  --good: #2f7d46;
+  --warn: #9a6a12;
+  --bad: #a83a32;
+  --truth: #2ea35a;
+  --font-display: "IM Fell English SC", "Iowan Old Style", Georgia, serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121a1b; --sheet: #182324; --ink: #e3ebe8; --muted: #9aaba8; --line: #2c3c3d;
+    --accent: #6cc3cb; --accent-soft: #1e3a3d; --good: #6fcf8c; --warn: #e0b45a; --bad: #f08a80; --truth: #5fd38a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121a1b; --sheet: #182324; --ink: #e3ebe8; --muted: #9aaba8; --line: #2c3c3d;
+  --accent: #6cc3cb; --accent-soft: #1e3a3d; --good: #6fcf8c; --warn: #e0b45a; --bad: #f08a80; --truth: #5fd38a;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font: 15.5px/1.55 var(--font-body); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 56px; display: flex; flex-direction: column; gap: 28px; }
+h1, h2 { font-family: var(--font-display); font-weight: 400; text-wrap: balance; letter-spacing: .01em; }
+h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.1; }
+h2 { font-size: 26px; }
+.eyebrow { font: 500 12px/1 var(--font-data); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+.lead { max-width: 68ch; color: var(--ink); }
+.lead strong { color: var(--accent); font-weight: 600; }
+.head { display: flex; flex-direction: column; gap: 10px; }
+.sheet { background: var(--sheet); border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 12px/1.2 var(--font-data); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+td.num { font-family: var(--font-data); white-space: nowrap; }
+tr.best td { background: var(--accent-soft); }
+.model { font-weight: 600; }
+.model small { display: block; font: 12px var(--font-data); color: var(--muted); font-weight: 400; }
+.pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font: 500 12px/1.6 var(--font-data); border: 1px solid currentColor; }
+.pill.good { color: var(--good); } .pill.warn { color: var(--warn); } .pill.bad { color: var(--bad); }
+.note { font-size: 13.5px; color: var(--muted); max-width: 80ch; }
+.viewer { display: flex; flex-direction: column; gap: 14px; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bar .label { font: 500 12px var(--font-data); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); min-width: 64px; }
+.tab { font: 500 13.5px var(--font-body); padding: 6px 12px; border-radius: 7px; border: 1px solid var(--line); background: var(--sheet); color: var(--ink); cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--sheet); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+figure img { width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line); display: block; max-width: 100%; }
+figcaption { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px var(--font-data); color: var(--muted); }
+figcaption b { color: var(--ink); font-weight: 500; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); }
+.dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; border: 1.5px solid #000; }
+.ring { display: inline-block; width: 13px; height: 13px; border-radius: 50%; border: 2.5px solid var(--truth); margin-right: 6px; vertical-align: -2px; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+.cols > div { min-width: 0; }
+.cols h3 { font: 600 15px var(--font-body); margin-bottom: 6px; }
+.cols p, .cols li { font-size: 14.5px; }
+.cols ul { padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+@media (prefers-reduced-motion: no-preference) { .tab { transition: background .12s, color .12s; } }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <span class="eyebrow">Ember Vale · map-detect-001 · 7 Oct 2026</span>
+    <h1>Can an AI find the places on a painted map?</h1>
+    <p class="lead">
+      Yes. On five maps you painted, <strong>Gemini 3.8 Flash found all 50 places</strong>, named the right
+      kind for 49, and dropped each pin a median of about 1% of the map's width from the drawing, with or
+      without labels. It invented nothing: everything it listed beyond my list is really on the map.
+      About 14 seconds and under one cent per map.
+    </p>
+  </header>
+
+  <section class="sheet">
+    <h2>Scoreboard</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Model</th><th>Places found</th><th>Right kind</th><th>Pin off (median, per map)</th><th>Cost, 5 maps</th><th>Verdict</th></tr>
+        </thead>
+        <tbody>
+          <tr class="best">
+            <td class="model">Gemini 3.8 Flash<small>google/gemini-3.8-flash</small></td>
+            <td class="num">50 / 50</td><td class="num">49</td><td class="num">0.7–1.7%</td><td class="num">$0.041</td>
+            <td><span class="pill good">use this</span></td>
+          </tr>
+          <tr>
+            <td class="model">Claude Sonnet 5.5<small>anthropic/claude-sonnet-5.5</small></td>
+            <td class="num">49 / 50</td><td class="num">45</td><td class="num">1.2–2.0%</td><td class="num">$0.087</td>
+            <td><span class="pill good">close second</span></td>
+          </tr>
+          <tr>
+            <td class="model">Qwen3-VL 235B<small>qwen/qwen3-vl-235b-a22b-instruct</small></td>
+            <td class="num">47 / 50</td><td class="num">39</td><td class="num">0.8–3.0%</td><td class="num">$0.008</td>
+            <td><span class="pill warn">cheap, slower, kinds wobble</span></td>
+          </tr>
+          <tr>
+            <td class="model">GPT-5 mini<small>openai/gpt-5-mini</small></td>
+            <td class="num">38 / 50</td><td class="num">29</td><td class="num">2.0–5.4%</td><td class="num">$0.031</td>
+            <td><span class="pill bad">pins too loose</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">
+      A place counts as found when the pin lands within 6% of the map's width of its drawing (15% for areas
+      such as forests, mountains, rivers and roads). On labelled maps the name must match too. "Right kind"
+      allows close words (a castle city for a city, a gatehouse for a checkpoint). Total for this test: $0.17.
+    </p>
+  </section>
+
+  <section class="sheet viewer" aria-labelledby="viewer-title">
+    <h2 id="viewer-title">The maps, with every model's pins</h2>
+    <div class="legend">
+      <span><span class="ring"></span>where I marked the place (the circle is the match radius)</span>
+      <span><span class="dot" style="background:#288cff"></span>model's pin, matched (white line to the place)</span>
+      <span><span class="dot" style="background:#f0323c"></span>model's pin not on my list (mostly real extras: bridges, docks, a lake)</span>
+    </div>
+    <div class="bar" role="tablist" aria-label="Map" id="maps"></div>
+    <div class="bar" role="tablist" aria-label="Model" id="models"></div>
+    <figure>
+      <img id="shot" alt="" width="1672" height="941">
+      <figcaption id="caption"></figcaption>
+    </figure>
+  </section>
+
+  <section class="sheet cols">
+    <div>
+      <h3>What this means for the world graph</h3>
+      <p>
+        Pulling places out of a painted map is reliable enough to build on: every map style, labelled or not,
+        came back complete and well placed. The player would confirm the pins (drag one if it sits a little
+        off) rather than place them all by hand.
+      </p>
+    </div>
+    <div>
+      <h3>Not yet tested</h3>
+      <ul>
+        <li>Roads and connections: which places link to which, the edges of the graph.</li>
+        <li>Terrain for the grid (forest, mountain, water cells) to weigh routes.</li>
+        <li>Repeat runs, to see how stable the pins are between calls.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script>
+const MAPS = [
+  { id: "map-1", name: "Kingdom", note: "labelled · parchment" },
+  { id: "map-2", name: "Kingdom", note: "icons only · parchment" },
+  { id: "map-3", name: "Valley", note: "unlabelled · painted" },
+  { id: "map-4", name: "Archipelago", note: "labelled · watercolour" },
+  { id: "map-5", name: "Village", note: "labelled · painted" }
+];
+const MODELS = [
+  { id: "google__gemini-3.8-flash", name: "Gemini 3.8 Flash" },
+  { id: "anthropic__claude-sonnet-5.5", name: "Sonnet 5.5" },
+  { id: "qwen__qwen3-vl-235b-a22b-instruct", name: "Qwen3-VL" },
+  { id: "openai__gpt-5-mini", name: "GPT-5 mini" }
+];
+// found / total, right kind, median pin offset (% of width), not on my list
+const SCORES = {
+  "google__gemini-3.8-flash": { "map-1": [10,10,10,1.2,1], "map-2": [11,11,10,0.9,0], "map-3": [8,8,8,1.4,1], "map-4": [11,11,11,0.7,0], "map-5": [10,10,10,1.7,0] },
+  "anthropic__claude-sonnet-5.5": { "map-1": [10,10,10,1.6,8], "map-2": [10,11,7,1.2,2], "map-3": [8,8,8,1.3,5], "map-4": [11,11,10,1.2,6], "map-5": [10,10,10,2.0,0] },
+  "qwen__qwen3-vl-235b-a22b-instruct": { "map-1": [10,10,10,2.3,2], "map-2": [10,11,6,0.8,2], "map-3": [8,8,6,2.1,1], "map-4": [9,11,9,2.0,3], "map-5": [10,10,8,3.0,0] },
+  "openai__gpt-5-mini": { "map-1": [5,10,5,5.4,3], "map-2": [10,11,4,4.0,6], "map-3": [7,8,5,2.0,7], "map-4": [7,11,6,3.0,1], "map-5": [9,10,9,4.3,2] }
+};
+let state = { map: "map-3", model: MODELS[0].id };
+try { const saved = JSON.parse(localStorage.getItem("map-detect-view") || "null"); if (saved) state = { ...state, ...saved }; } catch (e) {}
+if (/^map-[1-5]$/.test(location.hash.slice(1))) state.map = location.hash.slice(1);
+
+function tabs(el, items, key) {
+  el.innerHTML = `<span class="label">${key}</span>`;
+  for (const item of items) {
+    const b = document.createElement("button");
+    b.className = "tab"; b.type = "button"; b.setAttribute("role", "tab");
+    b.textContent = item.note ? `${item.name} · ${item.note}` : item.name;
+    b.setAttribute("aria-selected", String(state[key] === item.id));
+    b.addEventListener("click", () => { state[key] = item.id; render(); });
+    el.append(b);
+  }
+}
+function render() {
+  tabs(document.getElementById("maps"), MAPS, "map");
+  tabs(document.getElementById("models"), MODELS, "model");
+  const img = document.getElementById("shot");
+  const map = MAPS.find(m => m.id === state.map), model = MODELS.find(m => m.id === state.model);
+  img.src = `overlays/${state.map}__${state.model}.jpg`;
+  img.alt = `${map.name} map (${map.note}) with ${model.name}'s pins`;
+  const [found, total, kind, off, extra] = SCORES[state.model][state.map];
+  document.getElementById("caption").innerHTML =
+    `<span>found <b>${found} / ${total}</b></span><span>right kind <b>${kind}</b></span>` +
+    `<span>median pin off <b>${off}%</b></span><span>not on my list <b>${extra}</b></span>`;
+  try { localStorage.setItem("map-detect-view", JSON.stringify(state)); } catch (e) {}
+}
+render();
+</script>

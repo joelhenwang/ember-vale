@@ -1,0 +1,125 @@
+{
+  "_about": "Hand-marked ground truth for maps/map-N.png (1672x941). x and y are percent of width and height at the place's drawing (not its label). 'area' places (forests, mountains, swamps, rivers, roads, seas, lakes) get a wider match radius. 'extras' are real features the prompt did not ask for: finding them is not a false positive.",
+  "maps": {
+    "map-1": {
+      "prompt": 1,
+      "labelled": true,
+      "style": "parchment kingdom",
+      "places": [
+        {"name": "Aldermoor", "kind": "city", "x": 51, "y": 31},
+        {"name": "Saltreach", "kind": "port", "x": 16, "y": 33},
+        {"name": "Brindle", "kind": "village", "x": 68, "y": 58},
+        {"name": "Oakhollow", "kind": "village", "x": 32, "y": 57},
+        {"name": "Warden's Gate", "kind": "checkpoint", "x": 62, "y": 46},
+        {"name": "Duskfall", "kind": "cave", "x": 90, "y": 52},
+        {"name": "Sunken Keep", "kind": "ruin", "x": 59, "y": 76},
+        {"name": "Thornwood", "kind": "forest", "x": 45, "y": 13, "area": true},
+        {"name": "Greyspine", "kind": "mountains", "x": 88, "y": 35, "area": true},
+        {"name": "Ashwater", "kind": "river", "x": 67, "y": 33, "area": true}
+      ],
+      "extras": [
+        {"name": "lighthouse", "x": 4, "y": 20},
+        {"name": "sea tower", "x": 3, "y": 57},
+        {"name": "swamp", "x": 55, "y": 80, "area": true},
+        {"name": "bridge", "x": 41, "y": 50},
+        {"name": "bridge", "x": 47, "y": 62},
+        {"name": "bridge", "x": 58, "y": 41}
+      ]
+    },
+    "map-2": {
+      "prompt": 2,
+      "labelled": false,
+      "style": "parchment kingdom, icons only",
+      "places": [
+        {"name": "castle city", "kind": "city", "x": 50, "y": 45},
+        {"name": "harbour town", "kind": "port", "x": 12, "y": 42},
+        {"name": "northern village", "kind": "village", "x": 65, "y": 18},
+        {"name": "south-west village", "kind": "village", "x": 26, "y": 75},
+        {"name": "fortified gate", "kind": "checkpoint", "x": 57, "y": 30},
+        {"name": "cave", "kind": "cave", "x": 93, "y": 37},
+        {"name": "ruined tower", "kind": "ruin", "x": 73, "y": 77},
+        {"name": "northern forest", "kind": "forest", "x": 40, "y": 15, "area": true},
+        {"name": "eastern mountains", "kind": "mountains", "x": 88, "y": 35, "area": true},
+        {"name": "river", "kind": "river", "x": 63, "y": 44, "area": true},
+        {"name": "swamp", "kind": "swamp", "x": 70, "y": 75, "area": true}
+      ],
+      "extras": [
+        {"name": "bridge", "x": 25, "y": 42},
+        {"name": "bridge", "x": 57, "y": 64},
+        {"name": "bridge", "x": 73, "y": 26},
+        {"name": "lake", "x": 46, "y": 12, "area": true},
+        {"name": "sea", "x": 5, "y": 50, "area": true}
+      ]
+    },
+    "map-3": {
+      "prompt": 3,
+      "labelled": false,
+      "style": "painted anime overworld",
+      "places": [
+        {"name": "lakeside village", "kind": "village", "x": 22, "y": 70},
+        {"name": "hilltop monastery", "kind": "monastery", "x": 17, "y": 12},
+        {"name": "woodcutters' camp", "kind": "camp", "x": 37, "y": 40},
+        {"name": "stone bridge", "kind": "bridge", "x": 54, "y": 55},
+        {"name": "watchtower", "kind": "tower", "x": 86, "y": 45},
+        {"name": "mountain pass checkpoint", "kind": "checkpoint", "x": 68, "y": 14},
+        {"name": "abandoned mine", "kind": "mine", "x": 88, "y": 23},
+        {"name": "tribal encampment", "kind": "camp", "x": 84, "y": 77}
+      ],
+      "extras": [
+        {"name": "high tower", "x": 58, "y": 2},
+        {"name": "lake", "x": 12, "y": 62, "area": true},
+        {"name": "river", "x": 54, "y": 70, "area": true},
+        {"name": "mountains", "x": 60, "y": 8, "area": true},
+        {"name": "forest", "x": 30, "y": 32, "area": true},
+        {"name": "small bridge", "x": 51, "y": 81},
+        {"name": "waterfall", "x": 51, "y": 22}
+      ]
+    },
+    "map-4": {
+      "prompt": 4,
+      "labelled": true,
+      "style": "ink and watercolour archipelago",
+      "places": [
+        {"name": "Corvane", "kind": "city", "x": 27, "y": 52},
+        {"name": "Gullsend", "kind": "village", "x": 11, "y": 26},
+        {"name": "Tidemark", "kind": "village", "x": 48, "y": 24},
+        {"name": "Pell", "kind": "village", "x": 57, "y": 82},
+        {"name": "Ochre Clans", "kind": "tribe", "x": 16, "y": 10},
+        {"name": "Hollow Isle", "kind": "cave", "x": 56, "y": 55},
+        {"name": "Farpoint", "kind": "lighthouse", "x": 96, "y": 44},
+        {"name": "Blackreef", "kind": "ruin", "x": 16, "y": 73},
+        {"name": "Saltmarket", "kind": "port", "x": 75, "y": 36},
+        {"name": "Ixquel", "kind": "temple", "x": 84, "y": 70},
+        {"name": "Witchmire", "kind": "swamp", "x": 73, "y": 10, "area": true}
+      ],
+      "extras": [
+        {"name": "shipwreck", "x": 26, "y": 87},
+        {"name": "coastal road", "x": 70, "y": 22, "area": true},
+        {"name": "sea", "x": 40, "y": 70, "area": true}
+      ]
+    },
+    "map-5": {
+      "prompt": 5,
+      "labelled": true,
+      "style": "painted storybook village",
+      "places": [
+        {"name": "the Hearth", "kind": "inn", "x": 40, "y": 40},
+        {"name": "Market square", "kind": "market", "x": 45, "y": 55},
+        {"name": "Mill", "kind": "mill", "x": 18, "y": 61},
+        {"name": "Chapel", "kind": "chapel", "x": 52, "y": 17},
+        {"name": "Smithy", "kind": "smithy", "x": 71, "y": 47},
+        {"name": "Old Bram's farm", "kind": "farm", "x": 13, "y": 18},
+        {"name": "stone cairn", "kind": "landmark", "x": 89, "y": 4},
+        {"name": "Sheep Track", "kind": "path", "x": 85, "y": 25, "area": true},
+        {"name": "Mill Road", "kind": "road", "x": 55, "y": 85, "area": true},
+        {"name": "Whispering Wood", "kind": "forest", "x": 88, "y": 70, "area": true}
+      ],
+      "extras": [
+        {"name": "stone bridge", "x": 35, "y": 75},
+        {"name": "stream", "x": 25, "y": 72, "area": true},
+        {"name": "graveyard", "x": 58, "y": 24},
+        {"name": "lake", "x": 75, "y": 11, "area": true}
+      ]
+    }
+  }
+}
