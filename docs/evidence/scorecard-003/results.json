@@ -1,0 +1,369 @@
+{
+  "meta": {
+    "commit": "d9b2423",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T00:44:54+00:00",
+    "wall_seconds": 589,
+    "est_usd_total": 0.1479005864,
+    "scenarios": [
+      "strangers",
+      "lost_item",
+      "stuck_task",
+      "meet_up",
+      "named_place"
+    ]
+  },
+  "results": {
+    "strangers": {
+      "ids": {
+        "world": "57e6766f-65df-4abd-a0f8-c130612170e1",
+        "place:Hearth": "85c43b3e-1e9a-4adf-bc01-b4f2027578a3",
+        "place:Market": "ee1ab23a-09b7-4875-817e-470a365d47ee",
+        "wren": "1fdf933b-8b69-4f98-9b78-ba0a811b569c",
+        "ash": "b4330dc4-3d7e-4bda-b3bc-76ba4f142fd6"
+      },
+      "beat_seconds": [
+        55.90599999995902,
+        39.07799999997951,
+        73.43699999991804,
+        61.32799999997951,
+        96.5,
+        44.20299999997951,
+        54.35900000005495,
+        60.26500000001397
+      ],
+      "error": null,
+      "score": {
+        "calls": 92,
+        "failed_calls": 0,
+        "repairs": 7,
+        "repairs_by_role": {
+          "resolver": 5,
+          "narrator": 2
+        },
+        "repair_rate": 0.07608695652173914,
+        "est_usd": 0.031549144,
+        "action_mix": {
+          "communicate": 10,
+          "move": 2,
+          "wait": 2,
+          "interact": 4,
+          "observe": 5
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 4,
+        "hooks": [
+          {
+            "title": "The Market Opens with a Mystery Cart",
+            "powers": "spawn_npc"
+          },
+          {
+            "title": "The Merchant's Missing Manifest",
+            "powers": "new_location"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Casper": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Upriver Dock"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "repeated questions 0% (pass \u2264 20%)"
+      }
+    },
+    "lost_item": {
+      "ids": {
+        "world": "5f5a4f6a-0ba3-4fbd-b16f-e1b3573cb393",
+        "place:Hearth": "d68b38d2-91ba-4754-801c-af4ab721bfaa",
+        "place:Market": "cd5c7617-01c9-46a6-b176-7e3902520730",
+        "wren": "27bc2f96-4217-4f54-9fc0-8ee21681571a",
+        "ash": "9a573648-2726-4bb5-a2fc-fa54678905fb",
+        "item:purse": "acf0ff15-c526-421d-9cd7-ea917bf494c2"
+      },
+      "beat_seconds": [
+        33.57799999997951,
+        79.31299999996554,
+        58.06299999996554,
+        30.640999999945052,
+        54.23400000005495,
+        61.60900000005495,
+        53.54700000002049,
+        50.93799999996554
+      ],
+      "error": null,
+      "score": {
+        "calls": 97,
+        "failed_calls": 0,
+        "repairs": 7,
+        "repairs_by_role": {
+          "narrator": 3,
+          "character_decision": 1,
+          "resolver": 3
+        },
+        "repair_rate": 0.07216494845360824,
+        "est_usd": 0.0337776664,
+        "action_mix": {
+          "take": 1,
+          "observe": 12,
+          "move": 1,
+          "communicate": 8,
+          "interact": 1,
+          "wait": 1
+        },
+        "repetition_rate": 0.125,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 2,
+        "moves_tried": 1,
+        "moves_done": 1,
+        "interact_success": 1,
+        "hooks": [
+          {
+            "title": "The Cart That Never Came",
+            "powers": "place_item,spawn_npc"
+          },
+          {
+            "title": "The Caravan Ledger",
+            "powers": "place_item"
+          },
+          {
+            "title": "The Night Cart",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Hearth",
+          "Old Greta": "Hearth",
+          "Carter Pip": "Hearth"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {
+          "Merek's mud-caked manifest": {
+            "holder": null,
+            "place": "Hearth"
+          },
+          "Lost purse": {
+            "holder": "Ash",
+            "place": null
+          },
+          "Carter's Ledger": {
+            "holder": null,
+            "place": "Hearth"
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "purse held by Ash"
+      }
+    },
+    "stuck_task": {
+      "ids": {
+        "world": "142b8345-93f4-4f40-ae47-98f1bdf8590d",
+        "place:Hearth": "894448aa-a824-4d94-a256-dc44ad34f82c",
+        "place:Market": "82615c1f-96f9-4442-a2e4-01fbda603266",
+        "wren": "adbd6ee0-8ab8-4919-a65a-18f6f9711f93",
+        "ash": "ea25de88-5919-4645-8724-442d90f19ba2",
+        "marg": "8b45c378-5ab0-45bd-ad51-c9836e54e18f"
+      },
+      "beat_seconds": [
+        50.438000000081956,
+        36.53099999995902,
+        30.84299999999348,
+        44.25,
+        39.436999999918044,
+        52.21899999992456,
+        51.75,
+        120.51500000001397
+      ],
+      "error": null,
+      "score": {
+        "calls": 101,
+        "failed_calls": 0,
+        "repairs": 3,
+        "repairs_by_role": {
+          "director": 1,
+          "reaction": 1,
+          "narrator": 1
+        },
+        "repair_rate": 0.0297029702970297,
+        "est_usd": 0.029594908,
+        "action_mix": {
+          "communicate": 10,
+          "interact": 8,
+          "observe": 3,
+          "wait": 4
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 2,
+        "moves_tried": 0,
+        "moves_done": 0,
+        "interact_success": 8,
+        "hooks": [
+          {
+            "title": "A customer asks for the cart's cracked wheel",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Old Marg": "Market",
+          "Tomas the wheelwright": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "8 successful physical attempt(s)"
+      }
+    },
+    "meet_up": {
+      "ids": {
+        "world": "a4f00f34-21ef-4839-a61b-36b2f255d6bf",
+        "place:Hearth": "02c3a058-a30d-43d0-9775-6d53819b20ab",
+        "place:Market": "5242eb32-22c9-4164-a06d-c062c0bf0573",
+        "wren": "c3bde056-6697-4ea6-aef2-9c2b3e8909ef",
+        "ash": "3f4905fe-0761-49c7-a57d-4acd85402e9c"
+      },
+      "beat_seconds": [
+        18.57900000002701,
+        30.781000000075437,
+        25.859000000054948,
+        77.57799999997951,
+        14.343999999924563,
+        24.25,
+        26.844000000040978,
+        15.421999999904074
+      ],
+      "error": null,
+      "score": {
+        "calls": 49,
+        "failed_calls": 0,
+        "repairs": 2,
+        "repairs_by_role": {
+          "director": 1,
+          "narrator": 1
+        },
+        "repair_rate": 0.04081632653061224,
+        "est_usd": 0.0142415088,
+        "action_mix": {
+          "wait": 3,
+          "move": 5,
+          "communicate": 7,
+          "interact": 1
+        },
+        "repetition_rate": 0.14285714285714285,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 3,
+        "moves_tried": 5,
+        "moves_done": 5,
+        "interact_success": 1,
+        "hooks": [
+          {
+            "title": "A summons from the old mill",
+            "powers": "place_item"
+          }
+        ],
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Hearth"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {
+          "Pinned notice": {
+            "holder": null,
+            "place": "Market"
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "Wren at Hearth, Ash at Hearth"
+      }
+    },
+    "named_place": {
+      "ids": {
+        "world": "c1771ec2-7087-408a-8aa6-38db459c7f9d",
+        "place:Hearth": "72f31c32-21a1-4b0f-91d8-c22c5053ff4c",
+        "place:Market": "9bfbe887-6487-45ea-888b-53df46ba73cb",
+        "wren": "f429d622-edc4-4b6d-bf78-62cca97bd26c",
+        "ash": "83623327-657e-4ca7-a069-ceee7af3b4bf"
+      },
+      "beat_seconds": [
+        74.96899999992456,
+        75.89099999994505,
+        49.84399999992456,
+        37.07799999997951,
+        59.25,
+        55.67200000002049,
+        135.51600000006147,
+        99.73400000005495
+      ],
+      "error": null,
+      "score": {
+        "calls": 115,
+        "failed_calls": 0,
+        "repairs": 6,
+        "repairs_by_role": {
+          "director": 2,
+          "narrator": 3,
+          "resolver": 1
+        },
+        "repair_rate": 0.05217391304347826,
+        "est_usd": 0.038737359199999995,
+        "action_mix": {
+          "wait": 6,
+          "communicate": 11,
+          "move": 8,
+          "observe": 2
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 8,
+        "moves_done": 8,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "A Traveller Heading to the Old Mill",
+            "powers": "spawn_npc"
+          },
+          {
+            "title": "The Mill Door Stands Open",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Hearth",
+          "Elena": "Market",
+          "Old Marga": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": false,
+        "goal_detail": "no mill was added"
+      }
+    }
+  }
+}

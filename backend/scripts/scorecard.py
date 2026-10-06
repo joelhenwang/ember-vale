@@ -608,7 +608,7 @@ async def main_async(args: argparse.Namespace) -> int:
                 "score": score(conn, scenario, run["ids"], prices),
             }
     await state.engine.dispose()
-    commit = await asyncio.to_thread(_commit)
+    commit = args.code_label or await asyncio.to_thread(_commit)
     meta = {
         "commit": commit,
         "model": model,
@@ -631,6 +631,11 @@ def main() -> int:
     parser.add_argument("--max-usd", type=float, default=0.20)
     parser.add_argument("--only", default="", help="comma-separated scenario keys")
     parser.add_argument("--keep-db", action="store_true", help="keep the scratch database")
+    parser.add_argument(
+        "--code-label",
+        default="",
+        help="record this instead of git HEAD (e.g. a baseline run via PYTHONPATH)",
+    )
     args = parser.parse_args()
     if not args.live:
         print("refusing to run without --live (this spends real model credit)", file=sys.stderr)

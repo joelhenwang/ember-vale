@@ -77,3 +77,33 @@ def test_director_hears_about_the_mill(stage1_client: tuple[ApiClient, FakeGatew
     assert re.search(
         r"Places mentioned but not on the map: old mill \(\d+ mentions\)", director[-1]
     )
+
+
+def test_suggestion_names_the_place_and_where_it_joins() -> None:
+    import uuid
+
+    from worldsim.application.orchestration import stage1
+    from worldsim.domain.characters import Character
+    from worldsim.domain.world import Location
+
+    suggest = stage1._place_suggestion  # pyright: ignore[reportPrivateUsage]
+    world = uuid.uuid4()
+    hearth, market = (
+        Location(id=uuid.uuid4(), world_id=world, name=n) for n in ("Hearth", "Market")
+    )
+    people = [
+        Character(
+            id=uuid.uuid4(),
+            world_id=world,
+            name=n,
+            card_version=1,
+            location_id=market.id,
+            stamina=80,
+            mana=40,
+        )
+        for n in ("Wren", "Ash")
+    ]
+    text = suggest([("old mill", 4)], people, [hearth, market], places_left=2)
+    assert '"name": "Old Mill"' in text and f'"connect_to": "{market.id}"' in text
+    assert suggest([("old mill", 4)], people, [hearth, market], places_left=0) == ""
+    assert suggest([], people, [hearth, market], places_left=2) == ""

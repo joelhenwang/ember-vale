@@ -1,0 +1,94 @@
+{
+  "meta": {
+    "commit": "08d0168 (baseline)",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T00:34:59+00:00",
+    "wall_seconds": 624,
+    "est_usd_total": 0.031361938400000004,
+    "scenarios": [
+      "named_place"
+    ]
+  },
+  "results": {
+    "named_place": {
+      "ids": {
+        "world": "6b93d7c0-27e0-4ed3-9a41-e5ddb845930d",
+        "place:Hearth": "72e0659e-9760-4791-a9a2-b6a4e2fa7b2c",
+        "place:Market": "e8d536fc-76ec-48e4-8929-99ad1271c0f3",
+        "wren": "78448787-bdd8-4bc9-8965-7b7cdc12b13c",
+        "ash": "2f233482-6f4f-4688-a42f-b438a10749e1"
+      },
+      "beat_seconds": [
+        88.68700000003446,
+        76.31200000003446,
+        60.75,
+        86.84399999992456,
+        94.35999999998603,
+        70.625,
+        59.70299999997951,
+        86.70400000002701
+      ],
+      "error": null,
+      "score": {
+        "calls": 87,
+        "failed_calls": 0,
+        "repairs": 2,
+        "repairs_by_role": {
+          "resolver": 1,
+          "narrator": 1
+        },
+        "repair_rate": 0.022988505747126436,
+        "est_usd": 0.031361938400000004,
+        "action_mix": {
+          "communicate": 7,
+          "move": 11,
+          "wait": 1,
+          "observe": 2,
+          "interact": 2
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 11,
+        "moves_done": 10,
+        "interact_success": 2,
+        "hooks": [
+          {
+            "title": "The miller's apprentice is missing",
+            "powers": "spawn_npc"
+          },
+          {
+            "title": "A trail of flour",
+            "powers": "place_item"
+          },
+          {
+            "title": "The flour trail fades at the lane fork",
+            "powers": "place_item"
+          }
+        ],
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Hearth",
+          "Old Bram": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {
+          "Flour trail": {
+            "holder": null,
+            "place": "Market"
+          },
+          "torn scrap of a miller's ledger": {
+            "holder": null,
+            "place": "Hearth"
+          }
+        },
+        "goal_passed": false,
+        "goal_detail": "no mill was added"
+      }
+    }
+  }
+}

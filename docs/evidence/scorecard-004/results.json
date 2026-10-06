@@ -1,0 +1,80 @@
+{
+  "meta": {
+    "commit": "d9b2423 + place suggestion",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T00:51:41+00:00",
+    "wall_seconds": 304,
+    "est_usd_total": 0.0279037416,
+    "scenarios": [
+      "named_place"
+    ]
+  },
+  "results": {
+    "named_place": {
+      "ids": {
+        "world": "36eda48e-524b-4a85-a735-4d48964c0824",
+        "place:Hearth": "fc6ee8cb-885d-4a84-baef-0e175ac88561",
+        "place:Market": "de82a5b4-5731-4797-9d0f-5236726c45c9",
+        "wren": "84cf0581-7855-41af-80c8-2f32d6b874db",
+        "ash": "f8232651-eb84-4a61-b369-f51acccb269b"
+      },
+      "beat_seconds": [
+        27.42200000002049,
+        16.20299999997951,
+        47.17200000002049,
+        91.39000000001397,
+        72.34400000004098,
+        45.53099999995902,
+        1.8439999999245629,
+        1.5
+      ],
+      "error": null,
+      "score": {
+        "calls": 89,
+        "failed_calls": 11,
+        "repairs": 3,
+        "repairs_by_role": {
+          "narrator": 3
+        },
+        "repair_rate": 0.033707865168539325,
+        "est_usd": 0.0279037416,
+        "action_mix": {
+          "communicate": 12,
+          "move": 5,
+          "wait": 10
+        },
+        "repetition_rate": 0.08333333333333333,
+        "longest_idle_streak": 2,
+        "longest_talk_streak": 3,
+        "moves_tried": 5,
+        "moves_done": 5,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "Uncle's Debt at the Old Mill",
+            "powers": "new_location,spawn_npc"
+          },
+          {
+            "title": "Ultimatum at the Mill",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Old Mill",
+          "Ash": "Market",
+          "Maren": "Old Mill",
+          "Tom": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Old Mill"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "added Old Mill; there at the end: Wren, Maren"
+      }
+    }
+  }
+}

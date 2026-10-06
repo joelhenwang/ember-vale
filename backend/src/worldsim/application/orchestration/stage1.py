@@ -26,6 +26,7 @@ import json
 import logging
 import random
 import time
+from collections import Counter
 from collections.abc import Callable, Generator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
@@ -550,6 +551,31 @@ def director_summary(
         "gave or did anything else).",
     ]
     return "\n".join(lines)
+
+
+def _place_suggestion(
+    unmapped: Sequence[tuple[str, int]],
+    characters: Sequence[Character],
+    locations: Sequence[Location],
+    places_left: int,
+) -> str:
+    """A ready-to-use new_location for the most-mentioned unmapped place.
+
+    Playtest scorecards showed the director acknowledging such a place
+    ("The Mill Door Stands Open") yet spawning a character instead of
+    adding it; spelling out the fields makes adding it the easy path.
+    It connects from where most living characters stand.
+    """
+    if not unmapped or places_left <= 0 or not locations:
+        return ""
+    name = " ".join(w if w.endswith("'s") else w.capitalize() for w in unmapped[0][0].split())
+    crowd = Counter(c.location_id for c in characters if c.life_status == LifeStatus.ALIVE)
+    by_id = {loc.id: loc for loc in locations}
+    origin = next((by_id[p] for p, _n in crowd.most_common() if p in by_id), locations[0])
+    return (
+        f'\nSuggested: add "{name}" — for example "place": {{"name": "{name}", '
+        f'"connect_to": "{origin.id}"}} (reached from {origin.name}).'
+    )
 
 
 async def _event_place_name(uow: Any, event_id: UUID) -> str | None:
@@ -1736,6 +1762,7 @@ class Stage1Orchestrator:
                 or "none"
             )
             + "."
+            + _place_suggestion(unmapped, characters, locations, places_left)
         )
         hook_id = new_hook_id()
         arc_id = new_arc_id()
