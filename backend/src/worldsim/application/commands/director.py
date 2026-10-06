@@ -34,6 +34,8 @@ async def accept_decision(
 ) -> None:
     """Persist accepted rows, audit the command, and advance the cooldown."""
     await uow.worlds.put_config(world_id, "director.last_absolute", last_absolute)
+    for ending in decision.closed:
+        await uow.narrative.close_hook(ending.hook_id, ending.ending, last_absolute)
     if decision.accepted:
         style_pack = await world_style_pack(uow, world_id)
         if decision.place is not None:

@@ -21,6 +21,9 @@ import {
   isFresh,
   prologue,
   trimPlaceLead,
+  turnChanges,
+  type Glimpse,
+  type TurnChange,
   sayIntent,
   sceneFocus,
   suggestionIntent,
@@ -40,6 +43,33 @@ const sayTo = ref<string>('')
 const logEl = ref<HTMLElement | null>(null)
 const now = ref(Date.now())
 const startedAt = ref<number | null>(null)
+/** What changed on the last turn: shown under the story until the next one. */
+const changes = ref<TurnChange[]>([])
+function glimpse(): Glimpse {
+  const stat = (key: string): number | null => {
+    const v = stats.value?.[key]
+    return typeof v === 'number' ? v : null
+  }
+  return {
+    place: adv.here.value?.name ?? null,
+    stamina: stat('stamina'),
+    mana: stat('mana'),
+    items: adv.items.value.flatMap((i) =>
+      Array.from({ length: Math.max(1, i.quantity) }, () => i.name || i.item_key)
+    ),
+    present: adv.present.value.map((c) => c.name),
+    rumours: (adv.presentation.value?.rumours ?? []).map((r) => r.title),
+    settled: (adv.presentation.value?.settled ?? []).map((r) => r.title)
+  }
+}
+/** Run one turn: remember the world as it was, then say what changed. */
+async function turn(run: () => Promise<boolean>): Promise<boolean> {
+  const before = glimpse()
+  changes.value = []
+  const ok = await run()
+  if (ok) changes.value = turnChanges(before, glimpse())
+  return ok
+}
 /** The player's own action, shown at once while the world answers. */
 const echo = ref<{ kind: 'say' | 'do'; text: string } | null>(null)
 
@@ -86,6 +116,7 @@ const intro = computed(() => {
 })
 const drives = computed(() => cardDrives(card.value?.personality))
 const rumours = computed(() => adv.presentation.value?.rumours ?? [])
+const settled = computed(() => adv.presentation.value?.settled ?? [])
 const nowIndex = computed(() => adv.presentation.value?.absolute_index ?? 0)
 const elapsed = computed(() =>
   startedAt.value ? Math.max(0, Math.round((now.value - startedAt.value) / 1000)) : 0
@@ -127,7 +158,7 @@ async function submit(): Promise<void> {
     mode.value === 'say' && sayTarget.value
       ? { kind: 'say', text: `"${words.replace(/^["“]|["”]$/g, '')}"` }
       : { kind: 'do', text: `You ${words.charAt(0).toLowerCase()}${words.slice(1)}` }
-  const ok = await adv.act(intent)
+  const ok = await turn(() => adv.act(intent))
   echo.value = null
   if (!ok) text.value = words
 }
@@ -138,13 +169,13 @@ async function chip(s: SuggestionView): Promise<void> {
   const intent = suggestionIntent(me, s)
   if (!intent) return
   echo.value = { kind: 'do', text: `You ${s.title.charAt(0).toLowerCase()}${s.title.slice(1)}.` }
-  await adv.act(intent)
+  await turn(() => adv.act(intent))
   echo.value = null
 }
 
 async function pass(): Promise<void> {
   echo.value = { kind: 'do', text: 'You let a moment pass.' }
-  await adv.wait()
+  await turn(() => adv.wait())
   echo.value = null
 }
 
@@ -213,7 +244,11 @@ watch(canSay, (yes) => {
 })
 
 onMounted(() => {
-  void adv.load().then(scrollToEnd)
+  void adv.load().then(() => {
+    // Portraits load after the first layout and push the end out of view.
+    void scrollToEnd()
+    setTimeout(() => void scrollToEnd(), 600)
+  })
   setInterval(() => (now.value = Date.now()), 1000)
 })
 </script>
@@ -337,6 +372,20 @@ onMounted(() => {
             </template>
             <p v-else class="log__prose log__mine">{{ echo.text }}</p>
           </div>
+          <TransitionGroup
+            v-if="changes.length && !adv.acting.value"
+            name="badge"
+            tag="ul"
+            class="log__changes"
+            aria-label="What changed">
+            <li
+              v-for="(c, i) in changes"
+              :key="c.text"
+              :class="`badge badge--${c.tone}`"
+              :style="{ transitionDelay: `${i * 120}ms` }">
+              {{ c.text }}
+            </li>
+          </TransitionGroup>
           <div v-if="adv.acting.value" class="log__thinking">
             <IconFeather :size="18" class="log__quill" />
             <span>{{ adv.stage.value }}… {{ elapsed }} s</span>
@@ -456,8 +505,8 @@ onMounted(() => {
           <p v-else class="sheet__empty">Empty pockets.</p>
         </section>
 
-        <section v-if="rumours.length" class="rumours ev-card">
-          <h3>Word around the vale</h3>
+        <section v-if="rumours.length || settled.length" class="rumours ev-card">
+          <h3 v-if="rumours.length">Word around the vale</h3>
           <ul>
             <li
               v-for="r in rumours"
@@ -468,6 +517,15 @@ onMounted(() => {
               <p v-if="r.purpose">{{ r.purpose }}</p>
             </li>
           </ul>
+          <template v-if="settled.length">
+            <h3 class="rumours__done-title">Settled</h3>
+            <ul class="rumours__done">
+              <li v-for="r in settled" :key="r.hook_id">
+                <b>✓ {{ r.title }}</b>
+                <p v-if="r.purpose">{{ r.purpose }}</p>
+              </li>
+            </ul>
+          </template>
         </section>
 
         <section v-if="adv.presentation.value" class="minimap ev-card">
@@ -782,6 +840,43 @@ button.who:hover > span {
   font-style: italic;
   color: var(--teal-ink);
 }
+.log__changes {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0 4px;
+}
+.badge {
+  font-size: 13.5px;
+  padding: 2px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.badge--gain {
+  color: #2f6b3a;
+  border-color: #9cc2a3;
+  background: #eef6ec;
+}
+.badge--loss {
+  color: #8a3b2b;
+  border-color: #d7a99c;
+  background: #f8ece6;
+}
+.badge--news {
+  color: var(--gold);
+  border-color: var(--gold-soft);
+}
+.badge-enter-active {
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
+}
+.badge-enter-from {
+  opacity: 0;
+  transform: scale(0.85);
+}
 .log__thinking {
   display: flex;
   align-items: center;
@@ -1091,6 +1186,15 @@ button.who:hover > span {
 .rumours p {
   color: var(--ink-3);
   margin-top: 2px;
+}
+.rumours__done-title {
+  margin-top: 10px;
+}
+.rumours__done li {
+  border-left-color: #9cc2a3;
+}
+.rumours__done b {
+  color: #2f6b3a;
 }
 .rumours__new {
   margin-left: 6px;

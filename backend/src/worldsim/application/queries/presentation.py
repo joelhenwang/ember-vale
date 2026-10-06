@@ -108,6 +108,17 @@ async def presentation(
             for hook in sorted(hooks, key=lambda h: h.created_phase_index, reverse=True)
             if heard(hook, viewer, omniscient)
         ][:6],
+        settled=[
+            api.RumourView(
+                hook_id=hook.id,
+                title=hook.title,
+                purpose=hook.ending,
+                since_index=hook.closed_phase_index or hook.created_phase_index,
+            )
+            for hook in sorted(hooks, key=lambda h: h.closed_phase_index or 0, reverse=True)
+            if hook.status == NarrativeStatus.CLOSED
+            and (omniscient or not hook.participant_ids or viewer in hook.participant_ids)
+        ][:4],
     )
 
 

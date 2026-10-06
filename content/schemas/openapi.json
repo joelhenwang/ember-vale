@@ -4024,6 +4024,13 @@
             ],
             "title": "Run State"
           },
+          "settled": {
+            "items": {
+              "$ref": "#/components/schemas/RumourView"
+            },
+            "title": "Settled",
+            "type": "array"
+          },
           "threads": {
             "items": {
               "type": "string"

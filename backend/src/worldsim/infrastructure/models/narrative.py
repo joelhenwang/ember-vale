@@ -27,6 +27,8 @@ class NarrativeHookRow(Base):
     status: Mapped[str] = mapped_column(String(16), default="proposed")
     version: Mapped[int] = mapped_column(Integer, default=0)
     created_phase_index: Mapped[int] = mapped_column(Integer, default=0)
+    ending: Mapped[str] = mapped_column(String(240), server_default="")
+    closed_phase_index: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     __table_args__ = (CheckConstraint("version >= 0", name="ck_hook_version"),)
 

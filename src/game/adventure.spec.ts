@@ -13,7 +13,9 @@ import {
   sceneFocus,
   scenesToLoad,
   suggestionIntent,
-  trimPlaceLead
+  trimPlaceLead,
+  turnChanges,
+  type Glimpse
 } from './adventure'
 
 const ME = 'me'
@@ -197,5 +199,53 @@ describe('sheet aids', () => {
     expect(isFresh(5, 7)).toBe(true)
     expect(isFresh(5, 8)).toBe(false)
     expect(isFresh(undefined, 1)).toBe(false)
+  })
+})
+
+describe('turn feedback', () => {
+  const at = (over: Partial<Glimpse>): Glimpse => ({
+    place: 'Market',
+    stamina: 80,
+    mana: 50,
+    items: [],
+    present: ['Ash'],
+    rumours: [],
+    ...over
+  })
+
+  it('names what you gained, lost, met and heard', () => {
+    const changes = turnChanges(
+      at({ items: ['Tea cup', 'Tea cup'] }),
+      at({
+        items: ['Tea cup', 'Silver locket'],
+        stamina: 70,
+        present: ['Ash', 'Nessa'],
+        rumours: ['A Market-stall Puzzle']
+      })
+    )
+    expect(changes.map((c) => [c.text, c.tone])).toEqual([
+      ['+ Silver locket', 'gain'],
+      ['− Tea cup', 'loss'],
+      ['Stamina −10', 'loss'],
+      ['Nessa arrives', 'news'],
+      ['New rumour: A Market-stall Puzzle', 'news']
+    ])
+  })
+
+  it('says where you are now instead of who came and went', () => {
+    const changes = turnChanges(at({}), at({ place: 'Hearth', present: [] }))
+    expect(changes.map((c) => c.text)).toEqual(['Now at Hearth'])
+  })
+
+  it('celebrates a settled rumour', () => {
+    const changes = turnChanges(
+      at({ rumours: ['A Market-stall Puzzle'], settled: [] }),
+      at({ rumours: [], settled: ['A Market-stall Puzzle'] })
+    )
+    expect(changes).toEqual([{ text: 'Settled: A Market-stall Puzzle', tone: 'gain' }])
+  })
+
+  it('is quiet when nothing changed', () => {
+    expect(turnChanges(at({}), at({}))).toEqual([])
   })
 })

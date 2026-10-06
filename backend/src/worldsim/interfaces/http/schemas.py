@@ -997,6 +997,8 @@ class PresentationResponse(BaseModel):
     threads: list[str] = Field(default_factory=list)
     #: Open openings this viewer has heard of (the rule characters hear by).
     rumours: list[RumourView] = Field(default_factory=list)
+    #: Recently settled ones, with their endings as purpose.
+    settled: list[RumourView] = Field(default_factory=list)
 
 
 class JobRequest(BaseModel):

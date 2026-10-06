@@ -27,6 +27,9 @@ class NarrativeHook(BaseModel):
     status: NarrativeStatus = NarrativeStatus.PROPOSED
     version: int = Field(default=0, ge=0)
     created_phase_index: int = Field(default=0, ge=0)
+    #: How it ended, once closed (one sentence, in the world's voice).
+    ending: str = Field(default="", max_length=240)
+    closed_phase_index: int | None = Field(default=None, ge=0)
 
 
 class NarrativeArc(BaseModel):

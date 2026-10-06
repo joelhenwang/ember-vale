@@ -103,6 +103,15 @@ class SpawnedNpc(BaseModel):
     location_id: LocationId
 
 
+class HookEnding(BaseModel):
+    """A running hook the recent happenings have settled, and how it ended."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    hook_id: HookId
+    ending: str = Field(min_length=1, max_length=240)
+
+
 class DirectorProposal(BaseModel):
     """One model-proposed opportunity (or an explicit no-op)."""
 
@@ -117,6 +126,8 @@ class DirectorProposal(BaseModel):
     npc: NpcSpec | None = None
     item: ItemSpec | None = None
     place: PlaceSpec | None = None
+    #: Running hooks to close, with their endings (allowed with any action).
+    resolved: list[HookEnding] = Field(default_factory=list)
 
 
 class DirectorDecision(BaseModel):
@@ -131,6 +142,8 @@ class DirectorDecision(BaseModel):
     item: PlacedItem | None = None
     place: AddedPlace | None = None
     reason: str = Field(default="", max_length=512)
+    #: Hooks closed by this decision, applied even when nothing new is accepted.
+    closed: list[HookEnding] = Field(default_factory=list)
 
 
 def should_trigger(
@@ -158,8 +171,60 @@ def validate_proposal(
     place_id: LocationId | None = None,
     places_left: int = 0,
     known_place_names: frozenset[str] = frozenset(),
+    open_hook_ids: frozenset[HookId] = frozenset(),
 ) -> DirectorDecision:
-    """Accept well-formed proposals inside privilege and budget; else reject."""
+    """Accept well-formed proposals inside privilege and budget; else reject.
+
+    Endings for running hooks are kept whatever happens to the new
+    proposal, and they free their slots for it.
+    """
+    closed = _endings(proposal, open_hook_ids)
+    decision = _validate(
+        proposal,
+        world_id,
+        known_character_ids,
+        active_hooks - len(closed),
+        active_arcs,
+        hook_id,
+        arc_id,
+        known_location_ids=known_location_ids,
+        spawns_left=spawns_left,
+        npc_id=npc_id,
+        item_id=item_id,
+        place_id=place_id,
+        places_left=places_left,
+        known_place_names=known_place_names,
+    )
+    return decision.model_copy(update={"closed": closed}) if closed else decision
+
+
+def _endings(proposal: DirectorProposal, open_hook_ids: frozenset[HookId]) -> list[HookEnding]:
+    seen: set[HookId] = set()
+    kept: list[HookEnding] = []
+    for ending in proposal.resolved:
+        if ending.hook_id in open_hook_ids and ending.hook_id not in seen:
+            seen.add(ending.hook_id)
+            kept.append(ending)
+    return kept
+
+
+def _validate(
+    proposal: DirectorProposal,
+    world_id: WorldId,
+    known_character_ids: frozenset[CharacterId],
+    active_hooks: int,
+    active_arcs: int,
+    hook_id: HookId,
+    arc_id: ArcId,
+    *,
+    known_location_ids: frozenset[LocationId],
+    spawns_left: int,
+    npc_id: CharacterId | None,
+    item_id: ItemInstanceId | None,
+    place_id: LocationId | None,
+    places_left: int,
+    known_place_names: frozenset[str],
+) -> DirectorDecision:
     if proposal.action == "noop":
         return DirectorDecision(accepted=False, reason=proposal.reason or "no-op")
     if not proposal.title.strip():

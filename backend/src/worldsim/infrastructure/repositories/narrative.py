@@ -45,6 +45,8 @@ class SqlAlchemyNarrativeRepository:
             status=NarrativeStatus(row.status),
             version=row.version,
             created_phase_index=row.created_phase_index,
+            ending=row.ending or "",
+            closed_phase_index=row.closed_phase_index,
         )
 
     def _to_arc(self, row: NarrativeArcRow) -> NarrativeArc:
@@ -72,6 +74,19 @@ class SqlAlchemyNarrativeRepository:
                 created_phase_index=hook.created_phase_index,
             )
         )
+        await self._session.flush()
+
+    async def close_hook(self, hook_id: UUID, ending: str, phase_index: int) -> None:
+        """Close an open hook with its ending; closed hooks stay closed."""
+        row = await self._session.get(NarrativeHookRow, hook_id)
+        if row is None:
+            raise missing("hook", hook_id)
+        if row.status == NarrativeStatus.CLOSED.value:
+            return
+        row.status = NarrativeStatus.CLOSED.value
+        row.ending = ending[:240]
+        row.closed_phase_index = phase_index
+        row.version = row.version + 1
         await self._session.flush()
 
     async def add_arc(self, arc: NarrativeArc) -> None:

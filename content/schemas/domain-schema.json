@@ -2340,6 +2340,29 @@
           "title": "AddedPlace",
           "type": "object"
         },
+        "HookEnding": {
+          "additionalProperties": false,
+          "description": "A running hook the recent happenings have settled, and how it ended.",
+          "properties": {
+            "ending": {
+              "maxLength": 240,
+              "minLength": 1,
+              "title": "Ending",
+              "type": "string"
+            },
+            "hook_id": {
+              "format": "uuid",
+              "title": "Hook Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "hook_id",
+            "ending"
+          ],
+          "title": "HookEnding",
+          "type": "object"
+        },
         "NarrativeArc": {
           "additionalProperties": false,
           "description": "One longer purpose spanning several phases.",
@@ -2395,11 +2418,30 @@
           "additionalProperties": false,
           "description": "One situational opening with explicit requested powers.",
           "properties": {
+            "closed_phase_index": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Closed Phase Index"
+            },
             "created_phase_index": {
               "default": 0,
               "minimum": 0,
               "title": "Created Phase Index",
               "type": "integer"
+            },
+            "ending": {
+              "default": "",
+              "maxLength": 240,
+              "title": "Ending",
+              "type": "string"
             },
             "id": {
               "format": "uuid",
@@ -2561,6 +2603,13 @@
           ],
           "default": null
         },
+        "closed": {
+          "items": {
+            "$ref": "#/$defs/HookEnding"
+          },
+          "title": "Closed",
+          "type": "array"
+        },
         "hook": {
           "anyOf": [
             {
@@ -2620,6 +2669,29 @@
     },
     "DirectorProposal": {
       "$defs": {
+        "HookEnding": {
+          "additionalProperties": false,
+          "description": "A running hook the recent happenings have settled, and how it ended.",
+          "properties": {
+            "ending": {
+              "maxLength": 240,
+              "minLength": 1,
+              "title": "Ending",
+              "type": "string"
+            },
+            "hook_id": {
+              "format": "uuid",
+              "title": "Hook Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "hook_id",
+            "ending"
+          ],
+          "title": "HookEnding",
+          "type": "object"
+        },
         "ItemSpec": {
           "additionalProperties": false,
           "description": "A one-off thing an opening leaves somewhere (a lost ledger, a locket).",
@@ -2801,6 +2873,13 @@
             "type": "string"
           },
           "title": "Requested Powers",
+          "type": "array"
+        },
+        "resolved": {
+          "items": {
+            "$ref": "#/$defs/HookEnding"
+          },
+          "title": "Resolved",
           "type": "array"
         },
         "title": {
@@ -5007,11 +5086,30 @@
       "additionalProperties": false,
       "description": "One situational opening with explicit requested powers.",
       "properties": {
+        "closed_phase_index": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Closed Phase Index"
+        },
         "created_phase_index": {
           "default": 0,
           "minimum": 0,
           "title": "Created Phase Index",
           "type": "integer"
+        },
+        "ending": {
+          "default": "",
+          "maxLength": 240,
+          "title": "Ending",
+          "type": "string"
         },
         "id": {
           "format": "uuid",

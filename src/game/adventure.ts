@@ -241,3 +241,78 @@ export function cardDrives(personality: unknown): string[] {
 export function isFresh(sinceIndex: number | undefined, nowIndex: number): boolean {
   return typeof sinceIndex === 'number' && nowIndex - sinceIndex <= 2
 }
+
+/* Turn feedback ------------------------------------------------------------ */
+
+/** What the player can see of themselves and their surroundings at one moment. */
+export interface Glimpse {
+  place: string | null
+  stamina: number | null
+  mana: number | null
+  /** Carried item names (one entry per item). */
+  items: string[]
+  /** Names of others where the player stands. */
+  present: string[]
+  /** Rumour titles heard. */
+  rumours: string[]
+  /** Rumour titles settled (closed with an ending). */
+  settled?: string[]
+}
+
+export type ChangeTone = 'gain' | 'loss' | 'news'
+
+export interface TurnChange {
+  text: string
+  tone: ChangeTone
+}
+
+function counts(names: string[]): Map<string, number> {
+  const out = new Map<string, number>()
+  for (const n of names) out.set(n, (out.get(n) ?? 0) + 1)
+  return out
+}
+
+/** The small badges after a turn: what you gained, lost, met and heard. */
+export function turnChanges(before: Glimpse, after: Glimpse): TurnChange[] {
+  const out: TurnChange[] = []
+  if (after.place && after.place !== before.place)
+    out.push({ text: `Now at ${after.place}`, tone: 'news' })
+  const was = counts(before.items)
+  const now = counts(after.items)
+  for (const [name, n] of now) {
+    const gained = n - (was.get(name) ?? 0)
+    if (gained > 0) out.push({ text: `+ ${name}${gained > 1 ? ` ×${gained}` : ''}`, tone: 'gain' })
+  }
+  for (const [name, n] of was) {
+    const lost = n - (now.get(name) ?? 0)
+    if (lost > 0) out.push({ text: `− ${name}${lost > 1 ? ` ×${lost}` : ''}`, tone: 'loss' })
+  }
+  for (const [label, a, b] of [
+    ['Stamina', before.stamina, after.stamina],
+    ['Mana', before.mana, after.mana]
+  ] as const) {
+    if (a !== null && b !== null && a !== b) {
+      out.push({
+        text: `${label} ${b > a ? '+' : '−'}${Math.abs(b - a)}`,
+        tone: b > a ? 'gain' : 'loss'
+      })
+    }
+  }
+  if (after.place === before.place) {
+    for (const name of after.present) {
+      if (!before.present.includes(name)) out.push({ text: `${name} arrives`, tone: 'news' })
+    }
+    for (const name of before.present) {
+      if (!after.present.includes(name)) out.push({ text: `${name} leaves`, tone: 'news' })
+    }
+  }
+  for (const title of after.settled ?? []) {
+    if (!(before.settled ?? []).includes(title)) {
+      out.push({ text: `Settled: ${title}`, tone: 'gain' })
+    }
+  }
+  for (const title of after.rumours) {
+    if (!before.rumours.includes(title)) out.push({ text: `New rumour: ${title}`, tone: 'news' })
+  }
+  return out
+}

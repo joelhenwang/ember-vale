@@ -598,7 +598,9 @@ def director_summary(
     )
     places = ", ".join(f"{loc.name} (id {loc.id})" for loc in locations)
     open_hooks = "; ".join(
-        f"{h.title}: {h.purpose}".strip(": ") for h in hooks if h.status != NarrativeStatus.CLOSED
+        f"{h.title} (hook_id {h.id}): {h.purpose}".strip(": ")
+        for h in hooks
+        if h.status != NarrativeStatus.CLOSED
     )
     open_arcs = "; ".join(a.title for a in arcs if a.status != NarrativeStatus.CLOSED)
     lines = [
@@ -1915,6 +1917,7 @@ class Stage1Orchestrator:
                 "place_id": str(uuid5(hook_id, "place")),
                 "places_left": places_left,
                 "place_names": [loc.name for loc in locations],
+                "open_hook_ids": [str(h.id) for h in hooks if h.status != NarrativeStatus.CLOSED],
                 **(
                     {
                         "unmapped_place": suggested[0],

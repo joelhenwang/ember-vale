@@ -655,6 +655,7 @@ export interface PresentationResponse {
   revision: number;
   rumours?: RumourView[];
   run_state?: string | null;
+  settled?: RumourView[];
   threads?: string[];
   world_id: string;
 }
