@@ -970,8 +970,11 @@ def build_narration_graph(deps: NarratorGraphDeps) -> Any:
                         state, world_id, scene_id, event_id, facts, budget, errors, repairs, None
                     )
                 continue
+            # Party narration carries combat and recruit tags: never trim it.
+            party = any(f["key"].startswith("dnd-sheet:") for f in facts)
             recap = next((f["value"] for f in facts if f["key"] == RECAP_FACT_KEY), None)
-            proposals = drop_retold(proposals, recap)
+            if not party:
+                proposals = drop_retold(proposals, recap)
             beats = stamp_beats(proposals, world_id=world_id, scene_id=scene_id, event_id=event_id)
             return _narrated(state, beats, False, "valid", errors, repairs, raw)
 
