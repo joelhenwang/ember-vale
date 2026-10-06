@@ -3,8 +3,17 @@
 A terminal app that starts the whole game for you: no commands to remember.
 
 **Start it:** double-click `Start Ember Vale.cmd` in the game folder (or run
-`./start-ember-vale.sh` on macOS/Linux). The first start builds the launcher,
-which needs [Rust](https://rustup.rs) installed once.
+`./start-ember-vale.sh` on macOS/Linux). The first start downloads the ready-made
+launcher for your computer from the newest
+[release](https://github.com/joelhenwang/ember-vale/releases/latest), checks it
+against the release's `SHA256SUMS`, and keeps it in `launcher/bin/`. Nothing to
+install. Add `update` (`Start Ember Vale.cmd update`, `./start-ember-vale.sh
+update`) to fetch the newest launcher again.
+
+Ready-made launchers: Windows x64, macOS (Apple silicon and Intel), Linux x64 and
+arm64 (static, any distribution). Without a download (offline, another
+computer type) the scripts build it from source when [Rust](https://rustup.rs) is
+installed.
 
 ## What it does
 
@@ -28,6 +37,17 @@ Where things are kept:
 
 - Backend choices: the root `.env`, edited line by line so comments survive.
 - Launcher choices: `launcher/launcher.toml` (ignored by git).
+
+## Releases
+
+`.github/workflows/launcher.yml` builds and tests the launcher on Windows, macOS
+and Linux for every change under `launcher/`. Pushing a tag publishes a release
+the start scripts download:
+
+```bash
+# bump version in launcher/Cargo.toml first
+git tag launcher-v0.2.0 && git push origin launcher-v0.2.0
+```
 
 ## Development
 

@@ -1,0 +1,91 @@
+name: Launcher
+
+# Builds the Ember Vale launcher for Windows, macOS and Linux. Every push
+# that touches launcher/ builds and tests it; a tag like `launcher-v0.2.0`
+# also publishes the binaries (with SHA-256 sums) as a GitHub release,
+# which the start scripts download.
+
+on:
+  push:
+    branches: [main]
+    paths: ["launcher/**", ".github/workflows/launcher.yml"]
+    tags: ["launcher-v*"]
+  pull_request:
+    paths: ["launcher/**", ".github/workflows/launcher.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: launcher-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.asset }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, target: x86_64-pc-windows-msvc, asset: ember-vale-launcher-windows-x64.exe, test: true }
+          - { os: macos-latest, target: aarch64-apple-darwin, asset: ember-vale-launcher-macos-arm64, test: true }
+          - { os: macos-latest, target: x86_64-apple-darwin, asset: ember-vale-launcher-macos-x64, test: false }
+          # musl: one static binary that runs on any Linux distribution.
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-musl, asset: ember-vale-launcher-linux-x64, test: true }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-musl, asset: ember-vale-launcher-linux-arm64, test: true }
+    defaults:
+      run:
+        working-directory: launcher
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: launcher
+          key: ${{ matrix.target }}
+      - name: Install musl tools
+        if: contains(matrix.target, 'musl')
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+      - name: Test
+        if: matrix.test
+        run: cargo test --target ${{ matrix.target }}
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }}
+      - name: Name the binary
+        shell: bash
+        run: |
+          mkdir -p ../dist
+          src="target/${{ matrix.target }}/release/ember-vale-launcher"
+          [ -f "$src.exe" ] && src="$src.exe"
+          cp "$src" "../dist/${{ matrix.asset }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: dist/${{ matrix.asset }}
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/launcher-v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum ember-vale-launcher-* > SHA256SUMS && cat SHA256SUMS
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" dist/* \
+            --repo "${{ github.repository }}" \
+            --title "Ember Vale launcher ${TAG#launcher-}" \
+            --notes "Double-click \`Start Ember Vale.cmd\` (Windows) or run \`./start-ember-vale.sh\` (macOS, Linux): it downloads the right launcher from here and checks it against SHA256SUMS. You can also download yours directly and put it in \`launcher/bin/\` of the game folder." \
+            --latest

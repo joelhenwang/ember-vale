@@ -16,3 +16,4 @@ content/assets/generated/
 # Launcher build output and per-player choices
 launcher/target/
 launcher/launcher.toml
+launcher/bin/

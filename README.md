@@ -8,7 +8,8 @@ decor (compass rose, storyteller's desk, mountain ridge).
 ## Play (the easy way)
 
 Double-click **`Start Ember Vale.cmd`** (Windows) or run `./start-ember-vale.sh`
-(macOS/Linux). The launcher checks your PC (Docker, Node.js, settings, free
+(macOS/Linux). The first start downloads the ready-made launcher for your computer
+(Windows, macOS, Linux). The launcher checks your PC (Docker, Node.js, settings, free
 ports and memory), offers to fix what's missing, lets you pick the
 storyteller AI and options, then starts everything and opens the game. See
 [launcher/README.md](launcher/README.md).
