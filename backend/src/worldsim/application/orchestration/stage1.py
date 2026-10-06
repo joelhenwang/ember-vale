@@ -662,6 +662,9 @@ async def _recent_happenings(uow: Any, world_id: UUID) -> tuple[list[str], int, 
     return lines, _streak(idle_by_index), _streak(talk_by_index), said
 
 
+#: What the director reads when nothing is open (a long session sat 23 beats without a lead).
+NO_OPEN_HOOKS = "none (nobody has a lead to follow: propose one)"
+
 #: Lines of story-so-far the director gets from before its recent window.
 STORY_SO_FAR_LINES = 6
 #: How far back (in events) the story-so-far looks.
@@ -764,7 +767,7 @@ def director_summary(
         f"Phase {index} ({phase_label(index)}).",
         f"Characters: {cast or 'none'}.",
         f"Places: {places or 'none'}.",
-        f"Open hooks: {open_hooks or 'none'}.",
+        f"Open hooks: {open_hooks or NO_OPEN_HOOKS}.",
         f"Open arcs: {open_arcs or 'none'}.",
         *(["Settled so far:", *settled] if settled else []),
         *(
@@ -1324,13 +1327,19 @@ class Stage1Orchestrator:
         self._fire("after_scenes_committed")
         await self._set_state(run_id, PhaseRunState.COMPLETED)
         if index % PHASES_PER_DAY == PHASES_PER_DAY - 1:
-            with _timed(timings, "day_end"):
-                await self._summarize_day(
-                    world_id, run_id, index, index // PHASES_PER_DAY + 1, runtime
-                )
-                await self._promote_memories(
-                    world_id, run_id, index, index // PHASES_PER_DAY + 1, runtime
-                )
+
+            async def _day_end() -> None:
+                day = index // PHASES_PER_DAY + 1
+                await self._summarize_day(world_id, run_id, index, day, runtime)
+                await self._promote_memories(world_id, run_id, index, day, runtime)
+
+            if self._narration is not None:
+                # Midnight turns took 26-36 s with this inline; the next
+                # beat waits for it, as it does for narration.
+                self._narration.start(world_id, _day_end())
+            else:
+                with _timed(timings, "day_end"):
+                    await _day_end()
         timings["total"] = int((time.monotonic() - phase_started) * 1000)
         _phase_log.info(
             "phase %s timings %s",
@@ -1898,16 +1907,18 @@ class Stage1Orchestrator:
                 for c in await uow.characters.list_for_world(world_id)
                 if c.life_status == LifeStatus.ALIVE
             ]
-        written = 0
-        for character in sorted(characters, key=lambda c: c.id.hex):
+
+        async def _one(character: Character) -> bool:
             try:
-                if await self._summarize_owner(
+                return await self._summarize_owner(
                     world_id, run_id, character, day, start, end, runtime
-                ):
-                    written += 1
+                )
             except Exception:
-                continue
-        return written
+                return False
+
+        # Owners are independent (own sources, own task): side by side.
+        done = await asyncio.gather(*(_one(c) for c in sorted(characters, key=lambda c: c.id.hex)))
+        return sum(done)
 
     async def _summarize_owner(
         self,
