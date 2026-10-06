@@ -8,6 +8,7 @@ import {
   getRole,
   getSceneNarration,
   getStory,
+  openStory,
   getSuggestions,
   listItems,
   type CallOptions
@@ -34,6 +35,7 @@ import { beatStageLabel, mergeChronicle } from '../game/observatory'
 export interface AdventureApi {
   getRole(worldId: string): Promise<RoleGrantView | null>
   getStory(worldId: string, opts: CallOptions): Promise<StoryDetail>
+  openStory(worldId: string, opts: CallOptions): Promise<StoryDetail>
   getMap(worldId: string, opts: CallOptions): Promise<MapResponse>
   getPresentation(worldId: string, opts: CallOptions): Promise<PresentationResponse>
   getChronicle(worldId: string, after: number, opts: CallOptions): Promise<ChronicleResponse>
@@ -52,6 +54,7 @@ export interface AdventureApi {
 const LIVE_API: AdventureApi = {
   getRole: (id) => getRole(id),
   getStory: (id, o) => getStory(id, o),
+  openStory: (id, o) => openStory(id, o),
   getMap: (id, o) => getMap(id, o),
   getPresentation: (id, o) => getPresentation(id, o),
   getChronicle: (id, after, o) => getChronicle(id, after, o),
@@ -244,8 +247,9 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
     } catch {
       grant.value = null
     }
+    // Opening records the visit, so the shelf and home list it as just played.
     const [story, map] = await Promise.allSettled([
-      api.getStory(worldId.value, opts.value),
+      api.openStory(worldId.value, opts.value),
       api.getMap(worldId.value, opts.value)
     ])
     title.value = story.status === 'fulfilled' ? story.value.title : null

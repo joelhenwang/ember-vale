@@ -28,7 +28,7 @@ export function toStoryRecord(detail: StoryDetail, world: ResolvedWorld): StoryR
     timeOfDay: phaseToTimeOfDay(detail.phase),
     blurb: world.description || `Day ${detail.day} · ${phaseLabel(detail.phase)}`,
     cast: [],
-    lastPlayedAt: minutesSince(detail.last_played_at),
+    lastPlayedAt: playedAtMinutes(detail.last_played_at),
     lastPlayedLabel: lastPlayedLabel(detail.last_played_at),
     version: detail.metadata_version
   }
@@ -38,6 +38,17 @@ export function toStoryRecord(detail: StoryDetail, world: ResolvedWorld): StoryR
  * Minutes since the ISO timestamp; -1 when never opened so shelf sorts put
  * untouched stories last. Mirrors the shelf's relative-epoch convention.
  */
+/**
+ * When the story was last played, in minutes since the epoch: the shelf
+ * sorts larger-is-more-recent. Never opened is -1, so it sorts last.
+ * (Minutes *since* were used here once, which put the oldest story first.)
+ */
+export function playedAtMinutes(iso: string | null | undefined): number {
+  if (!iso) return -1
+  const then = Date.parse(iso)
+  return Number.isNaN(then) ? -1 : Math.floor(then / 60000)
+}
+
 export function minutesSince(iso: string | null | undefined, nowMs?: number): number {
   if (!iso) return -1
   const then = Date.parse(iso)

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { StoryDetail } from '../../content/clients/worldsim'
-import { minutesSince, sortStoriesNewest, toStoryRecord } from './records'
+import { minutesSince, playedAtMinutes, sortStoriesNewest, toStoryRecord } from './records'
+import { filterStories } from './filters'
 
 const DETAIL: StoryDetail = {
   absolute_index: 1,
@@ -53,5 +54,24 @@ describe('record mapping', () => {
     expect(minutesSince('2026-09-20T11:30:00Z', now)).toBe(30)
     expect(minutesSince(null, now)).toBe(-1)
     expect(minutesSince('nope', now)).toBe(-1)
+  })
+})
+
+describe('shelf order from real records', () => {
+  it('sorts the most recently played story first', () => {
+    const at = (iso: string | null) => ({
+      title: iso ?? 'never',
+      world: '',
+      blurb: '',
+      status: 'in-progress' as const,
+      lastPlayedAt: playedAtMinutes(iso)
+    })
+    const shelf = [at('2026-09-23T10:00:00Z'), at(null), at('2026-10-06T04:29:00Z')]
+    const sorted = filterStories(shelf, { search: '', chip: 'all', sort: 'recent' })
+    expect(sorted.map((s) => s.title)).toEqual([
+      '2026-10-06T04:29:00Z',
+      '2026-09-23T10:00:00Z',
+      'never'
+    ])
   })
 })
