@@ -54,8 +54,9 @@ def _proposal(**fields: Any) -> DirectorProposal:
 def test_overlooks_place_matches_the_place_noun() -> None:
     assert overlooks_place(_proposal(), "Old Mill") is True
     assert overlooks_place(_proposal(title="Mills", purpose=""), "Old Mill") is True
-    # "miller" alone is a person, not the place.
-    assert overlooks_place(_proposal(purpose="Ask the miller."), "Old Mill") is False
+    # The one who works the place counts too (scorecard-008: "The Miller's Debt").
+    assert overlooks_place(_proposal(title="The Miller's Debt", purpose=""), "Old Mill") is True
+    assert overlooks_place(_proposal(title="Millstones", purpose=""), "Old Mill") is False
     assert overlooks_place(_proposal(requested_powers=["new_location"]), "Old Mill") is False
     assert overlooks_place(_proposal(action="noop"), "Old Mill") is False
     assert overlooks_place(_proposal(), "Old Forge") is False

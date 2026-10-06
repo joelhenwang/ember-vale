@@ -1,0 +1,77 @@
+{
+  "meta": {
+    "commit": "f795356",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T02:55:57+00:00",
+    "wall_seconds": 353,
+    "est_usd_total": 0.0291536904,
+    "scenarios": [
+      "named_place"
+    ]
+  },
+  "results": {
+    "named_place": {
+      "ids": {
+        "world": "35a54c64-0182-452e-bd51-d403a04b5095",
+        "place:Hearth": "031bee9d-89eb-4eed-a260-635c3c9112d3",
+        "place:Market": "5f7ec86f-5b9d-4800-8cbe-6bb27d25921b",
+        "wren": "f84e9ace-7718-40e3-96ca-c3b052c2c810",
+        "ash": "08a506c2-ea79-4b88-8c01-54ef0c2025ef"
+      },
+      "beat_seconds": [
+        49.625,
+        50.10999999998603,
+        22.31299999996554,
+        71.06299999996554,
+        63.061999999918044,
+        44.03099999995902,
+        29.0,
+        22.89000000001397
+      ],
+      "error": null,
+      "score": {
+        "calls": 89,
+        "failed_calls": 0,
+        "repairs": 7,
+        "repairs_by_role": {
+          "director": 3,
+          "narrator": 2,
+          "resolver": 2
+        },
+        "repair_rate": 0.07865168539325842,
+        "est_usd": 0.0291536904,
+        "action_mix": {
+          "wait": 3,
+          "communicate": 16,
+          "interact": 1,
+          "move": 3
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 3,
+        "moves_tried": 3,
+        "moves_done": 3,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "The Miller's Debt",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Hearth",
+          "Corvin": "Hearth"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": false,
+        "goal_detail": "no mill was added"
+      }
+    }
+  }
+}

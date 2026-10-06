@@ -1,0 +1,75 @@
+{
+  "meta": {
+    "commit": "f795356",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T02:49:58+00:00",
+    "wall_seconds": 238,
+    "est_usd_total": 0.0159114534,
+    "scenarios": [
+      "named_place"
+    ]
+  },
+  "results": {
+    "named_place": {
+      "ids": {
+        "world": "62ea0278-762b-4bb3-a66c-3d9213c6f8ae",
+        "place:Hearth": "170125f6-b147-416b-9718-16f7abcc8e33",
+        "place:Market": "3e57708c-61f4-449e-8635-e0ea8ba2df52",
+        "wren": "05f76488-eee0-403e-bf90-6f88ee66d79d",
+        "ash": "4b410c7e-28b1-44dd-a46c-1d99cf157312"
+      },
+      "beat_seconds": [
+        66.875,
+        30.20299999997951,
+        14.140999999945052,
+        29.85999999998603,
+        18.31299999996554,
+        16.125,
+        45.70299999997951,
+        16.68700000003446
+      ],
+      "error": null,
+      "score": {
+        "calls": 51,
+        "failed_calls": 0,
+        "repairs": 2,
+        "repairs_by_role": {
+          "resolver": 1,
+          "narrator": 1
+        },
+        "repair_rate": 0.0392156862745098,
+        "est_usd": 0.0159114534,
+        "action_mix": {
+          "communicate": 7,
+          "move": 5,
+          "wait": 4
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 5,
+        "moves_done": 5,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "The Old Mill's Millstone",
+            "powers": "new_location"
+          }
+        ],
+        "final_places": {
+          "Wren": "Mill",
+          "Ash": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Mill"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "added Mill; there at the end: Wren"
+      }
+    }
+  }
+}

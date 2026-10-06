@@ -128,8 +128,11 @@ def overlooks_place(proposal: DirectorProposal, place: str) -> bool:
     words = place.split()
     if not words:
         return False
+    # The place itself or the one who works it ("mill", "miller's"):
+    # scorecard-008 answered the mill with "The Miller's Debt".
     noun = re.escape(words[-1].lower())
-    return re.search(rf"\b{noun}s?\b", f"{proposal.title} {proposal.purpose}".lower()) is not None
+    text = f"{proposal.title} {proposal.purpose}".lower()
+    return re.search(rf"\b{noun}(?:s|er|ers)?\b", text) is not None
 
 
 def _place_feedback(state: DirectorState) -> str:

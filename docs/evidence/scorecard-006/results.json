@@ -1,0 +1,93 @@
+{
+  "meta": {
+    "commit": "f795356",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T02:45:55+00:00",
+    "wall_seconds": 364,
+    "est_usd_total": 0.0264278298,
+    "scenarios": [
+      "named_place"
+    ]
+  },
+  "results": {
+    "named_place": {
+      "ids": {
+        "world": "a177508a-b0f0-4f7e-8124-0c6d0730abdf",
+        "place:Hearth": "a8f2931a-bb12-43ca-b602-d17f520ede28",
+        "place:Market": "4ffa4788-2817-41b0-a27f-3d1d847414f9",
+        "wren": "d75049ba-f6cb-401e-8d3c-a050e2250677",
+        "ash": "1a00c486-4f09-42d3-8ec1-ba3d25d87b79"
+      },
+      "beat_seconds": [
+        33.93799999996554,
+        42.04700000002049,
+        42.73400000005495,
+        54.60900000005495,
+        53.89000000001397,
+        48.56200000003446,
+        58.65599999995902,
+        29.39000000001397
+      ],
+      "error": null,
+      "score": {
+        "calls": 85,
+        "failed_calls": 0,
+        "repairs": 5,
+        "repairs_by_role": {
+          "director": 1,
+          "resolver": 3,
+          "narrator": 1
+        },
+        "repair_rate": 0.058823529411764705,
+        "est_usd": 0.0264278298,
+        "action_mix": {
+          "observe": 6,
+          "move": 5,
+          "wait": 2,
+          "communicate": 7,
+          "interact": 3
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 5,
+        "moves_done": 5,
+        "interact_success": 3,
+        "hooks": [
+          {
+            "title": "A Path to the Old Mill",
+            "powers": "new_location,spawn_npc"
+          },
+          {
+            "title": "The Forest Path Beckons",
+            "powers": "place_item"
+          },
+          {
+            "title": "The Path Through the Forest",
+            "powers": "new_location"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Old Mill",
+          "Bram": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Old Mill",
+          "Forest"
+        ],
+        "items": {
+          "Lost Crate": {
+            "holder": null,
+            "place": "Market"
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "added Old Mill; there at the end: Ash"
+      }
+    }
+  }
+}
