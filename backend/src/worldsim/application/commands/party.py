@@ -129,6 +129,7 @@ async def create_character(
     appearance: str = "",
     personality: str = "",
     background: str = "",
+    pronouns: str = "",
 ) -> Character:
     """Create a simulation character with its identity card, atomically."""
     location = await uow.locations.get(location_id)
@@ -153,6 +154,7 @@ async def create_character(
         appearance=appearance,
         personality=personality,
         background=background,
+        pronouns=pronouns,
     )
     await uow.characters.add_identity(character_id, world_id, name)
     await uow.characters.add_state(character)

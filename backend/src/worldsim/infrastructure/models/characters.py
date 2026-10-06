@@ -26,6 +26,9 @@ class CharacterRow(Base):
 
 class CharacterCardVersionRow(Base):
     __tablename__ = "character_card_version"
+    # Inserts never read the pronouns default back (see the repository's
+    # add_card), so they also run against schemas from before that column.
+    __mapper_args__ = {"eager_defaults": False}
 
     id: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
@@ -40,6 +43,7 @@ class CharacterCardVersionRow(Base):
     appearance: Mapped[str] = mapped_column(String(2000), default="")
     personality: Mapped[str] = mapped_column(String(2000), default="")
     background: Mapped[str] = mapped_column(String(2000), default="")
+    pronouns: Mapped[str] = mapped_column(String(40), server_default="")
 
     __table_args__ = (
         CheckConstraint("version >= 1", name="ck_card_version"),

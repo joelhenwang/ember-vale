@@ -23,6 +23,8 @@ class CharacterCard(BaseModel):
     appearance: str = Field(default="", max_length=2000)
     personality: str = Field(default="", max_length=2000)
     background: str = Field(default="", max_length=2000)
+    #: How to refer to the character ("she/her", "they/them"); empty = unstated.
+    pronouns: str = Field(default="", max_length=40)
     version: int = Field(default=1, ge=1)
 
 

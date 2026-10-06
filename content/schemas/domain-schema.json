@@ -1217,6 +1217,12 @@
           "title": "Personality",
           "type": "string"
         },
+        "pronouns": {
+          "default": "",
+          "maxLength": 40,
+          "title": "Pronouns",
+          "type": "string"
+        },
         "version": {
           "default": 1,
           "minimum": 1,
@@ -2520,6 +2526,12 @@
               "minLength": 1,
               "title": "Name",
               "type": "string"
+            },
+            "pronouns": {
+              "default": "",
+              "maxLength": 40,
+              "title": "Pronouns",
+              "type": "string"
             }
           },
           "required": [
@@ -2671,6 +2683,12 @@
               "maxLength": 64,
               "minLength": 1,
               "title": "Name",
+              "type": "string"
+            },
+            "pronouns": {
+              "default": "",
+              "maxLength": 40,
+              "title": "Pronouns",
               "type": "string"
             }
           },
@@ -6151,6 +6169,19 @@
               ],
               "default": null,
               "title": "Portrait Asset Id"
+            },
+            "pronouns": {
+              "anyOf": [
+                {
+                  "maxLength": 40,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Pronouns"
             },
             "starting_location_key": {
               "anyOf": [

@@ -100,6 +100,7 @@ function prevString(prev: Record<string, unknown>, key: string): string {
 export interface CharacterServerFields {
   personality?: string
   background?: string
+  pronouns?: string
 }
 
 /** Pack the character form, emitting only keys that differ from `prev`. */
@@ -124,6 +125,8 @@ export function packCharacter(
   const out: CharacterServerFields = {}
   if (personality !== prevString(prev, 'personality')) out.personality = personality
   if (background !== prevString(prev, 'background')) out.background = background
+  const pronouns = draft.pronouns.trim()
+  if (pronouns !== prevString(prev, 'pronouns')) out.pronouns = pronouns
   return out
 }
 
@@ -154,6 +157,7 @@ export function unpackCharacter(fields: Record<string, unknown>): Partial<Charac
     out.secretFear = s.values['Secret fear'] ?? ''
     out.backgroundExtra = s.rest
   }
+  if (typeof fields['pronouns'] === 'string') out.pronouns = fields['pronouns']
   return out
 }
 

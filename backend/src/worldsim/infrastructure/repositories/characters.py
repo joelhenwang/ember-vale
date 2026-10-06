@@ -67,17 +67,20 @@ class SqlAlchemyCharacterRepository:
         await self._session.flush()
 
     async def add_card(self, card: CharacterCard) -> None:
-        self._session.add(
-            CharacterCardVersionRow(
-                id=card.id,
-                character_id=card.character_id,
-                version=card.version,
-                name=card.name,
-                appearance=card.appearance,
-                personality=card.personality,
-                background=card.background,
-            )
+        row = CharacterCardVersionRow(
+            id=card.id,
+            character_id=card.character_id,
+            version=card.version,
+            name=card.name,
+            appearance=card.appearance,
+            personality=card.personality,
+            background=card.background,
         )
+        # Unstated pronouns are left to the column default, so the insert
+        # matches cards written before the column existed.
+        if card.pronouns:
+            row.pronouns = card.pronouns
+        self._session.add(row)
         await self._session.flush()
 
     async def get_card(self, character_id: UUID, version: int) -> CharacterCard:
@@ -98,6 +101,7 @@ class SqlAlchemyCharacterRepository:
             appearance=row.appearance,
             personality=row.personality,
             background=row.background,
+            pronouns=row.pronouns,
             version=row.version,
         )
 

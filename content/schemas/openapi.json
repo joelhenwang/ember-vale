@@ -773,6 +773,12 @@
             "title": "Personality",
             "type": "string"
           },
+          "pronouns": {
+            "default": "",
+            "maxLength": 40,
+            "title": "Pronouns",
+            "type": "string"
+          },
           "world_id": {
             "format": "uuid",
             "title": "World Id",

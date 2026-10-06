@@ -132,6 +132,7 @@ async def _spawn(uow: UnitOfWork, world_id: WorldId, npc: SpawnedNpc) -> None:
             character_id=npc.id,
             name=npc.name,
             personality=npc.description,
+            pronouns=npc.pronouns,
             version=1,
         )
     )

@@ -75,6 +75,7 @@ onMounted(() => {
         'exampleLine',
         'boundaries',
         'secretFear',
+        'pronouns',
         'presetName',
         'personalityExtra',
         'backgroundExtra'
@@ -513,6 +514,15 @@ function suggest(): void {
             <h2 class="card__title"><IconBook :size="19" /> How they speak</h2>
           </header>
           <div class="grid2">
+            <div>
+              <label class="ev-field-label" for="c-pronouns">Pronouns</label>
+              <input
+                id="c-pronouns"
+                v-model="draft.pronouns"
+                class="ev-input"
+                maxlength="40"
+                placeholder="she/her, he/him, they/them… (leave empty if unstated)" />
+            </div>
             <div>
               <span class="ev-field-label">Speaking style</span>
               <ChipEditor v-model="draft.styleTags" />

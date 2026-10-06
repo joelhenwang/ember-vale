@@ -126,6 +126,9 @@ def _fact_view(raw: Any) -> dict[str, str]:
     speaker_name = raw.get("speaker_name")
     if speaker_name:
         view["speaker_name"] = str(speaker_name)
+    pronouns = raw.get("speaker_pronouns")
+    if pronouns:
+        view["speaker_pronouns"] = str(pronouns)
     return view
 
 
@@ -142,7 +145,9 @@ def _speaker_roster(visible_facts: list[dict[str, str]]) -> list[str]:
         name = fact.get("speaker_name")
         if speaker and name and speaker not in seen:
             seen.add(speaker)
-            entries.append(f"- {name} (id: {speaker})")
+            pronouns = fact.get("speaker_pronouns")
+            stated = f"{pronouns}, " if pronouns else ""
+            entries.append(f"- {name} ({stated}id: {speaker})")
     if not entries:
         return []
     return ["Speakers (use these exact ids when setting speaker_id):", *entries]

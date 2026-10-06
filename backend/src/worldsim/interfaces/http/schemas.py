@@ -890,6 +890,7 @@ class CharacterCreateRequest(BaseModel):
     appearance: str = Field(default="", max_length=2000)
     personality: str = Field(default="", max_length=2000)
     background: str = Field(default="", max_length=2000)
+    pronouns: str = Field(default="", max_length=40)
 
 
 class PartyLinkRequest(BaseModel):

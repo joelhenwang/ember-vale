@@ -304,6 +304,7 @@ async def _instantiate(
                 appearance=preset.appearance or "",
                 personality=preset.personality or "",
                 background=preset.background or "",
+                pronouns=preset.pronouns or "",
                 version=1,
             )
         )

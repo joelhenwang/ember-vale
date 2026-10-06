@@ -185,6 +185,7 @@ async def get_character(character_id: UUID, request: Request) -> api.CharacterDe
                 "appearance": card_row.appearance,
                 "personality": card_row.personality,
                 "background": card_row.background,
+                "pronouns": card_row.pronouns,
                 "version": card_row.version,
             }
             detail_state = {
@@ -461,6 +462,7 @@ async def create_character_view(
             appearance=body.appearance,
             personality=body.personality,
             background=body.background,
+            pronouns=body.pronouns,
         )
     return api.CharacterSummary(
         id=character.id,

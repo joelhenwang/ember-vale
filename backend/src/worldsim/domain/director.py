@@ -64,6 +64,7 @@ class NpcSpec(BaseModel):
 
     name: str = Field(min_length=1, max_length=64)
     description: str = Field(default="", max_length=600)
+    pronouns: str = Field(default="", max_length=40)
     #: Left out: the place this same proposal adds.
     location_id: LocationId | None = None
 
@@ -98,6 +99,7 @@ class SpawnedNpc(BaseModel):
     id: CharacterId
     name: str = Field(min_length=1, max_length=64)
     description: str = Field(default="", max_length=600)
+    pronouns: str = Field(default="", max_length=40)
     location_id: LocationId
 
 

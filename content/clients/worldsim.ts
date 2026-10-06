@@ -562,6 +562,7 @@ export interface CharacterCreateRequest {
   location_id: string;
   name: string;
   personality?: string;
+  pronouns?: string;
   world_id: string;
 }
 

@@ -68,6 +68,8 @@ export interface CharacterDraft {
   exampleLine: string
   boundaries: string
   secretFear: string
+  /** How to refer to them ("she/her", "they/them"); empty = unstated. */
+  pronouns: string
   appearanceSaved: boolean
   /**
    * Name for first publication. The server requires it at creation, but
@@ -131,6 +133,7 @@ const blankCharacter = (): CharacterDraft => ({
   exampleLine: '',
   boundaries: '',
   secretFear: '',
+  pronouns: '',
   appearanceSaved: false,
   presetName: '',
   personalityExtra: '',
@@ -173,6 +176,7 @@ export function ensureCharDraft(id: string): CharacterDraft {
         exampleLine: 'I said I knew the road. I never said it was a good one.',
         boundaries: '',
         secretFear: '',
+        pronouns: '',
         appearanceSaved: false,
         presetName: '',
         personalityExtra: '',

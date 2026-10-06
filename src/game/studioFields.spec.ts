@@ -26,6 +26,7 @@ const charDraft: CharacterDraft = {
   exampleLine: 'I never said it was a good road.',
   boundaries: 'Will not lie for anyone.',
   secretFear: 'Being forgotten.',
+  pronouns: '',
   appearanceSaved: false,
   presetName: '',
   personalityExtra: '',
@@ -103,6 +104,17 @@ describe('studio field bridge', () => {
       personalityExtra: '',
       backgroundExtra: ''
     })
+  })
+
+  it('packs stated pronouns as their own field and restores them', () => {
+    const packed = packCharacter({ ...charDraft, pronouns: ' she/her ' })
+    expect(packed.pronouns).toBe('she/her')
+    expect(unpackCharacter(packed as Record<string, unknown>).pronouns).toBe('she/her')
+    // Unchanged pronouns are not resent; clearing them sends an empty value.
+    expect(
+      packCharacter({ ...charDraft, pronouns: 'she/her' }, packed as Record<string, unknown>)
+    ).not.toHaveProperty('pronouns')
+    expect(packCharacter(charDraft, packed as Record<string, unknown>).pronouns).toBe('')
   })
 
   it('round-trips multi-line prose via continuation lines', () => {

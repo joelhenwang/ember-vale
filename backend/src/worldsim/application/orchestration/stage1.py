@@ -116,7 +116,7 @@ from worldsim.application.transactions.canonical import (
 from worldsim.application.transactions.scenes import build_scene_commit, observation_spec
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.activities import Activity, effective_progress
-from worldsim.domain.characters import Character
+from worldsim.domain.characters import Character, CharacterCard
 from worldsim.domain.commands import (
     ActionIntent,
     AppealAction,
@@ -355,12 +355,34 @@ def item_line(item: ItemInstance) -> str:
     return f"{item_label(item)}{count}{detail} (item_id {item.id})"
 
 
+def _with_pronouns(character_id: UUID, pronouns: Mapping[UUID, str] | None) -> str:
+    stated = (pronouns or {}).get(character_id)
+    return f"{stated}, " if stated else ""
+
+
+def identity_text(card: CharacterCard) -> str:
+    """A character's card as their own identity line, pronouns after the name."""
+    named = f"{card.name} ({card.pronouns})" if card.pronouns else card.name
+    return f"{named}. {card.appearance} {card.personality} {card.background}".strip()
+
+
+async def _pronouns_of(uow: Any, characters: Sequence[Character]) -> dict[UUID, str]:
+    """Stated pronouns of these characters (unstated ones are left out)."""
+    found: dict[UUID, str] = {}
+    for character in characters:
+        card = await uow.characters.get_card(character.id, character.card_version)
+        if card.pronouns:
+            found[character.id] = card.pronouns
+    return found
+
+
 def surroundings_text(
     place: Location,
     place_names: Mapping[UUID, str],
     characters: Sequence[Character],
     viewer_id: UUID,
     items_here: Sequence[ItemInstance] = (),
+    pronouns: Mapping[UUID, str] | None = None,
 ) -> str:
     """What a character perceives where they stand: the place, its routes
     by name and id, and who else is visibly present (living, same place).
@@ -375,7 +397,7 @@ def surroundings_text(
         for r in place.routes
     )
     present = ", ".join(
-        f"{c.name} (character_id {c.id})"
+        f"{c.name} ({_with_pronouns(c.id, pronouns)}character_id {c.id})"
         for c in sorted(characters, key=lambda c: c.id.hex)
         if c.id != viewer_id and c.location_id == place.id and c.life_status == LifeStatus.ALIVE
     )
@@ -2134,6 +2156,10 @@ class Stage1Orchestrator:
             carried = await uow.inventory.list_for_owner(world_id, character.id)
             everyone = await uow.characters.list_for_world(world_id)
             place_names = {loc.id: loc.name for loc in await uow.locations.list_for_world(world_id)}
+            pronouns = await _pronouns_of(
+                uow,
+                [c for c in everyone if c.location_id == place.id and c.id != character.id],
+            )
         names = {c.id: c.name for c in everyone}
         candidates = [
             SourceCandidate(
@@ -2141,16 +2167,16 @@ class Stage1Orchestrator:
                 data_class="identity",
                 visibility=Visibility.PRIVATE,
                 owner_id=character.id,
-                text=(
-                    f"{card.name}. {card.appearance} {card.personality} {card.background}".strip()
-                ),
+                text=identity_text(card),
                 score=3.0,
             ),
             SourceCandidate(
                 source_id=f"place:{place.id}",
                 data_class="surroundings",
                 visibility=Visibility.PUBLIC,
-                text=surroundings_text(place, place_names, everyone, character.id, items_here),
+                text=surroundings_text(
+                    place, place_names, everyone, character.id, items_here, pronouns
+                ),
                 score=2.0,
             ),
             SourceCandidate(
@@ -2927,6 +2953,12 @@ class Stage1Orchestrator:
         # own speech: dialogue-eligible like quoted reactions.
         facts.extend(attempt_speech_facts(scene_intents, names, participants))
         facts.extend(communication_facts(scene_reactions, names, participants))
+        async with self._factory() as uow:
+            speaker_pronouns = await _pronouns_of(uow, characters)
+        for fact in facts:
+            speaker = fact.get("speaker")
+            if speaker and UUID(str(speaker)) in speaker_pronouns:
+                fact["speaker_pronouns"] = speaker_pronouns[UUID(str(speaker))]
         dnd_context: str | None = None
         dnd_sources: list[ManifestSource] = []
         if roster:

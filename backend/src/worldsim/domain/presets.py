@@ -57,6 +57,7 @@ class CharacterPresetPayload(BaseModel):
     appearance: str | None = Field(default=None, max_length=2000)
     personality: str | None = Field(default=None, max_length=2000)
     background: str | None = Field(default=None, max_length=4000)
+    pronouns: str | None = Field(default=None, max_length=40)
     portrait_asset_id: str | None = Field(default=None, max_length=128)
     tags: list[str] = Field(default_factory=list, max_length=16)
     starting_location_key: str | None = Field(default=None, max_length=64)

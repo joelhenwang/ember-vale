@@ -93,6 +93,7 @@ class SeedCard(BaseModel):
     appearance: str = ""
     personality: str = ""
     background: str = ""
+    pronouns: str = Field(default="", max_length=40)
 
 
 class SeedCharState(BaseModel):
@@ -334,6 +335,7 @@ class SeedService:
                         appearance=actor.card.appearance,
                         personality=actor.card.personality,
                         background=actor.card.background,
+                        pronouns=actor.card.pronouns,
                         version=1,
                     )
                 )
