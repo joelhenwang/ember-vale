@@ -100,6 +100,19 @@ class MemoryRecordedEffect(EffectBase):
     text: str = Field(min_length=1, max_length=2000)
 
 
+class ItemFoundEffect(EffectBase):
+    """A thing a successful attempt got its actor: the pouch, a key, a coin.
+
+    The resolver may grant one per scene, only to the author of an attempt
+    that succeeded; it lands in that character's inventory.
+    """
+
+    effect_type: Literal[EffectType.ITEM_FOUND] = EffectType.ITEM_FOUND
+    owner_character_id: UUID
+    name: str = Field(min_length=1, max_length=64)
+    description: str = Field(default="", max_length=240)
+
+
 DomainEffect = Annotated[
     AdvanceClockEffect
     | MoveEntityEffect
@@ -107,6 +120,7 @@ DomainEffect = Annotated[
     | ObservationRecordedEffect
     | MemoryRecordedEffect
     | SkillProgressEffect
-    | DeityOverrideEffect,
+    | DeityOverrideEffect
+    | ItemFoundEffect,
     Field(discriminator="effect_type"),
 ]

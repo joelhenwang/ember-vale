@@ -13,7 +13,7 @@ import json
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Protocol
-from uuid import UUID, uuid4
+from uuid import UUID, uuid4, uuid5
 
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.characters import Character
@@ -21,6 +21,7 @@ from worldsim.domain.effects import (
     AdvanceClockEffect,
     DeityOverrideEffect,
     DomainEffect,
+    ItemFoundEffect,
     MoveEntityEffect,
     ResourceAdjustedEffect,
     SkillProgressEffect,
@@ -41,6 +42,7 @@ from worldsim.domain.memory import memory_hash, observation_hash
 from worldsim.domain.perception import Observation, ObservationFact, RecentMemory
 from worldsim.domain.progress import (
     CharacterSkill,
+    ItemInstance,
     TrainingSession,
     fold_progress,
     session_gain,
@@ -298,6 +300,18 @@ class CanonicalTransaction:
                 clock[target] = effect
             elif isinstance(effect, SkillProgressEffect):
                 await self._progress_skill(uow, request, effect)
+            elif isinstance(effect, ItemFoundEffect):
+                await uow.inventory.add_item(
+                    ItemInstance(
+                        # Stable per commit: a replayed command finds the same thing.
+                        id=uuid5(request.command_id, f"found:{effect.owner_character_id}"),
+                        world_id=request.world_id,
+                        item_key="found_item",
+                        owner_id=effect.owner_character_id,
+                        name=effect.name.strip(),
+                        description=effect.description.strip() or None,
+                    )
+                )
             elif isinstance(effect, DeityOverrideEffect):
                 target = _primary_target(effect, request.world_id)
                 current = characters.get(target)

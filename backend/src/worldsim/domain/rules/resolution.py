@@ -50,6 +50,7 @@ STAGE1_FEASIBLE_EFFECTS = frozenset(
         EffectType.RECORD_OBSERVATION,
         EffectType.RECORD_MEMORY,
         EffectType.RESOURCE_ADJUSTED,
+        EffectType.ITEM_FOUND,
     }
 )
 

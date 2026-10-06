@@ -41,7 +41,7 @@ from worldsim.application.ports.model_gateway import (
     ModelUnavailableError,
 )
 from worldsim.domain.characters import Character
-from worldsim.domain.commands import MoveAction
+from worldsim.domain.commands import InteractAction, MoveAction
 from worldsim.domain.effects import MoveEntityEffect
 from worldsim.domain.enums import ResolutionOutcome, ResolverKind
 from worldsim.domain.ids import derive_resolution_id
@@ -59,7 +59,7 @@ from worldsim.domain.scenes import Intent, Resolution
 from worldsim.domain.world import Location, World
 
 #: Versioned resolver prompt file.
-RESOLVER_PROMPT_VERSION = "resolver.v2"
+RESOLVER_PROMPT_VERSION = "resolver.v3"
 
 _PROPOSAL_ADAPTER: TypeAdapter[ResolverProposal] = TypeAdapter(ResolverProposal)
 
@@ -104,7 +104,11 @@ def load_resolver_prompt() -> str:
 
 def render_system_prompt(template: str) -> str:
     """Fill the response-schema placeholder (the only placeholder)."""
-    schema_json = json.dumps(_PROPOSAL_ADAPTER.json_schema(), indent=2, sort_keys=True)
+    # Compact: the pretty-printed schema alone outgrew the 16k system limit
+    # once item_found joined the effects, and every space is a paid token.
+    schema_json = json.dumps(
+        _PROPOSAL_ADAPTER.json_schema(), separators=(",", ":"), sort_keys=True
+    )
     return template.replace("{{RESPONSE_SCHEMA}}", schema_json)
 
 
@@ -163,6 +167,48 @@ def _move_denial(effect: MoveEntityEffect, view: WorldView) -> str | None:
         if mover in where and where[mover] != effect.from_location_id:
             return f"move must start where the character stands ({where[mover]})"
     return None
+
+
+def keep_fair_finds(raw: str, finders: frozenset[str]) -> str:
+    """At most one item_found, for an attempt's author, and only on success.
+
+    Anything else is dropped rather than repaired: a find is a reward the
+    rules can withhold without failing the scene.
+    """
+    try:
+        document: object = json.loads(raw)
+    except ValueError:
+        return raw
+    if not isinstance(document, dict):
+        return raw
+    doc = cast("dict[str, Any]", document)
+    effects = doc.get("effects")
+    if not isinstance(effects, list):
+        return raw
+    success = doc.get("outcome") == "success"
+    kept: list[Any] = []
+    granted = False
+    for effect in cast("list[Any]", effects):
+        if isinstance(effect, dict) and effect.get("effect_type") == "item_found":
+            item = cast("dict[str, Any]", effect)
+            owner = str(item.get("owner_character_id", ""))
+            if success and not granted and owner in finders:
+                item["affected_ids"] = [owner]
+                kept.append(item)
+                granted = True
+            continue
+        kept.append(effect)
+    doc["effects"] = kept
+    return json.dumps(doc)
+
+
+def _finders_of(state: ResolveState) -> frozenset[str]:
+    """Authors of physical attempts in this scene: the only ones who may find things."""
+    return frozenset(
+        str(intent.author_character_id)
+        for intent in _intents_of(state)
+        if isinstance(intent.action, InteractAction)
+    )
 
 
 def fill_move_endpoints(raw: str, moves: Mapping[str, tuple[str, str]]) -> str:
@@ -377,8 +423,11 @@ def build_resolve_graph(deps: ResolverGraphDeps) -> Any:
             try:
                 proposal = validate_lenient(
                     _PROPOSAL_ADAPTER,
-                    fill_move_endpoints(
-                        fill_expected_versions(raw, _versions_of(state)), _moves_of(state)
+                    keep_fair_finds(
+                        fill_move_endpoints(
+                            fill_expected_versions(raw, _versions_of(state)), _moves_of(state)
+                        ),
+                        _finders_of(state),
                     ),
                 )
             except ValidationError as exc:
