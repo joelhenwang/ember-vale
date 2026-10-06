@@ -12,7 +12,10 @@ defineEmits<{ details: [] }>()
 
 const router = useRouter()
 const story = computed(() => menuState.current)
-const cover = useGameImage('hero.currentStory')
+const fallbackCover = useGameImage('hero.currentStory')
+const playing = computed(() => story.value?.playing ?? null)
+/** Where your character stands, when the place has its own art. */
+const cover = computed(() => playing.value?.sceneUrl ?? fallbackCover.value)
 </script>
 
 <template>
@@ -48,7 +51,15 @@ const cover = useGameImage('hero.currentStory')
               <span class="ev-dot">•</span>
               <span>{{ story.beat.location }}</span>
             </p>
-            <p class="hero__logline">{{ story.logline }}</p>
+            <div v-if="playing" class="hero__you">
+              <img v-if="playing.portraitUrl" :src="playing.portraitUrl" alt="" />
+              <span>
+                Playing as <b>{{ playing.name }}</b>
+                <template v-if="playing.title"> · {{ playing.title }}</template>
+              </span>
+            </div>
+            <p v-if="playing?.lastLine" class="hero__logline">Last time: {{ playing.lastLine }}</p>
+            <p v-else class="hero__logline">{{ story.logline }}</p>
           </div>
 
           <div class="hero__action">
@@ -57,7 +68,7 @@ const cover = useGameImage('hero.currentStory')
               size="md"
               arrow="circle"
               @click="router.push(storyLocation(story.id, story.pov))">
-              Continue Story
+              {{ playing ? `Continue as ${playing.name}` : 'Continue Story' }}
             </MenuButton>
             <div class="ev-divider hero__rule" aria-hidden="true"></div>
             <p v-if="story.epigraph" class="ev-quote hero__epigraph">“{{ story.epigraph }}”</p>
@@ -212,5 +223,23 @@ const cover = useGameImage('hero.currentStory')
   .hero__epigraph {
     display: none;
   }
+}
+.hero__you {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 2px;
+  color: var(--ink-3);
+  font-size: 15px;
+}
+.hero__you img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--gold-soft);
+}
+.hero__you b {
+  color: var(--ink);
 }
 </style>

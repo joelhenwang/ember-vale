@@ -51,6 +51,14 @@ export interface StorySummary {
 export interface CurrentStory extends StorySummary {
   /** Whimsical epigraph under the Continue button. */
   epigraph: string
+  /** For a story you play: who you are and what happened last. */
+  playing?: {
+    name: string
+    portraitUrl: string | null
+    title: string | null
+    lastLine: string | null
+    sceneUrl: string | null
+  }
 }
 
 export interface GameMenuState {

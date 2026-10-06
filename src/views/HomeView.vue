@@ -6,7 +6,18 @@ import LibraryCard from '../components/LibraryCard.vue'
 import RecentStories from '../components/RecentStories.vue'
 import SetupDialog from '../components/story/SetupDialog.vue'
 import type { StorySetupView } from '../../content/clients/worldsim'
-import { getSetup, getStory, listPresets, listStories } from '../api/worldsim'
+import {
+  assetUrl,
+  getChronicle,
+  getPresentation,
+  getRole,
+  getSetup,
+  getStory,
+  listPresets,
+  listStories
+} from '../api/worldsim'
+import { firstSentence } from '../game/adventure'
+import type { CurrentStory } from '../game/model'
 import { usePresets } from '../composables/usePresets'
 import { sortStoriesNewest, toMenuCurrent, toMenuRecent, type ResolvedWorld } from '../game/records'
 import { menuState } from '../game/state'
@@ -33,6 +44,40 @@ async function openSetup(): Promise<void> {
     setup.value = null
   } finally {
     showSetup.value = true
+  }
+}
+
+/**
+ * For a story you play: your character, their renown, the last thing that
+ * happened and where you stand, so Home invites you straight back in.
+ * Best effort: the hero keeps its plain form if any read fails.
+ */
+async function addPlaying(worldId: string): Promise<void> {
+  try {
+    const grant = await getRole(worldId)
+    const me = grant?.role === 'player' ? grant.character_id : null
+    if (!me) return
+    const opts = { role: 'player' as const, characterId: me }
+    const view = await getPresentation(worldId, opts)
+    const head = await getChronicle(worldId, 0, opts, 1)
+    const tail = await getChronicle(worldId, Math.max(0, head.watermark - 6), opts)
+    const told = [...(tail.entries ?? [])].reverse().find((e) => e.text)
+    const self = (view.cast ?? []).find((c) => c.character_id === me)
+    const art = (view.place_art ?? []).find((a) => a.location_id === self?.location_id)
+    const current = menuState.current as CurrentStory | null
+    if (!current || current.id !== worldId || !self) return
+    menuState.current = {
+      ...current,
+      playing: {
+        name: self.name,
+        portraitUrl: self.portrait_asset_id ? assetUrl(worldId, self.portrait_asset_id) : null,
+        title: view.journey?.title ?? null,
+        lastLine: told?.text ? firstSentence(told.text) : null,
+        sceneUrl: art ? assetUrl(worldId, art.asset_id) : null
+      }
+    }
+  } catch {
+    // Keep the plain hero.
   }
 }
 
@@ -64,6 +109,7 @@ onMounted(async () => {
     const first = details.find((d) => d.world_id === eligible[0].world_id)
     if (first) {
       menuState.current = toMenuCurrent(first, worldOf(eligible[0].world_name))
+      if (first.mode === 'player') void addPlaying(first.world_id)
     } else {
       menuState.current = null
     }
