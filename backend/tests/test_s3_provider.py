@@ -193,8 +193,9 @@ def test_reasoning_level_global_with_role_override(
     gateways, _ = gateways_for_settings(settings)
     resolver = gateways["resolver"]
     assert isinstance(resolver, RetryingGateway)
-    assert isinstance(resolver._inner, OpenRouterGateway)
-    assert resolver._inner.reasoning == "low"
+    adapter = resolver._inner._inner  # pyright: ignore[reportAttributeAccessIssue]  # retry -> hedge -> adapter
+    assert isinstance(adapter, OpenRouterGateway)
+    assert adapter.reasoning == "low"
 
 
 def test_reasoning_level_rejects_unknown_roles_and_levels(

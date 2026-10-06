@@ -38,7 +38,10 @@ def test_selection_wires_venice(monkeypatch: pytest.MonkeyPatch) -> None:
     gateways, profiles = gateways_for_settings(Settings())
     narrator = gateways["narrator"]
     assert isinstance(narrator, RetryingGateway)
-    assert isinstance(narrator._inner, VeniceGateway)
+    assert isinstance(
+        narrator._inner._inner,  # pyright: ignore[reportAttributeAccessIssue]
+        VeniceGateway,
+    )  # retry -> hedge -> adapter
     assert profiles["character"].adapter == "venice"
     assert profiles["character"].model_id == "venice-uncensored-1-2"
     assert profiles["narrator"].model_id == "venice-uncensored-role-play"
@@ -127,7 +130,7 @@ def test_pinned_venice_connection_builds_a_venice_gateway(
     )
     gateway = gateway_for_pin("narrator", pin, connection)
     assert isinstance(gateway, RetryingGateway)
-    assert isinstance(gateway._inner, VeniceGateway)
+    assert isinstance(gateway._inner._inner, VeniceGateway)  # pyright: ignore[reportAttributeAccessIssue]
     assert gateway.profile.adapter == "venice"
     assert gateway.profile.model_id == "venice-uncensored-1-2"
 

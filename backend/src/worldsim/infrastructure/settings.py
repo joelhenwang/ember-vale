@@ -85,6 +85,9 @@ class ProviderSettings(BaseModel):
     #: as DeepSeek V4 means thinking on every call.
     reasoning: ReasoningLevel | None = None
     role_reasoning: dict[str, ReasoningLevel] = Field(default_factory=dict)
+    #: Seconds before a slow live call gets a twin request (first answer
+    #: wins); 0 turns hedging off. Only slow calls pay for a duplicate.
+    hedge_after_s: float = Field(default=10.0, ge=0, le=120)
     embedding_model: str = "test-embed"
     embedding_dim: int = Field(default=768, ge=1, le=4096)
 

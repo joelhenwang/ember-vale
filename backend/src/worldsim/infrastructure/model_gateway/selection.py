@@ -19,6 +19,7 @@ from worldsim.application.ports.model_gateway import ModelGateway, ModelProfile
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.settings import AdapterKind, ProviderConnection, ProviderProfileRevision
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
+from worldsim.infrastructure.model_gateway.hedge import HedgedGateway
 from worldsim.infrastructure.model_gateway.openrouter import OpenRouterGateway
 from worldsim.infrastructure.model_gateway.profiles import (
     CHARACTER_FAKE_PROFILE,
@@ -82,12 +83,15 @@ def gateways_for_settings(
         }
         gateways: dict[str, ModelGateway] = {
             role: RetryingGateway(
-                adapter(
-                    profiles[role],
-                    api_key=key,
-                    base_url=base_url,
-                    client=client,
-                    reasoning=provider.reasoning_for(role),
+                hedged(
+                    adapter(
+                        profiles[role],
+                        api_key=key,
+                        base_url=base_url,
+                        client=client,
+                        reasoning=provider.reasoning_for(role),
+                    ),
+                    provider.hedge_after_s,
                 )
             )
             for role in ROLE_NAMES
@@ -100,6 +104,11 @@ def gateways_for_settings(
         },
         dict(FAKE_PROFILES),
     )
+
+
+def hedged(gateway: ModelGateway, after_s: float) -> ModelGateway:
+    """A live gateway with slow-call hedging, unless it is switched off."""
+    return HedgedGateway(gateway, after_s=after_s) if after_s > 0 else gateway
 
 
 def profile_for_pin(
@@ -157,12 +166,14 @@ def gateway_for_pin(
             )
         adapter = VeniceGateway if connection.adapter == AdapterKind.VENICE else OpenRouterGateway
         return RetryingGateway(
-            adapter(
-                profile,
-                api_key=SecretStr(secret),
-                base_url=connection.endpoint,
-                client=client,
-                reasoning=reasoning,
+            HedgedGateway(
+                adapter(
+                    profile,
+                    api_key=SecretStr(secret),
+                    base_url=connection.endpoint,
+                    client=client,
+                    reasoning=reasoning,
+                )
             )
         )
     if isinstance(env_gateway, FakeGateway):
