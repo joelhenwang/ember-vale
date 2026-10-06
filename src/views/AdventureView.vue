@@ -239,6 +239,16 @@ watch(
     void scrollToEnd()
   }
 )
+// The dropdown always shows who will hear you: never a blank that
+// silently falls back to the first person here.
+watch(
+  () => adv.talkable.value.map((c) => c.character_id).join(','),
+  () => {
+    const ids = adv.talkable.value.map((c) => c.character_id)
+    if (!ids.includes(sayTo.value)) sayTo.value = ids[0] ?? ''
+  },
+  { immediate: true }
+)
 watch(canSay, (yes) => {
   if (!yes && mode.value === 'say') mode.value = 'do'
 })
