@@ -21,6 +21,7 @@ space and the clock).
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import hashlib
 import json
 import logging
@@ -324,6 +325,19 @@ class SceneOutcome:
     event_id: UUID
     resolution_outcome: str
     narration: str
+
+
+@dataclass(frozen=True)
+class PreparedScene:
+    """A scene's model work, ready to commit."""
+
+    members: list[Intent]
+    attempts: list[Attempt]
+    reactions: list[Reaction]
+    resolution: Resolution
+    live_versions: dict[str, int]
+    observations: list[ObservationSpec]
+    memories: list[MemorySpec]
 
 
 _phase_log = logging.getLogger("worldsim.phase")
@@ -1065,36 +1079,34 @@ class Stage1Orchestrator:
             return await self._duplicate_report(world_id, run_id)
         await self._tick(world_id, run_id, index)
         sealed = await self._seal(world_id, run_id, index)
-        with _timed(timings, "director"):
-            await self._director_phase(world_id, run_id, index, sealed, runtime)
-        # Queued directions drain inside the beat (past the duplicate
-        # replay above): effects apply pre-decision, attempts merge into
-        # the decision and complete only once their scenes commit.
-        directed: dict[UUID, tuple[ActionIntent, str]] = {}
-        if drain_queue:
-            batch = await claim_for_boundary(self._factory, world_id, f"s1:{run_id.hex[:8]}")
-            await apply_batch(self._factory, world_id, index, batch, set(player_intents or {}))
-            # Conditions created by this drain tick in their start phase too;
-            # the route ticks before the beat, when they do not exist yet.
-            # Idempotent per (condition, index), so existing ones tick once.
-            await tick_conditions(self._factory, world_id, index)
-            for planned in await plan_attempts(
-                self._factory, world_id, sealed.snapshot_id, set(player_intents or {})
-            ):
-                directed[planned.actor] = (planned.intent, planned.ref)
-        merged = dict(player_intents or {})
-        merged.update({actor: intent for actor, (intent, _ref) in directed.items()})
-        with _timed(timings, "decide"):
-            intents = await self._decide_all(
+
+        async def _directing() -> None:
+            with _timed(timings, "director"):
+                await self._director_phase(world_id, run_id, index, sealed, runtime)
+
+        # The director (every third beat, 1-7 s) runs beside the decisions:
+        # characters decide from the sealed snapshot either way, and what
+        # it adds (a rumour, a place, a newcomer) is there for the scenes
+        # and for the next beat. It finishes before intents are recorded.
+        director = asyncio.ensure_future(_directing())
+        try:
+            intents = await self._drain_and_decide(
                 world_id,
                 run_id,
+                index,
                 sealed,
-                merged,
-                directed,
+                player_intents,
+                drain_queue=drain_queue,
                 runtime=runtime,
                 submitter_id=submitter_id,
                 grant_role=admitted_role,
+                timings=timings,
             )
+        except BaseException:
+            with contextlib.suppress(BaseException):
+                await director
+            raise
+        await director
         await self._set_state(run_id, PhaseRunState.INTENTS_COMPLETE)
         quiet = is_quiet_phase(intent.action.family for intent in intents)
         async with self._factory() as uow:
@@ -1142,31 +1154,73 @@ class Stage1Orchestrator:
             # Scenes commit one after another (event sequence numbers and
             # version checks are ordered); their narration, written after
             # the commits and reading only, then runs for all scenes at once.
-            for scene in scenes:
-                over_budget = await self._over_budget(world_id, run_id)
-                budgets.append(over_budget)
-                outcomes.append(
-                    await self._commit_scene(
-                        world_id,
-                        run_id,
-                        index,
-                        sealed,
-                        scene,
-                        intents,
-                        names,
-                        quiet,
-                        over_budget,
-                        runtime=runtime,
-                        timings=timings,
-                        narrate=False,
-                    )
-                )
-            self._fire("before_narration")
-            # Party scenes narrate one at a time: their narration applies
-            # combat and recruit tags (monsters, hit points), which is not
-            # safe to run side by side.
+            # Party scenes run one at a time: their narration applies combat
+            # and recruit tags (monsters, hit points), not safe side by side.
             async with self._factory() as uow:
                 party = bool(await uow.party.list_for_world(world_id))
+            budgets = [await self._over_budget(world_id, run_id) for _scene in scenes]
+            if party or len(scenes) < 2:
+                for scene in scenes:
+                    outcomes.append(
+                        await self._commit_scene(
+                            world_id,
+                            run_id,
+                            index,
+                            sealed,
+                            scene,
+                            intents,
+                            names,
+                            runtime=runtime,
+                            timings=timings,
+                            narrate=False,
+                        )
+                    )
+            else:
+                # A beat's scenes hold different people at different places:
+                # their model work (reactions, resolution) runs side by side;
+                # the commits stay in order (event sequence, version checks).
+                prepared = await asyncio.gather(
+                    *(
+                        self._prepare_scene(
+                            world_id,
+                            run_id,
+                            sealed,
+                            scene,
+                            intents,
+                            names,
+                            runtime=runtime,
+                            timings=timings,
+                        )
+                        for scene in scenes
+                    )
+                )
+                for scene, ready in zip(scenes, prepared, strict=True):
+                    try:
+                        outcomes.append(
+                            await self._commit_prepared(
+                                world_id, run_id, index, sealed, scene, ready
+                            )
+                        )
+                    except DomainError as exc:
+                        if exc.code is not ErrorCode.VERSION_CONFLICT:
+                            raise
+                        # An earlier scene touched the same thing: redo this
+                        # one against the world as it now stands.
+                        outcomes.append(
+                            await self._commit_scene(
+                                world_id,
+                                run_id,
+                                index,
+                                sealed,
+                                scene,
+                                intents,
+                                names,
+                                runtime=runtime,
+                                timings=timings,
+                                narrate=False,
+                            )
+                        )
+            self._fire("before_narration")
             jobs = [
                 self._narrate_outcome(world_id, run_id, scene, outcome, quiet, budget, runtime)
                 for scene, outcome, budget in zip(scenes, outcomes, budgets, strict=True)
@@ -1222,6 +1276,53 @@ class Stage1Orchestrator:
         for scene in scenes:
             assert scene.event_id is not None
             await self._narrate_scene(world_id, run_id, scene, scene.event_id, runtime=runtime)
+
+    async def _drain_and_decide(
+        self,
+        world_id: UUID,
+        run_id: UUID,
+        index: int,
+        sealed: SealedPhase,
+        player_intents: Mapping[UUID, ActionIntent] | None,
+        *,
+        drain_queue: bool,
+        runtime: PhaseRuntime,
+        submitter_id: UUID | None,
+        grant_role: UserRole | None,
+        timings: dict[str, int],
+    ) -> list[Intent]:
+        """Drain queued directions, then decide for every character.
+
+        Queued directions drain inside the beat (past the duplicate replay):
+        effects apply pre-decision, attempts merge into the decision and
+        complete only once their scenes commit.
+        """
+        directed: dict[UUID, tuple[ActionIntent, str]] = {}
+        if drain_queue:
+            batch = await claim_for_boundary(self._factory, world_id, f"s1:{run_id.hex[:8]}")
+            await apply_batch(self._factory, world_id, index, batch, set(player_intents or {}))
+            # Conditions created by this drain tick in their start phase too;
+            # the route ticks before the beat, when they do not exist yet.
+            # Idempotent per (condition, index), so existing ones tick once.
+            await tick_conditions(self._factory, world_id, index)
+            for planned in await plan_attempts(
+                self._factory, world_id, sealed.snapshot_id, set(player_intents or {})
+            ):
+                directed[planned.actor] = (planned.intent, planned.ref)
+        merged = dict(player_intents or {})
+        merged.update({actor: intent for actor, (intent, _ref) in directed.items()})
+        with _timed(timings, "decide"):
+            intents = await self._decide_all(
+                world_id,
+                run_id,
+                sealed,
+                merged,
+                directed,
+                runtime=runtime,
+                submitter_id=submitter_id,
+                grant_role=grant_role,
+            )
+        return intents
 
     async def _over_budget(self, world_id: UUID, run_id: UUID) -> bool:
         """True when this run already spent its model-call budget."""
@@ -2800,6 +2901,35 @@ class Stage1Orchestrator:
         With ``narrate=False`` the scene is committed and settled only; the
         caller narrates it later (see _narrate_outcome), alongside others.
         """
+        prepared = await self._prepare_scene(
+            world_id, run_id, sealed, scene, intents, names, runtime=runtime, timings=timings
+        )
+        outcome = await self._commit_prepared(world_id, run_id, index, sealed, scene, prepared)
+        if not narrate:
+            return outcome
+        self._fire("before_narration")
+        with _timed(timings if timings is not None else {}, "narrate"):
+            return await self._narrate_outcome(
+                world_id, run_id, scene, outcome, quiet, over_budget, runtime
+            )
+
+    async def _prepare_scene(
+        self,
+        world_id: UUID,
+        run_id: UUID,
+        sealed: SealedPhase,
+        scene: Scene,
+        intents: list[Intent],
+        names: Mapping[UUID, str],
+        *,
+        runtime: PhaseRuntime,
+        timings: dict[str, int] | None = None,
+    ) -> PreparedScene:
+        """The model work for one scene: reactions, then the resolution.
+
+        Reads only, so the scenes of a beat (different people, different
+        places) prepare side by side; their commits stay in order.
+        """
         stage_ms: dict[str, int] = timings if timings is not None else {}
         members = [i for i in intents if i.id in scene.intent_ids]
         attempts = [
@@ -2824,6 +2954,23 @@ class Stage1Orchestrator:
         observations, memories = self._perceive_scene(
             world_id, sealed, scene, members, names, reactions, resolution.outcome.value
         )
+        return PreparedScene(
+            members, attempts, reactions, resolution, live_versions, observations, memories
+        )
+
+    async def _commit_prepared(
+        self,
+        world_id: UUID,
+        run_id: UUID,
+        index: int,
+        sealed: SealedPhase,
+        scene: Scene,
+        prepared: PreparedScene,
+    ) -> SceneOutcome:
+        """Commit one prepared scene and settle its verbs."""
+        members, attempts, reactions = prepared.members, prepared.attempts, prepared.reactions
+        resolution, live_versions = prepared.resolution, prepared.live_versions
+        observations, memories = prepared.observations, prepared.memories
         # Only the aggregates this scene mutates enter the version check,
         # pinned to the versions the resolver just validated.
         touched = {
@@ -2858,19 +3005,12 @@ class Stage1Orchestrator:
             await record_attempts(self._factory, directed_outcomes)
         if resolution.outcome == ResolutionOutcome.SUCCESS:
             await self._settle_scene_verbs(world_id, run_id, index, scene, members, result.event_id)
-        outcome = SceneOutcome(
+        return SceneOutcome(
             scene_id=scene.id,
             event_id=result.event_id,
             resolution_outcome=resolution.outcome.value,
             narration="pending",
         )
-        if not narrate:
-            return outcome
-        self._fire("before_narration")
-        with _timed(stage_ms, "narrate"):
-            return await self._narrate_outcome(
-                world_id, run_id, scene, outcome, quiet, over_budget, runtime
-            )
 
     async def _narrate_outcome(
         self,
@@ -3070,9 +3210,9 @@ class Stage1Orchestrator:
     ) -> list[Reaction]:
         """One bounded reaction graph per eligible (attempt, reactor) pair.
 
-        Reactors run concurrently; each reactor still handles its
-        attempts in order, so its task and trace rows never race. Every
-        reaction reads only the sealed snapshot and its own attempt.
+        Every pair runs at once: each has its own task and graph thread and
+        reads only the sealed snapshot and its own attempt (a reactor with
+        two attempts to answer used to answer them one after the other).
         Results keep the attempt-major, participant-minor order of the
         former sequential loop.
         """
@@ -3090,26 +3230,26 @@ class Stage1Orchestrator:
                 pairs.setdefault(reactor_id, []).append((index, attempt))
         order = {p.character_id: rank for rank, p in enumerate(scene.participants)}
 
-        async def _reactor(reactor_id: UUID) -> list[tuple[int, int, Reaction]]:
-            out: list[tuple[int, int, Reaction]] = []
-            for index, attempt in pairs[reactor_id]:
-                reaction = await self._react_one(
-                    world_id,
-                    run_id,
-                    sealed,
-                    scene,
-                    attempt,
-                    reactor_id,
-                    participant_ids,
-                    names,
-                    runtime,
-                )
-                if reaction is not None:
-                    out.append((index, order[reactor_id], reaction))
-            return out
+        async def _pair(
+            reactor_id: UUID, index: int, attempt: Attempt
+        ) -> tuple[int, int, Reaction] | None:
+            reaction = await self._react_one(
+                world_id,
+                run_id,
+                sealed,
+                scene,
+                attempt,
+                reactor_id,
+                participant_ids,
+                names,
+                runtime,
+            )
+            return None if reaction is None else (index, order[reactor_id], reaction)
 
-        gathered = await asyncio.gather(*(_reactor(r) for r in pairs))
-        ranked = sorted((item for batch in gathered for item in batch), key=lambda t: (t[0], t[1]))
+        gathered = await asyncio.gather(
+            *(_pair(r, index, attempt) for r, todo in pairs.items() for index, attempt in todo)
+        )
+        ranked = sorted((item for item in gathered if item is not None), key=lambda t: (t[0], t[1]))
         return [reaction for _, _, reaction in ranked]
 
     async def _react_one(
@@ -3130,7 +3270,9 @@ class Stage1Orchestrator:
         envelope, included, excluded = await self._context_for(
             world_id, run_id, sealed.snapshot_id, reactor
         )
-        task_run_id = derive_task_id(run_id, "reaction", reactor_id)
+        # One task (and graph thread) per attempt and reactor, so a reactor's
+        # replies to several attempts run side by side and resume apart.
+        task_run_id = derive_task_id(run_id, f"reaction:{attempt.id.hex}", reactor_id)
         sources, dropped = to_manifest_dict(included, excluded)
         spec = ManifestSpec(
             role="reaction",

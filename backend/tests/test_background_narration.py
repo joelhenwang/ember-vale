@@ -84,3 +84,31 @@ def test_narration_lost_with_its_process_is_written_by_the_next_beat(
             await engine.dispose()
 
     asyncio.run(_inner())
+
+
+def test_scenes_prepare_side_by_side_and_redo_on_a_conflict(migrated_db: None) -> None:
+    from worldsim.domain.errors import DomainError, ErrorCode
+
+    async def _inner() -> None:
+        ids = await _seed()  # Wren at the Hearth, Ash at the Market: two scenes
+        orchestrator, engine = _orchestrator(_role_gateways(ids), BackgroundNarration())
+        real = orchestrator._commit_prepared  # pyright: ignore[reportPrivateUsage]
+        conflicts: list[Any] = []
+
+        async def first_conflicts(*args: Any) -> Any:
+            if not conflicts:
+                conflicts.append(args[4])
+                raise DomainError(ErrorCode.VERSION_CONFLICT, "injected")
+            return await real(*args)
+
+        orchestrator._commit_prepared = first_conflicts  # type: ignore[method-assign]
+        try:
+            report = await orchestrator.advance_phase(ids["world"], 1)
+            assert len(report.scenes) == 2 and conflicts  # the redo committed it anyway
+            async with create_unit_of_work(engine) as uow:
+                for scene in report.scenes:
+                    assert (await uow.scenes.get_scene(scene.scene_id)).event_id == scene.event_id
+        finally:
+            await engine.dispose()
+
+    asyncio.run(_inner())
