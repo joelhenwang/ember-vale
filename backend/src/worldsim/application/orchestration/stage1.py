@@ -97,6 +97,7 @@ from worldsim.application.interventions import (
     plan_attempts,
     record_attempts,
 )
+from worldsim.application.orchestration.background import BackgroundNarration
 from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
 from worldsim.application.ports.local_models import LocalModels, LocalModelsUnavailable
 from worldsim.application.ports.model_gateway import ModelGateway, ModelProfile
@@ -948,8 +949,12 @@ class Stage1Orchestrator:
         fault_hook: Callable[[str], None] | None = None,
         pin_gateway_factory: PinGatewayFactory | None = None,
         local_models: LocalModels | None = None,
+        narration: BackgroundNarration | None = None,
     ) -> None:
         self._factory = uow_factory
+        #: When set, a beat returns once its scenes commit and narration
+        #: finishes behind it (party scenes still narrate in line).
+        self._narration = narration
         #: Embeddings for recall by relevance; None keeps recency and salience only.
         self._local_models = local_models
         self._canonical = canonical
@@ -1023,6 +1028,10 @@ class Stage1Orchestrator:
     ) -> Stage1PhaseReport:
         """Advance one phase end to end (manual advancement unit)."""
         await self._tasks.reconcile()
+        if self._narration is not None:
+            # The last beat's words first: beats never overlap, and the
+            # recap and decisions read what was just narrated.
+            await self._narration.settle(world_id)
         run_id = derive_run_id(world_id, index)
         async with self._factory() as uow:
             try:
@@ -1046,6 +1055,8 @@ class Stage1Orchestrator:
         with _timed(timings, "probe"):
             await self._probe_gate(runtime)
         player_intents = await self._ground_player_moves(world_id, player_intents)
+        if self._narration is not None and index > 0:
+            await self._narrate_leftovers(world_id, derive_run_id(world_id, index - 1), runtime)
         run, admitted_owner, admitted_role = await self._admit_run(
             world_id, index, player_intents, submitter_id
         )
@@ -1163,6 +1174,9 @@ class Stage1Orchestrator:
             with _timed(timings, "narrate"):
                 if party:
                     outcomes = [await job for job in jobs]
+                elif self._narration is not None:
+                    self._narration.start(world_id, asyncio.gather(*jobs))
+                    outcomes = [replace(o, narration="pending") for o in outcomes]
                 else:
                     outcomes = list(await asyncio.gather(*jobs))
         await self._set_state(run_id, PhaseRunState.SCENES_COMMITTED)
@@ -1192,6 +1206,22 @@ class Stage1Orchestrator:
             quiet=quiet,
             timings_ms=timings,
         )
+
+    async def _narrate_leftovers(self, world_id: UUID, run_id: UUID, runtime: PhaseRuntime) -> None:
+        """Narrate committed scenes of an earlier beat still without words.
+
+        Background narration that a stopped process never finished; each
+        scene narrates at most once, so this is safe to repeat.
+        """
+        async with self._factory() as uow:
+            scenes = [
+                s
+                for s in await uow.scenes.list_for_run(run_id)
+                if s.event_id is not None and s.narration_status is None
+            ]
+        for scene in scenes:
+            assert scene.event_id is not None
+            await self._narrate_scene(world_id, run_id, scene, scene.event_id, runtime=runtime)
 
     async def _over_budget(self, world_id: UUID, run_id: UUID) -> bool:
         """True when this run already spent its model-call budget."""

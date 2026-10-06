@@ -276,3 +276,20 @@ def test_openrouter_strips_a_json_fence_only_in_json_mode() -> None:
     assert as_json.text == '{"family": "wait"}'
     as_text = asyncio.run(gateway.complete(CompletionRequest(prompt="hi")))
     assert as_text.text == fenced
+
+
+def test_a_good_probe_vouches_for_a_minute() -> None:
+    from worldsim.infrastructure.model_gateway import openrouter
+
+    hits: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        hits.append(request.url.path)
+        return httpx.Response(200, json={"data": [{"id": "m"}]})
+
+    openrouter._PROBE_CACHE.clear()  # pyright: ignore[reportPrivateUsage]
+    gateway = _mocked_gateway(handler)
+    assert asyncio.run(gateway.probe()).ok
+    assert asyncio.run(gateway.probe()).ok
+    assert len(hits) == 1
+    openrouter._PROBE_CACHE.clear()  # pyright: ignore[reportPrivateUsage]

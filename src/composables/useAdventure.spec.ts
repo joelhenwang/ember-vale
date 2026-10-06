@@ -6,7 +6,7 @@ import type {
   PresentationResponse,
   RoleGrantView
 } from '../../content/clients/worldsim'
-import { useAdventure, type AdventureApi } from './useAdventure'
+import { IDLE_POLL_MS, STAGE_POLL_MS, useAdventure, type AdventureApi } from './useAdventure'
 
 const WORLD = 'w1'
 const ME = 'wren'
@@ -76,6 +76,34 @@ function fakeApi(over: Partial<AdventureApi> = {}) {
 const never = (): (() => void) => () => undefined
 
 describe('useAdventure', () => {
+  it('reads again soon while a scene is still being written', async () => {
+    const waits: number[] = []
+    const record = (_fn: () => void, ms: number): (() => void) => {
+      waits.push(ms)
+      return () => undefined
+    }
+    const pending = { ...entry(1, ''), scene_id: 's1' } as ChronicleEntry
+    const { api } = fakeApi({
+      getChronicle: async () =>
+        ({ entries: [pending], has_more: false, next_after: 1, watermark: 1 }) as never
+    })
+    const adv = useAdventure(ref(WORLD), { api, schedule: record })
+    await adv.load()
+    expect(waits.at(-1)).toBe(STAGE_POLL_MS)
+
+    const calm = fakeApi()
+    const idle: number[] = []
+    const quiet = useAdventure(ref(WORLD), {
+      api: calm.api,
+      schedule: (_fn, ms) => {
+        idle.push(ms)
+        return () => undefined
+      }
+    })
+    await quiet.load()
+    expect(idle.at(-1)).toBe(IDLE_POLL_MS)
+  })
+
   it('opens as the player, at their place, with who is there', async () => {
     const { api } = fakeApi()
     const adv = useAdventure(ref(WORLD), { api, schedule: never })

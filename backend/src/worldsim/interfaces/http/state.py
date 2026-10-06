@@ -14,6 +14,7 @@ from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 import worldsim
+from worldsim.application.orchestration.background import BackgroundNarration
 from worldsim.application.orchestration.service import PhaseOrchestrator
 from worldsim.application.orchestration.stage1 import Stage1Orchestrator
 from worldsim.application.ports.model_gateway import ModelGateway
@@ -67,6 +68,8 @@ class AppState:
     exporter: TraceExporter
     #: One client per process so its failure back-off is shared.
     _local_models: LocalModelsClient | None = None
+    #: Narration still running after its beat returned, per story.
+    narration: BackgroundNarration | None = None
 
     def uow_factory(self) -> Callable[[], SqlAlchemyUnitOfWork]:
         engine = self.engine
@@ -124,6 +127,7 @@ class AppState:
             profiles,
             pin_gateway_factory=_for_pin,
             local_models=self.local_models(),
+            narration=self.narration,
         )
 
     def local_models(self) -> LocalModelsClient | None:
@@ -150,6 +154,7 @@ def build_state(
         app_version=worldsim.__version__,
     )
     return AppState(
+        narration=BackgroundNarration() if settings.app.background_narration else None,
         settings=settings,
         engine=create_engine(settings),
         seed_dir=seed_dir,

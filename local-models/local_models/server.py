@@ -2,7 +2,7 @@
 VM cannot reach the integrated GPU, so the API container calls this
 service at host.docker.internal instead of loading models itself.
 
-    uv run python -m local_models.server --port 8102
+    uv run python -m local_models.server --port 8110
 
 Environment:
     LOCAL_MODELS_EMBED_DIR   OpenVINO IR folder (default models/embeddinggemma-300m-int8)
@@ -168,7 +168,7 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=8102)
+    parser.add_argument("--port", type=int, default=8110)
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
     uvicorn.run(create_app(), host=args.host, port=args.port, log_level="info")

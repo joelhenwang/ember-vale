@@ -6,7 +6,7 @@ way the orchestrator builds it (the character and their latest lines).
 Prints the similarity spread (to set RELEVANCE_LOW/HIGH), how much the
 kept set changes, and a few swaps to read by eye.
 
-    uv run python scripts/recall_eval.py --url http://localhost:8102 --samples 40
+    uv run python scripts/recall_eval.py --url http://localhost:8110 --samples 40
 
 Needs WORLDSIM_DATABASE__URL (dev database) and the local model service.
 """
@@ -135,7 +135,7 @@ async def main(url: str, samples: int, seed: int) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("--url", default="http://localhost:8102")
+    parser.add_argument("--url", default="http://localhost:8110")
     parser.add_argument("--samples", type=int, default=40)
     parser.add_argument("--seed", type=int, default=7)
     args = parser.parse_args()

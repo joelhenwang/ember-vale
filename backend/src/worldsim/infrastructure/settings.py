@@ -39,6 +39,10 @@ class ApplicationSettings(BaseModel):
     host: str = "127.0.0.1"
     port: int = Field(default=8000, ge=1, le=65535)
     debug: bool = False
+    #: WORLDSIM_APP__BACKGROUND_NARRATION=true: a beat returns once its
+    #: scenes commit and narration (3.5-4.5 s) finishes behind it; the
+    #: Adventure screen shows "still being written" until the words land.
+    background_narration: bool = False
 
 
 class DatabaseSettings(BaseModel):
@@ -197,7 +201,7 @@ class ImageSettings(BaseModel):
 class LocalModelSettings(BaseModel):
     """The local model service (local-models/ at the repo root).
 
-    WORLDSIM_LOCAL_MODELS__URL=http://host.docker.internal:8102 turns on
+    WORLDSIM_LOCAL_MODELS__URL=http://host.docker.internal:8110 turns on
     recall by relevance and its background indexer; empty leaves both off
     and decisions use recency and salience alone.
     """

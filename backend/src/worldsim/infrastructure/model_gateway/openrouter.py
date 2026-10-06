@@ -63,6 +63,11 @@ def _retry_after_s(response: httpx.Response) -> float | None:
         return None
 
 
+#: How long a successful probe vouches for its endpoint and model.
+PROBE_TTL_S = 60.0
+_PROBE_CACHE: dict[tuple[str, str], tuple[float, ProbeResult]] = {}
+
+
 class OpenRouterGateway:
     def __init__(
         self,
@@ -362,6 +367,18 @@ class OpenRouterGateway:
         )
 
     async def probe(self) -> ProbeResult:
+        # A provider that answered a minute ago is up: every beat probed four
+        # roles, each listing every model (0.2-0.4 s a beat).
+        key = (self._base_url, self.profile.model_id)
+        cached = _PROBE_CACHE.get(key)
+        if cached is not None and time.monotonic() - cached[0] < PROBE_TTL_S:
+            return cached[1]
+        result = await self._probe()
+        if result.ok:
+            _PROBE_CACHE[key] = (time.monotonic(), result)
+        return result
+
+    async def _probe(self) -> ProbeResult:
         client = self._client_or_create()
         started = time.monotonic()
         try:

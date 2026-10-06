@@ -4,7 +4,14 @@ import prettierConfig from 'eslint-config-prettier'
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'node_modules/**', 'public/**', 'coverage/**', 'backend/.venv/**']
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'public/**',
+      'coverage/**',
+      'backend/.venv/**',
+      'local-models/**'
+    ]
   },
 
   // TS rules everywhere we have TS: .ts files plus the <script> blocks of SFCs.

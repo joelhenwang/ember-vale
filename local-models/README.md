@@ -26,10 +26,10 @@ weights as `google/embeddinggemma-300m`, Gemma licence). GLiNER2.5
 ## Run
 
 ```sh
-uv run python -m local_models.server --port 8102
+uv run python -m local_models.server --port 8110
 ```
 
-Then set `WORLDSIM_LOCAL_MODELS__URL=http://host.docker.internal:8102`
+Then set `WORLDSIM_LOCAL_MODELS__URL=http://host.docker.internal:8110`
 in the repo `.env` and rebuild the API (`docker compose up -d --build api`).
 The API works with it in the background, never inside a beat:
 

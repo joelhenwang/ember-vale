@@ -233,7 +233,11 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
           void refresh().then(planPoll)
         }
       },
-      acting.value ? STAGE_POLL_MS : IDLE_POLL_MS
+      // A scene still being written (narration finishes after the turn) is
+      // read again soon, so its words replace the placeholder quickly.
+      acting.value || entries.value.some((e) => e.scene_id && !e.text)
+        ? STAGE_POLL_MS
+        : IDLE_POLL_MS
     )
   }
 

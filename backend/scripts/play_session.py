@@ -25,6 +25,8 @@ WORLD_PRESET = "20000000-0000-4000-8000-000000000001"
 WREN_PRESET = "20000000-0000-4000-8000-000000000101"
 ASH_PRESET = "20000000-0000-4000-8000-000000000102"
 NIL = str(uuid.UUID(int=0))
+#: What the chronicle shows for a scene whose narration is still running.
+PENDING = "The scene is still being written…"
 
 
 def env(name: str, default: str = "") -> str:
@@ -123,11 +125,16 @@ class Session:
         return time.monotonic() - started
 
     def told(self) -> list[str]:
-        page = self.http.get(
-            "/api/v1/world/chronicle",
-            params={"world_id": self.world, "after": self.cursor, "limit": 100},
-            headers=self.player(),
-        ).json()
+        # Narration may finish after the turn returns: wait up to 30 s for it.
+        for _ in range(30):
+            page = self.http.get(
+                "/api/v1/world/chronicle",
+                params={"world_id": self.world, "after": self.cursor, "limit": 100},
+                headers=self.player(),
+            ).json()
+            if not any((e.get("text") or e.get("title")) == PENDING for e in page["entries"]):
+                break
+            time.sleep(1)
         self.cursor = page["next_after"]
         lines: list[str] = []
         for entry in page.get("entries", []):

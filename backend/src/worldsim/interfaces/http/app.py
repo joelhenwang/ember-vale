@@ -92,6 +92,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     for job, task in local_loops:
         await job.stop()
         await task
+    if state.narration is not None:
+        await state.narration.drain()
     if runner is not None and loop is not None:
         await runner.stop()
         await loop
