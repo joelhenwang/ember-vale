@@ -22,6 +22,7 @@ class VeniceGateway(OpenRouterGateway):
     def _body(self, request: CompletionRequest) -> dict[str, Any]:
         body = super()._body(request)
         body.pop("reasoning", None)
+        body.pop("provider", None)
         params: dict[str, Any] = {"include_venice_system_prompt": False}
         if self.reasoning == "off":
             params["disable_thinking"] = True

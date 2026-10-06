@@ -1,0 +1,327 @@
+{
+  "meta": {
+    "commit": "6d4dc1b",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T06:13:00+00:00",
+    "wall_seconds": 303,
+    "est_usd_total": 0.08621119840000001,
+    "scenarios": [
+      "strangers",
+      "lost_item",
+      "stuck_task",
+      "meet_up",
+      "named_place"
+    ]
+  },
+  "results": {
+    "strangers": {
+      "ids": {
+        "world": "f2dfdb45-c11c-4fa7-a362-021a46bfd990",
+        "place:Hearth": "63ce6aab-ebb1-4ca5-98a1-cb71c8971c11",
+        "place:Market": "448fdf7a-1d7d-41f1-aee5-d988ce0d2127",
+        "wren": "f0a5798e-8a5c-4aa7-bdf6-d72981b5e41b",
+        "ash": "3e094706-a162-455b-a936-9dd46194b5a4"
+      },
+      "beat_seconds": [
+        8.48499999998603,
+        17.109000000054948,
+        10.204000000027008,
+        7.781000000075437,
+        23.03200000000652,
+        28.703000000095926,
+        75.53099999995902,
+        77.75
+      ],
+      "error": null,
+      "score": {
+        "calls": 72,
+        "failed_calls": 0,
+        "repairs": 3,
+        "repairs_by_role": {
+          "narrator": 2,
+          "resolver": 1
+        },
+        "repair_rate": 0.041666666666666664,
+        "est_usd": 0.0212446936,
+        "action_mix": {
+          "wait": 1,
+          "observe": 4,
+          "communicate": 5,
+          "move": 2,
+          "interact": 8
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 2,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 8,
+        "hooks": [
+          {
+            "title": "Market stall with fresh supplies",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Old Marta": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "repeated questions 0% (pass \u2264 20%)"
+      }
+    },
+    "lost_item": {
+      "ids": {
+        "world": "4147b161-4641-4437-a12d-5bb73f229ca7",
+        "place:Hearth": "ffe16aa1-8a8e-4feb-8c0a-f7900a9cb062",
+        "place:Market": "2382eb57-0fed-4b67-b9e4-b968cd0cbbf1",
+        "wren": "e06ed536-a29c-4746-b6c5-46341ce6e4a3",
+        "ash": "5093df49-a1b0-4217-b0fd-cfff01e52c88",
+        "item:purse": "77a2dc3f-1e01-4690-9ca6-c57f07bc0630"
+      },
+      "beat_seconds": [
+        12.969000000040978,
+        9.297000000020489,
+        9.34299999999348,
+        11.390999999945052,
+        27.18799999996554,
+        2.687000000034459,
+        23.25,
+        32.90599999995902
+      ],
+      "error": null,
+      "score": {
+        "calls": 44,
+        "failed_calls": 0,
+        "repairs": 1,
+        "repairs_by_role": {
+          "resolver": 1
+        },
+        "repair_rate": 0.022727272727272728,
+        "est_usd": 0.0124042752,
+        "action_mix": {
+          "take": 1,
+          "move": 3,
+          "communicate": 6,
+          "interact": 1,
+          "wait": 4,
+          "observe": 1
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 2,
+        "longest_talk_streak": 3,
+        "moves_tried": 3,
+        "moves_done": 3,
+        "interact_success": 1,
+        "hooks": [
+          {
+            "title": "A stallkeeper claims the purse",
+            "powers": ""
+          }
+        ],
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Hearth"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {
+          "Lost purse": {
+            "holder": "Ash",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "purse held by Ash"
+      }
+    },
+    "stuck_task": {
+      "ids": {
+        "world": "c7643e6b-3c75-4a51-8941-a4e40471e0a9",
+        "place:Hearth": "8d61c737-05d1-40a2-bdf9-bf9ae10688d8",
+        "place:Market": "097e6ee0-2ef7-47a4-a0d8-f2342b8137cc",
+        "wren": "6b749f4e-5147-44bf-9f1d-a184ee6ba4e7",
+        "ash": "52f8767f-e00b-4cab-a718-d12201ad48b3",
+        "marg": "26bebb8c-88e7-4db5-8dd5-fad17b28aaa9"
+      },
+      "beat_seconds": [
+        17.42200000002049,
+        14.890999999945052,
+        10.204000000027008,
+        24.530999999959022,
+        51.79599999997299,
+        74.07799999997951,
+        91.89000000001397,
+        17.46799999999348
+      ],
+      "error": null,
+      "score": {
+        "calls": 83,
+        "failed_calls": 0,
+        "repairs": 0,
+        "repairs_by_role": {},
+        "repair_rate": 0.0,
+        "est_usd": 0.0238820108,
+        "action_mix": {
+          "communicate": 8,
+          "interact": 9,
+          "observe": 2,
+          "wait": 4,
+          "move": 1
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 1,
+        "moves_tried": 1,
+        "moves_done": 1,
+        "interact_success": 9,
+        "hooks": [
+          {
+            "title": "The Cart with the Cracked Wheel",
+            "powers": ""
+          }
+        ],
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Market",
+          "Old Marg": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "9 successful physical attempt(s)"
+      }
+    },
+    "meet_up": {
+      "ids": {
+        "world": "a48e89bc-9993-4c49-9d18-ee6c14ccd694",
+        "place:Hearth": "1f65c4b3-7a35-4bea-8360-351658634051",
+        "place:Market": "cc81d9f7-1918-4d4c-925a-8b1049658a52",
+        "wren": "43e8df51-2fd2-464d-8a9b-14a423e28c5e",
+        "ash": "3b5f0b39-0b71-4eb7-8c78-1bba8060bd02"
+      },
+      "beat_seconds": [
+        12.922000000020489,
+        9.719000000040978,
+        8.687000000034459,
+        12.640999999945052,
+        7.437000000034459,
+        7.311999999918044,
+        25.859000000054948,
+        35.71799999999348
+      ],
+      "error": null,
+      "score": {
+        "calls": 49,
+        "failed_calls": 0,
+        "repairs": 1,
+        "repairs_by_role": {
+          "narrator": 1
+        },
+        "repair_rate": 0.02040816326530612,
+        "est_usd": 0.0141712646,
+        "action_mix": {
+          "wait": 3,
+          "move": 5,
+          "communicate": 8
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 3,
+        "moves_tried": 5,
+        "moves_done": 5,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "Old Maren's word on the mill",
+            "powers": "new_location"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Mill"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "Wren at Market, Ash at Market"
+      }
+    },
+    "named_place": {
+      "ids": {
+        "world": "f9c8a2eb-2061-4180-8e70-ceb73cc13932",
+        "place:Hearth": "e84f3344-54c1-4cb3-a24d-ebfc0a311c25",
+        "place:Market": "e0606932-266b-48c0-9af2-2f630d2f38d8",
+        "wren": "1cd12a3d-5a7f-43a4-9619-44e35ae03956",
+        "ash": "f9548f35-2a6b-4cc0-917c-999b0c2eb163"
+      },
+      "beat_seconds": [
+        14.297000000020489,
+        5.0,
+        7.312999999965541,
+        9.51500000001397,
+        9.281000000075437,
+        21.29700000002049,
+        8.40700000000652,
+        39.68799999996554
+      ],
+      "error": null,
+      "score": {
+        "calls": 50,
+        "failed_calls": 0,
+        "repairs": 0,
+        "repairs_by_role": {},
+        "repair_rate": 0.0,
+        "est_usd": 0.0145089542,
+        "action_mix": {
+          "communicate": 6,
+          "move": 2,
+          "observe": 2,
+          "wait": 3,
+          "interact": 3
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 1,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 3,
+        "hooks": [
+          {
+            "title": "Uncle's Mill Needs a Hand",
+            "powers": "new_location"
+          }
+        ],
+        "final_places": {
+          "Wren": "Old Mill",
+          "Ash": "Old Mill"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Old Mill"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "added Old Mill; there at the end: Wren, Ash"
+      }
+    }
+  }
+}

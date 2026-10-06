@@ -72,9 +72,12 @@ class OpenRouterGateway:
         timeout_s: float = 30.0,
         client: httpx.AsyncClient | None = None,
         reasoning: str | None = None,
+        sort: str | None = None,
     ) -> None:
         self.profile = profile
         self.reasoning = reasoning
+        #: OpenRouter provider routing preference (throughput/price/latency).
+        self.sort = sort
         self._api_key = api_key
         self._base_url = base_url.rstrip("/")
         self._timeout_s = timeout_s
@@ -115,6 +118,8 @@ class OpenRouterGateway:
             body["reasoning"] = {"enabled": False}
         elif self.reasoning is not None:
             body["reasoning"] = {"effort": self.reasoning}
+        if self.sort:
+            body["provider"] = {"sort": self.sort}
         return body
 
     async def complete(self, request: CompletionRequest) -> CompletionResult:

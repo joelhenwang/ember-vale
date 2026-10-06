@@ -88,6 +88,10 @@ class ProviderSettings(BaseModel):
     #: Seconds before a slow live call gets a twin request (first answer
     #: wins); 0 turns hedging off. Only slow calls pay for a duplicate.
     hedge_after_s: float = Field(default=10.0, ge=0, le=120)
+    #: OpenRouter provider routing: "throughput" sends each call to the
+    #: fastest provider serving the model; "price" to the cheapest; unset
+    #: keeps OpenRouter's default balancing.
+    openrouter_sort: Literal["throughput", "price", "latency"] | None = None
     embedding_model: str = "test-embed"
     embedding_dim: int = Field(default=768, ge=1, le=4096)
 

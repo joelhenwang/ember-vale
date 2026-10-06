@@ -90,6 +90,7 @@ def gateways_for_settings(
                         base_url=base_url,
                         client=client,
                         reasoning=provider.reasoning_for(role),
+                        sort=None if venice else provider.openrouter_sort,
                     ),
                     provider.hedge_after_s,
                 )

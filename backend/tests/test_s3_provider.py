@@ -340,3 +340,12 @@ def test_retrying_gateway_satisfies_port_shape() -> None:
     assert gateway.profile.adapter == "fake"
     for method in ("complete", "embed", "probe"):
         assert callable(getattr(gateway, method))
+
+
+def test_openrouter_body_carries_provider_sort() -> None:
+    plain = OpenRouterGateway(OPENROUTER_CHAT_PROFILE, api_key=SecretStr("sk-test"))
+    fast = OpenRouterGateway(
+        OPENROUTER_CHAT_PROFILE, api_key=SecretStr("sk-test"), sort="throughput"
+    )
+    assert "provider" not in plain._body(_request())
+    assert fast._body(_request())["provider"] == {"sort": "throughput"}
