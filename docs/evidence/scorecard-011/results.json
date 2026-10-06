@@ -1,0 +1,87 @@
+{
+  "meta": {
+    "commit": "057a689",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T03:10:45+00:00",
+    "wall_seconds": 303,
+    "est_usd_total": 0.0205414183,
+    "scenarios": [
+      "named_place"
+    ]
+  },
+  "results": {
+    "named_place": {
+      "ids": {
+        "world": "31b7a612-b1ee-4a46-b324-0a1dd6987a9c",
+        "place:Hearth": "c9eaaffb-cf2a-4293-a9b1-2b1e660ffbd5",
+        "place:Market": "84853062-7e0d-4c7a-908e-66fa5ddd7aa3",
+        "wren": "f01393c2-ca81-451a-9425-385e93b36518",
+        "ash": "6b4e2070-97c2-48dd-b78e-09cc9cb0b90e"
+      },
+      "beat_seconds": [
+        41.188000000081956,
+        12.812000000034459,
+        9.687000000034459,
+        22.21799999999348,
+        40.93700000003446,
+        47.25,
+        51.59400000004098,
+        76.73400000005495
+      ],
+      "error": null,
+      "score": {
+        "calls": 74,
+        "failed_calls": 0,
+        "repairs": 6,
+        "repairs_by_role": {
+          "resolver": 4,
+          "narrator": 2
+        },
+        "repair_rate": 0.08108108108108109,
+        "est_usd": 0.0205414183,
+        "action_mix": {
+          "wait": 6,
+          "communicate": 4,
+          "move": 3,
+          "observe": 7,
+          "interact": 1
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 2,
+        "longest_talk_streak": 1,
+        "moves_tried": 3,
+        "moves_done": 3,
+        "interact_success": 1,
+        "hooks": [
+          {
+            "title": "Old Mill on the Hill",
+            "powers": "new_location"
+          },
+          {
+            "title": "The Miller's Apprentice",
+            "powers": "spawn_npc"
+          },
+          {
+            "title": "The Miller's Apprentice Arrives",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Old Mill",
+          "Ash": "Old Mill",
+          "Caleb": "Old Mill",
+          "Tomas": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Old Mill"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "added Old Mill; there at the end: Wren, Ash, Caleb"
+      }
+    }
+  }
+}

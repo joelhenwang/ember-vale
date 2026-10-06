@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "commit": "057a689",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T03:01:15+00:00",
+    "wall_seconds": 231,
+    "est_usd_total": 0.016565197,
+    "scenarios": [
+      "named_place"
+    ]
+  },
+  "results": {
+    "named_place": {
+      "ids": {
+        "world": "a1f5d0c9-df5c-45c5-b135-9c447e47be17",
+        "place:Hearth": "47bced96-8469-4d3f-a93f-993c01e41f16",
+        "place:Market": "3150015c-bcef-4767-83a4-62735e612a10",
+        "wren": "7ee5de7d-547c-4d76-b799-99feeb450cbc",
+        "ash": "550569ab-5604-4e60-9eba-f5677a3a3e83"
+      },
+      "beat_seconds": [
+        33.89100000006147,
+        12.858999999938533,
+        36.64099999994505,
+        36.46900000004098,
+        12.0,
+        18.375,
+        34.85900000005495,
+        45.07900000002701
+      ],
+      "error": null,
+      "score": {
+        "calls": 61,
+        "failed_calls": 0,
+        "repairs": 6,
+        "repairs_by_role": {
+          "resolver": 3,
+          "director": 2,
+          "reaction": 1
+        },
+        "repair_rate": 0.09836065573770492,
+        "est_usd": 0.016565197,
+        "action_mix": {
+          "communicate": 5,
+          "move": 2,
+          "wait": 2,
+          "observe": 3,
+          "interact": 5
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 2,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 3,
+        "hooks": [
+          {
+            "title": "Road to the Old Mill",
+            "powers": "new_location"
+          },
+          {
+            "title": "The miller's daughter returns",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Old Mill",
+          "Ash": "Old Mill",
+          "Mara": "Old Mill"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Old Mill"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "added Old Mill; there at the end: Wren, Ash, Mara"
+      }
+    }
+  }
+}

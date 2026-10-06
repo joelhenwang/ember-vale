@@ -1,0 +1,76 @@
+{
+  "meta": {
+    "commit": "057a689",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T03:05:36+00:00",
+    "wall_seconds": 254,
+    "est_usd_total": 0.0157617364,
+    "scenarios": [
+      "named_place"
+    ]
+  },
+  "results": {
+    "named_place": {
+      "ids": {
+        "world": "f4a0d5bf-a934-4282-a8ea-5a5b2f40902f",
+        "place:Hearth": "e9e97c08-6582-44ce-807f-195b8405aebb",
+        "place:Market": "b9534349-f2bf-4b8e-9cf3-0d04e57f72c4",
+        "wren": "0cbe8dc2-3b10-4e70-8c54-92d9a380a336",
+        "ash": "028fc964-1a6a-4a38-a877-94fdba0a69b2"
+      },
+      "beat_seconds": [
+        37.07799999997951,
+        33.89000000001397,
+        18.094000000040978,
+        18.17200000002049,
+        55.34399999992456,
+        27.093999999924563,
+        36.73400000005495,
+        27.094000000040978
+      ],
+      "error": null,
+      "score": {
+        "calls": 55,
+        "failed_calls": 0,
+        "repairs": 4,
+        "repairs_by_role": {
+          "resolver": 4
+        },
+        "repair_rate": 0.07272727272727272,
+        "est_usd": 0.0157617364,
+        "action_mix": {
+          "communicate": 6,
+          "move": 2,
+          "interact": 5,
+          "wait": 1,
+          "observe": 2
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 2,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 5,
+        "hooks": [
+          {
+            "title": "The Way to the Old Mill",
+            "powers": "new_location"
+          }
+        ],
+        "final_places": {
+          "Wren": "Old Mill",
+          "Ash": "Old Mill"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Old Mill"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "added Old Mill; there at the end: Wren, Ash"
+      }
+    }
+  }
+}
