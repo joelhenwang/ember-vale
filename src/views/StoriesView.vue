@@ -10,6 +10,7 @@
 -->
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { storyLocation } from '../game/storyRoute'
 import type { Component } from 'vue'
 import { useRouter } from 'vue-router'
 import type { StorySetupView } from '../../content/clients/worldsim'
@@ -68,7 +69,7 @@ function worldOf(name: string): ResolvedWorld {
 }
 
 function openStory(story: StoryRecord): void {
-  router.push({ name: 'story-play', params: { storyId: story.id } })
+  router.push(storyLocation(story.id, story.mode))
 }
 
 async function openSetup(story: StoryRecord): Promise<void> {

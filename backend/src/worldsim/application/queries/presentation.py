@@ -125,7 +125,7 @@ async def chronicle(
             continue
         beats = await uow.scenes.narrations_for_event(event.id)
         text = " ".join(b.text for b in beats) or None
-        title = (beats[0].text if beats else event.event_type.value)[:120]
+        title = (beats[0].text if beats else _untold_title(event.event_type.value))[:120]
         scene_id: UUID | None = None
         if event.phase_run_id is not None:
             for scene in await uow.scenes.list_for_run(event.phase_run_id):
@@ -155,6 +155,18 @@ async def chronicle(
         has_more=high > scanned,
         watermark=high,
     )
+
+
+#: Titles for events whose narration is not written (yet).
+_UNTOLD_TITLES = {
+    "action_resolved": "The scene is still being written…",
+    "travel_started": "Someone sets out on the road.",
+    "travel_arrived": "Someone arrives.",
+}
+
+
+def _untold_title(event_type: str) -> str:
+    return _UNTOLD_TITLES.get(event_type, event_type.replace("_", " ").capitalize() + ".")
 
 
 def _schematic_manifest(world_id: UUID, locations: list[Location]) -> api.MapManifestView:

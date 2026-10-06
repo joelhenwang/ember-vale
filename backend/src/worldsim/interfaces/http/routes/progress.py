@@ -9,6 +9,7 @@ from uuid import UUID
 from fastapi import APIRouter, Request
 
 from worldsim.application.commands.inventory import give_item, transfer_item
+from worldsim.application.orchestration.stage1 import item_description, item_label
 from worldsim.domain.items import ItemDefinition, load_item_definitions
 from worldsim.domain.progress import ItemInstance
 from worldsim.interfaces.http import schemas as api
@@ -36,6 +37,8 @@ def _item_view(item: ItemInstance) -> api.ItemView:
         owner_id=item.owner_id,
         quantity=item.quantity,
         version=item.version,
+        name=item_label(item),
+        description=item_description(item),
     )
 
 

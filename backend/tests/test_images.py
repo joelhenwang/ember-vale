@@ -12,6 +12,7 @@ from uuid import UUID
 import httpx
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 from test_stage1_api import ApiClient
 from test_story_travel import MIGRATIONS, SEED_DIR, _create, _draft
 
@@ -118,10 +119,26 @@ class _Painter:
         return GeneratedImage(data=PNG, mime="image/png", width=1024, height=1024, seed=1)
 
 
-def _story(client: ApiClient) -> UUID:
+def _story(client: ApiClient, *, curated: bool = False) -> UUID:
+    """A new story; without its curated starter portraits unless asked."""
     created = _create(client, _draft(client), "images-key")
     assert created.status_code == 200, created.text
-    return UUID(created.json()["world_id"])
+    world_id = UUID(created.json()["world_id"])
+    if not curated:
+        asyncio.run(_drop_portraits(world_id))
+    return world_id
+
+
+async def _drop_portraits(world_id: UUID) -> None:
+    engine = create_engine(Settings())
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(
+                text("delete from asset_record where world_id = :w and kind = 'portrait'"),
+                {"w": world_id},
+            )
+    finally:
+        await engine.dispose()
 
 
 def _work(world_id: UUID, painter: _Painter, root: Path) -> list[ImageJob]:
@@ -218,3 +235,38 @@ def test_jobs_fail_terminally_and_keep_the_error(
     assert jobs and all(job.status == JobStatus.FAILED for job in jobs)
     assert all(job.attempt_count == MAX_JOB_ATTEMPTS and "503" in job.error for job in jobs)
     assert len(painter.requests) == len(jobs) * MAX_JOB_ATTEMPTS
+
+
+def test_existing_art_is_kept_and_nothing_is_drawn(client: ApiClient, tmp_path: Path) -> None:
+    """Built-in cast ship curated portraits; the runner binds those instead."""
+    world_id = _story(client, curated=True)
+    starter = client.post(
+        "/api/v1/assets/ensure-starter",
+        json={"world_id": str(world_id)},
+        headers={"X-Worldsim-Role": "watcher"},
+    )
+    assert starter.status_code == 200, starter.text
+    curated = {a["subject_id"]: a["id"] for a in starter.json() if a["kind"] == "portrait"}
+    painter = _Painter()
+    jobs = _work(world_id, painter, tmp_path)
+    covered = [job for job in jobs if str(job.subject_id) in curated]
+    assert covered, "the built-in cast has curated portraits"
+    assert all(job.status == JobStatus.READY for job in covered)
+    assert all(str(job.result_asset_id) == curated[str(job.subject_id)] for job in covered)
+    assert len(painter.requests) == len(jobs) - len(covered)
+
+
+def test_generated_art_is_stored_at_display_size() -> None:
+    import io
+
+    from PIL import Image
+
+    from worldsim.infrastructure.images.shrink import shrink
+
+    raw = io.BytesIO()
+    Image.new("RGB", (1024, 1024), (200, 120, 40)).save(raw, format="PNG")
+    big = GeneratedImage(data=raw.getvalue(), mime="image/png", width=1024, height=1024)
+    small = shrink(big, AssetKind.PORTRAIT)
+    assert (small.mime, small.width, small.height) == ("image/webp", 512, 512)
+    assert len(small.data) < len(big.data)
+    assert shrink(GeneratedImage(PNG, "image/png", 1, 1), AssetKind.PORTRAIT).data == PNG

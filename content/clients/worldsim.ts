@@ -267,8 +267,10 @@ export interface ItemTransferRequest {
 }
 
 export interface ItemView {
+  description?: string;
   id: string;
   item_key: string;
+  name?: string;
   owner_id: string | null;
   quantity: number;
   version: number;
@@ -723,6 +725,7 @@ export interface SuggestionView {
   destination_location_id?: string | null;
   family: string;
   id: string;
+  item_instance_id?: string | null;
   needs_topic?: boolean;
   subtitle?: string;
   target_character_id?: string | null;

@@ -192,3 +192,47 @@ def test_create_link_select_flow(client: ApiClient) -> None:
 
     read = client.get("/api/v1/stage2/roles", params={"world_id": str(WORLD)}, headers=_watcher())
     assert read.json()["role"] == "player"
+
+
+def test_items_lying_here_are_offered_and_named(client: ApiClient) -> None:
+    from uuid import uuid4
+
+    from worldsim.domain.progress import ItemInstance
+    from worldsim.infrastructure.db.engine import create_engine
+    from worldsim.infrastructure.repositories.unit_of_work import create_unit_of_work
+
+    locket = uuid4()
+
+    async def drop() -> UUID:
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                wren = await uow.characters.get(WREN)
+                await uow.inventory.add_item(
+                    ItemInstance(
+                        id=locket,
+                        world_id=WORLD,
+                        item_key="placed_item",
+                        location_id=wren.location_id,
+                        name="Silver locket",
+                        description="Engraved with an R.",
+                    )
+                )
+                await uow.commit()
+                return wren.location_id
+        finally:
+            await engine.dispose()
+
+    asyncio.run(drop())
+    offered = client.get(
+        "/api/v1/stage1/suggestions", params={"character_id": str(WREN)}, headers=_player(WREN)
+    ).json()
+    take = [s for s in offered if s["family"] == "take"]
+    assert [(s["title"], s["item_instance_id"]) for s in take] == [
+        ("Pick up the Silver locket", str(locket))
+    ]
+    ground = client.get(
+        "/api/v1/stage2/items", params={"world_id": str(WORLD)}, headers=_watcher()
+    ).json()["members"]
+    named = next(i for i in ground if i["id"] == str(locket))
+    assert (named["name"], named["description"]) == ("Silver locket", "Engraved with an R.")

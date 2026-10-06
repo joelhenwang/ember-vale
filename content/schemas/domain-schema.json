@@ -3320,6 +3320,19 @@
               "title": "Family",
               "type": "string"
             },
+            "note": {
+              "anyOf": [
+                {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Note"
+            },
             "route_id": {
               "anyOf": [
                 {
@@ -4710,6 +4723,19 @@
           "default": "move",
           "title": "Family",
           "type": "string"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
         },
         "route_id": {
           "anyOf": [
@@ -6857,6 +6883,19 @@
               "default": "move",
               "title": "Family",
               "type": "string"
+            },
+            "note": {
+              "anyOf": [
+                {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Note"
             },
             "route_id": {
               "anyOf": [

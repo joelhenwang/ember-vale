@@ -90,6 +90,9 @@ class MoveAction(ActionBase):
     family: Literal[ActionFamily.MOVE] = ActionFamily.MOVE
     destination_location_id: LocationId
     route_id: RouteId | None = None
+    #: The player's own words for the trip ("carry two cups toward the
+    #: market"), told by the narrator; the rules only move.
+    note: str | None = Field(default=None, max_length=256)
 
 
 class CommunicateAction(ActionBase):

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
+from worldsim.application.orchestration.stage1 import item_description, item_label
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.enums import LifeStatus
 from worldsim.interfaces.http import schemas as api
@@ -34,13 +35,13 @@ async def suggestions_for(uow: UnitOfWork, character_id: UUID) -> list[api.Sugge
         api.SuggestionView(
             id="rest",
             family="rest",
-            title="Rest a while",
+            title="Rest",
             subtitle="Recover stamina and mana.",
         ),
         api.SuggestionView(
             id="observe",
             family="observe",
-            title="Take in the surroundings",
+            title="Look around",
             subtitle="Notice what is happening here.",
         ),
     ]
@@ -74,6 +75,18 @@ async def suggestions_for(uow: UnitOfWork, character_id: UUID) -> list[api.Sugge
                     target_character_id=other.id,
                 ),
             ]
+        )
+    for item in await uow.inventory.list_at_location(world_id, character.location_id):
+        if item.owner_id is not None:
+            continue
+        suggestions.append(
+            api.SuggestionView(
+                id=f"take:{item.id.hex}",
+                family="take",
+                title=f"Pick up the {item_label(item)}",
+                subtitle=item_description(item)[:120],
+                item_instance_id=item.id,
+            )
         )
     suggestions.append(
         api.SuggestionView(

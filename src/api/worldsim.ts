@@ -14,6 +14,7 @@ import type {
   AutoplayPlayRequest,
   AutoplayView,
   BeatView,
+  CharacterDetail,
   ChronicleResponse,
   DraftValidationView,
   EditorDraftCompleteRequest,
@@ -25,6 +26,7 @@ import type {
   InterventionEditRequest,
   InterventionRequest,
   InterventionView,
+  ItemListResponse,
   MapResponse,
   PresentationResponse,
   PresetDetail,
@@ -51,6 +53,7 @@ import type {
   StoryListResponse,
   StoryProviderView,
   StorySetupView,
+  SuggestionView,
   TimelineResponse
 } from '../../content/clients/worldsim'
 import { apiFetch, type Role } from './http'
@@ -452,6 +455,39 @@ export function getSceneNarration(sceneId: string, opts: CallOptions = {}): Prom
   // Narration beats with speaker and kind (dialogue vs narration), backing
   // the same reading view.
   return apiFetch<BeatView[]>(`/stage1/scenes/${sceneId}/narration`, { ...opts, method: 'GET' })
+}
+
+/* Adventure (player seat) ---------------------------------------------- */
+
+export function getCharacter(
+  characterId: string,
+  opts: CallOptions = {}
+): Promise<CharacterDetail> {
+  // Card and state are filled for the caller's own character (or a watcher).
+  return apiFetch<CharacterDetail>(`/stage1/characters/${characterId}`, { ...opts, method: 'GET' })
+}
+
+export function getSuggestions(
+  characterId: string,
+  opts: CallOptions = {}
+): Promise<SuggestionView[]> {
+  // Actions the rules allow right now: places to go, people here, things to pick up.
+  return apiFetch<SuggestionView[]>(`/stage1/suggestions?character_id=${characterId}`, {
+    ...opts,
+    method: 'GET'
+  })
+}
+
+export function listItems(
+  worldId: string,
+  ownerId: string | null,
+  opts: CallOptions = {}
+): Promise<ItemListResponse> {
+  const owner = ownerId ? `&owner_id=${ownerId}` : ''
+  return apiFetch<ItemListResponse>(`/stage2/items?world_id=${worldId}${owner}`, {
+    ...opts,
+    method: 'GET'
+  })
 }
 
 /* Operating seats -------------------------------------------------------- */

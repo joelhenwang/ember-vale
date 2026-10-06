@@ -36,7 +36,7 @@ from worldsim.application.ports.model_gateway import (
     ModelTimeoutError,
     ModelUnavailableError,
 )
-from worldsim.domain.commands import CommunicateAction
+from worldsim.domain.commands import CommunicateAction, MoveAction
 from worldsim.domain.enums import NarrationKind, ReactionStatus
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.ids import new_narration_id
@@ -470,6 +470,22 @@ def communication_facts(
                 **({"utterance": utterance} if utterance is not None else {}),
             }
         )
+    return facts
+
+
+def move_note_facts(intents: Sequence[Intent], names: Mapping[UUID, str]) -> list[dict[str, str]]:
+    """What a traveller set out to do, in the player's words, for the narrator."""
+    facts: list[dict[str, str]] = []
+    for intent in intents:
+        action = intent.action
+        if isinstance(action, MoveAction) and action.note:
+            name = names.get(intent.author_character_id, "Someone")
+            facts.append(
+                {
+                    "key": f"move-note:{intent.id}",
+                    "value": f"{name} sets out meaning to: {action.note}",
+                }
+            )
     return facts
 
 

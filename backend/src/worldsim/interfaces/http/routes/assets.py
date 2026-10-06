@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Request, Response
@@ -60,6 +61,25 @@ def _asset_view(asset: AssetRecord) -> api.AssetView:
 def _assets_root(request: Request) -> LocalStorage:
     state = request.app.state.app_state
     return LocalStorage(state.seed_dir.parent.parent / "assets")
+
+
+async def _visible_to(uow: Any, world_id: UUID, viewer: UUID | None, subject_id: UUID) -> bool:
+    """A face the player can see: their own, or anyone in a place they can see.
+
+    Matches the presentation cast filter, so every token on the player's
+    map has a portrait that loads.
+    """
+    if viewer is not None and subject_id == viewer:
+        return True
+    characters = {c.id: c for c in await uow.characters.list_for_world(world_id)}
+    subject = characters.get(subject_id)
+    if subject is None:
+        return False
+    me = characters.get(viewer) if viewer is not None else None
+    if me is not None and me.location_id == subject.location_id:
+        return True
+    place = await uow.locations.get(subject.location_id)
+    return bool(place.discovered)
 
 
 @router.post("/assets/jobs", response_model=api.JobView)
@@ -142,7 +162,8 @@ async def read_asset_bytes(asset_id: UUID, request: Request, world_id: UUID) -> 
             raise DomainError(ErrorCode.NOT_FOUND, "asset is not in this world")
         if not is_omniscient(parsed):
             allowed = asset.kind in (AssetKind.MAP, AssetKind.BACKGROUND) or (
-                asset.subject_id is not None and asset.subject_id == viewer
+                asset.subject_id is not None
+                and await _visible_to(uow, world_id, viewer, asset.subject_id)
             )
             if not allowed:
                 raise DomainError(ErrorCode.FORBIDDEN, "asset is outside player perspective")

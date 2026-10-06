@@ -17,9 +17,10 @@ from worldsim.application.images import compose_prompt, load_style_pack, subject
 from worldsim.application.ports.images import ImageGenerationError, ImageGenerator, ImageRequest
 from worldsim.application.ports.storage import StoragePort
 from worldsim.application.unit_of_work import UnitOfWork
-from worldsim.domain.assets import ImageJob
+from worldsim.domain.assets import ImageJob, JobStatus
 from worldsim.domain.errors import DomainError
 from worldsim.infrastructure.assets.fixture import FixtureImageGateway
+from worldsim.infrastructure.images.shrink import shrink
 
 _log = logging.getLogger(__name__)
 
@@ -59,6 +60,8 @@ class ImageJobRunner:
         return True
 
     async def _work(self, job: ImageJob) -> None:
+        if await self._already_drawn(job):
+            return
         try:
             request = await self._request_for(job)
             image = await self._generator.generate(request)
@@ -66,9 +69,33 @@ class ImageJobRunner:
             _log.warning("image job %s failed: %s", job.id, exc)
             await self._jobs.note_attempt(job.id, str(exc)[:1000])
             return
-        ref = f"generated/{job.world_id or 'shared'}/{job.kind.value}-{job.id}.png"
+        image = shrink(image, job.kind)
+        extension = "webp" if image.mime == "image/webp" else "png"
+        ref = f"generated/{job.world_id or 'shared'}/{job.kind.value}-{job.id}.{extension}"
         await self._storage.write(ref, image.data, image.mime)
         await self._jobs.complete(job.id, self._storage, ref, image.mime, image.width, image.height)
+
+    async def _already_drawn(self, job: ImageJob) -> bool:
+        """Curated or earlier art for this subject wins: bind it, draw nothing.
+
+        Built-in characters ship hand-made portraits; a generated one would
+        replace them on the map (the newest asset is shown).
+        """
+        if job.world_id is None or job.subject_id is None:
+            return False
+        async with self._factory() as uow:
+            existing = await uow.assets.list_assets_for_subject(
+                job.world_id, job.kind.value, job.subject_id
+            )
+            if not existing:
+                return False
+            newest = max(existing, key=lambda asset: asset.subject_visual_version)
+            await uow.assets.save_job(
+                job.model_copy(update={"status": JobStatus.READY, "result_asset_id": newest.id}),
+                job.version,
+            )
+            await uow.commit()
+        return True
 
     async def _request_for(self, job: ImageJob) -> ImageRequest:
         pack = load_style_pack(self._packs_dir, job.style_pack_version)

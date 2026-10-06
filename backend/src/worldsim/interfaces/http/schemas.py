@@ -404,6 +404,9 @@ class ItemView(BaseModel):
     owner_id: UUID | None
     quantity: int
     version: int
+    #: Display name: the item's own, else the catalog's, else its key.
+    name: str = ""
+    description: str = ""
 
 
 class ItemListResponse(BaseModel):
@@ -1116,6 +1119,7 @@ class SuggestionView(BaseModel):
     target_character_id: UUID | None = None
     destination_location_id: UUID | None = None
     needs_topic: bool = False
+    item_instance_id: UUID | None = None
 
 
 class ConditionView(BaseModel):

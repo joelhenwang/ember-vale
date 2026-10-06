@@ -2656,6 +2656,11 @@
       "ItemView": {
         "additionalProperties": false,
         "properties": {
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -2663,6 +2668,11 @@
           },
           "item_key": {
             "title": "Item Key",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
             "type": "string"
           },
           "owner_id": {
@@ -6163,6 +6173,18 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "item_instance_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Instance Id"
           },
           "needs_topic": {
             "default": false,

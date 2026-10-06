@@ -128,10 +128,15 @@ export function useObservatory(worldId: Ref<string>, options: ObservatoryOptions
   const feed = computed(() => groupFeed(entries.value))
 
   async function readChronicle(): Promise<void> {
+    // Re-read from the first scene still waiting for its words, so late
+    // narration replaces the placeholder title without a reload.
+    const pending = entries.value.find((e) => e.scene_id && !e.text)
+    let after = pending ? Math.min(cursor, pending.sequence - 1) : cursor
     for (let page = 0; page < 20; page++) {
-      const res = await api.getChronicle(worldId.value, cursor, opts.value)
+      const res = await api.getChronicle(worldId.value, after, opts.value)
       entries.value = mergeChronicle(entries.value, res.entries ?? [])
-      cursor = res.next_after
+      after = res.next_after
+      cursor = Math.max(cursor, after)
       if (!res.has_more) return
     }
   }

@@ -65,6 +65,7 @@ from worldsim.application.graphs.narrate import (
     dedupe_narration_facts,
     fallback_beats,
     load_narrator_prompt,
+    move_note_facts,
 )
 from worldsim.application.graphs.reaction import (
     REACTION_PROMPT_VERSION,
@@ -226,6 +227,7 @@ from worldsim.domain.rules.dnd import (
     weapon_attack_bonus,
 )
 from worldsim.domain.rules.dnd.data import dict_field, entry, str_field, table
+from worldsim.domain.rules.grounding import grounded_move
 from worldsim.domain.rules.meetups import resolve_meetups
 from worldsim.domain.rules.mentions import unmapped_places
 from worldsim.domain.rules.perception import permitted_facts
@@ -346,10 +348,15 @@ def item_label(item: ItemInstance) -> str:
     return known.name if known is not None else item.item_key.replace("_", " ")
 
 
+def item_description(item: ItemInstance) -> str:
+    """The item's own description, else the catalog's, else nothing."""
+    known = _item_catalog().get(item.item_key)
+    return item.description or (known.description if known is not None else "")
+
+
 def item_line(item: ItemInstance) -> str:
     """Name, short description and id, as listed to a character."""
-    known = _item_catalog().get(item.item_key)
-    about = item.description or (known.description if known is not None else "")
+    about = item_description(item)
     count = f" x{item.quantity}" if item.quantity > 1 else ""
     detail = f" — {about}" if about else ""
     return f"{item_label(item)}{count}{detail} (item_id {item.id})"
@@ -358,6 +365,38 @@ def item_line(item: ItemInstance) -> str:
 def _with_pronouns(character_id: UUID, pronouns: Mapping[UUID, str] | None) -> str:
     stated = (pronouns or {}).get(character_id)
     return f"{stated}, " if stated else ""
+
+
+def whereabouts(
+    characters: Sequence[Character], participants: Sequence[str], places: Mapping[UUID, str]
+) -> dict[str, str]:
+    """Name -> place for each scene participant, as the world stands now."""
+    wanted = set(participants)
+    return {
+        c.name: places.get(c.location_id, "the road") for c in characters if str(c.id) in wanted
+    }
+
+
+def scene_place_facts(start: str | None, ends: Mapping[str, str]) -> list[tuple[str, str]]:
+    """The scene's setting for the narrator: one place, or where it ends up.
+
+    Scorecard-era bug: a traveller and the friend waiting for them shared
+    a scene "at" the traveller's starting place, and the narrator had the
+    friend "stay behind" somewhere they never were.
+    """
+    facts: list[tuple[str, str]] = []
+    finals = set(ends.values())
+    if len(finals) == 1 and start and next(iter(finals)) != start:
+        end = next(iter(finals))
+        facts.append(
+            ("place", f"The scene begins at {start} and ends at {end}, where everyone in it is.")
+        )
+    elif start:
+        facts.append(("place", f"The scene takes place at {start}."))
+    if len(ends) > 1 or (ends and start and set(ends.values()) != {start}):
+        listed = "; ".join(f"{name} at {place}" for name, place in sorted(ends.items()))
+        facts.append(("whereabouts", f"By the end of the scene: {listed}."))
+    return facts
 
 
 def identity_text(card: CharacterCard) -> str:
@@ -747,6 +786,30 @@ class Stage1Orchestrator:
             profiles[role] = gateway.profile
         return PhaseRuntime(sampling=sampling, gateways=gateways, profiles=profiles, pin=pin)
 
+    async def _ground_player_moves(
+        self, world_id: UUID, player_intents: Mapping[UUID, ActionIntent] | None
+    ) -> Mapping[UUID, ActionIntent] | None:
+        """A player's "Do" that plainly heads to a neighbouring place becomes the move."""
+        if not player_intents or not any(
+            isinstance(a, InteractAction) for a in player_intents.values()
+        ):
+            return player_intents
+        async with self._factory() as uow:
+            places = {loc.id: loc for loc in await uow.locations.list_for_world(world_id)}
+            grounded: dict[UUID, ActionIntent] = {}
+            for character_id, action in player_intents.items():
+                if isinstance(action, InteractAction):
+                    actor = await uow.characters.get(character_id)
+                    here = places.get(actor.location_id)
+                    reachable = {
+                        route.destination_location_id: places[route.destination_location_id].name
+                        for route in (here.routes if here is not None else [])
+                        if route.destination_location_id in places
+                    }
+                    action = grounded_move(action, reachable) or action
+                grounded[character_id] = action
+        return grounded
+
     async def advance_phase(
         self,
         world_id: UUID,
@@ -779,6 +842,7 @@ class Stage1Orchestrator:
         self._fire("before_probe")
         with _timed(timings, "probe"):
             await self._probe_gate(runtime)
+        player_intents = await self._ground_player_moves(world_id, player_intents)
         run, admitted_owner, admitted_role = await self._admit_run(
             world_id, index, player_intents, submitter_id
         )
@@ -2959,6 +3023,7 @@ class Stage1Orchestrator:
             roster = await uow.party.list_for_world(world_id)
             config = await uow.worlds.get_config(world_id)
             place_name = await _event_place_name(uow, event_id)
+            place_names = {loc.id: loc.name for loc in await uow.locations.list_for_world(world_id)}
         if existing:
             return "skipped"
         structured = config.get(NARRATION_MODE_KEY) == NARRATION_MODE_STRUCTURED
@@ -2971,13 +3036,17 @@ class Stage1Orchestrator:
             if not fact.key.startswith("reply:")
         ]
         facts = [{"key": key, "value": value} for key, value in dedupe_narration_facts(sourced)]
-        # Where the scene happens, so the narrator does not set it elsewhere.
-        if place_name:
-            facts.insert(0, {"key": "place", "value": f"The scene takes place at {place_name}."})
         names = {c.id: c.name for c in characters}
+        # Where the scene happens, so the narrator does not set it elsewhere,
+        # and where each participant is by its end: a meeting scene starts
+        # where the traveller set out and ends where the others wait.
+        ends = whereabouts(characters, participants, place_names)
+        for key, value in reversed(scene_place_facts(place_name, ends)):
+            facts.insert(0, {"key": key, "value": value})
         # Quoted communicate attempts (a player's "Say" line) are the actor's
         # own speech: dialogue-eligible like quoted reactions.
         facts.extend(attempt_speech_facts(scene_intents, names, participants))
+        facts.extend(move_note_facts(scene_intents, names))
         facts.extend(communication_facts(scene_reactions, names, participants))
         async with self._factory() as uow:
             speaker_pronouns = await _pronouns_of(uow, characters)

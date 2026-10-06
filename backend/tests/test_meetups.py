@@ -249,3 +249,16 @@ def test_a_decided_move_actually_moves_and_crossers_meet(
     }
     # Ash (or Wren) waits; the other travels: both end up in one place.
     assert {"Wren", "Ash"} in occupants.values()
+
+
+def test_a_meeting_scene_is_set_where_it_ends() -> None:
+    from worldsim.application.orchestration.stage1 import scene_place_facts
+
+    met = dict(scene_place_facts("Hearth", {"Wren": "Market", "Ash": "Market"}))
+    assert met["place"] == "The scene begins at Hearth and ends at Market, where everyone in it is."
+    assert met["whereabouts"] == "By the end of the scene: Ash at Market; Wren at Market."
+    apart = dict(scene_place_facts("Hearth", {"Wren": "Hearth", "Ash": "Market"}))
+    assert apart["place"] == "The scene takes place at Hearth."
+    assert "Ash at Market" in apart["whereabouts"]
+    alone = dict(scene_place_facts("Hearth", {"Wren": "Hearth"}))
+    assert alone == {"place": "The scene takes place at Hearth."}

@@ -161,6 +161,31 @@ def test_bytes_served_with_perspective(client: ApiClient) -> None:
     assert got.headers["content-type"] == "image/png"
     assert len(got.content) > 100_000
 
+    # Someone in a place the player can see has a face that loads.
+    seen = client.get(
+        f"/api/v1/assets/{ash_asset['id']}",
+        params={"world_id": str(WORLD)},
+        headers=_player(WREN),
+    )
+    assert seen.status_code == 200, seen.text
+
+    # Someone in a place the player cannot see stays hidden.
+    async def hide_ash() -> None:
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                ash = await uow.characters.get(ASH)
+                wren = await uow.characters.get(WREN)
+                assert ash.location_id != wren.location_id
+                place = await uow.locations.get(ash.location_id)
+                await uow.locations.save(
+                    place.model_copy(update={"discovered": False}), place.version
+                )
+                await uow.commit()
+        finally:
+            await engine.dispose()
+
+    asyncio.run(hide_ash())
     foreign = client.get(
         f"/api/v1/assets/{ash_asset['id']}",
         params={"world_id": str(WORLD)},

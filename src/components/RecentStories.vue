@@ -9,9 +9,10 @@ import IconSparkle from './icons/IconSparkle.vue'
 import IconFeather from './icons/IconFeather.vue'
 import IconArrowInCircle from './icons/IconArrowInCircle.vue'
 import IconArrowRight from './icons/IconArrowRight.vue'
+import { storyLocation } from '../game/storyRoute'
 
 function resume(story: StorySummary): void {
-  router.push({ name: 'story-play', params: { storyId: story.id } })
+  router.push(storyLocation(story.id, story.pov))
 }
 </script>
 

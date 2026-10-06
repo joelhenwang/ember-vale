@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { storyLocation } from '../game/storyRoute'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import CreateCharacterTile from '../components/newstory/CreateCharacterTile.vue'
 import SearchField from '../components/ui/SearchField.vue'
@@ -423,15 +424,18 @@ async function prefillQuickStart(): Promise<void> {
   const starters = ['Wren', 'Ash']
   sel.cast = presets.characters.value
     .filter((c) => starters.includes(c.name))
-    .map((c, i) => ({
-      key: starters[i].toLowerCase(),
+    .map((c) => ({
+      // Keyed by name: presets arrive in their own order, not the starters'.
+      key: c.name.toLowerCase(),
       presetId: c.id,
       presetRevision: c.revision,
       name: c.name,
       location: c.startKey ?? ''
     }))
-  sel.role = 'watcher'
-  sel.controlledKey = undefined
+  // Quick Start puts you in the story: you play Wren, Ash is nearby.
+  const playable = sel.cast.find((c) => c.key === 'wren') ?? sel.cast[0]
+  sel.role = playable ? 'player' : 'watcher'
+  sel.controlledKey = playable?.key
   pinCtl.reset()
   sel.title = 'A Morning in Ember Vale'
   // Quick Start lands on Review with everything filled in — and persists.
@@ -439,7 +443,7 @@ async function prefillQuickStart(): Promise<void> {
   step.value = 6
   const saved = await persist()
   bootNotice.value = saved
-    ? 'Quick Start filled in Ember Vale with Wren and Ash — review and begin, or step back to change anything.'
+    ? 'Quick Start: you play Wren in Ember Vale, with Ash nearby — begin, or step back to change anything.'
     : 'Quick Start filled in Ember Vale with Wren and Ash, but the save failed — your choices are kept here, not yet on the server. Retry the save before leaving.'
 }
 
@@ -518,10 +522,8 @@ async function boot(
   // A completed draft already has a story: lead to it instead of offering
   // a second creation from the same draft.
   if (opened.created_world_id) {
-    await router.replace({
-      name: 'story-play',
-      params: { storyId: opened.created_world_id }
-    })
+    const mode = (opened.payload as { mode?: { role?: string } } | null)?.mode?.role
+    await router.replace(storyLocation(opened.created_world_id, mode))
     return
   }
   hydrate(opened.payload as Record<string, unknown>)
@@ -825,7 +827,7 @@ async function create(): Promise<void> {
       'The previous draft finished creating — find its story on the Stories shelf.'
     return
   }
-  await router.push({ name: 'story-play', params: { storyId: worldId } })
+  await router.push(storyLocation(worldId, sel.role))
 }
 
 /**
@@ -1218,21 +1220,22 @@ onMounted(() => {
         <dl class="nsv__review">
           <div>
             <dt>World</dt>
-            <dd>{{ selectedWorld?.name ?? sel.worldId }} (rev {{ sel.worldRev }})</dd>
+            <dd>{{ selectedWorld?.name ?? sel.worldId }}</dd>
           </div>
           <div>
             <dt>Cast</dt>
             <dd>
-              {{
-                sel.cast.map((c) => `${pinnedCharName(c)} (rev ${c.presetRevision})`).join(', ') ||
-                'None'
-              }}
+              {{ sel.cast.map((c) => pinnedCharName(c)).join(', ') || 'None' }}
             </dd>
           </div>
           <div>
             <dt>Mode</dt>
             <dd>
-              {{ sel.role === 'player' ? `Player as ${controlledDisplay}` : 'Observer' }}
+              {{
+                sel.role === 'player'
+                  ? `You play ${controlledDisplay}`
+                  : 'You watch the story unfold'
+              }}
             </dd>
           </div>
           <div>
@@ -1288,10 +1291,10 @@ onMounted(() => {
           !draftCtl.draft.value
             ? 'No draft yet'
             : draftCtl.saveState.value === 'failed'
-              ? `Draft rev ${draftCtl.draft.value.version} · save failed — choices kept locally`
+              ? 'Save failed — choices kept here'
               : dirty
-                ? `Draft rev ${draftCtl.draft.value.version} · unsaved changes`
-                : `Draft rev ${draftCtl.draft.value.version} · saved`
+                ? 'Unsaved changes'
+                : 'Draft saved'
         }}</span>
         <MenuButton
           v-if="step < 6"

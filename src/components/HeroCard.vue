@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { menuState } from '../game/state'
 import { useGameImage } from '../game/images'
 import MenuButton from './MenuButton.vue'
+import { storyLocation } from '../game/storyRoute'
 import IconSparkle from './icons/IconSparkle.vue'
 import IconInfo from './icons/IconInfo.vue'
 
@@ -55,7 +56,7 @@ const cover = useGameImage('hero.currentStory')
               class="hero__continue"
               size="md"
               arrow="circle"
-              @click="router.push({ name: 'story-play', params: { storyId: story.id } })">
+              @click="router.push(storyLocation(story.id, story.pov))">
               Continue Story
             </MenuButton>
             <div class="ev-divider hero__rule" aria-hidden="true"></div>
