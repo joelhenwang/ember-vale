@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { menuState } from '../game/state'
 import MenuButton from './MenuButton.vue'
@@ -8,8 +9,11 @@ import MountainRidge from './decor/MountainRidge.vue'
 import IconSparkle from './icons/IconSparkle.vue'
 import IconEmblem from './icons/IconEmblem.vue'
 import IconBook from './icons/IconBook.vue'
+import IconUser from './icons/IconUser.vue'
+import QuickHeroDialog from './QuickHeroDialog.vue'
 
 const router = useRouter()
+const heroOpen = ref(false)
 </script>
 
 <template>
@@ -39,11 +43,16 @@ const router = useRouter()
         <template #icon><IconBook :size="20" /></template>
         Quick Start: {{ menuState.quickStartWorld }}
       </MenuButton>
+      <MenuButton class="begin__cta2" variant="outline" size="md" @click="heroOpen = true">
+        <template #icon><IconUser :size="20" /></template>
+        Play as a new hero
+      </MenuButton>
 
       <p class="ev-quote begin__motto">“{{ menuState.motto }}”</p>
     </div>
 
     <MountainRidge class="begin__ridge" aria-hidden="true" />
+    <QuickHeroDialog :open="heroOpen" @close="heroOpen = false" />
   </section>
 </template>
 
