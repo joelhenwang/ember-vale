@@ -4,6 +4,8 @@ import { useGameImage } from '../game/images'
 import IconEmblem from './icons/IconEmblem.vue'
 import IconHelp from './icons/IconHelp.vue'
 import IconChevronDown from './icons/IconChevronDown.vue'
+import HelpDialog from './HelpDialog.vue'
+import { ref } from 'vue'
 
 const nav = [
   { label: 'Home', to: '/' },
@@ -14,6 +16,7 @@ const nav = [
 ] as const
 
 const avatarUrl = useGameImage(menuState.player.avatarSlot)
+const helpOpen = ref(false)
 </script>
 
 <template>
@@ -37,7 +40,7 @@ const avatarUrl = useGameImage(menuState.player.avatarSlot)
       </nav>
 
       <div class="topbar__right">
-        <button class="help" type="button">
+        <button class="help" type="button" aria-haspopup="dialog" @click="helpOpen = true">
           <IconHelp :size="19" />
           <span>Help</span>
         </button>
@@ -49,6 +52,7 @@ const avatarUrl = useGameImage(menuState.player.avatarSlot)
         </button>
       </div>
     </div>
+    <HelpDialog :open="helpOpen" @close="helpOpen = false" />
   </header>
 </template>
 
