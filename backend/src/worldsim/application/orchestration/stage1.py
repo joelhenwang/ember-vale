@@ -393,7 +393,9 @@ def scene_place_facts(start: str | None, ends: Mapping[str, str]) -> list[tuple[
         )
     elif start:
         facts.append(("place", f"The scene takes place at {start}."))
-    if len(ends) > 1 or (ends and start and set(ends.values()) != {start}):
+    # Only when people end up apart is it worth saying where each one is;
+    # otherwise the narrator just repeats "both remain at the Market".
+    if len(finals) > 1:
         listed = "; ".join(f"{name} at {place}" for name, place in sorted(ends.items()))
         facts.append(("whereabouts", f"By the end of the scene: {listed}."))
     return facts
