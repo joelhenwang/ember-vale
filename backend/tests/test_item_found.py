@@ -88,3 +88,33 @@ def test_a_successful_snatch_puts_the_pouch_in_your_pack(
         headers=player,
     ).json()["members"]
     assert [(i["name"], i["description"]) for i in pack] == [("Knotted coin pouch", "Heavy.")]
+
+
+def test_the_resolver_knows_who_and_what_is_at_hand(
+    stage1_client: tuple[ApiClient, FakeGateway],
+) -> None:
+    client, gateway = stage1_client
+    ids = asyncio.run(_seed_connected())  # Wren at the Hearth, Ash at the Market
+    wren = str(ids["wren"])
+    base = _route_for(ids, {})
+    prompts: list[str] = []
+
+    def route(request: CompletionRequest) -> str | None:
+        if "You resolve one scene" in (request.system or ""):
+            prompts.append(request.prompt)
+        return base(request)
+
+    gateway.route = route
+    attempt: dict[str, Any] = {
+        wren: {
+            "family": "interact",
+            "character_id": wren,
+            "snapshot_id": str(uuid.UUID(int=0)),
+            "attempt": "search the hearth for the lost crate",
+        }
+    }
+    player = {"X-Worldsim-Role": "player", "X-Worldsim-Character": wren}
+    assert _advance(client, ids["world"], 1, attempt, headers=player).status_code == 200
+    mine = next(p for p in prompts if "search the hearth" in p)
+    assert "Around them:" in mine
+    assert "At Hearth: Wren; lying here: nothing; carried here: nothing." in mine

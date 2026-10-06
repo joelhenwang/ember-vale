@@ -139,3 +139,11 @@ def test_a_settled_rumour_leaves_word_around_the_vale(
     assert [(s["title"], s["purpose"]) for s in view["settled"]] == [
         ("A Market-stall Puzzle", "The crate got sorted.")
     ]
+
+    # Characters hear how it ended, so nobody keeps chasing a finished job.
+    before = len(gateway.sent_requests)
+    assert _advance(client, ids["world"], 2).status_code == 200
+    decisions = [
+        r.prompt for r in gateway.sent_requests[before:] if "You decide" in (r.system or "")
+    ]
+    assert any("Settled around the vale: A Market-stall Puzzle" in p for p in decisions)

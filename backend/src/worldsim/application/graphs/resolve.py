@@ -71,6 +71,8 @@ class ResolveState(GraphState, total=False):
     characters_json: list[dict[str, Any]]
     locations_json: list[dict[str, Any]]
     expected_versions: dict[str, int]
+    #: Who and what is at each actor's place, and open rumours (plain lines).
+    surroundings: list[str]
     envelopes_json: list[dict[str, Any]]
     packet_json: dict[str, Any] | None
     system_prompt: str
@@ -383,10 +385,14 @@ def build_resolve_graph(deps: ResolverGraphDeps) -> Any:
             intents=intents,
             envelopes=envelopes,
         )
+        around = state.get("surroundings") or []
+        user = render_user_prompt(packet)
+        if around:
+            user += "\nAround them:\n" + "\n".join(f"- {line}" for line in around)
         return {
             "packet_json": packet.model_dump(mode="json"),
             "system_prompt": render_system_prompt(deps.system_template),
-            "user_prompt": render_user_prompt(packet),
+            "user_prompt": user,
         }
 
     async def decide(state: ResolveState) -> dict[str, Any]:

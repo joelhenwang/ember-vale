@@ -362,6 +362,51 @@ def item_line(item: ItemInstance) -> str:
     return f"{item_label(item)}{count}{detail} (item_id {item.id})"
 
 
+def scene_surroundings(
+    members: Sequence[Intent],
+    characters: Sequence[Character],
+    locations: Sequence[Location],
+    items: Sequence[ItemInstance],
+    hooks: Sequence[Any],
+) -> list[str]:
+    """What the resolver should know is at hand where each actor stands.
+
+    Without it every attempt was judged against an imagined place: a play
+    session "found" the peddler's crate at the Hearth while everyone said
+    it was at the Market.
+    """
+    names = {loc.id: loc.name for loc in locations}
+    where = {c.id: c.location_id for c in characters}
+    notes: list[str] = []
+    for place_id in dict.fromkeys(where.get(m.author_character_id) for m in members):
+        if place_id is None:
+            continue
+        people = [
+            c.name
+            for c in characters
+            if c.location_id == place_id and c.life_status == LifeStatus.ALIVE
+        ]
+        lying = [item_label(i) for i in items if i.owner_id is None and i.location_id == place_id]
+        held = [
+            f"{item_label(i)} (held by {next(c.name for c in characters if c.id == i.owner_id)})"
+            for i in items
+            if i.owner_id is not None and where.get(i.owner_id) == place_id
+        ]
+        notes.append(
+            f"At {names.get(place_id, 'this place')}: {', '.join(people) or 'nobody else'}"
+            f"; lying here: {', '.join(lying) or 'nothing'}"
+            f"; carried here: {', '.join(held) or 'nothing'}."
+        )
+    for hook in hooks:
+        if hook.status != NarrativeStatus.CLOSED:
+            notes.append(f"Word around the vale: {hook.title}. {hook.purpose}".strip())
+    return notes
+
+
+#: How long (in phases, ten a day) characters still talk of a settled rumour.
+SETTLED_MEMORY_PHASES = 20
+
+
 def _with_pronouns(character_id: UUID, pronouns: Mapping[UUID, str] | None) -> str:
     stated = (pronouns or {}).get(character_id)
     return f"{stated}, " if stated else ""
@@ -2323,9 +2368,27 @@ class Stage1Orchestrator:
                 )
             )
         for hook in hooks:
-            if hook.status == NarrativeStatus.CLOSED:
-                continue
             if hook.participant_ids and character.id not in hook.participant_ids:
+                continue
+            if hook.status == NarrativeStatus.CLOSED:
+                # How a recent rumour ended, so nobody keeps chasing a job
+                # that is done (closed hooks used to vanish without a trace).
+                closed = hook.closed_phase_index
+                if (
+                    hook.ending
+                    and closed is not None
+                    and now_index - closed <= SETTLED_MEMORY_PHASES
+                ):
+                    candidates.append(
+                        SourceCandidate(
+                            source_id=f"settled:{hook.id}",
+                            data_class="lore",
+                            visibility=Visibility.PUBLIC,
+                            text=f"Settled around the vale: {hook.title}. {hook.ending}".strip(),
+                            score=1.5,
+                            created_phase_index=closed,
+                        )
+                    )
                 continue
             candidates.append(
                 SourceCandidate(
@@ -2854,7 +2917,10 @@ class Stage1Orchestrator:
         async with self._factory() as uow:
             characters = await uow.characters.list_for_world(world_id)
             locations = await uow.locations.list_for_world(world_id)
+            items = await uow.inventory.list_for_world(world_id)
+            hooks = await uow.narrative.list_hooks_for_world(world_id)
         live_versions = {f"character:{c.id}": c.version for c in characters}
+        notes = scene_surroundings(members, characters, locations, items, hooks)
         task_run_id = derive_task_id(run_id, "resolver", scene.id)
         spec = ManifestSpec(
             role="resolver",
@@ -2887,6 +2953,7 @@ class Stage1Orchestrator:
                 "characters_json": [c.model_dump(mode="json") for c in characters],
                 "locations_json": [loc.model_dump(mode="json") for loc in locations],
                 "expected_versions": live_versions,
+                "surroundings": notes,
             },
         )
         sampling = runtime.sampling
