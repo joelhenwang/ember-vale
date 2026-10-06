@@ -20,7 +20,10 @@ Rules:
   plausible for those trying, given help and what is at hand; partial when
   it makes progress; failure when it cannot work now. Several characters
   working together on the same thing make success likelier. Do not fail an
-  attempt just because the world is ordinary.
+  attempt just because the world is ordinary. Each attempt says where its
+  actor stands: an attempt on a thing, person or place that is not there
+  (the crate everyone says is at the Market, while the actor is at the
+  Hearth) can at most be partial, turning up a lead, never success.
 - When a physical attempt succeeds and plainly gets its actor a thing (the
   pouch back from the dog, a key from under the mat, a coin from the
   well), add one `item_found` effect: `owner_character_id` is that actor,

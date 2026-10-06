@@ -1,0 +1,355 @@
+{
+  "meta": {
+    "commit": "3f44abb",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 8,
+    "at": "2026-10-06T06:51:31+00:00",
+    "wall_seconds": 138,
+    "est_usd_total": 0.09171618299999999,
+    "scenarios": [
+      "strangers",
+      "lost_item",
+      "stuck_task",
+      "meet_up",
+      "named_place"
+    ]
+  },
+  "results": {
+    "strangers": {
+      "ids": {
+        "world": "2bf5d41b-db81-4512-a68a-a2d1054b8cbe",
+        "place:Hearth": "bd531701-cc3d-40ef-862e-1c7a40154bef",
+        "place:Market": "667034ed-a7a2-4499-94ae-2cf7d540ee01",
+        "wren": "39d50152-4919-477e-bc18-053bb428fe53",
+        "ash": "d2762451-65a7-4c49-bf6c-d1b9be355037"
+      },
+      "beat_seconds": [
+        18.390999999945052,
+        12.204000000027008,
+        8.391000000061467,
+        11.23499999998603,
+        15.202999999979511,
+        10.186999999918044,
+        23.640999999945052,
+        14.5
+      ],
+      "error": null,
+      "score": {
+        "calls": 71,
+        "failed_calls": 0,
+        "repairs": 2,
+        "repairs_by_role": {
+          "narrator": 2
+        },
+        "repair_rate": 0.028169014084507043,
+        "est_usd": 0.022659858999999997,
+        "action_mix": {
+          "observe": 2,
+          "communicate": 12,
+          "move": 5,
+          "wait": 1
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 3,
+        "moves_tried": 5,
+        "moves_done": 5,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "A basket of early mushrooms at the Hearth door",
+            "powers": "place_item"
+          },
+          {
+            "title": "A stray dog carrying a marked sack",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Hearth",
+          "Bramble": "Hearth"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {
+          "Basket of early mushrooms": {
+            "holder": null,
+            "place": "Hearth"
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "repeated questions 0% (pass \u2264 20%)"
+      }
+    },
+    "lost_item": {
+      "ids": {
+        "world": "9c971d9c-8d11-4c69-8064-7ca85b586156",
+        "place:Hearth": "7cc4bde9-0e3a-440d-b26c-6f636c0b6f2a",
+        "place:Market": "581fea94-b364-4784-a425-f1f854bb365e",
+        "wren": "5e3741d6-28b7-43e2-8e86-98cebea5cfa3",
+        "ash": "3a45735e-8b40-4c85-9f8d-5c2e77264fd6",
+        "item:purse": "da1c1a36-0349-4436-84bf-d3754d8619e9"
+      },
+      "beat_seconds": [
+        9.202999999979511,
+        14.437999999965541,
+        11.766000000061467,
+        11.530999999959022,
+        11.702999999979511,
+        7.843999999924563,
+        10.905999999959022,
+        8.030999999959022
+      ],
+      "error": null,
+      "score": {
+        "calls": 48,
+        "failed_calls": 0,
+        "repairs": 0,
+        "repairs_by_role": {},
+        "repair_rate": 0.0,
+        "est_usd": 0.012214988,
+        "action_mix": {
+          "take": 1,
+          "move": 5,
+          "communicate": 8,
+          "interact": 1,
+          "wait": 1
+        },
+        "repetition_rate": 0.125,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 2,
+        "moves_tried": 5,
+        "moves_done": 5,
+        "interact_success": 1,
+        "hooks": [
+          {
+            "title": "The Hearth's empty pantry",
+            "powers": ""
+          },
+          {
+            "title": "The lost purse's owner",
+            "powers": ""
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {
+          "Lost purse": {
+            "holder": "Ash",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "purse held by Ash"
+      }
+    },
+    "stuck_task": {
+      "ids": {
+        "world": "ccc88d37-40b1-47ba-bd17-f30c43c53025",
+        "place:Hearth": "0ddfd357-ae4f-4fcc-8d18-a02be577bbb2",
+        "place:Market": "da389702-e682-4b14-856a-8ea1c53646d0",
+        "wren": "f0badea5-091e-4975-9b4f-70f0af05339a",
+        "ash": "60a987a3-378e-4ff1-961c-d3364424c47e",
+        "marg": "0a514683-6bae-4207-a9ca-e4d72936292f"
+      },
+      "beat_seconds": [
+        24.155999999959022,
+        20.70299999997951,
+        17.875,
+        9.59299999999348,
+        12.51500000001397,
+        15.468999999924563,
+        13.796999999904074,
+        12.641000000061467
+      ],
+      "error": null,
+      "score": {
+        "calls": 84,
+        "failed_calls": 0,
+        "repairs": 2,
+        "repairs_by_role": {
+          "resolver": 2
+        },
+        "repair_rate": 0.023809523809523808,
+        "est_usd": 0.021792865,
+        "action_mix": {
+          "communicate": 6,
+          "interact": 4,
+          "wait": 2,
+          "move": 4,
+          "observe": 8
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 1,
+        "moves_tried": 4,
+        "moves_done": 4,
+        "interact_success": 4,
+        "hooks": [
+          {
+            "title": "Missing herbs for the morning stew",
+            "powers": "new_location"
+          },
+          {
+            "title": "The Wheel Spoke Snaps",
+            "powers": "new_location"
+          },
+          {
+            "title": "The wheelwright at the Keep has a spare spoke",
+            "powers": ""
+          }
+        ],
+        "final_places": {
+          "Wren": "Edgewood Thicket",
+          "Ash": "Edgewood Thicket",
+          "Old Marg": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Edgewood Thicket",
+          "Keep"
+        ],
+        "items": {
+          "Freed cart wheel": {
+            "holder": "Old Marg",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "4 successful physical attempt(s)"
+      }
+    },
+    "meet_up": {
+      "ids": {
+        "world": "6e36b3a5-6f39-424e-9047-d6481a683903",
+        "place:Hearth": "708baf84-c53e-48a5-b5f6-37814d4870d0",
+        "place:Market": "ceb24630-7164-4176-8c1e-9c26ea99acfe",
+        "wren": "7532052f-27fd-43a5-aa31-d7f12bb4818a",
+        "ash": "5e4790ba-2cf5-48df-a9f4-beea9e4be4c7"
+      },
+      "beat_seconds": [
+        13.51500000001397,
+        15.922000000020489,
+        18.25,
+        21.67200000002049,
+        14.953000000095926,
+        12.359000000054948,
+        24.17099999997299,
+        15.922000000020489
+      ],
+      "error": null,
+      "score": {
+        "calls": 75,
+        "failed_calls": 0,
+        "repairs": 5,
+        "repairs_by_role": {
+          "narrator": 5
+        },
+        "repair_rate": 0.06666666666666667,
+        "est_usd": 0.02310714,
+        "action_mix": {
+          "wait": 6,
+          "move": 1,
+          "communicate": 11,
+          "observe": 2
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 7,
+        "moves_tried": 1,
+        "moves_done": 1,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "Stranger asking after Wren's rumour",
+            "powers": "spawn_npc"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Corbin": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "Wren at Market, Ash at Market"
+      }
+    },
+    "named_place": {
+      "ids": {
+        "world": "4ba9a5dd-46c5-4063-874e-aa1472f24928",
+        "place:Hearth": "8cf18922-fcbe-43db-96ff-8b59dcac2660",
+        "place:Market": "9ff1fc8b-341a-4826-a22c-1623cd0eeeeb",
+        "wren": "c2c13fd9-6eb4-4bb5-a05c-991600d0b6f3",
+        "ash": "4db8b18e-f9c7-4570-a96e-076ba75d7b02"
+      },
+      "beat_seconds": [
+        15.780999999959022,
+        6.89000000001397,
+        16.70299999997951,
+        10.483999999938533,
+        12.030999999959022,
+        13.530999999959022,
+        9.96799999999348,
+        6.530999999959022
+      ],
+      "error": null,
+      "score": {
+        "calls": 50,
+        "failed_calls": 0,
+        "repairs": 1,
+        "repairs_by_role": {
+          "director": 1
+        },
+        "repair_rate": 0.02,
+        "est_usd": 0.011941331,
+        "action_mix": {
+          "communicate": 5,
+          "move": 3,
+          "observe": 2,
+          "interact": 3,
+          "wait": 3
+        },
+        "repetition_rate": 0.2,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 3,
+        "moves_done": 3,
+        "interact_success": 2,
+        "hooks": [
+          {
+            "title": "Uncle's Debt at the Mill",
+            "powers": "new_location"
+          }
+        ],
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Old Mill"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Old Mill"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "added Old Mill; there at the end: Ash"
+      }
+    }
+  }
+}

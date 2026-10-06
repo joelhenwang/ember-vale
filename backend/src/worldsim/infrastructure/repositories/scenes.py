@@ -157,7 +157,9 @@ class SqlAlchemySceneRepository:
         """(places, people, deeds) from the scenes this character took part in.
 
         Deeds are their own physical attempts (interact, take, transfer,
-        appeal, spar) the resolver judged a success or partial success.
+        appeal, spar) the resolver judged a success or partial success,
+        counted once per distinct wording: repeating the same attempt
+        every turn earns renown once.
         """
         row = (
             await self._session.execute(
@@ -175,7 +177,8 @@ class SqlAlchemySceneRepository:
                       (select count(distinct p2.character_id) from mine
                          join scene_participant p2 on p2.scene_id = mine.id
                          where p2.character_id <> :c),
-                      (select count(distinct a.scene_id) from attempt a
+                      (select count(distinct coalesce(lower(i.intent->>'attempt'), a.scene_id::text))
+                         from attempt a
                          join character_intent i on i.id = a.intent_id
                          join resolution r on r.scene_id = a.scene_id
                          where i.world_id = :w and i.author_character_id = :c

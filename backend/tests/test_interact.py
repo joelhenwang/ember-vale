@@ -117,9 +117,11 @@ def test_an_attempt_is_judged_and_remembered_with_its_outcome(
     gateway.route = route
     assert _advance(client, ids["world"], 1).status_code == 200
     resolver = [r.prompt for r in gateway.sent_requests if "You resolve" in (r.system or "")]
-    # The resolver sees who tries what, by name, with the id effects need.
+    # The resolver sees who tries what, by name, with the id effects need,
+    # and where they stand.
     assert any(
-        f"Wren (character:{ids['wren']}) tries to heave the wheel free" in p for p in resolver
+        f"Wren (character:{ids['wren']}), at " in p and "tries to heave the wheel free" in p
+        for p in resolver
     )
 
     before = len(gateway.sent_requests)

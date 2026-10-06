@@ -261,6 +261,13 @@ def describe_intent(intent: Intent, view: WorldView) -> str:
     actor = who(intent.author_character_id)
     action = intent.action
     if isinstance(action, InteractAction):
+        # Where they stand, so an attempt on something elsewhere is judged
+        # as such (a play session "found" a crate at a place it never was).
+        try:
+            here = view.location(view.character(intent.author_character_id).location_id).name
+            actor = f"{actor}, at {here},"
+        except DomainError:
+            pass
         text = f"{actor} tries to {action.attempt.strip()}"
         if action.target_character_id is not None:
             text += f", with or on {who(action.target_character_id)}"

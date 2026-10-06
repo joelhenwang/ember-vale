@@ -106,9 +106,7 @@ def render_system_prompt(template: str) -> str:
     """Fill the response-schema placeholder (the only placeholder)."""
     # Compact: the pretty-printed schema alone outgrew the 16k system limit
     # once item_found joined the effects, and every space is a paid token.
-    schema_json = json.dumps(
-        _PROPOSAL_ADAPTER.json_schema(), separators=(",", ":"), sort_keys=True
-    )
+    schema_json = json.dumps(_PROPOSAL_ADAPTER.json_schema(), separators=(",", ":"), sort_keys=True)
     return template.replace("{{RESPONSE_SCHEMA}}", schema_json)
 
 
