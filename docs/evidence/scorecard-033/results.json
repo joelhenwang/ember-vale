@@ -1,0 +1,100 @@
+{
+  "meta": {
+    "commit": "729a04a",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 12,
+    "at": "2026-10-06T14:51:47+00:00",
+    "wall_seconds": 179,
+    "est_usd_total": 0.0468862636,
+    "scenarios": [
+      "stuck_task"
+    ]
+  },
+  "results": {
+    "stuck_task": {
+      "ids": {
+        "world": "2b60e8ee-1534-43c4-8fe7-c8eecd2c6e70",
+        "place:Hearth": "dab6e596-7740-4074-b2fe-4f74a4a9c430",
+        "place:Market": "6e79b0b6-c66b-46e1-979a-9d4e00996f94",
+        "wren": "2b52a208-aa5a-41a2-b01f-5d3d6313b953",
+        "ash": "77c0db95-8951-4f37-9f01-c8779d20f7be",
+        "marg": "34ef7069-05b7-4b34-98dc-8ea9ef19aa4a"
+      },
+      "beat_seconds": [
+        15.781000000075437,
+        19.35999999998603,
+        15.702999999979511,
+        8.608999999938533,
+        13.468999999924563,
+        11.704000000027008,
+        12.656000000075437,
+        14.922000000020489,
+        24.844000000040978,
+        11.484000000054948,
+        14.09299999999348,
+        16.20299999997951
+      ],
+      "error": null,
+      "score": {
+        "calls": 143,
+        "failed_calls": 0,
+        "repairs": 5,
+        "repairs_by_role": {
+          "reaction": 1,
+          "narrator": 1,
+          "resolver": 3
+        },
+        "repair_rate": 0.03496503496503497,
+        "est_usd": 0.0468862636,
+        "action_mix": {
+          "wait": 5,
+          "interact": 15,
+          "communicate": 8,
+          "move": 2,
+          "observe": 6
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 15,
+        "hooks": [
+          {
+            "title": "A strange crate at the Market",
+            "powers": "place_item",
+            "status": "closed",
+            "ending": "Old Marg and Wren heaved the heavy locked crate free from the Market rut, leaving the stall path clear for the coming crowds."
+          }
+        ],
+        "settled": 1,
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Old Marg": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {
+          "Heavy locked crate": {
+            "holder": null,
+            "place": "Market"
+          },
+          "Spring catch key": {
+            "holder": "Ash",
+            "place": null
+          },
+          "Young burrow-mole": {
+            "holder": "Ash",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "15 successful physical attempt(s)"
+      }
+    }
+  }
+}
