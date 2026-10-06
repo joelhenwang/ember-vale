@@ -82,7 +82,7 @@ describe('adventure log', () => {
 
   it('says a scene is still being written until narration exists', () => {
     const input = {
-      entries: [entry({ sequence: 1, scene_id: 's1', location_id: HERE })],
+      entries: [entry({ sequence: 1, scene_id: 's1', location_id: HERE, participant_ids: [ME] })],
       beats: {},
       me: ME,
       hereId: HERE
@@ -90,6 +90,12 @@ describe('adventure log', () => {
     expect(buildLog(input).at(-1)?.kind).toBe('pending')
     expect(scenesToLoad(input)).toEqual(['s1'])
     expect(scenesToLoad({ ...input, beats: { s1: [beat('b', 'narration', 'x')] } })).toEqual([])
+    // A scene nearby that the player was not in: its prose comes from the chronicle.
+    const nearby = {
+      ...input,
+      entries: [entry({ sequence: 2, scene_id: 's2', location_id: HERE })]
+    }
+    expect(scenesToLoad(nearby)).toEqual([])
   })
 
   it('cuts to the first sentence', () => {

@@ -135,11 +135,15 @@ export function firstSentence(text: string): string {
   return match ? match[0] : clean
 }
 
-/** Scenes whose narration should be fetched: seen up close and not loaded yet. */
+/**
+ * Scenes whose narration should be fetched: ones the player took part in
+ * and not loaded yet. Players may read narration only for their own
+ * scenes; what happened around them comes from the chronicle's text.
+ */
 export function scenesToLoad(input: LogInput): string[] {
   return input.entries
     .filter(
-      (e) => e.scene_id && !QUIET_TYPES.has(e.event_type) && isNear(e, input.me, input.hereId)
+      (e) => e.scene_id && !QUIET_TYPES.has(e.event_type) && e.participant_ids?.includes(input.me)
     )
     .map((e) => e.scene_id as string)
     .filter((id) => !input.beats[id] || input.beats[id]!.length === 0)
