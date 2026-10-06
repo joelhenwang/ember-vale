@@ -12,6 +12,7 @@ from uuid import UUID
 from worldsim.application.orchestration.stage1 import item_description, item_label
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.enums import LifeStatus
+from worldsim.domain.party import party_name_key
 from worldsim.interfaces.http import schemas as api
 
 
@@ -56,26 +57,31 @@ async def suggestions_for(uow: UnitOfWork, character_id: UUID) -> list[api.Sugge
                 destination_location_id=leg.to_location_id,
             )
         )
+    # A bout needs both fighters seated with sheets (the party roster); offering
+    # it without them only fails the turn.
+    seated = {member.name_key for member in await uow.party.list_for_world(world_id)}
+    can_spar = party_name_key(character.name) in seated
     for other in others:
-        suggestions.extend(
-            [
-                api.SuggestionView(
-                    id=f"talk:{other.id.hex}",
-                    family="communicate",
-                    title=f"Talk to {other.name}",
-                    subtitle="Say something in person.",
-                    target_character_id=other.id,
-                    needs_topic=True,
-                ),
+        suggestions.append(
+            api.SuggestionView(
+                id=f"talk:{other.id.hex}",
+                family="communicate",
+                title=f"Talk to {other.name}",
+                subtitle="Say something in person.",
+                target_character_id=other.id,
+                needs_topic=True,
+            )
+        )
+        if can_spar and party_name_key(other.name) in seated:
+            suggestions.append(
                 api.SuggestionView(
                     id=f"spar:{other.id.hex}",
                     family="spar",
                     title=f"Spar with {other.name}",
                     subtitle="A practice bout, not a real fight.",
                     target_character_id=other.id,
-                ),
-            ]
-        )
+                )
+            )
     for item in await uow.inventory.list_at_location(world_id, character.location_id):
         if item.owner_id is not None:
             continue

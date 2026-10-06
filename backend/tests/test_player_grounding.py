@@ -123,3 +123,34 @@ def test_resolver_moves_only_those_who_tried_to_move() -> None:
     assert [e["effect_type"] for e in out["effects"]] == ["record_observation", "move_entity"]
     assert out["effects"][1]["from_location_id"] == "hearth-id"
     assert out["effects"][1]["to_location_id"] == "market-id"
+
+
+def test_no_spar_offered_without_seated_sheets(
+    stage1_client: tuple[ApiClient, FakeGateway],
+) -> None:
+    """Quick Start casts have no party sheets: a bout would only fail the turn."""
+    client, _ = stage1_client
+    ids = asyncio.run(_seed_connected())
+
+    async def bring_ash_home() -> None:
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                ash = await uow.characters.get(ids["ash"])
+                await uow.characters.save_state(
+                    ash.model_copy(update={"location_id": ids["hearth"]}), ash.version
+                )
+                await uow.commit()
+        finally:
+            await engine.dispose()
+
+    asyncio.run(bring_ash_home())
+    wren = str(ids["wren"])
+    offered = client.get(
+        "/api/v1/stage1/suggestions",
+        params={"character_id": wren},
+        headers={"X-Worldsim-Role": "player", "X-Worldsim-Character": wren},
+    ).json()
+    families = {s["family"] for s in offered}
+    assert "communicate" in families  # Ash is here to talk to
+    assert "spar" not in families
