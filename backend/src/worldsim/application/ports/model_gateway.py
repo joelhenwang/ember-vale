@@ -101,6 +101,8 @@ class CompletionResult(BaseModel):
     attempts: list[dict[str, Any]] = Field(default_factory=list)
     #: Prompt tokens the provider served from its prefix cache.
     cached_tokens: int = Field(default=0, ge=0)
+    #: What the provider billed for this call, when it reports it.
+    cost_usd: float | None = Field(default=None, ge=0)
 
 
 class EmbeddingRequest(BaseModel):

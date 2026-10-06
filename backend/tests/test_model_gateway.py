@@ -3,6 +3,7 @@ import asyncio
 import json
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import httpx
 import pytest
@@ -293,3 +294,34 @@ def test_a_good_probe_vouches_for_a_minute() -> None:
     assert asyncio.run(gateway.probe()).ok
     assert len(hits) == 1
     openrouter._PROBE_CACHE.clear()  # pyright: ignore[reportPrivateUsage]
+
+
+def test_spend_is_what_openrouter_billed() -> None:
+    import uuid
+
+    from worldsim.domain.costs import compute_cost
+    from worldsim.infrastructure.model_gateway.openrouter import OpenRouterGateway
+
+    seen: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = json.loads(request.content.decode())
+        return httpx.Response(
+            200,
+            json={
+                "model": "deepseek/deepseek-v4-flash-0731",
+                "choices": [{"message": {"content": "{}"}, "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": 4000, "completion_tokens": 100, "cost": 0.000164},
+            },
+        )
+
+    result = asyncio.run(_mocked_gateway(handler).complete(CompletionRequest(prompt="hi")))
+    assert seen["body"]["usage"] == {"include": True}
+    assert result.cost_usd == 0.000164
+    assert OpenRouterGateway._cost_of({"usage": {"cost": True}}) is None  # pyright: ignore[reportPrivateUsage]
+    cost = compute_cost(uuid.uuid4(), result.model, 4000, 100, 0, reported_usd=result.cost_usd)
+    assert not cost.estimated
+    assert round(cost.prompt_cost_usd + cost.completion_cost_usd, 9) == 0.000164
+    # Without a report, the table now knows DeepSeek V4 Flash (not the default rate).
+    table = compute_cost(uuid.uuid4(), result.model, 1_000_000, 0, 0)
+    assert round(table.prompt_cost_usd, 6) == 0.009 and not table.estimated

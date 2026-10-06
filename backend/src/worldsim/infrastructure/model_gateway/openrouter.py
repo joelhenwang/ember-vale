@@ -126,6 +126,8 @@ class OpenRouterGateway:
             body["reasoning"] = {"effort": self.reasoning}
         if self.sort:
             body["provider"] = {"sort": self.sort}
+        # Ask for the billed amount, so spend is what OpenRouter charged.
+        body["usage"] = {"include": True}
         return body
 
     async def complete(self, request: CompletionRequest) -> CompletionResult:
@@ -151,6 +153,15 @@ class OpenRouterGateway:
             return result
         finally:
             await self._close_owned(client)
+
+    @staticmethod
+    def _cost_of(payload: dict[str, Any]) -> float | None:
+        """The billed USD OpenRouter reports in usage.cost, if any."""
+        usage = json_object(payload.get("usage"))
+        cost = usage.get("cost") if usage is not None else None
+        if isinstance(cost, bool) or not isinstance(cost, (int, float)) or cost < 0:
+            return None
+        return float(cost)
 
     @staticmethod
     def _usage_of(payload: dict[str, Any]) -> dict[str, int]:
@@ -311,6 +322,7 @@ class OpenRouterGateway:
             latency_ms=latency_ms,
             reasoning_tokens=usage["reasoning_tokens"],
             cached_tokens=usage["cached_tokens"],
+            cost_usd=self._cost_of(payload),
             finish_reason=choice.get("finish_reason")
             if isinstance(choice.get("finish_reason"), str)
             else None,

@@ -257,7 +257,12 @@ class TraceService:
         )
         prompt_chars = len(request.prompt) + len(request.system or "")
         cost = compute_cost(
-            call_id, result.model, result.prompt_tokens, result.completion_tokens, prompt_chars
+            call_id,
+            result.model,
+            result.prompt_tokens,
+            result.completion_tokens,
+            prompt_chars,
+            reported_usd=result.cost_usd,
         )
         async with self._factory() as uow:
             await uow.traces.finish_call(call_id, stored)

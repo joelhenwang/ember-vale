@@ -15,12 +15,14 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 #: Pricing table version recorded on every row.
-PRICING_VERSION = "s3-prov-v1"
+PRICING_VERSION = "s3-prov-v2"
 
 #: USD per 1k tokens by model prefix. OpenRouter's `auto` router can
 #: serve anything, so unknown models fall back to DEFAULT_RATE and
 #: are marked estimated.
 _RATES: dict[str, tuple[float, float]] = {
+    # OpenRouter list price, 2026-10-06 (the default rate overstated it ~17x).
+    "deepseek/deepseek-v4-flash": (0.000009, 0.00128),
     "openai/gpt-4o-mini": (0.00015, 0.0006),
     "openai/gpt-4o": (0.0025, 0.01),
     "anthropic/claude-3-5-haiku": (0.0008, 0.004),
@@ -52,8 +54,25 @@ def compute_cost(
     prompt_tokens: int,
     completion_tokens: int,
     prompt_chars: int,
+    reported_usd: float | None = None,
 ) -> ModelCost:
-    """Cost for one call; byte-estimated when usage is unreported."""
+    """Cost for one call; byte-estimated when usage is unreported.
+
+    ``reported_usd`` is the provider's own billed amount (OpenRouter's
+    usage accounting, cache discounts included): it is used as is, split
+    between prompt and completion by the rate table, and not estimated.
+    """
+    if reported_usd is not None:
+        completion = min(reported_usd, completion_tokens / 1000.0 * _rate_for(model)[1])
+        return ModelCost(
+            call_id=call_id,
+            model=model,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            prompt_cost_usd=reported_usd - completion,
+            completion_cost_usd=completion,
+            estimated=False,
+        )
     if prompt_tokens <= 0 and completion_tokens <= 0:
         prompt_tokens = max(1, prompt_chars // CHARS_PER_TOKEN)
         rate = _rate_for(model)
