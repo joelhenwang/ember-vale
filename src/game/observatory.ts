@@ -180,7 +180,12 @@ export function layoutTokens(anchors: MapAnchorView[], cast: CastEntry[]): Token
 }
 
 /** Bookkeeping events that say nothing to a reader. */
-export const QUIET_TYPES = new Set(['world_seeded', 'world_ticked', 'macro_ticked', 'condition_tick'])
+export const QUIET_TYPES = new Set([
+  'world_seeded',
+  'world_ticked',
+  'macro_ticked',
+  'condition_tick'
+])
 
 export interface FeedBeat {
   index: number

@@ -9,7 +9,7 @@ export type StoryScreen = 'story-adventure' | 'story-watch' | 'story-play'
 type ModeLike = string | { kind: string } | null | undefined
 
 export function storyScreen(mode: ModeLike): StoryScreen {
-  const kind = (typeof mode === 'string' ? mode : mode?.kind ?? '').toLowerCase()
+  const kind = (typeof mode === 'string' ? mode : (mode?.kind ?? '')).toLowerCase()
   if (kind === 'player') return 'story-adventure'
   if (kind === 'watcher' || kind === 'observer') return 'story-watch'
   return 'story-play'
