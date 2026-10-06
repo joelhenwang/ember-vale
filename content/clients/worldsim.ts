@@ -634,6 +634,13 @@ export interface CastEntry {
   portrait_asset_id?: string | null;
 }
 
+export interface RumourView {
+  hook_id: string;
+  purpose?: string;
+  since_index?: number;
+  title: string;
+}
+
 export interface PresentationResponse {
   absolute_index: number;
   activities?: ActivityView[];
@@ -646,6 +653,7 @@ export interface PresentationResponse {
   phase: string;
   recent_event_id?: string | null;
   revision: number;
+  rumours?: RumourView[];
   run_state?: string | null;
   threads?: string[];
   world_id: string;

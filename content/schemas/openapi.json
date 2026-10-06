@@ -4006,6 +4006,13 @@
             "title": "Revision",
             "type": "integer"
           },
+          "rumours": {
+            "items": {
+              "$ref": "#/components/schemas/RumourView"
+            },
+            "title": "Rumours",
+            "type": "array"
+          },
           "run_state": {
             "anyOf": [
               {
@@ -5033,6 +5040,37 @@
           "role"
         ],
         "title": "RoleSelectRequest",
+        "type": "object"
+      },
+      "RumourView": {
+        "additionalProperties": false,
+        "description": "An open opening as the viewer would hear it: word around the vale.",
+        "properties": {
+          "hook_id": {
+            "format": "uuid",
+            "title": "Hook Id",
+            "type": "string"
+          },
+          "purpose": {
+            "default": "",
+            "title": "Purpose",
+            "type": "string"
+          },
+          "since_index": {
+            "default": 0,
+            "title": "Since Index",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "hook_id",
+          "title"
+        ],
+        "title": "RumourView",
         "type": "object"
       },
       "RunIdRequest": {

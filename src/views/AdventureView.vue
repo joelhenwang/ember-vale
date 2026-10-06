@@ -16,7 +16,9 @@ import { assetUrl } from '../api/worldsim'
 import { useAdventure } from '../composables/useAdventure'
 import {
   barFraction,
+  cardDrives,
   doIntent,
+  isFresh,
   prologue,
   trimPlaceLead,
   sayIntent,
@@ -38,6 +40,8 @@ const sayTo = ref<string>('')
 const logEl = ref<HTMLElement | null>(null)
 const now = ref(Date.now())
 const startedAt = ref<number | null>(null)
+/** The player's own action, shown at once while the world answers. */
+const echo = ref<{ kind: 'say' | 'do'; text: string } | null>(null)
 
 const names = computed(
   () => new Map((adv.presentation.value?.cast ?? []).map((c) => [c.character_id, c.name]))
@@ -80,6 +84,9 @@ const intro = computed(() => {
       .map((c) => ({ name: c.name, place: placeNames.value.get(c.location_id) ?? null }))
   })
 })
+const drives = computed(() => cardDrives(card.value?.personality))
+const rumours = computed(() => adv.presentation.value?.rumours ?? [])
+const nowIndex = computed(() => adv.presentation.value?.absolute_index ?? 0)
 const elapsed = computed(() =>
   startedAt.value ? Math.max(0, Math.round((now.value - startedAt.value) / 1000)) : 0
 )
@@ -116,7 +123,12 @@ async function submit(): Promise<void> {
       ? sayIntent(me, sayTarget.value.character_id, words)
       : doIntent(me, words)
   text.value = ''
+  echo.value =
+    mode.value === 'say' && sayTarget.value
+      ? { kind: 'say', text: `"${words.replace(/^["“]|["”]$/g, '')}"` }
+      : { kind: 'do', text: `You ${words.charAt(0).toLowerCase()}${words.slice(1)}` }
   const ok = await adv.act(intent)
+  echo.value = null
   if (!ok) text.value = words
 }
 
@@ -124,7 +136,16 @@ async function chip(s: SuggestionView): Promise<void> {
   const me = adv.me.value
   if (!me || adv.acting.value) return
   const intent = suggestionIntent(me, s)
-  if (intent) await adv.act(intent)
+  if (!intent) return
+  echo.value = { kind: 'do', text: `You ${s.title.charAt(0).toLowerCase()}${s.title.slice(1)}.` }
+  await adv.act(intent)
+  echo.value = null
+}
+
+async function pass(): Promise<void> {
+  echo.value = { kind: 'do', text: 'You let a moment pass.' }
+  await adv.wait()
+  echo.value = null
 }
 
 function talkTo(id: string): void {
@@ -141,6 +162,36 @@ function onKey(event: KeyboardEvent): void {
 
 function lineClass(line: LogLine): string[] {
   return [`log__line`, `log__line--${line.kind}`, line.mine ? 'log__line--mine' : '']
+}
+
+/**
+ * Lines that arrive after the page opened unfold one after another, so a
+ * turn's answer reads like a story being told rather than a block appearing.
+ */
+const seen = new Set<string>()
+let seeded = false
+const reveal = computed(() => {
+  const delays = new Map<string, number>()
+  let order = 0
+  for (const line of adv.log.value) {
+    if (seen.has(line.key)) continue
+    if (seeded) delays.set(line.key, order++ * 550)
+  }
+  return delays
+})
+watch(
+  () => adv.log.value,
+  (lines) => {
+    // Remember after the reveal timing for this render has been read.
+    void nextTick(() => {
+      for (const line of lines) seen.add(line.key)
+      seeded = true
+    })
+  }
+)
+function revealStyle(key: string): Record<string, string> {
+  const delay = reveal.value.get(key)
+  return delay ? { transitionDelay: `${delay}ms` } : {}
 }
 
 async function scrollToEnd(): Promise<void> {
@@ -233,7 +284,11 @@ onMounted(() => {
             </p>
           </div>
           <TransitionGroup name="line" tag="div" class="log__lines">
-            <div v-for="line in adv.log.value" :key="line.key" :class="lineClass(line)">
+            <div
+              v-for="line in adv.log.value"
+              :key="line.key"
+              :class="lineClass(line)"
+              :style="revealStyle(line.key)">
               <template v-if="line.kind === 'time'">
                 <span class="log__time">{{ line.text }}</span>
               </template>
@@ -266,6 +321,22 @@ onMounted(() => {
               </template>
             </div>
           </TransitionGroup>
+          <div
+            v-if="adv.acting.value && echo"
+            class="log__echo"
+            :class="echo.kind === 'say' ? 'log__line--dialogue log__line--mine' : ''">
+            <template v-if="echo.kind === 'say'">
+              <span class="log__face">
+                <img v-if="portraits.get(adv.me.value)" :src="portraits.get(adv.me.value)" alt="" />
+                <span v-else>{{ initials(myName) }}</span>
+              </span>
+              <div class="log__bubble">
+                <b>You</b>
+                <span>{{ echo.text }}</span>
+              </div>
+            </template>
+            <p v-else class="log__prose log__mine">{{ echo.text }}</p>
+          </div>
           <div v-if="adv.acting.value" class="log__thinking">
             <IconFeather :size="18" class="log__quill" />
             <span>{{ adv.stage.value }}… {{ elapsed }} s</span>
@@ -316,7 +387,7 @@ onMounted(() => {
                 class="composer__wait"
                 :disabled="adv.acting.value || !adv.alive.value"
                 title="Let a moment pass"
-                @click="adv.wait()">
+                @click="pass()">
                 <IconClock :size="15" /> Wait
               </button>
             </div>
@@ -369,6 +440,12 @@ onMounted(() => {
           <p v-if="!adv.alive.value" class="sheet__fallen">
             {{ myName }} has fallen. The story goes on without you.
           </p>
+          <template v-if="drives.length">
+            <h3>What drives you</h3>
+            <ul class="sheet__drives">
+              <li v-for="d in drives" :key="d">{{ d }}</li>
+            </ul>
+          </template>
           <h3><IconSatchel :size="16" /> Carrying</h3>
           <ul v-if="adv.items.value.length" class="sheet__items">
             <li v-for="item in adv.items.value" :key="item.id" :title="item.description">
@@ -377,6 +454,20 @@ onMounted(() => {
             </li>
           </ul>
           <p v-else class="sheet__empty">Empty pockets.</p>
+        </section>
+
+        <section v-if="rumours.length" class="rumours ev-card">
+          <h3>Word around the vale</h3>
+          <ul>
+            <li
+              v-for="r in rumours"
+              :key="r.hook_id"
+              :class="{ fresh: isFresh(r.since_index, nowIndex) }">
+              <b>{{ r.title }}</b>
+              <span v-if="isFresh(r.since_index, nowIndex)" class="rumours__new">new</span>
+              <p v-if="r.purpose">{{ r.purpose }}</p>
+            </li>
+          </ul>
         </section>
 
         <section v-if="adv.presentation.value" class="minimap ev-card">
@@ -677,6 +768,20 @@ button.who:hover > span {
   padding-left: 12px;
   border-left: 2px solid var(--line-soft);
 }
+.log__echo {
+  margin-top: 10px;
+  opacity: 0.75;
+}
+.log__echo.log__line--dialogue {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-direction: row-reverse;
+}
+.log__mine {
+  font-style: italic;
+  color: var(--teal-ink);
+}
 .log__thinking {
   display: flex;
   align-items: center;
@@ -946,6 +1051,61 @@ button.who:hover > span {
 .sheet__fallen {
   margin-top: 8px;
   color: #9a3b2b;
+}
+.sheet__drives {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 14.5px;
+  color: var(--ink-2);
+}
+.rumours {
+  padding: 14px 18px;
+}
+.rumours h3 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.rumours ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rumours li {
+  font-size: 14.5px;
+  border-left: 2px solid var(--line);
+  padding-left: 10px;
+}
+.rumours li.fresh {
+  border-left-color: var(--gold);
+  animation: glow 2.4s ease-in-out 2;
+}
+.rumours b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.rumours p {
+  color: var(--ink-3);
+  margin-top: 2px;
+}
+.rumours__new {
+  margin-left: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--cream-on-teal);
+  background: var(--gold);
+  border-radius: 99px;
+  padding: 1px 7px;
+}
+@keyframes glow {
+  50% {
+    background: rgba(232, 198, 111, 0.18);
+  }
 }
 .minimap {
   padding: 6px;

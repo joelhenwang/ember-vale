@@ -143,6 +143,14 @@ def test_added_place_is_on_the_map_and_reachable(
     ).json()["manifest"]["anchors"]
     assert forge["id"] in {a["location_id"] for a in anchors}
 
+    # Players hear the opening as word around the vale.
+    heard = client.get(
+        "/api/v1/world/presentation",
+        params={"world_id": str(ids["world"])},
+        headers={"X-Worldsim-Role": "player", "X-Worldsim-Character": str(ids["wren"])},
+    ).json()["rumours"]
+    assert [r["title"] for r in heard] == ["Smoke from the old forge"]
+
     before = len(gateway.sent_requests)
     assert _advance(client, ids["world"], 2).status_code == 200
     wren = next(

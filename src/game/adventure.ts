@@ -226,3 +226,18 @@ export function barFraction(value: unknown): number {
   const n = typeof value === 'number' && Number.isFinite(value) ? value : 0
   return Math.min(1, Math.max(0, n / 100))
 }
+
+/** Drive lines a studio card packs into its personality ("Wants: ..."), as on the server. */
+export function cardDrives(personality: unknown): string[] {
+  if (typeof personality !== 'string') return []
+  const prefixes = ['Wants:', 'Avoids:', 'Under pressure:']
+  return personality
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => prefixes.some((p) => line.startsWith(p)) && line.length > 'Wants:'.length + 1)
+}
+
+/** A rumour is fresh for two beats after it spreads. */
+export function isFresh(sinceIndex: number | undefined, nowIndex: number): boolean {
+  return typeof sinceIndex === 'number' && nowIndex - sinceIndex <= 2
+}

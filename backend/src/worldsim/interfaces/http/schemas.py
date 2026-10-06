@@ -967,6 +967,17 @@ class CastEntry(BaseModel):
     portrait_asset_id: UUID | None = None
 
 
+class RumourView(BaseModel):
+    """An open opening as the viewer would hear it: word around the vale."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    hook_id: UUID
+    title: str
+    purpose: str = ""
+    since_index: int = 0
+
+
 class PresentationResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -984,6 +995,8 @@ class PresentationResponse(BaseModel):
     activities: list[ActivityView] = Field(default_factory=list)
     recent_event_id: UUID | None = None
     threads: list[str] = Field(default_factory=list)
+    #: Open openings this viewer has heard of (the rule characters hear by).
+    rumours: list[RumourView] = Field(default_factory=list)
 
 
 class JobRequest(BaseModel):

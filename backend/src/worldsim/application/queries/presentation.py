@@ -18,6 +18,7 @@ from worldsim.application.capabilities import capabilities_for, is_omniscient
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.activities import Activity
 from worldsim.domain.enums import NarrativeStatus, UserRole, Visibility
+from worldsim.domain.narrative import NarrativeHook
 from worldsim.domain.time import absolute_index
 from worldsim.domain.world import Location
 from worldsim.interfaces.http import schemas as api
@@ -97,7 +98,26 @@ async def presentation(
         threads=[
             hook.title for hook in hooks if hook.status == NarrativeStatus.ACTIVE and omniscient
         ],
+        rumours=[
+            api.RumourView(
+                hook_id=hook.id,
+                title=hook.title,
+                purpose=hook.purpose,
+                since_index=hook.created_phase_index,
+            )
+            for hook in sorted(hooks, key=lambda h: h.created_phase_index, reverse=True)
+            if heard(hook, viewer, omniscient)
+        ][:6],
     )
+
+
+def heard(hook: NarrativeHook, viewer: UUID | None, omniscient: bool) -> bool:
+    """Open, and either meant for everyone or naming this viewer (as characters hear)."""
+    if hook.status == NarrativeStatus.CLOSED:
+        return False
+    if omniscient or not hook.participant_ids:
+        return True
+    return viewer is not None and viewer in hook.participant_ids
 
 
 async def chronicle(

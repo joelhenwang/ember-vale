@@ -3,6 +3,8 @@ import type { BeatView, ChronicleEntry, SuggestionView } from '../../content/cli
 import {
   NIL_SNAPSHOT,
   buildLog,
+  cardDrives,
+  isFresh,
   doIntent,
   firstSentence,
   prologue,
@@ -179,5 +181,21 @@ describe('scene framing', () => {
       backgroundSize: '260%'
     })
     expect(sceneFocus(null).backgroundSize).toBe('cover')
+  })
+})
+
+describe('sheet aids', () => {
+  it('reads drive lines from a card', () => {
+    expect(cardDrives('A wanderer.\nWants: find her brother.\nAvoids: promises.\nWants:')).toEqual([
+      'Wants: find her brother.',
+      'Avoids: promises.'
+    ])
+    expect(cardDrives(undefined)).toEqual([])
+  })
+
+  it('marks rumours fresh for two beats', () => {
+    expect(isFresh(5, 7)).toBe(true)
+    expect(isFresh(5, 8)).toBe(false)
+    expect(isFresh(undefined, 1)).toBe(false)
   })
 })

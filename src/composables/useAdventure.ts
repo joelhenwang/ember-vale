@@ -63,6 +63,8 @@ const LIVE_API: AdventureApi = {
     advanceStory(id, index, intents as Parameters<typeof advanceStory>[2], o)
 }
 
+/** A beat runs every character plus the narrator; live models can take minutes. */
+export const ADVANCE_TIMEOUT_MS = 600000
 /** While the world answers, how often to read which stage the beat is in. */
 export const STAGE_POLL_MS = 1500
 /** Between turns: late narration and other players' changes still arrive. */
@@ -261,10 +263,19 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
     runState.value = 'created'
     planPoll()
     try {
-      await api.advance(worldId.value, nextIndex.value, { [me.value]: intent }, opts.value)
+      // A beat runs every character and the narrator: give it minutes, not seconds.
+      await api.advance(
+        worldId.value,
+        nextIndex.value,
+        { [me.value]: intent },
+        { ...opts.value, timeoutMs: ADVANCE_TIMEOUT_MS }
+      )
       return true
     } catch (err) {
-      actionError.value = message(err, 'The world could not answer that. Try something else.')
+      const text = message(err, '')
+      actionError.value = /timed out/i.test(text)
+        ? 'The world is slow to answer — the turn keeps going and will appear here when it is done.'
+        : text || 'The world could not answer that. Try something else.'
       return false
     } finally {
       acting.value = false

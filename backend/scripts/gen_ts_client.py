@@ -99,6 +99,7 @@ WANTED = (
     "MapAnchorView",
     "MapManifestView",
     "CastEntry",
+    "RumourView",
     "PresentationResponse",
     "AssetView",
     "EnsureStarterRequest",
