@@ -28,7 +28,14 @@ from typing import Any
 
 from pydantic import SecretStr, TypeAdapter, ValidationError
 
-from worldsim.application.graphs.narrate import beats_valid, render_system_prompt
+from worldsim.application.graphs.narrate import (
+    beats_valid,
+    drop_recap_only,
+    render_system_prompt,
+    repair_instruction,
+    schema_denial,
+    soften_dialogue,
+)
 from worldsim.application.ports.model_gateway import CompletionRequest, unfence_json
 from worldsim.domain.geography import spot_named
 from worldsim.domain.narration import BeatProposal
@@ -80,21 +87,24 @@ def spots_of(prompt: str) -> list[tuple[str, str]]:
     return [(name, name) for name in names if name]
 
 
-def score(prompt: str, raw: str) -> dict[str, Any]:
-    facts = facts_of(prompt)
-    out: dict[str, Any] = {"raw": raw}
+def check(prompt: str, raw: str, finish: str | None) -> tuple[list[BeatProposal], str | None]:
+    """The app's own acceptance: parse, drop recap-only beats, soften
+    ineligible dialogue, then the beat validator (narrate.py decide)."""
     try:
         proposals = _BEATS.validate_json(unfence_json(raw))
     except ValidationError as exc:
-        out["valid"] = False
-        out["denial"] = f"schema: {exc.error_count()} errors"
-        return out
+        return [], schema_denial(exc.error_count(), finish)
+    facts = facts_of(prompt)
     speech = frozenset(k for k, line in facts.items() if "dialogue-eligible" in line)
-    speakers = {
-        k: m.group(1)
-        for k, line in facts.items()
-        if (m := re.search(r"\(speaker [^,]+, id: ([0-9a-f-]+)\)", line))
-    }
+    speakers: dict[str, str] = {}
+    names: dict[str, str] = {}
+    utterances: dict[str, str] = {}
+    for key, line in facts.items():
+        if m := re.search(r"\(speaker ([^,]+), id: ([0-9a-f-]+)\)", line):
+            names[key], speakers[key] = m.group(1), m.group(2)
+        if key in speech and (q := re.search(r'"(.*)"', line)):
+            utterances[key] = q.group(1)
+    proposals = soften_dialogue(drop_recap_only(proposals), speech, utterances, names)
     denial = beats_valid(
         proposals,
         visible_keys=frozenset(facts),
@@ -102,21 +112,25 @@ def score(prompt: str, raw: str) -> dict[str, Any]:
         beats_budget=budget_of(prompt),
         fact_speakers=speakers,
         speech_keys=speech,
+        fact_utterances=utterances,
     )
+    return proposals, denial
+
+
+def score(prompt: str, proposals: list[BeatProposal], denial: str | None) -> dict[str, Any]:
     text = " ".join(p.text for p in proposals)
     lowered = text.lower()
     spots = spots_of(prompt)
-    out.update(
-        valid=denial is None,
-        denial=denial,
-        text=text,
-        beats=len(proposals),
-        words=len(text.split()),
-        stock=sum(lowered.count(s) for s in STOCK),
-        spot=spot_named(text, spots) if spots else None,
-        has_spots=bool(spots),
-    )
-    return out
+    return {
+        "valid": denial is None,
+        "denial": denial,
+        "text": text,
+        "beats": len(proposals),
+        "words": len(text.split()),
+        "stock": sum(lowered.count(s) for s in STOCK),
+        "spot": spot_named(text, spots) if spots else None,
+        "has_spots": bool(spots),
+    }
 
 
 async def run(
@@ -141,21 +155,37 @@ async def run(
 
         async def one(i: int, entry: dict[str, Any], system: str = system) -> dict[str, Any]:
             async with gate:
-                try:
-                    result = await gateway.complete(
-                        CompletionRequest(
-                            prompt=entry["prompt"], system=system, max_tokens=MAX_TOKENS
+                prompt = entry["prompt"]
+                tokens = [0, 0]
+                raws: list[str] = []
+                denials: list[str] = []
+                proposals: list[BeatProposal] = []
+                denial: str | None = None
+                # The first answer and, like the app, one repair.
+                for attempt in range(2):
+                    repair = "" if attempt == 0 else repair_instruction(denials[-1])
+                    asked = f"{prompt}\n\n{repair}" if repair else prompt
+                    try:
+                        result = await gateway.complete(
+                            CompletionRequest(prompt=asked, system=system, max_tokens=MAX_TOKENS)
                         )
-                    )
-                except Exception as exc:
-                    return {"i": i, "error": f"{type(exc).__name__}: {exc}"[:300]}
-                scored = score(entry["prompt"], result.text)
+                    except Exception as exc:
+                        return {"i": i, "error": f"{type(exc).__name__}: {exc}"[:300]}
+                    tokens[0] += result.prompt_tokens
+                    tokens[1] += result.completion_tokens
+                    raws.append(result.text)
+                    proposals, denial = check(prompt, result.text, result.finish_reason)
+                    if denial is None:
+                        break
+                    denials.append(denial)
                 return {
                     "i": i,
-                    "prompt_tokens": result.prompt_tokens,
-                    "completion_tokens": result.completion_tokens,
-                    "latency_ms": result.latency_ms,
-                    **scored,
+                    "prompt_tokens": tokens[0],
+                    "completion_tokens": tokens[1],
+                    "repaired": len(raws) > 1 and denial is None,
+                    "first_denial": denials[0] if denials else None,
+                    "raw": raws,
+                    **score(prompt, proposals, denial),
                 }
 
         rows = await asyncio.gather(*(one(i, e) for i, e in enumerate(fixture)))
@@ -164,7 +194,8 @@ async def run(
         valid = [r for r in ok if r.get("valid")]
         with_spots = [r for r in valid if r.get("has_spots")]
         print(
-            f"{version}: {len(valid)}/{len(rows)} valid, "
+            f"{version}: {len(valid)}/{len(rows)} valid "
+            f"({sum(1 for r in valid if r.get('repaired'))} after repair), "
             f"spot named {sum(1 for r in with_spots if r.get('spot'))}/{len(with_spots)}, "
             f"stock phrases {sum(r.get('stock', 0) for r in valid)}, "
             f"words/answer {sum(r.get('words', 0) for r in valid) / max(1, len(valid)):.0f}, "
