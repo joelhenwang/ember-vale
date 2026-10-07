@@ -1,0 +1,1584 @@
+{
+  "model": "minimax/minimax-m3",
+  "reasoning": "low",
+  "prompt": "This is a fantasy world map. List every place a traveller could go to or through:\n- settlements: city, town, village, port, camp, tribe\n- sites: castle, fort, checkpoint, gate, tower, lighthouse, temple, monastery, chapel, inn,\n  market, smithy, mill, farm, ruin, dungeon, cave, mine, bridge, landmark\n- areas: forest, mountains, hills, swamp, lake, river, road, path, sea, island\n\nFor each place give:\n- \"name\": the label written on the map for it, if there is one; otherwise a short description\n- \"kind\": one word from the lists above\n- \"point\": [x, y], the centre of the place's drawing (not of its label), as integers from 0 to\n  1000 across the image's width (x) and height (y); [0, 0] is the top-left corner\n\nAnswer with JSON only: {\"places\": [{\"name\": \"...\", \"kind\": \"...\", \"point\": [x, y]}]}",
+  "maps": {
+    "map-1": {
+      "seconds": 23.2,
+      "cost_usd": 0.00531348,
+      "usage": {
+        "prompt_tokens": 686,
+        "completion_tokens": 4280,
+        "total_tokens": 4966,
+        "cost": 0.00531348,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 118,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00531348,
+          "upstream_inference_prompt_cost": 0.00017748,
+          "upstream_inference_completions_cost": 0.005136
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 927,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "raw": "```json\n{\n  \"places\": [\n    {\"name\": \"Thornwood\", \"kind\": \"forest\", \"point\": [450, 80]},\n    {\"name\": \"Greyspine\", \"kind\": \"mountains\", \"point\": [850, 130]},\n    {\"name\": \"Saltreach\", \"kind\": \"port\", \"point\": [130, 230]},\n    {\"name\": \"Ashwater\", \"kind\": \"river\", \"point\": [650, 220]},\n    {\"name\": \"Aldermoor\", \"kind\": \"city\", \"point\": [480, 280]},\n    {\"name\": \"Warden's Gate\", \"kind\": \"gate\", \"point\": [650, 320]},\n    {\"name\": \"Duskfall\", \"kind\": \"mountains\", \"point\": [880, 400]},\n    {\"name\": \"Oakhollow\", \"kind\": \"village\", \"point\": [350, 400]},\n    {\"name\": \"Brindle\", \"kind\": \"village\", \"point\": [700, 430]},\n    {\"name\": \"Sunken Keep\", \"kind\": \"ruin\", \"point\": [550, 530]},\n    {\"name\": \"Western Sea\", \"kind\": \"sea\", \"point\": [50, 300]},\n    {\"name\": \"Coastal Lighthouse\", \"kind\": \"lighthouse\", \"point\": [60, 380]},\n    {\"name\": \"Northern Island\", \"kind\": \"island\", \"point\": [80, 470]},\n    {\"name\": \"Southern Island\", \"kind\": \"island\", \"point\": [40, 510]},\n    {\"name\": \"River Bridge\", \"kind\": \"bridge\", \"point\": [550, 280]},\n    {\"name\": \"Southern Swamp\", \"kind\": \"swamp\", \"point\": [550, 500]},\n    {\"name\": \"Compass Rose\", \"kind\": \"landmark\", \"point\": [60, 50]},\n    {\"name\": \"Coastal Cliffs\", \"kind\": \"hills\", \"point\": [80, 420]},\n    {\"name\": \"Eastern Highlands\", \"kind\": \"mountains\", \"point\": [900, 250]},\n    {\"name\": \"Northern Road\", \"kind\": \"road\", \"point\": [300, 200]},\n    {\"name\": \"Southern Road\", \"kind\": \"road\", \"point\": [500, 380]},\n    {\"name\": \"Eastern Road\", \"kind\": \"road\", \"point\": [750, 350]},\n    {\"name\": \"Western Road\", \"kind\": \"road\", \"point\": [200, 280]},\n    {\"name\": \"Aldermoor Outskirts\", \"kind\": \"forest\", \"point\": [400, 200]},\n    {\"name\": \"Brindle Wood\", \"kind\": \"forest\", \"point\": [750, 380]},\n    {\"name\": \"Oakhollow Grove\", \"kind\": \"forest\", \"point\": [300, 350]},\n    {\"name\": \"Sunken Marshes\", \"kind\": \"swamp\", \"point\": [450, 540]},\n    {\"name\": \"Duskfall Foothills\", \"kind\": \"hills\", \"point\": [820, 450]},\n    {\"name\": \"Greyspine Peaks\", \"kind\": \"mountains\", \"point\": [880, 180]},\n    {\"name\": \"Saltreach Harbor\", \"kind\": \"port\", \"point\": [100, 250]},\n    {\"name\": \"Warden's Watchtower\", \"kind\": \"tower\", \"point\": [680, 310]},\n    {\"name\": \"Aldermoor Farms\", \"kind\": \"farm\", \"point\": [420, 320]},\n    {\"name\": \"River Ford\", \"kind\": \"bridge\", \"point\": [380, 290]},\n    {\"name\": \"Coastal Path\", \"kind\": \"path\", \"point\": [150, 350]},\n    {\"name\": \"Thornwood Edge\", \"kind\": \"forest\", \"point\": [600, 100]},\n    {\"name\": \"Misty Hollow\", \"kind\": \"cave\", \"point\": [920, 380]},\n    {\"name\": \"Old Mill\", \"kind\": \"mill\", \"point\": [350, 380]},\n    {\"name\": \"Traveler's Inn\", \"kind\": \"inn\", \"point\": [550, 350]},\n    {\"name\": \"Mountain Pass\", \"kind\": \"path\", \"point\": [800, 200]},\n    {\"name\": \"Hidden Cove\", \"kind\": \"sea\", \"point\": [120, 450]},\n    {\"name\": \"Wreck Isle\", \"kind\": \"island\", \"point\": [60, 440]},\n    {\"name\": \"Saltmarsh\", \"kind\": \"swamp\", \"point\": [180, 480]},\n    {\"name\": \"River Bend\", \"kind\": \"river\", \"point\": [400, 260]},\n    {\"name\": \"Forest Glade\", \"kind\": \"forest\", \"point\": [500, 150]},\n    {\"name\": \"Stone Cairn\", \"kind\": \"landmark\", \"point\": [720, 250]},\n    {\"name\": \"Abandoned Mine\", \"kind\": \"mine\", \"point\": [850, 350]},\n    {\"name\": \"Chapel Ruins\", \"kind\": \"ruin\", \"point\": [600, 450]},\n    {\"name\": \"Market Crossroads\", \"kind\": \"market\", \"point\": [450, 350]},\n    {\"name\": \"Blacksmith Quarter\", \"kind\": \"smithy\", \"point\": [490, 290]},\n    {\"name\": \"Temple of the Old Gods\", \"kind\": \"temple\", \"point\": [470, 270]},\n    {\"name\": \"Monastery Spire\", \"kind\": \"monastery\", \"point\": [510, 260]},\n    {\"name\": \"Chapel of Brindle\", \"kind\": \"chapel\", \"point\": [710, 420]},\n    {\"name\": \"Fort Aldermoor\", \"kind\": \"fort\", \"point\": [460, 290]},\n    {\"name\": \"Checkpoint\", \"kind\": \"checkpoint\", \"point\": [600, 300]},\n    {\"name\": \"Camp of the Lost\", \"kind\": \"camp\", \"point\": [620, 480]},\n    {\"name\": \"Tribe of the Marsh\", \"kind\": \"tribe\", \"point\": [500, 560]},\n    {\"name\": \"Lake of Tears\", \"kind\": \"lake\", \"point\": [380, 460]},\n    {\"name\": \"Misty Mountains\", \"kind\": \"mountains\", \"point\": [920, 300]},\n    {\"name\": \"Rolling Hills\", \"kind\": \"hills\", \"point\": [250, 300]},\n    {\"name\": \"Whispering Pines\", \"kind\": \"forest\", \"point\": [700, 150]},\n    {\"name\": \"Dragon's Tooth\", \"kind\": \"landmark\", \"point\": [950, 200]},\n    {\"name\": \"Sunken Crypt\", \"kind\": \"dungeon\", \"point\": [560, 520]},\n    {\"name\": \"Old Oak\", \"kind\": \"landmark\", \"point\": [340, 390]},\n    {\"name\": \"River Crossing\", \"kind\": \"bridge\", \"point\": [620, 290]},\n    {\"name\": \"Saltreach Docks\", \"kind\": \"port\", \"point\": [110, 240]},\n    {\"name\": \"Northern Watch\", \"kind\": \"tower\", \"point\": [550, 130]},\n    {\"name\": \"Southern Outpost\", \"kind\": \"fort\", \"point\": [650, 500]},\n    {\"name\": \"Wandering Path\", \"kind\": \"path\", \"point\": [250, 400]},\n    {\"name\": \"Trade Road\", \"kind\": \"road\", \"point\": [400, 250]},\n    {\"name\": \"Mountain Trail\", \"kind\": \"path\", \"point\": [850, 250]},\n    {\"name\": \"Coastal Road\", \"kind\": \"road\", \"point\": [150, 300]},\n    {\"name\": \"Inn at the Crossroads\", \"kind\": \"inn\", \"point\": [430, 340]},\n    {\"name\": \"Smithy of Brindle\", \"kind\": \"smithy\", \"point\": [720, 440]},\n    {\"name\": \"Mill of Oakhollow\", \"kind\": \"mill\", \"point\": [370, 410]},\n    {\"name\": \"Farmlands\", \"kind\": \"farm\", \"point\": [300, 320]},\n    {\"name\": \"Orchard\", \"kind\": \"farm\", \"point\": [600, 380]},\n    {\"name\": \"Vineyard\", \"kind\": \"farm\", \"point\": [550, 400]},\n    {\"name\": \"Shepherd's Pasture\", \"kind\": \"farm\", \"point\": [250, 350]},\n    {\"name\": \"Hunter's Camp\", \"kind\": \"camp\", \"point\": [800, 150]},\n    {\"name\": \"Hermit's Cave\", \"kind\": \"cave\", \"point\": [900, 450]},\n    {\"name\": \"Goblin Cave\", \"kind\": \"cave\", \"point\": [780, 480]},\n    {\"name\": \"Iron Mine\", \"kind\": \"mine\", \"point\": [870, 320]},\n    {\"name\": \"Gold Mine\", \"kind\": \"mine\", \"point\": [820, 380]},\n    {\"name\": \"Ancient Ruins\", \"kind\": \"ruin\", \"point\": [480, 500]},\n    {\"name\": \"Forgotten Temple\", \"kind\": \"ruin\", \"point\": [700, 500]},\n    {\"name\": \"Old Fortress\", \"kind\": \"ruin\", \"point\": [600, 460]},\n    {\"name\": \"Sunken Tower\", \"kind\": \"ruin\", \"point\": [540, 540]},\n    {\"name\": \"Drowned Dungeon\", \"kind\": \"dungeon\", \"point\": [580, 550]},\n    {\"name\": \"Marshland\", \"kind\": \"swamp\", \"point\": [400, 520]},\n    {\"name\": \"Bog of Sighs\", \"kind\": \"swamp\", \"point\": [650, 540]},\n    {\"name\": \"Reedy Wetlands\", \"kind\": \"swamp\", \"point\": [480, 480]},\n    {\"name\": \"Willow Grove\", \"kind\": \"forest\", \"point\": [420, 470]},\n    {\"name\": \"Dead Wood\", \"kind\": \"forest\", \"point\": [620, 470]},\n    {\"name\": \"Pine Forest\", \"kind\": \"forest\", \"point\": [750, 200]},\n    {\"name\": \"Dark Thicket\", \"kind\": \"forest\", \"point\": [550, 180]},\n    {\"name\": \"Emerald Hills\", \"kind\": \"hills\", \"point\": [350, 250]},\n    {\"name\": \"Barren Hills\", \"kind\": \"hills\", \"point\": [700, 280]},\n    {\"name\": \"Snowy Peaks\", \"kind\": \"mountains\", \"point\": [950, 150]},\n    {\"name\": \"Rocky Crags\", \"kind\": \"mountains\", \"point\": [900, 350]},\n    {\"name\": \"Foothills\", \"kind\": \"hills\", \"point\": [800, 300]},\n    {\"name\": \"River Source\", \"kind\": \"river\", \"point\": [850, 150]},\n    {\"name\": \"River Mouth\", \"kind\": \"river\", \"point\": [150, 280]},\n    {\"name\": \"Tributary\", \"kind\": \"river\", \"point\": [500, 350]},\n    {\"name\": \"Stream\", \"kind\": \"river\", \"point\": [350, 380]},\n    {\"name\": \"Pond\", \"kind\": \"lake\", \"point\": [600, 420]},\n    {\"name\": \"Mirror Lake\", \"kind\": \"lake\", \"point\": [450, 430]},\n    {\"name\": \"Hidden Lake\", \"kind\": \"lake\", \"point\": [700, 460]},\n    {\"name\": \"Sea Stacks\", \"kind\": \"island\", \"point\": [30, 380]},\n    {\"name\": \"Rocky Isle\", \"kind\": \"island\", \"point\": [100, 500]},\n    {\"name\": \"Smuggler's Cove\", \"kind\": \"sea\", \"point\": [80, 420]},\n    {\"name\": \"Open Sea\", \"kind\": \"sea\", \"point\": [20, 250]},\n    {\"name\": \"Deep Waters\", \"kind\": \"sea\", \"point\": [40, 350]},\n    {\"name\": \"King's Highway\", \"kind\": \"road\", \"point\": [350, 230]},\n    {\"name\": \"Pilgrim's Path\", \"kind\": \"path\", \"point\": [500, 300]},\n    {\"name\": \"Merchant's Trail\", \"kind\": \"road\", \"point\": [600, 250]},\n    {\"name\": \"Old Wagon Road\", \"kind\": \"road\", \"point\": [450, 400]},\n    {\"name\": \"Forest Path\", \"kind\": \"path\", \"point\": [550, 120]},\n    {\"name\": \"Mountain Pass Trail\", \"kind\": \"path\", \"point\": [880, 220]},\n    {\"name\": \"Swamp Path\", \"kind\": \"path\", \"point\": [520, 510]},\n    {\"name\": \"Coastal Walk\", \"kind\": \"path\", \"point\": [130, 380]},\n    {\"name\": \"River Walk\", \"kind\": \"path\", \"point\": [450, 270]},\n    {\"name\": \"Village of Oakhollow\", \"kind\": \"village\", \"point\": [360, 405]},\n    {\"name\": \"Town of Brindle\", \"kind\": \"town\", \"point\": [705, 435]},\n    {\"name\": \"City of Aldermoor\", \"kind\": \"city\", \"point\": [485, 285]},\n    {\"name\": \"Port of Saltreach\", \"kind\": \"port\", \"point\": [135, 235]},\n    {\"name\": \"Gate of Wardens\", \"kind\": \"gate\", \"point\": [655, 325]},\n    {\"name\": \"Keep of the Sunken\", \"kind\": \"ruin\", \"point\": [555, 535]},\n    {\"name\": \"Mount Duskfall\", \"kind\": \"mountains\", \"point\": [885, 405]},\n    {\"name\": \"Mount Greyspine\", \"kind\": \"mountains\", \"point\": [855, 135]},\n    {\"name\": \"Thornwood Forest\", \"kind\": \"forest\", \"point\": [455, 85]},\n    {\"name\": \"River Ashwater\", \"kind\": \"river\", \"point\": [655, 225]}\n  ]\n}\n```",
+      "places": [
+        {
+          "name": "Thornwood",
+          "kind": "forest",
+          "x": 45.0,
+          "y": 8.0
+        },
+        {
+          "name": "Greyspine",
+          "kind": "mountains",
+          "x": 85.0,
+          "y": 13.0
+        },
+        {
+          "name": "Saltreach",
+          "kind": "port",
+          "x": 13.0,
+          "y": 23.0
+        },
+        {
+          "name": "Ashwater",
+          "kind": "river",
+          "x": 65.0,
+          "y": 22.0
+        },
+        {
+          "name": "Aldermoor",
+          "kind": "city",
+          "x": 48.0,
+          "y": 28.0
+        },
+        {
+          "name": "Warden's Gate",
+          "kind": "gate",
+          "x": 65.0,
+          "y": 32.0
+        },
+        {
+          "name": "Duskfall",
+          "kind": "mountains",
+          "x": 88.0,
+          "y": 40.0
+        },
+        {
+          "name": "Oakhollow",
+          "kind": "village",
+          "x": 35.0,
+          "y": 40.0
+        },
+        {
+          "name": "Brindle",
+          "kind": "village",
+          "x": 70.0,
+          "y": 43.0
+        },
+        {
+          "name": "Sunken Keep",
+          "kind": "ruin",
+          "x": 55.0,
+          "y": 53.0
+        },
+        {
+          "name": "Western Sea",
+          "kind": "sea",
+          "x": 5.0,
+          "y": 30.0
+        },
+        {
+          "name": "Coastal Lighthouse",
+          "kind": "lighthouse",
+          "x": 6.0,
+          "y": 38.0
+        },
+        {
+          "name": "Northern Island",
+          "kind": "island",
+          "x": 8.0,
+          "y": 47.0
+        },
+        {
+          "name": "Southern Island",
+          "kind": "island",
+          "x": 4.0,
+          "y": 51.0
+        },
+        {
+          "name": "River Bridge",
+          "kind": "bridge",
+          "x": 55.0,
+          "y": 28.0
+        },
+        {
+          "name": "Southern Swamp",
+          "kind": "swamp",
+          "x": 55.0,
+          "y": 50.0
+        },
+        {
+          "name": "Compass Rose",
+          "kind": "landmark",
+          "x": 6.0,
+          "y": 5.0
+        },
+        {
+          "name": "Coastal Cliffs",
+          "kind": "hills",
+          "x": 8.0,
+          "y": 42.0
+        },
+        {
+          "name": "Eastern Highlands",
+          "kind": "mountains",
+          "x": 90.0,
+          "y": 25.0
+        },
+        {
+          "name": "Northern Road",
+          "kind": "road",
+          "x": 30.0,
+          "y": 20.0
+        },
+        {
+          "name": "Southern Road",
+          "kind": "road",
+          "x": 50.0,
+          "y": 38.0
+        },
+        {
+          "name": "Eastern Road",
+          "kind": "road",
+          "x": 75.0,
+          "y": 35.0
+        },
+        {
+          "name": "Western Road",
+          "kind": "road",
+          "x": 20.0,
+          "y": 28.0
+        },
+        {
+          "name": "Aldermoor Outskirts",
+          "kind": "forest",
+          "x": 40.0,
+          "y": 20.0
+        },
+        {
+          "name": "Brindle Wood",
+          "kind": "forest",
+          "x": 75.0,
+          "y": 38.0
+        },
+        {
+          "name": "Oakhollow Grove",
+          "kind": "forest",
+          "x": 30.0,
+          "y": 35.0
+        },
+        {
+          "name": "Sunken Marshes",
+          "kind": "swamp",
+          "x": 45.0,
+          "y": 54.0
+        },
+        {
+          "name": "Duskfall Foothills",
+          "kind": "hills",
+          "x": 82.0,
+          "y": 45.0
+        },
+        {
+          "name": "Greyspine Peaks",
+          "kind": "mountains",
+          "x": 88.0,
+          "y": 18.0
+        },
+        {
+          "name": "Saltreach Harbor",
+          "kind": "port",
+          "x": 10.0,
+          "y": 25.0
+        },
+        {
+          "name": "Warden's Watchtower",
+          "kind": "tower",
+          "x": 68.0,
+          "y": 31.0
+        },
+        {
+          "name": "Aldermoor Farms",
+          "kind": "farm",
+          "x": 42.0,
+          "y": 32.0
+        },
+        {
+          "name": "River Ford",
+          "kind": "bridge",
+          "x": 38.0,
+          "y": 29.0
+        },
+        {
+          "name": "Coastal Path",
+          "kind": "path",
+          "x": 15.0,
+          "y": 35.0
+        },
+        {
+          "name": "Thornwood Edge",
+          "kind": "forest",
+          "x": 60.0,
+          "y": 10.0
+        },
+        {
+          "name": "Misty Hollow",
+          "kind": "cave",
+          "x": 92.0,
+          "y": 38.0
+        },
+        {
+          "name": "Old Mill",
+          "kind": "mill",
+          "x": 35.0,
+          "y": 38.0
+        },
+        {
+          "name": "Traveler's Inn",
+          "kind": "inn",
+          "x": 55.0,
+          "y": 35.0
+        },
+        {
+          "name": "Mountain Pass",
+          "kind": "path",
+          "x": 80.0,
+          "y": 20.0
+        },
+        {
+          "name": "Hidden Cove",
+          "kind": "sea",
+          "x": 12.0,
+          "y": 45.0
+        },
+        {
+          "name": "Wreck Isle",
+          "kind": "island",
+          "x": 6.0,
+          "y": 44.0
+        },
+        {
+          "name": "Saltmarsh",
+          "kind": "swamp",
+          "x": 18.0,
+          "y": 48.0
+        },
+        {
+          "name": "River Bend",
+          "kind": "river",
+          "x": 40.0,
+          "y": 26.0
+        },
+        {
+          "name": "Forest Glade",
+          "kind": "forest",
+          "x": 50.0,
+          "y": 15.0
+        },
+        {
+          "name": "Stone Cairn",
+          "kind": "landmark",
+          "x": 72.0,
+          "y": 25.0
+        },
+        {
+          "name": "Abandoned Mine",
+          "kind": "mine",
+          "x": 85.0,
+          "y": 35.0
+        },
+        {
+          "name": "Chapel Ruins",
+          "kind": "ruin",
+          "x": 60.0,
+          "y": 45.0
+        },
+        {
+          "name": "Market Crossroads",
+          "kind": "market",
+          "x": 45.0,
+          "y": 35.0
+        },
+        {
+          "name": "Blacksmith Quarter",
+          "kind": "smithy",
+          "x": 49.0,
+          "y": 29.0
+        },
+        {
+          "name": "Temple of the Old Gods",
+          "kind": "temple",
+          "x": 47.0,
+          "y": 27.0
+        },
+        {
+          "name": "Monastery Spire",
+          "kind": "monastery",
+          "x": 51.0,
+          "y": 26.0
+        },
+        {
+          "name": "Chapel of Brindle",
+          "kind": "chapel",
+          "x": 71.0,
+          "y": 42.0
+        },
+        {
+          "name": "Fort Aldermoor",
+          "kind": "fort",
+          "x": 46.0,
+          "y": 29.0
+        },
+        {
+          "name": "Checkpoint",
+          "kind": "checkpoint",
+          "x": 60.0,
+          "y": 30.0
+        },
+        {
+          "name": "Camp of the Lost",
+          "kind": "camp",
+          "x": 62.0,
+          "y": 48.0
+        },
+        {
+          "name": "Tribe of the Marsh",
+          "kind": "tribe",
+          "x": 50.0,
+          "y": 56.0
+        },
+        {
+          "name": "Lake of Tears",
+          "kind": "lake",
+          "x": 38.0,
+          "y": 46.0
+        },
+        {
+          "name": "Misty Mountains",
+          "kind": "mountains",
+          "x": 92.0,
+          "y": 30.0
+        },
+        {
+          "name": "Rolling Hills",
+          "kind": "hills",
+          "x": 25.0,
+          "y": 30.0
+        },
+        {
+          "name": "Whispering Pines",
+          "kind": "forest",
+          "x": 70.0,
+          "y": 15.0
+        },
+        {
+          "name": "Dragon's Tooth",
+          "kind": "landmark",
+          "x": 95.0,
+          "y": 20.0
+        },
+        {
+          "name": "Sunken Crypt",
+          "kind": "dungeon",
+          "x": 56.0,
+          "y": 52.0
+        },
+        {
+          "name": "Old Oak",
+          "kind": "landmark",
+          "x": 34.0,
+          "y": 39.0
+        },
+        {
+          "name": "River Crossing",
+          "kind": "bridge",
+          "x": 62.0,
+          "y": 29.0
+        },
+        {
+          "name": "Saltreach Docks",
+          "kind": "port",
+          "x": 11.0,
+          "y": 24.0
+        },
+        {
+          "name": "Northern Watch",
+          "kind": "tower",
+          "x": 55.0,
+          "y": 13.0
+        },
+        {
+          "name": "Southern Outpost",
+          "kind": "fort",
+          "x": 65.0,
+          "y": 50.0
+        },
+        {
+          "name": "Wandering Path",
+          "kind": "path",
+          "x": 25.0,
+          "y": 40.0
+        },
+        {
+          "name": "Trade Road",
+          "kind": "road",
+          "x": 40.0,
+          "y": 25.0
+        },
+        {
+          "name": "Mountain Trail",
+          "kind": "path",
+          "x": 85.0,
+          "y": 25.0
+        },
+        {
+          "name": "Coastal Road",
+          "kind": "road",
+          "x": 15.0,
+          "y": 30.0
+        },
+        {
+          "name": "Inn at the Crossroads",
+          "kind": "inn",
+          "x": 43.0,
+          "y": 34.0
+        },
+        {
+          "name": "Smithy of Brindle",
+          "kind": "smithy",
+          "x": 72.0,
+          "y": 44.0
+        },
+        {
+          "name": "Mill of Oakhollow",
+          "kind": "mill",
+          "x": 37.0,
+          "y": 41.0
+        },
+        {
+          "name": "Farmlands",
+          "kind": "farm",
+          "x": 30.0,
+          "y": 32.0
+        },
+        {
+          "name": "Orchard",
+          "kind": "farm",
+          "x": 60.0,
+          "y": 38.0
+        },
+        {
+          "name": "Vineyard",
+          "kind": "farm",
+          "x": 55.0,
+          "y": 40.0
+        },
+        {
+          "name": "Shepherd's Pasture",
+          "kind": "farm",
+          "x": 25.0,
+          "y": 35.0
+        },
+        {
+          "name": "Hunter's Camp",
+          "kind": "camp",
+          "x": 80.0,
+          "y": 15.0
+        },
+        {
+          "name": "Hermit's Cave",
+          "kind": "cave",
+          "x": 90.0,
+          "y": 45.0
+        },
+        {
+          "name": "Goblin Cave",
+          "kind": "cave",
+          "x": 78.0,
+          "y": 48.0
+        },
+        {
+          "name": "Iron Mine",
+          "kind": "mine",
+          "x": 87.0,
+          "y": 32.0
+        },
+        {
+          "name": "Gold Mine",
+          "kind": "mine",
+          "x": 82.0,
+          "y": 38.0
+        },
+        {
+          "name": "Ancient Ruins",
+          "kind": "ruin",
+          "x": 48.0,
+          "y": 50.0
+        },
+        {
+          "name": "Forgotten Temple",
+          "kind": "ruin",
+          "x": 70.0,
+          "y": 50.0
+        },
+        {
+          "name": "Old Fortress",
+          "kind": "ruin",
+          "x": 60.0,
+          "y": 46.0
+        },
+        {
+          "name": "Sunken Tower",
+          "kind": "ruin",
+          "x": 54.0,
+          "y": 54.0
+        },
+        {
+          "name": "Drowned Dungeon",
+          "kind": "dungeon",
+          "x": 58.0,
+          "y": 55.0
+        },
+        {
+          "name": "Marshland",
+          "kind": "swamp",
+          "x": 40.0,
+          "y": 52.0
+        },
+        {
+          "name": "Bog of Sighs",
+          "kind": "swamp",
+          "x": 65.0,
+          "y": 54.0
+        },
+        {
+          "name": "Reedy Wetlands",
+          "kind": "swamp",
+          "x": 48.0,
+          "y": 48.0
+        },
+        {
+          "name": "Willow Grove",
+          "kind": "forest",
+          "x": 42.0,
+          "y": 47.0
+        },
+        {
+          "name": "Dead Wood",
+          "kind": "forest",
+          "x": 62.0,
+          "y": 47.0
+        },
+        {
+          "name": "Pine Forest",
+          "kind": "forest",
+          "x": 75.0,
+          "y": 20.0
+        },
+        {
+          "name": "Dark Thicket",
+          "kind": "forest",
+          "x": 55.0,
+          "y": 18.0
+        },
+        {
+          "name": "Emerald Hills",
+          "kind": "hills",
+          "x": 35.0,
+          "y": 25.0
+        },
+        {
+          "name": "Barren Hills",
+          "kind": "hills",
+          "x": 70.0,
+          "y": 28.0
+        },
+        {
+          "name": "Snowy Peaks",
+          "kind": "mountains",
+          "x": 95.0,
+          "y": 15.0
+        },
+        {
+          "name": "Rocky Crags",
+          "kind": "mountains",
+          "x": 90.0,
+          "y": 35.0
+        },
+        {
+          "name": "Foothills",
+          "kind": "hills",
+          "x": 80.0,
+          "y": 30.0
+        },
+        {
+          "name": "River Source",
+          "kind": "river",
+          "x": 85.0,
+          "y": 15.0
+        },
+        {
+          "name": "River Mouth",
+          "kind": "river",
+          "x": 15.0,
+          "y": 28.0
+        },
+        {
+          "name": "Tributary",
+          "kind": "river",
+          "x": 50.0,
+          "y": 35.0
+        },
+        {
+          "name": "Stream",
+          "kind": "river",
+          "x": 35.0,
+          "y": 38.0
+        },
+        {
+          "name": "Pond",
+          "kind": "lake",
+          "x": 60.0,
+          "y": 42.0
+        },
+        {
+          "name": "Mirror Lake",
+          "kind": "lake",
+          "x": 45.0,
+          "y": 43.0
+        },
+        {
+          "name": "Hidden Lake",
+          "kind": "lake",
+          "x": 70.0,
+          "y": 46.0
+        },
+        {
+          "name": "Sea Stacks",
+          "kind": "island",
+          "x": 3.0,
+          "y": 38.0
+        },
+        {
+          "name": "Rocky Isle",
+          "kind": "island",
+          "x": 10.0,
+          "y": 50.0
+        },
+        {
+          "name": "Smuggler's Cove",
+          "kind": "sea",
+          "x": 8.0,
+          "y": 42.0
+        },
+        {
+          "name": "Open Sea",
+          "kind": "sea",
+          "x": 2.0,
+          "y": 25.0
+        },
+        {
+          "name": "Deep Waters",
+          "kind": "sea",
+          "x": 4.0,
+          "y": 35.0
+        },
+        {
+          "name": "King's Highway",
+          "kind": "road",
+          "x": 35.0,
+          "y": 23.0
+        },
+        {
+          "name": "Pilgrim's Path",
+          "kind": "path",
+          "x": 50.0,
+          "y": 30.0
+        },
+        {
+          "name": "Merchant's Trail",
+          "kind": "road",
+          "x": 60.0,
+          "y": 25.0
+        },
+        {
+          "name": "Old Wagon Road",
+          "kind": "road",
+          "x": 45.0,
+          "y": 40.0
+        },
+        {
+          "name": "Forest Path",
+          "kind": "path",
+          "x": 55.0,
+          "y": 12.0
+        },
+        {
+          "name": "Mountain Pass Trail",
+          "kind": "path",
+          "x": 88.0,
+          "y": 22.0
+        },
+        {
+          "name": "Swamp Path",
+          "kind": "path",
+          "x": 52.0,
+          "y": 51.0
+        },
+        {
+          "name": "Coastal Walk",
+          "kind": "path",
+          "x": 13.0,
+          "y": 38.0
+        },
+        {
+          "name": "River Walk",
+          "kind": "path",
+          "x": 45.0,
+          "y": 27.0
+        },
+        {
+          "name": "Village of Oakhollow",
+          "kind": "village",
+          "x": 36.0,
+          "y": 40.5
+        },
+        {
+          "name": "Town of Brindle",
+          "kind": "town",
+          "x": 70.5,
+          "y": 43.5
+        },
+        {
+          "name": "City of Aldermoor",
+          "kind": "city",
+          "x": 48.5,
+          "y": 28.5
+        },
+        {
+          "name": "Port of Saltreach",
+          "kind": "port",
+          "x": 13.5,
+          "y": 23.5
+        },
+        {
+          "name": "Gate of Wardens",
+          "kind": "gate",
+          "x": 65.5,
+          "y": 32.5
+        },
+        {
+          "name": "Keep of the Sunken",
+          "kind": "ruin",
+          "x": 55.5,
+          "y": 53.5
+        },
+        {
+          "name": "Mount Duskfall",
+          "kind": "mountains",
+          "x": 88.5,
+          "y": 40.5
+        },
+        {
+          "name": "Mount Greyspine",
+          "kind": "mountains",
+          "x": 85.5,
+          "y": 13.5
+        },
+        {
+          "name": "Thornwood Forest",
+          "kind": "forest",
+          "x": 45.5,
+          "y": 8.5
+        },
+        {
+          "name": "River Ashwater",
+          "kind": "river",
+          "x": 65.5,
+          "y": 22.5
+        }
+      ],
+      "error": null
+    },
+    "map-2": {
+      "seconds": 9.2,
+      "cost_usd": 0.00205908,
+      "usage": {
+        "prompt_tokens": 686,
+        "completion_tokens": 1568,
+        "total_tokens": 2254,
+        "cost": 0.00205908,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 118,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00205908,
+          "upstream_inference_prompt_cost": 0.00017748,
+          "upstream_inference_completions_cost": 0.0018816
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 420,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "raw": "```json\n{\n  \"places\": [\n    {\"name\": \"Central Walled City\", \"kind\": \"city\", \"point\": [500, 380]},\n    {\"name\": \"Port City\", \"kind\": \"port\", \"point\": [130, 320]},\n    {\"name\": \"Lighthouse\", \"kind\": \"lighthouse\", \"point\": [85, 280]},\n    {\"name\": \"Northern Village\", \"kind\": \"village\", \"point\": [180, 130]},\n    {\"name\": \"Hilltop Fort\", \"kind\": \"fort\", \"point\": [570, 200]},\n    {\"name\": \"Mountain Settlement\", \"kind\": \"village\", \"point\": [700, 130]},\n    {\"name\": \"Watchtower\", \"kind\": \"tower\", \"point\": [700, 380]},\n    {\"name\": \"Southern Village\", \"kind\": \"village\", \"point\": [250, 580]},\n    {\"name\": \"Swamp Ruins\", \"kind\": \"ruin\", \"point\": [700, 580]},\n    {\"name\": \"Stone Bridge\", \"kind\": \"bridge\", \"point\": [380, 380]},\n    {\"name\": \"Northern Forest\", \"kind\": \"forest\", \"point\": [400, 100]},\n    {\"name\": \"Eastern Mountains\", \"kind\": \"mountains\", \"point\": [850, 300]},\n    {\"name\": \"Great Swamp\", \"kind\": \"swamp\", \"point\": [650, 600]},\n    {\"name\": \"Western Sea\", \"kind\": \"sea\", \"point\": [50, 500]},\n    {\"name\": \"Central River\", \"kind\": \"river\", \"point\": [500, 350]},\n    {\"name\": \"Northern Road\", \"kind\": \"road\", \"point\": [600, 200]},\n    {\"name\": \"Southern Road\", \"kind\": \"road\", \"point\": [400, 500]},\n    {\"name\": \"Western Road\", \"kind\": \"road\", \"point\": [250, 400]},\n    {\"name\": \"Eastern Road\", \"kind\": \"road\", \"point\": [700, 450]},\n    {\"name\": \"Hills\", \"kind\": \"hills\", \"point\": [300, 250]},\n    {\"name\": \"Coastal Cliffs\", \"kind\": \"hills\", \"point\": [80, 450]},\n    {\"name\": \"Small Lake\", \"kind\": \"lake\", \"point\": [350, 600]},\n    {\"name\": \"Mountain Lake\", \"kind\": \"lake\", \"point\": [800, 200]},\n    {\"name\": \"Forest Glade\", \"kind\": \"forest\", \"point\": [550, 500]},\n    {\"name\": \"City Gate\", \"kind\": \"gate\", \"point\": [500, 420]},\n    {\"name\": \"Harbor Docks\", \"kind\": \"port\", \"point\": [110, 340]},\n    {\"name\": \"Farmstead\", \"kind\": \"farm\", \"point\": [350, 480]},\n    {\"name\": \"Mountain Pass\", \"kind\": \"path\", \"point\": [780, 250]},\n    {\"name\": \"Riverside Inn\", \"kind\": \"inn\", \"point\": [420, 380]},\n    {\"name\": \"City Market\", \"kind\": \"market\", \"point\": [490, 370]},\n    {\"name\": \"Temple\", \"kind\": \"temple\", \"point\": [510, 360]},\n    {\"name\": \"Monastery\", \"kind\": \"monastery\", \"point\": [620, 150]},\n    {\"name\": \"Chapel\", \"kind\": \"chapel\", \"point\": [220, 150]},\n    {\"name\": \"Smithy\", \"kind\": \"smithy\", \"point\": [480, 390]},\n    {\"name\": \"Mill\", \"kind\": \"mill\", \"point\": [380, 400]},\n    {\"name\": \"Cave\", \"kind\": \"cave\", \"point\": [870, 350]},\n    {\"name\": \"Mine\", \"kind\": \"mine\", \"point\": [820, 280]},\n    {\"name\": \"Dungeon\", \"kind\": \"dungeon\", \"point\": [720, 600]},\n    {\"name\": \"Landmark\", \"kind\": \"landmark\", \"point\": [600, 250]},\n    {\"name\": \"Island\", \"kind\": \"island\", \"point\": [60, 200]},\n    {\"name\": \"Camp\", \"kind\": \"camp\", \"point\": [450, 550]},\n    {\"name\": \"Tribe Settlement\", \"kind\": \"tribe\", \"point\": [600, 620]},\n    {\"name\": \"Checkpoint\", \"kind\": \"checkpoint\", \"point\": [350, 380]},\n    {\"name\": \"Tower Ruin\", \"kind\": \"ruin\", \"point\": [680, 200]},\n    {\"name\": \"Forest Path\", \"kind\": \"path\", \"point\": [300, 150]},\n    {\"name\": \"Mountain Trail\", \"kind\": \"path\", \"point\": [850, 400]}\n  ]\n}\n```",
+      "places": [
+        {
+          "name": "Central Walled City",
+          "kind": "city",
+          "x": 50.0,
+          "y": 38.0
+        },
+        {
+          "name": "Port City",
+          "kind": "port",
+          "x": 13.0,
+          "y": 32.0
+        },
+        {
+          "name": "Lighthouse",
+          "kind": "lighthouse",
+          "x": 8.5,
+          "y": 28.0
+        },
+        {
+          "name": "Northern Village",
+          "kind": "village",
+          "x": 18.0,
+          "y": 13.0
+        },
+        {
+          "name": "Hilltop Fort",
+          "kind": "fort",
+          "x": 57.0,
+          "y": 20.0
+        },
+        {
+          "name": "Mountain Settlement",
+          "kind": "village",
+          "x": 70.0,
+          "y": 13.0
+        },
+        {
+          "name": "Watchtower",
+          "kind": "tower",
+          "x": 70.0,
+          "y": 38.0
+        },
+        {
+          "name": "Southern Village",
+          "kind": "village",
+          "x": 25.0,
+          "y": 58.0
+        },
+        {
+          "name": "Swamp Ruins",
+          "kind": "ruin",
+          "x": 70.0,
+          "y": 58.0
+        },
+        {
+          "name": "Stone Bridge",
+          "kind": "bridge",
+          "x": 38.0,
+          "y": 38.0
+        },
+        {
+          "name": "Northern Forest",
+          "kind": "forest",
+          "x": 40.0,
+          "y": 10.0
+        },
+        {
+          "name": "Eastern Mountains",
+          "kind": "mountains",
+          "x": 85.0,
+          "y": 30.0
+        },
+        {
+          "name": "Great Swamp",
+          "kind": "swamp",
+          "x": 65.0,
+          "y": 60.0
+        },
+        {
+          "name": "Western Sea",
+          "kind": "sea",
+          "x": 5.0,
+          "y": 50.0
+        },
+        {
+          "name": "Central River",
+          "kind": "river",
+          "x": 50.0,
+          "y": 35.0
+        },
+        {
+          "name": "Northern Road",
+          "kind": "road",
+          "x": 60.0,
+          "y": 20.0
+        },
+        {
+          "name": "Southern Road",
+          "kind": "road",
+          "x": 40.0,
+          "y": 50.0
+        },
+        {
+          "name": "Western Road",
+          "kind": "road",
+          "x": 25.0,
+          "y": 40.0
+        },
+        {
+          "name": "Eastern Road",
+          "kind": "road",
+          "x": 70.0,
+          "y": 45.0
+        },
+        {
+          "name": "Hills",
+          "kind": "hills",
+          "x": 30.0,
+          "y": 25.0
+        },
+        {
+          "name": "Coastal Cliffs",
+          "kind": "hills",
+          "x": 8.0,
+          "y": 45.0
+        },
+        {
+          "name": "Small Lake",
+          "kind": "lake",
+          "x": 35.0,
+          "y": 60.0
+        },
+        {
+          "name": "Mountain Lake",
+          "kind": "lake",
+          "x": 80.0,
+          "y": 20.0
+        },
+        {
+          "name": "Forest Glade",
+          "kind": "forest",
+          "x": 55.0,
+          "y": 50.0
+        },
+        {
+          "name": "City Gate",
+          "kind": "gate",
+          "x": 50.0,
+          "y": 42.0
+        },
+        {
+          "name": "Harbor Docks",
+          "kind": "port",
+          "x": 11.0,
+          "y": 34.0
+        },
+        {
+          "name": "Farmstead",
+          "kind": "farm",
+          "x": 35.0,
+          "y": 48.0
+        },
+        {
+          "name": "Mountain Pass",
+          "kind": "path",
+          "x": 78.0,
+          "y": 25.0
+        },
+        {
+          "name": "Riverside Inn",
+          "kind": "inn",
+          "x": 42.0,
+          "y": 38.0
+        },
+        {
+          "name": "City Market",
+          "kind": "market",
+          "x": 49.0,
+          "y": 37.0
+        },
+        {
+          "name": "Temple",
+          "kind": "temple",
+          "x": 51.0,
+          "y": 36.0
+        },
+        {
+          "name": "Monastery",
+          "kind": "monastery",
+          "x": 62.0,
+          "y": 15.0
+        },
+        {
+          "name": "Chapel",
+          "kind": "chapel",
+          "x": 22.0,
+          "y": 15.0
+        },
+        {
+          "name": "Smithy",
+          "kind": "smithy",
+          "x": 48.0,
+          "y": 39.0
+        },
+        {
+          "name": "Mill",
+          "kind": "mill",
+          "x": 38.0,
+          "y": 40.0
+        },
+        {
+          "name": "Cave",
+          "kind": "cave",
+          "x": 87.0,
+          "y": 35.0
+        },
+        {
+          "name": "Mine",
+          "kind": "mine",
+          "x": 82.0,
+          "y": 28.0
+        },
+        {
+          "name": "Dungeon",
+          "kind": "dungeon",
+          "x": 72.0,
+          "y": 60.0
+        },
+        {
+          "name": "Landmark",
+          "kind": "landmark",
+          "x": 60.0,
+          "y": 25.0
+        },
+        {
+          "name": "Island",
+          "kind": "island",
+          "x": 6.0,
+          "y": 20.0
+        },
+        {
+          "name": "Camp",
+          "kind": "camp",
+          "x": 45.0,
+          "y": 55.0
+        },
+        {
+          "name": "Tribe Settlement",
+          "kind": "tribe",
+          "x": 60.0,
+          "y": 62.0
+        },
+        {
+          "name": "Checkpoint",
+          "kind": "checkpoint",
+          "x": 35.0,
+          "y": 38.0
+        },
+        {
+          "name": "Tower Ruin",
+          "kind": "ruin",
+          "x": 68.0,
+          "y": 20.0
+        },
+        {
+          "name": "Forest Path",
+          "kind": "path",
+          "x": 30.0,
+          "y": 15.0
+        },
+        {
+          "name": "Mountain Trail",
+          "kind": "path",
+          "x": 85.0,
+          "y": 40.0
+        }
+      ],
+      "error": null
+    },
+    "map-3": {
+      "seconds": 13.6,
+      "cost_usd": 0.00279708,
+      "usage": {
+        "prompt_tokens": 686,
+        "completion_tokens": 2183,
+        "total_tokens": 2869,
+        "cost": 0.00279708,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 118,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00279708,
+          "upstream_inference_prompt_cost": 0.00017748,
+          "upstream_inference_completions_cost": 0.0026196
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1083,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "raw": "```json\n{\n  \"places\": [\n    {\"name\": \"Hilltop Castle\", \"kind\": \"castle\", \"point\": [130, 80]},\n    {\"name\": \"Snowy Peaks\", \"kind\": \"mountains\", \"point\": [500, 50]},\n    {\"name\": \"Mountain Keep\", \"kind\": \"castle\", \"point\": [700, 100]},\n    {\"name\": \"Stone Fortress\", \"kind\": \"fort\", \"point\": [880, 180]},\n    {\"name\": \"Waterfall\", \"kind\": \"landmark\", \"point\": [500, 150]},\n    {\"name\": \"Great River\", \"kind\": \"river\", \"point\": [500, 400]},\n    {\"name\": \"Stone Bridge\", \"kind\": \"bridge\", \"point\": [500, 470]},\n    {\"name\": \"Lake\", \"kind\": \"lake\", \"point\": [150, 600]},\n    {\"name\": \"Small Island\", \"kind\": \"island\", \"point\": [50, 600]},\n    {\"name\": \"Lakeside Port\", \"kind\": \"port\", \"point\": [200, 650]},\n    {\"name\": \"Watchtower\", \"kind\": \"tower\", \"point\": [800, 400]},\n    {\"name\": \"Tribal Camp\", \"kind\": \"camp\", \"point\": [800, 700]},\n    {\"name\": \"Northern Forest\", \"kind\": \"forest\", \"point\": [200, 300]},\n    {\"name\": \"Eastern Forest\", \"kind\": \"forest\", \"point\": [700, 500]},\n    {\"name\": \"Central Hills\", \"kind\": \"hills\", \"point\": [400, 250]},\n    {\"name\": \"Southern Hills\", \"kind\": \"hills\", \"point\": [600, 600]},\n    {\"name\": \"Trade Road\", \"kind\": \"road\", \"point\": [400, 500]},\n    {\"name\": \"Mountain Path\", \"kind\": \"path\", \"point\": [650, 300]},\n    {\"name\": \"Lakeside Village\", \"kind\": \"village\", \"point\": [180, 680]},\n    {\"name\": \"Forest Settlement\", \"kind\": \"village\", \"point\": [350, 350]},\n    {\"name\": \"Mountain Pass\", \"kind\": \"path\", \"point\": [550, 200]},\n    {\"name\": \"River Bend\", \"kind\": \"river\", \"point\": [450, 550]},\n    {\"name\": \"Cliffside\", \"kind\": \"hills\", \"point\": [750, 350]},\n    {\"name\": \"Harbor Docks\", \"kind\": \"port\", \"point\": [220, 700]},\n    {\"name\": \"Tribe Totems\", \"kind\": \"tribe\", \"point\": [850, 720]},\n    {\"name\": \"Wooded Glade\", \"kind\": \"forest\", \"point\": [300, 450]},\n    {\"name\": \"Highland Ridge\", \"kind\": \"hills\", \"point\": [600, 150]},\n    {\"name\": \"Coastal Waters\", \"kind\": \"sea\", \"point\": [100, 750]},\n    {\"name\": \"Marshland\", \"kind\": \"swamp\", \"point\": [400, 750]},\n    {\"name\": \"Inn\", \"kind\": \"inn\", \"point\": [380, 380]},\n    {\"name\": \"Farmstead\", \"kind\": \"farm\", \"point\": [320, 420]},\n    {\"name\": \"Mill\", \"kind\": \"mill\", \"point\": [450, 430]},\n    {\"name\": \"Chapel\", \"kind\": \"chapel\", \"point\": [250, 660]},\n    {\"name\": \"Temple\", \"kind\": \"temple\", \"point\": [150, 100]},\n    {\"name\": \"Monastery\", \"kind\": \"monastery\", \"point\": [720, 130]},\n    {\"name\": \"Mine\", \"kind\": \"mine\", \"point\": [850, 250]},\n    {\"name\": \"Cave\", \"kind\": \"cave\", \"point\": [600, 250]},\n    {\"name\": \"Ruin\", \"kind\": \"ruin\", \"point\": [880, 220]},\n    {\"name\": \"Checkpoint\", \"kind\": \"checkpoint\", \"point\": [500, 470]},\n    {\"name\": \"Market\", \"kind\": \"market\", \"point\": [200, 670]},\n    {\"name\": \"Smithy\", \"kind\": \"smithy\", \"point\": [350, 360]},\n    {\"name\": \"Lighthouse\", \"kind\": \"lighthouse\", \"point\": [180, 720]},\n    {\"name\": \"Gate\", \"kind\": \"gate\", \"point\": [130, 90]},\n    {\"name\": \"Dungeon\", \"kind\": \"dungeon\", \"point\": [700, 110]}\n  ]\n}\n```",
+      "places": [
+        {
+          "name": "Hilltop Castle",
+          "kind": "castle",
+          "x": 13.0,
+          "y": 8.0
+        },
+        {
+          "name": "Snowy Peaks",
+          "kind": "mountains",
+          "x": 50.0,
+          "y": 5.0
+        },
+        {
+          "name": "Mountain Keep",
+          "kind": "castle",
+          "x": 70.0,
+          "y": 10.0
+        },
+        {
+          "name": "Stone Fortress",
+          "kind": "fort",
+          "x": 88.0,
+          "y": 18.0
+        },
+        {
+          "name": "Waterfall",
+          "kind": "landmark",
+          "x": 50.0,
+          "y": 15.0
+        },
+        {
+          "name": "Great River",
+          "kind": "river",
+          "x": 50.0,
+          "y": 40.0
+        },
+        {
+          "name": "Stone Bridge",
+          "kind": "bridge",
+          "x": 50.0,
+          "y": 47.0
+        },
+        {
+          "name": "Lake",
+          "kind": "lake",
+          "x": 15.0,
+          "y": 60.0
+        },
+        {
+          "name": "Small Island",
+          "kind": "island",
+          "x": 5.0,
+          "y": 60.0
+        },
+        {
+          "name": "Lakeside Port",
+          "kind": "port",
+          "x": 20.0,
+          "y": 65.0
+        },
+        {
+          "name": "Watchtower",
+          "kind": "tower",
+          "x": 80.0,
+          "y": 40.0
+        },
+        {
+          "name": "Tribal Camp",
+          "kind": "camp",
+          "x": 80.0,
+          "y": 70.0
+        },
+        {
+          "name": "Northern Forest",
+          "kind": "forest",
+          "x": 20.0,
+          "y": 30.0
+        },
+        {
+          "name": "Eastern Forest",
+          "kind": "forest",
+          "x": 70.0,
+          "y": 50.0
+        },
+        {
+          "name": "Central Hills",
+          "kind": "hills",
+          "x": 40.0,
+          "y": 25.0
+        },
+        {
+          "name": "Southern Hills",
+          "kind": "hills",
+          "x": 60.0,
+          "y": 60.0
+        },
+        {
+          "name": "Trade Road",
+          "kind": "road",
+          "x": 40.0,
+          "y": 50.0
+        },
+        {
+          "name": "Mountain Path",
+          "kind": "path",
+          "x": 65.0,
+          "y": 30.0
+        },
+        {
+          "name": "Lakeside Village",
+          "kind": "village",
+          "x": 18.0,
+          "y": 68.0
+        },
+        {
+          "name": "Forest Settlement",
+          "kind": "village",
+          "x": 35.0,
+          "y": 35.0
+        },
+        {
+          "name": "Mountain Pass",
+          "kind": "path",
+          "x": 55.0,
+          "y": 20.0
+        },
+        {
+          "name": "River Bend",
+          "kind": "river",
+          "x": 45.0,
+          "y": 55.0
+        },
+        {
+          "name": "Cliffside",
+          "kind": "hills",
+          "x": 75.0,
+          "y": 35.0
+        },
+        {
+          "name": "Harbor Docks",
+          "kind": "port",
+          "x": 22.0,
+          "y": 70.0
+        },
+        {
+          "name": "Tribe Totems",
+          "kind": "tribe",
+          "x": 85.0,
+          "y": 72.0
+        },
+        {
+          "name": "Wooded Glade",
+          "kind": "forest",
+          "x": 30.0,
+          "y": 45.0
+        },
+        {
+          "name": "Highland Ridge",
+          "kind": "hills",
+          "x": 60.0,
+          "y": 15.0
+        },
+        {
+          "name": "Coastal Waters",
+          "kind": "sea",
+          "x": 10.0,
+          "y": 75.0
+        },
+        {
+          "name": "Marshland",
+          "kind": "swamp",
+          "x": 40.0,
+          "y": 75.0
+        },
+        {
+          "name": "Inn",
+          "kind": "inn",
+          "x": 38.0,
+          "y": 38.0
+        },
+        {
+          "name": "Farmstead",
+          "kind": "farm",
+          "x": 32.0,
+          "y": 42.0
+        },
+        {
+          "name": "Mill",
+          "kind": "mill",
+          "x": 45.0,
+          "y": 43.0
+        },
+        {
+          "name": "Chapel",
+          "kind": "chapel",
+          "x": 25.0,
+          "y": 66.0
+        },
+        {
+          "name": "Temple",
+          "kind": "temple",
+          "x": 15.0,
+          "y": 10.0
+        },
+        {
+          "name": "Monastery",
+          "kind": "monastery",
+          "x": 72.0,
+          "y": 13.0
+        },
+        {
+          "name": "Mine",
+          "kind": "mine",
+          "x": 85.0,
+          "y": 25.0
+        },
+        {
+          "name": "Cave",
+          "kind": "cave",
+          "x": 60.0,
+          "y": 25.0
+        },
+        {
+          "name": "Ruin",
+          "kind": "ruin",
+          "x": 88.0,
+          "y": 22.0
+        },
+        {
+          "name": "Checkpoint",
+          "kind": "checkpoint",
+          "x": 50.0,
+          "y": 47.0
+        },
+        {
+          "name": "Market",
+          "kind": "market",
+          "x": 20.0,
+          "y": 67.0
+        },
+        {
+          "name": "Smithy",
+          "kind": "smithy",
+          "x": 35.0,
+          "y": 36.0
+        },
+        {
+          "name": "Lighthouse",
+          "kind": "lighthouse",
+          "x": 18.0,
+          "y": 72.0
+        },
+        {
+          "name": "Gate",
+          "kind": "gate",
+          "x": 13.0,
+          "y": 9.0
+        },
+        {
+          "name": "Dungeon",
+          "kind": "dungeon",
+          "x": 70.0,
+          "y": 11.0
+        }
+      ],
+      "error": null
+    },
+    "map-4": {
+      "seconds": 159.2,
+      "cost_usd": 0.04817748,
+      "usage": {
+        "prompt_tokens": 686,
+        "completion_tokens": 40000,
+        "total_tokens": 40686,
+        "cost": 0.04817748,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 118,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.04817748,
+          "upstream_inference_prompt_cost": 0.00017748,
+          "upstream_inference_completions_cost": 0.048
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 39996,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "raw": "",
+      "places": [],
+      "error": "JSONDecodeError: Expecting value: line 1 column 1 (char 0); {'id': 'gen-1791333001-dumBteHSuW3UxRaaoiOR', 'object': 'chat.completion', 'created': 1791333001, 'model': 'minimax/minimax-m3', 'provider': 'Venice', 'system_fingerprint': None, 'service_tier': None, 'choices': [{'index': 0, 'logprobs': None, 'finish_reason': 'length', 'native_finish_reason': 'leng"
+    },
+    "map-5": {
+      "seconds": 34.0,
+      "cost_usd": 0.00845748,
+      "usage": {
+        "prompt_tokens": 686,
+        "completion_tokens": 6900,
+        "total_tokens": 7586,
+        "cost": 0.00845748,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 118,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00845748,
+          "upstream_inference_prompt_cost": 0.00017748,
+          "upstream_inference_completions_cost": 0.00828
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 6496,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "raw": "```json\n{\n  \"places\": [\n    {\"name\": \"Old Bram's farm\", \"kind\": \"farm\", \"point\": [130, 130]},\n    {\"name\": \"Chapel\", \"kind\": \"chapel\", \"point\": [490, 130]},\n    {\"name\": \"Sheep Track\", \"kind\": \"path\", \"point\": [820, 180]},\n    {\"name\": \"the Hearth\", \"kind\": \"inn\", \"point\": [430, 290]},\n    {\"name\": \"Smithy\", \"kind\": \"smithy\", \"point\": [640, 290]},\n    {\"name\": \"Market square\", \"kind\": \"market\", \"point\": [430, 360]},\n    {\"name\": \"Mill\", \"kind\": \"mill\", \"point\": [130, 430]},\n    {\"name\": \"Mill Road\", \"kind\": \"road\", \"point\": [490, 620]},\n    {\"name\": \"Whispering Wood\", \"kind\": \"forest\", \"point\": [820, 580]},\n    {\"name\": \"village\", \"kind\": \"village\", \"point\": [430, 350]},\n    {\"name\": \"river\", \"kind\": \"river\", \"point\": [200, 500]},\n    {\"name\": \"bridge\", \"kind\": \"bridge\", \"point\": [350, 600]},\n    {\"name\": \"hills\", \"kind\": \"hills\", \"point\": [500, 50]},\n    {\"name\": \"village gate\", \"kind\": \"gate\", \"point\": [430, 400]},\n    {\"name\": \"cave\", \"kind\": \"cave\", \"point\": [880, 200]},\n    {\"name\": \"lake\", \"kind\": \"lake\", \"point\": [130, 600]}\n  ]\n}\n```",
+      "places": [
+        {
+          "name": "Old Bram's farm",
+          "kind": "farm",
+          "x": 13.0,
+          "y": 13.0
+        },
+        {
+          "name": "Chapel",
+          "kind": "chapel",
+          "x": 49.0,
+          "y": 13.0
+        },
+        {
+          "name": "Sheep Track",
+          "kind": "path",
+          "x": 82.0,
+          "y": 18.0
+        },
+        {
+          "name": "the Hearth",
+          "kind": "inn",
+          "x": 43.0,
+          "y": 29.0
+        },
+        {
+          "name": "Smithy",
+          "kind": "smithy",
+          "x": 64.0,
+          "y": 29.0
+        },
+        {
+          "name": "Market square",
+          "kind": "market",
+          "x": 43.0,
+          "y": 36.0
+        },
+        {
+          "name": "Mill",
+          "kind": "mill",
+          "x": 13.0,
+          "y": 43.0
+        },
+        {
+          "name": "Mill Road",
+          "kind": "road",
+          "x": 49.0,
+          "y": 62.0
+        },
+        {
+          "name": "Whispering Wood",
+          "kind": "forest",
+          "x": 82.0,
+          "y": 58.0
+        },
+        {
+          "name": "village",
+          "kind": "village",
+          "x": 43.0,
+          "y": 35.0
+        },
+        {
+          "name": "river",
+          "kind": "river",
+          "x": 20.0,
+          "y": 50.0
+        },
+        {
+          "name": "bridge",
+          "kind": "bridge",
+          "x": 35.0,
+          "y": 60.0
+        },
+        {
+          "name": "hills",
+          "kind": "hills",
+          "x": 50.0,
+          "y": 5.0
+        },
+        {
+          "name": "village gate",
+          "kind": "gate",
+          "x": 43.0,
+          "y": 40.0
+        },
+        {
+          "name": "cave",
+          "kind": "cave",
+          "x": 88.0,
+          "y": 20.0
+        },
+        {
+          "name": "lake",
+          "kind": "lake",
+          "x": 13.0,
+          "y": 60.0
+        }
+      ],
+      "error": null
+    }
+  },
+  "cost_usd": 0.0668
+}

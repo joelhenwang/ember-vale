@@ -31,6 +31,8 @@ import httpx
 from PIL import Image, ImageDraw, ImageFont
 
 OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
+#: Output cap per answer (thinking included) unless --max-tokens says otherwise.
+DEFAULT_MAX_TOKENS = 8000
 
 PROMPT = """This is a fantasy world map. List every place a traveller could go to or through:
 - settlements: city, town, village, port, camp, tribe
@@ -107,7 +109,9 @@ def _parse(text: str) -> list[dict[str, Any]]:
     return places
 
 
-def run(directory: Path, models: list[str]) -> None:
+def run(
+    directory: Path, models: list[str], reasoning: str | None = None, max_tokens: int = 0
+) -> None:
     truth = json.loads((directory / "truth.json").read_text(encoding="utf-8"))
     runs = directory / "runs"
     runs.mkdir(exist_ok=True)
@@ -117,14 +121,20 @@ def run(directory: Path, models: list[str]) -> None:
         if target.exists():
             print(f"{model}: {target.name} exists, not overwritten")
             continue
-        results: dict[str, Any] = {"model": model, "prompt": PROMPT, "maps": {}}
+        results: dict[str, Any] = {
+            "model": model,
+            "reasoning": reasoning,
+            "prompt": PROMPT,
+            "maps": {},
+        }
         total = 0.0
         for name in truth["maps"]:
             body = {
                 "model": model,
-                "max_tokens": 8000,
+                "max_tokens": max_tokens or DEFAULT_MAX_TOKENS,
                 "temperature": 0,
                 "usage": {"include": True},
+                **({"reasoning": {"effort": reasoning}} if reasoning else {}),
                 "messages": [
                     {
                         "role": "user",
@@ -351,9 +361,11 @@ def main() -> None:
     parser.add_argument("command", choices=["run", "score"])
     parser.add_argument("--dir", type=Path, required=True)
     parser.add_argument("--model", action="append", default=[])
+    parser.add_argument("--reasoning", choices=["minimal", "low", "medium", "high"])
+    parser.add_argument("--max-tokens", type=int, default=0)
     args = parser.parse_args()
     if args.command == "run":
-        run(args.dir, args.model)
+        run(args.dir, args.model, args.reasoning, args.max_tokens)
     else:
         score(args.dir)
 

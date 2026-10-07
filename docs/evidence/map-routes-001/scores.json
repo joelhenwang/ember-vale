@@ -46,6 +46,68 @@
       }
     }
   },
+  "deepseek/deepseek-v4.1-flash": {
+    "cost_usd": 0.0235,
+    "maps": {
+      "map-1": {
+        "found": 4,
+        "required": 5,
+        "missed": [
+          "Aldermoor|Oakhollow"
+        ],
+        "wrong": [
+          "Oakhollow - Saltreach"
+        ],
+        "precision": 0.8,
+        "claimed": 8
+      },
+      "map-2": {
+        "found": 0,
+        "required": 5,
+        "missed": [
+          "harbour town|castle city",
+          "castle city|fortified gate",
+          "fortified gate|northern village",
+          "castle city|south-west village",
+          "castle city|ruined tower / castle city|swamp"
+        ],
+        "wrong": [],
+        "precision": null,
+        "claimed": 0
+      },
+      "map-3": {
+        "found": 3,
+        "required": 5,
+        "missed": [
+          "lakeside village|stone bridge",
+          "stone bridge|tribal encampment"
+        ],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 7
+      },
+      "map-4": {
+        "found": 7,
+        "required": 10,
+        "missed": [
+          "Corvane|Saltmarket",
+          "Saltmarket|Ixquel",
+          "Ochre Clans|Gullsend"
+        ],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 11
+      },
+      "map-5": {
+        "found": 7,
+        "required": 7,
+        "missed": [],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 13
+      }
+    }
+  },
   "google/gemini-3.1-pro-preview": {
     "cost_usd": 0.1622,
     "maps": {
@@ -151,6 +213,80 @@
       }
     }
   },
+  "minimax/minimax-m3": {
+    "cost_usd": 0.0942,
+    "maps": {
+      "map-1": {
+        "found": 0,
+        "required": 5,
+        "missed": [
+          "Saltreach|Aldermoor",
+          "Aldermoor|Oakhollow",
+          "Aldermoor|Warden's Gate",
+          "Warden's Gate|Brindle",
+          "Oakhollow|Brindle"
+        ],
+        "wrong": [],
+        "precision": null,
+        "claimed": 0
+      },
+      "map-2": {
+        "found": 0,
+        "required": 5,
+        "missed": [
+          "harbour town|castle city",
+          "castle city|fortified gate",
+          "fortified gate|northern village",
+          "castle city|south-west village",
+          "castle city|ruined tower / castle city|swamp"
+        ],
+        "wrong": [],
+        "precision": null,
+        "claimed": 0
+      },
+      "map-3": {
+        "found": 3,
+        "required": 5,
+        "missed": [
+          "lakeside village|stone bridge",
+          "mountain pass checkpoint|abandoned mine / stone bridge|abandoned mine"
+        ],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 8
+      },
+      "map-4": {
+        "found": 8,
+        "required": 10,
+        "missed": [
+          "Hollow Isle|Pell",
+          "Ochre Clans|Tidemark"
+        ],
+        "wrong": [
+          "Gullsend - Tidemark",
+          "Pell - Saltmarket"
+        ],
+        "precision": 0.8,
+        "claimed": 15
+      },
+      "map-5": {
+        "found": 0,
+        "required": 7,
+        "missed": [
+          "the Hearth|Market square",
+          "Market square|Mill / the Hearth|Mill",
+          "Chapel|the Hearth / Chapel|Market square",
+          "Market square|Smithy / the Hearth|Smithy",
+          "Smithy|Sheep Track",
+          "Sheep Track|stone cairn",
+          "Market square|Mill Road"
+        ],
+        "wrong": [],
+        "precision": null,
+        "claimed": 0
+      }
+    }
+  },
   "openai/gpt-5-mini": {
     "cost_usd": 0.0494,
     "maps": {
@@ -204,6 +340,63 @@
         "wrong": [],
         "precision": 1.0,
         "claimed": 11
+      }
+    }
+  },
+  "openai/gpt-6-luna": {
+    "cost_usd": 0.0038,
+    "maps": {
+      "map-1": {
+        "found": 5,
+        "required": 5,
+        "missed": [],
+        "wrong": [
+          "Oakhollow - Saltreach"
+        ],
+        "precision": 0.83,
+        "claimed": 9
+      },
+      "map-2": {
+        "found": 5,
+        "required": 5,
+        "missed": [],
+        "wrong": [
+          "castle city - northern village"
+        ],
+        "precision": 0.83,
+        "claimed": 6
+      },
+      "map-3": {
+        "found": 3,
+        "required": 5,
+        "missed": [
+          "stone bridge|mountain pass checkpoint",
+          "stone bridge|tribal encampment"
+        ],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 8
+      },
+      "map-4": {
+        "found": 9,
+        "required": 10,
+        "missed": [
+          "Saltmarket|Ixquel"
+        ],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 12
+      },
+      "map-5": {
+        "found": 5,
+        "required": 7,
+        "missed": [
+          "Sheep Track|stone cairn",
+          "Market square|Mill Road"
+        ],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 8
       }
     }
   },
@@ -284,6 +477,63 @@
         "wrong": [],
         "precision": null,
         "claimed": 0
+      }
+    }
+  },
+  "qwen/qwen3.8-27b": {
+    "cost_usd": 0.0374,
+    "maps": {
+      "map-1": {
+        "found": 5,
+        "required": 5,
+        "missed": [],
+        "wrong": [
+          "Ashwater - Sunken Keep"
+        ],
+        "precision": 0.83,
+        "claimed": 8
+      },
+      "map-2": {
+        "found": 5,
+        "required": 5,
+        "missed": [],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 7
+      },
+      "map-3": {
+        "found": 3,
+        "required": 5,
+        "missed": [
+          "hilltop monastery|lakeside village / hilltop monastery|woodcutters' camp",
+          "stone bridge|tribal encampment"
+        ],
+        "wrong": [
+          "mountain pass checkpoint - woodcutters' camp"
+        ],
+        "precision": 0.75,
+        "claimed": 7
+      },
+      "map-4": {
+        "found": 8,
+        "required": 10,
+        "missed": [
+          "Corvane|Saltmarket",
+          "Saltmarket|Ixquel"
+        ],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 15
+      },
+      "map-5": {
+        "found": 6,
+        "required": 7,
+        "missed": [
+          "Market square|Mill Road"
+        ],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 9
       }
     }
   }

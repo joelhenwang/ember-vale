@@ -1,0 +1,1143 @@
+{
+  "model": "deepseek/deepseek-v4.1-flash",
+  "reasoning": "low",
+  "prompt": "These are the places on this fantasy map, with where each is drawn\n([x, y] from 0 to 1000 across the image's width and height; [0, 0] is the top-left corner):\n{places}\n\nList every direct connection a traveller could use between two of these places, as drawn on\nthe map: roads, paths and tracks, bridges, sea or river routes drawn as lines, mountain passes.\n\"Direct\" means the route goes from one place to the other without passing through a third\nlisted place; if it does, list the two shorter legs instead. Only include connections you can\nsee drawn; leave a place unconnected if no drawn route reaches it.\n\nFor each connection give:\n- \"from\" and \"to\": the place numbers\n- \"by\": one of road, path, sea, river, bridge, pass\n- \"points\": 3 to 8 [x, y] points along the drawn route, from the first place to the second\n\nAnswer with JSON only:\n{{\"connections\": [{{\"from\": 1, \"to\": 2, \"by\": \"road\", \"points\": [[x, y], [x, y], [x, y]]}}]}}",
+  "maps": {
+    "map-1": {
+      "seconds": 70.9,
+      "cost_usd": 0.003434445,
+      "raw": "Looking at the map, I need to trace the drawn routes (roads, bridges, paths) between the listed places.\n\nLet me identify the visible road network:\n\n1. **Saltreach (2) → Aldermoor (1)**: A road runs east from Saltreach, crosses the river at a bridge (~[400, 480]), then continues northeast to Aldermoor. This is a direct road connection.\n\n2. **Saltreach (2) → Oakhollow (4)**: The same road from Saltreach reaches a junction after the bridge; a branch goes south to Oakhollow. So Saltreach–Oakhollow is a road (the junction is not a listed place, so it's direct).\n\n3. **Oakhollow (4) → Brindle (3)**: A road goes east from Oakhollow, crosses the river at a bridge (~[470, 600]), and continues east to Brindle.\n\n4. **Aldermoor (1) → Warden's Gate (5)**: A road goes southeast from Aldermoor, crosses the river at a bridge (~[590, 400]), and continues south to Warden's Gate.\n\n5. **Warden's Gate (5) → Brindle (3)**: A road runs south from Warden's Gate to Brindle.\n\n6. **Brindle (3) → Duskfall (6)**: A road goes east/northeast from Brindle into the mountains to Duskfall.\n\n7. **Aldermoor (1) → Thornwood (8)**: A road goes north from Aldermoor into the Thornwood forest.\n\n8. **Aldermoor (1) → Greyspine (9)**: A road follows the Ashwater river northeast from Aldermoor toward the Greyspine mountains.\n\n9. **Sunken Keep (7)**: No drawn road reaches it (it sits in the marshes); leave unconnected.\n\nNow I'll produce the JSON with approximate points along each route.\n\n```json\n{\"connections\": [\n  {\"from\": 2, \"to\": 1, \"by\": \"road\", \"points\": [[160, 330], [250, 400], [330, 450], [400, 480], [450, 420], [510, 310]]},\n  {\"from\": 2, \"to\": 4, \"by\": \"road\", \"points\": [[160, 330], [250, 400], [330, 450], [400, 480], [380, 520], [320, 570]]},\n  {\"from\": 4, \"to\": 3, \"by\": \"road\", \"points\": [[320, 570], [400, 590], [470, 600], [560, 590], [680, 580]]},\n  {\"from\": 1, \"to\": 5, \"by\": \"road\", \"points\": [[510, 310], [560, 360], [590, 400], [610, 430], [620, 460]]},\n  {\"from\": 5, \"to\": 3, \"by\": \"road\", \"points\": [[620, 460], [640, 510], [660, 550], [680, 580]]},\n  {\"from\": 3, \"to\": 6, \"by\": \"road\", \"points\": [[680, 580], [760, 570], [830, 550], [900, 520]]},\n  {\"from\": 1, \"to\": 8, \"by\": \"road\", \"points\": [[510, 310], [500, 250], [480, 190], [450, 130]]},\n  {\"from\": 1, \"to\": 9, \"by\": \"road\", \"points\": [[510, 310], [580, 300], [670, 330], [760, 320], [830, 340], [880, 350]]}\n]}\n```",
+      "connections": [
+        {
+          "a": "Saltreach",
+          "b": "Aldermoor",
+          "by": "road",
+          "points": [
+            [
+              16.0,
+              33.0
+            ],
+            [
+              25.0,
+              40.0
+            ],
+            [
+              33.0,
+              45.0
+            ],
+            [
+              40.0,
+              48.0
+            ],
+            [
+              45.0,
+              42.0
+            ],
+            [
+              51.0,
+              31.0
+            ]
+          ]
+        },
+        {
+          "a": "Saltreach",
+          "b": "Oakhollow",
+          "by": "road",
+          "points": [
+            [
+              16.0,
+              33.0
+            ],
+            [
+              25.0,
+              40.0
+            ],
+            [
+              33.0,
+              45.0
+            ],
+            [
+              40.0,
+              48.0
+            ],
+            [
+              38.0,
+              52.0
+            ],
+            [
+              32.0,
+              57.0
+            ]
+          ]
+        },
+        {
+          "a": "Oakhollow",
+          "b": "Brindle",
+          "by": "road",
+          "points": [
+            [
+              32.0,
+              57.0
+            ],
+            [
+              40.0,
+              59.0
+            ],
+            [
+              47.0,
+              60.0
+            ],
+            [
+              56.0,
+              59.0
+            ],
+            [
+              68.0,
+              58.0
+            ]
+          ]
+        },
+        {
+          "a": "Aldermoor",
+          "b": "Warden's Gate",
+          "by": "road",
+          "points": [
+            [
+              51.0,
+              31.0
+            ],
+            [
+              56.0,
+              36.0
+            ],
+            [
+              59.0,
+              40.0
+            ],
+            [
+              61.0,
+              43.0
+            ],
+            [
+              62.0,
+              46.0
+            ]
+          ]
+        },
+        {
+          "a": "Warden's Gate",
+          "b": "Brindle",
+          "by": "road",
+          "points": [
+            [
+              62.0,
+              46.0
+            ],
+            [
+              64.0,
+              51.0
+            ],
+            [
+              66.0,
+              55.0
+            ],
+            [
+              68.0,
+              58.0
+            ]
+          ]
+        },
+        {
+          "a": "Brindle",
+          "b": "Duskfall",
+          "by": "road",
+          "points": [
+            [
+              68.0,
+              58.0
+            ],
+            [
+              76.0,
+              57.0
+            ],
+            [
+              83.0,
+              55.0
+            ],
+            [
+              90.0,
+              52.0
+            ]
+          ]
+        },
+        {
+          "a": "Aldermoor",
+          "b": "Thornwood",
+          "by": "road",
+          "points": [
+            [
+              51.0,
+              31.0
+            ],
+            [
+              50.0,
+              25.0
+            ],
+            [
+              48.0,
+              19.0
+            ],
+            [
+              45.0,
+              13.0
+            ]
+          ]
+        },
+        {
+          "a": "Aldermoor",
+          "b": "Greyspine",
+          "by": "road",
+          "points": [
+            [
+              51.0,
+              31.0
+            ],
+            [
+              58.0,
+              30.0
+            ],
+            [
+              67.0,
+              33.0
+            ],
+            [
+              76.0,
+              32.0
+            ],
+            [
+              83.0,
+              34.0
+            ],
+            [
+              88.0,
+              35.0
+            ]
+          ]
+        }
+      ],
+      "error": null
+    },
+    "map-2": {
+      "seconds": 323.6,
+      "cost_usd": 0.012035535,
+      "raw": "",
+      "connections": [],
+      "error": "JSONDecodeError: Expecting value: line 1 column 1 (char 0); {'id': 'gen-1791332404-k5vDe7coaoR2ldqLlkFB', 'object': 'chat.completion', 'created': 1791332404, 'model': 'deepseek/deepseek-v4.1-flash', 'provider': 'InferenceNet', 'system_fingerprint': 'inference.net', 'service_tier': None, 'choices': [{'index': 0, 'logprobs': None, 'finish_reason': 'length', 'n"
+    },
+    "map-3": {
+      "seconds": 37.8,
+      "cost_usd": 0.00131145,
+      "raw": "{\"connections\": [{\"from\": 1, \"to\": 3, \"by\": \"path\", \"points\": [[220, 700], [235, 630], [255, 560], [285, 500], [325, 450], [370, 400]]}, {\"from\": 2, \"to\": 3, \"by\": \"path\", \"points\": [[170, 120], [195, 190], [225, 260], [265, 320], [315, 365], [370, 400]]}, {\"from\": 3, \"to\": 4, \"by\": \"path\", \"points\": [[370, 400], [405, 445], [445, 485], [495, 520], [540, 550]]}, {\"from\": 4, \"to\": 6, \"by\": \"road\", \"points\": [[540, 550], [585, 500], [625, 430], [655, 350], [672, 260], [680, 190], [680, 140]]}, {\"from\": 4, \"to\": 5, \"by\": \"road\", \"points\": [[540, 550], [605, 560], [675, 550], [745, 520], [805, 480], [860, 450]]}, {\"from\": 5, \"to\": 8, \"by\": \"road\", \"points\": [[860, 450], [855, 520], [848, 600], [842, 680], [840, 770]]}, {\"from\": 6, \"to\": 7, \"by\": \"path\", \"points\": [[680, 140], [730, 150], [780, 180], [830, 210], [880, 230]]}]}",
+      "connections": [
+        {
+          "a": "lakeside village",
+          "b": "woodcutters' camp",
+          "by": "path",
+          "points": [
+            [
+              22.0,
+              70.0
+            ],
+            [
+              23.5,
+              63.0
+            ],
+            [
+              25.5,
+              56.0
+            ],
+            [
+              28.5,
+              50.0
+            ],
+            [
+              32.5,
+              45.0
+            ],
+            [
+              37.0,
+              40.0
+            ]
+          ]
+        },
+        {
+          "a": "hilltop monastery",
+          "b": "woodcutters' camp",
+          "by": "path",
+          "points": [
+            [
+              17.0,
+              12.0
+            ],
+            [
+              19.5,
+              19.0
+            ],
+            [
+              22.5,
+              26.0
+            ],
+            [
+              26.5,
+              32.0
+            ],
+            [
+              31.5,
+              36.5
+            ],
+            [
+              37.0,
+              40.0
+            ]
+          ]
+        },
+        {
+          "a": "woodcutters' camp",
+          "b": "stone bridge",
+          "by": "path",
+          "points": [
+            [
+              37.0,
+              40.0
+            ],
+            [
+              40.5,
+              44.5
+            ],
+            [
+              44.5,
+              48.5
+            ],
+            [
+              49.5,
+              52.0
+            ],
+            [
+              54.0,
+              55.0
+            ]
+          ]
+        },
+        {
+          "a": "stone bridge",
+          "b": "mountain pass checkpoint",
+          "by": "road",
+          "points": [
+            [
+              54.0,
+              55.0
+            ],
+            [
+              58.5,
+              50.0
+            ],
+            [
+              62.5,
+              43.0
+            ],
+            [
+              65.5,
+              35.0
+            ],
+            [
+              67.2,
+              26.0
+            ],
+            [
+              68.0,
+              19.0
+            ],
+            [
+              68.0,
+              14.0
+            ]
+          ]
+        },
+        {
+          "a": "stone bridge",
+          "b": "watchtower",
+          "by": "road",
+          "points": [
+            [
+              54.0,
+              55.0
+            ],
+            [
+              60.5,
+              56.0
+            ],
+            [
+              67.5,
+              55.0
+            ],
+            [
+              74.5,
+              52.0
+            ],
+            [
+              80.5,
+              48.0
+            ],
+            [
+              86.0,
+              45.0
+            ]
+          ]
+        },
+        {
+          "a": "watchtower",
+          "b": "tribal encampment",
+          "by": "road",
+          "points": [
+            [
+              86.0,
+              45.0
+            ],
+            [
+              85.5,
+              52.0
+            ],
+            [
+              84.8,
+              60.0
+            ],
+            [
+              84.2,
+              68.0
+            ],
+            [
+              84.0,
+              77.0
+            ]
+          ]
+        },
+        {
+          "a": "mountain pass checkpoint",
+          "b": "abandoned mine",
+          "by": "path",
+          "points": [
+            [
+              68.0,
+              14.0
+            ],
+            [
+              73.0,
+              15.0
+            ],
+            [
+              78.0,
+              18.0
+            ],
+            [
+              83.0,
+              21.0
+            ],
+            [
+              88.0,
+              23.0
+            ]
+          ]
+        }
+      ],
+      "error": null
+    },
+    "map-4": {
+      "seconds": 56.7,
+      "cost_usd": 0.00221064,
+      "raw": "{\"connections\": [{\"from\": 1, \"to\": 2, \"by\": \"sea\", \"points\": [[270, 520], [230, 460], [190, 400], [150, 340], [110, 260]]}, {\"from\": 1, \"to\": 3, \"by\": \"sea\", \"points\": [[270, 520], [320, 460], [370, 390], [420, 320], [480, 240]]}, {\"from\": 1, \"to\": 6, \"by\": \"sea\", \"points\": [[270, 520], [340, 530], [420, 540], [490, 545], [560, 550]]}, {\"from\": 6, \"to\": 9, \"by\": \"sea\", \"points\": [[560, 550], [610, 510], [660, 460], [710, 410], [750, 360]]}, {\"from\": 6, \"to\": 4, \"by\": \"sea\", \"points\": [[560, 550], [560, 620], [565, 690], [570, 760], [570, 820]]}, {\"from\": 9, \"to\": 7, \"by\": \"sea\", \"points\": [[750, 360], [810, 380], [870, 400], [920, 420], [960, 440]]}, {\"from\": 4, \"to\": 10, \"by\": \"sea\", \"points\": [[570, 820], [640, 800], [710, 770], [780, 730], [840, 700]]}, {\"from\": 5, \"to\": 3, \"by\": \"road\", \"points\": [[160, 100], [240, 150], [320, 190], [400, 220], [480, 240]]}, {\"from\": 3, \"to\": 9, \"by\": \"road\", \"points\": [[480, 240], [540, 220], [600, 240], [660, 290], [710, 330], [750, 360]]}, {\"from\": 11, \"to\": 3, \"by\": \"road\", \"points\": [[730, 100], [680, 150], [640, 210], [620, 250], [560, 230], [480, 240]]}, {\"from\": 11, \"to\": 9, \"by\": \"road\", \"points\": [[730, 100], [680, 150], [640, 210], [620, 250], [660, 290], [710, 330], [750, 360]]}, {\"from\": 9, \"to\": 7, \"by\": \"road\", \"points\": [[750, 360], [760, 420], [780, 460], [830, 480], [890, 470], [940, 450], [960, 440]]}]}",
+      "connections": [
+        {
+          "a": "Corvane",
+          "b": "Gullsend",
+          "by": "sea",
+          "points": [
+            [
+              27.0,
+              52.0
+            ],
+            [
+              23.0,
+              46.0
+            ],
+            [
+              19.0,
+              40.0
+            ],
+            [
+              15.0,
+              34.0
+            ],
+            [
+              11.0,
+              26.0
+            ]
+          ]
+        },
+        {
+          "a": "Corvane",
+          "b": "Tidemark",
+          "by": "sea",
+          "points": [
+            [
+              27.0,
+              52.0
+            ],
+            [
+              32.0,
+              46.0
+            ],
+            [
+              37.0,
+              39.0
+            ],
+            [
+              42.0,
+              32.0
+            ],
+            [
+              48.0,
+              24.0
+            ]
+          ]
+        },
+        {
+          "a": "Corvane",
+          "b": "Hollow Isle",
+          "by": "sea",
+          "points": [
+            [
+              27.0,
+              52.0
+            ],
+            [
+              34.0,
+              53.0
+            ],
+            [
+              42.0,
+              54.0
+            ],
+            [
+              49.0,
+              54.5
+            ],
+            [
+              56.0,
+              55.0
+            ]
+          ]
+        },
+        {
+          "a": "Hollow Isle",
+          "b": "Saltmarket",
+          "by": "sea",
+          "points": [
+            [
+              56.0,
+              55.0
+            ],
+            [
+              61.0,
+              51.0
+            ],
+            [
+              66.0,
+              46.0
+            ],
+            [
+              71.0,
+              41.0
+            ],
+            [
+              75.0,
+              36.0
+            ]
+          ]
+        },
+        {
+          "a": "Hollow Isle",
+          "b": "Pell",
+          "by": "sea",
+          "points": [
+            [
+              56.0,
+              55.0
+            ],
+            [
+              56.0,
+              62.0
+            ],
+            [
+              56.5,
+              69.0
+            ],
+            [
+              57.0,
+              76.0
+            ],
+            [
+              57.0,
+              82.0
+            ]
+          ]
+        },
+        {
+          "a": "Saltmarket",
+          "b": "Farpoint",
+          "by": "sea",
+          "points": [
+            [
+              75.0,
+              36.0
+            ],
+            [
+              81.0,
+              38.0
+            ],
+            [
+              87.0,
+              40.0
+            ],
+            [
+              92.0,
+              42.0
+            ],
+            [
+              96.0,
+              44.0
+            ]
+          ]
+        },
+        {
+          "a": "Pell",
+          "b": "Ixquel",
+          "by": "sea",
+          "points": [
+            [
+              57.0,
+              82.0
+            ],
+            [
+              64.0,
+              80.0
+            ],
+            [
+              71.0,
+              77.0
+            ],
+            [
+              78.0,
+              73.0
+            ],
+            [
+              84.0,
+              70.0
+            ]
+          ]
+        },
+        {
+          "a": "Ochre Clans",
+          "b": "Tidemark",
+          "by": "road",
+          "points": [
+            [
+              16.0,
+              10.0
+            ],
+            [
+              24.0,
+              15.0
+            ],
+            [
+              32.0,
+              19.0
+            ],
+            [
+              40.0,
+              22.0
+            ],
+            [
+              48.0,
+              24.0
+            ]
+          ]
+        },
+        {
+          "a": "Tidemark",
+          "b": "Saltmarket",
+          "by": "road",
+          "points": [
+            [
+              48.0,
+              24.0
+            ],
+            [
+              54.0,
+              22.0
+            ],
+            [
+              60.0,
+              24.0
+            ],
+            [
+              66.0,
+              29.0
+            ],
+            [
+              71.0,
+              33.0
+            ],
+            [
+              75.0,
+              36.0
+            ]
+          ]
+        },
+        {
+          "a": "Witchmire",
+          "b": "Tidemark",
+          "by": "road",
+          "points": [
+            [
+              73.0,
+              10.0
+            ],
+            [
+              68.0,
+              15.0
+            ],
+            [
+              64.0,
+              21.0
+            ],
+            [
+              62.0,
+              25.0
+            ],
+            [
+              56.0,
+              23.0
+            ],
+            [
+              48.0,
+              24.0
+            ]
+          ]
+        },
+        {
+          "a": "Witchmire",
+          "b": "Saltmarket",
+          "by": "road",
+          "points": [
+            [
+              73.0,
+              10.0
+            ],
+            [
+              68.0,
+              15.0
+            ],
+            [
+              64.0,
+              21.0
+            ],
+            [
+              62.0,
+              25.0
+            ],
+            [
+              66.0,
+              29.0
+            ],
+            [
+              71.0,
+              33.0
+            ],
+            [
+              75.0,
+              36.0
+            ]
+          ]
+        },
+        {
+          "a": "Saltmarket",
+          "b": "Farpoint",
+          "by": "road",
+          "points": [
+            [
+              75.0,
+              36.0
+            ],
+            [
+              76.0,
+              42.0
+            ],
+            [
+              78.0,
+              46.0
+            ],
+            [
+              83.0,
+              48.0
+            ],
+            [
+              89.0,
+              47.0
+            ],
+            [
+              94.0,
+              45.0
+            ],
+            [
+              96.0,
+              44.0
+            ]
+          ]
+        }
+      ],
+      "error": null
+    },
+    "map-5": {
+      "seconds": 133.9,
+      "cost_usd": 0.00450735,
+      "raw": "{\"connections\": [{\"from\": 1, \"to\": 2, \"by\": \"road\", \"points\": [[400, 400], [430, 480], [450, 550]]}, {\"from\": 1, \"to\": 4, \"by\": \"path\", \"points\": [[400, 400], [450, 300], [500, 250], [520, 170]]}, {\"from\": 1, \"to\": 6, \"by\": \"road\", \"points\": [[400, 400], [350, 350], [300, 300], [200, 250], [130, 180]]}, {\"from\": 2, \"to\": 3, \"by\": \"road\", \"points\": [[450, 550], [380, 600], [300, 700], [250, 650], [180, 610]]}, {\"from\": 2, \"to\": 5, \"by\": \"road\", \"points\": [[450, 550], [550, 550], [650, 500], [710, 470]]}, {\"from\": 2, \"to\": 9, \"by\": \"road\", \"points\": [[450, 550], [480, 650], [520, 750], [550, 850]]}, {\"from\": 3, \"to\": 9, \"by\": \"road\", \"points\": [[180, 610], [250, 650], [300, 700], [400, 750], [500, 800], [550, 850]]}, {\"from\": 4, \"to\": 6, \"by\": \"path\", \"points\": [[520, 170], [450, 150], [350, 150], [250, 180], [130, 180]]}, {\"from\": 5, \"to\": 8, \"by\": \"path\", \"points\": [[710, 470], [750, 400], [800, 350], [850, 250]]}, {\"from\": 5, \"to\": 10, \"by\": \"path\", \"points\": [[710, 470], [750, 550], [800, 600], [850, 650], [880, 700]]}, {\"from\": 7, \"to\": 8, \"by\": \"path\", \"points\": [[890, 40], [870, 150], [850, 250]]}, {\"from\": 8, \"to\": 10, \"by\": \"path\", \"points\": [[850, 250], [880, 350], [900, 450], [900, 550], [880, 700]]}, {\"from\": 9, \"to\": 10, \"by\": \"road\", \"points\": [[550, 850], [650, 850], [750, 800], [850, 750], [880, 700]]}]}",
+      "connections": [
+        {
+          "a": "the Hearth",
+          "b": "Market square",
+          "by": "road",
+          "points": [
+            [
+              40.0,
+              40.0
+            ],
+            [
+              43.0,
+              48.0
+            ],
+            [
+              45.0,
+              55.0
+            ]
+          ]
+        },
+        {
+          "a": "the Hearth",
+          "b": "Chapel",
+          "by": "path",
+          "points": [
+            [
+              40.0,
+              40.0
+            ],
+            [
+              45.0,
+              30.0
+            ],
+            [
+              50.0,
+              25.0
+            ],
+            [
+              52.0,
+              17.0
+            ]
+          ]
+        },
+        {
+          "a": "the Hearth",
+          "b": "Old Bram's farm",
+          "by": "road",
+          "points": [
+            [
+              40.0,
+              40.0
+            ],
+            [
+              35.0,
+              35.0
+            ],
+            [
+              30.0,
+              30.0
+            ],
+            [
+              20.0,
+              25.0
+            ],
+            [
+              13.0,
+              18.0
+            ]
+          ]
+        },
+        {
+          "a": "Market square",
+          "b": "Mill",
+          "by": "road",
+          "points": [
+            [
+              45.0,
+              55.0
+            ],
+            [
+              38.0,
+              60.0
+            ],
+            [
+              30.0,
+              70.0
+            ],
+            [
+              25.0,
+              65.0
+            ],
+            [
+              18.0,
+              61.0
+            ]
+          ]
+        },
+        {
+          "a": "Market square",
+          "b": "Smithy",
+          "by": "road",
+          "points": [
+            [
+              45.0,
+              55.0
+            ],
+            [
+              55.0,
+              55.0
+            ],
+            [
+              65.0,
+              50.0
+            ],
+            [
+              71.0,
+              47.0
+            ]
+          ]
+        },
+        {
+          "a": "Market square",
+          "b": "Mill Road",
+          "by": "road",
+          "points": [
+            [
+              45.0,
+              55.0
+            ],
+            [
+              48.0,
+              65.0
+            ],
+            [
+              52.0,
+              75.0
+            ],
+            [
+              55.0,
+              85.0
+            ]
+          ]
+        },
+        {
+          "a": "Mill",
+          "b": "Mill Road",
+          "by": "road",
+          "points": [
+            [
+              18.0,
+              61.0
+            ],
+            [
+              25.0,
+              65.0
+            ],
+            [
+              30.0,
+              70.0
+            ],
+            [
+              40.0,
+              75.0
+            ],
+            [
+              50.0,
+              80.0
+            ],
+            [
+              55.0,
+              85.0
+            ]
+          ]
+        },
+        {
+          "a": "Chapel",
+          "b": "Old Bram's farm",
+          "by": "path",
+          "points": [
+            [
+              52.0,
+              17.0
+            ],
+            [
+              45.0,
+              15.0
+            ],
+            [
+              35.0,
+              15.0
+            ],
+            [
+              25.0,
+              18.0
+            ],
+            [
+              13.0,
+              18.0
+            ]
+          ]
+        },
+        {
+          "a": "Smithy",
+          "b": "Sheep Track",
+          "by": "path",
+          "points": [
+            [
+              71.0,
+              47.0
+            ],
+            [
+              75.0,
+              40.0
+            ],
+            [
+              80.0,
+              35.0
+            ],
+            [
+              85.0,
+              25.0
+            ]
+          ]
+        },
+        {
+          "a": "Smithy",
+          "b": "Whispering Wood",
+          "by": "path",
+          "points": [
+            [
+              71.0,
+              47.0
+            ],
+            [
+              75.0,
+              55.0
+            ],
+            [
+              80.0,
+              60.0
+            ],
+            [
+              85.0,
+              65.0
+            ],
+            [
+              88.0,
+              70.0
+            ]
+          ]
+        },
+        {
+          "a": "stone cairn",
+          "b": "Sheep Track",
+          "by": "path",
+          "points": [
+            [
+              89.0,
+              4.0
+            ],
+            [
+              87.0,
+              15.0
+            ],
+            [
+              85.0,
+              25.0
+            ]
+          ]
+        },
+        {
+          "a": "Sheep Track",
+          "b": "Whispering Wood",
+          "by": "path",
+          "points": [
+            [
+              85.0,
+              25.0
+            ],
+            [
+              88.0,
+              35.0
+            ],
+            [
+              90.0,
+              45.0
+            ],
+            [
+              90.0,
+              55.0
+            ],
+            [
+              88.0,
+              70.0
+            ]
+          ]
+        },
+        {
+          "a": "Mill Road",
+          "b": "Whispering Wood",
+          "by": "road",
+          "points": [
+            [
+              55.0,
+              85.0
+            ],
+            [
+              65.0,
+              85.0
+            ],
+            [
+              75.0,
+              80.0
+            ],
+            [
+              85.0,
+              75.0
+            ],
+            [
+              88.0,
+              70.0
+            ]
+          ]
+        }
+      ],
+      "error": null
+    }
+  },
+  "cost_usd": 0.0235
+}

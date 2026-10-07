@@ -1,0 +1,534 @@
+{
+  "model": "minimax/minimax-m3",
+  "reasoning": "low",
+  "prompt": "These are the places on this fantasy map, with where each is drawn\n([x, y] from 0 to 1000 across the image's width and height; [0, 0] is the top-left corner):\n{places}\n\nList every direct connection a traveller could use between two of these places, as drawn on\nthe map: roads, paths and tracks, bridges, sea or river routes drawn as lines, mountain passes.\n\"Direct\" means the route goes from one place to the other without passing through a third\nlisted place; if it does, list the two shorter legs instead. Only include connections you can\nsee drawn; leave a place unconnected if no drawn route reaches it.\n\nFor each connection give:\n- \"from\" and \"to\": the place numbers\n- \"by\": one of road, path, sea, river, bridge, pass\n- \"points\": 3 to 8 [x, y] points along the drawn route, from the first place to the second\n\nAnswer with JSON only:\n{{\"connections\": [{{\"from\": 1, \"to\": 2, \"by\": \"road\", \"points\": [[x, y], [x, y], [x, y]]}}]}}",
+  "maps": {
+    "map-1": {
+      "seconds": 2417.1,
+      "cost_usd": 0.0,
+      "raw": "",
+      "connections": [],
+      "error": "JSONDecodeError: Expecting value: line 1 column 1 (char 0); {'id': 'gen-1791333363-OOIqlkInt38RRHYoTy2X', 'object': 'chat.completion', 'created': 1791333363, 'model': 'minimax/minimax-m3', 'provider': 'DeepInfra', 'system_fingerprint': None, 'service_tier': 'default', 'choices': [{'index': 0, 'logprobs': None, 'finish_reason': 'error', 'native_finish_reason'"
+    },
+    "map-2": {
+      "seconds": 259.8,
+      "cost_usd": 0.0482337,
+      "raw": "",
+      "connections": [],
+      "error": "JSONDecodeError: Expecting value: line 1 column 1 (char 0); {'id': 'gen-1791335780-95wJ1iX3NpCeJbZCX5fw', 'object': 'chat.completion', 'created': 1791335780, 'model': 'minimax/minimax-m3', 'provider': 'Venice', 'system_fingerprint': None, 'service_tier': None, 'choices': [{'index': 0, 'logprobs': None, 'finish_reason': 'length', 'native_finish_reason': 'leng"
+    },
+    "map-3": {
+      "seconds": 316.5,
+      "cost_usd": 0.02301468,
+      "raw": "```json\n{\"connections\": [\n  {\"from\": 1, \"to\": 3, \"by\": \"path\", \"points\": [[220, 700], [260, 630], [300, 540], [340, 470], [370, 400]]},\n  {\"from\": 2, \"to\": 3, \"by\": \"path\", \"points\": [[170, 120], [220, 200], [270, 280], [320, 340], [370, 400]]},\n  {\"from\": 3, \"to\": 4, \"by\": \"path\", \"points\": [[370, 400], [420, 460], [480, 510], [540, 550]]},\n  {\"from\": 4, \"to\": 5, \"by\": \"path\", \"points\": [[540, 550], [610, 540], [700, 510], [790, 480], [860, 450]]},\n  {\"from\": 4, \"to\": 6, \"by\": \"pass\", \"points\": [[540, 550], [580, 470], [620, 360], [650, 240], [680, 140]]},\n  {\"from\": 4, \"to\": 8, \"by\": \"path\", \"points\": [[540, 550], [610, 620], [690, 690], [770, 740], [840, 770]]},\n  {\"from\": 5, \"to\": 7, \"by\": \"path\", \"points\": [[860, 450], [870, 380], [880, 320], [880, 230]]},\n  {\"from\": 5, \"to\": 8, \"by\": \"path\", \"points\": [[860, 450], [850, 540], [820, 650], [840, 770]]}\n]}\n```",
+      "connections": [
+        {
+          "a": "lakeside village",
+          "b": "woodcutters' camp",
+          "by": "path",
+          "points": [
+            [
+              22.0,
+              70.0
+            ],
+            [
+              26.0,
+              63.0
+            ],
+            [
+              30.0,
+              54.0
+            ],
+            [
+              34.0,
+              47.0
+            ],
+            [
+              37.0,
+              40.0
+            ]
+          ]
+        },
+        {
+          "a": "hilltop monastery",
+          "b": "woodcutters' camp",
+          "by": "path",
+          "points": [
+            [
+              17.0,
+              12.0
+            ],
+            [
+              22.0,
+              20.0
+            ],
+            [
+              27.0,
+              28.0
+            ],
+            [
+              32.0,
+              34.0
+            ],
+            [
+              37.0,
+              40.0
+            ]
+          ]
+        },
+        {
+          "a": "woodcutters' camp",
+          "b": "stone bridge",
+          "by": "path",
+          "points": [
+            [
+              37.0,
+              40.0
+            ],
+            [
+              42.0,
+              46.0
+            ],
+            [
+              48.0,
+              51.0
+            ],
+            [
+              54.0,
+              55.0
+            ]
+          ]
+        },
+        {
+          "a": "stone bridge",
+          "b": "watchtower",
+          "by": "path",
+          "points": [
+            [
+              54.0,
+              55.0
+            ],
+            [
+              61.0,
+              54.0
+            ],
+            [
+              70.0,
+              51.0
+            ],
+            [
+              79.0,
+              48.0
+            ],
+            [
+              86.0,
+              45.0
+            ]
+          ]
+        },
+        {
+          "a": "stone bridge",
+          "b": "mountain pass checkpoint",
+          "by": "pass",
+          "points": [
+            [
+              54.0,
+              55.0
+            ],
+            [
+              58.0,
+              47.0
+            ],
+            [
+              62.0,
+              36.0
+            ],
+            [
+              65.0,
+              24.0
+            ],
+            [
+              68.0,
+              14.0
+            ]
+          ]
+        },
+        {
+          "a": "stone bridge",
+          "b": "tribal encampment",
+          "by": "path",
+          "points": [
+            [
+              54.0,
+              55.0
+            ],
+            [
+              61.0,
+              62.0
+            ],
+            [
+              69.0,
+              69.0
+            ],
+            [
+              77.0,
+              74.0
+            ],
+            [
+              84.0,
+              77.0
+            ]
+          ]
+        },
+        {
+          "a": "watchtower",
+          "b": "abandoned mine",
+          "by": "path",
+          "points": [
+            [
+              86.0,
+              45.0
+            ],
+            [
+              87.0,
+              38.0
+            ],
+            [
+              88.0,
+              32.0
+            ],
+            [
+              88.0,
+              23.0
+            ]
+          ]
+        },
+        {
+          "a": "watchtower",
+          "b": "tribal encampment",
+          "by": "path",
+          "points": [
+            [
+              86.0,
+              45.0
+            ],
+            [
+              85.0,
+              54.0
+            ],
+            [
+              82.0,
+              65.0
+            ],
+            [
+              84.0,
+              77.0
+            ]
+          ]
+        }
+      ],
+      "error": null
+    },
+    "map-4": {
+      "seconds": 210.1,
+      "cost_usd": 0.02295558,
+      "raw": "```json\n{\"connections\": [{\"from\": 5, \"to\": 2, \"by\": \"path\", \"points\": [[160, 100], [130, 180], [110, 260]]}, {\"from\": 2, \"to\": 3, \"by\": \"path\", \"points\": [[110, 260], [300, 250], [480, 240]]}, {\"from\": 3, \"to\": 9, \"by\": \"path\", \"points\": [[480, 240], [600, 290], [750, 360]]}, {\"from\": 9, \"to\": 11, \"by\": \"path\", \"points\": [[750, 360], [740, 230], [730, 100]]}, {\"from\": 9, \"to\": 7, \"by\": \"path\", \"points\": [[750, 360], [850, 400], [960, 440]]}, {\"from\": 1, \"to\": 2, \"by\": \"sea\", \"points\": [[270, 520], [200, 400], [110, 260]]}, {\"from\": 1, \"to\": 3, \"by\": \"sea\", \"points\": [[270, 520], [380, 380], [480, 240]]}, {\"from\": 1, \"to\": 6, \"by\": \"sea\", \"points\": [[270, 520], [400, 540], [560, 550]]}, {\"from\": 1, \"to\": 8, \"by\": \"sea\", \"points\": [[270, 520], [220, 620], [160, 730]]}, {\"from\": 1, \"to\": 4, \"by\": \"sea\", \"points\": [[270, 520], [400, 680], [570, 820]]}, {\"from\": 9, \"to\": 1, \"by\": \"sea\", \"points\": [[750, 360], [500, 440], [270, 520]]}, {\"from\": 9, \"to\": 6, \"by\": \"sea\", \"points\": [[750, 360], [650, 450], [560, 550]]}, {\"from\": 9, \"to\": 4, \"by\": \"sea\", \"points\": [[750, 360], [650, 600], [570, 820]]}, {\"from\": 9, \"to\": 10, \"by\": \"sea\", \"points\": [[750, 360], [800, 530], [840, 700]]}, {\"from\": 4, \"to\": 10, \"by\": \"sea\", \"points\": [[570, 820], [700, 770], [840, 700]]}]}\n```",
+      "connections": [
+        {
+          "a": "Ochre Clans",
+          "b": "Gullsend",
+          "by": "path",
+          "points": [
+            [
+              16.0,
+              10.0
+            ],
+            [
+              13.0,
+              18.0
+            ],
+            [
+              11.0,
+              26.0
+            ]
+          ]
+        },
+        {
+          "a": "Gullsend",
+          "b": "Tidemark",
+          "by": "path",
+          "points": [
+            [
+              11.0,
+              26.0
+            ],
+            [
+              30.0,
+              25.0
+            ],
+            [
+              48.0,
+              24.0
+            ]
+          ]
+        },
+        {
+          "a": "Tidemark",
+          "b": "Saltmarket",
+          "by": "path",
+          "points": [
+            [
+              48.0,
+              24.0
+            ],
+            [
+              60.0,
+              29.0
+            ],
+            [
+              75.0,
+              36.0
+            ]
+          ]
+        },
+        {
+          "a": "Saltmarket",
+          "b": "Witchmire",
+          "by": "path",
+          "points": [
+            [
+              75.0,
+              36.0
+            ],
+            [
+              74.0,
+              23.0
+            ],
+            [
+              73.0,
+              10.0
+            ]
+          ]
+        },
+        {
+          "a": "Saltmarket",
+          "b": "Farpoint",
+          "by": "path",
+          "points": [
+            [
+              75.0,
+              36.0
+            ],
+            [
+              85.0,
+              40.0
+            ],
+            [
+              96.0,
+              44.0
+            ]
+          ]
+        },
+        {
+          "a": "Corvane",
+          "b": "Gullsend",
+          "by": "sea",
+          "points": [
+            [
+              27.0,
+              52.0
+            ],
+            [
+              20.0,
+              40.0
+            ],
+            [
+              11.0,
+              26.0
+            ]
+          ]
+        },
+        {
+          "a": "Corvane",
+          "b": "Tidemark",
+          "by": "sea",
+          "points": [
+            [
+              27.0,
+              52.0
+            ],
+            [
+              38.0,
+              38.0
+            ],
+            [
+              48.0,
+              24.0
+            ]
+          ]
+        },
+        {
+          "a": "Corvane",
+          "b": "Hollow Isle",
+          "by": "sea",
+          "points": [
+            [
+              27.0,
+              52.0
+            ],
+            [
+              40.0,
+              54.0
+            ],
+            [
+              56.0,
+              55.0
+            ]
+          ]
+        },
+        {
+          "a": "Corvane",
+          "b": "Blackreef",
+          "by": "sea",
+          "points": [
+            [
+              27.0,
+              52.0
+            ],
+            [
+              22.0,
+              62.0
+            ],
+            [
+              16.0,
+              73.0
+            ]
+          ]
+        },
+        {
+          "a": "Corvane",
+          "b": "Pell",
+          "by": "sea",
+          "points": [
+            [
+              27.0,
+              52.0
+            ],
+            [
+              40.0,
+              68.0
+            ],
+            [
+              57.0,
+              82.0
+            ]
+          ]
+        },
+        {
+          "a": "Saltmarket",
+          "b": "Corvane",
+          "by": "sea",
+          "points": [
+            [
+              75.0,
+              36.0
+            ],
+            [
+              50.0,
+              44.0
+            ],
+            [
+              27.0,
+              52.0
+            ]
+          ]
+        },
+        {
+          "a": "Saltmarket",
+          "b": "Hollow Isle",
+          "by": "sea",
+          "points": [
+            [
+              75.0,
+              36.0
+            ],
+            [
+              65.0,
+              45.0
+            ],
+            [
+              56.0,
+              55.0
+            ]
+          ]
+        },
+        {
+          "a": "Saltmarket",
+          "b": "Pell",
+          "by": "sea",
+          "points": [
+            [
+              75.0,
+              36.0
+            ],
+            [
+              65.0,
+              60.0
+            ],
+            [
+              57.0,
+              82.0
+            ]
+          ]
+        },
+        {
+          "a": "Saltmarket",
+          "b": "Ixquel",
+          "by": "sea",
+          "points": [
+            [
+              75.0,
+              36.0
+            ],
+            [
+              80.0,
+              53.0
+            ],
+            [
+              84.0,
+              70.0
+            ]
+          ]
+        },
+        {
+          "a": "Pell",
+          "b": "Ixquel",
+          "by": "sea",
+          "points": [
+            [
+              57.0,
+              82.0
+            ],
+            [
+              70.0,
+              77.0
+            ],
+            [
+              84.0,
+              70.0
+            ]
+          ]
+        }
+      ],
+      "error": null
+    },
+    "map-5": {
+      "seconds": 661.6,
+      "cost_usd": 0.0,
+      "raw": "",
+      "connections": [],
+      "error": "JSONDecodeError: Expecting value: line 1 column 1 (char 0); {'id': 'gen-1791336567-hBmpkQcmrVTJPfmWXstp', 'object': 'chat.completion', 'created': 1791336567, 'model': 'minimax/minimax-m3', 'provider': 'Together', 'system_fingerprint': 'default', 'service_tier': None, 'choices': [{'index': 0, 'logprobs': None, 'finish_reason': 'error', 'native_finish_reason':"
+    }
+  },
+  "cost_usd": 0.0942
+}

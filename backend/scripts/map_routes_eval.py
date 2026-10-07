@@ -30,6 +30,8 @@ import httpx
 from PIL import Image, ImageDraw, ImageFont
 
 OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
+#: Output cap per answer (thinking included) unless --max-tokens says otherwise.
+DEFAULT_MAX_TOKENS = 40000
 
 PROMPT = """These are the places on this fantasy map, with where each is drawn
 ([x, y] from 0 to 1000 across the image's width and height; [0, 0] is the top-left corner):
@@ -98,7 +100,9 @@ def _parse(text: str, places: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return found
 
 
-def run(directory: Path, models: list[str]) -> None:
+def run(
+    directory: Path, models: list[str], reasoning: str | None = None, max_tokens: int = 0
+) -> None:
     truth = json.loads((directory / "truth.json").read_text(encoding="utf-8"))
     maps_dir = (directory / truth["maps_dir"]).resolve()
     runs = directory / "runs"
@@ -109,7 +113,12 @@ def run(directory: Path, models: list[str]) -> None:
         if target.exists():
             print(f"{model}: {target.name} exists, not overwritten")
             continue
-        results: dict[str, Any] = {"model": model, "prompt": PROMPT, "maps": {}}
+        results: dict[str, Any] = {
+            "model": model,
+            "reasoning": reasoning,
+            "prompt": PROMPT,
+            "maps": {},
+        }
         total = 0.0
         for name, spec in truth["maps"].items():
             prompt = PROMPT.format(places=_place_list(spec["places"]))
@@ -119,9 +128,10 @@ def run(directory: Path, models: list[str]) -> None:
             }
             body = {
                 "model": model,
-                "max_tokens": 40000,
+                "max_tokens": max_tokens or DEFAULT_MAX_TOKENS,
                 "temperature": 0,
                 "usage": {"include": True},
+                **({"reasoning": {"effort": reasoning}} if reasoning else {}),
                 "messages": [
                     {"role": "user", "content": [image, {"type": "text", "text": prompt}]}
                 ],
@@ -265,9 +275,11 @@ def main() -> None:
     parser.add_argument("command", choices=["run", "score"])
     parser.add_argument("--dir", type=Path, required=True)
     parser.add_argument("--model", action="append", default=[])
+    parser.add_argument("--reasoning", choices=["minimal", "low", "medium", "high"])
+    parser.add_argument("--max-tokens", type=int, default=0)
     args = parser.parse_args()
     if args.command == "run":
-        run(args.dir, args.model)
+        run(args.dir, args.model, args.reasoning, args.max_tokens)
     else:
         score(args.dir)
 
