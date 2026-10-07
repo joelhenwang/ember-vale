@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Header, Query, Request
+from fastapi import APIRouter, Query, Request
 
 from worldsim.application.capabilities import is_omniscient, parse_role
 from worldsim.application.commands.seed_world import SeedService
@@ -22,9 +22,6 @@ from worldsim.domain.world import World
 from worldsim.interfaces.http import schemas as api
 from worldsim.interfaces.http.routes.roles import effective_role
 from worldsim.interfaces.http.schemas import (
-    AdvanceRequest,
-    AdvanceResponse,
-    AdvanceResult,
     ClockResponse,
     CurrentPhaseResponse,
     EventEntry,
@@ -156,30 +153,6 @@ async def seed_world(request: Request) -> SeedResponse:
         seed_version=result.seed_version,
         content_hash=result.content_hash,
         duplicate=result.duplicate,
-    )
-
-
-@router.post("/world/phases/advance", response_model=AdvanceResponse)
-async def advance_phase(
-    body: AdvanceRequest,
-    request: Request,
-    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
-) -> AdvanceResponse:
-    if idempotency_key is None or not idempotency_key.strip():
-        raise DomainError(ErrorCode.VALIDATION_FAILED, "Idempotency-Key header is required")
-    state = request.app.state.app_state
-    report = await state.orchestrator().advance_world(body.world_id, idempotency_key.strip())
-    async with state.uow_factory()() as uow:
-        world = await uow.worlds.get(body.world_id)
-        cursor = await uow.events.max_sequence(body.world_id)
-    return AdvanceResponse(
-        command_id=report.command_id,
-        run_id=report.run_id,
-        task_id=report.task_id,
-        world_version=world.version,
-        event_cursor=cursor,
-        idempotent_replay=report.duplicate,
-        result=AdvanceResult(event_id=report.event_id, sequence=report.sequence),
     )
 
 

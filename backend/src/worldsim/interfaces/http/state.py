@@ -15,7 +15,6 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 import worldsim
 from worldsim.application.orchestration.background import BackgroundNarration
-from worldsim.application.orchestration.service import PhaseOrchestrator
 from worldsim.application.orchestration.stage1 import Stage1Orchestrator
 from worldsim.application.ports.map_reader import MapReader
 from worldsim.application.ports.model_gateway import ModelGateway
@@ -90,16 +89,6 @@ class AppState:
 
     def traces(self) -> TraceService:
         return TraceService(self.uow_factory(), self.exporter)
-
-    def orchestrator(self, gateway: FakeGateway | None = None) -> PhaseOrchestrator:
-        factory = self.uow_factory()
-        return PhaseOrchestrator(
-            factory,
-            CanonicalTransaction(factory),
-            TaskService(factory),
-            TraceService(factory, self.exporter),
-            gateway if gateway is not None else self.gateway_factory(),
-        )
 
     def stage1(self) -> Stage1Orchestrator:
         """Stage 1 orchestrator with per-role gateways for the active profile."""

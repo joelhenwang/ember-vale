@@ -24,12 +24,9 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-import worldsim
 from worldsim.application.commands.seed_world import SeedService
-from worldsim.application.orchestration.service import PhaseOrchestrator
+from worldsim.application.orchestration.service import reconcile_world
 from worldsim.application.tasks.service import TaskService
-from worldsim.application.tracing.service import TraceService
-from worldsim.application.transactions.canonical import CanonicalTransaction
 from worldsim.domain.errors import DomainError
 from worldsim.domain.time import absolute_index
 from worldsim.infrastructure.db.engine import create_engine
@@ -39,8 +36,7 @@ from worldsim.infrastructure.repositories.unit_of_work import (
     create_unit_of_work,
 )
 from worldsim.infrastructure.settings import Settings
-from worldsim.infrastructure.tracing.langsmith import select_exporter
-from worldsim.interfaces.http.state import SEED_DIR, stage0_gateway
+from worldsim.interfaces.http.state import SEED_DIR
 
 
 def _json(document: object) -> str:
@@ -56,23 +52,6 @@ class Services:
     def uow(self) -> SqlAlchemyUnitOfWork:
         return create_unit_of_work(self.engine)
 
-    def orchestrator(self) -> PhaseOrchestrator:
-        factory = lambda: self.uow()  # noqa: E731
-        return PhaseOrchestrator(
-            factory,
-            CanonicalTransaction(factory),
-            TaskService(factory),
-            TraceService(
-                factory,
-                select_exporter(
-                    self.settings.tracing,
-                    environment=self.settings.app.environment,
-                    app_version=worldsim.__version__,
-                ),
-            ),
-            stage0_gateway(),
-        )
-
 
 def _services(settings: Settings, seed_dir: Path) -> Services:
     return Services(settings=settings, engine=create_engine(settings), seed_dir=seed_dir)
@@ -85,23 +64,6 @@ async def _seed(services: Services) -> dict[str, object]:
         "seed_version": result.seed_version,
         "content_hash": result.content_hash,
         "duplicate": result.duplicate,
-    }
-
-
-async def _advance(services: Services, world_id: UUID, key: str) -> dict[str, object]:
-    report = await services.orchestrator().advance_world(world_id, key)
-    async with services.uow() as uow:
-        world = await uow.worlds.get(world_id)
-        cursor = await uow.events.max_sequence(world_id)
-    return {
-        "command_id": str(report.command_id),
-        "run_id": str(report.run_id),
-        "task_id": str(report.task_id),
-        "world_version": world.version,
-        "event_cursor": cursor,
-        "idempotent_replay": report.duplicate,
-        "event_id": str(report.event_id),
-        "sequence": report.sequence,
     }
 
 
@@ -167,7 +129,8 @@ async def _inspect_task(services: Services, task_id: UUID) -> dict[str, object]:
 
 
 async def _reconcile(services: Services, world_id: UUID) -> dict[str, object]:
-    report = await services.orchestrator().reconcile_world(world_id)
+    factory = lambda: services.uow()  # noqa: E731
+    report = await reconcile_world(factory, TaskService(factory), world_id)
     return {
         "tasks_requeued": report.tasks_requeued,
         "outbox_requeued": report.outbox_requeued,
@@ -182,11 +145,6 @@ def _parser() -> argparse.ArgumentParser:
 
     seed = sub.add_parser("seed", help="Import the Stage 0 seed")
     seed.add_argument("--seed-dir", type=Path, default=SEED_DIR)
-
-    advance = sub.add_parser("advance", help="Advance one phase")
-    advance.add_argument("--world", type=UUID, required=True)
-    advance.add_argument("--key", required=True, help="Idempotency key for this advance")
-    advance.add_argument("--seed-dir", type=Path, default=SEED_DIR)
 
     inspect = sub.add_parser("inspect", help="Read projections")
     inspect_sub = inspect.add_subparsers(dest="target", required=True)
@@ -220,8 +178,6 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "seed":
             document = asyncio.run(_seed(services))
-        elif args.command == "advance":
-            document = asyncio.run(_advance(services, args.world, args.key))
         elif args.command == "inspect" and args.target == "world":
             document = asyncio.run(_inspect_world(services, args.world))
         elif args.command == "inspect" and args.target == "events":

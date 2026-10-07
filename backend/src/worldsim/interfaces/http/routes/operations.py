@@ -6,6 +6,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Request
 
+from worldsim.application.orchestration.service import reconcile_world
 from worldsim.interfaces.http.schemas import (
     ReconcileRequest,
     ReconcileResponse,
@@ -18,7 +19,7 @@ router = APIRouter(tags=["operations"])
 @router.post("/operations/reconcile", response_model=ReconcileResponse)
 async def reconcile(body: ReconcileRequest, request: Request) -> ReconcileResponse:
     state = request.app.state.app_state
-    report = await state.orchestrator().reconcile_world(body.world_id)
+    report = await reconcile_world(state.uow_factory(), state.tasks(), body.world_id)
     return ReconcileResponse(
         tasks_requeued=report.tasks_requeued,
         outbox_requeued=report.outbox_requeued,

@@ -105,32 +105,6 @@ class SeedResponse(BaseModel):
     duplicate: bool
 
 
-class AdvanceRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    world_id: UUID
-
-
-class AdvanceResult(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    event_id: UUID
-    sequence: int
-
-
-class AdvanceResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    command_id: UUID
-    run_id: UUID
-    task_id: UUID
-    status: Literal["completed"] = "completed"
-    world_version: int
-    event_cursor: int
-    idempotent_replay: bool
-    result: AdvanceResult
-
-
 class ReconcileRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 

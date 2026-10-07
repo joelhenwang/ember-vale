@@ -50,21 +50,6 @@ class SeedWorldCommand(CommandBase):
     content_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
-class AdvancePhaseCommand(CommandBase):
-    command_type: Literal[CommandType.ADVANCE_PHASE] = CommandType.ADVANCE_PHASE
-    schema_version: Literal[1] = 1
-
-
-class PauseSimulationCommand(CommandBase):
-    command_type: Literal[CommandType.PAUSE_SIMULATION] = CommandType.PAUSE_SIMULATION
-    schema_version: Literal[1] = 1
-
-
-class ResumeSimulationCommand(CommandBase):
-    command_type: Literal[CommandType.RESUME_SIMULATION] = CommandType.RESUME_SIMULATION
-    schema_version: Literal[1] = 1
-
-
 class ActionBase(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 

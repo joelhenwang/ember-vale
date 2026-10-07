@@ -3,10 +3,10 @@ from pydantic import TypeAdapter, ValidationError
 
 from worldsim.domain.commands import (
     ActionIntent,
-    AdvancePhaseCommand,
     AuditMeta,
     MoveAction,
     RestAction,
+    SeedWorldCommand,
     WaitAction,
 )
 from worldsim.domain.enums import ActionFamily, CommandType, UserRole
@@ -17,41 +17,31 @@ def _audit() -> AuditMeta:
     return AuditMeta(requested_by="stage-scenario")
 
 
-def test_advance_phase_round_trip() -> None:
-    command = AdvancePhaseCommand(
-        command_id=new_command_id(),
-        idempotency_key="phase-0007",
-        actor_role=UserRole.SYSTEM,
-        world_id=new_world_id(),
-        expected_versions={},
-        audit=_audit(),
-    )
-    assert command.command_type is CommandType.ADVANCE_PHASE
-    clone = AdvancePhaseCommand.model_validate_json(command.model_dump_json())
-    assert clone == command
+def _seed(**overrides: object) -> SeedWorldCommand:
+    fields: dict[str, object] = {
+        "command_id": new_command_id(),
+        "idempotency_key": "seed-0001",
+        "actor_role": UserRole.SYSTEM,
+        "world_id": new_world_id(),
+        "expected_versions": {},
+        "audit": _audit(),
+        "seed_version": "stage0-v1",
+        "content_hash": "0" * 64,
+    }
+    return SeedWorldCommand.model_validate(fields | overrides)
+
+
+def test_command_round_trip() -> None:
+    command = _seed()
+    assert command.command_type is CommandType.SEED_WORLD
+    assert SeedWorldCommand.model_validate_json(command.model_dump_json()) == command
 
 
 def test_command_rejects_extra_fields_and_empty_key() -> None:
-    world_id = new_world_id()
     with pytest.raises(ValidationError):
-        AdvancePhaseCommand(
-            command_id=new_command_id(),
-            idempotency_key="k",
-            actor_role=UserRole.SYSTEM,
-            world_id=world_id,
-            expected_versions={},
-            audit=_audit(),
-            unknown_field="nope",  # type: ignore[call-arg]
-        )
+        _seed(unknown_field="nope")
     with pytest.raises(ValidationError):
-        AdvancePhaseCommand(
-            command_id=new_command_id(),
-            idempotency_key="",
-            actor_role=UserRole.SYSTEM,
-            world_id=world_id,
-            expected_versions={},
-            audit=_audit(),
-        )
+        _seed(idempotency_key="")
 
 
 def test_action_intents_dispatch_on_family() -> None:

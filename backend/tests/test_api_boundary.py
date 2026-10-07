@@ -13,6 +13,7 @@ from alembic.config import Config
 from alembic.script import ScriptDirectory
 from fastapi.testclient import TestClient
 
+import worldsim
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
 from worldsim.infrastructure.model_gateway.profiles import FAKE_TEST_PROFILE
 from worldsim.infrastructure.settings import Settings
@@ -53,24 +54,22 @@ def boundary(migrated_db: None) -> Iterator[tuple[BoundaryClient, FakeGateway]]:
         yield BoundaryClient(raw), gateway
 
 
-def test_live_echoes_request_id(boundary: tuple[BoundaryClient, FakeGateway]) -> None:
-    client, _gateway = boundary
-    response = client.get("/api/v1/health/live", headers={"X-Request-ID": "req-demo-1"})
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
-    assert response.headers["X-Request-ID"] == "req-demo-1"
-
-
-def test_ready_reports_versions_without_secrets(
+def test_unseeded_boundary(
     boundary: tuple[BoundaryClient, FakeGateway], monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Health, readiness and lookups before any world exists (one app)."""
     monkeypatch.setenv("WORLDSIM_SECURITY__API_KEY", "sentinel-key-xyz")
     client, _gateway = boundary
-    response = client.get("/api/v1/health/ready")
-    assert response.status_code == 200
-    body = response.json()
+    live = client.get("/api/v1/health/live", headers={"X-Request-ID": "req-demo-1"})
+    assert live.status_code == 200
+    assert live.json() == {"status": "ok"}
+    assert live.headers["X-Request-ID"] == "req-demo-1"
+
+    ready = client.get("/api/v1/health/ready")
+    assert ready.status_code == 200
+    body = ready.json()
     assert body["status"] == "degraded"
-    assert body["version"] == "0.1.0"
+    assert body["version"] == worldsim.__version__
     config = Config()
     config.set_main_option("script_location", str(MIGRATIONS))
     assert body["migration_head"] in ScriptDirectory.from_config(config).get_heads()
@@ -80,19 +79,18 @@ def test_ready_reports_versions_without_secrets(
     assert by_name["migrations"]["status"] == "ok"
     assert by_name["extensions"]["status"] == "ok"
     assert by_name["seed"]["status"] == "degraded"
-    assert "sentinel-key-xyz" not in response.text
+    assert "sentinel-key-xyz" not in ready.text
 
-
-def test_world_missing_before_seed(boundary: tuple[BoundaryClient, FakeGateway]) -> None:
-    client, _gateway = boundary
-    response = client.get("/api/v1/world")
-    assert response.status_code == 404
-    error = response.json()["error"]
+    missing = client.get("/api/v1/world")
+    assert missing.status_code == 404
+    error = missing.json()["error"]
     assert error["code"] == "NOT_FOUND"
-    assert error["request_id"] == response.headers["X-Request-ID"]
+    assert error["request_id"] == missing.headers["X-Request-ID"]
+    task = client.get("/api/v1/operations/tasks/10000000-0000-4000-8000-000000009999")
+    assert task.status_code == 404
 
 
-def test_seed_inspect_flow(boundary: tuple[BoundaryClient, FakeGateway]) -> None:
+def test_seed_inspect_and_reconcile(boundary: tuple[BoundaryClient, FakeGateway]) -> None:
     client, _gateway = boundary
     first = client.post("/api/v1/world/seed")
     assert first.status_code == 200
@@ -124,102 +122,11 @@ def test_seed_inspect_flow(boundary: tuple[BoundaryClient, FakeGateway]) -> None
     assert events["next_after"] == 1
     empty = client.get("/api/v1/world/events", params={"after": 1}).json()
     assert empty["entries"] == [] and empty["next_after"] == 1
-
-
-def test_event_pagination_rejects_bad_bounds(
-    boundary: tuple[BoundaryClient, FakeGateway],
-) -> None:
-    client, _gateway = boundary
-    client.post("/api/v1/world/seed")
     bad_after = client.get("/api/v1/world/events", params={"after": -1})
     assert bad_after.status_code == 422
     assert bad_after.json()["error"]["code"] == "VALIDATION_FAILED"
-    bad_limit = client.get("/api/v1/world/events", params={"limit": 0})
-    assert bad_limit.status_code == 422
+    assert client.get("/api/v1/world/events", params={"limit": 0}).status_code == 422
 
-
-def test_advance_requires_idempotency_key(
-    boundary: tuple[BoundaryClient, FakeGateway],
-) -> None:
-    client, _gateway = boundary
-    world_id = client.post("/api/v1/world/seed").json()["world_id"]
-    response = client.post("/api/v1/world/phases/advance", json={"world_id": world_id})
-    assert response.status_code == 422
-    assert response.json()["error"]["code"] == "VALIDATION_FAILED"
-
-
-def test_advance_replay_and_progress(boundary: tuple[BoundaryClient, FakeGateway]) -> None:
-    client, gateway = boundary
-    world_id = client.post("/api/v1/world/seed").json()["world_id"]
-    gateway.enqueue_text("Dawn breaks over the Hearth.", 10, 5)
-    gateway.enqueue_text("Morning comes to the market.", 10, 5)
-    first = client.post(
-        "/api/v1/world/phases/advance",
-        json={"world_id": world_id},
-        headers={"Idempotency-Key": "stage0-demo-advance-1"},
-    )
-    assert first.status_code == 200
-    body = first.json()
-    assert body["status"] == "completed"
-    assert body["idempotent_replay"] is False
-    assert body["world_version"] == 1
-    assert body["event_cursor"] == 2
-    assert body["result"]["sequence"] == 2
-
-    task = client.get(f"/api/v1/operations/tasks/{body['task_id']}").json()
-    assert task["state"] == "succeeded"
-    assert task["owner"] is None
-    assert task["kind"] == "phase_advance"
-
-    replay = client.post(
-        "/api/v1/world/phases/advance",
-        json={"world_id": world_id},
-        headers={"Idempotency-Key": "stage0-demo-advance-1"},
-    )
-    assert replay.json()["idempotent_replay"] is True
-    assert replay.json()["event_cursor"] == 2
-    assert replay.json()["result"] == body["result"]
-    assert replay.json()["run_id"] == body["run_id"]
-
-    second = client.post(
-        "/api/v1/world/phases/advance",
-        json={"world_id": world_id},
-        headers={"Idempotency-Key": "stage0-demo-advance-2"},
-    )
-    assert second.json()["idempotent_replay"] is False
-    assert second.json()["result"]["sequence"] == 3
-    current = client.get("/api/v1/world/phases/current").json()
-    assert current["absolute_index"] == 2
-
-
-def test_advance_unknown_world_is_not_found(
-    boundary: tuple[BoundaryClient, FakeGateway],
-) -> None:
-    client, _gateway = boundary
-    response = client.post(
-        "/api/v1/world/phases/advance",
-        json={"world_id": "10000000-0000-4000-8000-000000009999"},
-        headers={"Idempotency-Key": "stage0-demo-missing"},
-    )
-    assert response.status_code == 404
-    assert response.json()["error"]["code"] == "NOT_FOUND"
-
-
-def test_unknown_task_is_not_found(boundary: tuple[BoundaryClient, FakeGateway]) -> None:
-    client, _gateway = boundary
-    response = client.get("/api/v1/operations/tasks/10000000-0000-4000-8000-000000009999")
-    assert response.status_code == 404
-
-
-def test_reconcile_reports_idle_world(boundary: tuple[BoundaryClient, FakeGateway]) -> None:
-    client, gateway = boundary
-    world_id = client.post("/api/v1/world/seed").json()["world_id"]
-    gateway.enqueue_text("Dawn breaks.", 1, 1)
-    client.post(
-        "/api/v1/world/phases/advance",
-        json={"world_id": world_id},
-        headers={"Idempotency-Key": "stage0-demo-reconcile"},
-    )
     report = client.post("/api/v1/operations/reconcile", json={"world_id": world_id}).json()
     assert report["open_run_id"] is None
     assert report["open_state"] is None
