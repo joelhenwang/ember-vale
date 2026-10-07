@@ -205,9 +205,12 @@ async def _scene_art(
                 picture_id=picture.id,
                 scene_id=picture.scene_id,
                 moment=picture.moment.value,
+                title=picture.title,
                 caption=picture.caption,
                 status=job.status.value,
                 asset_id=job.result_asset_id,
+                phase_index=picture.created_phase_index,
+                location_id=picture.location_id,
             )
         )
     return shown

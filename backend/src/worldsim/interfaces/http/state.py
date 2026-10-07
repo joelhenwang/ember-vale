@@ -127,6 +127,7 @@ class AppState:
             local_models=self.local_models(),
             narration=self.narration,
             paint_moments=self.images() is not None,
+            moment_writer=self.writer() if self.images() is not None else None,
         )
 
     def local_models(self) -> LocalModelsClient | None:

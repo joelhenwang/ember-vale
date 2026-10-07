@@ -686,10 +686,13 @@ export interface PlaceArtView {
 export interface SceneArtView {
   asset_id?: string | null;
   caption: string;
+  location_id?: string | null;
   moment: string;
+  phase_index?: number;
   picture_id: string;
   scene_id: string;
   status: string;
+  title?: string | null;
 }
 
 export interface PictureCharacter {

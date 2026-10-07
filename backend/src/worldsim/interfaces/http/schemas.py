@@ -1008,12 +1008,17 @@ class SceneArtView(BaseModel):
 
     picture_id: UUID
     scene_id: UUID
-    #: arrival, meeting, settled or manual.
+    #: turning, arrival, meeting, settled or manual.
     moment: str
+    #: A short headline for the moment; older pictures have none.
+    title: str | None = None
     caption: str
     #: pending (being painted), ready or failed.
     status: str
     asset_id: UUID | None = None
+    #: The beat it was painted for (day and time of day follow from it).
+    phase_index: int = 0
+    location_id: UUID | None = None
 
 
 class PictureCharacter(BaseModel):

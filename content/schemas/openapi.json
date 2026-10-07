@@ -6033,9 +6033,26 @@
             "title": "Caption",
             "type": "string"
           },
+          "location_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          },
           "moment": {
             "title": "Moment",
             "type": "string"
+          },
+          "phase_index": {
+            "default": 0,
+            "title": "Phase Index",
+            "type": "integer"
           },
           "picture_id": {
             "format": "uuid",
@@ -6050,6 +6067,17 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
           }
         },
         "required": [

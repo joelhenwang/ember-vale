@@ -1,7 +1,8 @@
 """Scene pictures: a painted moment of a scene, with the people in it.
 
-A picture is asked for at a key moment (arriving somewhere new, a first
-meeting, a rumour settled) or by the player ("Paint this scene"). Its
+A picture is asked for at a key moment (a turning point picked out of
+the narration, arriving somewhere new, a first meeting, a rumour
+settled) or by the player ("Paint this scene"). Its
 image is an ordinary image job of kind ``scene``; this record says what
 to paint and how to caption it in the story.
 """
@@ -18,6 +19,8 @@ class PictureMoment(StrEnum):
     ARRIVAL = "arrival"
     MEETING = "meeting"
     SETTLED = "settled"
+    #: Picked out of the narration: a discovery, a confrontation, a reveal.
+    TURNING = "turning"
     MANUAL = "manual"
 
 
@@ -37,6 +40,8 @@ class ScenePicture(BaseModel):
     scene_id: UUID
     job_id: UUID
     moment: PictureMoment
+    #: A short headline ("A bell beneath the tide"); older pictures have none.
+    title: str | None = Field(default=None, max_length=80)
     #: Shown under the picture in the story.
     caption: str = Field(min_length=1, max_length=400)
     #: The words to paint from, when the player wrote or edited them.

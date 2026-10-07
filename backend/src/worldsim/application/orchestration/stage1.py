@@ -104,9 +104,10 @@ from worldsim.application.interventions import (
 from worldsim.application.orchestration.background import BackgroundNarration
 from worldsim.application.orchestration.framing import frame_gateways
 from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
-from worldsim.application.pictures import queue_moment
+from worldsim.application.pictures import MomentWords, judge_moment, plan_moments, queue_moment
 from worldsim.application.ports.local_models import LocalModels, LocalModelsUnavailable
 from worldsim.application.ports.model_gateway import ModelGateway, ModelProfile
+from worldsim.application.ports.writer import Writer
 from worldsim.application.settings.resolution import (
     PinnedRuntime,
     SamplingParams,
@@ -1098,6 +1099,7 @@ class Stage1Orchestrator:
         local_models: LocalModels | None = None,
         narration: BackgroundNarration | None = None,
         paint_moments: bool = False,
+        moment_writer: Writer | None = None,
     ) -> None:
         self._factory = uow_factory
         #: When set, a beat returns once its scenes commit and narration
@@ -1105,6 +1107,8 @@ class Stage1Orchestrator:
         self._narration = narration
         #: Queue key-moment scene pictures (only with a live image service).
         self._paint_moments = paint_moments
+        #: Reads a beat's narration for its picture (worth, headline, words).
+        self._moment_writer = moment_writer
         #: Embeddings for recall by relevance; None keeps recency and salience only.
         self._local_models = local_models
         self._canonical = canonical
@@ -1361,6 +1365,8 @@ class Stage1Orchestrator:
         await self._set_state(run_id, PhaseRunState.SCENES_ASSEMBLED)
         outcomes: list[SceneOutcome] = []
         budgets: list[bool] = []
+        #: Narration still being written behind the beat, if any.
+        narrated: asyncio.Future[Any] | None = None
         with _timed(timings, "scenes"):
             # Scenes commit one after another (event sequence numbers and
             # version checks are ordered); their narration, written after
@@ -1440,7 +1446,7 @@ class Stage1Orchestrator:
                 if party:
                     outcomes = [await job for job in jobs]
                 elif self._narration is not None:
-                    self._narration.start(world_id, asyncio.gather(*jobs))
+                    narrated = self._narration.start(world_id, asyncio.gather(*jobs))
                     outcomes = [replace(o, narration="pending") for o in outcomes]
                 else:
                     outcomes = list(await asyncio.gather(*jobs))
@@ -1449,8 +1455,16 @@ class Stage1Orchestrator:
         await self._set_state(run_id, PhaseRunState.COMPLETED)
         player = runtime.controlled_character_id
         if self._paint_moments and player is not None and outcomes:
-            with _timed(timings, "moments"):
-                await self._queue_moment(world_id, index, player, [o.scene_id for o in outcomes])
+            # The moment is read from the narration, so it waits for it;
+            # behind the beat when narration is, keeping turns quick.
+            paint = self._queue_moment(
+                world_id, index, player, [o.scene_id for o in outcomes], narrated
+            )
+            if self._narration is not None:
+                self._narration.start(world_id, paint)
+            else:
+                with _timed(timings, "moments"):
+                    await paint
         if index % PHASES_PER_DAY == PHASES_PER_DAY - 1:
 
             async def _day_end() -> None:
@@ -1483,21 +1497,46 @@ class Stage1Orchestrator:
         )
 
     async def _queue_moment(
-        self, world_id: UUID, index: int, player: UUID, scene_ids: list[UUID]
+        self,
+        world_id: UUID,
+        index: int,
+        player: UUID,
+        scene_ids: list[UUID],
+        narrated: asyncio.Future[Any] | None = None,
     ) -> None:
         """Queue a picture of this beat's key moment, if it had one.
 
-        Pictures are decoration: a failure here is logged, never raised,
-        so a turn always completes.
+        Once the narration is written, the moment writer (when there is
+        one) reads the player's first narrated scene: worth, headline,
+        caption and what to paint. Pictures are decoration: a failure
+        here is logged, never raised, so a turn always completes.
         """
         try:
+            if narrated is not None:
+                await asyncio.wait([narrated])
             async with self._factory() as uow:
                 prefs = (await uow.settings.get_preferences(LOCAL_OPERATOR)).images
                 if not (prefs.enabled and prefs.scene_moments):
                     return
                 scenes = [await uow.scenes.get_scene(scene_id) for scene_id in scene_ids]
+                plans = await plan_moments(uow, player, scenes)
+            words: dict[UUID, MomentWords] = {}
+            judged = next((plan for plan in plans if plan.narration.strip()), None)
+            if self._moment_writer is not None and judged is not None:
+                said, cost = await judge_moment(self._moment_writer, judged)
+                if said is not None:
+                    words[judged.scene.id] = said
+                _phase_log.info(
+                    "moment judged",
+                    extra={
+                        "world_id": str(world_id),
+                        "worth": said.worth if said else None,
+                        "cost_usd": cost,
+                    },
+                )
+            async with self._factory() as uow:
                 style_pack = await world_style_pack(uow, world_id)
-                if await queue_moment(uow, world_id, index, player, scenes, style_pack):
+                if await queue_moment(uow, world_id, index, player, plans, style_pack, words):
                     await uow.commit()
         except Exception:
             _phase_log.exception(

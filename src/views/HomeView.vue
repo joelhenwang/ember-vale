@@ -1,22 +1,18 @@
 <script setup lang="ts">
 import { onActivated, onMounted, ref } from 'vue'
 import HeroCard from '../components/HeroCard.vue'
-import BeginTaleCard from '../components/BeginTaleCard.vue'
-import LibraryCard from '../components/LibraryCard.vue'
 import RecentStories from '../components/RecentStories.vue'
-import SetupDialog from '../components/story/SetupDialog.vue'
-import type { StorySetupView } from '../../content/clients/worldsim'
 import {
   assetUrl,
   getChronicle,
+  getMap,
   getPresentation,
   getRole,
-  getSetup,
   getStory,
-  listPresets,
   listStories
 } from '../api/worldsim'
 import { firstSentence } from '../game/adventure'
+import { readyMoments, type Speaker } from '../game/moments'
 import type { CurrentStory } from '../game/model'
 import { usePresets } from '../composables/usePresets'
 import { sortStoriesNewest, toMenuCurrent, toMenuRecent, type ResolvedWorld } from '../game/records'
@@ -24,27 +20,12 @@ import { menuState } from '../game/state'
 
 const loading = ref(true)
 const error = ref<string | null>(null)
-const setup = ref<StorySetupView | null>(null)
-const showSetup = ref(false)
-const counts = ref({ worlds: 0, characters: 0, packs: 0 })
 const presets = usePresets()
 
 function worldOf(name: string): ResolvedWorld {
   const found = presets.worlds.value.find((w) => w.name === name)
   if (found) return { name: found.name, description: found.description }
   return { name: name || 'Unknown world', description: '' }
-}
-
-async function openSetup(): Promise<void> {
-  const current = menuState.current
-  if (!current) return
-  try {
-    setup.value = await getSetup(current.id)
-  } catch {
-    setup.value = null
-  } finally {
-    showSetup.value = true
-  }
 }
 
 /**
@@ -60,20 +41,36 @@ async function addPlaying(worldId: string): Promise<void> {
     const opts = { role: 'player' as const, characterId: me }
     const view = await getPresentation(worldId, opts)
     const head = await getChronicle(worldId, 0, opts, 1)
-    const tail = await getChronicle(worldId, Math.max(0, head.watermark - 6), opts)
+    const [tail, map] = await Promise.all([
+      getChronicle(worldId, Math.max(0, head.watermark - 6), opts),
+      getMap(worldId, opts).catch(() => null)
+    ])
     const told = [...(tail.entries ?? [])].reverse().find((e) => e.text)
     const self = (view.cast ?? []).find((c) => c.character_id === me)
     const art = (view.place_art ?? []).find((a) => a.location_id === self?.location_id)
     const current = menuState.current as CurrentStory | null
     if (!current || current.id !== worldId || !self) return
+    const speakers: Record<string, Speaker> = {}
+    for (const c of view.cast ?? []) {
+      speakers[c.character_id] = {
+        name: c.name,
+        portraitUrl: c.portrait_asset_id ? assetUrl(worldId, c.portrait_asset_id) : null
+      }
+    }
+    const places: Record<string, string> = {}
+    for (const p of map?.places ?? []) places[p.id] = p.name
     menuState.current = {
       ...current,
       playing: {
+        characterId: me,
         name: self.name,
         portraitUrl: self.portrait_asset_id ? assetUrl(worldId, self.portrait_asset_id) : null,
         title: view.journey?.title ?? null,
         lastLine: told?.text ? firstSentence(told.text) : null,
-        sceneUrl: art ? assetUrl(worldId, art.asset_id) : null
+        sceneUrl: art ? assetUrl(worldId, art.asset_id) : null,
+        moments: readyMoments(view.scene_art),
+        speakers,
+        places
       }
     }
   } catch {
@@ -84,17 +81,8 @@ async function addPlaying(worldId: string): Promise<void> {
 /** Read the shelf; a quiet read keeps what is on screen until it is done. */
 async function refresh(quiet = false): Promise<void> {
   try {
-    const [stories, packSummaries] = await Promise.all([
-      listStories('all'),
-      listPresets('style_pack').catch(() => []),
-      presets.load()
-    ])
+    const [stories] = await Promise.all([listStories('all'), presets.load()])
     if (presets.error.value) throw new Error(presets.error.value)
-    counts.value = {
-      worlds: presets.worlds.value.length,
-      characters: presets.characters.value.length,
-      packs: packSummaries.length
-    }
     // Continue features an eligible unarchived story: archived tales stay
     // available through the shelf's explicit archived filter, never as hero.
     // sortStoriesNewest already puts never-opened (null last_played_at)
@@ -115,7 +103,7 @@ async function refresh(quiet = false): Promise<void> {
       menuState.current = null
     }
     menuState.recent = eligible
-      .slice(1, 4)
+      .slice(1, 3)
       .map((s) => {
         const detail = details.find((d) => d.world_id === s.world_id)
         return detail ? toMenuRecent(detail, worldOf(s.world_name)) : null
@@ -146,19 +134,9 @@ onActivated(() => {
     </p>
     <p v-else-if="loading" class="page__state" role="status">Opening the library…</p>
     <template v-else>
-      <div class="page__grid ev-rise">
-        <HeroCard @details="openSetup" />
-        <aside class="page__side">
-          <BeginTaleCard />
-          <LibraryCard
-            :worlds="counts.worlds"
-            :characters="counts.characters"
-            :packs="counts.packs" />
-        </aside>
-      </div>
+      <HeroCard class="ev-rise" />
       <RecentStories />
     </template>
-    <SetupDialog :setup="setup" :open="showSetup" @close="showSetup = false" />
   </main>
 </template>
 
@@ -173,32 +151,5 @@ onActivated(() => {
   border: 1px solid var(--line);
   border-radius: 12px;
   background: #fbf6e9;
-}
-.page__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 474px;
-  gap: 14px;
-  align-items: stretch;
-}
-.page__side {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: 16px;
-  min-width: 0;
-}
-
-@media (max-width: 1180px) {
-  .page__grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .page__side {
-    grid-template-rows: auto;
-    grid-template-columns: 1fr 1fr;
-  }
-}
-@media (max-width: 900px) {
-  .page__side {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

@@ -111,4 +111,6 @@ async def paint_scene(
         moment=picture.moment.value,
         caption=picture.caption,
         status="pending",
+        phase_index=picture.created_phase_index,
+        location_id=picture.location_id,
     )

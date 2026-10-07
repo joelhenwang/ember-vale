@@ -1,4 +1,6 @@
 import type { Frame } from './framing'
+import type { SceneArtView } from '../../content/clients/worldsim'
+import type { Speaker } from './moments'
 /**
  * Domain model for the menus and the creation wizard.
  *
@@ -56,11 +58,18 @@ export interface CurrentStory extends StorySummary {
   epigraph: string
   /** For a story you play: who you are and what happened last. */
   playing?: {
+    characterId: string
     name: string
     portraitUrl: string | null
     title: string | null
     lastLine: string | null
     sceneUrl: string | null
+    /** Painted key moments, oldest first (the newest leads Home). */
+    moments: SceneArtView[]
+    /** Faces and names for the moment view, by character id. */
+    speakers: Record<string, Speaker>
+    /** Place names, by location id. */
+    places: Record<string, string>
   }
 }
 

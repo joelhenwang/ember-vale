@@ -23,8 +23,8 @@ class BackgroundNarration:
     def __init__(self) -> None:
         self._tasks: dict[UUID, set[asyncio.Future[Any]]] = {}
 
-    def start(self, world_id: UUID, work: Awaitable[Any]) -> None:
-        """Run ``work`` for this story without waiting for it."""
+    def start(self, world_id: UUID, work: Awaitable[Any]) -> asyncio.Future[Any]:
+        """Run ``work`` for this story without waiting for it; its task."""
         task = asyncio.ensure_future(work)
         running = self._tasks.setdefault(world_id, set())
         running.add(task)
@@ -39,6 +39,7 @@ class BackgroundNarration:
                 )
 
         task.add_done_callback(_done)
+        return task
 
     async def settle(self, world_id: UUID) -> None:
         """Wait for this story's narration still running (errors already logged)."""

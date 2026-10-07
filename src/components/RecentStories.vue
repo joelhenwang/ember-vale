@@ -10,6 +10,7 @@ import IconSparkle from './icons/IconSparkle.vue'
 import IconFeather from './icons/IconFeather.vue'
 import IconArrowInCircle from './icons/IconArrowInCircle.vue'
 import IconArrowRight from './icons/IconArrowRight.vue'
+import IconPlus from './icons/IconPlus.vue'
 import { storyLocation } from '../game/storyRoute'
 
 function resume(story: StorySummary): void {
@@ -30,10 +31,7 @@ function resume(story: StorySummary): void {
       </router-link>
     </div>
 
-    <p v-if="!menuState.recent.length" class="recent__empty">
-      Your recent stories will appear here once you begin a tale.
-    </p>
-    <div v-else class="recent__grid">
+    <div class="recent__grid">
       <article
         v-for="story in menuState.recent"
         :key="story.id"
@@ -64,16 +62,25 @@ function resume(story: StorySummary): void {
             {{ story.title }}
           </h3>
           <p class="recent__meta">
-            <span>{{ story.pov }}</span>
-            <span class="ev-dot">•</span>
-            <span>Day {{ story.beat.day }}</span>
+            {{ story.pov === 'Player' ? 'You play' : 'Watching' }} · Day {{ story.beat.day }} ·
+            {{ story.beat.timeOfDay }}
           </p>
-          <p class="recent__logline">{{ story.logline }}</p>
+          <p class="recent__logline">In {{ story.beat.location }}</p>
         </div>
         <span class="recent__go" aria-hidden="true">
           <IconArrowInCircle :size="24" />
         </span>
       </article>
+      <router-link class="recent__card recent__new ev-card" :to="{ name: 'new-story' }">
+        <span class="recent__plus" aria-hidden="true"><IconPlus :size="28" /></span>
+        <span class="recent__body">
+          <span class="recent__title">Start a new story</span>
+          <span class="recent__logline">Choose a world and someone to be.</span>
+        </span>
+        <span class="recent__go" aria-hidden="true">
+          <IconArrowInCircle :size="24" />
+        </span>
+      </router-link>
     </div>
   </section>
 </template>
@@ -106,8 +113,8 @@ function resume(story: StorySummary): void {
 /* cards ---------------------------------------------------------------------- */
 .recent__grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 26px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
 }
 .recent__card {
   display: flex;
@@ -130,7 +137,8 @@ function resume(story: StorySummary): void {
     inset 0 1px 0 rgba(255, 252, 240, 0.7);
 }
 .recent__img {
-  width: 266px;
+  width: 42%;
+  max-width: 220px;
   height: 108px;
   object-fit: cover;
   border-radius: 8px;
@@ -195,7 +203,32 @@ function resume(story: StorySummary): void {
   transform: translateX(2px);
 }
 
-@media (max-width: 900px) {
+.recent__new {
+  color: inherit;
+  text-decoration: none;
+}
+.recent__new .recent__body {
+  display: flex;
+  flex-direction: column;
+}
+.recent__plus {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 108px;
+  height: 108px;
+  border-radius: 8px;
+  border: 1px dashed var(--line-strong);
+  background: var(--panel-2);
+  color: var(--teal-ink);
+}
+
+@media (max-width: 1180px) {
+  .recent__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
   .recent__grid {
     grid-template-columns: 1fr;
   }

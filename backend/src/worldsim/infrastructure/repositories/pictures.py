@@ -1,4 +1,4 @@
-"""Scene pictures (table ``scene_picture``, migration 0052)."""
+"""Scene pictures (table ``scene_picture``, migrations 0052 and 0054)."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from worldsim.domain.pictures import PictureMoment, ScenePicture
 
 _COLUMNS = (
     "id, world_id, scene_id, job_id, moment, caption, prompt, character_ids, "
-    "location_id, created_phase_index"
+    "location_id, created_phase_index, title"
 )
 
 
@@ -36,6 +36,7 @@ def _picture(row: Sequence[Any]) -> ScenePicture:
         character_ids=[UUID(str(i)) for i in ids or []],
         location_id=row[8],
         created_phase_index=row[9],
+        title=row[10],
     )
 
 
@@ -48,7 +49,7 @@ class SqlAlchemyPictureRepository:
             text(
                 f"INSERT INTO scene_picture ({_COLUMNS}) VALUES (:id, :world_id, :scene_id, "
                 ":job_id, :moment, :caption, :prompt, CAST(:character_ids AS jsonb), "
-                ":location_id, :created_phase_index)"
+                ":location_id, :created_phase_index, :title)"
             ),
             {
                 **picture.model_dump(exclude={"character_ids", "moment"}),

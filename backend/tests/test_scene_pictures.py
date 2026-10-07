@@ -36,6 +36,7 @@ from worldsim.application.orchestration.service import derive_run_id, derive_sna
 from worldsim.application.pictures import service_character_id
 from worldsim.application.ports.images import CharacterCard
 from worldsim.application.ports.model_gateway import CompletionRequest
+from worldsim.application.ports.writer import Written
 from worldsim.domain.assets import AssetKind, AssetRecord
 from worldsim.domain.ids import new_asset_id
 from worldsim.infrastructure.db.engine import create_engine
@@ -288,3 +289,84 @@ def test_suggested_words_leave_out_speech_and_backstory() -> None:
         "Tobin: a boy with sawdust in his hair"
     )
     assert look_of("Ash", "") == "Ash"
+
+
+class _MomentWriter:
+    """A stand-in moment writer: one fixed reading, and the prompts it read."""
+
+    def __init__(self, answer: str) -> None:
+        self.answer = answer
+        self.prompts: list[str] = []
+
+    async def write(self, prompt: str) -> Written:
+        self.prompts.append(prompt)
+        return Written(text=self.answer, model="fake/writer", seconds=0.1, cost_usd=0.0001)
+
+
+def test_a_turning_point_is_painted_with_its_headline(
+    stack: tuple[ApiClient, TestClient, FakeGateway], tmp_path: Path
+) -> None:
+    api, raw, gateway = stack
+    ids = asyncio.run(_seed_two_at_hearth())
+    krea = _Krea()
+    writer = _MomentWriter(
+        '```json\n{"worth": 3, "title": "A bell beneath the tide.", '
+        '"line": "Wren finds a bell in the shallows.", '
+        '"picture": "Wren kneels in the shallows, lifting a green bronze bell. '
+        '\\"Look,\\" she says."}\n```'
+    )
+    state = raw.app.state.app_state  # pyright: ignore[reportAttributeAccessIssue, reportFunctionMemberAccess]
+    state._images = krea.client()
+    state._writer = writer
+    selected = api.post(
+        "/api/v1/stage2/roles/select",
+        json={"world_id": str(ids["world"]), "role": "player", "character_id": str(ids["wren"])},
+        headers=_watcher(),
+    )
+    assert selected.status_code == 200, selected.text
+    gateway.route = _ash_greets_wren(ids)
+    assert _advance(api, ids["world"], 1, headers=_player(ids["wren"])).status_code == 200
+
+    # The writer read the turn's narration once, with who and where.
+    assert len(writer.prompts) == 1
+    assert "Wren" in writer.prompts[0] and "Hearth" in writer.prompts[0]
+    art = api.get(
+        "/api/v1/world/presentation",
+        params={"world_id": str(ids["world"])},
+        headers=_player(ids["wren"]),
+    ).json()["scene_art"]
+    # The turning point leads over the first meeting in the same scene.
+    assert [(a["moment"], a["title"], a["caption"]) for a in art] == [
+        ("turning", "A bell beneath the tide", "Wren finds a bell in the shallows.")
+    ]
+    assert art[0]["phase_index"] == 1 and art[0]["location_id"]
+    _paint_all(ids["world"], krea, tmp_path)
+    painted = krea.generated[-1]["prompt"]
+    assert "lifting a green bronze bell" in painted and "Look" not in painted
+
+
+def test_moment_readings_parse_or_are_dropped() -> None:
+    from worldsim.application.pictures import parse_moment
+
+    said = parse_moment('Sure: {"worth": 7, "title": "x", "line": "", "picture": "A door opens."}')
+    assert said is not None and said.worth == 3 and said.line == ""
+    assert parse_moment('{"worth": "high", "title": "x", "picture": "y"}') is None
+    assert parse_moment('{"worth": 2, "title": "", "picture": "y"}') is None
+    assert parse_moment("no json here") is None
+    assert parse_moment('{"worth": true, "title": "x", "picture": "y"}') is None
+
+
+def test_studio_looks_read_as_one_phrase() -> None:
+    from worldsim.application.pictures import look_of, plain_looks
+
+    studio = (
+        "Age: 17\nRace: Human\nSex: Female\nHair: dark brown hair in a wind-tangled braid\n"
+        "Eyes: sea-gray\nHeight: average\nBuild: lean and wiry\n"
+        "Wears: a patched oilskin coat.\nCondition: grieving her grandmother"
+    )
+    assert plain_looks(studio) == (
+        "17-year-old human female, lean and wiry, dark brown hair in a wind-tangled braid, "
+        "sea-gray eyes, wearing a patched oilskin coat"
+    )
+    assert look_of("Mara", studio).startswith("Mara: 17-year-old human female, lean")
+    assert plain_looks("A tall woman with a scar.") is None
