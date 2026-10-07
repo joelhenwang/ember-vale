@@ -62,9 +62,10 @@ def test_the_beat_returns_before_its_narration_and_the_next_waits(migrated_db: N
 class _Dropping(BackgroundNarration):
     """Loses its work, as a process stopped mid-narration would."""
 
-    def start(self, world_id: Any, work: Awaitable[Any]) -> None:
+    def start(self, world_id: Any, work: Awaitable[Any]) -> asyncio.Future[Any]:
         future = asyncio.ensure_future(work)
         future.cancel()
+        return future
 
 
 def test_narration_lost_with_its_process_is_written_by_the_next_beat(
