@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field, ValidationError
 from worldsim.application.capabilities import capabilities_for, is_omniscient
 from worldsim.application.geography import PLACE_MAPS, story_place_maps
 from worldsim.application.unit_of_work import UnitOfWork
-from worldsim.domain.activities import Activity
+from worldsim.domain.activities import Activity, effective_progress
 from worldsim.domain.enums import NarrativeStatus, UserRole, Visibility
 from worldsim.domain.geography import spot_named
 from worldsim.domain.journey import Journey, level_floor, level_for, title_for
@@ -115,7 +115,7 @@ async def presentation(
             if place_map.location_id in visible_locations
         ],
         cast=cast,
-        activities=[_activity_view(activity) for activity in activities],
+        activities=[_activity_view(activity, now) for activity in activities],
         recent_event_id=recent[0].id if recent else None,
         threads=[
             hook.title for hook in hooks if hook.status == NarrativeStatus.ACTIVE and omniscient
@@ -231,6 +231,8 @@ async def chronicle(
     omniscient = is_omniscient(role)
     events = await uow.events.list_range(world_id, after, limit)
     place_maps = story_place_maps((await uow.worlds.get_config(world_id)).get(PLACE_MAPS))
+    who = {c.id: c.name for c in await uow.characters.list_for_world(world_id)}
+    where = {loc.id: loc.name for loc in await uow.locations.list_for_world(world_id)}
     entries: list[api.ChronicleEntry] = []
     for event in events:
         if (
@@ -242,6 +244,12 @@ async def chronicle(
         beats = await uow.scenes.narrations_for_event(event.id)
         text = " ".join(b.text for b in beats) or None
         title = (beats[0].text if beats else _untold_title(event.event_type.value))[:120]
+        if not beats and event.summary.get("arrival") == "1":
+            # A journey's end is told in one line, never narrated as a scene.
+            people = [who.get(p, "Someone") for p in event.participant_ids] or ["Someone"]
+            reached = _as_uuid(event.summary.get("location_id"))
+            place = where.get(reached, "their destination") if reached else "their destination"
+            title = text = f"{people[0]} arrives at {place}."
         scene_id: UUID | None = None
         if event.phase_run_id is not None:
             for scene in await uow.scenes.list_for_run(event.phase_run_id):
@@ -318,8 +326,9 @@ def _as_uuid(raw: object) -> UUID | None:
     return None
 
 
-def _activity_view(activity: Activity) -> api.ActivityView:
-    """Typed activity projection with travel route data (no payload leak)."""
+def _activity_view(activity: Activity, now: int) -> api.ActivityView:
+    """Typed activity projection with travel route data (no payload leak);
+    a journey's progress counts the phases elapsed by the world clock."""
     payload = activity.payload
     return api.ActivityView(
         id=activity.id,
@@ -333,7 +342,7 @@ def _activity_view(activity: Activity) -> api.ActivityView:
         from_location_id=_as_uuid(payload.get("from_location_id")),
         to_location_id=_as_uuid(payload.get("to_location_id")),
         route_id=_as_uuid(payload.get("route_id")),
-        effective_progress_phases=activity.progress_phases
+        effective_progress_phases=effective_progress(activity, now)
         if activity.kind.value == "travel"
         else None,
         version=activity.version,

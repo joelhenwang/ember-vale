@@ -12,9 +12,9 @@ import { useInterventions, type DirectMode } from '../composables/useInterventio
 import { usePlayerAsk } from '../composables/usePlayerAsk'
 import { useStory } from '../composables/useStory'
 import { collectScenePointers, type ScenePointer } from '../components/story/beatReading'
-import type { TimelineEntry } from '../../content/clients/worldsim'
+import type { ActivityView, TimelineEntry } from '../../content/clients/worldsim'
 import { useStoryProvider } from '../composables/useStoryProvider'
-import { selectSeat } from '../api/worldsim'
+import { listActivities, selectSeat } from '../api/worldsim'
 import type { Role } from '../api/http'
 import { phaseLabel } from '../game/format'
 import { inputLimit, topicFor, type SpeechMode } from '../game/playerSpeech'
@@ -144,6 +144,33 @@ const nextIndex = computed(() => (detail.value?.absolute_index ?? 0) + 1)
 
 // A new beat is safe only when the room positively knows none is open: an
 // unknown recovery status is not a clear room.
+/** Journeys and other activities under way, re-read after every beat. */
+const activities = ref<ActivityView[]>([])
+async function loadActivities(): Promise<void> {
+  const world = storyId.value
+  try {
+    const listed = await listActivities(world)
+    if (world === storyId.value) activities.value = listed.members ?? []
+  } catch {
+    activities.value = [] // not knowing never blocks the room
+  }
+}
+watch(
+  () => [storyId.value, story.detail.value?.absolute_index],
+  () => void loadActivities(),
+  { immediate: true }
+)
+
+/** The controlled character's journey under way, if any: they act again on arrival. */
+const myJourney = computed(() => {
+  const trip = activities.value.find(
+    (a) => a.character_id === controlledId.value && a.kind === 'travel' && a.status === 'active'
+  )
+  if (!trip) return null
+  const to = story.map.value?.places?.find((p) => p.id === trip.to_location_id)?.name
+  const done = trip.effective_progress_phases ?? trip.progress_phases
+  return { to: to ?? 'the next place', left: Math.max(1, trip.duration_phases - done) }
+})
 const beatReady = computed(
   () => story.grantLoaded.value && !story.advancing.value && story.recoveryState.value === 'clear'
 )
@@ -464,7 +491,16 @@ function loadBeatDetails(eventIds: string[]): void {
               </select>
             </label>
             <MenuButton
-              :disabled="!travelChar || !travelTo || story.traveling.value || !playerReady"
+              :disabled="
+                !travelChar ||
+                !travelTo ||
+                story.traveling.value ||
+                !playerReady ||
+                activities.some(
+                  (a) =>
+                    a.character_id === travelChar && a.kind === 'travel' && a.status === 'active'
+                )
+              "
               @click="travel()">
               {{ story.traveling.value ? 'Starting…' : 'Start journey' }}
             </MenuButton>
@@ -487,6 +523,11 @@ function loadBeatDetails(eventIds: string[]): void {
           class="play__card"
           aria-label="Speak as your character">
           <h2>Speak as {{ controlledName }}</h2>
+          <p v-if="myJourney" class="play__journey" role="status">
+            You are on the road to {{ myJourney.to }}, about {{ myJourney.left }}
+            {{ myJourney.left === 1 ? 'phase' : 'phases' }} from arriving. Commit beats to travel
+            on; you can speak again when you get there.
+          </p>
           <p class="play__empty">
             Your words file with the next committed beat — the cast's reactions, the resolution and
             the narration follow.
@@ -521,7 +562,7 @@ function loadBeatDetails(eventIds: string[]): void {
                 " />
             </label>
             <MenuButton
-              :disabled="!askText.trim() || !askTarget || !beatReady"
+              :disabled="!askText.trim() || !askTarget || !beatReady || !!myJourney"
               @click="askQuestion()">
               {{
                 story.advancing.value
@@ -880,6 +921,14 @@ function loadBeatDetails(eventIds: string[]): void {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #6b5d43;
+}
+.play__journey {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--teal);
+  background: var(--surface);
+  color: var(--teal-ink);
+  font-size: 15px;
 }
 .play__empty {
   color: #6b5d43;

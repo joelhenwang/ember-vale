@@ -110,7 +110,18 @@ def _active(action: ActionIntent) -> bool:
     )
 
 
-def _linked(first: Intent, second: Intent, locations: dict[str, str]) -> bool:
+def _arrives_now(action: ActionIntent, journeys: frozenset[str]) -> bool:
+    """A move that gets there this phase (a road longer than one phase is a
+    journey: the mover meets no one at the far end yet)."""
+    return isinstance(action, MoveAction) and str(action.route_id) not in journeys
+
+
+def _linked(
+    first: Intent,
+    second: Intent,
+    locations: dict[str, str],
+    journeys: frozenset[str] = frozenset(),
+) -> bool:
     first_target = target_key(first.action)
     second_target = target_key(second.action)
     if first_target is not None and first_target == second_target:
@@ -130,12 +141,16 @@ def _linked(first: Intent, second: Intent, locations: dict[str, str]) -> bool:
     ):
         return True
     # Meeting: a move whose destination is the other's current location.
-    if isinstance(first.action, MoveAction) and str(first.action.destination_location_id) == (
-        second_place
+    if (
+        isinstance(first.action, MoveAction)
+        and _arrives_now(first.action, journeys)
+        and str(first.action.destination_location_id) == second_place
     ):
         return True
-    if isinstance(second.action, MoveAction) and str(second.action.destination_location_id) == (
-        first_place
+    if (
+        isinstance(second.action, MoveAction)
+        and _arrives_now(second.action, journeys)
+        and str(second.action.destination_location_id) == first_place
     ):
         return True
     # Appointment: directed interaction between the two authors.
@@ -179,6 +194,12 @@ def assemble_scenes(
     """Group intents into deterministic scenes (order-independent)."""
     ordered = sorted(intents, key=lambda i: str(i.id))
     locations = {str(c.id): str(c.location_id) for c in view.characters}
+    journeys = frozenset(
+        str(route.id)
+        for place in view.locations
+        for route in place.routes
+        if route.duration_phases > 1
+    )
 
     parent: dict[str, str] = {str(i.id): str(i.id) for i in ordered}
 
@@ -195,7 +216,7 @@ def assemble_scenes(
 
     for index, first in enumerate(ordered):
         for second in ordered[index + 1 :]:
-            if _linked(first, second, locations):
+            if _linked(first, second, locations, journeys):
                 union(str(first.id), str(second.id))
 
     groups: dict[str, list[Intent]] = {}

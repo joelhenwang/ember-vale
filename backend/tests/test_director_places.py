@@ -158,4 +158,4 @@ def test_added_place_is_on_the_map_and_reachable(
         for r in gateway.sent_requests[before:]
         if "You decide" in (r.system or "") and "<<untrusted:identity>>Wren" in r.prompt
     )
-    assert f"Old Forge (location_id {forge['id']})" in wren
+    assert f"Old Forge (location_id {forge['id']}" in wren

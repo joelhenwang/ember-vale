@@ -48,7 +48,7 @@ def test_surroundings_name_routes_and_present_characters() -> None:
 
     text = surroundings_text(hearth, {market_id: "Market"}, [wren, ash, miller, ghost], wren.id)
 
-    assert f"Market (location_id {market_id})" in text
+    assert f"Market (location_id {market_id}; a journey of 1 phase, costs 5 stamina)" in text
     assert f"Ash (character_id {ash.id})" in text
     assert "Wren" not in text  # never lists the viewer
     assert "Tam" not in text  # elsewhere: not perceived

@@ -114,11 +114,15 @@ class WorldMap(BaseModel):
             seen.add(pair)
         return self
 
-    def phases_between(self, a: str, b: str) -> int | None:
+    def road_between(self, a: str, b: str) -> MapRoad | None:
         for road in self.roads:
             if {road.a, road.b} == {a, b}:
-                return road.phases
+                return road
         return None
+
+    def phases_between(self, a: str, b: str) -> int | None:
+        road = self.road_between(a, b)
+        return road.phases if road is not None else None
 
 
 #: Spots a place's own map may hold.
@@ -157,6 +161,20 @@ class PlaceMap(BaseModel):
         if len(set(keys)) != len(keys):
             raise ValueError("two spots share a key")
         return self
+
+
+#: Stamina a phase on the road costs, by how it is travelled: on board a
+#: ship or a riverboat one mostly sits; a mountain pass is hard going.
+STAMINA_PER_PHASE = {"sea": 1, "river": 1, "road": 2, "bridge": 2, "path": 3, "pass": 5}
+#: No road costs more: a rested traveller (stamina 80 at the start) can
+#: always set off, and arrives tired rather than never.
+MAX_ROAD_STAMINA = 40
+
+
+def road_stamina(phases: int, by: str) -> int:
+    """Stamina a whole road costs, paid on setting off (rest gives 10 a phase)."""
+    rate = STAMINA_PER_PHASE.get(by, STAMINA_PER_PHASE["road"])
+    return min(MAX_ROAD_STAMINA, max(1, phases) * rate)
 
 
 def road_length(line: list[Point], width: int, height: int) -> float:

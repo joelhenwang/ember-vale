@@ -409,9 +409,9 @@ def test_read_a_map_and_time_the_new_story(stack: tuple[ApiClient, _Reader]) -> 
         )
         assert created.status_code == 200, created.text
         legs = _routes(UUID(created.json()["world_id"]))
-        assert legs[("Hearth", "Market")] == (2, 0)
-        assert legs[("Old Mill", "Market")] == (7, 0)
-        assert legs[("Market", "Old Mill")] == (7, 0)
+        assert legs[("Hearth", "Market")] == (2, 4)  # a 2-phase road: 2 stamina a phase
+        assert legs[("Old Mill", "Market")] == (7, 21)  # a 7-phase path: 3 a phase
+        assert legs[("Market", "Old Mill")] == (7, 21)
         # The story keeps the map: its art, its pins and its roads as drawn.
         story = created.json()["world_id"]
         shown = api.get(

@@ -178,6 +178,7 @@ from worldsim.domain.ids import (
     derive_combat_event_id,
     derive_intent_id,
     derive_task_id,
+    new_activity_id,
     new_arc_id,
     new_digest_id,
     new_hook_id,
@@ -272,7 +273,7 @@ from worldsim.domain.summaries import DailySummary, day_range, fallback_text
 from worldsim.domain.tasks import Lease
 from worldsim.domain.time import PHASES_PER_DAY, absolute_index, phase_label, utcnow
 from worldsim.domain.tracing import ManifestSource
-from worldsim.domain.world import Location
+from worldsim.domain.world import Location, Route
 
 #: Resolved from this file like the prompt paths (and like
 #: interfaces/http/state.py), so loading works from any working directory.
@@ -539,7 +540,7 @@ def surroundings_text(
     """
     routes = ", ".join(
         f"{place_names.get(r.destination_location_id, 'unknown place')} "
-        f"(location_id {r.destination_location_id})"
+        f"(location_id {r.destination_location_id}{road_note(r)})"
         for r in place.routes
     )
     present = ", ".join(
@@ -746,12 +747,20 @@ def director_summary(
     *,
     talk_streak: int = 0,
     earlier: Sequence[str] = (),
+    journeys: Mapping[UUID, UUID] | None = None,
 ) -> str:
     """What the director sees: who is where (with ids), threads, the story so far."""
     place = {loc.id: loc.name for loc in locations}
     plans = intentions or {}
+    roads = journeys or {}
+
+    def where(c: Character) -> str:
+        if c.id in roads:
+            return f"on the road to {place.get(roads[c.id], 'somewhere')}"
+        return f"at {place.get(c.location_id, 'somewhere')}"
+
     cast = "; ".join(
-        f"{c.name} (id {c.id}, at {place.get(c.location_id, 'somewhere')}"
+        f"{c.name} (id {c.id}, {where(c)}"
         + (f", intends: {plans[c.id]}" if c.id in plans else "")
         + ")"
         for c in characters
@@ -900,6 +909,62 @@ async def _last_spot(
             return next((s for s in spots if s.key == key), None)
         # A scene that named no spot leaves them where they were.
     return None
+
+
+def journey_span(phases: int) -> str:
+    """'3 phases', 'about 1 day', 'about 2 days and 4 phases' (ten phases a day)."""
+    days, rest = divmod(phases, 10)
+    if days == 0:
+        return f"{phases} phase{'s' if phases > 1 else ''}"
+    return f"about {days} day{'s' if days > 1 else ''}" + (f" and {rest} phases" if rest else "")
+
+
+def road_note(route: Route) -> str:
+    """How long and how tiring a road is, for whoever might take it."""
+    if route.duration_phases <= 1 and route.stamina_cost == 0:
+        return ""
+    cost = f", costs {route.stamina_cost} stamina" if route.stamina_cost else ""
+    return f"; a journey of {journey_span(route.duration_phases)}{cost}"
+
+
+def journey_fact(name: str, destination: str, phases: int) -> str:
+    """What the narrator is told of a traveller who has only set off."""
+    span = journey_span(phases)
+    return (
+        f"{name} sets off on the road to {destination}, a journey of {span}: "
+        f"{name} leaves this place now and has not arrived."
+    )
+
+
+def split_journeys(
+    effects: list[DomainEffect], roads: Mapping[UUID, Route]
+) -> tuple[list[DomainEffect], list[tuple[MoveEntityEffect, Route]]]:
+    """Moves along roads longer than one phase become journeys, not effects.
+
+    Their stamina effect stays: the traveller pays it on setting off.
+    """
+    kept: list[DomainEffect] = []
+    journeys: list[tuple[MoveEntityEffect, Route]] = []
+    for effect in effects:
+        route = (
+            roads.get(effect.route_id)
+            if isinstance(effect, MoveEntityEffect) and effect.route_id
+            else None
+        )
+        if isinstance(effect, MoveEntityEffect) and route is not None and route.duration_phases > 1:
+            journeys.append((effect, route))
+        else:
+            kept.append(effect)
+    return kept, journeys
+
+
+async def on_the_road(uow: Any, world_id: UUID) -> set[UUID]:
+    """Characters on an active journey: at no place until they arrive."""
+    return {
+        a.character_id
+        for a in await uow.activities.list_active_for_world(world_id)
+        if a.kind == ActivityKind.TRAVEL
+    }
 
 
 async def _event_place(uow: Any, event_id: UUID) -> Location | None:
@@ -1814,10 +1879,31 @@ class Stage1Orchestrator:
             character = await uow.characters.get(activity.character_id)
         effects: list[DomainEffect] = []
         observations: list[ObservationSpec] = []
+        participants: list[UUID] = []
+        summary: dict[str, str] = {}
         try:
             if activity.kind == ActivityKind.TRAVEL:
                 destination = UUID(str(activity.payload["to_location_id"]))
                 cost = int(activity.payload.get("stamina_cost", 0))
+                # The arrival is the traveller's own event: the chronicle and
+                # their memory say where they got to.
+                participants = [character.id]
+                summary = {"location_id": str(destination), "arrival": "1"}
+                async with self._factory() as uow:
+                    there = await uow.locations.get(destination)
+                observations.append(
+                    ObservationSpec(
+                        observer_id=character.id,
+                        facts=[
+                            ObservationFact(
+                                key=f"arrival:{there.name}",
+                                value=(
+                                    f"arrived after {activity.duration_phases} phases on the road"
+                                ),
+                            )
+                        ],
+                    )
+                )
                 effects.append(
                     MoveEntityEffect(
                         affected_ids=[character.id],
@@ -1920,6 +2006,8 @@ class Stage1Orchestrator:
                     event_type=EventType.ACTION_RESOLVED,
                     effects=effects,
                     observations=observations,
+                    participant_ids=participants,
+                    summary=summary,
                 )
             )
         except IntegrityError:
@@ -2319,11 +2407,15 @@ class Stage1Orchestrator:
         except IntegrityError:
             pass
         sealed_versions = {f"character:{c.id}": c.version for c in characters}
+        async with self._factory() as uow:
+            away = await on_the_road(uow, world_id)
         await self._set_state(run_id, PhaseRunState.SNAPSHOT_SEALED)
+        # Travellers are on the road, at no place: they neither decide, nor
+        # react, nor see what happens where they set out from.
         return SealedPhase(
             snapshot_id=snapshot_id,
             versions=sealed_versions,
-            locations={c.id: c.location_id for c in characters},
+            locations={c.id: c.location_id for c in characters if c.id not in away},
         )
 
     async def _director_phase(
@@ -2346,6 +2438,11 @@ class Stage1Orchestrator:
             characters = await uow.characters.list_for_world(world_id)
             locations = await uow.locations.list_for_world(world_id)
             hooks = await uow.narrative.list_hooks_for_world(world_id)
+            journeys = {
+                a.character_id: UUID(str(a.payload["to_location_id"]))
+                for a in await uow.activities.list_active_for_world(world_id)
+                if a.kind == ActivityKind.TRAVEL and a.payload.get("to_location_id")
+            }
             arcs = await uow.narrative.list_arcs_for_world(world_id)
             recent, quiet_streak, talk_streak, said = await _recent_happenings(uow, world_id)
             earlier = await _story_so_far(uow, world_id)
@@ -2399,6 +2496,7 @@ class Stage1Orchestrator:
                 intentions,
                 talk_streak=talk_streak,
                 earlier=earlier,
+                journeys=journeys,
             )
             + f"\nNew characters you may still add to this story: {spawns_left}."
             + f"\nNew places you may still add to this story: {places_left}."
@@ -2872,10 +2970,12 @@ class Stage1Orchestrator:
             items_here = await uow.inventory.list_at_location(world_id, character.location_id)
             carried = await uow.inventory.list_for_owner(world_id, character.id)
             everyone = await uow.characters.list_for_world(world_id)
+            away = await on_the_road(uow, world_id)
+            present = [c for c in everyone if c.id not in away]
             place_names = {loc.id: loc.name for loc in await uow.locations.list_for_world(world_id)}
             pronouns = await _pronouns_of(
                 uow,
-                [c for c in everyone if c.location_id == place.id and c.id != character.id],
+                [c for c in present if c.location_id == place.id and c.id != character.id],
             )
         names = {c.id: c.name for c in everyone}
         candidates = [
@@ -2892,7 +2992,7 @@ class Stage1Orchestrator:
                 data_class="surroundings",
                 visibility=Visibility.PUBLIC,
                 text=surroundings_text(
-                    place, place_names, everyone, character.id, items_here, pronouns
+                    place, place_names, present, character.id, items_here, pronouns
                 ),
                 score=2.0,
             ),
@@ -3246,6 +3346,15 @@ class Stage1Orchestrator:
             for key in scene.mutable_aggregate_ids
             if key in live_versions
         }
+        # A road longer than one phase is a journey: the traveller pays its
+        # stamina now and sets off, arriving when its phases have passed.
+        async with self._factory() as uow:
+            roads = {
+                route.id: route
+                for place in await uow.locations.list_for_world(world_id)
+                for route in place.routes
+            }
+        effects, journeys = split_journeys(list(resolution.effects), roads)
         result = await self._canonical.commit(
             build_scene_commit(
                 command_id=uuid4(),
@@ -3254,7 +3363,7 @@ class Stage1Orchestrator:
                 attempts=attempts,
                 reactions=reactions,
                 resolution=resolution,
-                effects=list(resolution.effects),
+                effects=effects,
                 expected_versions=touched,
                 absolute_index=index,
                 observations=observations,
@@ -3271,6 +3380,8 @@ class Stage1Orchestrator:
         ]
         if directed_outcomes:
             await record_attempts(self._factory, directed_outcomes)
+        if journeys:
+            await self._set_off(world_id, index, scene.id, journeys)
         if resolution.outcome == ResolutionOutcome.SUCCESS:
             await self._settle_scene_verbs(world_id, run_id, index, scene, members, result.event_id)
         return SceneOutcome(
@@ -3279,6 +3390,56 @@ class Stage1Orchestrator:
             resolution_outcome=resolution.outcome.value,
             narration="pending",
         )
+
+    async def _set_off(
+        self,
+        world_id: UUID,
+        index: int,
+        scene_id: UUID,
+        journeys: Sequence[tuple[MoveEntityEffect, Route]],
+    ) -> None:
+        """Start each journey a committed scene set out on (once per scene and
+        traveller); whatever a traveller was doing here ends as they leave."""
+        async with self._factory() as uow:
+            active = {
+                a.character_id: a for a in await uow.activities.list_active_for_world(world_id)
+            }
+            for move, route in journeys:
+                for character_id in move.affected_ids:
+                    key = f"journey:{scene_id.hex}:{character_id.hex}"
+                    if await uow.activities.get_by_direct_step_key(world_id, key) is not None:
+                        continue
+                    doing = active.get(character_id)
+                    if doing is not None:
+                        await uow.activities.save(
+                            doing.model_copy(
+                                update={
+                                    "status": ActivityStatus.CANCELLED,
+                                    "progress_phases": effective_progress(doing, index),
+                                }
+                            ),
+                            doing.version,
+                        )
+                    await uow.activities.add(
+                        Activity(
+                            id=new_activity_id(),
+                            world_id=world_id,
+                            character_id=character_id,
+                            kind=ActivityKind.TRAVEL,
+                            status=ActivityStatus.ACTIVE,
+                            start_absolute=index,
+                            duration_phases=route.duration_phases,
+                            payload={
+                                "from_location_id": str(move.from_location_id),
+                                "to_location_id": str(move.to_location_id),
+                                "route_id": str(route.id),
+                                # Paid on setting off, with the scene.
+                                "stamina_cost": 0,
+                            },
+                            direct_step_key=key,
+                        )
+                    )
+            await uow.commit()
 
     async def _narrate_outcome(
         self,
@@ -3853,6 +4014,12 @@ class Stage1Orchestrator:
             config = await uow.worlds.get_config(world_id)
             scene_place = await _event_place(uow, event_id)
             place_name = scene_place.name if scene_place is not None else None
+            # Journeys this scene set out on (their travellers have not arrived).
+            setting_off = [
+                a
+                for a in await uow.activities.list_active_for_world(world_id)
+                if (a.direct_step_key or "").startswith(f"journey:{scene.id.hex}:")
+            ]
             place_names = {loc.id: loc.name for loc in await uow.locations.list_for_world(world_id)}
             previously = await _previously(uow, world_id, event_id)
         if existing:
@@ -3886,6 +4053,17 @@ class Stage1Orchestrator:
             setting.append((RECAP_FACT_KEY, previously))
         for key, value in reversed(setting):
             facts.insert(0, {"key": key, "value": value})
+        for trip in setting_off:
+            facts.append(
+                {
+                    "key": f"journey:{names.get(trip.character_id, 'someone')}",
+                    "value": journey_fact(
+                        names.get(trip.character_id, "Someone"),
+                        place_names.get(UUID(str(trip.payload["to_location_id"])), "another place"),
+                        trip.duration_phases,
+                    ),
+                }
+            )
         # Quoted communicate attempts (a player's "Say" line) are the actor's
         # own speech: dialogue-eligible like quoted reactions.
         facts.extend(attempt_speech_facts(scene_intents, names, participants))

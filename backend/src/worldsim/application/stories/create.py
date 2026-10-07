@@ -30,7 +30,7 @@ from worldsim.domain.characters import Character, CharacterCard
 from worldsim.domain.enums import EventType, LifeStatus, PhaseName, PhaseRunState, UserRole
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.events import WorldEvent
-from worldsim.domain.geography import MAP_SPAN, WorldMap
+from worldsim.domain.geography import MAP_SPAN, WorldMap, road_stamina
 from worldsim.domain.ids import (
     new_asset_id,
     new_card_id,
@@ -367,13 +367,18 @@ async def _instantiate(
         timed = world_map.phases_between(src, dst) if world_map else None
         return timed or 1
 
+    def stamina(src: str, dst: str) -> int:
+        """A road drawn on the map tires by its length and how it is travelled."""
+        road = world_map.road_between(src, dst) if world_map else None
+        return road_stamina(road.phases, road.by) if road is not None else 0
+
     embedded_routes: dict[str, list[Route]] = {
         key: [
             Route(
                 id=new_route_id(),
                 destination_location_id=location_ids[dst],
                 duration_phases=phases(src, dst),
-                stamina_cost=0,
+                stamina_cost=stamina(src, dst),
             )
             for (src, dst) in travel_pairs
             if src == key
@@ -400,7 +405,7 @@ async def _instantiate(
                 from_location_id=location_ids[src],
                 to_location_id=location_ids[dst],
                 duration_phases=phases(src, dst),
-                stamina_cost=0,
+                stamina_cost=stamina(src, dst),
             )
         )
     copied: dict[str, UUID] = {}
