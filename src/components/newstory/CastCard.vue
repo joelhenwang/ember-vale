@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CharacterDef } from '../../game/model'
+import FramedImage from '../ui/FramedImage.vue'
 import StoryImage from '../StoryImage.vue'
 import IconSparkle from '../icons/IconSparkle.vue'
 import IconCheck from '../icons/IconCheck.vue'
@@ -20,7 +21,14 @@ defineEmits<{ toggle: [] }>()
     @keydown.enter.prevent="$emit('toggle')"
     @keydown.space.prevent="$emit('toggle')">
     <div class="cast__media">
+      <span v-if="character.portrait" class="cast__img">
+        <FramedImage
+          :src="character.portrait.src"
+          :frame="character.portrait.portrait"
+          :alt="`${character.name} portrait`" />
+      </span>
       <StoryImage
+        v-else
         :image-slot="character.imageSlot"
         :alt="`${character.name} portrait`"
         class="cast__img" />

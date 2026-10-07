@@ -1001,6 +1001,10 @@ class CastEntry(BaseModel):
     life_status: str
     location_id: UUID
     portrait_asset_id: UUID | None = None
+    #: On an imported portrait: the parts its cards and its round tokens
+    #: show, [x, y, w, h] fractions of the picture; absent on painted ones.
+    portrait_frame: list[float] | None = None
+    face_frame: list[float] | None = None
 
 
 class RumourView(BaseModel):
@@ -1841,6 +1845,17 @@ class MapRoadsView(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     roads: list[MapRoadView]
+    model: str
+    seconds: float
+    cost_usd: float
+
+
+class FaceView(BaseModel):
+    """Where the map reader sees a face: [x, y, w, h] fractions, or none."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    face: list[float] | None = None
     model: str
     seconds: float
     cost_usd: float

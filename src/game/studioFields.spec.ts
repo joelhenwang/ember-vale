@@ -30,7 +30,9 @@ const charDraft: CharacterDraft = {
   appearanceSaved: false,
   presetName: '',
   personalityExtra: '',
-  backgroundExtra: ''
+  backgroundExtra: '',
+  portraitAssetId: null,
+  portraitFrames: null
 }
 
 function worldDraft(): WorldDraft {
@@ -629,5 +631,38 @@ describe('studio field bridge', () => {
     expect(removeWorldPlace(draft, 'market')).toBe(true)
     expect(draft.places[0]!.connectedTo).toBe('')
     expect(draft.places[0]!.connectedKey).toBe('')
+  })
+})
+
+describe('an imported portrait', () => {
+  const frames = {
+    portrait: { x: 0.25, y: 0, w: 0.5, h: 1 },
+    face: { x: 0.375, y: 0.1, w: 0.25, h: 0.25 }
+  }
+
+  it('saves the picture with its frames, and nothing when unchanged', () => {
+    const withPicture = { ...charDraft, portraitAssetId: 'a1', portraitFrames: frames }
+    const packed = packCharacter(withPicture)
+    expect(packed.portrait_asset_id).toBe('a1')
+    expect(packed.portrait_frames).toEqual(frames)
+    const again = packCharacter(withPicture, { ...packed })
+    expect('portrait_asset_id' in again).toBe(false)
+    // No picture on a new character: nothing is sent.
+    expect('portrait_asset_id' in packCharacter(charDraft)).toBe(false)
+    // Taking the picture away sends both as null.
+    const removed = packCharacter(charDraft, { ...packed })
+    expect(removed.portrait_asset_id).toBeNull()
+    expect(removed.portrait_frames).toBeNull()
+  })
+
+  it('restores the picture only with its frames', () => {
+    expect(unpackCharacter({ portrait_asset_id: 'a1', portrait_frames: frames })).toMatchObject({
+      portraitAssetId: 'a1',
+      portraitFrames: frames
+    })
+    expect(unpackCharacter({ portrait_asset_id: 'a1' })).toMatchObject({
+      portraitAssetId: null,
+      portraitFrames: null
+    })
   })
 })

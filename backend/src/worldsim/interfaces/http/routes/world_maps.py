@@ -59,8 +59,19 @@ def _storage(request: Request) -> LocalStorage:
     return LocalStorage(request.app.state.app_state.seed_dir.parent.parent / "assets")
 
 
-async def _keep(request: Request, data: bytes) -> api.MapImageView:
-    """Store a map picture as an unscoped MAP asset."""
+async def keep_picture(
+    request: Request,
+    data: bytes,
+    kind: AssetKind = AssetKind.MAP,
+    folder: str = "maps",
+    style: str = STYLE,
+    max_side: int | None = None,
+) -> api.MapImageView:
+    """Store a picture as an unscoped asset (a world map, an imported portrait).
+
+    With max_side, a larger picture is kept as a WebP no larger than that:
+    it is shown, never printed.
+    """
     try:
         with Image.open(io.BytesIO(data)) as picture:
             fmt, (width, height) = picture.format or "", picture.size
@@ -68,43 +79,63 @@ async def _keep(request: Request, data: bytes) -> api.MapImageView:
     except (OSError, ValueError, Image.DecompressionBombError) as exc:
         raise DomainError(ErrorCode.VALIDATION_FAILED, "that is not a picture") from exc
     if fmt not in _MIMES:
-        raise DomainError(ErrorCode.VALIDATION_FAILED, "maps must be PNG, JPEG or WebP")
+        raise DomainError(ErrorCode.VALIDATION_FAILED, "pictures must be PNG, JPEG or WebP")
     if width * height > MAX_PIXELS:
-        raise DomainError(ErrorCode.VALIDATION_FAILED, "that map is too large")
+        raise DomainError(ErrorCode.VALIDATION_FAILED, "that picture is too large")
     mime, ext = _MIMES[fmt]
+    if max_side is not None and max(width, height) > max_side:
+        with Image.open(io.BytesIO(data)) as source:
+            smaller = source.convert("RGB")
+        smaller.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+        out = io.BytesIO()
+        smaller.save(out, format="WEBP", quality=90, method=5)
+        data, (width, height), (mime, ext) = out.getvalue(), smaller.size, _MIMES["WEBP"]
     asset_id = new_asset_id()
-    ref = f"generated/maps/{asset_id}.{ext}"
+    ref = f"generated/{folder}/{asset_id}.{ext}"
     await _storage(request).write(ref, data, mime)
     state = request.app.state.app_state
     async with state.uow_factory()() as uow:
         await uow.assets.add_asset(
             AssetRecord(
                 id=asset_id,
-                kind=AssetKind.MAP,
+                kind=kind,
                 content_ref=ref,
                 mime=mime,
                 width=width,
                 height=height,
-                style_pack_version=STYLE,
+                style_pack_version=style,
             )
         )
         await uow.commit()
     return api.MapImageView(asset_id=asset_id, width=width, height=height)
 
 
-async def _map_bytes(request: Request, asset_id: UUID) -> tuple[AssetRecord, bytes]:
+def picture_bytes(data_url: str) -> bytes:
+    """The bytes of a base64 data URL the page sent."""
+    header, _, encoded = data_url.partition(",")
+    if not header.startswith("data:image/") or ";base64" not in header:
+        raise DomainError(ErrorCode.VALIDATION_FAILED, "send the picture as a base64 data URL")
+    try:
+        return base64.b64decode(encoded, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise DomainError(ErrorCode.VALIDATION_FAILED, "the data URL is not base64") from exc
+
+
+async def library_picture(
+    request: Request, asset_id: UUID, kind: AssetKind = AssetKind.MAP
+) -> tuple[AssetRecord, bytes]:
     state = request.app.state.app_state
     async with state.uow_factory()() as uow:
         asset = await uow.assets.get_asset(asset_id)
-    if asset.kind != AssetKind.MAP or asset.world_id is not None:
-        raise DomainError(ErrorCode.NOT_FOUND, "no such map picture")
+    if asset.kind != kind or asset.world_id is not None:
+        raise DomainError(ErrorCode.NOT_FOUND, f"no such {kind.value} picture")
     try:
         return asset, await _storage(request).read(asset.content_ref)
     except (FileNotFoundError, OSError) as exc:
         raise DomainError(ErrorCode.NOT_FOUND, "stored bytes are missing") from exc
 
 
-def _reader(request: Request) -> MapReader:
+def map_reader(request: Request) -> MapReader:
     reader = request.app.state.app_state.map_reader()
     if reader is None:
         raise DomainError(
@@ -116,14 +147,7 @@ def _reader(request: Request) -> MapReader:
 
 @router.post("/library/maps", response_model=api.MapImageView)
 async def upload_map(body: api.MapUploadRequest, request: Request) -> api.MapImageView:
-    header, _, encoded = body.data_url.partition(",")
-    if not header.startswith("data:image/") or ";base64" not in header:
-        raise DomainError(ErrorCode.VALIDATION_FAILED, "send the map as a base64 data URL")
-    try:
-        data = base64.b64decode(encoded, validate=True)
-    except (binascii.Error, ValueError) as exc:
-        raise DomainError(ErrorCode.VALIDATION_FAILED, "the data URL is not base64") from exc
-    return await _keep(request, data)
+    return await keep_picture(request, picture_bytes(body.data_url))
 
 
 @router.post("/library/maps/paint", response_model=api.MapImageView)
@@ -145,14 +169,14 @@ async def paint_map(body: api.MapPaintRequest, request: Request) -> api.MapImage
         )
     except ImageGenerationError as exc:
         raise DomainError(ErrorCode.PRECONDITION_FAILED, f"image service: {exc}") from exc
-    return await _keep(request, made.data)
+    return await keep_picture(request, made.data)
 
 
 @router.post("/library/maps/{asset_id}/places", response_model=api.MapPlacesView)
 async def read_places(asset_id: UUID, request: Request) -> api.MapPlacesView:
-    asset, data = await _map_bytes(request, asset_id)
+    asset, data = await library_picture(request, asset_id)
     try:
-        reading = await _reader(request).places(data, asset.mime)
+        reading = await map_reader(request).places(data, asset.mime)
     except MapReadingError as exc:
         raise DomainError(ErrorCode.PRECONDITION_FAILED, str(exc)) from exc
     return api.MapPlacesView(
@@ -166,9 +190,9 @@ async def read_places(asset_id: UUID, request: Request) -> api.MapPlacesView:
 @router.post("/library/maps/{asset_id}/spots", response_model=api.MapPlacesView)
 async def read_spots(asset_id: UUID, request: Request) -> api.MapPlacesView:
     """The spots inside one place, read off a closer picture of it."""
-    asset, data = await _map_bytes(request, asset_id)
+    asset, data = await library_picture(request, asset_id)
     try:
-        reading = await _reader(request).spots(data, asset.mime)
+        reading = await map_reader(request).spots(data, asset.mime)
     except MapReadingError as exc:
         raise DomainError(ErrorCode.PRECONDITION_FAILED, str(exc)) from exc
     return api.MapPlacesView(
@@ -183,10 +207,10 @@ async def read_spots(asset_id: UUID, request: Request) -> api.MapPlacesView:
 async def read_roads(
     asset_id: UUID, body: api.MapRoadsRequest, request: Request
 ) -> api.MapRoadsView:
-    asset, data = await _map_bytes(request, asset_id)
+    asset, data = await library_picture(request, asset_id)
     places = [ReadPlace(name=p.name, kind=p.kind, point=p.point) for p in body.places]
     try:
-        reading = await _reader(request).roads(data, asset.mime, places)
+        reading = await map_reader(request).roads(data, asset.mime, places)
     except MapReadingError as exc:
         raise DomainError(ErrorCode.PRECONDITION_FAILED, str(exc)) from exc
     return api.MapRoadsView(
@@ -243,7 +267,7 @@ async def save_world_map(
     preset_id: UUID, body: api.WorldMapRequest, request: Request
 ) -> api.PresetDetail:
     """Pin the world's places on the map and time its roads: a new revision."""
-    asset, _ = await _map_bytes(request, body.asset_id)
+    asset, _ = await library_picture(request, body.asset_id)
     try:
         scale = TravelScale(
             shortest_phases=body.shortest_phases, longest_phases=body.longest_phases
@@ -273,7 +297,7 @@ async def save_place_map(
     """Give one place its own map and spots (or take it away): a new revision."""
     place_map: PlaceMap | None = None
     if body.asset_id is not None:
-        asset, _ = await _map_bytes(request, body.asset_id)
+        asset, _ = await library_picture(request, body.asset_id)
         try:
             place_map = PlaceMap(
                 asset_id=str(asset.id),

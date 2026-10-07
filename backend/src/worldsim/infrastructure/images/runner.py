@@ -12,6 +12,7 @@ import base64
 import logging
 from collections.abc import Callable
 from pathlib import Path
+from typing import cast
 from uuid import UUID
 
 from worldsim.application.images import (
@@ -32,11 +33,29 @@ from worldsim.application.ports.storage import StoragePort
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.assets import AssetKind, ImageJob, JobStatus
 from worldsim.domain.errors import DomainError
+from worldsim.domain.framing import Frame
 from worldsim.domain.settings import ImagePrefs
 from worldsim.infrastructure.assets.fixture import FixtureImageGateway
-from worldsim.infrastructure.images.shrink import shrink
+from worldsim.infrastructure.images.shrink import crop, shrink
 
 _log = logging.getLogger(__name__)
+
+
+def imported_portrait(raw: object, character_id: UUID, asset_id: UUID) -> Frame | None:
+    """The portrait frame on an imported picture, while it is the portrait shown."""
+    if not isinstance(raw, dict):
+        return None
+    entry = cast("dict[str, object]", raw).get(str(character_id))
+    if not isinstance(entry, dict):
+        return None
+    framed = cast("dict[str, object]", entry)
+    if framed.get("asset_id") != str(asset_id):
+        return None
+    try:
+        x, y, w, h = cast("list[float]", framed["portrait"])
+        return Frame(x=x, y=y, w=w, h=h)
+    except (KeyError, TypeError, ValueError):
+        return None
 
 
 class ImageJobRunner:
@@ -173,6 +192,13 @@ class ImageJobRunner:
                 if portrait is None:
                     continue
                 image = await self._storage.read(portrait.content_ref)
+                framed = imported_portrait(
+                    (await uow.worlds.get_config(picture.world_id)).get("portrait_frames"),
+                    character_id,
+                    portrait.id,
+                )
+                if framed is not None:
+                    image = crop(image, framed)  # the portrait, not the whole picture
                 cards.append(
                     await character_card(
                         uow, picture.world_id, character_id, image, portrait.subject_visual_version

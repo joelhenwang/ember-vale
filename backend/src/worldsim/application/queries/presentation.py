@@ -14,7 +14,7 @@ import math
 from pathlib import Path
 from uuid import UUID
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
 from worldsim.application.capabilities import capabilities_for, is_omniscient
 from worldsim.application.geography import PLACE_MAPS, story_place_maps
@@ -63,6 +63,16 @@ async def presentation(
     }
     portraits = await _newest_by_subject(uow, world_id, "portrait")
     backgrounds = await _newest_by_subject(uow, world_id, "background")
+    config = await uow.worlds.get_config(world_id)
+    framed = _frames(config.get("portrait_frames"))
+
+    def frame(character_id: UUID, part: str) -> list[float] | None:
+        entry = framed.get(str(character_id))
+        # Only while the imported picture is still the portrait shown.
+        if entry is None or entry.asset_id != portraits.get(character_id):
+            return None
+        return entry.portrait if part == "portrait" else entry.face
+
     cast = [
         api.CastEntry(
             character_id=character.id,
@@ -70,11 +80,12 @@ async def presentation(
             life_status=character.life_status.value,
             location_id=character.location_id,
             portrait_asset_id=portraits.get(character.id),
+            portrait_frame=frame(character.id, "portrait"),
+            face_frame=frame(character.id, "face"),
         )
         for character in characters
         if omniscient or character.location_id in visible_locations or character.id == viewer
     ]
-    config = await uow.worlds.get_config(world_id)
     manifest = _schematic_manifest(world_id, locations)
     drawn = _drawn_manifest(world_id, config.get("map_layout"))
     if drawn is not None:
@@ -391,6 +402,23 @@ def _drawn_manifest(world_id: UUID, raw: object) -> api.MapManifestView | None:
         )
     except ValidationError:
         return None
+
+
+class _Framed(BaseModel):
+    asset_id: UUID
+    portrait: list[float]
+    face: list[float]
+
+
+_FRAMED = TypeAdapter(dict[str, _Framed])
+
+
+def _frames(raw: object) -> dict[str, _Framed]:
+    """Imported portraits' frames by character id (unreadable: none)."""
+    try:
+        return _FRAMED.validate_python(raw or {})
+    except ValidationError:
+        return {}
 
 
 def _place_maps(raw: object) -> list[api.PlaceMapView]:

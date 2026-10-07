@@ -16,7 +16,8 @@ const wren: PresetCharacter = {
   tags: ['Human', 'Explorer', 'Player-ready'],
   startKey: 'hearth',
   playerReady: true,
-  imageSlot: 'character.wren'
+  imageSlot: 'character.wren',
+  portrait: null
 }
 
 const nessa: PresetCharacter = {
@@ -28,7 +29,8 @@ const nessa: PresetCharacter = {
   tags: ['Human', 'Local', 'NPC'],
   startKey: null,
   playerReady: false,
-  imageSlot: 'story.lantern'
+  imageSlot: 'story.lantern',
+  portrait: null
 }
 
 const vale: PresetWorld = {
@@ -53,7 +55,8 @@ describe('server preset library mapping', () => {
       categories: ['companions'],
       usedInStories: null,
       revision: 2,
-      imageSlot: 'character.wren'
+      imageSlot: 'character.wren',
+      portrait: null
     })
     expect(record.tags).toContainEqual({ label: 'Player-ready', tone: 'green' })
     expect(record.tags).toContainEqual({ label: 'Explorer' })

@@ -27,7 +27,7 @@
  * the merge.
  */
 
-import type { CharacterDraft, PlaceDraft, WorldDraft } from './studio'
+import type { CharacterDraft, PlaceDraft, PortraitFrames, WorldDraft } from './studio'
 
 const PERSONALITY_PREFIXES = [
   'Wants',
@@ -101,6 +101,8 @@ export interface CharacterServerFields {
   personality?: string
   background?: string
   pronouns?: string
+  portrait_asset_id?: string | null
+  portrait_frames?: PortraitFrames | null
 }
 
 /** Pack the character form, emitting only keys that differ from `prev`. */
@@ -127,6 +129,16 @@ export function packCharacter(
   if (background !== prevString(prev, 'background')) out.background = background
   const pronouns = draft.pronouns.trim()
   if (pronouns !== prevString(prev, 'pronouns')) out.pronouns = pronouns
+  // The imported picture travels with its frames: both, or neither.
+  const picture = draft.portraitFrames ? draft.portraitAssetId : null
+  const frames = picture ? draft.portraitFrames : null
+  if (
+    picture !== (prev['portrait_asset_id'] ?? null) ||
+    JSON.stringify(frames) !== JSON.stringify(prev['portrait_frames'] ?? null)
+  ) {
+    out.portrait_asset_id = picture
+    out.portrait_frames = frames
+  }
   return out
 }
 
@@ -158,6 +170,12 @@ export function unpackCharacter(fields: Record<string, unknown>): Partial<Charac
     out.backgroundExtra = s.rest
   }
   if (typeof fields['pronouns'] === 'string') out.pronouns = fields['pronouns']
+  if ('portrait_asset_id' in fields || 'portrait_frames' in fields) {
+    const picture = fields['portrait_asset_id']
+    const frames = fields['portrait_frames'] as PortraitFrames | null | undefined
+    out.portraitAssetId = typeof picture === 'string' && frames ? picture : null
+    out.portraitFrames = out.portraitAssetId ? frames! : null
+  }
   return out
 }
 

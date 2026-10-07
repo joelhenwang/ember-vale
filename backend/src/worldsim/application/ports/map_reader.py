@@ -40,6 +40,9 @@ class MapReadingError(Exception):
 class MapReader(Protocol):
     async def places(self, image: bytes, mime: str) -> Reading[ReadPlace]: ...
 
+    #: The box around a character's face: (left, top, right, bottom) 0..1000.
+    async def face(self, image: bytes, mime: str) -> Reading[tuple[int, int, int, int]]: ...
+
     #: Spots inside one place, from a closer picture of it.
     async def spots(self, image: bytes, mime: str) -> Reading[ReadPlace]: ...
 

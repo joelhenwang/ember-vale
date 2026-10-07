@@ -124,6 +124,7 @@ WANTED = (
     "WorldMapPlace",
     "WorldMapRequest",
     "PlaceMapRequest",
+    "FaceView",
     "PresentationResponse",
     "AssetView",
     "EnsureStarterRequest",

@@ -80,6 +80,13 @@ For each spot give:
 
 Answer with JSON only: {"places": [{"name": "...", "kind": "...", "point": [x, y]}]}"""
 
+FACE_PROMPT = """This picture shows a character. Give the box around the main character's face,
+forehead to chin and ear to ear, as integers from 0 to 1000 across the image's width (x) and
+height (y); [0, 0] is the top-left corner.
+
+Answer with JSON only: {"face": [left, top, right, bottom]}, or {"face": null} when no face
+is visible."""
+
 #: Larger pictures cost more and read no better.
 MAX_SIDE = 2048
 
@@ -141,6 +148,22 @@ def parse_places(text: str) -> list[ReadPlace]:
             continue
         places.append(ReadPlace(name=name, kind=_text(raw, "kind").lower()[:32], point=point))
     return places
+
+
+def parse_face(text: str) -> tuple[int, int, int, int] | None:
+    raw = _json(text).get("face")
+    if not isinstance(raw, list):
+        return None
+    values = cast("list[object]", raw)
+    if len(values) != 4:
+        return None
+    try:
+        left, top, right, bottom = (_clamp(v) for v in values)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if right <= left or bottom <= top:
+        return None
+    return left, top, right, bottom
 
 
 def parse_roads(text: str, count: int) -> list[ReadRoad]:
@@ -243,6 +266,12 @@ class OpenRouterMapReader:
         del mime
         text, seconds, cost = await self._ask(self._places_model, image, PLACES_PROMPT)
         return Reading(tuple(parse_places(text)), self._places_model, seconds, cost)
+
+    async def face(self, image: bytes, mime: str) -> Reading[tuple[int, int, int, int]]:
+        del mime
+        text, seconds, cost = await self._ask(self._places_model, image, FACE_PROMPT)
+        box = parse_face(text)
+        return Reading((box,) if box else (), self._places_model, seconds, cost)
 
     async def spots(self, image: bytes, mime: str) -> Reading[ReadPlace]:
         del mime

@@ -37,6 +37,7 @@ import {
 } from '../game/studio'
 import { packCharacter, unpackCharacter } from '../game/studioFields'
 import CharacterPreviewPanel from '../components/studio/CharacterPreviewPanel.vue'
+import PortraitCard from '../components/studio/PortraitCard.vue'
 import InlineStepper from '../components/studio/InlineStepper.vue'
 import ChipEditor from '../components/studio/ChipEditor.vue'
 import CollapseBox from '../components/studio/CollapseBox.vue'
@@ -467,6 +468,17 @@ function suggest(): void {
           ]"
           :current="step"
           @go="step = $event" />
+
+        <PortraitCard
+          :name="isNew ? draft.presetName || 'The character' : displayName"
+          :asset-id="draft.portraitAssetId"
+          :frames="draft.portraitFrames"
+          @change="
+            (assetId, frames) => {
+              draft.portraitAssetId = assetId
+              draft.portraitFrames = frames
+            }
+          " />
 
         <section class="card ev-card">
           <header class="card__head">

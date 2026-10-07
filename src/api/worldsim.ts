@@ -66,7 +66,8 @@ import type {
   MapPlacesView,
   MapRoadsView,
   WorldMapRequest,
-  PlaceMapRequest
+  PlaceMapRequest,
+  FaceView
 } from '../../content/clients/worldsim'
 import { apiFetch, type Role } from './http'
 
@@ -760,6 +761,24 @@ export function uploadMap(dataUrl: string, opts: CallOptions = {}): Promise<MapI
     ...opts,
     method: 'POST',
     body: { data_url: dataUrl }
+  })
+}
+
+export function uploadPortrait(dataUrl: string, opts: CallOptions = {}): Promise<MapImageView> {
+  return apiFetch<MapImageView>('/library/portraits', {
+    timeoutMs: 120000,
+    ...opts,
+    method: 'POST',
+    body: { data_url: dataUrl }
+  })
+}
+
+/** Where the map reader sees the face on an imported portrait (costs a fraction of a cent). */
+export function findFace(assetId: string, opts: CallOptions = {}): Promise<FaceView> {
+  return apiFetch<FaceView>(`/library/portraits/${assetId}/face`, {
+    timeoutMs: 120000,
+    ...opts,
+    method: 'POST'
   })
 }
 

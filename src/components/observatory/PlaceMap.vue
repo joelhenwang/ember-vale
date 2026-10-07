@@ -13,6 +13,7 @@ import type {
 } from '../../../content/clients/worldsim'
 import { layoutSpotTokens } from '../../game/placeMap'
 import { assetUrl } from '../../api/worldsim'
+import FramedImage from '../ui/FramedImage.vue'
 import IconArrowLeft from '../icons/IconArrowLeft.vue'
 
 const props = defineProps<{
@@ -83,11 +84,10 @@ function initials(name: string): string {
         :title="`${token.name} · ${token.spot}`"
         :aria-label="`${token.name}, at ${token.spot}`"
         @click="emit('select', token.id)">
-        <img
+        <FramedImage
           v-if="token.portraitAssetId"
           :src="assetUrl(worldId, token.portraitAssetId)"
-          alt=""
-          draggable="false" />
+          :frame="token.faceFrame" />
         <span v-else>{{ initials(token.name) }}</span>
         <em class="pm__name">{{ token.name }}</em>
       </button>
@@ -189,7 +189,8 @@ function initials(name: string): string {
     top 0.8s ease,
     transform 0.15s ease;
 }
-.pm__token img {
+.pm__token img,
+.pm__token .framed {
   width: 100%;
   height: 100%;
   border-radius: 50%;

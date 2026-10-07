@@ -158,6 +158,7 @@ function toCharacterDef(p: PresetCharacter): CharacterDef {
     bio: p.blurb,
     tags: [{ label: 'Preset' }, { label: `rev ${p.revision}` }],
     imageSlot: p.imageSlot,
+    portrait: p.portrait,
     categories: [p.playerReady ? 'companions' : 'locals'],
     playerReady: p.playerReady,
     usedInStories: null,

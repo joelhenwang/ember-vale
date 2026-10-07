@@ -15,6 +15,8 @@ import IconSatchel from '../components/icons/IconSatchel.vue'
 import IconImage from '../components/icons/IconImage.vue'
 import PaintSceneDialog from '../components/story/PaintSceneDialog.vue'
 import { assetUrl } from '../api/worldsim'
+import FramedImage from '../components/ui/FramedImage.vue'
+import { frameFromList } from '../game/framing'
 import { useAdventure } from '../composables/useAdventure'
 import {
   barFraction,
@@ -93,7 +95,13 @@ const portraits = computed(
     new Map(
       (adv.presentation.value?.cast ?? [])
         .filter((c) => c.portrait_asset_id)
-        .map((c) => [c.character_id, assetUrl(storyId.value, c.portrait_asset_id as string)])
+        .map((c) => [
+          c.character_id,
+          {
+            src: assetUrl(storyId.value, c.portrait_asset_id as string),
+            face: frameFromList(c.face_frame)
+          }
+        ])
     )
 )
 const placeNames = computed(() => new Map(adv.places.value.map((p) => [p.id, p.name])))
@@ -369,16 +377,19 @@ onMounted(() => {
                   class="who"
                   :title="`Talk to ${c.name}`"
                   @click="talkTo(c.character_id)">
-                  <img
+                  <FramedImage
                     v-if="portraits.get(c.character_id)"
-                    :src="portraits.get(c.character_id)"
-                    alt="" />
+                    :src="portraits.get(c.character_id)!.src"
+                    :frame="portraits.get(c.character_id)!.face" />
                   <span v-else>{{ initials(c.name) }}</span>
                   <small>{{ c.name }}</small>
                 </button>
               </li>
               <li class="who who--me" :title="`${myName} (you)`">
-                <img v-if="portraits.get(adv.me.value)" :src="portraits.get(adv.me.value)" alt="" />
+                <FramedImage
+                  v-if="portraits.get(adv.me.value)"
+                  :src="portraits.get(adv.me.value)!.src"
+                  :frame="portraits.get(adv.me.value)!.face" />
                 <span v-else>{{ initials(myName) }}</span>
                 <small>You</small>
               </li>
@@ -404,10 +415,10 @@ onMounted(() => {
               </template>
               <template v-else-if="line.kind === 'dialogue'">
                 <span class="log__face" :title="nameOf(line.speakerId)">
-                  <img
+                  <FramedImage
                     v-if="line.speakerId && portraits.get(line.speakerId)"
-                    :src="portraits.get(line.speakerId)"
-                    alt="" />
+                    :src="portraits.get(line.speakerId)!.src"
+                    :frame="portraits.get(line.speakerId)!.face" />
                   <span v-else>{{ initials(nameOf(line.speakerId)) }}</span>
                 </span>
                 <div class="log__bubble">
@@ -460,7 +471,10 @@ onMounted(() => {
             :class="echo.kind === 'say' ? 'log__line--dialogue log__line--mine' : ''">
             <template v-if="echo.kind === 'say'">
               <span class="log__face">
-                <img v-if="portraits.get(adv.me.value)" :src="portraits.get(adv.me.value)" alt="" />
+                <FramedImage
+                  v-if="portraits.get(adv.me.value)"
+                  :src="portraits.get(adv.me.value)!.src"
+                  :frame="portraits.get(adv.me.value)!.face" />
                 <span v-else>{{ initials(myName) }}</span>
               </span>
               <div class="log__bubble">
@@ -571,7 +585,10 @@ onMounted(() => {
         <section class="sheet ev-card">
           <div class="sheet__head">
             <div class="sheet__portrait">
-              <img v-if="portraits.get(adv.me.value)" :src="portraits.get(adv.me.value)" alt="" />
+              <FramedImage
+                v-if="portraits.get(adv.me.value)"
+                :src="portraits.get(adv.me.value)!.src"
+                :frame="portraits.get(adv.me.value)!.face" />
               <span v-else>{{ initials(myName) }}</span>
             </div>
             <div>

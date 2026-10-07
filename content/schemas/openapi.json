@@ -706,6 +706,20 @@
             "title": "Character Id",
             "type": "string"
           },
+          "face_frame": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Face Frame"
+          },
           "life_status": {
             "title": "Life Status",
             "type": "string"
@@ -730,6 +744,20 @@
               }
             ],
             "title": "Portrait Asset Id"
+          },
+          "portrait_frame": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Portrait Frame"
           }
         },
         "required": [
@@ -2122,6 +2150,45 @@
           "next_after"
         ],
         "title": "EventsResponse",
+        "type": "object"
+      },
+      "FaceView": {
+        "additionalProperties": false,
+        "description": "Where the map reader sees a face: [x, y, w, h] fractions, or none.",
+        "properties": {
+          "cost_usd": {
+            "title": "Cost Usd",
+            "type": "number"
+          },
+          "face": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Face"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "seconds": {
+            "title": "Seconds",
+            "type": "number"
+          }
+        },
+        "required": [
+          "model",
+          "seconds",
+          "cost_usd"
+        ],
+        "title": "FaceView",
         "type": "object"
       },
       "FocusAssignRequest": {
@@ -8591,6 +8658,91 @@
           }
         },
         "summary": "Read Spots",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/v1/library/portraits": {
+      "post": {
+        "operationId": "upload_portrait_api_v1_library_portraits_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MapUploadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapImageView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Portrait",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/v1/library/portraits/{asset_id}/face": {
+      "post": {
+        "description": "The box around the character's face, as fractions of the picture.",
+        "operationId": "find_face_api_v1_library_portraits__asset_id__face_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FaceView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Find Face",
         "tags": [
           "library"
         ]

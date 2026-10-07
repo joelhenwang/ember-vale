@@ -6,6 +6,7 @@
  * what the server reports; nothing here invents progress.
  */
 
+import { frameFromList, type Frame } from './framing'
 import type {
   ActivityView,
   AutoplayView,
@@ -137,6 +138,8 @@ export interface Token {
   x: number
   y: number
   portraitAssetId: string | null
+  /** Where the face is on an imported portrait; round tokens show it. */
+  faceFrame?: Frame | null
   /** On the road between two places. */
   travelling?: boolean
 }
@@ -219,6 +222,7 @@ export function layoutTokens(
       x: spot.x,
       y: spot.y,
       portraitAssetId: member.portrait_asset_id ?? null,
+      faceFrame: frameFromList(member.face_frame),
       travelling: true
     })
   }
@@ -245,7 +249,8 @@ export function layoutTokens(
         locationId: placeId,
         x: anchor.x + (col - (inRow - 1) / 2) * TOKEN_GAP,
         y: anchor.y + row * TOKEN_GAP * 1.6,
-        portraitAssetId: member.portrait_asset_id ?? null
+        portraitAssetId: member.portrait_asset_id ?? null,
+        faceFrame: frameFromList(member.face_frame)
       })
     })
   }

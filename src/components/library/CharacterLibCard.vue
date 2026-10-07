@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CharacterDef } from '../../game/model'
+import FramedImage from '../ui/FramedImage.vue'
 import StoryImage from '../StoryImage.vue'
 import TagPill from '../ui/TagPill.vue'
 import IconSparkle from '../icons/IconSparkle.vue'
@@ -18,7 +19,14 @@ defineEmits<{ open: [] }>()
     @click="$emit('open')"
     @keydown.enter="$emit('open')"
     @keydown.space.prevent="$emit('open')">
+    <span v-if="character.portrait" class="libcard__img">
+      <FramedImage
+        :src="character.portrait.src"
+        :frame="character.portrait.portrait"
+        :alt="`${character.name} portrait`" />
+    </span>
     <StoryImage
+      v-else
       :image-slot="character.imageSlot"
       :alt="`${character.name} portrait`"
       class="libcard__img" />

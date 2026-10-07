@@ -16,6 +16,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from worldsim.domain.framing import PictureFrames
 from worldsim.domain.geography import PlaceMap, WorldMap
 from worldsim.domain.ids import EditorDraftId, PresetId
 from worldsim.domain.time import utcnow
@@ -74,6 +75,8 @@ class CharacterPresetPayload(BaseModel):
     background: str | None = Field(default=None, max_length=4000)
     pronouns: str | None = Field(default=None, max_length=40)
     portrait_asset_id: str | None = Field(default=None, max_length=128)
+    #: Where the portrait and the face are on an imported picture.
+    portrait_frames: PictureFrames | None = None
     tags: list[str] = Field(default_factory=list, max_length=16)
     starting_location_key: str | None = Field(default=None, max_length=64)
 
@@ -130,6 +133,8 @@ def canonical_payload_hash(payload: PresetPayload) -> str:
     data = payload.model_dump(mode="json")
     # Fields added later hash as if absent while unset, so every revision
     # written before them keeps its hash.
+    if data.get("kind") == "character" and data.get("portrait_frames") is None:
+        data.pop("portrait_frames", None)
     if data.get("kind") == "world":
         if data.get("map") is None:
             data.pop("map", None)

@@ -18,6 +18,7 @@ import type {
   PresetDetail
 } from '../../content/clients/worldsim'
 import { MAP_SPAN, type Point } from './worldMap'
+import { frameFromList } from './framing'
 import type { Token } from './observatory'
 
 export const MAX_SPOTS = 32
@@ -354,6 +355,7 @@ export function layoutSpotTokens(
         x: Number(spot.x) + (i - (members.length - 1) / 2) * TOKEN_GAP,
         y: Number(spot.y),
         portraitAssetId: member.portrait_asset_id ?? null,
+        faceFrame: frameFromList(member.face_frame),
         spot: spot.name,
         spotKey: spot.key
       })

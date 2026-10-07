@@ -651,10 +651,12 @@ export interface PlaceMapView {
 
 export interface CastEntry {
   character_id: string;
+  face_frame?: unknown[] | null;
   life_status: string;
   location_id: string;
   name: string;
   portrait_asset_id?: string | null;
+  portrait_frame?: unknown[] | null;
 }
 
 export interface RumourView {
@@ -811,6 +813,13 @@ export interface PlaceMapRequest {
   asset_id?: string | null;
   expected_version: number;
   spots?: MapPlaceView[];
+}
+
+export interface FaceView {
+  cost_usd: unknown;
+  face?: unknown[] | null;
+  model: string;
+  seconds: unknown;
 }
 
 export interface PresentationResponse {

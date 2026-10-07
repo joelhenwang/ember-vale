@@ -13,6 +13,7 @@ from PIL import Image
 
 from worldsim.application.ports.images import GeneratedImage
 from worldsim.domain.assets import AssetKind
+from worldsim.domain.framing import Frame
 
 #: Longest side kept per kind.
 MAX_SIDE: dict[AssetKind, int] = {
@@ -40,3 +41,15 @@ def shrink(image: GeneratedImage, kind: AssetKind) -> GeneratedImage:
         height=picture.height,
         seed=image.seed,
     )
+
+
+def crop(data: bytes, frame: Frame) -> bytes:
+    """The framed part of a picture, as PNG; unreadable bytes pass through."""
+    try:
+        with Image.open(io.BytesIO(data)) as source:
+            picture = source.convert("RGB")
+    except (OSError, ValueError):
+        return data
+    out = io.BytesIO()
+    picture.crop(frame.pixels(picture.width, picture.height)).save(out, format="PNG")
+    return out.getvalue()

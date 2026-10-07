@@ -1,3 +1,4 @@
+import type { Frame } from './framing'
 /**
  * Domain model for the menus and the creation wizard.
  *
@@ -83,6 +84,13 @@ export interface Tag {
   tone?: TagTone
 }
 
+/** An imported picture and where its portrait and face are on it. */
+export interface FramedPortrait {
+  src: string
+  portrait: Frame
+  face: Frame
+}
+
 export interface CharacterDef {
   id: string
   name: string
@@ -93,6 +101,8 @@ export interface CharacterDef {
   bio: string
   tags: Tag[]
   imageSlot: ImageSlot
+  /** Their own imported picture, framed; shown instead of the slot when set. */
+  portrait?: FramedPortrait | null
   categories: Array<'companions' | 'travelers' | 'scholars' | 'locals'>
   playerReady: boolean
   /** Null until story shelves report real usage — never display null as a count. */

@@ -6703,6 +6703,17 @@
               "default": null,
               "title": "Portrait Asset Id"
             },
+            "portrait_frames": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/PictureFrames"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
             "pronouns": {
               "anyOf": [
                 {
@@ -6742,6 +6753,43 @@
             "name"
           ],
           "title": "CharacterPresetPayload",
+          "type": "object"
+        },
+        "Frame": {
+          "additionalProperties": false,
+          "properties": {
+            "h": {
+              "exclusiveMinimum": 0,
+              "maximum": 1,
+              "title": "H",
+              "type": "number"
+            },
+            "w": {
+              "exclusiveMinimum": 0,
+              "maximum": 1,
+              "title": "W",
+              "type": "number"
+            },
+            "x": {
+              "maximum": 1,
+              "minimum": 0,
+              "title": "X",
+              "type": "number"
+            },
+            "y": {
+              "maximum": 1,
+              "minimum": 0,
+              "title": "Y",
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y",
+            "w",
+            "h"
+          ],
+          "title": "Frame",
           "type": "object"
         },
         "MapPin": {
@@ -6835,6 +6883,24 @@
             "b"
           ],
           "title": "MapRoad",
+          "type": "object"
+        },
+        "PictureFrames": {
+          "additionalProperties": false,
+          "description": "Where a character's portrait and face are on their imported picture.",
+          "properties": {
+            "face": {
+              "$ref": "#/$defs/Frame"
+            },
+            "portrait": {
+              "$ref": "#/$defs/Frame"
+            }
+          },
+          "required": [
+            "portrait",
+            "face"
+          ],
+          "title": "PictureFrames",
           "type": "object"
         },
         "PlaceMap": {

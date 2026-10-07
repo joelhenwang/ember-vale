@@ -8,6 +8,7 @@ import { computed } from 'vue'
 import type { MapAnchorView, MapPlace, MapRoadLineView } from '../../../content/clients/worldsim'
 import type { Token } from '../../game/observatory'
 import { assetUrl } from '../../api/worldsim'
+import FramedImage from '../ui/FramedImage.vue'
 
 const props = defineProps<{
   worldId: string
@@ -130,11 +131,10 @@ function initials(name: string): string {
       :title="token.name"
       :aria-label="`${token.name}`"
       @click="emit('select', token.id)">
-      <img
+      <FramedImage
         v-if="token.portraitAssetId"
         :src="assetUrl(worldId, token.portraitAssetId)"
-        alt=""
-        draggable="false" />
+        :frame="token.faceFrame" />
       <span v-else>{{ initials(token.name) }}</span>
       <em class="wm__name">{{ token.name }}</em>
     </button>
@@ -268,7 +268,8 @@ function initials(name: string): string {
     top 0.8s ease,
     transform 0.15s ease;
 }
-.wm__token img {
+.wm__token img,
+.wm__token .framed {
   width: 100%;
   height: 100%;
   border-radius: 50%;

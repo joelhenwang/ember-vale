@@ -8,8 +8,9 @@
  */
 
 import { computed, ref } from 'vue'
-import type { CharacterDef, ImageSlot, WorldDef } from '../game/model'
-import { getPreset, listPresets } from '../api/worldsim'
+import type { CharacterDef, FramedPortrait, ImageSlot, WorldDef } from '../game/model'
+import type { Frame } from '../game/framing'
+import { getPreset, libraryAssetUrl, listPresets } from '../api/worldsim'
 
 export interface PresetCharacter {
   id: string
@@ -21,6 +22,7 @@ export interface PresetCharacter {
   startKey: string | null
   playerReady: boolean
   imageSlot: ImageSlot
+  portrait: FramedPortrait | null
 }
 
 export interface PresetWorld {
@@ -53,6 +55,14 @@ const WORLD_IMAGE_BY_NAME: Record<string, ImageSlot> = {
  * explicit metadata instead. Anything without curated art gets the
  * neutral fallback, never another face.
  */
+/** A preset revision's imported picture with its frames, when it has both. */
+export function framedPortrait(rev: Record<string, unknown>): FramedPortrait | null {
+  const id = rev['portrait_asset_id']
+  const frames = rev['portrait_frames'] as { portrait?: Frame; face?: Frame } | null | undefined
+  if (typeof id !== 'string' || !frames?.portrait || !frames.face) return null
+  return { src: libraryAssetUrl(id), portrait: frames.portrait, face: frames.face }
+}
+
 export function toLibraryCharacter(p: PresetCharacter): CharacterDef {
   return {
     id: p.id,
@@ -64,6 +74,7 @@ export function toLibraryCharacter(p: PresetCharacter): CharacterDef {
       label === 'Player-ready' ? { label, tone: 'green' as const } : { label }
     ),
     imageSlot: p.imageSlot,
+    portrait: p.portrait,
     categories: p.playerReady ? ['companions'] : ['locals'],
     playerReady: p.playerReady,
     usedInStories: null,
@@ -137,7 +148,8 @@ export function usePresets() {
             tags,
             startKey: (rev['starting_location_key'] as string | undefined) ?? null,
             playerReady: tags.includes('Player-ready'),
-            imageSlot: PORTRAIT_BY_NAME[name] ?? 'story.lantern'
+            imageSlot: PORTRAIT_BY_NAME[name] ?? 'story.lantern',
+            portrait: framedPortrait(rev)
           }
         })
         .sort((a, b) => a.name.localeCompare(b.name))

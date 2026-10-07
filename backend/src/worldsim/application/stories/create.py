@@ -30,6 +30,7 @@ from worldsim.domain.characters import Character, CharacterCard
 from worldsim.domain.enums import EventType, LifeStatus, PhaseName, PhaseRunState, UserRole
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.events import WorldEvent
+from worldsim.domain.framing import as_list
 from worldsim.domain.geography import MAP_SPAN, WorldMap, road_stamina
 from worldsim.domain.ids import (
     new_asset_id,
@@ -297,6 +298,45 @@ async def _adopt_map(
     )
 
 
+#: World config key holding imported portraits' frames, by character id.
+PORTRAIT_FRAMES = "portrait_frames"
+
+
+async def _adopt_portrait(
+    uow: UnitOfWork,
+    world_id: UUID,
+    character_id: UUID,
+    preset: CharacterPresetPayload,
+    frames_by_character: dict[str, object],
+) -> None:
+    """Register the preset's imported picture as this character's portrait."""
+    if preset.portrait_asset_id is None or preset.portrait_frames is None:
+        return
+    try:
+        source = await uow.assets.get_asset(UUID(preset.portrait_asset_id))
+    except (DomainError, ValueError):
+        return  # the picture is gone: a portrait is painted as usual
+    art = AssetRecord(
+        id=new_asset_id(),
+        world_id=world_id,
+        kind=AssetKind.PORTRAIT,
+        subject_id=character_id,
+        content_ref=source.content_ref,
+        mime=source.mime,
+        width=source.width,
+        height=source.height,
+        style_pack_version=source.style_pack_version,
+    )
+    await uow.assets.add_asset(art)
+    frames = preset.portrait_frames
+    frames_by_character[str(character_id)] = {
+        "asset_id": str(art.id),
+        "portrait": as_list(frames.portrait),
+        "face": as_list(frames.face),
+    }
+    await uow.worlds.put_config(world_id, PORTRAIT_FRAMES, frames_by_character)
+
+
 async def _adopt_place_maps(
     uow: UnitOfWork,
     world_id: UUID,
@@ -413,6 +453,7 @@ async def _instantiate(
         await _adopt_map(uow, world_id, world_map, location_ids, copied)
     await _adopt_place_maps(uow, world_id, world_preset.locations, location_ids, copied)
     runtime_characters: dict[str, UUID] = {}
+    portrait_frames: dict[str, object] = {}
     for member in payload.cast:
         character_id = new_character_id()
         preset = cast_presets[member.instance_key]
@@ -445,6 +486,9 @@ async def _instantiate(
             )
         )
         runtime_characters[member.instance_key] = character_id
+        # A picture the player brought is this character's portrait: the
+        # job below then binds it instead of painting one.
+        await _adopt_portrait(uow, world_id, character_id, preset, portrait_frames)
         await queue_image(uow, world_id, AssetKind.PORTRAIT, character_id)
     await uow.versions.ensure(world_id, world_id, "world")
     for location_id in location_ids.values():

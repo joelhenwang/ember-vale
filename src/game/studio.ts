@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import type { Frame } from './framing'
 /* snapshots live in reactive maps so "dirty" indicators update after save */
 
 /**
@@ -85,6 +86,15 @@ export interface CharacterDraft {
    */
   personalityExtra: string
   backgroundExtra: string
+  /** An imported picture (library asset) and where its portrait and face are. */
+  portraitAssetId: string | null
+  portraitFrames: PortraitFrames | null
+}
+
+/** Where the portrait (2:3) and the face (square) are on an imported picture. */
+export interface PortraitFrames {
+  portrait: Frame
+  face: Frame
 }
 
 export interface WorldDraft {
@@ -137,7 +147,9 @@ const blankCharacter = (): CharacterDraft => ({
   appearanceSaved: false,
   presetName: '',
   personalityExtra: '',
-  backgroundExtra: ''
+  backgroundExtra: '',
+  portraitAssetId: null,
+  portraitFrames: null
 })
 
 const blankPlace = (n: number): PlaceDraft => ({
@@ -180,7 +192,9 @@ export function ensureCharDraft(id: string): CharacterDraft {
         appearanceSaved: false,
         presetName: '',
         personalityExtra: '',
-        backgroundExtra: ''
+        backgroundExtra: '',
+        portraitAssetId: null,
+        portraitFrames: null
       }
     } else if (id === 'nessa') {
       charDrafts[id] = {
