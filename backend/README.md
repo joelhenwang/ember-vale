@@ -43,7 +43,7 @@ Run from `backend/` (CI runs exactly these, see `.github/workflows/ci.yml`):
 ```bash
 uv run ruff check . && uv run ruff format --check .
 uv run basedpyright        # zero errors; strict for src, relaxed private/unknown rules for tests
-uv run pytest -n 8         # routine suite in parallel (~2.5 min; ~9 min serially)
+uv run pytest -n 8         # routine suite in parallel (~2.5 min; ~7 min serially)
 uv run pytest -m sim_gate -n 8   # multi-phase simulations (~8 min); CI runs these nightly
 ```
 
