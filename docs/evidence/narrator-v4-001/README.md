@@ -39,6 +39,16 @@ recap had just described (the whole opening beat was cut, leaving bare dialogue)
 | run-7 | DeepSeek V4 Flash | v3 | 22/24 (1) | 3/6 | 5 | 7 | 71 | 37k/9.2k |
 | run-7 | DeepSeek V4 Flash | v4 final | 21/24 (1) | 5/5 | 1 | 2 | 60 | 56k/6.2k |
 
+A live play with run-7's v4 then copied its single example sentence ("Wren leans across
+the table and asks Ash…") into two scenes, and once set a scene at "the docks of
+Corvane", which is not a listed spot. The final v4 shows three varied record-to-beat
+examples marked "never reuse their wording" and forbids unlisted spots:
+
+| run | model | prompt | valid (after repair) | spot named | stock phrases | retold cut | example wording copied | words/answer |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| run-8 | Venice | v4 final | 24/24 (2) | 7/8 | 6 | 3 | 1 | 77 |
+| run-8 | DeepSeek V4 Flash | v4 final | 22/24 (2) | 5/6 | 0 | 1 | 2 | 63 |
+
 DeepSeek's one extra failure in run-7 is an invented key (`places`) and one summary
 rendered as dialogue that survived the repair; run-6 had it level with v3 (22/24). A
 failed narration falls back to the deterministic beats, as before.
@@ -62,6 +72,8 @@ What each revision fixed:
   dialogue (3 repairs in run-5); one repair left.
 - **No re-describing (run-7):** "When the recap shows the same people already at this
   spot, do not describe it again". Retold sentences fell from 9 (v3) to 2 on Venice.
+- **Varied examples, not to be reused (run-8):** the replay never showed the copying the
+  live play did; with three examples, one or two copied phrases in 24 answers remain.
 
 The two answers no version gets right are one fixture scene whose speaker is not in its
 audience (`speaker outside the audience`), in every run and both models.
@@ -85,6 +97,6 @@ Same scene, v3 then v4 (Venice):
 **Costs and trade-offs.** v4's system prompt is about 600 tokens longer: prompt tokens per
 call rise ~35–45 %; answers run about twice as long on Venice. Small inventions of
 atmosphere remain ("the nearby baker's stall") although the prompt forbids new buildings.
-OpenRouter spend for runs 5–7 was $0.022 (DeepSeek); Venice is billed separately.
+OpenRouter spend for runs 5–8 was about $0.03 (DeepSeek); Venice is billed separately.
 
 **Decision.** `NARRATOR_PROMPT_VERSION = "narrator.v4"`; v3 stays on disk for replays.

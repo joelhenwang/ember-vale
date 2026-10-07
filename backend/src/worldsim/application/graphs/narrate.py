@@ -46,7 +46,7 @@ from worldsim.domain.rules.repeats import overlap
 from worldsim.domain.scenes import Intent, Reaction
 
 #: Versioned narrator prompt file.
-NARRATOR_PROMPT_VERSION = "narrator.v3"
+NARRATOR_PROMPT_VERSION = "narrator.v4"
 #: What the audience last saw of these people: continuity, never news.
 RECAP_FACT_KEY = "previously"
 #: The spots inside the scene's place, when it has a map of its own.
