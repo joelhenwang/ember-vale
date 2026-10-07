@@ -4,12 +4,16 @@ You narrate one committed event for a stated audience, as the
 storyteller of a living fantasy world.
 
 Your answer is ONLY a JSON array of beat objects, nothing before or
-after it. Shape (ids and keys come from the visible facts below):
+after it. The shape, with <placeholders> you replace from the visible
+facts below (never copy a placeholder or invent a key):
 
 [
-  {"kind": "narration", "speaker_id": null, "text": "Rain drums on the eaves of the Hearth as Wren shoulders the door open.", "cited_fact_keys": ["spots", "attempt:move"]},
-  {"kind": "dialogue", "speaker_id": "<id of the speaker>", "text": "\"You're late,\" Ash says, not looking up.", "cited_fact_keys": ["reaction:1"]}
+  {"kind": "narration", "speaker_id": null, "text": "<one to three sentences>", "cited_fact_keys": ["<key of a fact this beat shows>"]},
+  {"kind": "dialogue", "speaker_id": "<the speaker's id>", "text": "<their quoted words>", "cited_fact_keys": ["<key of a fact marked quoted speech — dialogue-eligible>"]}
 ]
+
+Only a fact marked `[quoted speech — dialogue-eligible]` may be cited by
+a `dialogue` beat; with none, write narration beats only.
 
 The visible facts are everything the audience may learn: every beat
 cites only those fact keys, names only the given event, and speaks only

@@ -1,0 +1,468 @@
+[
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 0,
+    "prompt_tokens": 4323,
+    "completion_tokens": 701,
+    "repaired": true,
+    "first_denial": "dialogue cites non-speech evidence: ['reaction:2']",
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Hearth's wooden beams creak under the weight of the rain as Wren pushes the door open, the scent of damp earth and wood smoke filling the air.\", \"cited_fact_keys\": [\"spots\", \"attempt:communicate\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\", \"text\": \"\\\"You're late,\\\" Ash says, not looking up from the table.\", \"cited_fact_keys\": [\"reaction:2\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren's eyes flicker with a hint of frustration as they take a seat across from Ash, the fire crackling between them.\", \"cited_fact_keys\": [\"attempt:communicate\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"f01c6baf-0996-42fd-a9b9-4a97cb6a7af3\", \"text\": \"\\\"The Fisher's Lost Catch is a tale that has been passed down through generations. It speaks of a fisher who lost their catch in the treacherous waters of the rocky islets. The story is a reminder of the dangers of the sea and the importance of respecting its power.\\\"\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash's gaze remains fixed on the table, their fingers tracing the grain of the wood, as if lost in thought.\", \"cited_fact_keys\": [\"attempt:communicate\"]}\n]",
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Hearth's hearth crackles as Wren pushes the door open, rain pattering on the eaves.\", \"cited_fact_keys\": [\"spots\", \"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren's eyes meet Ash's, who is seated by the fire, a book in hand.\", \"cited_fact_keys\": [\"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash's voice is calm, \\\"The Fisher's Lost Catch is a tale that has been passed down through generations. It speaks of a fisher who lost their catch in the treacherous waters of the rocky islets.\\\"\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren nods, \\\"The story is a reminder of the dangers of the sea and the importance of respecting its power.\\\"\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash's gaze shifts to the window, \\\"The distress call from the rocky islets echoes this tale.\\\"\", \"cited_fact_keys\": [\"reaction:2\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The Hearth's hearth crackles as Wren pushes the door open, rain pattering on the eaves. Wren's eyes meet Ash's, who is seated by the fire, a book in hand. Ash's voice is calm, \"The Fisher's Lost Catch is a tale that has been passed down through generations. It speaks of a fisher who lost their catch in the treacherous waters of the rocky islets.\" Wren nods, \"The story is a reminder of the dangers of the sea and the importance of respecting its power.\" Ash's gaze shifts to the window, \"The distress call from the rocky islets echoes this tale.\"",
+    "beats": 5,
+    "words": 100,
+    "stock": 0,
+    "spot": "the Hearth",
+    "has_spots": true
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 1,
+    "prompt_tokens": 4387,
+    "completion_tokens": 613,
+    "repaired": false,
+    "first_denial": "dialogue cites non-speech evidence: ['reaction:1']",
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The wind whistles through the fields of Old Bram’s farm, where the morning mist clings to the earth. Wren, with a determined stride, approaches the farmhouse, their boots crunching on the gravel path.\", \"cited_fact_keys\": [\"spots\", \"attempt:communicate\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\", \"text\": \"\\\"You're late,\\\" Ash says, not looking up.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren pauses, the weight of the unspoken words hanging in the air between them.\", \"cited_fact_keys\": [\"attempt:communicate\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"f01c6baf-0996-42fd-a9b9-4a97cb6a7af3\", \"text\": \"\\\"The rocky islets south of Corvane are indeed a place of mystery and intrigue. What do you think might be the reason behind the Fisher's Lost Catch?\\\"\", \"cited_fact_keys\": [\"reaction:2\"]}\n]",
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Old Bram’s farm is quiet, the morning mist clinging to the fields as Wren approaches the barn, rain pattering softly on the roof.\", \"cited_fact_keys\": [\"spots\", \"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren attempts to engage Ash in a discussion about the tales of Ember Vale, their voice steady despite the tension in the air.\", \"cited_fact_keys\": [\"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash, however, speaks to Wren about the rocky islets south of Corvane, their tone measured and deliberate.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"f01c6baf-0996-42fd-a9b9-4a97cb6a7af3\", \"text\": \"\\\"The rocky islets south of Corvane are indeed a place of mystery and intrigue. What do you think might be the reason behind the Fisher's Lost Catch?\\\" Wren asks, their eyes searching Ash's face for any hint of understanding.\", \"cited_fact_keys\": [\"reaction:2\"]}\n]"
+    ],
+    "valid": false,
+    "denial": "speaker outside the audience: f01c6baf-0996-42fd-a9b9-4a97cb6a7af3",
+    "text": "Old Bram’s farm is quiet, the morning mist clinging to the fields as Wren approaches the barn, rain pattering softly on the roof. Wren attempts to engage Ash in a discussion about the tales of Ember Vale, their voice steady despite the tension in the air. Ash, however, speaks to Wren about the rocky islets south of Corvane, their tone measured and deliberate. \"The rocky islets south of Corvane are indeed a place of mystery and intrigue. What do you think might be the reason behind the Fisher's Lost Catch?\" Wren asks, their eyes searching Ash's face for any hint of understanding.",
+    "beats": 4,
+    "words": 102,
+    "stock": 2,
+    "spot": "Old Bram’s farm",
+    "has_spots": true
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 2,
+    "prompt_tokens": 4159,
+    "completion_tokens": 547,
+    "repaired": true,
+    "first_denial": "dialogue cites non-speech evidence: ['reaction:1']",
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The wind whistles through the cracks in the walls of Old Bram’s farm as Wren enters, their boots crunching on the straw-strewn floor.\", \"cited_fact_keys\": [\"spots\", \"attempt:communicate\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\", \"text\": \"\\\"You're late,\\\" Ash says, not looking up.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren pauses, their eyes scanning the room, before they speak.\", \"cited_fact_keys\": [\"attempt:communicate\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"f01c6baf-0996-42fd-a9b9-4a97cb6a7af3\", \"text\": \"\\\"I've been thinking about the tales of Ember Vale,\\\" Wren begins, their voice steady.\", \"cited_fact_keys\": [\"reaction:2\"]}\n]",
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Old Bram’s farm is quiet, the morning mist clinging to the fields. Rain drums on the eaves of the Hearth as Wren shoulders the door open.\", \"cited_fact_keys\": [\"spots\", \"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash is already there, their back to the door, eyes on the fire. \\\"You're late,\\\" they say, not looking up, as Wren steps inside.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren pauses, the rain on their cloak dripping onto the wooden floor. \\\"The tales of Ember Vale,\\\" they begin, their voice steady despite the chill in the air.\", \"cited_fact_keys\": [\"reaction:2\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash turns, their expression unreadable, and nods for Wren to continue, the firelight casting shadows on their face.\", \"cited_fact_keys\": [\"attempt:communicate\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "Old Bram’s farm is quiet, the morning mist clinging to the fields. Rain drums on the eaves of the Hearth as Wren shoulders the door open. Ash is already there, their back to the door, eyes on the fire. \"You're late,\" they say, not looking up, as Wren steps inside. Wren pauses, the rain on their cloak dripping onto the wooden floor. \"The tales of Ember Vale,\" they begin, their voice steady despite the chill in the air. Ash turns, their expression unreadable, and nods for Wren to continue, the firelight casting shadows on their face.",
+    "beats": 4,
+    "words": 96,
+    "stock": 0,
+    "spot": "Old Bram’s farm",
+    "has_spots": true
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 3,
+    "prompt_tokens": 3932,
+    "completion_tokens": 444,
+    "repaired": false,
+    "first_denial": "unsupported facts cited: ['attempt:move']",
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Rain drums on the eaves of the Hearth as Wren shoulders the door open.\", \"cited_fact_keys\": [\"spots\", \"attempt:move\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\", \"text\": \"\\\"You're late,\\\" Ash says, not looking up.\", \"cited_fact_keys\": [\"reaction:1\"]}\n]",
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Rain drums on the eaves of the Hearth as Wren enters, their boots squelching on the damp floorboards.\", \"cited_fact_keys\": [\"spots\", \"attempt:communicate\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\", \"text\": \"\\\"You're late,\\\" Ash says, not looking up.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren hesitates, their hands clenching and unclenching at their sides, before stepping closer to the table where Ash sits.\", \"cited_fact_keys\": [\"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash's eyes flicker with a hint of impatience, but they remain silent, waiting for Wren to speak.\", \"cited_fact_keys\": [\"attempt:wait\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The fire crackles in the hearth, casting flickering shadows on the walls, as the two sit in a tense silence.\", \"cited_fact_keys\": []}\n]"
+    ],
+    "valid": false,
+    "denial": "dialogue cites non-speech evidence: ['reaction:1']",
+    "text": "Rain drums on the eaves of the Hearth as Wren enters, their boots squelching on the damp floorboards. \"You're late,\" Ash says, not looking up. Wren hesitates, their hands clenching and unclenching at their sides, before stepping closer to the table where Ash sits. Ash's eyes flicker with a hint of impatience, but they remain silent, waiting for Wren to speak. The fire crackles in the hearth, casting flickering shadows on the walls, as the two sit in a tense silence.",
+    "beats": 5,
+    "words": 81,
+    "stock": 0,
+    "spot": "the Hearth",
+    "has_spots": true
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 4,
+    "prompt_tokens": 4112,
+    "completion_tokens": 623,
+    "repaired": false,
+    "first_denial": "unsupported facts cited: ['attempt:move']",
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Rain drums on the eaves of the Hearth as Wren shoulders the door open.\", \"cited_fact_keys\": [\"spots\", \"attempt:move\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\", \"text\": \"\\\"You're late,\\\" Ash says, not looking up.\", \"cited_fact_keys\": [\"reaction:1\"]}\n]",
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Hearth is quiet, the fire crackling softly as Wren enters, their boots scuffing against the wooden floor. Ash sits at a table, a map spread out before them, their eyes scanning the parchment.\", \"cited_fact_keys\": [\"spots\", \"attempt:communicate\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\", \"text\": \"\\\"You're late,\\\" Ash says, not looking up.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren takes a seat across from Ash, their eyes drawn to the map, the rocky islets south of Corvane marked in ink.\", \"cited_fact_keys\": [\"attempt:communicate\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"f01c6baf-0996-42fd-a9b9-4a97cb6a7af3\", \"text\": \"\\\"I've been thinking about those islets,\\\" Wren begins, their voice low.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash finally looks up, their gaze meeting Wren's, a silent understanding passing between them.\", \"cited_fact_keys\": [\"reaction:2\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\", \"text\": \"\\\"They're a mystery, aren't they?\\\" Ash muses, tapping the map.\", \"cited_fact_keys\": [\"reaction:2\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The two sit in silence, the weight of their shared curiosity about the islets hanging in the air.\", \"cited_fact_keys\": [\"attempt:communicate\"]}\n]"
+    ],
+    "valid": false,
+    "denial": "dialogue cites non-speech evidence: ['reaction:1']",
+    "text": "The Hearth is quiet, the fire crackling softly as Wren enters, their boots scuffing against the wooden floor. Ash sits at a table, a map spread out before them, their eyes scanning the parchment. \"You're late,\" Ash says, not looking up. Wren takes a seat across from Ash, their eyes drawn to the map, the rocky islets south of Corvane marked in ink. \"I've been thinking about those islets,\" Wren begins, their voice low. Ash finally looks up, their gaze meeting Wren's, a silent understanding passing between them. \"They're a mystery, aren't they?\" Ash muses, tapping the map. The two sit in silence, the weight of their shared curiosity about the islets hanging in the air.",
+    "beats": 7,
+    "words": 116,
+    "stock": 0,
+    "spot": "the Hearth",
+    "has_spots": true
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 5,
+    "prompt_tokens": 4169,
+    "completion_tokens": 734,
+    "repaired": true,
+    "first_denial": "dialogue cites non-speech evidence: ['reaction:1']",
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Hearth hums with the murmur of patrons as Wren pushes the door open, rain pattering on the cobblestones outside.\", \"cited_fact_keys\": [\"spots\", \"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash, seated at a table, glances up from their drink, a flicker of recognition in their eyes.\", \"cited_fact_keys\": [\"attempt:wait\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\", \"text\": \"\\\"You're late,\\\" Ash says, not looking up.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren takes a seat across from Ash, the scent of damp wool filling the air.\", \"cited_fact_keys\": [\"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash's fingers tap the table, a rhythm of impatience.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"f01c6baf-0996-42fd-a9b9-4a97cb6a7af3\", \"text\": \"\\\"I've been thinking about the rocky islets south of Corvane,\\\" Wren begins, leaning in.\", \"cited_fact_keys\": [\"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash's gaze sharpens, a spark of interest igniting in their eyes.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The fire crackles in the hearth, casting a warm glow over the two as they delve into the tale of the Fisher's Lost Catch.\", \"cited_fact_keys\": [\"reaction:2\"]}\n]",
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Hearth's hearthstone crackles as Wren pushes the door open, rain pattering on the eaves.\", \"cited_fact_keys\": [\"spots\", \"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash remains seated, eyes on the fire, as Wren enters, the scent of damp earth clinging to their cloak.\", \"cited_fact_keys\": [\"attempt:wait\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash speaks of the rocky islets south of Corvane, their voice steady, as if continuing a conversation long begun.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren nods, their gaze distant, as they recall the Fisher's Lost Catch, the tale that has bound them since the sunset of Day 1.\", \"cited_fact_keys\": [\"reaction:2\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The Hearth's hearthstone crackles as Wren pushes the door open, rain pattering on the eaves. Ash remains seated, eyes on the fire, as Wren enters, the scent of damp earth clinging to their cloak. Ash speaks of the rocky islets south of Corvane, their voice steady, as if continuing a conversation long begun. Wren nods, their gaze distant, as they recall the Fisher's Lost Catch, the tale that has bound them since the sunset of Day 1.",
+    "beats": 4,
+    "words": 77,
+    "stock": 0,
+    "spot": "the Hearth",
+    "has_spots": true
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 6,
+    "prompt_tokens": 4177,
+    "completion_tokens": 758,
+    "repaired": true,
+    "first_denial": "dialogue cites non-speech evidence: ['reaction:1']",
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Hearth's common room is quiet, the fire low, as Wren pushes the door open with a shoulder, rain pattering on the eaves.\", \"cited_fact_keys\": [\"spots\", \"attempt:communicate\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\", \"text\": \"\\\"You're late,\\\" Ash says, not looking up from the table.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren's boots leave a trail of mud as they step inside, the scent of damp wool and woodsmoke filling the air.\", \"cited_fact_keys\": [\"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash's fingers tap the table, a rhythm of impatience, as they glance up at Wren.\", \"cited_fact_keys\": [\"reaction:2\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren's eyes flicker with a hint of frustration, but they take a deep breath, the tension in the room palpable.\", \"cited_fact_keys\": [\"attempt:communicate\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"f01c6baf-0996-42fd-a9b9-4a97cb6a7af3\", \"text\": \"\\\"I've been delayed,\\\" Wren says, their voice steady despite the underlying current of annoyance.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash's expression softens slightly, a flicker of understanding crossing their face.\", \"cited_fact_keys\": [\"reaction:2\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The rain outside grows heavier, a drumbeat on the roof, as the two sit in silence, the weight of their journey and the Fisher's Lost Catch hanging between them.\", \"cited_fact_keys\": [\"attempt:communicate\", \"reaction:2\"]}\n]",
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Hearth's common room is quiet, the fire's embers glowing as Wren enters, rain pattering against the windows.\", \"cited_fact_keys\": [\"spots\", \"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren approaches Ash, who is seated by the hearth, and begins to speak about their journey to Ember Vale.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash, however, seems more interested in discussing the Fisher's Lost Catch, a topic that Wren had previously mentioned.\", \"cited_fact_keys\": [\"reaction:2\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The two sit in silence for a moment, the weight of their past conversation lingering in the air.\", \"cited_fact_keys\": [\"previously\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The Hearth's common room is quiet, the fire's embers glowing as Wren enters, rain pattering against the windows. Wren approaches Ash, who is seated by the hearth, and begins to speak about their journey to Ember Vale. Ash, however, seems more interested in discussing the Fisher's Lost Catch, a topic that Wren had previously mentioned.",
+    "beats": 3,
+    "words": 55,
+    "stock": 0,
+    "spot": "the Hearth",
+    "has_spots": true
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 7,
+    "prompt_tokens": 4068,
+    "completion_tokens": 492,
+    "repaired": true,
+    "first_denial": "unsupported facts cited: ['attempt:move']",
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Rain drums on the eaves of the Hearth as Wren shoulders the door open.\", \"cited_fact_keys\": [\"spots\", \"attempt:move\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\", \"text\": \"\\\"You're late,\\\" Ash says, not looking up.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren's eyes flicker with a mix of curiosity and concern as they step inside, the weight of their journey evident in their stance.\", \"cited_fact_keys\": [\"attempt:communicate\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\", \"text\": \"\\\"I've been here for a while, Wren. What brings you to Ember Vale?\\\"\", \"cited_fact_keys\": [\"reaction:2\"]}\n]",
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Rain drums on the eaves of the Hearth as Wren enters, shaking water from their cloak.\", \"cited_fact_keys\": [\"spots\", \"attempt:communicate\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\", \"text\": \"\\\"I've been here for a while, Wren. What brings you to Ember Vale?\\\" Ash asks, not looking up.\", \"cited_fact_keys\": [\"reaction:2\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren's eyes flicker with a hint of unease, but they don't answer immediately, their gaze lingering on the fire.\", \"cited_fact_keys\": [\"attempt:communicate\", \"reaction:1\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "Rain drums on the eaves of the Hearth as Wren enters, shaking water from their cloak. \"I've been here for a while, Wren. What brings you to Ember Vale?\" Ash asks, not looking up. Wren's eyes flicker with a hint of unease, but they don't answer immediately, their gaze lingering on the fire.",
+    "beats": 3,
+    "words": 53,
+    "stock": 0,
+    "spot": "the Hearth",
+    "has_spots": true
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 8,
+    "prompt_tokens": 1640,
+    "completion_tokens": 71,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The sun rises over the Rocky islets, casting a golden glow on the sea as Fisher stands on the shore, their gaze fixed on the horizon, waiting.\", \"cited_fact_keys\": [\"previously\", \"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The sun rises over the Rocky islets, casting a golden glow on the sea as Fisher stands on the shore, their gaze fixed on the horizon, waiting.",
+    "beats": 1,
+    "words": 27,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 9,
+    "prompt_tokens": 1613,
+    "completion_tokens": 90,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Rocky islets south of Corvane stretch out like broken teeth in the sea, their jagged edges catching the first light of dawn. Fisher stands on the highest point, eyes scanning the horizon, waiting for something, anything, to break the silence.\", \"cited_fact_keys\": [\"place\", \"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The Rocky islets south of Corvane stretch out like broken teeth in the sea, their jagged edges catching the first light of dawn. Fisher stands on the highest point, eyes scanning the horizon, waiting for something, anything, to break the silence.",
+    "beats": 1,
+    "words": 41,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 10,
+    "prompt_tokens": 1609,
+    "completion_tokens": 74,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The wind whips through the rocky islets, carrying the scent of salt and seaweed. Fisher stands on the highest point, their gaze fixed on the horizon, waiting.\", \"cited_fact_keys\": [\"place\", \"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The wind whips through the rocky islets, carrying the scent of salt and seaweed. Fisher stands on the highest point, their gaze fixed on the horizon, waiting.",
+    "beats": 1,
+    "words": 27,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 11,
+    "prompt_tokens": 1615,
+    "completion_tokens": 96,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Rocky islets south of Corvane are bathed in the soft glow of moonlight, the waves lapping gently against the jagged rocks. Fisher stands, their silhouette a stark contrast against the starry sky, eyes still fixed on the distant horizon, waiting.\", \"cited_fact_keys\": [\"place\", \"attempt:wait\", \"previously\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The Rocky islets south of Corvane are bathed in the soft glow of moonlight, the waves lapping gently against the jagged rocks. Fisher stands, their silhouette a stark contrast against the starry sky, eyes still fixed on the distant horizon, waiting.",
+    "beats": 1,
+    "words": 41,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 12,
+    "prompt_tokens": 1636,
+    "completion_tokens": 73,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The sea stretches out in all directions, its surface glistening under the fading light of dusk, as Fisher waits on the Rocky islets south of Corvane.\", \"cited_fact_keys\": [\"place\", \"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The sea stretches out in all directions, its surface glistening under the fading light of dusk, as Fisher waits on the Rocky islets south of Corvane.",
+    "beats": 1,
+    "words": 26,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 13,
+    "prompt_tokens": 1592,
+    "completion_tokens": 86,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The wind whips through the rocky islets, carrying the scent of salt and seaweed. Fisher stands on the highest point, their eyes scanning the horizon, just as they did at dusk the day before.\", \"cited_fact_keys\": [\"place\", \"previously\", \"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The wind whips through the rocky islets, carrying the scent of salt and seaweed. Fisher stands on the highest point, their eyes scanning the horizon, just as they did at dusk the day before.",
+    "beats": 1,
+    "words": 34,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 14,
+    "prompt_tokens": 1610,
+    "completion_tokens": 90,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The rocky islets south of Corvane are bathed in the fading light of the setting sun, the waves lapping gently against the jagged rocks. Fisher stands, their silhouette framed against the horizon, a solitary figure against the vast expanse of the sea.\", \"cited_fact_keys\": [\"place\", \"previously\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The rocky islets south of Corvane are bathed in the fading light of the setting sun, the waves lapping gently against the jagged rocks. Fisher stands, their silhouette framed against the horizon, a solitary figure against the vast expanse of the sea.",
+    "beats": 1,
+    "words": 42,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 15,
+    "prompt_tokens": 1853,
+    "completion_tokens": 352,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Saltmarket is quiet, the air thick with the scent of salt and the distant cry of gulls. Wren stands at the door, their hand hovering over the latch, hesitating before they push it open.\", \"cited_fact_keys\": [\"place\", \"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Inside, Ash is seated by the hearth, their eyes fixed on the flickering flames, a cup of tea steaming beside them. They seem lost in thought, waiting for something, or perhaps someone.\", \"cited_fact_keys\": [\"attempt:wait\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren enters, the door creaking softly behind them, and takes a seat across from Ash, their gaze steady and intent.\", \"cited_fact_keys\": [\"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren speaks, their voice low and measured, \\\"I've been thinking about the Fisher's Lost Catch. There's more to the tale than we've heard.\\\"\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash looks up, their expression unreadable, and responds, \\\"The Fisher's Lost Catch is a story with many layers, Wren. What's on your mind?\\\"\", \"cited_fact_keys\": [\"reaction:2\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The Saltmarket is quiet, the air thick with the scent of salt and the distant cry of gulls. Wren stands at the door, their hand hovering over the latch, hesitating before they push it open. Inside, Ash is seated by the hearth, their eyes fixed on the flickering flames, a cup of tea steaming beside them. They seem lost in thought, waiting for something, or perhaps someone. Wren enters, the door creaking softly behind them, and takes a seat across from Ash, their gaze steady and intent. Wren speaks, their voice low and measured, \"I've been thinking about the Fisher's Lost Catch. There's more to the tale than we've heard.\" Ash looks up, their expression unreadable, and responds, \"The Fisher's Lost Catch is a story with many layers, Wren. What's on your mind?\"",
+    "beats": 5,
+    "words": 133,
+    "stock": 1,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 16,
+    "prompt_tokens": 3921,
+    "completion_tokens": 579,
+    "repaired": false,
+    "first_denial": "dialogue cites non-speech evidence: ['reaction:1']",
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Saltmarket bustles with the scent of salt and the sound of distant waves as Wren arrives, the door creaking under their hand.\", \"cited_fact_keys\": [\"place\", \"attempt:communicate\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\", \"text\": \"\\\"You're late,\\\" Ash says, not looking up.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren pauses, the weight of the tales of Ember Vale heavy on their mind.\", \"cited_fact_keys\": [\"attempt:communicate\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\", \"text\": \"\\\"Ember Vale's tales are as varied as its people, Wren. What's on your mind?\\\"\", \"cited_fact_keys\": [\"reaction:2\"]}\n]",
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Saltmarket bustles with the scent of salt and the sound of distant waves, as Wren, following the path Ash once took, arrives at the Hearth. Ash, seated by the hearth, waits, their gaze fixed on the flickering flames.\", \"cited_fact_keys\": [\"place\", \"attempt:wait\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Rain drums on the eaves of the Hearth as Wren shoulders the door open, their eyes searching for Ash, who remains silent, lost in thought.\", \"cited_fact_keys\": [\"spots\", \"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren speaks to Ash about the tales of Ember Vale, their voice carrying a hint of curiosity and concern.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\", \"text\": \"\\\"Ember Vale's tales are as varied as its people, Wren. What's on your mind?\\\"\", \"cited_fact_keys\": [\"reaction:2\"]}\n]"
+    ],
+    "valid": false,
+    "denial": "unsupported facts cited: ['spots']",
+    "text": "The Saltmarket bustles with the scent of salt and the sound of distant waves, as Wren, following the path Ash once took, arrives at the Hearth. Ash, seated by the hearth, waits, their gaze fixed on the flickering flames. Rain drums on the eaves of the Hearth as Wren shoulders the door open, their eyes searching for Ash, who remains silent, lost in thought. Wren speaks to Ash about the tales of Ember Vale, their voice carrying a hint of curiosity and concern. \"Ember Vale's tales are as varied as its people, Wren. What's on your mind?\"",
+    "beats": 4,
+    "words": 97,
+    "stock": 1,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 17,
+    "prompt_tokens": 1587,
+    "completion_tokens": 102,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The rocky islets south of Corvane jut from the sea, their surfaces pocked with tide pools and barnacle-encrusted rocks. The air is salty and damp, the sound of waves crashing against the shore a constant backdrop. Fisher stands on the shore, eyes scanning the horizon, waiting.\", \"cited_fact_keys\": [\"place\", \"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The rocky islets south of Corvane jut from the sea, their surfaces pocked with tide pools and barnacle-encrusted rocks. The air is salty and damp, the sound of waves crashing against the shore a constant backdrop. Fisher stands on the shore, eyes scanning the horizon, waiting.",
+    "beats": 1,
+    "words": 46,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 18,
+    "prompt_tokens": 1604,
+    "completion_tokens": 65,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Fisher waits on the rocky shore, the sea breeze tugging at their cloak, as the sun dips lower in the sky.\", \"cited_fact_keys\": [\"attempt:wait\", \"previously\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "Fisher waits on the rocky shore, the sea breeze tugging at their cloak, as the sun dips lower in the sky.",
+    "beats": 1,
+    "words": 21,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 19,
+    "prompt_tokens": 1719,
+    "completion_tokens": 84,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Saltmarket bustles with the midday crowd, the scent of fresh bread mingling with the salty tang of the sea. Wren steps into the square, their eyes scanning the crowd, looking for a familiar face.\", \"cited_fact_keys\": [\"place\", \"attempt:move\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The Saltmarket bustles with the midday crowd, the scent of fresh bread mingling with the salty tang of the sea. Wren steps into the square, their eyes scanning the crowd, looking for a familiar face.",
+    "beats": 1,
+    "words": 35,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 20,
+    "prompt_tokens": 3638,
+    "completion_tokens": 320,
+    "repaired": true,
+    "first_denial": "unsupported facts cited: ['spots']",
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Rain drums on the eaves of the Hearth as Wren shoulders the door open.\", \"cited_fact_keys\": [\"spots\", \"attempt:move\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\", \"text\": \"\\\"You're late,\\\" Ash says, not looking up.\", \"cited_fact_keys\": [\"reaction:1\"]}\n]",
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The hearth crackles in the Hearth, casting a warm glow as Wren attempts to engage Ash in a conversation about the tales of Ember Vale.\", \"cited_fact_keys\": [\"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash, however, is already on the move, heading towards Saltmarket, leaving Wren to ponder the stories they've heard.\", \"cited_fact_keys\": [\"attempt:move\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash, in their usual manner, speaks to Wren about the tales of Ember Vale, though their words are more of a reminder than a new revelation.\", \"cited_fact_keys\": [\"reaction:1\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The hearth crackles in the Hearth, casting a warm glow as Wren attempts to engage Ash in a conversation about the tales of Ember Vale. Ash, however, is already on the move, heading towards Saltmarket, leaving Wren to ponder the stories they've heard. Ash, in their usual manner, speaks to Wren about the tales of Ember Vale, though their words are more of a reminder than a new revelation.",
+    "beats": 3,
+    "words": 69,
+    "stock": 2,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 21,
+    "prompt_tokens": 1604,
+    "completion_tokens": 76,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The sun glints off the waves lapping at the rocky shore, and the cry of gulls fills the air. Fisher stands on the islets, eyes scanning the horizon, waiting.\", \"cited_fact_keys\": [\"place\", \"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The sun glints off the waves lapping at the rocky shore, and the cry of gulls fills the air. Fisher stands on the islets, eyes scanning the horizon, waiting.",
+    "beats": 1,
+    "words": 29,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 22,
+    "prompt_tokens": 1561,
+    "completion_tokens": 96,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Rocky islets south of Corvane are a stark contrast to the bustling city, with the wind whipping through the sparse vegetation and the waves crashing against the jagged rocks. Fisher stands on the highest point, their gaze fixed on the horizon, waiting for something or someone.\", \"cited_fact_keys\": [\"place\", \"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The Rocky islets south of Corvane are a stark contrast to the bustling city, with the wind whipping through the sparse vegetation and the waves crashing against the jagged rocks. Fisher stands on the highest point, their gaze fixed on the horizon, waiting for something or someone.",
+    "beats": 1,
+    "words": 47,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 23,
+    "prompt_tokens": 1670,
+    "completion_tokens": 57,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Rain drums on the eaves of the Hearth as Wren shoulders the door open.\", \"cited_fact_keys\": [\"place\", \"attempt:interact\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "Rain drums on the eaves of the Hearth as Wren shoulders the door open.",
+    "beats": 1,
+    "words": 14,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  }
+]
