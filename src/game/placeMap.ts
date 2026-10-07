@@ -58,21 +58,22 @@ function asPoint(raw: unknown): Point {
   return [clamp(pair[0]), clamp(pair[1])]
 }
 
-/** Spots the map reader found, onto the board. */
+/** Spots the map reader found, onto the board; past MAX_SPOTS they come unticked. */
 export function spotsFromReading(found: MapPlaceView[]): BoardSpot[] {
-  return found.map((p) => ({
-    id: localId(),
-    name: p.name,
-    kind: p.kind ?? '',
-    point: asPoint(p.point),
-    keep: isSpot(p.kind ?? '')
-  }))
+  let kept = 0
+  return found.map((p) => {
+    const keep = isSpot(p.kind ?? '') && kept < MAX_SPOTS
+    if (keep) kept += 1
+    return { id: localId(), name: p.name, kind: p.kind ?? '', point: asPoint(p.point), keep }
+  })
 }
 
 /** One world place as the preset stores it. */
 export interface PresetPlace {
   key: string
   name: string
+  /** The world's own words for it, when it has any. */
+  description: string
   map: SpotBoard | null
 }
 
@@ -97,7 +98,8 @@ export function presetPlaces(detail: PresetDetail): PresetPlace[] {
             }))
           }
         : null
-    return { key: String(p['key']), name: String(p['name']), map: board }
+    const description = typeof p['description'] === 'string' ? p['description'] : ''
+    return { key: String(p['key']), name: String(p['name']), description, map: board }
   })
 }
 
@@ -125,12 +127,87 @@ export function spotProblem(board: SpotBoard): string | null {
 }
 
 /** A painting prompt for a closer picture of one place. */
-export function placePrompt(worldName: string, placeName: string): string {
+export function placePrompt(
+  worldName: string,
+  placeName: string,
+  kind = '',
+  description = ''
+): string {
+  const an = /^[aeiou]/i.test(kind) ? 'an' : 'a'
+  const what = kind ? `${an} ${kind} in ${worldName}` : `a place in ${worldName}`
+  // The first sentence of the world's own description, if any, steers the picture.
+  const first =
+    description
+      .trim()
+      .split(/(?<=[.!?])\s/)[0]
+      ?.slice(0, 240) ?? ''
   return (
-    `Painted storybook bird's-eye view of ${placeName}, a place in ${worldName}. ` +
+    `Painted storybook bird's-eye view of ${placeName}, ${what}. ` +
+    (first ? `${first} ` : '') +
     'Its buildings, squares, yards and gates clearly drawn and separated by lanes, ' +
     'each with a short readable label, people-sized details, warm daylight, no border.'
   )
+}
+
+/** Kinds of world place with an inside worth drawing: settlements and sites. */
+const HAS_INSIDE = new Set([
+  'city',
+  'town',
+  'village',
+  'port',
+  'harbor',
+  'harbour',
+  'camp',
+  'tribe',
+  'castle',
+  'fort',
+  'keep',
+  'checkpoint',
+  'gate',
+  'tower',
+  'lighthouse',
+  'temple',
+  'monastery',
+  'chapel',
+  'inn',
+  'market',
+  'smithy',
+  'mill',
+  'farm',
+  'ruin',
+  'ruins',
+  'dungeon',
+  'cave',
+  'mine'
+])
+
+export interface InsideCandidate {
+  key: string
+  name: string
+  description: string
+  /** Kind from the world map pin, when the world has one. */
+  kind: string
+  /** Ticked by default: a settlement or site, or a place of unknown kind. */
+  suggested: boolean
+}
+
+/** The world's places that have no map of their own yet. */
+export function insideCandidates(detail: PresetDetail): InsideCandidate[] {
+  const map = (detail.revision as Record<string, unknown>)['map'] as
+    { pins?: Array<{ key?: string; kind?: string }> } | null | undefined
+  const kinds = new Map((map?.pins ?? []).map((p) => [String(p.key), String(p.kind ?? '')]))
+  return presetPlaces(detail)
+    .filter((p) => p.map === null)
+    .map((p) => {
+      const kind = (kinds.get(p.key) ?? '').trim().toLowerCase()
+      return {
+        key: p.key,
+        name: p.name,
+        description: p.description,
+        kind,
+        suggested: !kind || HAS_INSIDE.has(kind)
+      }
+    })
 }
 
 // --- where people stand inside a place -------------------------------------

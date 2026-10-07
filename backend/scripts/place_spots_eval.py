@@ -15,6 +15,7 @@ import json
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 from worldsim.infrastructure.geography.openrouter import (
     SPOTS_PROMPT,
@@ -39,7 +40,7 @@ POSITION_WORDS = (
 )
 
 
-async def read(reader: OpenRouterMapReader, picture: bytes, prompt: str) -> dict[str, object]:
+async def read(reader: OpenRouterMapReader, picture: bytes, prompt: str) -> dict[str, Any]:
     text, seconds, cost = await reader._ask(MODEL, picture, prompt)  # pyright: ignore[reportPrivateUsage]
     spots = parse_places(text)
     names = [s.name for s in spots]
@@ -53,7 +54,7 @@ async def read(reader: OpenRouterMapReader, picture: bytes, prompt: str) -> dict
     }
 
 
-async def run(prompts: dict[str, str], pictures: list[Path]) -> dict[str, dict[str, object]]:
+async def run(prompts: dict[str, str], pictures: list[Path]) -> dict[str, dict[str, Any]]:
     reader = OpenRouterMapReader(
         os.environ["WORLDSIM_PROVIDER__OPENROUTER_API_KEY"],
         "https://openrouter.ai/api/v1",
@@ -66,7 +67,7 @@ async def run(prompts: dict[str, str], pictures: list[Path]) -> dict[str, dict[s
         for path in pictures
     }
     results = await asyncio.gather(*jobs.values())
-    out: dict[str, dict[str, object]] = {}
+    out: dict[str, dict[str, Any]] = {}
     for (label, stem), result in zip(jobs, results, strict=True):
         out.setdefault(label, {})[stem] = result
     return out

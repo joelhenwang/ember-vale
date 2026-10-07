@@ -41,6 +41,18 @@ describe('api transport', () => {
     expect(isIdempotencyConflict(err)).toBe(false)
   })
 
+  it('says what request validation rejected', async () => {
+    const detail = [{ loc: ['body', 'spots'], msg: 'List should have at most 32 items' }]
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ detail }), { status: 422 }))
+    const err = (await apiFetch('/library/presets/x/places/y/map', {
+      fetchImpl: fetchImpl as unknown as typeof fetch
+    }).catch((e: unknown) => e)) as ApiError
+    expect(err.code).toBe('VALIDATION_FAILED')
+    expect(err.message).toBe('spots: List should have at most 32 items')
+  })
+
   it('marks 503 retryable and falls back without an envelope', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response('oops', { status: 503 }))
     const err = (await apiFetch('/health/ready', {

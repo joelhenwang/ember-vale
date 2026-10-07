@@ -7,6 +7,8 @@ import type {
   PresetDetail
 } from '../../content/clients/worldsim'
 import {
+  insideCandidates,
+  placePrompt,
   layoutSpotTokens,
   placeMapRequest,
   presetPlaces,
@@ -63,6 +65,15 @@ describe('the board', () => {
     expect(board[1]!.point).toEqual([550, 1000])
   })
 
+  it('keeps no more spots than a place holds', () => {
+    const many = Array.from({ length: 40 }, (_, i) => ({
+      name: `House ${i}`,
+      kind: 'house',
+      point: [i, i] as [number, number]
+    }))
+    expect(spotsFromReading(many).filter((s) => s.keep)).toHaveLength(32)
+  })
+
   it('builds the save request from the kept spots', () => {
     const board: SpotBoard = {
       assetId: 'pic',
@@ -98,6 +109,41 @@ describe('the board', () => {
       ['vale', 'art'],
       ['pass', null]
     ])
+  })
+})
+
+describe('painting the places', () => {
+  it('offers the places without a map, settlements ticked', () => {
+    const detail = {
+      revision: {
+        locations: [
+          { key: 'corvane', name: 'Corvane', map: { asset_id: 'a', width: 1, height: 1 } },
+          { key: 'tidemark', name: 'Tidemark' },
+          { key: 'islets', name: 'Rocky islets' },
+          { key: 'hearth', name: 'Hearth' }
+        ],
+        map: {
+          pins: [
+            { key: 'corvane', kind: 'city' },
+            { key: 'tidemark', kind: 'Port' },
+            { key: 'islets', kind: 'island' }
+          ]
+        }
+      }
+    } as unknown as PresetDetail
+    expect(insideCandidates(detail).map((c) => [c.key, c.kind, c.suggested])).toEqual([
+      ['tidemark', 'port', true],
+      ['islets', 'island', false],
+      ['hearth', '', true] // not on the map: its kind is unknown
+    ])
+  })
+})
+
+describe('the painting prompt', () => {
+  it('names the place and its kind, and borrows the first sentence of its description', () => {
+    const prompt = placePrompt('Ember Vale', 'the Hearth', 'inn', 'A warm inn. Smoke curls.')
+    expect(prompt).toContain('the Hearth, an inn in Ember Vale. A warm inn. Its buildings')
+    expect(prompt).not.toContain('Smoke')
   })
 })
 

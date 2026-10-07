@@ -29,6 +29,7 @@ import {
 import { isVersionConflict } from '../api/http'
 import type { PresetDetail } from '../../content/clients/worldsim'
 import {
+  insideCandidates,
   keptSpots,
   placeMapRequest,
   placePrompt,
@@ -36,6 +37,7 @@ import {
   spotProblem,
   spotsFromReading,
   type BoardSpot,
+  type InsideCandidate,
   type PresetPlace,
   type SpotBoard
 } from '../game/placeMap'
@@ -74,6 +76,89 @@ const aspect = computed(() =>
 const selectedSpot = computed(() => board.value?.spots.find((s) => s.id === selected.value) ?? null)
 const keptCount = computed(() => (board.value ? keptSpots(board.value).length : 0))
 
+/* inside every place at once ------------------------------------------------ */
+
+type Step = 'waiting' | 'painting' | 'reading' | 'saving' | 'done' | 'failed' | 'skipped'
+interface BatchRow extends InsideCandidate {
+  tick: boolean
+  step: Step
+  note: string
+}
+const batch = ref<BatchRow[]>([])
+const offered = ref(false)
+const batchRunning = ref(false)
+const batchStop = ref(false)
+const batchCost = ref(0)
+const ticked = computed(() => batch.value.filter((r) => r.tick).length)
+const STEP_TEXT: Record<Step, string> = {
+  waiting: '',
+  painting: 'Painting…',
+  reading: 'Reading the spots…',
+  saving: 'Saving…',
+  done: 'Done',
+  failed: 'Failed',
+  skipped: 'Stopped'
+}
+
+function offerBatch(): void {
+  if (batchRunning.value || !detail.value) return
+  offered.value = true
+  batch.value = insideCandidates(detail.value).map((c) => ({
+    ...c,
+    tick: c.suggested,
+    step: 'waiting',
+    note: ''
+  }))
+}
+
+/** Paint, read and save each ticked place in turn; one failure does not stop the rest. */
+async function runBatch(): Promise<void> {
+  if (batchRunning.value || dirty.value || !detail.value) return
+  batchRunning.value = true
+  batchStop.value = false
+  batchCost.value = 0
+  error.value = null
+  for (const row of batch.value) {
+    if (!row.tick || row.step === 'done') continue
+    if (batchStop.value) {
+      row.step = 'skipped'
+      continue
+    }
+    try {
+      row.step = 'painting'
+      const picture = await paintMap(
+        placePrompt(worldName.value, row.name, row.kind, row.description),
+        '16:9'
+      )
+      row.step = 'reading'
+      const reading = await readMapSpots(picture.asset_id)
+      batchCost.value += Number(reading.cost_usd) || 0
+      const spots = spotsFromReading(reading.places)
+      if (!spots.some((s) => s.keep)) throw new Error('no spots found in the picture')
+      row.step = 'saving'
+      const board: SpotBoard = {
+        assetId: picture.asset_id,
+        width: picture.width,
+        height: picture.height,
+        spots
+      }
+      detail.value = await savePlaceMap(
+        presetId.value,
+        row.key,
+        placeMapRequest(board, detail.value!.version)
+      )
+      row.step = 'done'
+      row.note = `${keptSpots(board).length} spots`
+    } catch (err) {
+      row.step = 'failed'
+      row.note = message(err, 'something went wrong')
+    }
+  }
+  batchRunning.value = false
+  showPlace()
+  notice.value = null
+}
+
 function message(err: unknown, fallback: string): string {
   return err instanceof Error && err.message ? err.message : fallback
 }
@@ -87,7 +172,12 @@ function showPlace(): void {
   placing.value = false
   notice.value = null
   showPaint.value = false
-  paintPrompt.value = placePrompt(worldName.value, place.value?.name ?? 'this place')
+  paintPrompt.value = placePrompt(
+    worldName.value,
+    place.value?.name ?? 'this place',
+    '',
+    place.value?.description ?? ''
+  )
 }
 
 async function load(): Promise<void> {
@@ -342,6 +432,68 @@ onMounted(load)
               {{ p.name }}
             </button>
           </div>
+        </section>
+
+        <!-- inside every place at once ------------------------------------------ -->
+        <section class="card ev-card">
+          <header class="card__head">
+            <span class="card__icon"><IconSparkle :size="20" /></span>
+            <div>
+              <h2 class="card__title">Inside every place at once</h2>
+              <p class="card__sub">
+                Paint a close-up of each place that has none yet, read its spots and save it. About
+                half a minute a place; pictures you made yourself are never replaced.
+              </p>
+            </div>
+          </header>
+          <div v-if="!offered" class="row">
+            <button
+              type="button"
+              class="ghost"
+              :disabled="busy !== '' || dirty"
+              @click="offerBatch">
+              Choose places to paint
+            </button>
+          </div>
+          <template v-else>
+            <ul v-if="batch.length" class="batch">
+              <li v-for="row in batch" :key="row.key" :class="`batch__row batch__row--${row.step}`">
+                <label class="check">
+                  <input v-model="row.tick" type="checkbox" :disabled="batchRunning" />
+                  {{ row.name }} <small v-if="row.kind">({{ row.kind }})</small>
+                </label>
+                <span class="batch__step">
+                  {{ STEP_TEXT[row.step] }}<template v-if="row.note"> · {{ row.note }}</template>
+                </span>
+              </li>
+            </ul>
+            <p v-else class="card__note">Every place already has a map of its own.</p>
+            <div class="row">
+              <button
+                v-if="!batchRunning"
+                type="button"
+                class="cta cta--sm"
+                :disabled="ticked === 0 || busy !== '' || dirty"
+                @click="runBatch">
+                {{
+                  ticked === 0
+                    ? 'Tick the places to paint'
+                    : `Paint ${ticked} ${ticked === 1 ? 'place' : 'places'}`
+                }}
+              </button>
+              <button
+                v-else
+                type="button"
+                class="ghost"
+                :disabled="batchStop"
+                @click="batchStop = true">
+                {{ batchStop ? 'Stopping after this place…' : 'Stop' }}
+              </button>
+              <span v-if="batchCost > 0" class="card__note">
+                Reading cost so far ${{ batchCost.toFixed(4) }} (painting is free).
+              </span>
+            </div>
+          </template>
         </section>
 
         <template v-if="place">
@@ -646,6 +798,34 @@ onMounted(load)
   background: var(--teal);
   border-color: var(--teal);
   color: var(--cream-on-teal);
+}
+.batch {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 6px 18px;
+}
+.batch__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+.batch__row .check small {
+  color: var(--muted);
+}
+.batch__step {
+  font-size: 13.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.batch__row--done .batch__step {
+  color: var(--teal-ink);
+}
+.batch__row--failed .batch__step {
+  color: #b3542e;
+  white-space: normal;
 }
 .chip:disabled {
   opacity: 0.5;

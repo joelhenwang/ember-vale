@@ -1,0 +1,494 @@
+{
+  "map-5": {
+    "seconds": 9.1,
+    "cost_usd": 0.0005908,
+    "count": 15,
+    "positional_names": 1,
+    "houses": 0,
+    "spots": [
+      {
+        "name": "Old Bram’s farm",
+        "kind": "farm",
+        "point": [
+          106,
+          207
+        ]
+      },
+      {
+        "name": "Farm Garden",
+        "kind": "garden",
+        "point": [
+          265,
+          305
+        ]
+      },
+      {
+        "name": "Chapel",
+        "kind": "chapel",
+        "point": [
+          521,
+          168
+        ]
+      },
+      {
+        "name": "Chapel Graveyard",
+        "kind": "graveyard",
+        "point": [
+          594,
+          265
+        ]
+      },
+      {
+        "name": "Sheep Track",
+        "kind": "path",
+        "point": [
+          860,
+          238
+        ]
+      },
+      {
+        "name": "the Hearth",
+        "kind": "inn",
+        "point": [
+          413,
+          414
+        ]
+      },
+      {
+        "name": "Market square",
+        "kind": "square",
+        "point": [
+          456,
+          526
+        ]
+      },
+      {
+        "name": "Market Well",
+        "kind": "well",
+        "point": [
+          445,
+          560
+        ]
+      },
+      {
+        "name": "Smithy",
+        "kind": "smithy",
+        "point": [
+          681,
+          451
+        ]
+      },
+      {
+        "name": "Mill",
+        "kind": "mill",
+        "point": [
+          155,
+          603
+        ]
+      },
+      {
+        "name": "Mill Road",
+        "kind": "road",
+        "point": [
+          544,
+          837
+        ]
+      },
+      {
+        "name": "Stone Bridge",
+        "kind": "bridge",
+        "point": [
+          343,
+          733
+        ]
+      },
+      {
+        "name": "River",
+        "kind": "river",
+        "point": [
+          422,
+          860
+        ]
+      },
+      {
+        "name": "Whispering Wood",
+        "kind": "forest",
+        "point": [
+          873,
+          794
+        ]
+      },
+      {
+        "name": "Hilltop Cairn",
+        "kind": "landmark",
+        "point": [
+          893,
+          45
+        ]
+      }
+    ]
+  },
+  "tidemark": {
+    "seconds": 5.9,
+    "cost_usd": 0.00033655,
+    "count": 15,
+    "positional_names": 0,
+    "houses": 3,
+    "spots": [
+      {
+        "name": "Harbor Square",
+        "kind": "square",
+        "point": [
+          570,
+          520
+        ]
+      },
+      {
+        "name": "The Red Spire",
+        "kind": "tower",
+        "point": [
+          337,
+          208
+        ]
+      },
+      {
+        "name": "The Harbor Pier",
+        "kind": "pier",
+        "point": [
+          936,
+          104
+        ]
+      },
+      {
+        "name": "The Seawall Walk",
+        "kind": "path",
+        "point": [
+          127,
+          713
+        ]
+      },
+      {
+        "name": "The Waterside Road",
+        "kind": "road",
+        "point": [
+          905,
+          630
+        ]
+      },
+      {
+        "name": "The Market Stalls",
+        "kind": "market",
+        "point": [
+          374,
+          473
+        ]
+      },
+      {
+        "name": "The Town Well",
+        "kind": "well",
+        "point": [
+          543,
+          574
+        ]
+      },
+      {
+        "name": "The Bell Tower",
+        "kind": "tower",
+        "point": [
+          166,
+          229
+        ]
+      },
+      {
+        "name": "The Half-Timbered Inn",
+        "kind": "inn",
+        "point": [
+          460,
+          354
+        ]
+      },
+      {
+        "name": "The Stone Gatehouse",
+        "kind": "gate",
+        "point": [
+          639,
+          384
+        ]
+      },
+      {
+        "name": "The Harbor Chapel",
+        "kind": "chapel",
+        "point": [
+          760,
+          383
+        ]
+      },
+      {
+        "name": "The Watchtower",
+        "kind": "tower",
+        "point": [
+          746,
+          709
+        ]
+      },
+      {
+        "name": "The Townhouses",
+        "kind": "house",
+        "point": [
+          291,
+          440
+        ]
+      },
+      {
+        "name": "The Weavers' House",
+        "kind": "house",
+        "point": [
+          660,
+          251
+        ]
+      },
+      {
+        "name": "The Seafarers' House",
+        "kind": "house",
+        "point": [
+          892,
+          735
+        ]
+      }
+    ]
+  },
+  "blackreef": {
+    "seconds": 9.6,
+    "cost_usd": 0.00052505,
+    "count": 13,
+    "positional_names": 1,
+    "houses": 1,
+    "spots": [
+      {
+        "name": "Great Hall",
+        "kind": "hall",
+        "point": [
+          520,
+          280
+        ]
+      },
+      {
+        "name": "West Red Tower",
+        "kind": "tower",
+        "point": [
+          150,
+          355
+        ]
+      },
+      {
+        "name": "Northwest Tower",
+        "kind": "tower",
+        "point": [
+          245,
+          235
+        ]
+      },
+      {
+        "name": "High Central Tower",
+        "kind": "tower",
+        "point": [
+          415,
+          135
+        ]
+      },
+      {
+        "name": "East Red Tower",
+        "kind": "tower",
+        "point": [
+          640,
+          145
+        ]
+      },
+      {
+        "name": "Northeast Tower",
+        "kind": "tower",
+        "point": [
+          880,
+          235
+        ]
+      },
+      {
+        "name": "South Gatehouse",
+        "kind": "gate",
+        "point": [
+          690,
+          590
+        ]
+      },
+      {
+        "name": "Southwest Gate Tower",
+        "kind": "tower",
+        "point": [
+          500,
+          785
+        ]
+      },
+      {
+        "name": "Courtyard Fountain",
+        "kind": "landmark",
+        "point": [
+          500,
+          505
+        ]
+      },
+      {
+        "name": "Inner Courtyard",
+        "kind": "yard",
+        "point": [
+          500,
+          390
+        ]
+      },
+      {
+        "name": "Outer Walk",
+        "kind": "path",
+        "point": [
+          900,
+          670
+        ]
+      },
+      {
+        "name": "Mountain Forest",
+        "kind": "forest",
+        "point": [
+          500,
+          180
+        ]
+      },
+      {
+        "name": "Hilltop Cottages",
+        "kind": "house",
+        "point": [
+          135,
+          205
+        ]
+      }
+    ]
+  },
+  "ixquel": {
+    "seconds": 9.8,
+    "cost_usd": 0.00051255,
+    "count": 14,
+    "positional_names": 0,
+    "houses": 0,
+    "spots": [
+      {
+        "name": "the Central Pavilion",
+        "kind": "hall",
+        "point": [
+          507,
+          448
+        ]
+      },
+      {
+        "name": "the North Hall",
+        "kind": "hall",
+        "point": [
+          500,
+          220
+        ]
+      },
+      {
+        "name": "the Red Tower",
+        "kind": "tower",
+        "point": [
+          279,
+          208
+        ]
+      },
+      {
+        "name": "the East Hall",
+        "kind": "hall",
+        "point": [
+          724,
+          232
+        ]
+      },
+      {
+        "name": "the West Gatehouse",
+        "kind": "gate",
+        "point": [
+          59,
+          391
+        ]
+      },
+      {
+        "name": "the Stone Gatehouse",
+        "kind": "gate",
+        "point": [
+          169,
+          475
+        ]
+      },
+      {
+        "name": "the Southwest Gatehouse",
+        "kind": "gate",
+        "point": [
+          257,
+          664
+        ]
+      },
+      {
+        "name": "the South Hall",
+        "kind": "hall",
+        "point": [
+          496,
+          846
+        ]
+      },
+      {
+        "name": "the Southeast Gatehouse",
+        "kind": "gate",
+        "point": [
+          750,
+          664
+        ]
+      },
+      {
+        "name": "the East Gatehouse",
+        "kind": "gate",
+        "point": [
+          890,
+          469
+        ]
+      },
+      {
+        "name": "the Outer East Gatehouse",
+        "kind": "gate",
+        "point": [
+          934,
+          391
+        ]
+      },
+      {
+        "name": "the Courtyard",
+        "kind": "yard",
+        "point": [
+          500,
+          570
+        ]
+      },
+      {
+        "name": "the Paved Walks",
+        "kind": "path",
+        "point": [
+          500,
+          500
+        ]
+      },
+      {
+        "name": "the Surrounding Forest",
+        "kind": "forest",
+        "point": [
+          500,
+          70
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,886 @@
+{
+  "map-5": {
+    "seconds": 9.2,
+    "cost_usd": 0.00060505,
+    "count": 19,
+    "positional_names": 0,
+    "houses": 3,
+    "spots": [
+      {
+        "name": "Old Bram’s farm",
+        "kind": "farm",
+        "point": [
+          139,
+          188
+        ]
+      },
+      {
+        "name": "farm garden",
+        "kind": "garden",
+        "point": [
+          273,
+          294
+        ]
+      },
+      {
+        "name": "Chapel",
+        "kind": "chapel",
+        "point": [
+          519,
+          169
+        ]
+      },
+      {
+        "name": "chapel graveyard",
+        "kind": "graveyard",
+        "point": [
+          593,
+          269
+        ]
+      },
+      {
+        "name": "Sheep Track",
+        "kind": "path",
+        "point": [
+          868,
+          193
+        ]
+      },
+      {
+        "name": "the Hearth",
+        "kind": "inn",
+        "point": [
+          411,
+          388
+        ]
+      },
+      {
+        "name": "Market square",
+        "kind": "square",
+        "point": [
+          462,
+          501
+        ]
+      },
+      {
+        "name": "market well",
+        "kind": "well",
+        "point": [
+          445,
+          560
+        ]
+      },
+      {
+        "name": "Smithy",
+        "kind": "smithy",
+        "point": [
+          699,
+          446
+        ]
+      },
+      {
+        "name": "Mill",
+        "kind": "mill",
+        "point": [
+          157,
+          587
+        ]
+      },
+      {
+        "name": "Mill Road",
+        "kind": "road",
+        "point": [
+          563,
+          806
+        ]
+      },
+      {
+        "name": "stone bridge",
+        "kind": "bridge",
+        "point": [
+          311,
+          730
+        ]
+      },
+      {
+        "name": "river",
+        "kind": "river",
+        "point": [
+          467,
+          815
+        ]
+      },
+      {
+        "name": "Whispering Wood",
+        "kind": "forest",
+        "point": [
+          865,
+          744
+        ]
+      },
+      {
+        "name": "village houses",
+        "kind": "house",
+        "point": [
+          357,
+          567
+        ]
+      },
+      {
+        "name": "village houses",
+        "kind": "house",
+        "point": [
+          565,
+          556
+        ]
+      },
+      {
+        "name": "village houses",
+        "kind": "house",
+        "point": [
+          603,
+          394
+        ]
+      },
+      {
+        "name": "village barn",
+        "kind": "barn",
+        "point": [
+          290,
+          185
+        ]
+      },
+      {
+        "name": "surrounding pasture",
+        "kind": "field",
+        "point": [
+          799,
+          325
+        ]
+      }
+    ]
+  },
+  "tidemark": {
+    "seconds": 9.2,
+    "cost_usd": 0.0008868,
+    "count": 59,
+    "positional_names": 4,
+    "houses": 48,
+    "spots": [
+      {
+        "name": "central paved square",
+        "kind": "square",
+        "point": [
+          510,
+          523
+        ]
+      },
+      {
+        "name": "tall-roofed tower",
+        "kind": "tower",
+        "point": [
+          343,
+          203
+        ]
+      },
+      {
+        "name": "waterfront timber house",
+        "kind": "house",
+        "point": [
+          140,
+          390
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          209,
+          432
+        ]
+      },
+      {
+        "name": "corner house by the square",
+        "kind": "house",
+        "point": [
+          225,
+          318
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          240,
+          281
+        ]
+      },
+      {
+        "name": "house with a front dormer",
+        "kind": "house",
+        "point": [
+          234,
+          482
+        ]
+      },
+      {
+        "name": "house beside the square",
+        "kind": "house",
+        "point": [
+          301,
+          466
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          300,
+          331
+        ]
+      },
+      {
+        "name": "house near the tower",
+        "kind": "house",
+        "point": [
+          320,
+          235
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          359,
+          180
+        ]
+      },
+      {
+        "name": "house with a red awning",
+        "kind": "shop",
+        "point": [
+          369,
+          387
+        ]
+      },
+      {
+        "name": "large timber house",
+        "kind": "house",
+        "point": [
+          420,
+          310
+        ]
+      },
+      {
+        "name": "house with a red awning",
+        "kind": "shop",
+        "point": [
+          376,
+          541
+        ]
+      },
+      {
+        "name": "large house at the square's edge",
+        "kind": "house",
+        "point": [
+          432,
+          620
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          452,
+          546
+        ]
+      },
+      {
+        "name": "house with a red awning",
+        "kind": "shop",
+        "point": [
+          369,
+          427
+        ]
+      },
+      {
+        "name": "large timber house",
+        "kind": "house",
+        "point": [
+          447,
+          232
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          429,
+          153
+        ]
+      },
+      {
+        "name": "house behind the square",
+        "kind": "house",
+        "point": [
+          435,
+          139
+        ]
+      },
+      {
+        "name": "large timber house",
+        "kind": "house",
+        "point": [
+          501,
+          203
+        ]
+      },
+      {
+        "name": "house with a red awning",
+        "kind": "shop",
+        "point": [
+          375,
+          494
+        ]
+      },
+      {
+        "name": "large timber house",
+        "kind": "house",
+        "point": [
+          493,
+          346
+        ]
+      },
+      {
+        "name": "large timber house",
+        "kind": "house",
+        "point": [
+          485,
+          165
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          523,
+          115
+        ]
+      },
+      {
+        "name": "house near the waterfront",
+        "kind": "house",
+        "point": [
+          566,
+          138
+        ]
+      },
+      {
+        "name": "large house beside the square",
+        "kind": "house",
+        "point": [
+          600,
+          255
+        ]
+      },
+      {
+        "name": "dark-roofed house",
+        "kind": "house",
+        "point": [
+          606,
+          277
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          614,
+          134
+        ]
+      },
+      {
+        "name": "house behind the square",
+        "kind": "house",
+        "point": [
+          656,
+          139
+        ]
+      },
+      {
+        "name": "dark-roofed house",
+        "kind": "house",
+        "point": [
+          619,
+          208
+        ]
+      },
+      {
+        "name": "large timber house",
+        "kind": "house",
+        "point": [
+          644,
+          290
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          702,
+          174
+        ]
+      },
+      {
+        "name": "large timber house",
+        "kind": "house",
+        "point": [
+          702,
+          253
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          740,
+          150
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          789,
+          188
+        ]
+      },
+      {
+        "name": "large timber house",
+        "kind": "house",
+        "point": [
+          798,
+          270
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          846,
+          172
+        ]
+      },
+      {
+        "name": "large timber house",
+        "kind": "house",
+        "point": [
+          803,
+          211
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          883,
+          220
+        ]
+      },
+      {
+        "name": "large timber house",
+        "kind": "house",
+        "point": [
+          928,
+          268
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          954,
+          190
+        ]
+      },
+      {
+        "name": "house near the square",
+        "kind": "house",
+        "point": [
+          916,
+          412
+        ]
+      },
+      {
+        "name": "large timber house",
+        "kind": "house",
+        "point": [
+          982,
+          518
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          1000,
+          369
+        ]
+      },
+      {
+        "name": "large timber house",
+        "kind": "house",
+        "point": [
+          1000,
+          319
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          906,
+          497
+        ]
+      },
+      {
+        "name": "large timber house",
+        "kind": "house",
+        "point": [
+          923,
+          563
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          1000,
+          570
+        ]
+      },
+      {
+        "name": "large timber house",
+        "kind": "house",
+        "point": [
+          1000,
+          685
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          912,
+          680
+        ]
+      },
+      {
+        "name": "large timber house",
+        "kind": "house",
+        "point": [
+          652,
+          713
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          560,
+          724
+        ]
+      },
+      {
+        "name": "red-roofed house",
+        "kind": "house",
+        "point": [
+          751,
+          692
+        ]
+      },
+      {
+        "name": "waterfront path",
+        "kind": "path",
+        "point": [
+          196,
+          750
+        ]
+      },
+      {
+        "name": "town streets",
+        "kind": "road",
+        "point": [
+          501,
+          567
+        ]
+      },
+      {
+        "name": "surrounding water",
+        "kind": "lake",
+        "point": [
+          62,
+          529
+        ]
+      },
+      {
+        "name": "waterfront pier",
+        "kind": "pier",
+        "point": [
+          926,
+          100
+        ]
+      },
+      {
+        "name": "harbor water",
+        "kind": "lake",
+        "point": [
+          955,
+          36
+        ]
+      }
+    ]
+  },
+  "blackreef": {
+    "seconds": 7.4,
+    "cost_usd": 0.0004568,
+    "count": 16,
+    "positional_names": 2,
+    "houses": 2,
+    "spots": [
+      {
+        "name": "castle hall",
+        "kind": "hall",
+        "point": [
+          500,
+          299
+        ]
+      },
+      {
+        "name": "central courtyard",
+        "kind": "yard",
+        "point": [
+          497,
+          462
+        ]
+      },
+      {
+        "name": "courtyard fountain",
+        "kind": "landmark",
+        "point": [
+          497,
+          503
+        ]
+      },
+      {
+        "name": "main gate",
+        "kind": "gate",
+        "point": [
+          495,
+          820
+        ]
+      },
+      {
+        "name": "southwest corner tower",
+        "kind": "tower",
+        "point": [
+          168,
+          389
+        ]
+      },
+      {
+        "name": "southeast corner tower",
+        "kind": "tower",
+        "point": [
+          820,
+          288
+        ]
+      },
+      {
+        "name": "northwest tower",
+        "kind": "tower",
+        "point": [
+          247,
+          326
+        ]
+      },
+      {
+        "name": "northern central tower",
+        "kind": "tower",
+        "point": [
+          416,
+          129
+        ]
+      },
+      {
+        "name": "northeast tower",
+        "kind": "tower",
+        "point": [
+          642,
+          117
+        ]
+      },
+      {
+        "name": "eastern inner tower",
+        "kind": "tower",
+        "point": [
+          740,
+          185
+        ]
+      },
+      {
+        "name": "western outlying houses",
+        "kind": "house",
+        "point": [
+          142,
+          222
+        ]
+      },
+      {
+        "name": "eastern outlying house",
+        "kind": "house",
+        "point": [
+          954,
+          208
+        ]
+      },
+      {
+        "name": "surrounding forest",
+        "kind": "forest",
+        "point": [
+          52,
+          526
+        ]
+      },
+      {
+        "name": "surrounding fields",
+        "kind": "field",
+        "point": [
+          492,
+          152
+        ]
+      },
+      {
+        "name": "castle approach path",
+        "kind": "path",
+        "point": [
+          491,
+          914
+        ]
+      },
+      {
+        "name": "outer road",
+        "kind": "road",
+        "point": [
+          83,
+          782
+        ]
+      }
+    ]
+  },
+  "ixquel": {
+    "seconds": 7.7,
+    "cost_usd": 0.0004908,
+    "count": 12,
+    "positional_names": 0,
+    "houses": 2,
+    "spots": [
+      {
+        "name": "Central pavilion",
+        "kind": "hall",
+        "point": [
+          504,
+          428
+        ]
+      },
+      {
+        "name": "Rear hall",
+        "kind": "hall",
+        "point": [
+          522,
+          212
+        ]
+      },
+      {
+        "name": "Northwest building",
+        "kind": "house",
+        "point": [
+          285,
+          228
+        ]
+      },
+      {
+        "name": "Northeast building",
+        "kind": "house",
+        "point": [
+          713,
+          234
+        ]
+      },
+      {
+        "name": "Northwest gatehouse",
+        "kind": "gate",
+        "point": [
+          118,
+          411
+        ]
+      },
+      {
+        "name": "Northeast gatehouse",
+        "kind": "gate",
+        "point": [
+          882,
+          409
+        ]
+      },
+      {
+        "name": "Southwest gatehouse",
+        "kind": "gate",
+        "point": [
+          255,
+          665
+        ]
+      },
+      {
+        "name": "Southeast gatehouse",
+        "kind": "gate",
+        "point": [
+          752,
+          681
+        ]
+      },
+      {
+        "name": "South gatehouse",
+        "kind": "gate",
+        "point": [
+          501,
+          848
+        ]
+      },
+      {
+        "name": "Courtyard",
+        "kind": "yard",
+        "point": [
+          500,
+          577
+        ]
+      },
+      {
+        "name": "Paved paths",
+        "kind": "path",
+        "point": [
+          500,
+          500
+        ]
+      },
+      {
+        "name": "Surrounding forest",
+        "kind": "forest",
+        "point": [
+          45,
+          690
+        ]
+      }
+    ]
+  }
+}

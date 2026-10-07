@@ -69,6 +69,18 @@ export interface RequestOptions {
 
 function readEnvelope(raw: unknown): EnvelopeError | null {
   if (typeof raw !== 'object' || raw === null) return null
+  // Request validation answers in the framework's own shape:
+  // {"detail": [{"loc": ["body", "spots"], "msg": "List should have at most 32 items"}]}
+  const detail = (raw as { detail?: unknown }).detail
+  if (Array.isArray(detail) && detail.length > 0) {
+    const first = detail[0] as { loc?: unknown; msg?: unknown }
+    if (typeof first.msg === 'string') {
+      const where = Array.isArray(first.loc)
+        ? first.loc.filter((part) => part !== 'body').join('.')
+        : ''
+      return { code: 'VALIDATION_FAILED', message: where ? `${where}: ${first.msg}` : first.msg }
+    }
+  }
   const error = (raw as { error?: unknown }).error
   if (typeof error !== 'object' || error === null) return null
   const { code, message } = error as { code?: unknown; message?: unknown }
