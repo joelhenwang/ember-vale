@@ -10,6 +10,8 @@ import {
 const wren: PresetCharacter = {
   id: 'w1',
   revision: 2,
+  version: 1,
+  builtin: false,
   name: 'Wren',
   role: 'Traveler',
   blurb: 'Quick eyes.',
@@ -23,6 +25,8 @@ const wren: PresetCharacter = {
 const nessa: PresetCharacter = {
   id: 'n1',
   revision: 1,
+  version: 1,
+  builtin: false,
   name: 'Nessa',
   role: 'Ferrywoman',
   blurb: 'Knows the river.',
@@ -36,6 +40,8 @@ const nessa: PresetCharacter = {
 const vale: PresetWorld = {
   id: 'v1',
   revision: 2,
+  version: 1,
+  builtin: false,
   name: 'Ember Vale',
   description: 'A welcoming valley.',
   places: [

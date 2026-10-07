@@ -107,8 +107,10 @@ const helpOpen = ref(false)
   height: 100%;
   display: inline-flex;
   align-items: center;
-  font-size: 17.5px;
+  font-family: var(--font-ui);
+  font-size: 18px;
   font-weight: 500;
+  letter-spacing: 0.01em;
   color: #4c4130;
   transition: color 0.15s ease;
 }
@@ -118,15 +120,23 @@ const helpOpen = ref(false)
 .nav__item--active {
   color: var(--teal-ink);
 }
-.nav__item--active::after {
+.nav__item::after {
   content: '';
   position: absolute;
-  left: 1px;
-  right: 1px;
+  left: 0;
+  right: 0;
   bottom: 12px;
-  height: 2px;
+  height: 2.5px;
   border-radius: 2px;
-  background: var(--teal-ink);
+  background: linear-gradient(90deg, var(--teal-ink), var(--ember));
+  transform: scaleX(0);
+  transition: transform 0.32s var(--ease-out);
+}
+.nav__item:hover::after {
+  transform: scaleX(0.35);
+}
+.nav__item--active::after {
+  transform: scaleX(1);
 }
 
 /* right cluster */
@@ -177,7 +187,8 @@ const helpOpen = ref(false)
     0 1px 3px rgba(96, 74, 40, 0.3);
 }
 .profile__name {
-  font-size: 18px;
+  font-family: var(--font-ui);
+  font-size: 17px;
   font-weight: 500;
   color: var(--ink);
 }

@@ -11,10 +11,15 @@ import { computed, ref } from 'vue'
 import type { CharacterDef, FramedCover, FramedPortrait, ImageSlot, WorldDef } from '../game/model'
 import type { Frame } from '../game/framing'
 import { getPreset, libraryAssetUrl, listPresets } from '../api/worldsim'
+import type { PresetDetail } from '../../content/clients/worldsim'
 
 export interface PresetCharacter {
   id: string
   revision: number
+  /** The preset's metadata version, for archiving. */
+  version: number
+  /** Shipped with the app: it can be copied but not put away. */
+  builtin: boolean
   name: string
   role: string
   blurb: string
@@ -28,6 +33,8 @@ export interface PresetCharacter {
 export interface PresetWorld {
   id: string
   revision: number
+  version: number
+  builtin: boolean
   name: string
   description: string
   places: { key: string; name: string }[]
@@ -108,27 +115,58 @@ export function toLibraryWorld(p: PresetWorld): WorldDef {
   }
 }
 
+/*
+ * The last shelf read, shared by every page: a page opening again shows it
+ * at once and refreshes quietly. A revision never changes once written, so
+ * its details are read only once.
+ */
+let shelf: { worlds: PresetWorld[]; characters: PresetCharacter[] } | null = null
+const revisions = new Map<string, PresetDetail>()
+
+/** Forget the shared shelf (tests, and after a change made elsewhere). */
+export function forgetPresetShelf(): void {
+  shelf = null
+  revisions.clear()
+}
+
+async function revisionOf(
+  id: string,
+  revision: number,
+  signal?: AbortSignal
+): Promise<PresetDetail> {
+  const key = `${id}:${revision}`
+  const known = revisions.get(key)
+  if (known) return known
+  const detail = await getPreset(id, revision, { signal })
+  revisions.set(key, detail)
+  return detail
+}
+
 export function usePresets() {
-  const worlds = ref<PresetWorld[]>([])
-  const characters = ref<PresetCharacter[]>([])
+  const worlds = ref<PresetWorld[]>(shelf?.worlds ?? [])
+  const characters = ref<PresetCharacter[]>(shelf?.characters ?? [])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
   const ready = computed(() => !loading.value && error.value === null)
 
   async function load(signal?: AbortSignal): Promise<void> {
-    loading.value = true
+    // Only an empty shelf shows a loading state; a known one refreshes quietly.
+    loading.value = shelf === null
     error.value = null
     try {
       const [worldSummaries, charSummaries] = await Promise.all([
         listPresets('world', { signal }),
         listPresets('character', { signal })
       ])
+      const versions = new Map(
+        [...worldSummaries, ...charSummaries].map((p) => [p.id, p.version] as const)
+      )
       const worldDetails = await Promise.all(
-        worldSummaries.map((w) => getPreset(w.id, w.current_revision, { signal }))
+        worldSummaries.map((w) => revisionOf(w.id, w.current_revision, signal))
       )
       const charDetails = await Promise.all(
-        charSummaries.map((c) => getPreset(c.id, c.current_revision, { signal }))
+        charSummaries.map((c) => revisionOf(c.id, c.current_revision, signal))
       )
       worlds.value = worldDetails
         .map((d) => {
@@ -137,6 +175,8 @@ export function usePresets() {
           return {
             id: d.id,
             revision: d.current_revision,
+            version: versions.get(d.id) ?? d.version,
+            builtin: d.builtin,
             name: d.name,
             description: (rev['description'] as string | undefined) ?? '',
             places: places.map((p) => ({ key: p.key, name: p.name })),
@@ -152,6 +192,8 @@ export function usePresets() {
           return {
             id: d.id,
             revision: d.current_revision,
+            version: versions.get(d.id) ?? d.version,
+            builtin: d.builtin,
             name,
             role: roleFromTags(tags),
             blurb: (rev['appearance'] as string | undefined) ?? '',
@@ -163,6 +205,7 @@ export function usePresets() {
           }
         })
         .sort((a, b) => a.name.localeCompare(b.name))
+      shelf = { worlds: worlds.value, characters: characters.value }
     } catch (err) {
       if (err instanceof Error && err.name === 'ApiError') {
         const cancelled = (err as { cancelled?: boolean }).cancelled

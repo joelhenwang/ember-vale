@@ -1,32 +1,22 @@
+<!--
+  CreateLibTile — the dashed "create one" tile at the end of a library
+  shelf. The whole tile is the button, on every shelf alike.
+-->
 <script setup lang="ts">
 import MountainRidge from '../decor/MountainRidge.vue'
 import IconEmblem from '../icons/IconEmblem.vue'
-import IconPlus from '../icons/IconPlus.vue'
 
-withDefaults(
-  defineProps<{
-    title: string
-    copy: string
-    cta?: string
-  }>(),
-  { cta: undefined }
-)
+defineProps<{ title: string; copy: string }>()
 defineEmits<{ create: [] }>()
 </script>
 
 <template>
-  <div class="create-tile">
+  <button type="button" class="create-tile" @click="$emit('create')">
     <MountainRidge class="create-tile__ridge" />
-    <IconEmblem :size="cta ? 38 : 42" class="create-tile__mark" />
-    <h3 class="create-tile__title">{{ title }}</h3>
-    <p class="ev-quote create-tile__copy">{{ copy }}</p>
-    <button v-if="cta" type="button" class="create-tile__btn" @click="$emit('create')">
-      <IconPlus :size="13" /> {{ cta }}
-    </button>
-    <button v-else type="button" class="create-tile__hit" @click="$emit('create')">
-      <span class="sr-only">Create</span>
-    </button>
-  </div>
+    <IconEmblem :size="42" class="create-tile__mark" />
+    <span class="create-tile__title">{{ title }}</span>
+    <span class="ev-quote create-tile__copy">{{ copy }}</span>
+  </button>
 </template>
 
 <style scoped>
@@ -44,12 +34,17 @@ defineEmits<{ create: [] }>()
   min-height: 200px;
   overflow: hidden;
   transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease;
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.22s var(--ease-out),
+    box-shadow 0.22s var(--ease-out);
 }
 .create-tile:hover {
-  border-color: #a98d57;
-  background: #f8efdb;
+  border-color: var(--ember);
+  border-style: solid;
+  background: #fbf1dc;
+  transform: translateY(-3px);
+  box-shadow: var(--card-shadow-hover);
 }
 .create-tile__ridge {
   position: absolute;
@@ -63,6 +58,13 @@ defineEmits<{ create: [] }>()
 .create-tile__mark {
   position: relative;
   color: #b08d3f;
+  transition:
+    color 0.2s ease,
+    transform 0.5s var(--ease-spring);
+}
+.create-tile:hover .create-tile__mark {
+  color: var(--ember);
+  transform: rotate(90deg) scale(1.12);
 }
 .create-tile__title {
   position: relative;
@@ -76,41 +78,9 @@ defineEmits<{ create: [] }>()
 .create-tile__copy {
   position: relative;
   margin-top: 6px;
+  font-family: var(--font-body);
   font-size: 15.5px;
   line-height: 1.4;
   white-space: pre-line;
-}
-.create-tile__btn {
-  position: relative;
-  margin-top: 16px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 40px;
-  padding: 0 22px;
-  border-radius: 9px;
-  background: linear-gradient(180deg, #23665f, #14514f);
-  border: 1px solid #0f4147;
-  box-shadow: inset 0 1px 0 rgba(255, 243, 214, 0.2);
-  color: var(--cream-on-teal);
-  font-size: 15.5px;
-  font-weight: 500;
-  transition: filter 0.14s ease;
-}
-.create-tile__btn:hover {
-  filter: brightness(1.07);
-}
-.create-tile__hit {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-}
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
 }
 </style>

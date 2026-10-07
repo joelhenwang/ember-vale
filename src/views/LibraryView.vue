@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onActivated, onMounted, onUnmounted, ref } from 'vue'
 import type { Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { catalog, libraryUi, resetLibraryFilters } from '../game/catalog'
 import { filterCharactersLibrary, filterPacks, filterWorlds } from '../game/filters'
 import { toLibraryCharacter, toLibraryWorld, usePresets } from '../composables/usePresets'
+import { duplicatePreset, setPresetArchived } from '../api/worldsim'
+import type { CardMenuItem } from '../components/ui/CardMenu.vue'
 import { useGameImage } from '../game/images'
 import { useRouteQueryTab } from '../game/useTab'
 import LibTabBar from '../components/library/LibTabBar.vue'
@@ -12,13 +14,14 @@ import CharacterLibCard from '../components/library/CharacterLibCard.vue'
 import WorldLibCard from '../components/library/WorldLibCard.vue'
 import PackLibCard from '../components/library/PackLibCard.vue'
 import CreateLibTile from '../components/library/CreateLibTile.vue'
-import InspireRail from '../components/library/InspireRail.vue'
 import SearchField from '../components/ui/SearchField.vue'
 import ChipGroup from '../components/ui/ChipGroup.vue'
 import SortSelect from '../components/ui/SortSelect.vue'
 import ViewToggle from '../components/ui/ViewToggle.vue'
-import IconPlus from '../components/icons/IconPlus.vue'
-import IconChevronDown from '../components/icons/IconChevronDown.vue'
+import IconArchive from '../components/icons/IconArchive.vue'
+import IconGlobe from '../components/icons/IconGlobe.vue'
+import IconPencil from '../components/icons/IconPencil.vue'
+import IconStack from '../components/icons/IconStack.vue'
 import IconGrid from '../components/icons/IconGrid.vue'
 import IconList from '../components/icons/IconList.vue'
 import IconSparkle from '../components/icons/IconSparkle.vue'
@@ -29,9 +32,9 @@ const tab = useRouteQueryTab(route, router, 'characters')
 
 const bannerUrl = useGameImage('library.banner')
 
-const viewOptions: { value: 'grid' | 'list'; label: string; icon: Component }[] = [
-  { value: 'grid', label: 'Grid view', icon: IconGrid },
-  { value: 'list', label: 'List view', icon: IconList }
+const viewOptions: { value: 'grid' | 'list'; label: string; short: string; icon: Component }[] = [
+  { value: 'grid', label: 'Cards view', short: 'Cards', icon: IconGrid },
+  { value: 'list', label: 'List view', short: 'List', icon: IconList }
 ]
 
 /* Worlds and characters come from server presets (E3); style packs and
@@ -43,6 +46,13 @@ onMounted(() => {
   void presets.load(presetAbort.signal)
 })
 onUnmounted(() => presetAbort?.abort())
+// Kept alive between visits: coming back refreshes quietly (usePresets
+// only shows its loading line while it has nothing to show).
+let opened = false
+onActivated(() => {
+  if (opened) retryPresets()
+  opened = true
+})
 
 function retryPresets(): void {
   presetAbort?.abort()
@@ -60,7 +70,6 @@ const tabs = computed(() => [
 interface TabConfig {
   search: string
   chips: { value: string; label: string }[]
-  rail: { title: string; copy: string; quote: string }
 }
 
 const configs: Record<string, TabConfig> = {
@@ -70,12 +79,7 @@ const configs: Record<string, TabConfig> = {
       { value: 'all', label: 'All' },
       { value: 'player', label: 'Player-ready' },
       { value: 'npc', label: 'NPC' }
-    ],
-    rail: {
-      title: 'From character to story',
-      copy: 'Select characters here, then add them to a cast when creating a new story.',
-      quote: '“Familiar faces.\nBrighter worlds.”'
-    }
+    ]
   },
   worlds: {
     search: 'Search worlds…',
@@ -83,30 +87,15 @@ const configs: Record<string, TabConfig> = {
       { value: 'all', label: 'All' },
       { value: 'ready', label: 'Ready to use' },
       { value: 'draft', label: 'Drafts' }
-    ],
-    rail: {
-      title: 'From world to story',
-      copy: 'Choose a world, gather your cast, and begin a new story.',
-      quote: '“Familiar places.\nBrighter worlds.”'
-    }
+    ]
   },
   'style-packs': {
     search: 'Search style packs…',
-    chips: [],
-    rail: {
-      title: 'From style to story',
-      copy: 'Every tale wears a voice. Craft a house style, then lend it to any world.',
-      quote: '“New voices.\nOld fires.”'
-    }
+    chips: []
   },
   templates: {
     search: 'Search templates…',
-    chips: [],
-    rail: {
-      title: 'From spark to story',
-      copy: 'Start from a template, or roll your own. The page stays blank until you begin.',
-      quote: '“First lines.\nLasting worlds.”'
-    }
+    chips: []
   }
 }
 
@@ -151,6 +140,60 @@ function setTab(key: string): void {
 /* The default tab is server-backed, while the shared default sort is not. */
 if (serverTab.value && libraryUi.sort !== 'name') libraryUi.sort = 'name'
 
+/* card menus ------------------------------------------------------------------ */
+const notice = ref<{ text: string; undo?: () => void } | null>(null)
+let noticeTimer: ReturnType<typeof setTimeout> | undefined
+function tell(text: string, undo?: () => void): void {
+  notice.value = { text, undo }
+  clearTimeout(noticeTimer)
+  noticeTimer = setTimeout(() => (notice.value = null), 7000)
+}
+
+function presetOf(kind: 'character' | 'world', id: string) {
+  return kind === 'world'
+    ? presets.worlds.value.find((w) => w.id === id)
+    : presets.characters.value.find((c) => c.id === id)
+}
+
+function menuFor(kind: 'character' | 'world', id: string): CardMenuItem[] {
+  const items: CardMenuItem[] = [{ key: 'open', label: 'Open in the studio', icon: IconPencil }]
+  if (kind === 'world') items.push({ key: 'map', label: 'Draw the map', icon: IconGlobe })
+  items.push({ key: 'copy', label: 'Make a copy', icon: IconStack })
+  if (!presetOf(kind, id)?.builtin)
+    items.push({ key: 'archive', label: 'Archive', icon: IconArchive, danger: true })
+  return items
+}
+
+async function onPick(kind: 'character' | 'world', id: string, key: string): Promise<void> {
+  const preset = presetOf(kind, id)
+  if (!preset) return
+  if (key === 'open') return kind === 'world' ? openWorld(id) : openCharacter(id)
+  if (key === 'map') return void router.push(`/library/world/${id}/map`)
+  try {
+    if (key === 'copy') {
+      const copy = await duplicatePreset(id)
+      await presets.load()
+      tell(`Made “${copy.name}”.`)
+    } else if (key === 'archive') {
+      const done = await setPresetArchived(id, true, preset.version)
+      await presets.load()
+      tell(`Archived “${preset.name}”.`, () => void restore(id, done.version, preset.name))
+    }
+  } catch (err) {
+    tell(err instanceof Error ? err.message : 'That did not work — try again.')
+  }
+}
+
+async function restore(id: string, version: number, name: string): Promise<void> {
+  try {
+    await setPresetArchived(id, false, version)
+    await presets.load()
+    tell(`“${name}” is back.`)
+  } catch (err) {
+    tell(err instanceof Error ? err.message : 'Could not bring it back.')
+  }
+}
+
 /** Studios are shared pages — the library opens its own flavor of each. */
 function openCharacter(id: string): void {
   router.push(`/library/character/${id}`)
@@ -174,26 +217,16 @@ function openWorld(id: string): void {
             Build the places, people, and storytelling styles you can reuse across adventures.
           </p>
         </div>
-        <div class="lib__side">
-          <div class="lib__create">
-            <button type="button" class="lib__create-main" @click="openCharacter('new')">
-              <IconPlus :size="15" /> Create
-            </button>
-            <button type="button" class="lib__create-caret" aria-label="More create options">
-              <IconChevronDown :size="15" />
-            </button>
-          </div>
-          <p class="ev-quote lib__motto">“Same people.<br />New paths.”</p>
-        </div>
       </div>
     </section>
 
-    <!-- tabs ------------------------------------------------------------------ -->
-    <LibTabBar :tabs="tabs" :model-value="tab" @update="setTab" />
-
-    <!-- content ----------------------------------------------------------------- -->
-    <div class="lib__grid" :class="{ 'lib--list': libraryUi.view === 'list' }">
-      <section class="lib__panel ev-card" :aria-label="`Library — ${tab}`">
+    <!-- tabs, joined to the shelf they open ------------------------------------ -->
+    <section
+      class="lib__panel ev-card"
+      :class="{ 'lib--list': libraryUi.view === 'list' }"
+      :aria-label="`Library — ${tab}`">
+      <LibTabBar :tabs="tabs" :model-value="tab" @update="setTab" />
+      <div class="lib__shelf">
         <div class="lib__toolbar">
           <SearchField
             v-model="libraryUi.search"
@@ -206,7 +239,7 @@ function openWorld(id: string): void {
         </div>
 
         <!-- characters -->
-        <div v-if="tab === 'characters'" class="lib__cards">
+        <div v-if="tab === 'characters'" class="lib__cards ev-rise">
           <p v-if="presets.loading.value" class="lib__none" role="status">Reading the archive…</p>
           <p v-else-if="presets.error.value" class="lib__none" role="alert">
             The archive did not answer ({{ presets.error.value }}) —
@@ -217,7 +250,9 @@ function openWorld(id: string): void {
               v-for="c in characters"
               :key="c.id"
               :character="c"
-              @open="openCharacter(c.id)" />
+              :menu="menuFor('character', c.id)"
+              @open="openCharacter(c.id)"
+              @pick="onPick('character', c.id, $event)" />
             <p v-if="!characters.length" class="lib__none">
               Nothing in the archive matches — try another word.
             </p>
@@ -230,49 +265,57 @@ New possibilities."
         </div>
 
         <!-- worlds -->
-        <div v-else-if="tab === 'worlds'" class="lib__cards lib__cards--worlds">
+        <div v-else-if="tab === 'worlds'" class="ev-rise lib__cards lib__cards--worlds">
           <p v-if="presets.loading.value" class="lib__none" role="status">Reading the archive…</p>
           <p v-else-if="presets.error.value" class="lib__none" role="alert">
             The archive did not answer ({{ presets.error.value }}) —
             <button type="button" class="lib__link" @click="retryPresets()">retry</button>
           </p>
           <template v-else>
-            <WorldLibCard v-for="w in worlds" :key="w.id" :world="w" @open="openWorld(w.id)" />
+            <WorldLibCard
+              v-for="w in worlds"
+              :key="w.id"
+              :world="w"
+              :menu="menuFor('world', w.id)"
+              @open="openWorld(w.id)"
+              @pick="onPick('world', w.id, $event)" />
             <p v-if="!worlds.length" class="lib__none">No worlds match — the map is blank.</p>
           </template>
           <CreateLibTile
             title="Create a world"
             copy="Shape the setting of
 your next story."
-            cta="Create world"
             @create="openWorld('new')" />
         </div>
 
         <!-- style packs -->
-        <div v-else-if="tab === 'style-packs'" class="lib__cards lib__cards--packs">
+        <div v-else-if="tab === 'style-packs'" class="ev-rise lib__cards lib__cards--packs">
           <p class="lib__none">Preview samples — persistence arrives with editor drafts.</p>
           <PackLibCard v-for="p in packs" :key="p.id" :pack="p" />
           <CreateLibTile
             title="Create a style pack"
             copy="Find the voice
-of your tales."
-            cta="Create pack" />
+of your tales." />
         </div>
 
         <!-- templates -->
-        <div v-else class="lib__cards lib__cards--worlds">
+        <div v-else class="ev-rise lib__cards lib__cards--worlds">
           <p class="lib__none">Preview samples — persistence arrives with editor drafts.</p>
           <PackLibCard v-for="p in templates" :key="p.id" :pack="p" />
           <CreateLibTile
             title="Create a template"
             copy="A first draft of
-every future story."
-            cta="Create template" />
+every future story." />
         </div>
-      </section>
+      </div>
+    </section>
 
-      <InspireRail :title="config.rail.title" :copy="config.rail.copy" :quote="config.rail.quote" />
-    </div>
+    <Transition name="toast">
+      <div v-if="notice" class="lib__toast" role="status">
+        <span>{{ notice.text }}</span>
+        <button v-if="notice.undo" type="button" @click="notice.undo?.()">Undo</button>
+      </div>
+    </Transition>
   </main>
 </template>
 
@@ -280,35 +323,40 @@ every future story."
 .lib {
   max-width: 1440px;
   margin: 0 auto;
-  padding: 14px 16px 40px;
+  padding: 14px 16px 24px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  /* the shelf reaches the bottom of the window, whatever the tab holds */
+  min-height: calc(100vh - 62px);
 }
 
 /* banner ---------------------------------------------------------------------- */
 .lib__banner {
   position: relative;
   overflow: hidden;
-  min-height: 208px;
+  min-height: 184px;
   padding: 0;
 }
 .lib__art {
   position: absolute;
-  inset: 0 auto 0 30%;
+  inset: 0 0 0 auto;
   height: 100%;
-  width: 70%;
+  width: 72%;
   object-fit: cover;
   object-position: right center;
+  /* the picture melts into the paper on its left */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.35) 22%, #000 52%);
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.35) 22%, #000 52%);
 }
 .lib__fade {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     90deg,
-    var(--surface-2) 22%,
-    rgba(249, 242, 225, 0.55) 46%,
-    transparent 68%
+    var(--surface-2) 18%,
+    rgba(251, 246, 233, 0.6) 40%,
+    transparent 62%
   );
   pointer-events: none;
 }
@@ -318,7 +366,7 @@ every future story."
   align-items: flex-start;
   justify-content: space-between;
   gap: 26px;
-  padding: 20px 24px 18px;
+  padding: 22px 26px 20px;
   min-height: inherit;
 }
 .lib__title {
@@ -335,69 +383,24 @@ every future story."
 }
 .lib__sub {
   margin-top: 10px;
+  max-width: 46ch;
   font-size: 16.5px;
   color: var(--ink-2);
 }
-.lib__side {
+
+/* the shelf: tabs on top, then the toolbar and the cards ------------------------ */
+.lib__panel {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 14px;
-  flex: none;
-}
-.lib__create {
-  display: flex;
-  align-items: stretch;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid #0c3f46;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 243, 214, 0.22),
-    0 1px 2px rgba(16, 46, 46, 0.3),
-    0 8px 16px -10px rgba(16, 46, 46, 0.5);
-}
-.lib__create-main,
-.lib__create-caret {
-  background: linear-gradient(180deg, #256e67, #14535a);
-  color: var(--cream-on-teal);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 46px;
-  transition: filter 0.14s ease;
-}
-.lib__create-main {
-  gap: 9px;
-  padding: 0 22px;
-  font-size: 19px;
-  font-weight: 500;
-}
-.lib__create-caret {
-  padding: 0 13px;
-  border-left: 1px solid rgba(10, 46, 50, 0.6);
-  box-shadow: inset 1px 0 0 rgba(255, 243, 214, 0.15);
-}
-.lib__create:hover {
-  filter: brightness(1.07);
-}
-.lib__motto {
-  text-align: center;
-  font-size: 15.5px;
-  line-height: 1.45;
-  white-space: pre-line;
-  padding-right: 4px;
-}
-
-/* content grid ------------------------------------------------------------------ */
-.lib__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 318px;
-  gap: 14px;
-  align-items: stretch;
-}
-.lib__panel {
-  padding: 16px 18px 18px;
+  padding: 0;
   min-width: 0;
+}
+.lib__shelf {
+  flex: 1;
+  padding: 16px 18px 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 .lib__toolbar {
@@ -418,7 +421,8 @@ every future story."
   margin-top: 16px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 14px;
+  gap: 16px;
+  align-content: start;
 }
 .lib__cards--worlds {
   grid-template-columns: repeat(auto-fill, minmax(292px, 1fr));
@@ -448,17 +452,52 @@ every future story."
   padding: 0;
 }
 
-@media (max-width: 1180px) {
-  .lib__grid {
-    grid-template-columns: 1fr;
-  }
+/* a short note after a card action, with Undo when it can be taken back */
+.lib__toast {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  z-index: 50;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: calc(100vw - 32px);
+  padding: 11px 14px 11px 18px;
+  border-radius: 12px;
+  background: #22302c;
+  color: #f4ecd7;
+  font-size: 15.5px;
+  box-shadow: 0 14px 30px -12px rgba(0, 0, 0, 0.5);
 }
+.lib__toast button {
+  font-weight: 700;
+  color: var(--ember-soft);
+  padding: 4px 8px;
+  border-radius: 7px;
+}
+.lib__toast button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.toast-enter-active,
+.toast-leave-active {
+  transition:
+    opacity 0.25s ease,
+    transform 0.3s var(--ease-spring);
+}
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 14px);
+}
+
 @media (max-width: 860px) {
   .lib__banner-body {
     flex-direction: column;
   }
-  .lib__side {
-    align-items: flex-start;
+  .lib__art {
+    width: 100%;
+    opacity: 0.55;
   }
 }
 </style>

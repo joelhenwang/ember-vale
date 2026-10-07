@@ -2,15 +2,14 @@
 withDefaults(defineProps<{ size?: number | string }>(), { size: 20 })
 </script>
 
-<!-- A drawn arrow: a firm shaft and a swept head, the nib's own mark. -->
 <template>
   <svg :width="size" :height="size" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
     <path
       fill="none"
       stroke="currentColor"
-      stroke-width="2.1"
+      stroke-width="1.8"
       stroke-linecap="round"
       stroke-linejoin="round"
-      d="M4 12h15.2M13.4 5.6c.9 3 3 5.4 6.1 6.4-3.1 1-5.2 3.4-6.1 6.4" />
+      d="M9.5 5.5 15.5 12l-6 6.5" />
   </svg>
 </template>

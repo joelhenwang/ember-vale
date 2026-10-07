@@ -12,7 +12,6 @@ import StoryStepper from '../components/newstory/StoryStepper.vue'
 import MenuButton from '../components/MenuButton.vue'
 import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
 import IconSave from '../components/icons/IconSave.vue'
-import IconArrowRight from '../components/icons/IconArrowRight.vue'
 import IconPlay from '../components/icons/IconPlay.vue'
 import MountainRidge from '../components/decor/MountainRidge.vue'
 import PageIntro from '../components/ui/PageIntro.vue'
@@ -1007,25 +1006,25 @@ onMounted(() => {
       <section v-if="step === 1" class="nsv__panel" aria-label="Choose a world">
         <h2 class="nsv__h">Where does the story begin?</h2>
         <p v-if="sel.worldId" class="nsv__hint">
-          Shaping this world further?
+          Want it different?
           <router-link
             class="sel__refine"
             :to="{
               path: `/new-story/world/${sel.worldId}`,
               query: { draft: draftCtl.draft.value?.id }
             }">
-            Refine it in the studio
-          </router-link>
-          — publishing returns here so the new revision can be adopted deliberately.
+            Refine this world in the studio</router-link
+          >
+          or
           <router-link
             class="sel__refine"
             :to="{
               path: '/new-story/world/new',
               query: { draft: draftCtl.draft.value?.id }
             }">
-            Or shape a new world
-          </router-link>
-          — creating returns here so it can be adopted deliberately.
+            shape a new one</router-link
+          >
+          — you come back here to use it.
         </p>
         <ul class="nsv__worlds">
           <li v-for="world in presets.worlds.value" :key="world.id">
@@ -1276,17 +1275,41 @@ onMounted(() => {
       </section>
 
       <footer class="nsv__footer">
+        <span
+          class="nsv__draftstate"
+          :class="{
+            'nsv__draftstate--warn': draftCtl.draft.value && dirty,
+            'nsv__draftstate--bad': draftCtl.saveState.value === 'failed',
+            'nsv__draftstate--ok':
+              draftCtl.draft.value && !dirty && draftCtl.saveState.value !== 'failed'
+          }"
+          role="status">
+          <span class="nsv__draftdot" aria-hidden="true"></span>
+          {{
+            !draftCtl.draft.value
+              ? 'No draft yet'
+              : draftCtl.saveState.value === 'failed'
+                ? 'Save failed — choices kept here'
+                : dirty
+                  ? 'Unsaved changes'
+                  : 'Draft saved'
+          }}
+        </span>
         <MenuButton
+          class="nsv__btn"
           v-if="step > 1"
           variant="outline"
           :icon="IconArrowLeft"
+          arrow="none"
           :disabled="draftCtl.busy.value || draftCtl.creating.value"
           @click="back()"
           >Back</MenuButton
         >
         <MenuButton
+          class="nsv__btn"
           variant="outline"
           :icon="IconSave"
+          arrow="none"
           :disabled="draftCtl.busy.value"
           @click="persist()">
           {{
@@ -1297,25 +1320,18 @@ onMounted(() => {
                 : 'Save draft'
           }}
         </MenuButton>
-        <span class="nsv__draftstate">{{
-          !draftCtl.draft.value
-            ? 'No draft yet'
-            : draftCtl.saveState.value === 'failed'
-              ? 'Save failed — choices kept here'
-              : dirty
-                ? 'Unsaved changes'
-                : 'Draft saved'
-        }}</span>
         <MenuButton
+          class="nsv__btn"
           v-if="step < 6"
-          :icon="IconArrowRight"
           :disabled="!canContinue || draftCtl.busy.value || draftCtl.creating.value"
           @click="next()">
           Continue
         </MenuButton>
         <MenuButton
+          class="nsv__btn"
           v-else
           :icon="IconPlay"
+          arrow="none"
           :disabled="
             draftCtl.creating.value ||
             draftCtl.busy.value ||
@@ -1339,14 +1355,21 @@ onMounted(() => {
 .nsv {
   max-width: 1440px;
   margin: 0 auto;
-  padding: 14px 16px 40px;
+  padding: 14px 16px 24px;
+  /* the step fills the window, so the actions sit at its foot */
+  min-height: calc(100vh - 62px);
+  display: flex;
+  flex-direction: column;
 }
 .nsv__panel {
+  flex: 1;
   margin-top: 14px;
-  padding: 18px 20px 20px;
+  padding: 20px 22px 22px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fbf6e9;
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  box-shadow: var(--card-shadow);
+  animation: ev-rise 0.4s var(--ease-out) both;
 }
 .nsv__h {
   margin: 0;
@@ -1379,14 +1402,26 @@ onMounted(() => {
   color: #4a4436;
 }
 .nsv__footer {
+  position: sticky;
+  bottom: 12px;
+  z-index: 5;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 14px;
-  padding: 12px 18px;
+  padding: 12px 14px 12px 20px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fbf6e9;
+  background: linear-gradient(180deg, #fdf8ec, #f8f0dc);
+  box-shadow: var(--card-shadow-hover);
+}
+.nsv__btn {
+  width: auto;
+  min-width: 132px;
+}
+.nsv__footer .nsv__btn:last-child {
+  min-width: 190px;
 }
 .cast__layout {
   display: grid;
@@ -1424,12 +1459,12 @@ onMounted(() => {
   font-size: 22px;
 }
 .sel__count {
-  font-size: 13px;
+  font-size: 14.5px;
   color: #6b5d43;
 }
 .sel__empty {
   color: #6b5d43;
-  font-size: 14px;
+  font-size: 15.5px;
 }
 .sel__list {
   list-style: none;
@@ -1452,16 +1487,25 @@ onMounted(() => {
 }
 .nsv__world {
   display: grid;
-  gap: 2px;
+  gap: 3px;
   width: 100%;
   text-align: left;
-  padding: 12px 14px;
+  padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: linear-gradient(180deg, #fcf7ea, #f8f1df);
   cursor: pointer;
   font: inherit;
   color: inherit;
+  transition:
+    transform 0.22s var(--ease-out),
+    box-shadow 0.22s var(--ease-out),
+    border-color 0.2s ease;
+}
+.nsv__world:hover {
+  transform: translateY(-2px);
+  border-color: #c4a86f;
+  box-shadow: var(--card-shadow-hover);
 }
 .nsv__world--pictured {
   grid-template-columns: 168px minmax(0, 1fr);
@@ -1489,25 +1533,33 @@ onMounted(() => {
     grid-row: auto;
   }
 }
-.nsv__world--on {
-  border-color: #1f4d3f;
-  box-shadow: 0 0 0 2px rgba(31, 77, 63, 0.25);
+.nsv__world--on,
+.nsv__world--on:hover {
+  border-color: var(--teal-ink);
+  background: linear-gradient(180deg, #fdfaf0, #f3f0e0);
+  box-shadow:
+    0 0 0 2px rgba(31, 106, 94, 0.28),
+    0 0 0 6px var(--ember-glow),
+    var(--card-shadow);
 }
 .nsv__world-name {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 20px;
+  font-family: var(--font-display);
+  font-size: 23px;
   font-weight: 600;
+  line-height: 1.15;
 }
 .nsv__world-rev {
-  font-size: 12px;
+  font-family: var(--font-ui);
+  font-size: 14px;
   color: #6b5d43;
 }
 .nsv__world-desc {
-  font-size: 14px;
+  font-size: 16px;
   color: #4a4436;
 }
 .nsv__world-places {
-  font-size: 13px;
+  font-family: var(--font-ui);
+  font-size: 15px;
   color: #6b5d43;
 }
 .nsv__band {
@@ -1553,8 +1605,8 @@ onMounted(() => {
   color: #4a4436;
 }
 .nsv__hint {
-  margin-top: 12px;
-  font-size: 13px;
+  margin-top: 10px;
+  font-size: 16px;
   color: #6b5d43;
 }
 .nsv__link {
@@ -1593,10 +1645,39 @@ onMounted(() => {
   list-style: disc inside;
 }
 .nsv__draftstate {
-  margin-left: auto;
-  margin-right: 8px;
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  font-family: var(--font-ui);
+  font-size: 15.5px;
   color: #6b5d43;
+}
+.nsv__draftdot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+.nsv__draftstate--ok .nsv__draftdot {
+  background: #3f8f6b;
+  box-shadow: 0 0 0 3px rgba(63, 143, 107, 0.18);
+}
+.nsv__draftstate--warn .nsv__draftdot {
+  background: var(--ember-hi);
+  box-shadow: 0 0 0 3px var(--ember-glow);
+  animation: nsv-pulse 1.6s ease-in-out infinite;
+}
+.nsv__draftstate--bad {
+  color: #7c3226;
+}
+.nsv__draftstate--bad .nsv__draftdot {
+  background: #b3543f;
+}
+@keyframes nsv-pulse {
+  50% {
+    box-shadow: 0 0 0 6px rgba(214, 112, 48, 0.05);
+  }
 }
 .sel__row {
   display: grid;
@@ -1612,18 +1693,18 @@ onMounted(() => {
   gap: 8px;
 }
 .sel__rev {
-  font-size: 12px;
+  font-size: 14px;
   color: #6b5d43;
 }
 .sel__place {
   display: grid;
   gap: 4px;
-  font-size: 13px;
+  font-size: 15px;
 }
 .sel__remove {
   justify-self: start;
   font: inherit;
-  font-size: 13px;
+  font-size: 14.5px;
   color: #7c3226;
   background: none;
   border: none;
@@ -1634,7 +1715,7 @@ onMounted(() => {
 /* Studio entry links carry ?draft= so the return adoption binds to this draft. */
 .sel__refine {
   justify-self: start;
-  font-size: 13px;
+  font-size: inherit;
   color: var(--teal-ink);
   text-decoration: underline;
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onActivated, onMounted, ref } from 'vue'
 import HeroCard from '../components/HeroCard.vue'
 import BeginTaleCard from '../components/BeginTaleCard.vue'
 import LibraryCard from '../components/LibraryCard.vue'
@@ -81,7 +81,8 @@ async function addPlaying(worldId: string): Promise<void> {
   }
 }
 
-onMounted(async () => {
+/** Read the shelf; a quiet read keeps what is on screen until it is done. */
+async function refresh(quiet = false): Promise<void> {
   try {
     const [stories, packSummaries] = await Promise.all([
       listStories('all'),
@@ -120,11 +121,21 @@ onMounted(async () => {
         return detail ? toMenuRecent(detail, worldOf(s.world_name)) : null
       })
       .filter((r): r is NonNullable<typeof r> => r !== null)
+    error.value = null
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'could not load stories'
+    if (!quiet) error.value = err instanceof Error ? err.message : 'could not load stories'
   } finally {
     loading.value = false
   }
+}
+
+// Kept alive between visits: the first opening reads with a loading line,
+// coming back refreshes behind what is already shown.
+let opened = false
+onMounted(() => void refresh())
+onActivated(() => {
+  if (opened) void refresh(true)
+  opened = true
 })
 </script>
 
@@ -135,7 +146,7 @@ onMounted(async () => {
     </p>
     <p v-else-if="loading" class="page__state" role="status">Opening the library…</p>
     <template v-else>
-      <div class="page__grid">
+      <div class="page__grid ev-rise">
         <HeroCard @details="openSetup" />
         <aside class="page__side">
           <BeginTaleCard />

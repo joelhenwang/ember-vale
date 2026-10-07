@@ -4,16 +4,16 @@ import FramedImage from '../ui/FramedImage.vue'
 import StoryImage from '../StoryImage.vue'
 import TagPill from '../ui/TagPill.vue'
 import IconSparkle from '../icons/IconSparkle.vue'
-import IconEllipsis from '../icons/IconEllipsis.vue'
 import IconBook from '../icons/IconBook.vue'
+import CardMenu, { type CardMenuItem } from '../ui/CardMenu.vue'
 
-defineProps<{ character: CharacterDef }>()
-defineEmits<{ open: [] }>()
+defineProps<{ character: CharacterDef; menu: CardMenuItem[] }>()
+defineEmits<{ open: []; pick: [key: string] }>()
 </script>
 
 <template>
   <article
-    class="libcard ev-card"
+    class="libcard ev-card ev-lift"
     role="button"
     tabindex="0"
     @click="$emit('open')"
@@ -36,9 +36,10 @@ defineEmits<{ open: [] }>()
           <h3 class="libcard__name">{{ character.name }}</h3>
           <p class="libcard__role">{{ character.role }}</p>
         </div>
-        <button type="button" class="libcard__menu" aria-label="Character options" @click.stop>
-          <IconEllipsis :size="15" />
-        </button>
+        <CardMenu
+          :items="menu"
+          :label="`Options for ${character.name}`"
+          @pick="$emit('pick', $event)" />
       </div>
       <div class="libcard__rule" aria-hidden="true"><IconSparkle :size="10" /></div>
       <p class="libcard__bio">{{ character.bio }}</p>
@@ -61,22 +62,12 @@ defineEmits<{ open: [] }>()
 <style scoped>
 .libcard {
   display: flex;
-  overflow: hidden;
   cursor: pointer;
-  transition:
-    transform 0.14s ease,
-    box-shadow 0.14s ease,
-    border-color 0.14s ease;
   min-height: 196px;
 }
-.libcard:hover {
-  transform: translateY(-1px);
-  border-color: #c6b48a;
-  box-shadow:
-    0 10px 20px -16px rgba(96, 74, 40, 0.55),
-    inset 0 1px 0 rgba(255, 252, 240, 0.7);
-}
 .libcard__img {
+  overflow: hidden;
+  border-radius: var(--radius-card) 0 0 var(--radius-card);
   width: 44%;
   min-width: 158px;
   object-fit: cover;
@@ -109,25 +100,6 @@ defineEmits<{ open: [] }>()
   font-size: 15px;
   font-weight: 500;
   color: #55482f;
-}
-.libcard__menu {
-  flex: none;
-  width: 27px;
-  height: 25px;
-  border-radius: 8px;
-  border: 1px solid #dccfa9;
-  background: #fcf7ea;
-  color: #6c5f45;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    border-color 0.14s ease,
-    color 0.14s ease;
-}
-.libcard__menu:hover {
-  border-color: #b39c6d;
-  color: var(--teal-ink);
 }
 .libcard__rule {
   display: flex;

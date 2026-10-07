@@ -47,8 +47,6 @@ const heroOpen = ref(false)
         <template #icon><IconUser :size="20" /></template>
         Play as a new hero
       </MenuButton>
-
-      <p class="ev-quote begin__motto">“{{ menuState.motto }}”</p>
     </div>
 
     <MountainRidge class="begin__ridge" aria-hidden="true" />
@@ -60,7 +58,7 @@ const heroOpen = ref(false)
 .begin {
   display: flex;
   flex-direction: column;
-  padding: 24px 26px 0;
+  padding: 24px 26px 96px;
   overflow: hidden;
 }
 
@@ -123,11 +121,5 @@ const heroOpen = ref(false)
 }
 .begin__cta2 {
   margin-top: 12px;
-}
-.begin__motto {
-  margin: auto auto 20px;
-  padding-top: 26px;
-  font-size: 16.5px;
-  text-align: center;
 }
 </style>

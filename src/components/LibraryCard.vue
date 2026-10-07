@@ -15,19 +15,19 @@ const library = computed(() => [
     icon: IconGlobe,
     count: props.worlds,
     name: 'Worlds',
-    note: 'Places to explore'
+    tab: 'worlds'
   },
   {
     icon: IconUsers,
     count: props.characters,
     name: 'Characters',
-    note: "People you've met"
+    tab: 'characters'
   },
   {
     icon: IconStack,
     count: props.packs,
-    name: 'Style Pack',
-    note: 'Ways to tell your story'
+    name: 'Style Packs',
+    tab: 'style-packs'
   }
 ])
 </script>
@@ -47,14 +47,13 @@ const library = computed(() => [
 
     <ul class="library__stats">
       <li v-for="stat in library" :key="stat.name" class="library__stat">
-        <div class="library__row">
+        <router-link class="library__row" :to="`/library?tab=${stat.tab}`">
           <component :is="stat.icon" :size="30" class="library__icon" />
           <p class="library__count">
             <strong>{{ stat.count }}</strong>
             <span>{{ stat.name }}</span>
           </p>
-        </div>
-        <p class="ev-quote library__note">{{ stat.note }}</p>
+        </router-link>
       </li>
     </ul>
   </section>
@@ -105,12 +104,30 @@ const library = computed(() => [
   display: flex;
   align-items: center;
   gap: 11px;
+  padding: 8px 10px;
+  margin: -8px -10px;
+  border-radius: 10px;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s var(--ease-out);
+}
+.library__row:hover {
+  background: rgba(214, 112, 48, 0.08);
+  transform: translateY(-1px);
+}
+.library__row:hover .library__icon {
+  color: var(--ember);
+  transform: scale(1.08) rotate(-4deg);
 }
 .library__icon {
   color: #a5823f;
   flex: none;
+  transition:
+    color 0.2s ease,
+    transform 0.3s var(--ease-spring);
 }
 .library__count {
+  font-family: var(--font-ui);
   font-size: 16.5px;
   font-weight: 500;
   line-height: 1.15;
@@ -120,14 +137,6 @@ const library = computed(() => [
   display: block;
   font-size: 21px;
   font-weight: 600;
-}
-.library__note {
-  margin-top: 6px;
-  font-size: 14px;
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 @media (max-width: 1330px) {

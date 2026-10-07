@@ -2,6 +2,36 @@
  * Ember Vale — parchment design system
  * ------------------------------------------------------------------ */
 
+/* Libron: the reading face (OFL, bundled — see assets/fonts/libron). */
+@font-face {
+  font-family: 'Libron';
+  src: url('./assets/fonts/libron/Libron-Regular.woff2') format('woff2');
+  font-weight: 400 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Libron';
+  src: url('./assets/fonts/libron/Libron-Italic.woff2') format('woff2');
+  font-weight: 400 500;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Libron';
+  src: url('./assets/fonts/libron/Libron-Bold.woff2') format('woff2');
+  font-weight: 600 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Libron';
+  src: url('./assets/fonts/libron/Libron-BoldItalic.woff2') format('woff2');
+  font-weight: 600 800;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
   /* Paper */
   --bg: #f6eeda;
@@ -31,14 +61,31 @@
   --teal-hi: #256e67;
   --teal-ink: #1f6a5e;
   --cream-on-teal: #f4ecd7;
+  /* Ember: the warm accent — active marks, highlights, glows */
+  --ember: #c2612a;
+  --ember-hi: #dc7a3c;
+  --ember-soft: #f0c79f;
+  --ember-glow: rgba(214, 112, 48, 0.28);
 
   /* Type */
   --font-display: 'Cormorant Garamond', 'EB Garamond', Georgia, serif;
-  --font-body: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  /* Text meant to be read: stories, descriptions, form text. */
+  --font-body: 'Libron', 'EB Garamond', Georgia, 'Times New Roman', serif;
+  /* Short text: navigation, tabs, buttons, labels, chips. */
+  --font-ui: 'Alegreya Sans', 'Segoe UI', system-ui, sans-serif;
 
   /* Elevation */
-  --card-shadow: 0 1px 2px rgba(96, 74, 40, 0.09), 0 8px 22px -18px rgba(96, 74, 40, 0.35);
+  --card-shadow:
+    0 1px 2px rgba(84, 60, 24, 0.12), 0 4px 10px -4px rgba(84, 60, 24, 0.16),
+    0 16px 32px -18px rgba(84, 60, 24, 0.42);
+  --card-shadow-hover:
+    0 2px 4px rgba(84, 60, 24, 0.14), 0 10px 20px -8px rgba(84, 60, 24, 0.24),
+    0 26px 44px -22px rgba(84, 60, 24, 0.5);
   --radius-card: 12px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 0.8, 0.24, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
 }
 
 * {
@@ -55,6 +102,7 @@ html {
 body {
   font-family: var(--font-body);
   font-size: 16px;
+  line-height: 1.5;
   color: var(--ink-2);
   background-color: var(--bg);
   background-image:
@@ -85,6 +133,7 @@ body::before {
 
 button {
   font: inherit;
+  font-family: var(--font-ui);
   color: inherit;
   background: none;
   border: 0;
@@ -135,9 +184,10 @@ img {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 12.5px;
-  font-weight: 600;
-  letter-spacing: 0.18em;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--gold);
 }
@@ -167,7 +217,8 @@ img {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 15.5px;
+  font-family: var(--font-ui);
+  font-size: 16px;
   font-weight: 500;
   color: var(--teal-ink);
   border-radius: 6px;
@@ -183,7 +234,8 @@ img {
   transition: transform 0.15s ease;
 }
 .ev-link:hover .ev-chevron {
-  transform: translateX(2px);
+  transform: translateX(3px);
+  color: var(--ember);
 }
 
 .ev-dot {
@@ -198,8 +250,9 @@ img {
 .ev-field-label {
   display: block;
   margin-bottom: 6px;
-  font-size: 14.5px;
-  font-weight: 600;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 700;
   color: #4c4130;
 }
 
@@ -249,8 +302,63 @@ textarea.ev-input {
   color: #6d8a83;
 }
 
+/* ------------------------------------------------------------------ *
+ * Motion
+ * ------------------------------------------------------------------ */
+
+/* Content rises into place when a page opens; siblings follow one by one. */
+@keyframes ev-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.ev-rise > * {
+  animation: ev-rise 0.5s var(--ease-out) both;
+}
+.ev-rise > :nth-child(2) {
+  animation-delay: 0.05s;
+}
+.ev-rise > :nth-child(3) {
+  animation-delay: 0.1s;
+}
+.ev-rise > :nth-child(4) {
+  animation-delay: 0.15s;
+}
+.ev-rise > :nth-child(5) {
+  animation-delay: 0.2s;
+}
+.ev-rise > :nth-child(6) {
+  animation-delay: 0.25s;
+}
+.ev-rise > :nth-child(7) {
+  animation-delay: 0.3s;
+}
+.ev-rise > :nth-child(n + 8) {
+  animation-delay: 0.34s;
+}
+
+/* A card you can open lifts toward you. */
+.ev-lift {
+  transition:
+    transform 0.22s var(--ease-out),
+    box-shadow 0.22s var(--ease-out),
+    border-color 0.22s ease;
+}
+.ev-lift:hover {
+  transform: translateY(-3px);
+  border-color: #c4a86f;
+  box-shadow:
+    var(--card-shadow-hover),
+    inset 0 1px 0 rgba(255, 252, 240, 0.7);
+}
+.ev-lift:active {
+  transform: translateY(-1px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
+    animation: none !important;
   }
 }

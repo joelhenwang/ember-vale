@@ -113,7 +113,8 @@ const routes: RouteRecordRaw[] = [
 export const router = createRouter({
   history: createWebHistory(),
   routes,
-  scrollBehavior: () => ({ top: 0 })
+  // Back and forward return to where the page was; anything else starts at the top.
+  scrollBehavior: (_to, _from, saved) => saved ?? { top: 0 }
 })
 
 router.afterEach((to) => {

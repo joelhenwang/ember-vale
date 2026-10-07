@@ -9,7 +9,7 @@
   with the record's metadata version.
 -->
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onActivated, onMounted, ref } from 'vue'
 import { storyLocation } from '../game/storyRoute'
 import type { Component } from 'vue'
 import { useRouter } from 'vue-router'
@@ -50,9 +50,9 @@ const sortOptions = [
   { value: 'name', label: 'Title' }
 ]
 
-const viewOptions: { value: 'grid' | 'list'; label: string; icon: Component }[] = [
-  { value: 'grid', label: 'Grid view', icon: IconGrid },
-  { value: 'list', label: 'List view', icon: IconList }
+const viewOptions: { value: 'grid' | 'list'; label: string; short: string; icon: Component }[] = [
+  { value: 'grid', label: 'Cards view', short: 'Cards', icon: IconGrid },
+  { value: 'list', label: 'List view', short: 'List', icon: IconList }
 ]
 
 const presets = usePresets()
@@ -96,7 +96,7 @@ async function toggleArchive(story: StoryRecord, archived: boolean): Promise<voi
   }
 }
 
-onMounted(async () => {
+async function refresh(quiet = false): Promise<void> {
   try {
     const [stories] = await Promise.all([listStories('all'), presets.load()])
     if (presets.error.value) throw new Error(presets.error.value)
@@ -108,11 +108,20 @@ onMounted(async () => {
       return toStoryRecord(detail, worldOf(s.world_name))
     })
     storyShelf.splice(0, storyShelf.length, ...records.filter((r): r is StoryRecord => r !== null))
+    loadError.value = null
   } catch (err) {
-    loadError.value = err instanceof Error ? err.message : 'could not load stories'
+    if (!quiet) loadError.value = err instanceof Error ? err.message : 'could not load stories'
   } finally {
     loading.value = false
   }
+}
+
+// Kept alive: coming back refreshes quietly behind the shelf already shown.
+let opened = false
+onMounted(() => void refresh())
+onActivated(() => {
+  if (opened) void refresh(true)
+  opened = true
 })
 </script>
 

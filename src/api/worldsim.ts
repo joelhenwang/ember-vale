@@ -861,6 +861,19 @@ export function savePlaceMap(
   )
 }
 
+/** Put a preset away (or bring it back); `version` is its metadata version. */
+export function setPresetArchived(
+  presetId: string,
+  archived: boolean,
+  version: number,
+  opts: CallOptions = {}
+): Promise<PresetDetail> {
+  return apiFetch<PresetDetail>(
+    `/library/presets/${presetId}/${archived ? 'archive' : 'unarchive'}`,
+    { ...opts, method: 'POST', body: { expected_version: version } }
+  )
+}
+
 export function duplicatePreset(presetId: string, opts: CallOptions = {}): Promise<PresetDetail> {
   return apiFetch<PresetDetail>(`/library/presets/${presetId}/duplicate`, {
     ...opts,

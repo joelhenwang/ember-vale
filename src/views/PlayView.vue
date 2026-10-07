@@ -7,7 +7,6 @@ import MountainRidge from '../components/decor/MountainRidge.vue'
 import PageIntro from '../components/ui/PageIntro.vue'
 import MenuButton from '../components/MenuButton.vue'
 import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
-import IconArrowRight from '../components/icons/IconArrowRight.vue'
 import { useInterventions, type DirectMode } from '../composables/useInterventions'
 import { usePlayerAsk } from '../composables/usePlayerAsk'
 import { useStory } from '../composables/useStory'
@@ -440,7 +439,6 @@ function loadBeatDetails(eventIds: string[]): void {
             {{ story.advancing.value ? 'Checking…' : 'Check again' }}
           </MenuButton>
           <MenuButton
-            :icon="IconArrowRight"
             :disabled="story.advancing.value || !story.grantLoaded.value"
             @click="resume()">
             {{ story.advancing.value ? 'Resuming…' : `Resume beat ${story.openRun.value.index}` }}
@@ -506,11 +504,7 @@ function loadBeatDetails(eventIds: string[]): void {
             </MenuButton>
           </div>
           <h3>Advance the story</h3>
-          <MenuButton
-            :icon="IconArrowRight"
-            :disabled="!beatReady"
-            :title="beatBlockedTitle"
-            @click="advance()">
+          <MenuButton :disabled="!beatReady" :title="beatBlockedTitle" @click="advance()">
             {{ story.advancing.value ? 'Committing beat…' : `Commit beat ${nextIndex}` }}
           </MenuButton>
           <p v-if="story.effectiveRole.value !== 'player'" class="play__empty">
@@ -730,7 +724,11 @@ function loadBeatDetails(eventIds: string[]): void {
         </template>
       </section>
       <footer class="play__foot">
-        <MenuButton variant="outline" :icon="IconArrowLeft" @click="router.push('/stories')"
+        <MenuButton
+          variant="outline"
+          :icon="IconArrowLeft"
+          arrow="none"
+          @click="router.push('/stories')"
           >All stories</MenuButton
         >
       </footer>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import IconArrowRight from '../icons/IconArrowRight.vue'
+import IconChevronRight from '../icons/IconChevronRight.vue'
 
 withDefaults(defineProps<{ title: string; open?: boolean }>(), { open: false })
 const isOpen = ref(false)
@@ -9,7 +9,7 @@ const isOpen = ref(false)
 <template>
   <div class="cb" :class="{ 'cb--open': isOpen }">
     <button type="button" class="cb__head" :aria-expanded="isOpen" @click="isOpen = !isOpen">
-      <IconArrowRight :size="13" class="cb__chev" />
+      <IconChevronRight :size="13" class="cb__chev" />
       {{ title }}
     </button>
     <div v-show="isOpen" class="cb__body">
