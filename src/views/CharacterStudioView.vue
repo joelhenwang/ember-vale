@@ -495,6 +495,12 @@ function edited(key: WritableKey): void {
   helped.value.delete(key)
 }
 
+/** A choice button: picking the chosen one again clears it. */
+function choose(key: WritableKey, option: string): void {
+  draft.value[key] = draft.value[key].toLowerCase() === option.toLowerCase() ? '' : option
+  edited(key)
+}
+
 const SEXES = ['Male', 'Female', 'Other']
 const HEIGHTS = ['Tall', 'Average', 'Short']
 const paintWords = computed(() => portraitPrompt(draft.value))
@@ -602,10 +608,7 @@ const paintWords = computed(() => portraitPrompt(draft.value))
                         'seg__opt--on': draft[f.key].toLowerCase() === opt.toLowerCase()
                       }"
                       :aria-pressed="draft[f.key].toLowerCase() === opt.toLowerCase()"
-                      @click="
-                        draft[f.key] = draft[f.key].toLowerCase() === opt.toLowerCase() ? '' : opt
-                        edited(f.key)
-                      ">
+                      @click="choose(f.key, opt)">
                       {{ opt }}
                     </button>
                   </div>
