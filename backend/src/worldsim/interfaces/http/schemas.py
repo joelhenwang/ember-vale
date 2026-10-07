@@ -1779,6 +1779,32 @@ class MapPlacesRequest(BaseModel):
     known: list[str] = Field(default_factory=list, max_length=60)
 
 
+class TerrainGridView(BaseModel):
+    """What covers a map: rows of terrain letters, top row first (cells joined)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    cols: int = Field(ge=2, le=48)
+    rows: int = Field(ge=2, le=48)
+    cells: str = Field(min_length=4, max_length=2304)
+
+
+class TerrainRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    cols: int = Field(default=24, ge=4, le=48)
+    rows: int = Field(default=16, ge=4, le=48)
+
+
+class TerrainView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    terrain: TerrainGridView | None
+    model: str
+    seconds: float
+    cost_usd: float
+
+
 class MapPaintRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -1949,4 +1975,6 @@ class WorldMapRequest(BaseModel):
     roads: list[MapRoadView] = Field(default_factory=list, max_length=256)
     shortest_phases: int = Field(ge=1, le=999)
     longest_phases: int = Field(ge=1, le=999)
+    #: What covers the map; roads through hard country take longer.
+    terrain: TerrainGridView | None = None
     expected_version: int = Field(ge=0)

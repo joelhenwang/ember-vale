@@ -1,0 +1,100 @@
+[
+  {
+    "turn": 1,
+    "kind": "do",
+    "words": "Ring my grandmother's brass bell softly and listen for an answer from the bay",
+    "secs": 13.263,
+    "lines": [
+      "DAY 1 · SUNRISE",
+      "The scene is still being written…",
+      "Painting this moment…\nMara Vell meets Ash."
+    ]
+  },
+  {
+    "turn": 2,
+    "kind": "say",
+    "words": "You're not from the islands. What brings you to the Mirewake at dawn?",
+    "secs": 11.835,
+    "lines": [
+      "Mara Vell, hearing the news, turns to Ash with a thoughtful expression, then moves to the edge of the square, where a small brass bell hangs. She gently rings it, listening intently for a response from the bay.",
+      "Paint this scene",
+      "Painting this moment…\nMara Vell meets Ash.",
+      "DAY 1 · MORNING",
+      "The scene is still being written…"
+    ]
+  },
+  {
+    "turn": 3,
+    "kind": "do",
+    "words": "Look for the bell-keepers' landing and check the tide chart",
+    "secs": 14.687,
+    "lines": [
+      "Ash asks Mara Vell about the Tower's Call, their voice low and curious.",
+      "YOU\nYou're not from the islands. What brings you to the Mirewake at dawn?",
+      "Mara Vell's question hangs in the air, her eyes searching Ash's face for an answer.",
+      "ASH\nI'm here to trade. The market's always busy at dawn.",
+      "Paint this scene",
+      "DAY 1 · NOON",
+      "The scene is still being written…"
+    ]
+  },
+  {
+    "turn": 4,
+    "kind": "chip",
+    "words": "Go to",
+    "secs": 7.665,
+    "lines": [
+      "Mara Vell, however, seems distracted, her attention divided between Ash and the distant bell-keepers' landing. She tries to check the tide chart, her fingers tracing the lines on the chart, but her focus is clearly elsewhere.",
+      "Paint this scene",
+      "DAY 1 · AFTERNOON",
+      "The scene is still being written…",
+      "Painting this moment…\nMara Vell arrives at Oarfall Harbor."
+    ]
+  },
+  {
+    "turn": 5,
+    "kind": "wait",
+    "words": "",
+    "secs": 7.43,
+    "lines": [
+      "Paint this scene",
+      "Painting this moment…\nMara Vell arrives at Oarfall Harbor.",
+      "DAY 1 · SUNSET",
+      "Mara Vell waits",
+      "Paint this scene"
+    ]
+  },
+  {
+    "turn": 6,
+    "kind": "do",
+    "words": "Ask the harbor folk what they know about the drowned city's bells",
+    "secs": 9.039,
+    "lines": [
+      "DAY 1 · DUSK",
+      "The scene is still being written…"
+    ]
+  },
+  {
+    "turn": 7,
+    "kind": "wait",
+    "words": "",
+    "secs": 7.314,
+    "lines": [
+      "She approaches a group of fishermen, their nets and ropes scattered around them, and asks about the drowned city's bells, her voice barely above a whisper.",
+      "Paint this scene",
+      "DAY 1 · EVENING",
+      "Mara Vell waits",
+      "Paint this scene"
+    ]
+  },
+  {
+    "turn": 8,
+    "kind": "do",
+    "words": "Show Ash the burn mark on my palm and tell him how I got it",
+    "secs": 5.578,
+    "lines": [
+      "DAY 1 · NIGHT",
+      "The scene is still being written…"
+    ]
+  }
+]

@@ -25,6 +25,7 @@ import {
   duplicatePreset,
   getPreset,
   libraryAssetUrl,
+  readTerrain,
   paintMap,
   readMapPlaces,
   readMapRoads,
@@ -34,6 +35,13 @@ import {
 import { isVersionConflict } from '../api/http'
 import type { PresetDetail } from '../../content/clients/worldsim'
 import { parchmentDataUrl } from '../game/parchment'
+import {
+  blankTerrain,
+  paintTerrain,
+  TERRAIN_KINDS,
+  terrainKind,
+  terrainShares
+} from '../game/terrain'
 import {
   MAX_BENDS,
   PHASES_PER_DAY,
@@ -72,13 +80,15 @@ const detail = ref<PresetDetail | null>(null)
 const board = ref<Board | null>(null)
 const baseline = ref('')
 const loading = ref(true)
-const busy = ref<'' | 'upload' | 'paint' | 'parchment' | 'places' | 'roads' | 'save' | 'copy'>('')
+const busy = ref<
+  '' | 'upload' | 'paint' | 'parchment' | 'places' | 'roads' | 'terrain' | 'save' | 'copy'
+>('')
 const error = ref<string | null>(null)
 const notice = ref<string | null>(null)
 const savedFlash = ref(false)
 const selected = ref<string | null>(null)
 /** What a click on the map does: pick, put down a place, or draw a road. */
-const tool = ref<'select' | 'place' | 'road'>('select')
+const tool = ref<'select' | 'place' | 'road' | 'terrain'>('select')
 const placing = computed(() => tool.value === 'place')
 /** The road being drawn: the place it starts at and its bends so far. */
 const drawing = ref<{ from: string; bends: Point[] } | null>(null)
@@ -369,8 +379,80 @@ function pointFrom(event: PointerEvent): [number, number] | null {
   ]
 }
 
+/* terrain ------------------------------------------------------------------- */
+/** The terrain shows over the map while painting it, or when asked to. */
+const showTerrain = ref(false)
+const brush = ref('f')
+const brushSize = ref(0)
+let paintingTerrain = false
+const terrainCells = computed(() => {
+  const t = board.value?.terrain
+  if (!t || !(showTerrain.value || tool.value === 'terrain')) return []
+  const w = 1000 / t.cols
+  const h = 1000 / t.rows
+  return t.cells.split('').map((letter, i) => ({
+    x: (i % t.cols) * w,
+    y: Math.floor(i / t.cols) * h,
+    w,
+    h,
+    fill: terrainKind(letter).colour
+  }))
+})
+const terrainLegend = computed(() =>
+  board.value?.terrain ? terrainShares(board.value.terrain).filter((s) => s.share >= 0.01) : []
+)
+
+/** The map reader drafts the terrain: about 24 cells across, as tall as the map is. */
+async function readTheTerrain(): Promise<void> {
+  if (!board.value) return
+  busy.value = 'terrain'
+  error.value = null
+  const shape = blankTerrain(board.value.width, board.value.height)
+  try {
+    const read = await readTerrain(board.value.assetId, shape.cols, shape.rows)
+    if (!read.terrain) throw new Error('The map reader saw no terrain on this picture.')
+    board.value.terrain = read.terrain
+    showTerrain.value = true
+    notice.value =
+      `Read the terrain in ${Math.round(Number(read.seconds))} s ($${Number(read.cost_usd).toFixed(4)}). ` +
+      'It is a first draft: paint over what it got wrong.'
+  } catch (err) {
+    error.value = message(err, 'The map reader could not read the terrain.')
+  } finally {
+    busy.value = ''
+  }
+}
+
+function blankTheTerrain(): void {
+  if (!board.value) return
+  board.value.terrain = blankTerrain(board.value.width, board.value.height)
+  showTerrain.value = true
+  if (tool.value !== 'terrain') setTool('terrain')
+}
+
+function clearTheTerrain(): void {
+  if (!board.value) return
+  board.value.terrain = null
+  if (tool.value === 'terrain') setTool('terrain')
+}
+
+function paintAt(event: PointerEvent): void {
+  const t = board.value?.terrain
+  const point = pointFrom(event)
+  if (!board.value || !t || !point) return
+  board.value.terrain = paintTerrain(t, point, brush.value, brushSize.value)
+}
+
+function onFrameDown(event: PointerEvent): void {
+  if (tool.value !== 'terrain' || !board.value?.terrain) return
+  paintingTerrain = true
+  frameEl.value?.setPointerCapture(event.pointerId)
+  paintAt(event)
+}
+
 function onFrameClick(event: PointerEvent): void {
   if (!board.value) return
+  if (tool.value === 'terrain') return
   const point = pointFrom(event)
   if (!point) return
   if (tool.value === 'road') {
@@ -400,7 +482,7 @@ function onFrameClick(event: PointerEvent): void {
 }
 
 /* drawing roads ------------------------------------------------------------ */
-function setTool(next: 'select' | 'place' | 'road'): void {
+function setTool(next: 'select' | 'place' | 'road' | 'terrain'): void {
   tool.value = tool.value === next ? 'select' : next
   drawing.value = null
   roadNote.value =
@@ -517,6 +599,7 @@ function removeSelectedRoad(): void {
 }
 
 function onFrameMove(event: PointerEvent): void {
+  if (paintingTerrain) return paintAt(event)
   if (tool.value === 'road' && drawing.value) cursor.value = pointFrom(event)
   if (draggingBend.value === null || !selectedRoad.value) return
   const point = pointFrom(event)
@@ -534,6 +617,7 @@ function onFrameMove(event: PointerEvent): void {
 let draggedBend = false
 
 function onFrameUp(): void {
+  paintingTerrain = false
   dragging.value = null
   if (draggingBend.value !== null && bendMoved) draggedBend = true
   draggingBend.value = null
@@ -795,7 +879,78 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
               aria-label="Kind of road to draw">
               <option v-for="k in ROAD_KINDS" :key="k" :value="k">{{ k }}</option>
             </select>
+            <button
+              type="button"
+              class="ghost"
+              :class="{ 'is-on': tool === 'terrain' }"
+              :aria-pressed="tool === 'terrain'"
+              :disabled="busy !== ''"
+              @click="board.terrain ? setTool('terrain') : blankTheTerrain()">
+              <IconGlobe :size="14" />
+              {{ tool === 'terrain' ? 'Done with the terrain' : 'Terrain' }}
+            </button>
           </div>
+
+          <div v-if="tool === 'terrain'" class="terrainbar" role="group" aria-label="Terrain">
+            <p class="terrainbar__lead">
+              What covers the land makes roads slower: a road over mountains takes about two and a
+              half times as long as one over plains. Paint by dragging over the map.
+            </p>
+            <div class="terrainbar__row">
+              <button
+                type="button"
+                class="cta cta--sm"
+                :disabled="busy !== ''"
+                @click="readTheTerrain">
+                {{ busy === 'terrain' ? 'Reading the terrain… (about 10 s)' : 'Read the terrain' }}
+              </button>
+              <button
+                type="button"
+                class="ghost ghost--sm"
+                :disabled="busy !== ''"
+                @click="blankTheTerrain">
+                Start blank
+              </button>
+              <button
+                v-if="board.terrain"
+                type="button"
+                class="ghost ghost--sm"
+                :disabled="busy !== ''"
+                @click="clearTheTerrain">
+                No terrain
+              </button>
+            </div>
+            <div
+              v-if="board.terrain"
+              class="terrainbar__row"
+              role="radiogroup"
+              aria-label="Paint with">
+              <button
+                v-for="k in TERRAIN_KINDS"
+                :key="k.letter"
+                type="button"
+                role="radio"
+                class="swatch"
+                :class="{ 'swatch--on': brush === k.letter }"
+                :aria-checked="brush === k.letter"
+                :title="`${k.name}: roads ×${k.cost}`"
+                @click="brush = k.letter">
+                <span class="swatch__colour" :style="{ background: k.colour }"></span>
+                {{ k.name }}
+              </button>
+              <label class="terrainbar__size">
+                Brush
+                <select v-model.number="brushSize" class="ev-input small" aria-label="Brush size">
+                  <option :value="0">1 cell</option>
+                  <option :value="1">3 × 3</option>
+                  <option :value="2">5 × 5</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <label v-else-if="board.terrain" class="terrainbar__show">
+            <input v-model="showTerrain" type="checkbox" /> Show the terrain
+          </label>
           <p v-if="notice" class="card__note"><IconInfo :size="14" /> {{ notice }}</p>
           <p v-if="roadNote" class="card__note card__note--road" role="status">
             <IconBranch :size="14" /> {{ roadNote }}
@@ -806,13 +961,32 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
             <div
               ref="frameEl"
               class="mapframe"
-              :class="{ 'mapframe--placing': placing || tool === 'road' }"
+              :class="{
+                'mapframe--placing': placing || tool === 'road',
+                'mapframe--painting': tool === 'terrain'
+              }"
               :style="{ aspectRatio: aspect }"
+              @pointerdown="onFrameDown"
               @pointermove="onFrameMove"
               @pointerup="onFrameUp"
               @pointerleave="cursor = null"
               @click="onFrameClick($event as PointerEvent)">
               <img :src="pictureUrl" :alt="`Map of ${worldName}`" draggable="false" />
+              <svg
+                v-if="terrainCells.length"
+                class="terrain"
+                viewBox="0 0 1000 1000"
+                preserveAspectRatio="none"
+                aria-hidden="true">
+                <rect
+                  v-for="(c, i) in terrainCells"
+                  :key="i"
+                  :x="c.x"
+                  :y="c.y"
+                  :width="c.w + 0.5"
+                  :height="c.h + 0.5"
+                  :fill="c.fill" />
+              </svg>
               <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
                 <polyline
                   v-if="selectedLine.length"
@@ -999,6 +1173,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
                 <li><span class="sw"></span> Already in the world</li>
                 <li><span class="sw sw--off"></span> Left off</li>
               </ul>
+              <ul v-if="terrainLegend.length && (showTerrain || tool === 'terrain')" class="legend">
+                <li v-for="t in terrainLegend" :key="t.kind.letter">
+                  <span class="sw" :style="{ background: t.kind.colour }"></span>
+                  {{ t.kind.name }} · {{ Math.round(t.share * 100) }}%
+                </li>
+              </ul>
             </aside>
           </div>
         </section>
@@ -1011,7 +1191,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
               <h2 class="card__title">3 · Travel time</h2>
               <p class="card__sub">
                 Say how long the shortest and the longest road take; every other road scales with
-                its length on the map. A day has {{ PHASES_PER_DAY }} phases, dawn to midnight.
+                its length on the map{{
+                  board.terrain ? ', weighed by the terrain it crosses' : ''
+                }}. A day has {{ PHASES_PER_DAY }} phases, dawn to midnight.
               </p>
             </div>
           </header>
@@ -1505,5 +1687,80 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   .pair {
     grid-template-columns: 1fr;
   }
+}
+/* terrain -------------------------------------------------------------------- */
+.mapframe svg.terrain {
+  opacity: 0.5;
+  pointer-events: none;
+}
+/* while painting, the colours are stronger and each cell shows its edge */
+.mapframe--painting svg.terrain {
+  opacity: 0.66;
+}
+.mapframe--painting svg.terrain rect {
+  stroke: rgba(40, 30, 10, 0.28);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.mapframe--painting {
+  cursor: crosshair;
+  touch-action: none;
+}
+.terrainbar {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px dashed var(--line-strong);
+  background: #fbf3e2;
+}
+.terrainbar__lead {
+  font-size: 15px;
+  color: var(--ink-2);
+}
+.terrainbar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.terrainbar__size,
+.terrainbar__show {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+}
+.terrainbar__show {
+  margin-top: 10px;
+}
+.swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 11px 0 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fffaf0;
+  font-size: 14.5px;
+  color: var(--ink-2);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.swatch__colour {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+.swatch--on {
+  border-color: var(--teal-ink);
+  box-shadow: 0 0 0 2px rgba(31, 106, 94, 0.25);
+  color: var(--teal);
+  font-weight: 700;
 }
 </style>

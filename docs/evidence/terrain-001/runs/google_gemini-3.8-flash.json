@@ -1,0 +1,42 @@
+{
+  "model": "google/gemini-3.8-flash",
+  "cols": 24,
+  "rows": 16,
+  "maps": [
+    {
+      "text": "```json\n{\"rows\": [\"wwfff ffff ffff fffm mmii\", \"wwff ffff ffff fffm mmmm\", \"wtpp ffff fftt tfpm mmmm\", \"wttt pppp pttt tppm mmmm\", \"wppp pppp ptpp pppm mmmm\", \"wwpp pppp pppp tpmm mmmm\", \"wwpp pppp ppps sppm mmmm\", \"wwpp pppp psss sppm mmmm\", \"wwpp ttpp psss ssmm mmmm\", \"wwpp pppp ssss ssmm mmmm\", \"wwpp ppps ssss ssmm mmmm\", \"wwpp ppss ssss ssmm mmmm\", \"wwpp psss ssts ssmm mmmm\", \"wwpp psss ssss ssmm mmmm\", \"wpph hsss ssss smmm mmmm\", \"pphh hhss ssss mmmm mmmm\"]}\n```",
+      "seconds": 7.5,
+      "cost_usd": 0.00260925,
+      "map": "map-1.png",
+      "cells": "wwffffffffffffffmmmiiiiiwwfffffffffffffmmmmmmmmmwtppfffffftttfpmmmmmmmmmwtttpppppttttppmmmmmmmmmwpppppppptpppppmmmmmmmmmwwpppppppppptpmmmmmmmmmmwwpppppppppssppmmmmmmmmmwwpppppppssssppmmmmmmmmmwwppttpppsssssmmmmmmmmmmwwppppppssssssmmmmmmmmmmwwpppppsssssssmmmmmmmmmmwwppppssssssssmmmmmmmmmmwwpppssssstsssmmmmmmmmmmwwpppsssssssssmmmmmmmmmmwpphhssssssssmmmmmmmmmmmpphhhhssssssmmmmmmmmmmmm"
+    },
+    {
+      "text": "```json\n{\"rows\": [\n  \"fffffffffwfffffffpiiiiii\",\n  \"wwffffffffffffppttpiiiim\",\n  \"wwwhffffffffffttppmmiiim\",\n  \"wwwhpffffffppptpppmmiimm\",\n  \"wwwpppfpppppftppppmmmmmm\",\n  \"wtttppppppttttppppmmmmmm\",\n  \"wtttppppppttttppppmmmmmm\",\n  \"wwttppppppttttpppppmmmmm\",\n  \"wwwpppppppptttpppppmmmmm\",\n  \"wwwpppppppppppssssspmmmm\",\n  \"wwhppppppppppsssssssmmmm\",\n  \"wwwpptpppppsssstsssmmmmm\",\n  \"wwwhpppppppsssstsssssmmm\",\n  \"wwhhpppppppssssssssssmmm\",\n  \"wwwdpppppppssssssssmimmm\",\n  \"wwwdhppppppssssssssmmmmm\"\n]}\n```",
+      "seconds": 27.5,
+      "cost_usd": 0.0148755,
+      "map": "map-2.png",
+      "cells": "fffffffffwfffffffpiiiiiiwwffffffffffffppttpiiiimwwwhffffffffffttppmmiiimwwwhpffffffppptpppmmiimmwwwpppfpppppftppppmmmmmmwtttppppppttttppppmmmmmmwtttppppppttttppppmmmmmmwwttppppppttttpppppmmmmmwwwpppppppptttpppppmmmmmwwwpppppppppppssssspmmmmwwhppppppppppsssssssmmmmwwwpptpppppsssstsssmmmmmwwwhpppppppsssstsssssmmmwwhhpppppppssssssssssmmmwwwdpppppppssssssssmimmmwwwdhppppppssssssssmmmmm"
+    },
+    {
+      "text": "```json\n{\"rows\": [\n  \"ffttffhppiimmmitttiiimmi\",\n  \"fhtttthfffiiimmmtmmmimmf\",\n  \"dhttthffffpiiimmpppmmiif\",\n  \"hhdhhhhffffpiipmpphhmttf\",\n  \"ffhhfffffffffffhhfhhmmmf\",\n  \"fffhhffffffmffhhhhhhmmmt\",\n  \"fffffhhffftfffmhhhhhhmmm\",\n  \"ffffhffffffffmhhhhhphhhm\",\n  \"wffpphhhhftttmmphhhhhphh\",\n  \"wwwwpppphhfwwwmpphhhhhhh\",\n  \"wwwwwptttppwwwmhphhhhhhh\",\n  \"wwwwwttttppphwwhhppttthh\",\n  \"wwwwwwttwhhhhwwhhpttttth\",\n  \"hwwwwwwwhhhppwmhhhhptthh\",\n  \"hhhwwwwwwhhpwwhhhhhhhphh\",\n  \"fhhhhwwwhhpmwwhmhhhhhhhh\"\n]}\n```",
+      "seconds": 6.0,
+      "cost_usd": 0.00186675,
+      "map": "map-3.png",
+      "cells": "ffttffhppiimmmitttiiimmifhtttthfffiiimmmtmmmimmfdhttthffffpiiimmpppmmiifhhdhhhhffffpiipmpphhmttfffhhfffffffffffhhfhhmmmffffhhffffffmffhhhhhhmmmtfffffhhffftfffmhhhhhhmmmffffhffffffffmhhhhhphhhmwffpphhhhftttmmphhhhhphhwwwwpppphhfwwwmpphhhhhhhwwwwwptttppwwwmhphhhhhhhwwwwwttttppphwwhhppttthhwwwwwwttwhhhhwwhhpttttthhwwwwwwwhhhppwmhhhhptthhhhhwwwwwwhhpwwhhhhhhhphhfhhhhwwwhhpmwwhmhhhhhhhh"
+    },
+    {
+      "text": "```json\n{\"rows\": [\n  \"mmmmmmdpfffffssssssssssw\",\n  \"mddtdddppppffssssssssssw\",\n  \"fwddddwwpppppppssssfwww\",\n  \"wwddpwwwpttpppppppppffww\",\n  \"wwttwwwwwwtwwddwwtttppww\",\n  \"ddddwwwdwwwwwdwwttttpppw\",\n  \"ddwwwtttwwwwwwwwwddddtw\",\n  \"wwwwttttttwwddwwwwwwdddw\",\n  \"wwwwttttttwwdddwwwwwwwww\",\n  \"wwwwwdddtwwwdddwwdwffffw\",\n  \"ddttwwdwwwwwwwwwwffttfd\",\n  \"ddttdwwwwwwwwwwwwfffttfd\",\n  \"ddddddwwwwwwwttwwwffffff\",\n  \"wddddddwwwwwdttwwwffffdw\",\n  \"wwddddddwwwwddwwwwdffddw\",\n  \"wwwwdddwwwwwwdwwwwwwwwww\"\n]}\n```",
+      "seconds": 22.5,
+      "cost_usd": 0.01435425,
+      "map": "map-4.png",
+      "cells": "mmmmmmdpfffffsssssssssswmddtdddppppffsssssssssswfwddddwwpppppppssssfwwwwwwddpwwwpttpppppppppffwwwwttwwwwwwtwwddwwtttppwwddddwwwdwwwwwdwwttttpppwddwwwtttwwwwwwwwwddddtwwwwwwttttttwwddwwwwwwdddwwwwwttttttwwdddwwwwwwwwwwwwwwdddtwwwdddwwdwffffwddttwwdwwwwwwwwwwffttfddddttdwwwwwwwwwwwwfffttfdddddddwwwwwwwttwwwffffffwddddddwwwwwdttwwwffffdwwwddddddwwwwddwwwwdffddwwwwwdddwwwwwwdwwwwwwwwww"
+    },
+    {
+      "text": "```json\n{\"rows\": [\"hhhhphhhphhphhhwhhhhhhhh\", \"ppphpphhhhhtthhwhhhhhhhh\", \"tthttpphhfftttfhhphhhhhh\", \"ppppppptfffppfpphhhhhphh\", \"ppptttttfffppppppphhhphh\", \"wppptttpptttttfpffppphph\", \"wwttppptttttttttffhhhppf\", \"wwttpffpttttttttttffhfff\", \"wwtttffptttttttttffppfff\", \"wwwwpttttttttttttffffff\", \"pwwfwwtttttttpffffffffff\", \"ppwwwwtppptttfffffffffff\", \"ppffwwwwwfffffffffffffff\", \"ffffwwwwwffffffpffffffff\", \"fpfffpwwwwffffffffffffff\", \"ffffffppwwwwffffffffffff\"]}\n```",
+      "seconds": 6.3,
+      "cost_usd": 0.002463,
+      "map": "map-5.png",
+      "cells": "hhhhphhhphhphhhwhhhhhhhhppphpphhhhhtthhwhhhhhhhhtthttpphhfftttfhhphhhhhhppppppptfffppfpphhhhhphhppptttttfffppppppphhhphhwppptttpptttttfpffppphphwwttppptttttttttffhhhppfwwttpffpttttttttttffhfffwwtttffptttttttttffppfffwwwwpttttttttttttfffffffpwwfwwtttttttpffffffffffppwwwwtppptttfffffffffffppffwwwwwfffffffffffffffffffwwwwwffffffpfffffffffpfffpwwwwffffffffffffffffffffppwwwwffffffffffff"
+    }
+  ]
+}

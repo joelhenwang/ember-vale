@@ -158,6 +158,7 @@ class AppState:
                     max_tokens=maps.max_tokens,
                     timeout_s=maps.timeout_s,
                 )
+                self._map_reader.use_terrain_model(maps.terrain_model)
         return self._map_reader
 
     def writer(self) -> Writer | None:

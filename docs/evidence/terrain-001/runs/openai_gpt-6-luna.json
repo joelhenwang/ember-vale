@@ -1,0 +1,42 @@
+{
+  "model": "openai/gpt-6-luna",
+  "cols": 24,
+  "rows": 16,
+  "maps": [
+    {
+      "text": "{\"rows\":[\"wwwpfffffffffhhmmmmmmmmm\",\"wwwppfffffffffpphmmmmmmm\",\"wwwpttppfffffffhhmmmmmmm\",\"wwttppppffffffppphmmmmmm\",\"wwttppppppppppptthmmmmmm\",\"wwwpppppppppppttpphmmmmm\",\"wwwwppppppppppppppphmmmm\",\"wwwwwwppppppppppppppphmmm\",\"wwwwpppppppppppppppphhmmm\",\"wwwwppppppppppppppppphmmm\",\"wwwwpppppppppppppppphhmmm\",\"wwwwpppppppppppppppshhmmm\",\"wwwwpppppppppppppssshhmmm\",\"wwwwpppppppppppsssssmmmm\",\"wwwwpppppppppsssssssmmmm\",\"wwwwpppppppsssssssmmmmmm\"]}",
+      "seconds": 14.2,
+      "cost_usd": 0.000734675,
+      "map": "map-1.png",
+      "cells": "wwwpfffffffffhhmmmmmmmmmwwwppfffffffffpphmmmmmmmwwwpttppfffffffhhmmmmmmmwwttppppffffffppphmmmmmmwwttppppppppppptthmmmmmmwwwpppppppppppttpphmmmmmwwwwppppppppppppppphmmmmwwwwwwppppppppppppppphmmwwwwpppppppppppppppphhmmwwwwppppppppppppppppphmmwwwwpppppppppppppppphhmmwwwwpppppppppppppppshhmmwwwwpppppppppppppssshhmmwwwwpppppppppppsssssmmmmwwwwpppppppppsssssssmmmmwwwwpppppppsssssssmmmmmm"
+    },
+    {
+      "text": "{\"rows\":[\"ffffffffffffffffmmmmmmmm\",\"wffffffffffffffpppmmmmmm\",\"wwwfffffffppppppppmmmmmm\",\"wwwfffffppppppppppmmmmmm\",\"wwwpppfffpppppppppmmmmmm\",\"wwwppppppppppttpppmmmmmm\",\"wwwttpppppttttppppmmmmmm\",\"wwwttpppppttttppppmmmmmm\",\"wwwpppppppttttpppppppmmm\",\"www hppppppttttssssssmmm\",\"wwwppppppssssssssssspmmm\",\"wwwppppppssssssssssssmmm\",\"wwwppppttppsssssssssssmmm\",\"wppppppppppssssssssssmmm\",\"wpppppppppsssssssssssmmm\",\"pppppppppppsssssssssssmmm\"]}",
+      "seconds": 11.4,
+      "cost_usd": 0.000860675,
+      "map": "map-2.png",
+      "cells": "ffffffffffffffffmmmmmmmmwffffffffffffffpppmmmmmmwwwfffffffppppppppmmmmmmwwwfffffppppppppppmmmmmmwwwpppfffpppppppppmmmmmmwwwppppppppppttpppmmmmmmwwwttpppppttttppppmmmmmmwwwttpppppttttppppmmmmmmwwwpppppppttttpppppppmmmwwwhppppppttttssssssmmmmwwwppppppssssssssssspmmmwwwppppppssssssssssssmmmwwwppppttppsssssssssssmmwppppppppppssssssssssmmmwpppppppppsssssssssssmmmpppppppppppsssssssssssmm"
+    },
+    {
+      "text": "{\"rows\":[\"fffftffhmmimimmmmmmmmmmm\",\"fftttffhmmmmmmmmmmmmmmmm\",\"fffhttfffm mhhhhpptttmmmm\",\"ffffffffhhm hpppphtt hmh hh\",\"fffffffffh hppppphhhhhht h\",\"fffffttffffppppphhhhhhhh\",\"fffftttff fppppphhhhhhtthh\",\"fffffffppppphhhhhhhhhhhh\",\"wwwwwwppppwphhhhhhppppppp\",\"wwwwwwttppwwhhhhppppppppp\",\"wwwwwwttpppwwhhhhppppppppp\",\"wwwwwwtppppwwhhhhppppppppp\",\"wwwwwwpppppwwhhhhppppppppp\",\"wwwwwwppppppwwhhhppppppppp\",\"wwwwwwppppppwwhhhppppppppp\",\"wwwwwwppppppwwmmmppppppppp\"]}",
+      "seconds": 9.5,
+      "cost_usd": 0.000768175,
+      "map": "map-3.png",
+      "cells": "fffftffhmmimimmmmmmmmmmmfftttffhmmmmmmmmmmmmmmmmfffhttfffmmhhhhpptttmmmmffffffffhhmhpppphtthmhhhfffffffffhhppppphhhhhhthfffffttffffppppphhhhhhhhfffftttfffppppphhhhhhtthfffffffppppphhhhhhhhhhhhwwwwwwppppwphhhhhhppppppwwwwwwttppwwhhhhppppppppwwwwwwttpppwwhhhhpppppppwwwwwwtppppwwhhhhpppppppwwwwwwpppppwwhhhhpppppppwwwwwwppppppwwhhhpppppppwwwwwwppppppwwhhhpppppppwwwwwwppppppwwmmmppppppp"
+    },
+    {
+      "text": "{\"rows\":[\"mmmmmmmmmmmmfffffssswwwww\",\"mmddddddpppppffffssssssww\",\"dddppppppptpppffffssssssww\",\"pppwwwwwppptppppsssssppww\",\"pppwwwwwwppptwwwpppppppw\",\"wwwwwwwwtttwwwwwwtttttww\",\"wwwwwwtttttwwwwwwwwwwwww\",\"wwwwwwtttttwwwwwwwwwwwww\",\"wwwwwwtttttwwwwwwwwwwwww\",\"wwwwwwwwwwwwwwwwwwwwwwww\",\"wwwwwwwwwwwwwwwwwwwwwwww\",\"wwwwwwwwwwwwwwwwwwwwwwww\",\"wwwwwwwwwwwwwwwwwwwwwwww\",\"wwwwwwwwwwwwwwwwwwwwwwww\",\"wwwwwwwwwwwwwwwwwwwwwwww\",\"wwwwwwwwwwwwwwwwwwwwwwww\"]}",
+      "seconds": 11.4,
+      "cost_usd": 0.000726675,
+      "map": "map-4.png",
+      "cells": "mmmmmmmmmmmmfffffssswwwwmmddddddpppppffffsssssswdddppppppptpppffffsssssspppwwwwwppptppppsssssppwpppwwwwwwppptwwwpppppppwwwwwwwwwtttwwwwwwtttttwwwwwwwwtttttwwwwwwwwwwwwwwwwwwwtttttwwwwwwwwwwwwwwwwwwwtttttwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
+    },
+    {
+      "text": "{\"rows\":[\"hhhhphhhhhhhhhhhhhhhhhhh\",\"fppppppppphthhhhhhhhhhhhhh\",\"fttttppppppthppphhhhhhhhhhh\",\"fttttppptppptppphhhhhhhhhhh\",\"pppppppppptppppphhhhhhhhhh\",\"fppppppttttttpppphhhhhhhh\",\"wwpppptttttttppptthhhhhhhh\",\"wwfppptttttttppptthhhhhh\",\"wwfptttttttttpppttpphhh\",\"wwtptttttttttppptttppff\",\"wwftttttttppppppptttppff\",\"pwwppptpppppppppppppffff\",\"ppppppppppppppppppppffff\",\"ppppppppppppppppppfffffff\",\"pppppppppppppppppppfffffff\",\"ppppppwwwpppppppppfffffff\"]}",
+      "seconds": 11.5,
+      "cost_usd": 0.000723675,
+      "map": "map-5.png",
+      "cells": "hhhhphhhhhhhhhhhhhhhhhhhfppppppppphthhhhhhhhhhhhfttttppppppthppphhhhhhhhfttttppptppptppphhhhhhhhpppppppppptppppphhhhhhhhfppppppttttttpppphhhhhhhwwpppptttttttppptthhhhhhwwfppptttttttppptthhhhhhwwfptttttttttpppttpphhhhwwtptttttttttppptttppfffwwftttttttppppppptttppffpwwppptpppppppppppppffffppppppppppppppppppppffffppppppppppppppppppffffffpppppppppppppppppppfffffppppppwwwpppppppppffffff"
+    }
+  ]
+}

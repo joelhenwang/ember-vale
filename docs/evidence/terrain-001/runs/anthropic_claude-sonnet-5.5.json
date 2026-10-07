@@ -1,0 +1,42 @@
+{
+  "model": "anthropic/claude-sonnet-5.5",
+  "cols": 24,
+  "rows": 16,
+  "maps": [
+    {
+      "text": "{\"rows\":[\"wwppfffffffffffffffmmmmm\",\"wwppfffffffffffffffmmmmm\",\"wwppfffffffhffffffpwmmmm\",\"wwtppppfhpfffttfppwwmmmm\",\"wwpptppppppptttpppwmmmmm\",\"wwtttppppppttttppwpmmmmm\",\"wwwpwwppppppppppppwmmmmm\",\"wwwppwwwwwpppppppppmmmmm\",\"wwwpppwwpppppppptppmmmmm\",\"wwwhpptpppwpppptpptmmmmm\",\"wwwpppttpppwpppppttmmmmm\",\"wwwwhpppppwpppppppmmmmmm\",\"wwwwhhpppsswpppppmmmmmmm\",\"wwwhppppsssssssspsmmmmmm\",\"wwwhhppssssssssssssmmmmm\",\"wwwhhhhpsssssssssssmmmmm\"]}",
+      "seconds": 5.5,
+      "cost_usd": 0.007706,
+      "map": "map-1.png",
+      "cells": "wwppfffffffffffffffmmmmmwwppfffffffffffffffmmmmmwwppfffffffhffffffpwmmmmwwtppppfhpfffttfppwwmmmmwwpptppppppptttpppwmmmmmwwtttppppppttttppwpmmmmmwwwpwwppppppppppppwmmmmmwwwppwwwwwpppppppppmmmmmwwwpppwwpppppppptppmmmmmwwwhpptpppwpppptpptmmmmmwwwpppttpppwpppppttmmmmmwwwwhpppppwpppppppmmmmmmwwwwhhpppsswpppppmmmmmmmwwwhppppsssssssspsmmmmmmwwwhhppssssssssssssmmmmmwwwhhhhpsssssssssssmmmmm"
+    },
+    {
+      "text": "{\"rows\":[\"wwppfffffffffffffpppmmmm\",\"wwpfffffffffffwfffppppmmm\",\"wwwpffffffffffpfffptpppmm\",\"wwwwpppfffffppppppppppmmm\",\"wwwwpppppppppptpppppppmmm\",\"wwwppppppppppppppppppfmmm\",\"wwwwttpppwwpttpwwwwwwwwmm\",\"wwwtttpwwwwwtttttppwwwwmmm\",\"wwwwwppppppptttpppppwwwmmm\",\"wwwwpppppppppppppppppwwmmm\",\"wwhhpppppppppppssssspppmmm\",\"wwhppppppppppppsssssssppmm\",\"wwhpptpppppppppsssssssspmm\",\"wwhhpppppppppsssssssssspmm\",\"wwhhhpppppppssssssssssshmm\",\"wwhhhppppppppsssssssspphhm\"]}",
+      "seconds": 5.5,
+      "cost_usd": 0.007656,
+      "map": "map-2.png",
+      "cells": "wwppfffffffffffffpppmmmmwwpfffffffffffwfffppppmmwwwpffffffffffpfffptpppmwwwwpppfffffppppppppppmmwwwwpppppppppptpppppppmmwwwppppppppppppppppppfmmwwwwttpppwwpttpwwwwwwwwmwwwtttpwwwwwtttttppwwwwmwwwwwppppppptttpppppwwwmwwwwpppppppppppppppppwwmwwhhpppppppppppssssspppmwwhppppppppppppsssssssppwwhpptpppppppppsssssssspwwhhpppppppppsssssssssspwwhhhpppppppssssssssssshwwhhhppppppppsssssssspph"
+    },
+    {
+      "text": "{\"rows\":[\"ffhhttfhhmmmmmiimmmmmmii\",\"fhhhhtffhhmmmmiimmmmmmmm\",\"ffhhhhffhwmmmmmmmmmmmmmm\",\"ffffffffhwwhmmhhhdmmtmmm\",\"ffffffffffwwhhhffhdtdmmm\",\"ffffffffffwwfffffhhpppmm\",\"fffftfffffwwffffffhhhppp\",\"wwfffffffffwfffffffhhhpp\",\"wwwwpfffffwwwfffffhhhppp\",\"wwwfffffffwwwffpphhhpppp\",\"wwwppftfffwwfffppphhpppp\",\"wwwtttpfffwwfffppppptppp\",\"wwwttpppffwwfpppppppppph\",\"wwwwwppfffwwwfppppphpphp\",\"wwwwwwpfffwwfppphhhhpppp\",\"wwwwwfffffwwfpphhhhhhppp\"]}",
+      "seconds": 5.8,
+      "cost_usd": 0.007846,
+      "map": "map-3.png",
+      "cells": "ffhhttfhhmmmmmiimmmmmmiifhhhhtffhhmmmmiimmmmmmmmffhhhhffhwmmmmmmmmmmmmmmffffffffhwwhmmhhhdmmtmmmffffffffffwwhhhffhdtdmmmffffffffffwwfffffhhpppmmfffftfffffwwffffffhhhpppwwfffffffffwfffffffhhhppwwwwpfffffwwwfffffhhhpppwwwfffffffwwwffpphhhppppwwwppftfffwwfffppphhppppwwwtttpfffwwfffppppptpppwwwttpppffwwfpppppppppphwwwwwppfffwwwfppppphpphpwwwwwwpfffwwfppphhhhppppwwwwwfffffwwfpphhhhhhppp"
+    },
+    {
+      "text": "{\"rows\":[\"mmmmhhfffsssssssssssssww\",\"mmmthhhfpfsssssssssssfww\",\"ddmtdhhpppfsssssssssfffw\",\"dddddhhpwppfsfsssssfffww\",\"wddtdwwwtttfpffsswwpfffw\",\"tttwwwwwwwttwwwwwtttppfw\",\"wwwwwwwwwwwwwwwwwwtthpfw\",\"wwttttwwwwwwwwwwwwwdddhw\",\"wttttttwwwwhhhhwwwwwwwtw\",\"wtttttttwwwhhwhwwwwwfffw\",\"wwtttttwwwwhhhwwwwfffffw\",\"wwdddwwwwwwwwwwwwfffffff\",\"wddmmdwwwwwwwwwwwffffffw\",\"wmmmmmmwwwwfftwwwffffffw\",\"wwmmmmwwwwwtttwwwwfffffw\",\"wwwmmwwwwwwwwwwwwwwwfffw\"]}",
+      "seconds": 6.0,
+      "cost_usd": 0.007996,
+      "map": "map-4.png",
+      "cells": "mmmmhhfffssssssssssssswwmmmthhhfpfsssssssssssfwwddmtdhhpppfsssssssssfffwdddddhhpwppfsfsssssfffwwwddtdwwwtttfpffsswwpfffwtttwwwwwwwttwwwwwtttppfwwwwwwwwwwwwwwwwwwwtthpfwwwttttwwwwwwwwwwwwwdddhwwttttttwwwwhhhhwwwwwwwtwwtttttttwwwhhwhwwwwwfffwwwtttttwwwwhhhwwwwfffffwwwdddwwwwwwwwwwwwfffffffwddmmdwwwwwwwwwwwffffffwwmmmmmmwwwwfftwwwffffffwwwmmmmwwwwwtttwwwwfffffwwwwmmwwwwwwwwwwwwwwwfffw"
+    },
+    {
+      "text": "{\"rows\":[\"pppfffhhhfffppphhhhhhhhh\",\"pppppfpppfffttphhhhhhhhh\",\"tttppppfffttfpphhhhhhhhh\",\"tttpppppfftttpphhhhhhhhh\",\"pppppppppfpppphhhhhhhhhh\",\"wpppppppptttttpphhhhhhhh\",\"wwppppptttttttttpppphhhh\",\"wwwppptttttttttttppphhff\",\"wwwwtttttttttttttpppffff\",\"wwwwtttttttttttttpppffff\",\"wwwwpttttttttttpppfffff\",\"pwwwppttttttpppppfffffff\",\"ppwwwppppppppppppffffff\",\"pppwwwpppppppppfffffffff\",\"fppppwwwpppppppffffffff\",\"ffpppppwwwpppppfffffffff\"]}",
+      "seconds": 4.5,
+      "cost_usd": 0.007396,
+      "map": "map-5.png",
+      "cells": "pppfffhhhfffppphhhhhhhhhpppppfpppfffttphhhhhhhhhtttppppfffttfpphhhhhhhhhtttpppppfftttpphhhhhhhhhpppppppppfpppphhhhhhhhhhwpppppppptttttpphhhhhhhhwwppppptttttttttpppphhhhwwwppptttttttttttppphhffwwwwtttttttttttttpppffffwwwwtttttttttttttpppffffwwwwpttttttttttpppffffffpwwwppttttttpppppfffffffppwwwppppppppppppfffffffpppwwwpppppppppffffffffffppppwwwpppppppfffffffffffpppppwwwpppppfffffffff"
+    }
+  ]
+}

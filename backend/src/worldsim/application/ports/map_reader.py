@@ -6,6 +6,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
+from worldsim.domain.geography import TerrainGrid
+
 
 @dataclass(frozen=True)
 class ReadPlace:
@@ -45,6 +47,11 @@ class MapReader(Protocol):
 
     #: The box around a character's face: (left, top, right, bottom) 0..1000.
     async def face(self, image: bytes, mime: str) -> Reading[tuple[int, int, int, int]]: ...
+
+    #: What covers the map, as a grid of terrain letters.
+    async def terrain(
+        self, image: bytes, mime: str, cols: int, rows: int
+    ) -> Reading[TerrainGrid]: ...
 
     #: Spots inside one place, from a closer picture of it.
     async def spots(self, image: bytes, mime: str) -> Reading[ReadPlace]: ...

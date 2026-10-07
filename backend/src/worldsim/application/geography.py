@@ -13,6 +13,7 @@ from worldsim.domain.geography import (
     MapRoad,
     PlaceMap,
     PlaceSpot,
+    TerrainGrid,
     TravelScale,
     WorldMap,
     timed_roads,
@@ -50,6 +51,7 @@ def world_with_map(
     places: list[PinnedPlace],
     roads: list[DrawnRoad],
     scale: TravelScale,
+    terrain: TerrainGrid | None = None,
 ) -> WorldPresetPayload:
     """The world with these pins and roads; nothing else of it changes.
 
@@ -92,7 +94,7 @@ def world_with_map(
             continue
         seen.add(pair)
         drawn.append(MapRoad(a=a, b=b, by=road.by, points=list(road.points)))
-    drawn = timed_roads(drawn, pins, width, height, scale)
+    drawn = timed_roads(drawn, pins, width, height, scale, terrain)
     old: set[frozenset[str]] = (
         {frozenset((r.a, r.b)) for r in world.map.roads} if world.map else set()
     )
@@ -104,7 +106,13 @@ def world_with_map(
                 have.add(leg)
                 travel.append(list(leg))
     world_map = WorldMap(
-        asset_id=asset_id, width=width, height=height, pins=pins, roads=drawn, scale=scale
+        asset_id=asset_id,
+        width=width,
+        height=height,
+        pins=pins,
+        roads=drawn,
+        scale=scale,
+        terrain=terrain,
     )
     return WorldPresetPayload.model_validate(
         world.model_dump() | {"locations": locations, "travel": travel, "map": world_map}

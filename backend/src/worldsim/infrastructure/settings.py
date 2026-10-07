@@ -238,6 +238,8 @@ class MapSettings(BaseModel):
 
     places_model: str = "openai/gpt-6-luna"
     roads_model: str = "anthropic/claude-sonnet-5.5"
+    #: Reads the terrain grid (docs/evidence/terrain-001: best of three).
+    terrain_model: str = "google/gemini-3.8-flash"
     reasoning: Literal["minimal", "low", "medium", "high"] | None = "low"
     #: Thinking included: some models think at length even at low effort.
     max_tokens: int = Field(default=40000, ge=1000, le=128000)

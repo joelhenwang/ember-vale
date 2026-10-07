@@ -28,7 +28,7 @@ from worldsim.application.ports.images import ImageGenerationError
 from worldsim.application.ports.map_reader import MapReader, MapReadingError, ReadPlace
 from worldsim.domain.assets import AssetKind, AssetRecord
 from worldsim.domain.errors import DomainError, ErrorCode
-from worldsim.domain.geography import PlaceMap, TravelScale
+from worldsim.domain.geography import PlaceMap, TerrainGrid, TravelScale
 from worldsim.domain.ids import new_asset_id
 from worldsim.domain.presets import (
     PresetKind,
@@ -190,6 +190,28 @@ async def read_places(
     )
 
 
+@router.post("/library/maps/{asset_id}/terrain", response_model=api.TerrainView)
+async def read_terrain(
+    asset_id: UUID, request: Request, body: api.TerrainRequest | None = None
+) -> api.TerrainView:
+    """What covers the map, cell by cell: a first draft to correct by hand."""
+    asset, data = await library_picture(request, asset_id)
+    shape = body or api.TerrainRequest()
+    try:
+        reading = await map_reader(request).terrain(data, asset.mime, shape.cols, shape.rows)
+    except MapReadingError as exc:
+        raise DomainError(ErrorCode.PRECONDITION_FAILED, str(exc)) from exc
+    grid = reading.found[0] if reading.found else None
+    return api.TerrainView(
+        terrain=api.TerrainGridView(cols=grid.cols, rows=grid.rows, cells=grid.cells)
+        if grid
+        else None,
+        model=reading.model,
+        seconds=reading.seconds,
+        cost_usd=reading.cost_usd,
+    )
+
+
 @router.post("/library/maps/{asset_id}/spots", response_model=api.MapPlacesView)
 async def read_spots(asset_id: UUID, request: Request) -> api.MapPlacesView:
     """The spots inside one place, read off a closer picture of it."""
@@ -275,6 +297,11 @@ async def save_world_map(
         scale = TravelScale(
             shortest_phases=body.shortest_phases, longest_phases=body.longest_phases
         )
+        terrain = (
+            TerrainGrid(cols=body.terrain.cols, rows=body.terrain.rows, cells=body.terrain.cells)
+            if body.terrain
+            else None
+        )
     except ValueError as exc:
         raise DomainError(ErrorCode.VALIDATION_FAILED, str(exc)) from exc
     return await _revise_world(
@@ -289,6 +316,7 @@ async def save_world_map(
             [PinnedPlace(p.name, p.kind, p.point, p.key) for p in body.places],
             [DrawnRoad(r.a, r.b, r.by, tuple(r.points)) for r in body.roads],
             scale,
+            terrain,
         ),
     )
 

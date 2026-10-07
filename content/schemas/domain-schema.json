@@ -6918,6 +6918,37 @@
           "title": "TemplatePresetPayload",
           "type": "object"
         },
+        "TerrainGrid": {
+          "additionalProperties": false,
+          "description": "What covers the map, cell by cell: rows of letters, top row first.",
+          "properties": {
+            "cells": {
+              "maxLength": 2304,
+              "minLength": 4,
+              "title": "Cells",
+              "type": "string"
+            },
+            "cols": {
+              "maximum": 48,
+              "minimum": 2,
+              "title": "Cols",
+              "type": "integer"
+            },
+            "rows": {
+              "maximum": 48,
+              "minimum": 2,
+              "title": "Rows",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "cols",
+            "rows",
+            "cells"
+          ],
+          "title": "TerrainGrid",
+          "type": "object"
+        },
         "TravelScale": {
           "additionalProperties": false,
           "description": "The player's anchor: the shortest and the longest road, in phases.",
@@ -7041,6 +7072,17 @@
             },
             "scale": {
               "$ref": "#/$defs/TravelScale"
+            },
+            "terrain": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/TerrainGrid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
             },
             "width": {
               "minimum": 1,

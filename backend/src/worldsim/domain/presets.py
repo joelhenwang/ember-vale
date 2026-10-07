@@ -12,7 +12,7 @@ import hashlib
 import json
 from datetime import datetime
 from enum import StrEnum
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -150,6 +150,9 @@ def canonical_payload_hash(payload: PresetPayload) -> str:
         for added in ("map", "cover"):
             if data.get(added) is None:
                 data.pop(added, None)
+        drawn = cast("dict[str, object] | None", data.get("map"))
+        if drawn is not None and drawn.get("terrain") is None:
+            drawn.pop("terrain", None)
         for place in data.get("locations", []):
             if place.get("map") is None:
                 place.pop("map", None)

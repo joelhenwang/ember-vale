@@ -86,6 +86,70 @@ class TravelScale(BaseModel):
         return self
 
 
+#: Terrain on a world map, one letter a cell.
+TERRAIN_KINDS: dict[str, str] = {
+    "w": "water",
+    "p": "plains",
+    "f": "forest",
+    "h": "hills",
+    "m": "mountains",
+    "s": "marsh",
+    "d": "desert",
+    "i": "snow",
+    "t": "town",
+}
+#: How much harder than open plains a stretch of road through it is.
+TERRAIN_COST: dict[str, float] = {
+    "w": 1.0,
+    "p": 1.0,
+    "t": 1.0,
+    "f": 1.4,
+    "d": 1.5,
+    "h": 1.6,
+    "s": 2.0,
+    "i": 2.0,
+    "m": 2.6,
+}
+#: Colours for drawing the grid (shared with the client legend).
+TERRAIN_COLOURS: dict[str, str] = {
+    "w": "#3b82c4",
+    "p": "#b6d36b",
+    "f": "#2f7d3a",
+    "h": "#b8935a",
+    "m": "#7a6a5a",
+    "s": "#5f8f7a",
+    "d": "#e3c77a",
+    "i": "#eef3f7",
+    "t": "#c0392b",
+}
+MAX_TERRAIN_SIDE = 48
+
+
+class TerrainGrid(BaseModel):
+    """What covers the map, cell by cell: rows of letters, top row first."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    cols: int = Field(ge=2, le=MAX_TERRAIN_SIDE)
+    rows: int = Field(ge=2, le=MAX_TERRAIN_SIDE)
+    cells: str = Field(min_length=4, max_length=MAX_TERRAIN_SIDE * MAX_TERRAIN_SIDE)
+
+    @model_validator(mode="after")
+    def _shape(self) -> TerrainGrid:
+        if len(self.cells) != self.cols * self.rows:
+            raise ValueError("the terrain grid has the wrong number of cells")
+        unknown = set(self.cells) - set(TERRAIN_KINDS)
+        if unknown:
+            raise ValueError(f"unknown terrain {sorted(unknown)}")
+        return self
+
+    def at(self, x: float, y: float) -> str:
+        """The letter under a point given as fractions of the map's sides."""
+        col = min(self.cols - 1, max(0, int(x * self.cols)))
+        row = min(self.rows - 1, max(0, int(y * self.rows)))
+        return self.cells[row * self.cols + col]
+
+
 class WorldMap(BaseModel):
     """A world preset's map: the picture, its pins and its timed roads."""
 
@@ -97,6 +161,8 @@ class WorldMap(BaseModel):
     pins: list[MapPin] = Field(default_factory=list, max_length=64)
     roads: list[MapRoad] = Field(default_factory=list, max_length=256)
     scale: TravelScale = Field(default_factory=TravelScale)
+    #: What covers the map; roads through hard country take longer.
+    terrain: TerrainGrid | None = None
 
     @model_validator(mode="after")
     def _known_ends(self) -> WorldMap:
@@ -191,6 +257,32 @@ def road_length(line: list[Point], width: int, height: int) -> float:
     )
 
 
+#: Road stretches are walked in steps this long (map units) when weighed by terrain.
+_TERRAIN_STEP = MAP_SPAN / 100
+
+
+def effort_length(
+    line: list[Point], width: int, height: int, terrain: TerrainGrid | None, by: str = "road"
+) -> float:
+    """A road's length weighed by what it crosses: plains count once, a
+    mountain stretch 2.6 times. Without terrain (or on water) it is the
+    drawn length."""
+    if terrain is None or by in ("sea", "river"):
+        return road_length(line, width, height)
+    longer = max(width, height)
+    sx, sy = width / longer, height / longer
+    total = 0.0
+    for (x1, y1), (x2, y2) in zip(line, line[1:], strict=False):
+        length = math.hypot((x2 - x1) * sx, (y2 - y1) * sy)
+        steps = max(1, math.ceil(length / _TERRAIN_STEP))
+        for n in range(steps):
+            t = (n + 0.5) / steps
+            x = (x1 + (x2 - x1) * t) / MAP_SPAN
+            y = (y1 + (y2 - y1) * t) / MAP_SPAN
+            total += length / steps * TERRAIN_COST[terrain.at(x, y)]
+    return total
+
+
 def travel_phases(lengths: list[float], scale: TravelScale) -> list[int]:
     """Phases per road: the shortest road takes the shortest time, and so on.
 
@@ -211,12 +303,19 @@ def travel_phases(lengths: list[float], scale: TravelScale) -> list[int]:
 
 
 def timed_roads(
-    roads: list[MapRoad], pins: list[MapPin], width: int, height: int, scale: TravelScale
+    roads: list[MapRoad],
+    pins: list[MapPin],
+    width: int,
+    height: int,
+    scale: TravelScale,
+    terrain: TerrainGrid | None = None,
 ) -> list[MapRoad]:
-    """The same roads with phases set from their drawn length and the scale."""
+    """The same roads with phases set from their length (weighed by the
+    terrain they cross, when the map has one) and the scale."""
     where = {pin.key: pin.point for pin in pins}
     lengths = [
-        road_length([where[road.a], *road.points, where[road.b]], width, height) for road in roads
+        effort_length([where[road.a], *road.points, where[road.b]], width, height, terrain, road.by)
+        for road in roads
     ]
     return [
         road.model_copy(update={"phases": phases})

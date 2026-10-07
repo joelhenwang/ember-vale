@@ -807,6 +807,7 @@ export interface WorldMapRequest {
   places: WorldMapPlace[];
   roads?: MapRoadView[];
   shortest_phases: number;
+  terrain?: TerrainGridView | null;
 }
 
 export interface PlaceMapRequest {
@@ -820,6 +821,28 @@ export interface FaceView {
   face?: unknown[] | null;
   model: string;
   seconds: unknown;
+}
+
+export interface TerrainGridView {
+  cells: string;
+  cols: number;
+  rows: number;
+}
+
+export interface TerrainRequest {
+  cols?: number;
+  rows?: number;
+}
+
+export interface TerrainView {
+  cost_usd: unknown;
+  model: string;
+  seconds: unknown;
+  terrain: TerrainGridView | null;
+}
+
+export interface MapPlacesRequest {
+  known?: string[];
 }
 
 export interface PortraitPaintRequest {

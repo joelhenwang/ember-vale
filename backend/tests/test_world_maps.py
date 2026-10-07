@@ -28,6 +28,7 @@ from worldsim.application.geography import (
 from worldsim.application.ports.map_reader import Reading, ReadPlace, ReadRoad
 from worldsim.domain.geography import (
     PlaceMap,
+    TerrainGrid,
     TravelScale,
     road_length,
     spot_named,
@@ -248,6 +249,11 @@ class _Reader:
         self.asked: list[list[ReadPlace]] = []
         self.known: tuple[str, ...] = ()
 
+    async def terrain(self, image: bytes, mime: str, cols: int, rows: int) -> Reading[TerrainGrid]:
+        assert image
+        cells = ("p" * (cols // 2) + "m" * (cols - cols // 2)) * rows
+        return Reading((TerrainGrid(cols=cols, rows=rows, cells=cells),), "fake/terrain", 0.1, 0)
+
     async def places(
         self, image: bytes, mime: str, known: tuple[str, ...] = ()
     ) -> Reading[ReadPlace]:
@@ -356,6 +362,21 @@ def test_read_a_map_and_time_the_new_story(stack: tuple[ApiClient, _Reader]) -> 
             ("hearth", "market", 2),
             ("market", "old-mill", 7),
         ]
+        # The terrain is read as a draft, and saved with the map it weighs.
+        read = api.post(f"/api/v1/library/maps/{asset_id}/terrain", json={"cols": 4, "rows": 4})
+        assert read.status_code == 200, read.text
+        assert read.json()["terrain"] == {"cols": 4, "rows": 4, "cells": "ppmm" * 4}
+        weighed = api.put(
+            f"/api/v1/library/presets/{copy['id']}/map",
+            json={
+                **body,
+                "terrain": read.json()["terrain"],
+                "expected_version": saved.json()["version"],
+            },
+        )
+        assert weighed.status_code == 200, weighed.text
+        assert weighed.json()["revision"]["map"]["terrain"]["cells"] == "ppmm" * 4
+        saved = weighed
         stale = api.put(
             f"/api/v1/library/presets/{copy['id']}/map",
             json={**body, "expected_version": copy["version"]},
@@ -386,7 +407,10 @@ def test_read_a_map_and_time_the_new_story(stack: tuple[ApiClient, _Reader]) -> 
             "/api/v1/story-drafts",
             json={
                 "payload": {
-                    "world": {"preset_id": copy["id"], "preset_revision": 3},
+                    "world": {
+                        "preset_id": copy["id"],
+                        "preset_revision": inside.json()["current_revision"],
+                    },
                     "cast": [
                         {
                             "instance_key": "cast-wren",

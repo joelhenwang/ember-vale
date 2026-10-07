@@ -7,6 +7,7 @@
  * shortest takes, the longest likewise, and the rest scale in between.
  * The server repeats this sum when it saves (domain/geography.py).
  */
+import { effortLength, type Terrain } from './terrain'
 import type {
   MapPlaceView,
   MapRoadView,
@@ -45,6 +46,8 @@ export interface Board {
   height: number
   places: BoardPlace[]
   roads: BoardRoad[]
+  /** What covers the map; roads through hard country take longer. */
+  terrain?: Terrain | null
 }
 
 export interface WorldPlace {
@@ -192,12 +195,17 @@ export function boardFromPreset(detail: PresetDetail): Board | null {
     const points = Array.isArray(raw['points']) ? (raw['points'] as unknown[]).map(asPoint) : []
     roads.push({ a, b, by: String(raw['by'] ?? 'road'), points })
   }
+  const rawTerrain = map['terrain'] as Terrain | null | undefined
   return {
     assetId: map['asset_id'],
     width: Number(map['width']) || 1,
     height: Number(map['height']) || 1,
     places,
-    roads
+    roads,
+    terrain:
+      rawTerrain && typeof rawTerrain.cells === 'string'
+        ? { cols: rawTerrain.cols, rows: rawTerrain.rows, cells: rawTerrain.cells }
+        : null
   }
 }
 
@@ -264,7 +272,10 @@ export function timedRoads(
   longest: number
 ): Array<{ road: BoardRoad; phases: number; length: number }> {
   const roads = liveRoads(board)
-  const lengths = roads.map((r) => roadLength(roadLine(board, r), board.width, board.height))
+  // Weighed by the terrain each road crosses, as the server times them.
+  const lengths = roads.map((r) =>
+    effortLength(roadLine(board, r), board.width, board.height, board.terrain, r.by)
+  )
   const phases = travelPhases(lengths, shortest, longest)
   return roads.map((road, i) => ({ road, phases: phases[i]!, length: lengths[i]! }))
 }
@@ -315,6 +326,7 @@ export function saveRequest(
     })),
     shortest_phases: shortest,
     longest_phases: longest,
+    terrain: board.terrain ?? null,
     expected_version: expectedVersion
   }
 }

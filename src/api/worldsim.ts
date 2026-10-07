@@ -70,7 +70,8 @@ import type {
   FaceView,
   WritingEnhanceView,
   WritingFillRequest,
-  WritingFillView
+  WritingFillView,
+  TerrainView
 } from '../../content/clients/worldsim'
 import { apiFetch, type Role } from './http'
 
@@ -861,6 +862,21 @@ export function readMapPlaces(
     ...opts,
     method: 'POST',
     body: { known }
+  })
+}
+
+/** What covers a map, as a grid of terrain letters (a draft; a cent or so). */
+export function readTerrain(
+  assetId: string,
+  cols: number,
+  rows: number,
+  opts: CallOptions = {}
+): Promise<TerrainView> {
+  return apiFetch<TerrainView>(`/library/maps/${assetId}/terrain`, {
+    timeoutMs: 420000,
+    ...opts,
+    method: 'POST',
+    body: { cols, rows }
   })
 }
 

@@ -24,7 +24,7 @@ from worldsim.application.ports.map_reader import (
     ReadPlace,
     ReadRoad,
 )
-from worldsim.domain.geography import MAP_SPAN, ROAD_KINDS
+from worldsim.domain.geography import MAP_SPAN, ROAD_KINDS, TERRAIN_KINDS, TerrainGrid
 
 PLACES_PROMPT = """This is a fantasy world map. List every place a traveller could go to or through:
 - settlements: city, town, village, port, camp, tribe
@@ -102,6 +102,38 @@ def places_prompt(known: tuple[str, ...] = ()) -> str:
         return PLACES_PROMPT
     head, _, answer = PLACES_PROMPT.rpartition("\n\nAnswer with JSON only")
     return head + KNOWN_PART.format(names=", ".join(names)) + "\n\nAnswer with JSON only" + answer
+
+
+TERRAIN_PROMPT = """This is a fantasy world map. Lay a grid of {cols} columns and {rows} rows over
+the whole picture, edge to edge. For each cell, say what mostly covers that part of the land,
+as one letter:
+w water (sea, lake, wide river)   p plains, grassland, fields   f forest, woods
+h hills   m mountains   s marsh, swamp   d desert, sand, barren rock   i snow, ice
+t town, city, castle or other buildings
+Look at the picture itself, not at labels. Roads and thin rivers do not count: say what is
+around them.
+
+Answer with JSON only: {{"rows": ["...", "..."]}} with exactly {rows} strings, top row first,
+each exactly {cols} letters long, left to right."""
+
+
+def parse_terrain(text: str, cols: int, rows: int) -> TerrainGrid | None:
+    """The grid from an answer: short rows padded with their last letter,
+    long ones cut, unknown letters read as plains. None if no rows came."""
+    raw = _json(text).get("rows")
+    if not isinstance(raw, list) or not raw:
+        return None
+    lines = [str(r).strip().lower() for r in cast("list[object]", raw)][:rows]
+    if not any(lines):
+        return None
+    while len(lines) < rows:
+        lines.append(lines[-1])
+    fixed: list[str] = []
+    for line in lines:
+        letters = "".join(c if c in TERRAIN_KINDS else "p" for c in line if not c.isspace())
+        letters = (letters or "p")[:cols]
+        fixed.append(letters + letters[-1] * (cols - len(letters)))
+    return TerrainGrid(cols=cols, rows=rows, cells="".join(fixed))
 
 
 #: Larger pictures cost more and read no better.
@@ -233,6 +265,7 @@ class OpenRouterMapReader:
         self._url = base_url.rstrip("/") + "/chat/completions"
         self._places_model = places_model
         self._roads_model = roads_model
+        self._terrain_model = places_model
         self._reasoning = reasoning
         self._max_tokens = max_tokens
         self._timeout = timeout_s
@@ -285,6 +318,16 @@ class OpenRouterMapReader:
         del mime
         text, seconds, cost = await self._ask(self._places_model, image, places_prompt(known))
         return Reading(tuple(parse_places(text)), self._places_model, seconds, cost)
+
+    def use_terrain_model(self, model: str) -> None:
+        self._terrain_model = model
+
+    async def terrain(self, image: bytes, mime: str, cols: int, rows: int) -> Reading[TerrainGrid]:
+        del mime
+        prompt = TERRAIN_PROMPT.format(cols=cols, rows=rows)
+        text, seconds, cost = await self._ask(self._terrain_model, image, prompt)
+        grid = parse_terrain(text, cols, rows)
+        return Reading((grid,) if grid else (), self._terrain_model, seconds, cost)
 
     async def face(self, image: bytes, mime: str) -> Reading[tuple[int, int, int, int]]:
         del mime
