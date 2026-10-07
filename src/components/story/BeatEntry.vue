@@ -2,7 +2,13 @@
 import { computed, onMounted, watch } from 'vue'
 import type { TimelineEntry } from '../../../content/clients/worldsim'
 import type { BeatDetailState } from '../../composables/useStory'
-import { readScene, sceneCitations, type ScenePointer, type TopicRecord } from './beatReading'
+import {
+  eventLabel,
+  readScene,
+  sceneCitations,
+  type ScenePointer,
+  type TopicRecord
+} from './beatReading'
 
 const props = defineProps<{
   index: number
@@ -91,7 +97,7 @@ function eventSnippets(eventId: string): TimelineEntry[] {
     <h3 class="beat__head">Beat {{ index }}</h3>
     <template v-for="(segment, si) in segments" :key="si">
       <template v-if="segment.kind === 'legacy'">
-        <p class="beat__kind">{{ segment.entry.event_type.replace(/_/g, ' ') }}</p>
+        <p class="beat__kind">{{ eventLabel(segment.entry.event_type) }}</p>
         <p v-if="segment.entry.snippet" class="beat__text">{{ segment.entry.snippet }}</p>
       </template>
       <template
@@ -104,7 +110,7 @@ function eventSnippets(eventId: string): TimelineEntry[] {
         <template
           v-for="entry in eventSnippets(segment.pointer.eventId)"
           :key="entry.event_id + entry.sequence">
-          <p class="beat__kind">{{ entry.event_type.replace(/_/g, ' ') }}</p>
+          <p class="beat__kind">{{ eventLabel(entry.event_type) }}</p>
           <p class="beat__text">{{ entry.snippet }}</p>
         </template>
       </template>
@@ -181,7 +187,7 @@ function eventSnippets(eventId: string): TimelineEntry[] {
             <template
               v-for="entry in eventSnippets(segment.pointer.eventId)"
               :key="entry.event_id + entry.sequence">
-              <p class="beat__kind">{{ entry.event_type.replace(/_/g, ' ') }}</p>
+              <p class="beat__kind">{{ eventLabel(entry.event_type) }}</p>
               <p class="beat__text">{{ entry.snippet }}</p>
             </template>
           </template>

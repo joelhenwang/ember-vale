@@ -157,3 +157,19 @@ export function sceneCitations(narration: BeatView[]): string[] {
   }
   return out
 }
+
+const EVENT_LABELS: Record<string, string> = {
+  world_seeded: 'The story begins',
+  world_ticked: 'Time passes',
+  macro_ticked: 'Meanwhile, far off',
+  action_resolved: 'What happened',
+  deity_override: 'A hand from above',
+  schedule_fired: 'As planned',
+  world_ended: 'The end',
+  condition_tick: 'How they fare'
+}
+
+/** A story event's kind in plain words ("action_resolved" → "What happened"). */
+export function eventLabel(type: string): string {
+  return EVENT_LABELS[type] ?? type.replace(/_/g, ' ')
+}

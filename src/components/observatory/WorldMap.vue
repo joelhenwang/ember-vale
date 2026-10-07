@@ -239,14 +239,15 @@ function initials(name: string): string {
   color: var(--teal-ink);
 }
 .wm__enter {
-  margin-left: 4px;
-  padding: 0 6px;
+  margin-left: 5px;
+  padding: 1px 8px 2px;
   border-radius: 999px;
-  font-family: var(--font-body);
-  font-size: 11.5px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  vertical-align: 2px;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
   background: var(--teal);
   color: var(--cream-on-teal);
 }

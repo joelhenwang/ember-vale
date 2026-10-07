@@ -132,3 +132,13 @@ def test_places_without_a_map_are_spread_apart() -> None:
         for (ax, ay), (bx, by) in combinations(at.values(), 2):
             assert abs(ax - bx) + abs(ay - by) > 0.1
         assert schematic_anchors(list(reversed(ids))) == at  # stable
+
+
+def test_a_snippet_ends_on_a_whole_word() -> None:
+    from worldsim.interfaces.http.routes.stage2 import clip
+
+    long = "The harbor is quiet, the air thick with the scent of salt and seaweed. " * 4
+    short = clip(long)
+    assert len(short) <= 160 and short.endswith("…")
+    assert long.startswith(short[:-1]) and long[len(short) - 1] == " "
+    assert clip("Ash waits.") == "Ash waits."

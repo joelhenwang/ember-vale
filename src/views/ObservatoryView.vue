@@ -353,6 +353,12 @@ onUnmounted(() => {
   min-height: 0;
   overflow: auto;
 }
+/* a map without art fills the column beside the events */
+.obs__map :deep(.wm--schematic) {
+  aspect-ratio: auto;
+  height: 100%;
+  min-height: 380px;
+}
 .obs__feed {
   min-height: 0;
 }

@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest'
 import type { BeatView, SceneDetail } from '../../../content/clients/worldsim'
 import {
+  eventLabel,
   collectScenePointers,
   communicateTopics,
   isAttemptRecord,
@@ -197,5 +198,13 @@ describe('sceneCitations', () => {
       { ...beat('narration', 'More.'), cited_fact_keys: ['mill.hours'] }
     ]
     expect(sceneCitations(narration)).toEqual(['mill.hours', 'market.bell'])
+  })
+})
+
+describe('event labels', () => {
+  it('names story events in plain words', () => {
+    expect(eventLabel('action_resolved')).toBe('What happened')
+    expect(eventLabel('world_ticked')).toBe('Time passes')
+    expect(eventLabel('something_new')).toBe('something new')
   })
 })

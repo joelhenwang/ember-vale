@@ -20,6 +20,19 @@ from worldsim.interfaces.http import schemas as api
 from worldsim.interfaces.http.routes.activities import activity_view
 from worldsim.interfaces.http.routes.roles import effective_role, require_role
 
+
+def clip(text: str, limit: int = 160) -> str:
+    """A glance at the text: whole words, an ellipsis when it goes on."""
+    text = " ".join(text.split())
+    if len(text) <= limit:
+        return text
+    cut = text[: limit - 1]
+    space = cut.rfind(" ")
+    if space > limit // 2:
+        cut = cut[:space]
+    return cut.rstrip(" ,;:—–-") + "…"
+
+
 router = APIRouter(tags=["stage2"])
 
 
@@ -68,7 +81,7 @@ async def timeline(
                     event_id=event.id,
                     event_type=event.event_type.value,
                     absolute_index=event.absolute_index,
-                    snippet=" ".join(_voiced_beat_text(b, names) for b in beats)[:160] or None,
+                    snippet=clip(" ".join(_voiced_beat_text(b, names) for b in beats)) or None,
                 )
             )
         total = await uow.events.count_events(world_id)

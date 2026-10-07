@@ -568,7 +568,7 @@ function loadBeatDetails(eventIds: string[]): void {
             </MenuButton>
           </div>
         </section>
-        <section class="play__card" aria-label="Story so far">
+        <section class="play__card play__card--story" aria-label="Story so far">
           <h2>Story so far</h2>
           <p v-if="!story.entries.value.length" class="play__empty">
             Nothing has happened yet — commit the first beat.
@@ -740,7 +740,7 @@ function loadBeatDetails(eventIds: string[]): void {
 
 <style scoped>
 .play {
-  max-width: 1100px;
+  max-width: 1440px;
   margin: 0 auto;
   padding: 14px 16px 40px;
 }
@@ -799,20 +799,34 @@ function loadBeatDetails(eventIds: string[]): void {
 }
 .play__grid {
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  /* the controls on the left, the story taking the rest */
+  grid-template-columns: minmax(300px, 400px) minmax(0, 1fr);
+  grid-auto-flow: row dense;
   gap: 14px;
   margin-top: 12px;
+  align-items: start;
+}
+.play__grid > .play__card {
+  grid-column: 1;
+}
+.play__grid > .play__card--story {
+  grid-column: 2;
+  grid-row: 1 / span 6;
+  min-height: 100%;
 }
 .play__card {
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fbf6e9;
-  padding: 16px 18px;
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  box-shadow: var(--card-shadow);
+  padding: 18px 20px;
 }
 .play__card h2 {
-  margin: 0 0 8px;
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 22px;
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: 25px;
+  font-weight: 600;
+  color: #26200f;
 }
 .play__card h3 {
   margin: 16px 0 8px;
@@ -896,6 +910,19 @@ function loadBeatDetails(eventIds: string[]): void {
   gap: 4px;
   font-size: 14px;
 }
+.play__travel input {
+  font: inherit;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fffdf6;
+}
+.play__travel input:focus-visible {
+  outline: none;
+  border-color: #5f9488;
+  box-shadow: 0 0 0 3px rgba(46, 122, 108, 0.14);
+}
 .play__travel select {
   font: inherit;
   padding: 8px 10px;
@@ -958,6 +985,11 @@ function loadBeatDetails(eventIds: string[]): void {
 @media (max-width: 900px) {
   .play__grid {
     grid-template-columns: 1fr;
+  }
+  .play__grid > .play__card,
+  .play__grid > .play__card--story {
+    grid-column: 1;
+    grid-row: auto;
   }
 }
 </style>
