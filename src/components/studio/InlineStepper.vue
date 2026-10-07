@@ -101,4 +101,26 @@ const emit = defineEmits<{ go: [index: number] }>()
   background: #d5c3a0;
   flex: none;
 }
+/* Narrow screens: every step stays on screen; only the current one is named. */
+@media (max-width: 760px) {
+  .istep {
+    justify-content: space-between;
+  }
+  .istep__step:not(.istep__step--active) .istep__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .istep__link {
+    flex: 1 1 8px;
+    width: auto;
+    min-width: 8px;
+    margin: 0 4px;
+  }
+  .istep__step button {
+    gap: 7px;
+  }
+}
 </style>

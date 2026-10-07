@@ -452,7 +452,25 @@
   .conds {
     grid-template-columns: 1fr;
   }
+  /* two short rows: back and save side by side, then the way on */
   .studio__foot {
     flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px;
+    bottom: 8px;
+  }
+  .studio__foot .dirty,
+  .studio__foot-spacer {
+    display: none;
+  }
+  .studio__foot > .ghost {
+    flex: 1 1 0;
+    justify-content: center;
+    height: 40px;
+    padding: 0 12px;
+  }
+  .studio__foot > :last-child {
+    flex: 1 1 100%;
+    height: 46px;
   }
 }

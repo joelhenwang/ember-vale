@@ -5,7 +5,8 @@ import IconEmblem from './icons/IconEmblem.vue'
 import IconHelp from './icons/IconHelp.vue'
 import IconChevronDown from './icons/IconChevronDown.vue'
 import HelpDialog from './HelpDialog.vue'
-import { ref } from 'vue'
+import { nextTick, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 const nav = [
   { label: 'Home', to: '/' },
@@ -17,6 +18,21 @@ const nav = [
 
 const avatarUrl = useGameImage(menuState.player.avatarSlot)
 const helpOpen = ref(false)
+
+/* On a phone the nav is a strip that scrolls sideways: keep the current
+   page's link in view. */
+const route = useRoute()
+const navEl = ref<HTMLElement | null>(null)
+watch(
+  () => route.path,
+  () =>
+    nextTick(() =>
+      navEl.value
+        ?.querySelector('.nav__item--active')
+        ?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
+    ),
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -27,7 +43,7 @@ const helpOpen = ref(false)
         <span class="brand__name">Ember Vale</span>
       </router-link>
 
-      <nav class="nav" aria-label="Main">
+      <nav ref="navEl" class="nav" aria-label="Main">
         <router-link
           v-for="item in nav"
           :key="item.label"
@@ -211,6 +227,22 @@ const helpOpen = ref(false)
   }
   .nav::-webkit-scrollbar {
     display: none;
+  }
+  /* the strip fades at its edges: there is more to swipe to */
+  .nav {
+    gap: 22px;
+    padding: 0 14px;
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent,
+      #000 14px,
+      #000 calc(100% - 26px),
+      transparent
+    );
+    mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 26px), transparent);
+  }
+  .nav__item {
+    font-size: 16.5px;
   }
   .help span,
   .profile__name,
