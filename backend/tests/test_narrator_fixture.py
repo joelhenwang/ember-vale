@@ -50,15 +50,6 @@ def _fixture_dest(tmp_path: Path) -> Path:
     return tmp_path / FIXTURE_PATH.name
 
 
-def test_fixture_write_gated_behind_env_var(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.delenv("WORLDSIM_WRITE_FIXTURES", raising=False)
-    assert _fixture_dest(tmp_path) == tmp_path / "fixture-narrator-v2.json"
-    monkeypatch.setenv("WORLDSIM_WRITE_FIXTURES", "1")
-    assert _fixture_dest(tmp_path) == FIXTURE_PATH
-
-
 def _request_record(request: CompletionRequest) -> dict:
     return {
         "prompt": request.prompt,

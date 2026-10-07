@@ -9,49 +9,12 @@ from collections.abc import Iterator
 from typing import Any, cast
 
 import pytest
-from fixtures.clocks import FakeOperationalClock, FictionalClock
-from fixtures.fake_model_gateway import FakeModelGateway
-from fixtures.faults import FaultHooks
-from fixtures.postgres import sync_dsn
-from fixtures.randomness import SeededRandomSource
-from fixtures.scenario import StageScenario
-from psycopg import Connection, connect
 
 from worldsim.infrastructure.settings import Settings
 
 # No background autoplay runner in test apps: it would poll every scratch
 # database each second. Autoplay tests drive AutoplayRunner.tick directly.
 os.environ.setdefault("WORLDSIM_AUTOPLAY__ENABLED", "false")
-
-
-@pytest.fixture
-def operational_clock() -> FakeOperationalClock:
-    return FakeOperationalClock()
-
-
-@pytest.fixture
-def fictional_clock() -> FictionalClock:
-    return FictionalClock()
-
-
-@pytest.fixture
-def random_source() -> SeededRandomSource:
-    return SeededRandomSource(seed=1234)
-
-
-@pytest.fixture
-def model_gateway() -> FakeModelGateway:
-    return FakeModelGateway()
-
-
-@pytest.fixture
-def fault_hooks() -> FaultHooks:
-    return FaultHooks()
-
-
-@pytest.fixture
-def stage_scenario() -> StageScenario:
-    return StageScenario(name="qa-selftest")
 
 
 @pytest.fixture(autouse=True)
@@ -92,40 +55,6 @@ def _block_external_network(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture(scope="session")
-def _pg_schema() -> Iterator[None]:
-    conn = connect(sync_dsn(Settings()))
-    conn.autocommit = True
-    try:
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS qa_rollback_probe"
-            " (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,"
-            " note text NOT NULL)"
-        )
-        yield
-    finally:
-        conn.execute("DROP TABLE IF EXISTS qa_rollback_probe")
-        conn.close()
-
-
-@pytest.fixture(scope="session")
-def tracked_connections() -> list[Connection[Any]]:
-    return []
-
-
-@pytest.fixture
-def pg_conn(
-    _pg_schema: None, tracked_connections: list[Connection[Any]]
-) -> Iterator[Connection[Any]]:
-    conn = connect(sync_dsn(Settings()))
-    tracked_connections.append(conn)
-    try:
-        yield conn
-    finally:
-        conn.rollback()
-        conn.close()
-
-
-@pytest.fixture(scope="session")
 def _db_template() -> Iterator[str]:
     """Fully migrated template database, built once per invocation.
 
@@ -142,8 +71,6 @@ def _db_template() -> Iterator[str]:
         scratch_name,
         upgrade_head,
     )
-
-    from worldsim.infrastructure.settings import Settings
 
     name = scratch_name("worldsim_stage0_template")
     settings = Settings()
@@ -174,8 +101,6 @@ def migrated_db(monkeypatch: pytest.MonkeyPatch, _db_template: str) -> Iterator[
         replace_database,
         scratch_name,
     )
-
-    from worldsim.infrastructure.settings import Settings
 
     name = scratch_name("worldsim_stage0_test")
     settings = Settings()

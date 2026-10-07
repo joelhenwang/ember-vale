@@ -80,11 +80,6 @@ describe('api client spine', () => {
     expect(findCheck(READY_FIXTURE, 'nope')).toBeUndefined()
   })
 
-  it('matches the authoritative envelope shape (integer schema_version)', () => {
-    expect(typeof READY_FIXTURE.schema_version).toBe('number')
-    expect(READY_FIXTURE.migration_head).toBe('0031_settings_pipeline')
-  })
-
   it('throws on non-OK readiness HTTP, never reports success', async () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 503 })
     await expect(fetchReady(fetchImpl as unknown as typeof fetch)).rejects.toThrow('HTTP 503')

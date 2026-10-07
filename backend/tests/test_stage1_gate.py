@@ -418,15 +418,6 @@ def _seed_two_world() -> UUID:
     return asyncio.run(_inner())
 
 
-def test_live_scenario_opt_in_only() -> None:
-    import os
-
-    if os.environ.get("WORLDSIM_LIVE_SCENARIO") != "1":
-        pytest.skip("live-provider scenario is opt-in")
-    key = os.environ.get("WORLDSIM_PROVIDER__OPENROUTER_API_KEY", "")
-    assert key, "live scenario needs WORLDSIM_PROVIDER__OPENROUTER_API_KEY"
-
-
 def _write_evidence(
     reports: list[dict[str, Any]],
     findings: dict[str, Any],

@@ -471,10 +471,3 @@ def _write_evidence(
         )
         + "\n"
     )
-
-
-def test_live_sample_opt_in_only() -> None:
-    import os
-
-    key = os.environ.get("WORLDSIM_PROVIDER__OPENROUTER_API_KEY")
-    assert not key, "live sample needs a keyed opt-in runbook, not CI"

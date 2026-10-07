@@ -1,4 +1,4 @@
-import { computed, reactive } from 'vue'
+import { reactive } from 'vue'
 import type { CastCategory, SortMode } from './filters'
 import type { CharacterDef, PackDef, WorldDef } from './model'
 
@@ -180,16 +180,6 @@ export const wizard = reactive({
   category: 'all' as WizardCategory,
   sort: 'name' as SortMode
 })
-
-export const selectedCharacters = computed<CharacterDef[]>(() =>
-  wizard.selected.map((id) => catalog.characters.find((c) => c.id === id)!).filter(Boolean)
-)
-
-export function toggleCharacter(id: string): void {
-  const i = wizard.selected.indexOf(id)
-  if (i >= 0) wizard.selected.splice(i, 1)
-  else wizard.selected.push(id)
-}
 
 /* ------------------------------------------------------------------ *
  * Library page UI state

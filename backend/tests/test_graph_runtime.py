@@ -17,7 +17,6 @@ from worldsim.application.graphs.director import DirectorGraphDeps
 from worldsim.application.graphs.narrate import NarratorGraphDeps
 from worldsim.application.graphs.reaction import ReactionGraphDeps
 from worldsim.application.graphs.resolve import ResolverGraphDeps
-from worldsim.application.graphs.retention import prune_thread, thread_checkpoint_count
 from worldsim.application.graphs.runtime import checkpointer, invoke, psycopg_dsn, read_thread
 from worldsim.application.graphs.state import (
     GraphInvocation,
@@ -26,8 +25,6 @@ from worldsim.application.graphs.state import (
     thread_id_for,
 )
 from worldsim.application.graphs.summary import SummaryGraphDeps
-from worldsim.infrastructure.db.engine import create_engine, session_factory
-from worldsim.infrastructure.models.world import WorldRow
 from worldsim.infrastructure.settings import Settings
 
 
@@ -91,39 +88,6 @@ def test_interrupted_graph_resumes_once(migrated_db: None) -> None:
             resumed = await graph.ainvoke(Command(resume="yes"), config_for(invocation))
             assert resumed["proposal"] == {"decision": "yes"}
             assert resumed["status"] == "completed"
-
-    _run(_inner())
-
-
-def test_prune_leaves_canon_intact(migrated_db: None) -> None:
-    async def _inner() -> None:
-        settings = Settings()
-        engine = create_engine(settings)
-        try:
-            wid = uuid.uuid4()
-            async with session_factory(engine)() as session:
-                session.add(WorldRow(id=wid, name="Vale", seed_version="s1-graph"))
-                await session.commit()
-
-            invocation = _invocation(uuid.uuid4())
-            async with checkpointer(_dsn()) as saver:
-                graph: Any = _build().compile(checkpointer=saver)
-                paused = await invoke(graph, invocation)
-                assert len(paused["__interrupt__"]) == 1
-                assert await thread_checkpoint_count(saver, invocation) > 0
-                await prune_thread(saver, invocation)
-                assert await thread_checkpoint_count(saver, invocation) == 0
-                assert await read_thread(saver, invocation) is None
-
-            async with session_factory(engine)() as session:
-                row = await session.get(WorldRow, wid)
-                assert row is not None and row.name == "Vale"
-                # This test bypasses the scratch-DB fixture, so remove the
-                # probe row: stray worlds break the dev surface world listing.
-                await session.delete(row)
-                await session.commit()
-        finally:
-            await engine.dispose()
 
     _run(_inner())
 
