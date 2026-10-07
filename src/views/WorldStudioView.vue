@@ -1,16 +1,16 @@
 <!--
-  WorldStudioView — the "Shape your world" screen. Same split of concerns as
-  CharacterStudioView: shared chrome is styled once in src/styles/studio.css;
-  this file keeps the two form cards (look + places) and the footer, while the
-  preview column (Scene / Map / Summary) lives inline because its panes are
-  thin enough not to warrant their own component (the character preview owns
-  render timers, lightbox and dialogue state — the world one does not).
-
-  Mock copy pools (scene samples, suggest values) live in src/game/studio.ts.
+  WorldStudioView — make or change a world, step by step:
+    1 Overview   its name and the player's own overview (the world's
+                 description); the writing helper can improve it and fill the
+                 empty fields, describe places and add new ones
+    2 The world  terrain, climate, architecture, peoples, history, details,
+                 what it never contains
+    3 Places     each place: name, type, what it is like, landmark, road to;
+                 the helper adds and describes places
+    4 Review     where stories start, then create (new) or publish (existing)
+  The right column is WorldPreviewPanel (the world's picture, each place's
+  picture, the summary). Shared studio chrome lives in src/styles/studio.css.
   Drafts persist in the studio store keyed by id, shared with the Library.
-
-  DEMO scope: the 4-step InlineStepper is visual state only; advancing just
-  increments `step`. Production replaces it with per-step routes + validation.
 -->
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -25,20 +25,26 @@ import {
 } from '../composables/useEditorDraft'
 import { loadCreateRequest } from '../composables/usePresetCreation'
 import { usePresetCreation } from '../composables/usePresetCreation'
-import { resolveImage, setGeneratedImage } from '../game/images'
-import type { ImageSlot } from '../game/model'
 import {
   CLIMATES,
   ensureWorldDraft,
   isWorldDirty,
   PLACE_TYPES,
   saveWorldDraft,
-  suggestWorld,
-  TIMES,
-  WEATHERS,
-  worldSample,
   type WorldDraft
 } from '../game/studio'
+import {
+  isWorldFieldEmpty,
+  placeForWriting,
+  setWorldField,
+  WORLD_FIELDS,
+  WORLD_STEPS,
+  worldEmptyCount,
+  worldWritingFields,
+  WRITABLE_PLACE_TYPES,
+  type WorldKey
+} from '../game/worldForm'
+import { fillFields } from '../api/worldsim'
 import {
   connectionLabel,
   connectionOptions,
@@ -53,19 +59,13 @@ import {
 import InlineStepper from '../components/studio/InlineStepper.vue'
 import ChipEditor from '../components/studio/ChipEditor.vue'
 import CollapseBox from '../components/studio/CollapseBox.vue'
-import SuggestButton from '../components/studio/SuggestButton.vue'
 import StudioSelect from '../components/studio/StudioSelect.vue'
-import CoverCard from '../components/studio/CoverCard.vue'
-import MapPreview from '../components/studio/MapPreview.vue'
+import OverviewCard from '../components/studio/OverviewCard.vue'
+import WorldPreviewPanel from '../components/studio/WorldPreviewPanel.vue'
 import SaveBar from '../components/ui/SaveBar.vue'
+import MenuButton from '../components/MenuButton.vue'
 import IconSparkle from '../components/icons/IconSparkle.vue'
-import IconBook from '../components/icons/IconBook.vue'
-import IconEmblem from '../components/icons/IconEmblem.vue'
 import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
-import IconArrowRight from '../components/icons/IconArrowRight.vue'
-import IconInfo from '../components/icons/IconInfo.vue'
-import IconImage from '../components/icons/IconImage.vue'
-import IconPencil from '../components/icons/IconPencil.vue'
 import IconPlus from '../components/icons/IconPlus.vue'
 
 const route = useRoute()
@@ -97,6 +97,13 @@ onMounted(() => {
         architecture: typeof kept['architecture'] === 'string' ? kept['architecture'] : undefined,
         details: typeof kept['details'] === 'string' ? kept['details'] : undefined,
         exclusions: typeof kept['exclusions'] === 'string' ? kept['exclusions'] : undefined,
+        peoples: typeof kept['peoples'] === 'string' ? kept['peoples'] : undefined,
+        history: typeof kept['history'] === 'string' ? kept['history'] : undefined,
+        distinct: typeof kept['distinct'] === 'string' ? kept['distinct'] : undefined,
+        cover:
+          kept['cover'] && typeof kept['cover'] === 'object'
+            ? (kept['cover'] as WorldDraft['cover'])
+            : undefined,
         loreExtra: typeof kept['loreExtra'] === 'string' ? kept['loreExtra'] : undefined,
         travelExtra: Array.isArray(kept['travelExtra'])
           ? (kept['travelExtra'] as unknown[]).filter(
@@ -140,7 +147,6 @@ function retryPresets(): void {
   void presets.load(presetAbort.signal)
 }
 const fromLibrary = computed(() => route.meta.from === 'library')
-const originCrumb = computed(() => (fromLibrary.value ? 'Library' : 'New Story'))
 const originRoute = computed(() => (fromLibrary.value ? '/library?tab=worlds' : '/new-story'))
 const draft = computed(() => ensureWorldDraft(id.value))
 const place = computed(() => {
@@ -148,16 +154,14 @@ const place = computed(() => {
   return d.places.find((p) => p.id === d.activePlace) ?? d.places[0]!
 })
 
-/** The Location condition picker is name-based; sync it to the id-keyed draft. */
-const activePlaceName = computed({
-  get: () => place.value.name,
-  set: (name: string) => {
-    const found = draft.value.places.find((p) => p.name === name)
-    if (found) draft.value.activePlace = found.id
-  }
-})
-
-const step = ref(2)
+/* Four steps, each its own part of the form; any step can be opened. */
+const step = ref(1)
+const stepInfo = computed(() => WORLD_STEPS[step.value - 1]!)
+const lastStep = WORLD_STEPS.length
+function goStep(n: number): void {
+  step.value = Math.min(lastStep, Math.max(1, n))
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 /* save / dirty ----------------------------------------------------------- */
 const dirty = computed(() => isWorldDirty(id.value))
@@ -284,6 +288,9 @@ function applyWorldRestore(restored: ReturnType<typeof unpackWorld>): void {
   if (restored.architecture !== undefined) d.architecture = restored.architecture
   if (restored.details !== undefined) d.details = restored.details
   if (restored.exclusions !== undefined) d.exclusions = restored.exclusions
+  if (restored.peoples !== undefined) d.peoples = restored.peoples
+  if (restored.history !== undefined) d.history = restored.history
+  if (restored.distinct !== undefined) d.distinct = restored.distinct
   if (restored.loreExtra !== undefined) d.loreExtra = restored.loreExtra
   if (restored.cover !== undefined) d.cover = restored.cover
   if (restored.travelExtra !== undefined) {
@@ -356,7 +363,12 @@ watch(serverWorld, (rec) => {
   void editor
     .open(id.value, rec.revision)
     .then(hydrateFromEditor)
-    .catch(() => {})
+    // A draft saved earlier sits on an older revision (a map or a place
+    // picture moved the head since): carry on with it. Publishing keeps
+    // the newer maps.
+    .catch(() => {
+      if (editor.openConflict.value) void resumeSavedDraft()
+    })
 })
 
 function retryEditor(): void {
@@ -426,6 +438,10 @@ async function save(): Promise<boolean> {
       architecture: draft.value.architecture,
       details: draft.value.details,
       exclusions: draft.value.exclusions,
+      peoples: draft.value.peoples,
+      history: draft.value.history,
+      distinct: draft.value.distinct,
+      cover: draft.value.cover,
       loreExtra: draft.value.loreExtra,
       travelExtra: draft.value.travelExtra,
       places: draft.value.places,
@@ -543,19 +559,16 @@ onBeforeUnmount(() => {
   editor.dispose()
 })
 
-const nextLabel = computed(() =>
-  step.value <= 2 ? 'Rules' : step.value === 3 ? 'Review' : 'Finish'
-)
+const nextLabel = computed(() => WORLD_STEPS[step.value]?.title ?? '')
+const nameMissing = computed(() => isNew.value && !draft.value.presetName.trim())
 async function advance(): Promise<void> {
-  // DEMO: stepper is cosmetic (see header note) — production gates by validation.
-  if (step.value < 4) {
-    step.value++
-    return
-  }
-  // Navigation waits for persistence: a failed save keeps the user here
-  // with their edits intact instead of leaving anyway.
-  if (await save()) router.push(originRoute.value)
+  if (step.value < lastStep) return goStep(step.value + 1)
+  if (isNew.value) await createWorld()
+  else await publish()
 }
+const displayNameForm = computed(() =>
+  isNew.value ? draft.value.presetName.trim() : (record.value?.name ?? '')
+)
 
 /* places ----------------------------------------------------------------- */
 
@@ -569,10 +582,12 @@ function freshPlaceKey(name: string): string {
   return `${base}-${n}`
 }
 
+let placeSerial = 0
 function addPlace(): void {
   const d = draft.value
   const p = {
-    id: `place-${Date.now()}`,
+    // Unique even when several are added in the same millisecond.
+    id: `place-${Date.now()}-${(placeSerial += 1)}`,
     key: freshPlaceKey('New place'),
     name: 'New place',
     type: 'Village square',
@@ -613,80 +628,127 @@ function setConnection(place: WorldDraft['places'][number], label: string): void
   place.connectedTo = found?.name ?? ''
 }
 
-/* preview ------------------------------------------------------------------ */
-const tab = ref<'scene' | 'map' | 'summary'>('scene')
-const sceneSlot = computed<ImageSlot>(() =>
-  id.value === 'ember-vale'
-    ? 'scene.market'
-    : id.value === 'silverleaf-coast'
-      ? 'world.silverleaf'
-      : 'world.emberVale'
-)
-const sceneUrl = computed(() => resolveImage(sceneSlot.value))
-const mapUrl = computed(() => resolveImage('world.map'))
+/* writing help ------------------------------------------------------------ */
+const filling = ref(false)
+const fillNote = ref<string | null>(null)
+const helped = ref(new Set<WorldKey>())
+const addCount = ref(3)
 
-const time = ref('Morning')
-const weather = ref('Clear')
-
-/* Canned scene prose lives in game/studio.ts (worldSample), keyed by
-   "Time|Weather", with a generated fallback for unauthored combinations. */
-const sample = computed(() =>
-  worldSample(time.value, weather.value, place.value.name, draft.value.details)
+/** A world fresh from the form still has only its one untouched place. */
+const onlyBlankPlace = computed(() => {
+  const ps = draft.value.places
+  return ps.length === 1 && ps[0]!.name === 'New place' && !placeForWriting(ps[0]!).description
+})
+const emptyTotal = computed(
+  () => worldEmptyCount(draft.value) + (onlyBlankPlace.value ? addCount.value : 0)
 )
 
-const generating = ref(false)
-let genTimer: ReturnType<typeof setTimeout> | undefined
-function generatePreview(): void {
-  if (generating.value) return
-  generating.value = true
-  clearTimeout(genTimer)
-  // DEMO: fake render latency + cache-busted placeholder URL; production
-  // queues a real image task and swaps the slot once it resolves.
-  genTimer = setTimeout(() => {
-    setGeneratedImage(sceneSlot.value, `${resolveImage(sceneSlot.value)}?v=${Date.now()}`)
-    generating.value = false
-  }, 900)
-}
-onBeforeUnmount(() => clearTimeout(genTimer))
-
-const refining = ref(false)
-const refinedText = ref('')
-function toggleRefine(): void {
-  refining.value = !refining.value
-  if (refining.value && !refinedText.value) refinedText.value = sample.value
-}
-function applyRefine(): void {
-  if (refinedText.value.trim()) {
-    // production: feed the refinement back into the world notes
-    draft.value.details = refinedText.value.trim()
+/**
+ * Ask the writing helper for what is empty: the world's fields, words for
+ * places nobody described, and new places. Only empty things are written.
+ */
+async function fill(opts: { fields: boolean; places: boolean; add: number }): Promise<void> {
+  if (filling.value) return
+  filling.value = true
+  fillNote.value = null
+  try {
+    const fields = worldWritingFields(draft.value).filter((f) => opts.fields || f.value.trim())
+    const add = opts.add || (opts.fields && onlyBlankPlace.value ? addCount.value : 0)
+    const known = onlyBlankPlace.value && add ? [] : draft.value.places.map(placeForWriting)
+    const made = await fillFields({
+      kind: 'world',
+      overview: draft.value.details,
+      name: displayNameForm.value,
+      fields,
+      places: opts.places || add ? known : [],
+      add_places: add,
+      place_kinds: WRITABLE_PLACE_TYPES
+    })
+    let count = 0
+    for (const [key, value] of Object.entries(made.values)) {
+      const k = key as WorldKey
+      if (WORLD_FIELDS.some((f) => f.key === k) && isWorldFieldEmpty(draft.value, k)) {
+        setWorldField(draft.value, k, value)
+        helped.value.add(k)
+        count++
+      }
+    }
+    let added = 0
+    for (const written of made.places) {
+      if (written.new) {
+        if (added === 0 && onlyBlankPlace.value) draft.value.places.splice(0, 1)
+        addPlace()
+        const fresh = draft.value.places[draft.value.places.length - 1]!
+        fresh.name = written.name
+        fresh.key = freshPlaceKey(written.name)
+        fresh.type = written.kind || 'Other'
+        fresh.appearance = written.description
+        added++
+      } else {
+        const old = draft.value.places.find(
+          (p) => p.name.trim().toLowerCase() === written.name.toLowerCase()
+        )
+        if (old && !old.appearance.trim()) {
+          old.appearance = written.description
+          count++
+        }
+      }
+    }
+    if (added) {
+      // New places start with a road to the first place, so none is cut off.
+      const [first, second] = draft.value.places
+      for (const p of draft.value.places) {
+        if (p.connectedKey) continue
+        const to = p === first ? second : first
+        if (to) setConnection(p, connectionLabel(draft.value.places, to.key))
+      }
+      resolveConnectionKeys(draft.value.places)
+    }
+    const startOk = draft.value.places.some((p) => p.id === draft.value.startPlace)
+    if (!startOk && draft.value.places[0]) draft.value.startPlace = draft.value.places[0].id
+    const parts = [
+      count ? `filled ${count} field${count === 1 ? '' : 's'}` : '',
+      added ? `added ${added} place${added === 1 ? '' : 's'}` : ''
+    ].filter(Boolean)
+    fillNote.value = parts.length
+      ? `${parts.join(' and ')} for $${Number(made.cost_usd).toFixed(4)} — look them over and change anything.`.replace(
+          /^./,
+          (c) => c.toUpperCase()
+        )
+      : 'Nothing new to fill.'
+  } catch (err) {
+    fillNote.value = err instanceof Error ? err.message : 'Could not fill the fields this time.'
+  } finally {
+    filling.value = false
   }
-  refining.value = false
 }
 
-/* suggest ------------------------------------------------------------------ */
-function suggest(): void {
-  suggestWorld(draft.value)
-}
+const climateOptions = computed(() =>
+  CLIMATES.includes(draft.value.climate) || !draft.value.climate
+    ? CLIMATES
+    : [...CLIMATES, draft.value.climate]
+)
+const typeOptions = computed(() =>
+  PLACE_TYPES.includes(place.value.type) ? PLACE_TYPES : [...PLACE_TYPES, place.value.type]
+)
+const placesUndescribed = computed(
+  () => draft.value.places.filter((p) => !placeForWriting(p).description).length
+)
 </script>
 
 <template>
-  <main class="studio">
+  <main class="studio wstudio">
     <div class="studio__body">
       <!-- ————————————————— form column ————————————————— -->
       <div class="studio__left">
-        <nav class="crumbs" aria-label="Breadcrumb">
-          <router-link :to="originRoute">{{ originCrumb }}</router-link>
-          <span class="crumbs__sep">/</span>
-          <router-link :to="originRoute">Worlds</router-link>
-          <span class="crumbs__sep">/</span>
-          <span class="crumbs__here">{{ isNew ? 'New world' : worldName }}</span>
-        </nav>
-
         <div class="studio__head">
-          <h1 class="studio__title">Shape your world</h1>
-          <span class="draft-badge"><span class="draft-badge__dot"></span>Draft</span>
+          <h1 class="studio__title">
+            {{ isNew ? draft.presetName.trim() || 'New world' : worldName }}
+          </h1>
+          <span v-if="dirty" class="draft-badge"
+            ><span class="draft-badge__dot"></span>Unsaved</span
+          >
         </div>
-        <p class="studio__sub">Define the places your stories will inhabit.</p>
         <p v-if="recordLoading" class="studio__state" role="status">Reading the archive…</p>
         <p v-else-if="recordFailed" class="studio__state" role="alert">
           The archive did not answer ({{ presets.error.value }}) —
@@ -695,153 +757,251 @@ function suggest(): void {
         <p v-else-if="recordMissing" class="studio__state" role="alert">
           No world answers to that id.
         </p>
+        <p v-if="!isNew && editor.status.value === 'failed'" class="studio__state" role="alert">
+          {{ editor.error.value ?? 'Something went wrong.' }} —
+          <button type="button" class="studio__link" @click="retryLast()">
+            retry {{ editor.lastFailedOp.value ?? 'operation' }}
+          </button>
+          <button
+            v-if="editor.openConflict.value"
+            type="button"
+            class="studio__link"
+            @click="resumeSavedDraft()">
+            Resume saved draft
+          </button>
+        </p>
 
         <InlineStepper
           class="studio__stepper"
-          :steps="['Concept', 'Places & appearance', 'Rules & knowledge', 'Review']"
+          :steps="WORLD_STEPS.map((s) => s.title)"
           :current="step"
-          @go="step = $event" />
+          @go="goStep" />
 
-        <CoverCard
-          :name="isNew ? draft.presetName || 'The world' : worldName"
-          :cover="draft.cover"
-          @change="draft.cover = $event" />
+        <Transition name="wstep" mode="out-in">
+          <div :key="step" class="wstudio__step">
+            <p class="wstudio__sub">{{ stepInfo.sub }}</p>
 
-        <section class="card ev-card">
-          <header class="card__head">
-            <h2 class="card__title"><IconSparkle :size="15" /> The look of {{ worldName }}</h2>
-            <SuggestButton @suggest="suggest" />
-          </header>
-          <div class="grid2">
-            <div>
-              <span class="ev-field-label">Terrain</span>
-              <ChipEditor v-model="draft.terrain" />
-            </div>
-            <div>
-              <span class="ev-field-label">Climate</span>
-              <StudioSelect v-model="draft.climate" :options="CLIMATES" />
-            </div>
-            <div>
-              <span class="ev-field-label">Architecture</span>
-              <textarea
-                v-model="draft.architecture"
-                class="ev-input"
-                placeholder="What do roofs remember?" />
-            </div>
-            <div>
-              <span class="ev-field-label">Distinctive details</span>
-              <textarea
-                v-model="draft.details"
-                class="ev-input"
-                placeholder="The three glances that say “you’re here”" />
-            </div>
-            <div class="grid2__wide">
-              <span class="ev-field-label">Exclusions</span>
-              <input
-                v-model="draft.exclusions"
-                class="ev-input"
-                placeholder="What this world will never contain" />
-            </div>
-          </div>
-        </section>
-
-        <section class="card ev-card">
-          <header class="card__head">
-            <h2 class="card__title"><IconBook :size="19" /> Places</h2>
-          </header>
-
-          <div class="places">
-            <div class="places__tabs">
-              <button
-                v-for="p in draft.places"
-                :key="p.id"
-                type="button"
-                class="places__tab"
-                :class="{ 'places__tab--on': p.id === draft.activePlace }"
-                @click="draft.activePlace = p.id">
-                {{ p.name }}
-              </button>
-              <button type="button" class="places__add" @click="addPlace">
-                <IconPlus :size="12" /> Add place
-              </button>
-            </div>
-
-            <div class="places__fields grid2">
-              <div>
-                <span class="ev-field-label">Name</span>
-                <input v-model="place.name" class="ev-input" />
-              </div>
-              <div>
-                <span class="ev-field-label">Type</span>
-                <StudioSelect v-model="place.type" :options="PLACE_TYPES" />
-              </div>
-              <div>
-                <span class="ev-field-label">Purpose</span>
-                <input v-model="place.purpose" class="ev-input" placeholder="What is it for?" />
-              </div>
-              <div>
-                <span class="ev-field-label">Appearance</span>
-                <textarea
-                  v-model="place.appearance"
-                  class="ev-input"
-                  placeholder="One honest paragraph of stone, cloth and light…" />
-              </div>
-              <div>
-                <span class="ev-field-label">Landmark</span>
+            <!-- 1 · overview -->
+            <template v-if="step === 1">
+              <section class="card ev-card">
+                <label class="ev-field-label" for="w-name">Name</label>
                 <input
-                  v-model="place.landmark"
+                  v-if="isNew"
+                  id="w-name"
+                  v-model="draft.presetName"
                   class="ev-input"
-                  placeholder="The thing everyone navigates by" />
-              </div>
-              <div>
-                <span class="ev-field-label">Connected to</span>
-                <StudioSelect
-                  :model-value="connectionLabel(draft.places, place.connectedKey)"
-                  :options="connectionOptions(draft.places, place.id)"
-                  @update:model-value="setConnection(place, $event)" />
-              </div>
-              <div class="grid2__wide">
-                <CollapseBox title="Sounds, scents & hidden details">
-                  <span class="ev-field-label">Texture</span>
-                  <textarea
-                    v-model="place.sounds"
-                    class="ev-input"
-                    placeholder="What does it sound like at dusk?" />
-                </CollapseBox>
-              </div>
-            </div>
-            <div class="places__foot">
-              <div>
-                <span class="ev-field-label">Starting place</span>
-                <StudioSelect v-model="startPlaceName" :options="draft.places.map((p) => p.name)" />
-              </div>
-              <button
-                type="button"
-                class="ghost ghost--sm"
-                :disabled="draft.places.length <= 1"
-                @click="removeActivePlace">
-                Remove this place
-              </button>
-            </div>
-          </div>
-        </section>
+                  maxlength="128"
+                  placeholder="What is this world called?" />
+                <p v-else id="w-name" class="wstudio__fixed">{{ worldName }}</p>
+              </section>
+              <OverviewCard
+                v-model="draft.details"
+                kind="world"
+                :name="displayNameForm"
+                placeholder="What is it? e.g. A ring of salt-marsh islands where ferry clans keep the old roads of water, the tide decides the calendar, and the drowned city under the bay still rings its bells."
+                :empty="emptyTotal"
+                :filling="filling"
+                :fill-note="fillNote"
+                @fill="fill({ fields: true, places: true, add: 0 })" />
+            </template>
 
-        <section class="card ev-card" aria-label="Publication">
-          <header class="card__head">
-            <h2 class="card__title">Publication</h2>
-          </header>
-          <div v-if="isNew">
-            <p class="studio__state" role="status">
-              New worlds live on this device until first publication.
+            <!-- 2 · the world -->
+            <section v-else-if="step === 2" class="card ev-card">
+              <div class="wstudio__grid">
+                <div class="wf">
+                  <span class="ev-field-label">Terrain</span>
+                  <ChipEditor
+                    v-model="draft.terrain"
+                    :class="{ 'is-helped': helped.has('terrain') }" />
+                </div>
+                <div class="wf">
+                  <label class="ev-field-label" for="w-climate">Climate</label>
+                  <StudioSelect
+                    id="w-climate"
+                    v-model="draft.climate"
+                    :class="{ 'is-helped': helped.has('climate') }"
+                    :options="climateOptions" />
+                </div>
+                <div
+                  v-for="f in WORLD_FIELDS.filter(
+                    (x) => x.key !== 'terrain' && x.key !== 'climate'
+                  )"
+                  :key="f.key"
+                  class="wf"
+                  :class="{ 'wf--wide': f.max > 400 }">
+                  <label class="ev-field-label" :for="`w-${f.key}`">{{ f.label }}</label>
+                  <textarea
+                    :id="`w-${f.key}`"
+                    v-model="draft[f.key as 'architecture']"
+                    class="ev-input"
+                    :class="{ 'is-helped': helped.has(f.key) }"
+                    :maxlength="f.max"
+                    :placeholder="f.hint"
+                    :rows="f.max > 400 ? 3 : 2"
+                    @input="helped.delete(f.key)" />
+                </div>
+              </div>
+              <div class="wstudio__fill">
+                <button
+                  type="button"
+                  class="wstudio__fillbtn"
+                  :disabled="filling"
+                  @click="fill({ fields: true, places: false, add: 0 })">
+                  <IconSparkle :size="14" />
+                  {{ filling ? 'Writing…' : 'Fill the empty ones from the overview' }}
+                </button>
+                <span v-if="fillNote" class="wstudio__fillnote" role="status">{{ fillNote }}</span>
+              </div>
+            </section>
+
+            <!-- 3 · places -->
+            <section v-else-if="step === 3" class="card ev-card">
+              <div class="wstudio__helper">
+                <span class="wstudio__helper-text">
+                  <IconSparkle :size="14" /> Let the helper add
+                </span>
+                <select v-model.number="addCount" class="wstudio__count" aria-label="How many">
+                  <option v-for="n in 6" :key="n" :value="n">{{ n }}</option>
+                </select>
+                <span class="wstudio__helper-text">
+                  {{ addCount === 1 ? 'place' : 'places' }} from the overview
+                </span>
+                <button
+                  type="button"
+                  class="wstudio__fillbtn"
+                  :disabled="filling"
+                  @click="fill({ fields: false, places: true, add: addCount })">
+                  {{ filling ? 'Writing…' : 'Add them' }}
+                </button>
+                <button
+                  v-if="placesUndescribed"
+                  type="button"
+                  class="wstudio__fillbtn"
+                  :disabled="filling"
+                  @click="fill({ fields: false, places: true, add: 0 })">
+                  Describe the {{ placesUndescribed }} without words
+                </button>
+              </div>
+              <p v-if="fillNote" class="wstudio__fillnote" role="status">{{ fillNote }}</p>
+
+              <div class="places">
+                <div class="places__tabs">
+                  <button
+                    v-for="p in draft.places"
+                    :key="p.id"
+                    type="button"
+                    class="places__tab"
+                    :class="{ 'places__tab--on': p.id === draft.activePlace }"
+                    @click="draft.activePlace = p.id">
+                    {{ p.name }}
+                  </button>
+                  <button type="button" class="places__add" @click="addPlace">
+                    <IconPlus :size="12" /> Add a place
+                  </button>
+                </div>
+
+                <div class="places__fields grid2">
+                  <div>
+                    <label class="ev-field-label" for="p-name">Name</label>
+                    <input id="p-name" v-model="place.name" class="ev-input" />
+                  </div>
+                  <div>
+                    <label class="ev-field-label" for="p-type">Type</label>
+                    <StudioSelect id="p-type" v-model="place.type" :options="typeOptions" />
+                  </div>
+                  <div class="grid2__wide">
+                    <label class="ev-field-label" for="p-look">What it is like</label>
+                    <textarea
+                      id="p-look"
+                      v-model="place.appearance"
+                      class="ev-input"
+                      rows="3"
+                      placeholder="One honest paragraph of stone, cloth and light…" />
+                  </div>
+                  <div>
+                    <label class="ev-field-label" for="p-purpose">What it is for</label>
+                    <input
+                      id="p-purpose"
+                      v-model="place.purpose"
+                      class="ev-input"
+                      placeholder="Trade, rest, worship…" />
+                  </div>
+                  <div>
+                    <label class="ev-field-label" for="p-landmark">Landmark</label>
+                    <input
+                      id="p-landmark"
+                      v-model="place.landmark"
+                      class="ev-input"
+                      placeholder="The thing everyone navigates by" />
+                  </div>
+                  <div>
+                    <label class="ev-field-label" for="p-conn">Road to</label>
+                    <StudioSelect
+                      id="p-conn"
+                      :model-value="connectionLabel(draft.places, place.connectedKey)"
+                      :options="connectionOptions(draft.places, place.id)"
+                      @update:model-value="setConnection(place, $event)" />
+                  </div>
+                  <div class="grid2__wide">
+                    <CollapseBox title="Sounds, scents & hidden details">
+                      <textarea
+                        v-model="place.sounds"
+                        class="ev-input"
+                        aria-label="Sounds, scents and hidden details"
+                        placeholder="What does it sound like at dusk?" />
+                    </CollapseBox>
+                  </div>
+                </div>
+                <div class="places__foot">
+                  <span class="places__count"
+                    >{{ draft.places.length }} place{{ draft.places.length === 1 ? '' : 's' }}</span
+                  >
+                  <button
+                    type="button"
+                    class="ghost ghost--sm"
+                    :disabled="draft.places.length <= 1"
+                    @click="removeActivePlace">
+                    Remove {{ place.name }}
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <!-- 4 · review -->
+            <section v-else class="card ev-card">
+              <div class="grid2">
+                <div>
+                  <label class="ev-field-label" for="w-start">Stories start at</label>
+                  <StudioSelect
+                    id="w-start"
+                    v-model="startPlaceName"
+                    :options="draft.places.map((p) => p.name)" />
+                </div>
+              </div>
+              <ul class="wstudio__checks">
+                <li :class="{ 'is-ok': !!displayNameForm }">
+                  {{ displayNameForm ? `Named ${displayNameForm}` : 'No name yet (Overview step)' }}
+                </li>
+                <li :class="{ 'is-ok': !!draft.details.trim() }">
+                  {{ draft.details.trim() ? 'Has an overview' : 'No overview yet' }}
+                </li>
+                <li :class="{ 'is-ok': draft.places.length > 1 }">
+                  {{ draft.places.length }} place{{ draft.places.length === 1 ? '' : 's' }}
+                </li>
+                <li :class="{ 'is-ok': !!draft.cover }">
+                  {{ draft.cover ? 'Has its own picture' : 'No picture yet (see the preview)' }}
+                </li>
+              </ul>
+            </section>
+          </div>
+        </Transition>
+
+        <!-- the last step makes it real: create, or publish the changes -->
+        <section v-if="step === lastStep" class="card ev-card wstudio__finish">
+          <template v-if="isNew">
+            <p v-if="nameMissing" class="studio__state" role="status">
+              Give the world a name on the Overview step to create it.
             </p>
-            <div>
-              <span class="ev-field-label">Name</span>
-              <input
-                v-model="draft.presetName"
-                class="ev-input"
-                maxlength="128"
-                placeholder="Name this world" />
-            </div>
             <p v-if="creation.status.value === 'failed'" class="studio__state" role="alert">
               {{ creation.error.value }}
             </p>
@@ -849,299 +1009,274 @@ function suggest(): void {
               v-if="creation.pending.value && creationFormDiffers"
               class="studio__state"
               role="status">
-              An earlier creation is still unresolved — retrying replays the original request under
-              its original key. Newer edits stay in the form and are never sent implicitly.
+              An earlier creation is still unresolved — creating again replays the original request,
+              so it never makes a duplicate. Newer edits stay in the form.
             </p>
             <p
               v-if="creation.pending.value && !creation.requestPersisted.value"
               class="studio__state"
               role="alert">
-              The creation request is in memory only (storage unavailable) — retry works in this
-              tab, but a reload before the receipt lands may create a duplicate. Keep this tab open.
+              The creation request is in memory only (storage unavailable) — keep this tab open
+              until it lands.
             </p>
             <div v-if="creation.recoveredId.value" class="preview__actions">
-              <p v-if="!creation.noticeDismissed.value" class="studio__state" role="status">
-                Recovered preset {{ creation.recoveredId.value }} from the original request.
+              <p class="studio__state" role="status">
+                This draft already created a world.
                 <template v-if="creation.supersededEdits.value">
-                  Newer edits are still in the form — open the preset to apply them there, or create
-                  a separate preset explicitly.
+                  Newer edits are still in the form — open it to apply them there, or create a
+                  separate one.
                 </template>
               </p>
-              <p v-else class="studio__state" role="status">
-                This draft already created preset {{ creation.recoveredId.value }}.
-              </p>
               <button type="button" class="cta cta--sm" @click="openRecoveredWorld">
-                Open preset
+                Open the world
               </button>
               <button type="button" class="ghost ghost--sm" @click="createSeparateWorld">
-                Create a separate preset
+                Create a separate one
               </button>
               <button
                 v-if="creation.supersededEdits.value"
                 type="button"
                 class="ghost ghost--sm"
-                title="Forget the set-aside edits. The created preset stays associated with this draft."
                 @click="creation.discardNewerEdits()">
                 Discard newer edits
               </button>
-              <button
-                v-if="!creation.noticeDismissed.value"
-                type="button"
-                class="ghost ghost--sm"
-                title="Hide this notice. The created preset and any set-aside edits are kept."
-                @click="creation.dismissRecovery()">
-                Dismiss
-              </button>
             </div>
-            <div v-else class="preview__actions">
-              <button
-                type="button"
-                class="cta cta--sm"
-                :disabled="creation.status.value === 'creating'"
-                @click="createWorld">
-                {{
-                  creation.status.value === 'creating'
-                    ? 'Creating…'
-                    : creation.pending.value
-                      ? 'Retry creation'
-                      : 'Create preset'
-                }}
-              </button>
-              <button
-                v-if="creation.pending.value && creationFormDiffers"
-                type="button"
-                class="ghost ghost--sm"
-                title="The unresolved request may already have created a preset; use only if you intend a second one."
-                @click="createSeparateWorld">
-                Create a separate preset instead
-              </button>
-            </div>
-            <p v-if="deviceSavedFlash" class="studio__state" role="status">Saved on this device.</p>
-            <p v-if="deviceStorageFailed" class="studio__state" role="alert">
-              This device would not keep the draft (storage unavailable) — keep this tab open until
-              you can save elsewhere.
+            <p v-else class="wstudio__finishnote">
+              Creating puts the world in your library, ready for any story; then you can pin its
+              places on a map and give each place its own picture. Until then it is kept on this
+              device whenever you save the draft.
             </p>
-          </div>
-          <div v-else>
+            <p v-if="deviceStorageFailed" class="studio__state" role="alert">
+              This device would not keep the draft (storage unavailable) — keep this tab open.
+            </p>
+          </template>
+          <template v-else>
             <p v-if="pubStatus" class="studio__state" role="status">{{ pubStatus }}</p>
             <p v-if="unsavedAfterPublish" class="studio__state" role="status">
-              Newer edits are still unsaved — save or publish again before leaving, or finish from
-              the button below once everything is saved.
+              Newer edits are still unsaved — save or publish again before leaving.
             </p>
-            <p v-if="editor.status.value === 'failed'" class="studio__state" role="alert">
-              <button type="button" class="studio__link" @click="retryLast()">
-                retry {{ editor.lastFailedOp.value ?? 'operation' }}
-              </button>
-              <button
-                v-if="editor.openConflict.value"
-                type="button"
-                class="studio__link"
-                @click="resumeSavedDraft()">
-                Resume saved draft
-              </button>
+            <p class="wstudio__finishnote">
+              Publishing makes these changes the version new stories use. Stories already under way
+              keep the version they started with.
             </p>
-            <div class="preview__actions">
-              <button
-                type="button"
-                class="cta cta--sm"
-                :disabled="
-                  editor.status.value === 'publishing' || editor.status.value === 'loading'
-                "
-                @click="publish">
-                {{
-                  editor.status.value === 'publishing'
-                    ? 'Publishing…'
-                    : editor.pendingPublication.value
-                      ? 'Retry publish'
-                      : 'Publish new revision'
-                }}
-              </button>
-              <button
-                v-if="editor.status.value === 'published'"
-                type="button"
-                class="ghost ghost--sm"
-                @click="finishAndReturn">
-                Finish &amp; return
-              </button>
-            </div>
-          </div>
+            <button
+              v-if="editor.status.value === 'published'"
+              type="button"
+              class="ghost ghost--sm"
+              @click="finishAndReturn">
+              Back to the {{ fromLibrary ? 'library' : 'new story' }}
+            </button>
+          </template>
         </section>
       </div>
 
-      <!-- ————————————————— preview column ————————————————— -->
-      <aside class="card ev-card preview" aria-label="World preview">
-        <header class="preview__head">
-          <IconEmblem :size="24" class="preview__emblem" />
-          <h2 class="preview__title">World preview</h2>
-        </header>
-
-        <div class="preview__tabs" role="tablist" aria-label="Preview sections">
-          <button
-            v-for="t in ['scene', 'map', 'summary'] as const"
-            :id="`wpanel-tab-${t}`"
-            :key="t"
-            type="button"
-            role="tab"
-            :aria-selected="tab === t"
-            :aria-controls="`wpanel-panel-${t}`"
-            :class="{ 'preview__tabs--on': tab === t }"
-            @click="tab = t">
-            {{ t === 'scene' ? 'Scene' : t === 'map' ? 'Map' : 'Summary' }}
-          </button>
-        </div>
-
-        <div
-          v-show="tab === 'scene'"
-          id="wpanel-panel-scene"
-          class="preview__pane"
-          role="tabpanel"
-          aria-labelledby="wpanel-tab-scene">
-          <div class="scene-img" :class="{ 'is-rendering': generating }">
-            <img :src="sceneUrl" :alt="`${worldName} scene preview`" />
-          </div>
-
-          <div class="conds">
-            <div>
-              <span class="conds__label">Location</span>
-              <StudioSelect v-model="activePlaceName" :options="draft.places.map((p) => p.name)" />
-            </div>
-            <div>
-              <span class="conds__label">Time</span>
-              <StudioSelect v-model="time" :options="TIMES" />
-            </div>
-            <div>
-              <span class="conds__label">Weather</span>
-              <StudioSelect v-model="weather" :options="WEATHERS" />
-            </div>
-          </div>
-          <p class="ev-info"><IconInfo :size="14" /> Preview conditions only</p>
-
-          <div class="ev-divider preview__rule" aria-hidden="true"><IconSparkle :size="11" /></div>
-
-          <span class="ev-field-label">Scene sample</span>
-          <p class="sample">{{ sample }}</p>
-
-          <div class="preview__actions">
-            <button type="button" class="cta" :disabled="generating" @click="generatePreview">
-              <IconImage :size="16" /> {{ generating ? 'Painting…' : 'Generate preview' }}
-            </button>
-            <button type="button" class="refine" @click="toggleRefine">
-              <IconPencil :size="12" /> Refine description
-            </button>
-          </div>
-          <div v-if="refining" class="refine-box">
-            <textarea v-model="refinedText" class="ev-input" rows="3" />
-            <div class="refine-box__row">
-              <button type="button" class="ghost ghost--sm" @click="refining = false">
-                Cancel
-              </button>
-              <button type="button" class="cta cta--sm" @click="applyRefine">Apply to notes</button>
-            </div>
-          </div>
-          <p class="ev-info"><IconInfo :size="14" /> Preview art does not change world facts.</p>
-        </div>
-
-        <div
-          v-show="tab === 'map'"
-          id="wpanel-panel-map"
-          class="preview__pane"
-          role="tabpanel"
-          aria-labelledby="wpanel-tab-map">
-          <MapPreview :preset-id="id" :revision="record?.revision ?? null">
-            <div class="scene-img scene-img--tall">
-              <img :src="mapUrl" :alt="`${worldName} map`" />
-            </div>
-            <p class="ev-info">
-              <IconInfo :size="14" />
-              No map yet. Draw one from a picture, a painting or a blank parchment: put the places
-              down and draw the roads between them.
-            </p>
-          </MapPreview>
-          <RouterLink
-            v-if="id !== 'new'"
-            class="ghost maplink"
-            :to="{ name: 'library-world-map', params: { id } }">
-            Draw or change this world’s map: places, roads and travel times
-          </RouterLink>
-          <RouterLink
-            v-if="id !== 'new'"
-            class="ghost maplink"
-            :to="{ name: 'library-place-maps', params: { id } }">
-            Draw inside its places: the inn, the market, who is where
-          </RouterLink>
-          <ul class="maplegend">
-            <li v-for="p in draft.places" :key="p.id">
-              <span class="maplegend__dot"></span>{{ p.name }}
-              <em v-if="p.landmark">· {{ p.landmark }}</em>
-            </li>
-          </ul>
-        </div>
-
-        <div
-          v-show="tab === 'summary'"
-          id="wpanel-panel-summary"
-          class="preview__pane"
-          role="tabpanel"
-          aria-labelledby="wpanel-tab-summary">
-          <dl class="facts">
-            <template
-              v-for="row in [
-                { k: 'Terrain', v: draft.terrain.join(', ') || '—' },
-                { k: 'Climate', v: draft.climate },
-                { k: 'Architecture', v: draft.architecture || '—' },
-                { k: 'Signature details', v: draft.details || '—' },
-                { k: 'Exclusions', v: draft.exclusions || '—' },
-                { k: 'Places', v: String(draft.places.length) }
-              ]"
-              :key="row.k">
-              <dt>{{ row.k }}</dt>
-              <dd>{{ row.v }}</dd>
-            </template>
-          </dl>
-          <p class="ev-info">
-            <IconInfo :size="14" />
-            The narrator quotes these facts back to you in the Review step.
-          </p>
-        </div>
-      </aside>
+      <WorldPreviewPanel
+        :draft="draft"
+        :name="displayNameForm"
+        :preset-id="isNew ? null : id"
+        @cover="draft.cover = $event"
+        @saved="editor.adoptHead($event)" />
     </div>
 
     <!-- ————————————————— footer ————————————————— -->
     <SaveBar :dirty="dirty" :saved="savedFlash" secondary-label="Save draft" @secondary="save">
       <template #start>
-        <button type="button" class="ghost" @click="router.back()">
-          <IconArrowLeft :size="14" /> Back
+        <button
+          type="button"
+          class="ghost"
+          @click="step > 1 ? goStep(step - 1) : router.push(originRoute)">
+          <IconArrowLeft :size="15" /> {{ step > 1 ? 'Back' : 'Leave' }}
         </button>
       </template>
       <template #end>
-        <button type="button" class="cta cta--foot" @click="advance">
-          {{ step < 4 ? `Continue to ${nextLabel}` : 'Finish & save' }}
-          <IconArrowRight :size="14" />
-        </button>
+        <MenuButton
+          class="wstudio__next"
+          :disabled="
+            step === lastStep &&
+            (isNew
+              ? nameMissing || creation.status.value === 'creating' || !!creation.recoveredId.value
+              : editor.status.value === 'publishing' || editor.status.value === 'loading')
+          "
+          @click="advance">
+          {{
+            step < lastStep
+              ? `Continue to ${nextLabel}`
+              : isNew
+                ? creation.status.value === 'creating'
+                  ? 'Creating…'
+                  : 'Create world'
+                : editor.status.value === 'publishing'
+                  ? 'Publishing…'
+                  : editor.pendingPublication.value
+                    ? 'Retry publish'
+                    : 'Publish changes'
+          }}
+        </MenuButton>
       </template>
     </SaveBar>
   </main>
 </template>
 
 <style scoped>
-/* places tab strip ---------------------------------------------------------- */
-.places {
-  border-top: 1px solid transparent;
+.wstudio__sub {
+  margin: 2px 0 12px;
+  font-size: 17px;
+  color: var(--ink-3);
 }
+.wstudio__step {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.wstudio__fixed {
+  padding: 6px 2px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.wstudio__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 18px;
+}
+.wf {
+  min-width: 0;
+}
+.wf--wide {
+  grid-column: 1 / -1;
+}
+.is-helped,
+.is-helped :deep(.ev-input) {
+  border-color: #e0b07a !important;
+  background: linear-gradient(180deg, #fff8ec, #fdf1de) !important;
+  box-shadow: inset 3px 0 0 var(--ember) !important;
+}
+.wstudio__fill {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+.wstudio__helper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  border: 1px dashed #e0c9a0;
+  background: #fdf6ea;
+}
+.wstudio__helper-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-ui);
+  font-size: 16px;
+  color: #7a3f17;
+}
+.wstudio__helper-text svg {
+  color: var(--ember);
+}
+.wstudio__count {
+  height: 36px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid #d9b48a;
+  background: #fffaf0;
+  font: inherit;
+  font-family: var(--font-ui);
+  font-size: 16px;
+}
+.wstudio__fillbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 15px;
+  border-radius: 9px;
+  border: 1px solid #d9b48a;
+  background: linear-gradient(180deg, #fdf3e6, #f8e6cf);
+  color: #7a3f17;
+  font-size: 15px;
+  font-weight: 500;
+  transition: transform 0.18s var(--ease-out);
+}
+.wstudio__fillbtn svg {
+  color: var(--ember);
+}
+.wstudio__fillbtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.wstudio__fillbtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.wstudio__fillnote {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--ink-3);
+}
+.wstudio__checks {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+.wstudio__checks li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  color: var(--muted);
+}
+.wstudio__checks li::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--faint);
+}
+.wstudio__checks li.is-ok {
+  color: var(--ink-2);
+}
+.wstudio__checks li.is-ok::before {
+  border-color: #3f8f6b;
+  background: #3f8f6b;
+}
+.wstudio__finish {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.wstudio__finishnote {
+  font-size: 16px;
+  color: var(--ink-2);
+}
+.wstudio__next {
+  width: auto;
+  min-width: 220px;
+}
+
+/* places tab strip ---------------------------------------------------------- */
 .places__tabs {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
   border-bottom: 1px solid #e6d9bb;
   margin-bottom: 15px;
 }
 .places__tab {
-  height: 34px;
+  height: 36px;
   padding: 0 16px;
   border-radius: 9px 9px 0 0;
   border: 1px solid transparent;
   border-bottom: 0;
-  font-size: 15px;
+  font-size: 15.5px;
   font-weight: 500;
   color: #55482f;
   position: relative;
@@ -1163,37 +1298,55 @@ function suggest(): void {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  height: 34px;
+  height: 36px;
   padding: 0 12px;
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--teal-ink);
   border-radius: 8px;
-  transition: color 0.14s ease;
 }
 .places__add:hover {
-  color: var(--teal);
+  color: var(--ember);
 }
 .places__fields {
   gap: 15px 18px;
 }
-/* starting-place picker + explicit place removal ---------------------------- */
 .places__foot {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 18px;
   margin-top: 15px;
   padding-top: 15px;
   border-top: 1px solid #e6d9bb;
 }
-.places__foot > div {
-  min-width: 220px;
+.places__count {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--muted);
 }
-.maplink {
-  align-self: flex-start;
-  height: auto;
-  padding: 8px 14px;
-  font-size: 14.5px;
+.wstep-enter-active {
+  transition:
+    opacity 0.28s ease,
+    transform 0.32s var(--ease-out);
+}
+.wstep-leave-active {
+  transition: opacity 0.12s ease;
+}
+.wstep-enter-from {
+  opacity: 0;
+  transform: translateX(18px);
+}
+.wstep-leave-to {
+  opacity: 0;
+}
+@media (max-width: 760px) {
+  .wstudio__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .wstudio__next {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
 }
 </style>

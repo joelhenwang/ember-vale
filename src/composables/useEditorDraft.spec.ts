@@ -369,6 +369,21 @@ describe('useEditorDraft', () => {
     expect(ctl.status.value).toBe('published')
   })
 
+  it('publishes against the head the studio itself moved (a place picture)', async () => {
+    installFetch()
+    const ctl = useEditorDraft()
+    await ctl.open('preset-1', 2)
+    const base = ctl.baseDetail.value!
+    // Someone else's preset is ignored; ours moves the head only.
+    ctl.adoptHead({ ...base, id: 'preset-9', version: 40 })
+    expect(ctl.baseDetail.value?.version).toBe(3)
+    ctl.adoptHead({ ...base, version: 7, current_revision: 5 })
+    expect(ctl.baseDetail.value).toMatchObject({ version: 7, current_revision: 5 })
+    expect(ctl.baseDetail.value?.revision).toEqual(base.revision)
+    await ctl.saveAndPublish('preset-1', { ...ctl.fields.value }, JSON.stringify({ round: 1 }))
+    expect(publishBodies[0]).toMatchObject({ preset_expected_version: 7 })
+  })
+
   it('replays Older on retry after Newest saved: the revision holds Older', async () => {
     installFetch()
     const ctl = useEditorDraft()

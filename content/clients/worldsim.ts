@@ -858,11 +858,13 @@ export interface WritingFillRequest {
   kind: string;
   name?: string;
   overview?: string;
+  place_kinds?: string[];
   places?: WritingPlace[];
 }
 
 export interface WritingFilledPlace {
   description: string;
+  kind?: string;
   name: string;
   new: boolean;
 }

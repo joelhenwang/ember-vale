@@ -525,7 +525,24 @@ export function useEditorDraft() {
     }
   }
 
+  /**
+   * The studio itself moved the preset's head (a place picture: a new
+   * revision with a map). Publishing keeps maps from the newest revision,
+   * so the next publication may carry the new head version instead of
+   * conflicting with the studio's own change. Only head identity moves.
+   */
+  function adoptHead(head: PresetDetail): void {
+    if (!baseDetail.value || baseDetail.value.id !== head.id) return
+    baseDetail.value = {
+      ...baseDetail.value,
+      version: head.version,
+      current_revision: head.current_revision
+    }
+    // A publication already in flight replays exactly as it was sent.
+  }
+
   return {
+    adoptHead,
     draft,
     baseDetail,
     fields,

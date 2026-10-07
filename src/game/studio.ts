@@ -140,6 +140,12 @@ export interface WorldDraft {
   architecture: string
   details: string
   exclusions: string
+  /** Who lives there: peoples, folk, factions. */
+  peoples: string
+  /** What happened there before the story. */
+  history: string
+  /** The few details that say "you are here". */
+  distinct: string
   places: PlaceDraft[]
   /** Local id of the tab being edited. Inspecting tabs never publishes. */
   activePlace: string
@@ -272,6 +278,9 @@ export function ensureWorldDraft(id: string): WorldDraft {
         architecture: 'Timber and pale stone, weathered copper roofs, modest village squares.',
         details: 'Mossy riverbanks, woven market awnings, quiet traces of old magic.',
         exclusions: 'Modern machinery, towering castles',
+        peoples: '',
+        history: '',
+        distinct: '',
         places: [
           {
             id: 'hearth',
@@ -319,6 +328,9 @@ export function ensureWorldDraft(id: string): WorldDraft {
         architecture: 'Whitewashed stone, terracotta roofs, stair-streets down to the water.',
         details: 'Gull cries, salt on the wind, ruins that predate the town.',
         exclusions: 'Steam engines, standing armies',
+        peoples: '',
+        history: '',
+        distinct: '',
         places: [
           {
             id: 'lighthouse',
@@ -350,6 +362,9 @@ export function ensureWorldDraft(id: string): WorldDraft {
         architecture: '',
         details: '',
         exclusions: '',
+        peoples: '',
+        history: '',
+        distinct: '',
         places: [blankPlace(0)],
         activePlace: 'boot',
         startPlace: 'boot',
@@ -396,13 +411,29 @@ export const STRANGER_STANCES = [
 export const CLIMATES = ['Temperate', 'Mild coastal', 'Alpine', 'Arid', 'Grey and drizzly']
 
 export const PLACE_TYPES = [
-  'Open-air market',
+  'City',
+  'Town',
+  'Village',
   'Village square',
+  'Open-air market',
   'Village inn',
-  'Shrine',
   'Harbor',
+  'Castle',
+  'Tower',
+  'Temple',
+  'Shrine',
+  'Farmstead',
+  'Mill',
+  'Mine',
+  'Cave',
   'Ruin',
+  'Forest',
   'Woodland path',
+  'Mountain pass',
+  'River crossing',
+  'Lake',
+  'Island',
+  'Camp',
   'Other'
 ]
 

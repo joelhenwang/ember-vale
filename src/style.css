@@ -284,7 +284,10 @@ img {
 }
 textarea.ev-input {
   min-height: 62px;
+  max-height: 360px;
   resize: vertical;
+  /* grows with what is written, where the browser can */
+  field-sizing: content;
 }
 
 /* info line: ⓘ + small text */

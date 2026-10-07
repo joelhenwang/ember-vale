@@ -60,7 +60,15 @@ const APPEARANCE_PREFIXES = [
   'Condition'
 ] as const
 
-const LORE_PREFIXES = ['Terrain', 'Climate', 'Architecture', 'Exclusions'] as const
+const LORE_PREFIXES = [
+  'Terrain',
+  'Climate',
+  'Architecture',
+  'Peoples',
+  'History',
+  'Details',
+  'Exclusions'
+] as const
 
 const PLACE_PREFIXES = [
   'Type',
@@ -301,6 +309,9 @@ export function packWorld(
     ['Terrain', draft.terrain.join('; ')],
     ['Climate', draft.climate],
     ['Architecture', draft.architecture],
+    ['Peoples', draft.peoples],
+    ['History', draft.history],
+    ['Details', draft.distinct],
     ['Exclusions', draft.exclusions]
   ])
   const prevLocations = Array.isArray(prev['locations']) ? (prev['locations'] as unknown[]) : []
@@ -463,6 +474,9 @@ export function unpackWorld(fields: Record<string, unknown>): Partial<WorldDraft
       : []
     out.climate = s.values['Climate'] ?? ''
     out.architecture = s.values['Architecture'] ?? ''
+    out.peoples = s.values['Peoples'] ?? ''
+    out.history = s.values['History'] ?? ''
+    out.distinct = s.values['Details'] ?? ''
     out.exclusions = s.values['Exclusions'] ?? ''
     out.loreExtra = s.rest
   }

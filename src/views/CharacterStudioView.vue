@@ -259,7 +259,12 @@ watch(serverCharacter, (rec) => {
   void editor
     .open(id.value, rec.revision)
     .then(hydrateFromEditor)
-    .catch(() => {})
+    // A draft saved earlier sits on an older revision (a map or a place
+    // picture moved the head since): carry on with it. Publishing keeps
+    // the newer maps.
+    .catch(() => {
+      if (editor.openConflict.value) void resumeSavedDraft()
+    })
 })
 
 function retryEditor(): void {
@@ -516,6 +521,19 @@ const paintWords = computed(() => portraitPrompt(draft.value))
         <p v-else-if="recordMissing" class="studio__state" role="alert">
           No character answers to that id.
         </p>
+        <p v-if="!isNew && editor.status.value === 'failed'" class="studio__state" role="alert">
+          {{ editor.error.value ?? 'Something went wrong.' }} —
+          <button type="button" class="studio__link" @click="retryLast()">
+            retry {{ editor.lastFailedOp.value ?? 'operation' }}
+          </button>
+          <button
+            v-if="editor.openConflict.value"
+            type="button"
+            class="studio__link"
+            @click="resumeSavedDraft()">
+            Resume saved draft
+          </button>
+        </p>
 
         <InlineStepper
           class="studio__stepper"
@@ -770,18 +788,6 @@ const paintWords = computed(() => portraitPrompt(draft.value))
             <p v-if="pubStatus" class="studio__state" role="status">{{ pubStatus }}</p>
             <p v-if="unsavedAfterPublish" class="studio__state" role="status">
               Newer edits are still unsaved — save or publish again before leaving.
-            </p>
-            <p v-if="editor.status.value === 'failed'" class="studio__state" role="alert">
-              <button type="button" class="studio__link" @click="retryLast()">
-                retry {{ editor.lastFailedOp.value ?? 'operation' }}
-              </button>
-              <button
-                v-if="editor.openConflict.value"
-                type="button"
-                class="studio__link"
-                @click="resumeSavedDraft()">
-                Resume saved draft
-              </button>
             </p>
             <p class="cstudio__finishnote">
               Publishing makes these changes the version new stories use. Stories already under way

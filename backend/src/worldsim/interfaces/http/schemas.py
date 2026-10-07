@@ -1882,6 +1882,8 @@ class WritingFillRequest(BaseModel):
     places: list[WritingPlace] = Field(default_factory=list, max_length=40)
     #: How many new places to add (worlds).
     add_places: int = Field(default=0, ge=0, le=12)
+    #: The kinds of place the studio offers; each written place picks one.
+    place_kinds: list[str] = Field(default_factory=list, max_length=40)
 
 
 class WritingFilledPlace(BaseModel):
@@ -1890,6 +1892,7 @@ class WritingFilledPlace(BaseModel):
     name: str
     description: str
     new: bool
+    kind: str = ""
 
 
 class WritingFillView(BaseModel):

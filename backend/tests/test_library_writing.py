@@ -76,6 +76,21 @@ def test_places_are_described_and_added_but_never_doubled() -> None:
         ("Reedmarsh", True),
         ("Stonebridge", True),
     ]
+    # Each place picks a kind the studio offers; anything else is left blank.
+    kinds = ["Village inn", "Marsh"]
+    assert "one of: Village inn, Marsh" in fill_prompt(
+        "world", "", [], places=known, place_kinds=kinds
+    )
+    answer = json.dumps(
+        {
+            "places": [
+                {"name": "Reedmarsh", "description": "Herons.", "kind": "marsh"},
+                {"name": "Tower", "description": "Tall.", "kind": "castle"},
+            ]
+        }
+    )
+    _, places = parse_filled(answer, [], [], add_places=2, place_kinds=kinds)
+    assert [(p.name, p.kind) for p in places] == [("Reedmarsh", "Marsh"), ("Tower", "")]
 
 
 def test_an_unreadable_answer_is_an_error() -> None:

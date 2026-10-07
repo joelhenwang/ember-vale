@@ -44,6 +44,8 @@ class FilledPlace:
     description: str
     #: True for a place the writer added; False fills an existing one.
     new: bool
+    #: What sort of place it is, from the kinds the studio offers ("" if none fit).
+    kind: str = ""
 
 
 _WHAT = {
@@ -84,7 +86,7 @@ Answer with JSON only: {{"fields": {{"key": "text", ...}}{places_shape}}}"""
 PLACES_PART = """
 Places{have}:
 {listed}
-{add}Each place gets one or two sentences: what it is and what a visitor notices there.
+{add}Each place gets one or two sentences: what it is and what a visitor notices there.{kinds}
 """
 
 
@@ -103,6 +105,7 @@ def fill_prompt(
     name: str = "",
     places: list[Place] | None = None,
     add_places: int = 0,
+    place_kinds: list[str] | None = None,
 ) -> str:
     decided_fields = [f for f in fields if f.value.strip()]
     decided = ""
@@ -124,13 +127,20 @@ def fill_prompt(
             if add_places > 0
             else ""
         )
+        kinds = (
+            "\nGive each place a kind, one of: " + ", ".join(place_kinds) + "."
+            if place_kinds
+            else ""
+        )
         places_text = PLACES_PART.format(
             have=" so far" if places else " (none yet)",
             listed=listed or "(none)",
             add=add,
+            kinds=kinds,
         )
+        kind_shape = ', "kind": "..."' if place_kinds else ""
         places_shape = (
-            ', "places": [{"name": "...", "description": "..."}] '
+            f', "places": [{{"name": "...", "description": "..."{kind_shape}}}] '
             "(the places not described yet, by their names, and any new ones)"
         )
     return FILL_PROMPT.format(
@@ -178,6 +188,7 @@ def parse_filled(
     fields: list[Field],
     places: list[Place] | None = None,
     add_places: int = 0,
+    place_kinds: list[str] | None = None,
 ) -> tuple[dict[str, str], list[FilledPlace]]:
     """Answers for the empty fields only, and the places' descriptions.
 
@@ -207,6 +218,8 @@ def parse_filled(
         entry = cast("dict[str, object]", item)
         name = _clean(entry.get("name"), 64)
         description = _clean(entry.get("description"), 2000)
+        said = _clean(entry.get("kind"), 40).lower()
+        kind = next((k for k in place_kinds or [] if k.lower() == said), "")
         key = name.lower()
         if not name or not description or key in seen:
             continue
@@ -214,8 +227,8 @@ def parse_filled(
         old = known.get(key)
         if old is not None:
             if not old.description.strip():
-                filled.append(FilledPlace(old.name, description, new=False))
+                filled.append(FilledPlace(old.name, description, new=False, kind=kind))
         elif added < add_places:
             added += 1
-            filled.append(FilledPlace(name, description, new=True))
+            filled.append(FilledPlace(name, description, new=True, kind=kind))
     return values, filled

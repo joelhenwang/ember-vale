@@ -51,20 +51,21 @@ async def enhance(body: api.WritingEnhanceRequest, request: Request) -> api.Writ
 async def fill(body: api.WritingFillRequest, request: Request) -> api.WritingFillView:
     fields = [Field(f.key, f.label, f.hint, f.value, f.max_length) for f in body.fields]
     places = [Place(p.name, p.description) for p in body.places]
+    kinds = [k.strip()[:40] for k in body.place_kinds if k.strip()]
     wants_places = body.add_places > 0 or any(not p.description.strip() for p in places)
     if not any(not f.value.strip() for f in fields) and not wants_places:
         raise DomainError(ErrorCode.VALIDATION_FAILED, "every field is already filled")
     try:
         written = await _writer(request).write(
-            fill_prompt(body.kind, body.overview, fields, body.name, places, body.add_places)
+            fill_prompt(body.kind, body.overview, fields, body.name, places, body.add_places, kinds)
         )
-        values, filled = parse_filled(written.text, fields, places, body.add_places)
+        values, filled = parse_filled(written.text, fields, places, body.add_places, kinds)
     except (WritingError, WritingAnswerError) as exc:
         raise DomainError(ErrorCode.PRECONDITION_FAILED, str(exc)) from exc
     return api.WritingFillView(
         values=values,
         places=[
-            api.WritingFilledPlace(name=p.name, description=p.description, new=p.new)
+            api.WritingFilledPlace(name=p.name, description=p.description, new=p.new, kind=p.kind)
             for p in filled
         ],
         model=written.model,

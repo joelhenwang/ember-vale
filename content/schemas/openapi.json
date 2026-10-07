@@ -7827,6 +7827,14 @@
             "title": "Overview",
             "type": "string"
           },
+          "place_kinds": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 40,
+            "title": "Place Kinds",
+            "type": "array"
+          },
           "places": {
             "items": {
               "$ref": "#/components/schemas/WritingPlace"
@@ -7888,6 +7896,11 @@
         "properties": {
           "description": {
             "title": "Description",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
             "type": "string"
           },
           "name": {
