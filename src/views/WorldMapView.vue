@@ -262,6 +262,36 @@ async function paint(): Promise<void> {
   }
 }
 
+/** The world's own picture (from the studio), when it has one. */
+const worldPicture = computed(() => {
+  const cover = (detail.value?.revision as Record<string, unknown> | undefined)?.['cover'] as
+    { asset_id?: unknown } | null | undefined
+  return typeof cover?.asset_id === 'string' ? cover.asset_id : null
+})
+
+/** Start from the world's own picture: kept again as a map the reader can read. */
+async function useWorldPicture(): Promise<void> {
+  if (!worldPicture.value) return
+  busy.value = 'upload'
+  error.value = null
+  try {
+    const blob = await (await fetch(libraryAssetUrl(worldPicture.value))).blob()
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result))
+      reader.onerror = () => reject(new Error('Could not read the picture.'))
+      reader.readAsDataURL(blob)
+    })
+    newBoard(await uploadMap(dataUrl))
+    notice.value =
+      'The world’s picture is the map now. Find the places on it, or put them down yourself.'
+  } catch (err) {
+    error.value = message(err, 'Could not use the world’s picture.')
+  } finally {
+    busy.value = ''
+  }
+}
+
 /** No picture: start on an empty parchment and put everything down by hand. */
 async function blankParchment(): Promise<void> {
   busy.value = 'parchment'
@@ -282,7 +312,10 @@ async function findPlaces(): Promise<void> {
   busy.value = 'places'
   error.value = null
   try {
-    const reading = await readMapPlaces(board.value.assetId)
+    const reading = await readMapPlaces(
+      board.value.assetId,
+      places.value.map((p) => p.name)
+    )
     board.value.places = placesFromReading(reading.places, places.value)
     board.value.roads = []
     selected.value = null
@@ -668,6 +701,14 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
               :disabled="busy !== ''"
               @click="showPaint = !showPaint">
               <IconSparkle :size="14" /> Paint one
+            </button>
+            <button
+              v-if="worldPicture && board?.assetId !== worldPicture"
+              type="button"
+              class="ghost"
+              :disabled="busy !== ''"
+              @click="useWorldPicture">
+              <IconImage :size="14" /> Use the world’s picture
             </button>
             <button type="button" class="ghost" :disabled="busy !== ''" @click="blankParchment">
               {{ busy === 'parchment' ? 'Laying it out…' : 'Blank parchment' }}

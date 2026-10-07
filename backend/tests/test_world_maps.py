@@ -246,9 +246,13 @@ def test_reader_answers_are_cleaned() -> None:
 class _Reader:
     def __init__(self) -> None:
         self.asked: list[list[ReadPlace]] = []
+        self.known: tuple[str, ...] = ()
 
-    async def places(self, image: bytes, mime: str) -> Reading[ReadPlace]:
+    async def places(
+        self, image: bytes, mime: str, known: tuple[str, ...] = ()
+    ) -> Reading[ReadPlace]:
         assert image and mime == "image/png"
+        self.known = known
         found = (
             ReadPlace("Hearth", "inn", (100, 100)),
             ReadPlace("Market", "market", (300, 100)),
@@ -318,6 +322,11 @@ def test_read_a_map_and_time_the_new_story(stack: tuple[ApiClient, _Reader]) -> 
         assert api.get(f"/api/v1/library/assets/{asset_id}/bytes").status_code == 200
         places = api.post(f"/api/v1/library/maps/{asset_id}/places").json()
         assert [p["name"] for p in places["places"]] == ["Hearth", "Market", "Old Mill"]
+        # The world's own names travel with the question, for unlabelled drawings.
+        api.post(
+            f"/api/v1/library/maps/{asset_id}/places", json={"known": ["Hearth", " ", "Market"]}
+        )
+        assert reader.known == ("Hearth", "Market")
         roads = api.post(
             f"/api/v1/library/maps/{asset_id}/roads", json={"places": places["places"]}
         ).json()
@@ -451,3 +460,12 @@ def test_readings_need_a_map_picture(stack: tuple[ApiClient, _Reader]) -> None:
     missing = api.post(f"/api/v1/library/maps/{UUID(int=7)}/places")
     assert missing.status_code == 404
     assert Path(ASSETS).exists()
+
+
+def test_the_places_question_names_the_worlds_own_places() -> None:
+    from worldsim.infrastructure.geography.openrouter import PLACES_PROMPT, places_prompt
+
+    assert places_prompt(()) == PLACES_PROMPT
+    asked = places_prompt(("Mirewake", "Oarfall Harbor"))
+    assert "already has these places: Mirewake, Oarfall Harbor." in asked
+    assert asked.endswith(PLACES_PROMPT[PLACES_PROMPT.rindex("Answer with JSON only") :])

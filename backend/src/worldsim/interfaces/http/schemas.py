@@ -1771,6 +1771,14 @@ class MapUploadRequest(BaseModel):
     data_url: str = Field(min_length=32, max_length=24_000_000)
 
 
+class MapPlacesRequest(BaseModel):
+    """The world's own place names, to match unlabelled drawings to."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    known: list[str] = Field(default_factory=list, max_length=60)
+
+
 class MapPaintRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 

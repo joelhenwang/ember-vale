@@ -850,11 +850,17 @@ export function paintMap(
   })
 }
 
-export function readMapPlaces(assetId: string, opts: CallOptions = {}): Promise<MapPlacesView> {
+/** The places on a map; `known` are the world's own place names, to match unlabelled drawings. */
+export function readMapPlaces(
+  assetId: string,
+  known: string[] = [],
+  opts: CallOptions = {}
+): Promise<MapPlacesView> {
   return apiFetch<MapPlacesView>(`/library/maps/${assetId}/places`, {
     timeoutMs: 420000,
     ...opts,
-    method: 'POST'
+    method: 'POST',
+    body: { known }
   })
 }
 

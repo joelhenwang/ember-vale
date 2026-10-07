@@ -26,6 +26,7 @@ from worldsim.application.stories.validation import validate_draft
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.activities import TravelRoute
 from worldsim.domain.assets import AssetKind, AssetRecord
+from worldsim.domain.carried import carried_items
 from worldsim.domain.characters import Character, CharacterCard
 from worldsim.domain.enums import EventType, LifeStatus, PhaseName, PhaseRunState, UserRole
 from worldsim.domain.errors import DomainError, ErrorCode
@@ -36,6 +37,7 @@ from worldsim.domain.ids import (
     new_asset_id,
     new_card_id,
     new_character_id,
+    new_item_instance_id,
     new_location_id,
     new_role_grant_id,
     new_route_id,
@@ -48,6 +50,7 @@ from worldsim.domain.presets import (
     WorldLocationPreset,
     WorldPresetPayload,
 )
+from worldsim.domain.progress import ItemInstance
 from worldsim.domain.roles import RoleGrant
 from worldsim.domain.stories import (
     DraftCastMember,
@@ -340,6 +343,8 @@ async def _adopt_portrait(
 
 #: World config key holding the story's cover: its world's own picture.
 COVER = "cover"
+#: Items a character brings from the library ("Carries:" in their look).
+CARRIED_ITEM_KEY = "carried"
 
 
 @dataclass(frozen=True)
@@ -535,6 +540,17 @@ async def _instantiate(
                 conditions=[],
             )
         )
+        # What the studio says they carry, they hold from the first beat.
+        for item_name in carried_items(preset.appearance):
+            await uow.inventory.add_item(
+                ItemInstance(
+                    id=new_item_instance_id(),
+                    world_id=world_id,
+                    item_key=CARRIED_ITEM_KEY,
+                    owner_id=character_id,
+                    name=item_name,
+                )
+            )
         runtime_characters[member.instance_key] = character_id
         # A picture the player brought is this character's portrait: the
         # job below then binds it instead of painting one.

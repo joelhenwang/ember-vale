@@ -30,9 +30,32 @@ from worldsim.interfaces.http import schemas as api
 
 
 def _anchor(location_id: UUID) -> tuple[float, float]:
-    """Stable schematic anchor in [0,1]; curated art replaces it in P04."""
+    """A stable point in [0,1] from the place's id (for places added in play)."""
     digest = hashlib.sha256(str(location_id).encode()).digest()
     return (digest[0] / 255, digest[1] / 255)
+
+
+def schematic_anchors(ids: list[UUID]) -> dict[UUID, tuple[float, float]]:
+    """Places without a drawn map, spread evenly around a ring (two rings
+    past eight), in a stable order, clear of each other and of the edges."""
+    ordered = sorted(ids, key=lambda i: hashlib.sha256(str(i).encode()).digest())
+    if len(ordered) == 1:
+        return {ordered[0]: (0.5, 0.5)}
+    rings = (
+        [ordered]
+        if len(ordered) <= 8
+        else [ordered[: len(ordered) // 3], ordered[len(ordered) // 3 :]]
+    )
+    radii = [(0.36, 0.34)] if len(rings) == 1 else [(0.16, 0.15), (0.4, 0.37)]
+    out: dict[UUID, tuple[float, float]] = {}
+    for ring, (rx, ry) in zip(rings, radii, strict=True):
+        for n, location_id in enumerate(ring):
+            angle = -math.pi / 2 + 2 * math.pi * n / len(ring)
+            out[location_id] = (
+                round(0.5 + rx * math.cos(angle), 4),
+                round(0.5 + ry * math.sin(angle), 4),
+            )
+    return out
 
 
 async def presentation(
@@ -319,9 +342,8 @@ def _schematic_manifest(world_id: UUID, locations: list[Location]) -> api.MapMan
         version=1,
         schematic=True,
         anchors=[
-            api.MapAnchorView(location_id=location.id, x=x, y=y)
-            for location in locations
-            for x, y in [_anchor(location.id)]
+            api.MapAnchorView(location_id=location_id, x=x, y=y)
+            for location_id, (x, y) in schematic_anchors([loc.id for loc in locations]).items()
         ],
     )
 

@@ -643,6 +643,17 @@ onMounted(() => {
           <p v-else class="sheet__empty">Empty pockets.</p>
         </section>
 
+        <section v-if="adv.presentation.value" class="minimap ev-card">
+          <WorldMap
+            :world-id="storyId"
+            :map-asset-id="adv.mapAssetId.value"
+            :anchors="adv.presentation.value.manifest.anchors ?? []"
+            :places="adv.places.value"
+            :tokens="tokens"
+            :active-place-id="adv.hereId.value"
+            :focus-id="adv.me.value" />
+        </section>
+
         <section v-if="rumours.length || settled.length" class="rumours ev-card">
           <h3 v-if="rumours.length">Word around the vale</h3>
           <ul>
@@ -665,17 +676,6 @@ onMounted(() => {
             </ul>
           </template>
         </section>
-
-        <section v-if="adv.presentation.value" class="minimap ev-card">
-          <WorldMap
-            :world-id="storyId"
-            :map-asset-id="adv.mapAssetId.value"
-            :anchors="adv.presentation.value.manifest.anchors ?? []"
-            :places="adv.places.value"
-            :tokens="tokens"
-            :active-place-id="adv.hereId.value"
-            :focus-id="adv.me.value" />
-        </section>
       </aside>
     </div>
     <PaintSceneDialog
@@ -691,7 +691,7 @@ onMounted(() => {
 .adv {
   max-width: 1440px;
   margin: 0 auto;
-  padding: 14px 16px 24px;
+  padding: 14px 16px 10px;
 }
 .adv__bar {
   display: flex;
@@ -1282,6 +1282,18 @@ button.who:hover > span {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  /* as tall as the story beside it: the column scrolls on its own, so
+     the page never runs on past the story */
+  height: calc(100vh - 150px);
+  min-height: 560px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+  padding: 0 4px 2px 0;
+}
+.adv__side > * {
+  flex: none;
 }
 .sheet {
   padding: 16px 18px;
@@ -1491,6 +1503,12 @@ button.who:hover > span {
   }
   .adv__grid {
     grid-template-columns: 1fr;
+  }
+  .adv__side {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    padding: 0;
   }
   /* The story fills the screen with the composer always in reach. */
   .adv__stage {

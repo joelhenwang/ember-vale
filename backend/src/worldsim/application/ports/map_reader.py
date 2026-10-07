@@ -38,7 +38,10 @@ class MapReadingError(Exception):
 
 
 class MapReader(Protocol):
-    async def places(self, image: bytes, mime: str) -> Reading[ReadPlace]: ...
+    #: known: the world's own place names, so unlabelled drawings can be matched to them.
+    async def places(
+        self, image: bytes, mime: str, known: tuple[str, ...] = ()
+    ) -> Reading[ReadPlace]: ...
 
     #: The box around a character's face: (left, top, right, bottom) 0..1000.
     async def face(self, image: bytes, mime: str) -> Reading[tuple[int, int, int, int]]: ...

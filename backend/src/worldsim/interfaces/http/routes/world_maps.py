@@ -173,10 +173,13 @@ async def paint_map(body: api.MapPaintRequest, request: Request) -> api.MapImage
 
 
 @router.post("/library/maps/{asset_id}/places", response_model=api.MapPlacesView)
-async def read_places(asset_id: UUID, request: Request) -> api.MapPlacesView:
+async def read_places(
+    asset_id: UUID, request: Request, body: api.MapPlacesRequest | None = None
+) -> api.MapPlacesView:
     asset, data = await library_picture(request, asset_id)
+    known = tuple(name.strip()[:128] for name in (body.known if body else []) if name.strip())
     try:
-        reading = await map_reader(request).places(data, asset.mime)
+        reading = await map_reader(request).places(data, asset.mime, known)
     except MapReadingError as exc:
         raise DomainError(ErrorCode.PRECONDITION_FAILED, str(exc)) from exc
     return api.MapPlacesView(

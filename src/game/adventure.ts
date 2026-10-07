@@ -141,10 +141,74 @@ export interface PrologueInput {
   others: { name: string; place: string | null }[]
 }
 
+const LOOK_KEYS = [
+  'Age',
+  'Race',
+  'Sex',
+  'Hair',
+  'Eyes',
+  'Height',
+  'Build',
+  'Marks',
+  'Wears',
+  'Carries',
+  'Condition'
+] as const
+
+/**
+ * How a character looks, as prose. The studio keeps appearance as
+ * "Age: 17", "Hair: …" lines (the narrator reads them as they are); a
+ * reader gets sentences: who, then hair, eyes and build, then what they
+ * wear. Prose without those lines comes back unchanged; what they carry
+ * is left to the satchel.
+ */
+export function appearancePlain(text: string | null | undefined): string {
+  const raw = (text ?? '').trim()
+  if (!raw) return ''
+  const found: Partial<Record<(typeof LOOK_KEYS)[number], string>> = {}
+  const rest: string[] = []
+  let current: (typeof LOOK_KEYS)[number] | null = null
+  for (const line of raw.split('\n')) {
+    const key = LOOK_KEYS.find((k) => line.startsWith(`${k}:`))
+    if (key) {
+      current = key
+      found[key] = line.slice(key.length + 1).trim()
+    } else if (current) {
+      found[current] = `${found[current]} ${line.trim()}`.trim()
+    } else if (line.trim()) {
+      rest.push(line.trim())
+    }
+  }
+  if (!Object.keys(found).length) return raw
+  const soft = (t: string) => t.replace(/^[A-Z](?=[a-z ])/, (c) => c.toLowerCase())
+  const end = (t: string) => (/[.!?…]$/.test(t) ? t : `${t}.`)
+  const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
+  const age = found.Age ?? ''
+  const who = [
+    age ? (/^\d+$/.test(age) ? `${age} years old` : soft(age)) : '',
+    found.Race ?? '',
+    found.Sex ? found.Sex.toLowerCase() : '',
+    found.Height && found.Height.toLowerCase() !== 'average' ? found.Height.toLowerCase() : ''
+  ].filter(Boolean)
+  const looks = [
+    found.Hair && `${soft(found.Hair)}${/hair/i.test(found.Hair) ? '' : ' hair'}`,
+    found.Eyes && `${soft(found.Eyes)}${/eye/i.test(found.Eyes) ? '' : ' eyes'}`,
+    found.Build && soft(found.Build.replace(/[.]$/, '')),
+    found.Marks && soft(found.Marks.replace(/[.]$/, ''))
+  ].filter(Boolean) as string[]
+  const out = [...rest]
+  if (who.length) out.push(end(cap(who.join(', '))))
+  if (looks.length) out.push(end(cap(looks.join('; '))))
+  if (found.Wears) out.push(end(`Wearing ${soft(found.Wears.replace(/[.]$/, ''))}`))
+  if (found.Condition) out.push(end(cap(found.Condition.replace(/[.]$/, ''))))
+  return out.join(' ')
+}
+
 /** Who you are, where you stand, and who else is out there: the hook before turn one. */
 export function prologue({ name, place, appearance, others }: PrologueInput): string[] {
   const lines = [`You are ${name}${place ? `, at the ${place}` : ''}.`]
-  if (appearance?.trim()) lines.push(appearance.trim())
+  const looks = appearancePlain(appearance)
+  if (looks) lines.push(looks)
   const near = others.filter((o) => o.place && o.place === place).map((o) => o.name)
   const far = others.filter((o) => o.place && o.place !== place)
   if (near.length) lines.push(`${listNames(near)} ${near.length > 1 ? 'are' : 'is'} here with you.`)

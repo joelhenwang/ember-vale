@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { BeatView, ChronicleEntry, SuggestionView } from '../../content/clients/worldsim'
 import {
+  appearancePlain,
   NIL_SNAPSHOT,
   buildLog,
   cardDrives,
@@ -231,6 +232,34 @@ describe('reading aids', () => {
       'Tam is here with you.',
       'Ash is at the Market.'
     ])
+  })
+})
+
+describe('appearance as prose', () => {
+  it('turns the studio lines into sentences and leaves prose alone', () => {
+    const lines = [
+      'Age: 17',
+      'Race: Human',
+      'Sex: Female',
+      'Hair: Dark brown hair in a braid',
+      'Eyes: Sea-gray',
+      'Height: average',
+      'Build: Lean and wiry.',
+      'Marks: A pale burn on her left palm',
+      'Wears: An oilskin coat and sturdy boots',
+      'Carries: A brass bell',
+      'Condition: Tired from a long watch'
+    ].join('\n')
+    expect(appearancePlain(lines)).toBe(
+      '17 years old, Human, female. Dark brown hair in a braid; sea-gray eyes; lean and wiry; a pale burn on her left palm. Wearing an oilskin coat and sturdy boots. Tired from a long watch.'
+    )
+    expect(appearancePlain('Quick eyes and a traveler’s coat.')).toBe(
+      'Quick eyes and a traveler’s coat.'
+    )
+    expect(appearancePlain(['Steady stance.', 'Hair: Black'].join('\n'))).toBe(
+      'Steady stance. Black hair.'
+    )
+    expect(appearancePlain(null)).toBe('')
   })
 })
 

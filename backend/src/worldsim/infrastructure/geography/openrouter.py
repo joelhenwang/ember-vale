@@ -87,6 +87,23 @@ height (y); [0, 0] is the top-left corner.
 Answer with JSON only: {"face": [left, top, right, bottom]}, or {"face": null} when no face
 is visible."""
 
+KNOWN_PART = """
+
+This world already has these places: {names}.
+The map may show them without labels. When a drawn place fits one of them (its kind and
+what the name suggests), use that exact name for it, each name at most once; give any other
+place its own label or a short description as above."""
+
+
+def places_prompt(known: tuple[str, ...] = ()) -> str:
+    """The places question, told the world's own place names when there are any."""
+    names = [n.strip() for n in known if n.strip()][:40]
+    if not names:
+        return PLACES_PROMPT
+    head, _, answer = PLACES_PROMPT.rpartition("\n\nAnswer with JSON only")
+    return head + KNOWN_PART.format(names=", ".join(names)) + "\n\nAnswer with JSON only" + answer
+
+
 #: Larger pictures cost more and read no better.
 MAX_SIDE = 2048
 
@@ -262,9 +279,11 @@ class OpenRouterMapReader:
             raise MapReadingError(f"the map reader gave up without answering ({reason})")
         return text, seconds, cost
 
-    async def places(self, image: bytes, mime: str) -> Reading[ReadPlace]:
+    async def places(
+        self, image: bytes, mime: str, known: tuple[str, ...] = ()
+    ) -> Reading[ReadPlace]:
         del mime
-        text, seconds, cost = await self._ask(self._places_model, image, PLACES_PROMPT)
+        text, seconds, cost = await self._ask(self._places_model, image, places_prompt(known))
         return Reading(tuple(parse_places(text)), self._places_model, seconds, cost)
 
     async def face(self, image: bytes, mime: str) -> Reading[tuple[int, int, int, int]]:

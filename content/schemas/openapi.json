@@ -3698,6 +3698,22 @@
         "title": "MapPlaceView",
         "type": "object"
       },
+      "MapPlacesRequest": {
+        "additionalProperties": false,
+        "description": "The world's own place names, to match unlabelled drawings to.",
+        "properties": {
+          "known": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 60,
+            "title": "Known",
+            "type": "array"
+          }
+        },
+        "title": "MapPlacesRequest",
+        "type": "object"
+      },
       "MapPlacesView": {
         "additionalProperties": false,
         "properties": {
@@ -8791,6 +8807,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/MapPlacesRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
