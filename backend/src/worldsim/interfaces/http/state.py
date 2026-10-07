@@ -19,6 +19,7 @@ from worldsim.application.orchestration.stage1 import Stage1Orchestrator
 from worldsim.application.ports.map_reader import MapReader
 from worldsim.application.ports.model_gateway import ModelGateway
 from worldsim.application.ports.traces import TraceExporter
+from worldsim.application.ports.writer import Writer
 from worldsim.application.settings.resolution import PinnedRuntime
 from worldsim.application.tasks.service import TaskService
 from worldsim.application.tracing.service import TraceService
@@ -39,6 +40,7 @@ from worldsim.infrastructure.repositories.unit_of_work import (
 )
 from worldsim.infrastructure.settings import Settings
 from worldsim.infrastructure.tracing.langsmith import select_exporter
+from worldsim.infrastructure.writing.openrouter import OpenRouterWriter
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent.parent
 SEED_DIR = _REPO_ROOT / "content" / "seeds" / "stage0"
@@ -75,6 +77,7 @@ class AppState:
     #: The image service client (Krea), when images are switched on.
     _images: KreaImageGenerator | None = None
     _map_reader: MapReader | None = None
+    _writer: Writer | None = None
 
     def uow_factory(self) -> Callable[[], SqlAlchemyUnitOfWork]:
         engine = self.engine
@@ -156,6 +159,22 @@ class AppState:
                     timeout_s=maps.timeout_s,
                 )
         return self._map_reader
+
+    def writer(self) -> Writer | None:
+        """The library writing helper, when an OpenRouter key is configured."""
+        if self._writer is None:
+            key = self.settings.provider.openrouter_api_key
+            if key is not None and key.get_secret_value().strip():
+                writing = self.settings.writing
+                self._writer = OpenRouterWriter(
+                    key.get_secret_value().strip(),
+                    self.settings.provider.openrouter_base_url,
+                    writing.model,
+                    reasoning=writing.reasoning,
+                    max_tokens=writing.max_tokens,
+                    timeout_s=writing.timeout_s,
+                )
+        return self._writer
 
 
 MIGRATIONS_DIR = Path("backend/migrations")

@@ -4650,6 +4650,23 @@
         "title": "PlaceSpotView",
         "type": "object"
       },
+      "PortraitPaintRequest": {
+        "additionalProperties": false,
+        "description": "Paint a character from words: how they look.",
+        "properties": {
+          "prompt": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Prompt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "title": "PortraitPaintRequest",
+        "type": "object"
+      },
       "PreferencesPatchRequest": {
         "additionalProperties": false,
         "properties": {
@@ -7668,6 +7685,249 @@
         ],
         "title": "WorldResponse",
         "type": "object"
+      },
+      "WritingEnhanceRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "character",
+              "world"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 128,
+            "title": "Name",
+            "type": "string"
+          },
+          "overview": {
+            "maxLength": 6000,
+            "minLength": 1,
+            "title": "Overview",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "overview"
+        ],
+        "title": "WritingEnhanceRequest",
+        "type": "object"
+      },
+      "WritingEnhanceView": {
+        "additionalProperties": false,
+        "properties": {
+          "cost_usd": {
+            "title": "Cost Usd",
+            "type": "number"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "seconds": {
+            "title": "Seconds",
+            "type": "number"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "model",
+          "seconds",
+          "cost_usd"
+        ],
+        "title": "WritingEnhanceView",
+        "type": "object"
+      },
+      "WritingField": {
+        "additionalProperties": false,
+        "description": "One studio field: filled ones are context, empty ones get written.",
+        "properties": {
+          "hint": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Hint",
+            "type": "string"
+          },
+          "key": {
+            "maxLength": 48,
+            "minLength": 1,
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "max_length": {
+            "default": 600,
+            "maximum": 4000.0,
+            "minimum": 20.0,
+            "title": "Max Length",
+            "type": "integer"
+          },
+          "value": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "WritingField",
+        "type": "object"
+      },
+      "WritingFillRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "add_places": {
+            "default": 0,
+            "maximum": 12.0,
+            "minimum": 0.0,
+            "title": "Add Places",
+            "type": "integer"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/WritingField"
+            },
+            "maxItems": 40,
+            "title": "Fields",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "character",
+              "world"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 128,
+            "title": "Name",
+            "type": "string"
+          },
+          "overview": {
+            "default": "",
+            "maxLength": 6000,
+            "title": "Overview",
+            "type": "string"
+          },
+          "places": {
+            "items": {
+              "$ref": "#/components/schemas/WritingPlace"
+            },
+            "maxItems": 40,
+            "title": "Places",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "WritingFillRequest",
+        "type": "object"
+      },
+      "WritingFillView": {
+        "additionalProperties": false,
+        "description": "Text for the empty fields only (by key), and places described or added.",
+        "properties": {
+          "cost_usd": {
+            "title": "Cost Usd",
+            "type": "number"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "places": {
+            "items": {
+              "$ref": "#/components/schemas/WritingFilledPlace"
+            },
+            "title": "Places",
+            "type": "array"
+          },
+          "seconds": {
+            "title": "Seconds",
+            "type": "number"
+          },
+          "values": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Values",
+            "type": "object"
+          }
+        },
+        "required": [
+          "values",
+          "places",
+          "model",
+          "seconds",
+          "cost_usd"
+        ],
+        "title": "WritingFillView",
+        "type": "object"
+      },
+      "WritingFilledPlace": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "new": {
+            "title": "New",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "new"
+        ],
+        "title": "WritingFilledPlace",
+        "type": "object"
+      },
+      "WritingPlace": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Description",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "WritingPlace",
+        "type": "object"
       }
     }
   },
@@ -8684,6 +8944,48 @@
         ]
       }
     },
+    "/api/v1/library/portraits/paint": {
+      "post": {
+        "description": "Paint a character from how they look, in the house style; framed afterwards.",
+        "operationId": "paint_portrait_api_v1_library_portraits_paint_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortraitPaintRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapImageView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Paint Portrait",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/api/v1/library/portraits/{asset_id}/face": {
       "post": {
         "description": "The box around the character's face, as fractions of the picture.",
@@ -9684,6 +9986,88 @@
           }
         },
         "summary": "Unarchive Preset",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/v1/library/writing/enhance": {
+      "post": {
+        "operationId": "enhance_api_v1_library_writing_enhance_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WritingEnhanceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WritingEnhanceView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Enhance",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/v1/library/writing/fill": {
+      "post": {
+        "operationId": "fill_api_v1_library_writing_fill_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WritingFillRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WritingFillView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Fill",
         "tags": [
           "library"
         ]

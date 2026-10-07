@@ -12,6 +12,7 @@ import type { CharacterDef, FramedCover, FramedPortrait, ImageSlot, WorldDef } f
 import type { Frame } from '../game/framing'
 import { getPreset, libraryAssetUrl, listPresets } from '../api/worldsim'
 import type { PresetDetail } from '../../content/clients/worldsim'
+import { characterBlurb } from '../game/studioFields'
 
 export interface PresetCharacter {
   id: string
@@ -196,7 +197,7 @@ export function usePresets() {
             builtin: d.builtin,
             name,
             role: roleFromTags(tags),
-            blurb: (rev['appearance'] as string | undefined) ?? '',
+            blurb: characterBlurb(rev),
             tags,
             startKey: (rev['starting_location_key'] as string | undefined) ?? null,
             playerReady: tags.includes('Player-ready'),

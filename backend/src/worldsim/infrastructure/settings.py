@@ -244,6 +244,18 @@ class MapSettings(BaseModel):
     timeout_s: float = Field(default=400.0, gt=0, le=900)
 
 
+class WritingSettings(BaseModel):
+    """Writing help in the library studios (enhance an overview, fill empty fields).
+
+    A small text model on OpenRouter, with the provider's OpenRouter key.
+    """
+
+    model: str = "openai/gpt-6-luna"
+    reasoning: Literal["minimal", "low", "medium", "high"] | None = "low"
+    max_tokens: int = Field(default=12000, ge=1000, le=64000)
+    timeout_s: float = Field(default=120.0, gt=0, le=600)
+
+
 class Settings(BaseSettings):
     """Root settings; validated once at startup."""
 
@@ -260,6 +272,7 @@ class Settings(BaseSettings):
     autoplay: AutoplaySettings = AutoplaySettings()
     images: ImageSettings = ImageSettings()
     maps: MapSettings = MapSettings()
+    writing: WritingSettings = WritingSettings()
     local_models: LocalModelSettings = LocalModelSettings()
 
     @model_validator(mode="after")

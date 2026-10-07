@@ -1828,6 +1828,82 @@ class MapRoadsView(BaseModel):
     cost_usd: float
 
 
+class PortraitPaintRequest(BaseModel):
+    """Paint a character from words: how they look."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    prompt: str = Field(min_length=1, max_length=2000)
+
+
+class WritingField(BaseModel):
+    """One studio field: filled ones are context, empty ones get written."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    key: str = Field(min_length=1, max_length=48)
+    label: str = Field(min_length=1, max_length=80)
+    hint: str = Field(default="", max_length=300)
+    value: str = Field(default="", max_length=4000)
+    max_length: int = Field(default=600, ge=20, le=4000)
+
+
+class WritingPlace(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    name: str = Field(min_length=1, max_length=64)
+    description: str = Field(default="", max_length=2000)
+
+
+class WritingEnhanceRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    kind: Literal["character", "world"]
+    overview: str = Field(min_length=1, max_length=6000)
+    name: str = Field(default="", max_length=128)
+
+
+class WritingEnhanceView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    text: str
+    model: str
+    seconds: float
+    cost_usd: float
+
+
+class WritingFillRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    kind: Literal["character", "world"]
+    overview: str = Field(default="", max_length=6000)
+    name: str = Field(default="", max_length=128)
+    fields: list[WritingField] = Field(default_factory=list, max_length=40)
+    places: list[WritingPlace] = Field(default_factory=list, max_length=40)
+    #: How many new places to add (worlds).
+    add_places: int = Field(default=0, ge=0, le=12)
+
+
+class WritingFilledPlace(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    name: str
+    description: str
+    new: bool
+
+
+class WritingFillView(BaseModel):
+    """Text for the empty fields only (by key), and places described or added."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    values: dict[str, str]
+    places: list[WritingFilledPlace]
+    model: str
+    seconds: float
+    cost_usd: float
+
+
 class FaceView(BaseModel):
     """Where the map reader sees a face: [x, y, w, h] fractions, or none."""
 

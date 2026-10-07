@@ -13,11 +13,14 @@ from uuid import UUID
 
 from fastapi import APIRouter, Request
 
+from worldsim.application.images import compose_prompt, image_request, load_style_pack
+from worldsim.application.ports.images import ImageGenerationError
 from worldsim.application.ports.map_reader import MapReadingError
-from worldsim.domain.assets import AssetKind
+from worldsim.domain.assets import DEFAULT_STYLE_PACK, AssetKind
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.geography import MAP_SPAN
 from worldsim.interfaces.http import schemas as api
+from worldsim.interfaces.http.routes.settings import OPERATOR
 from worldsim.interfaces.http.routes.world_maps import (
     keep_picture,
     library_picture,
@@ -41,6 +44,36 @@ async def upload_portrait(body: api.MapUploadRequest, request: Request) -> api.M
         kind=AssetKind.PORTRAIT,
         folder="portraits",
         style="imported-portrait",
+        max_side=PORTRAIT_MAX_SIDE,
+    )
+
+
+@router.post("/library/portraits/paint", response_model=api.MapImageView)
+async def paint_portrait(body: api.PortraitPaintRequest, request: Request) -> api.MapImageView:
+    """Paint a character from how they look, in the house style; framed afterwards."""
+    state = request.app.state.app_state
+    generator = state.images()
+    if generator is None:
+        raise DomainError(
+            ErrorCode.PRECONDITION_FAILED,
+            "no image service: set WORLDSIM_IMAGES__PROVIDER=krea and KREA_BASE_URL",
+        )
+    pack = load_style_pack(state.seed_dir.parent.parent / "visual-styles", DEFAULT_STYLE_PACK)
+    prompt, ratio = compose_prompt(pack, AssetKind.PORTRAIT, body.prompt.strip())
+    async with state.uow_factory()() as uow:
+        prefs = (await uow.settings.get_preferences(OPERATOR)).images
+    try:
+        made = await generator.generate(
+            image_request(prompt, ratio, AssetKind.PORTRAIT, prefs, pixel=None)
+        )
+    except ImageGenerationError as exc:
+        raise DomainError(ErrorCode.PRECONDITION_FAILED, f"image service: {exc}") from exc
+    return await keep_picture(
+        request,
+        made.data,
+        kind=AssetKind.PORTRAIT,
+        folder="portraits",
+        style=DEFAULT_STYLE_PACK,
         max_side=PORTRAIT_MAX_SIDE,
     )
 

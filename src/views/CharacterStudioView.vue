@@ -1,17 +1,16 @@
 <!--
-  CharacterStudioView — the "Character studio" screen (mockup: Give {name} a
-  voice). Reached from two origins, told apart only by route meta.from:
-    · /library/character/:id     (editing a catalogued character)
-    · /new-story/character/new   (creating one from the wizard)
-
-  Layout contract:
-    · This file owns the form column (identity/personality cards) and the
-      save/continue footer. Everything shared with WorldStudioView — crumbs,
-      card chrome, tabs, .cta/.ghost, stepper spacing — is styled once in
-      src/styles/studio.css. Do not redeclare those classes in a scoped block.
-    · The right-hand preview column lives in CharacterPreviewPanel.vue and
-      pulls its own state from the draft store; the two halves never pass
-      props, they just watch the same reactive draft.
+  CharacterStudioView — make or change a character, step by step:
+    1 Overview      their name and the player's own overview; the writing
+                    helper can improve it and fill every empty field from it
+    2 Appearance    age, race, sex, hair, eyes, height, body, extra; a picture
+                    painted from those words or imported
+    3 Background & personality
+    4 Voice         tone, speaking style, lines they would say
+    5 Review        what they wear and carry and how they are, then create
+                    (new) or publish (existing)
+  Reached from /library/character/:id and /new-story/character/:id, told
+  apart by route meta.from (where to return). Shared studio chrome lives in
+  src/styles/studio.css; the right column is CharacterPreviewPanel.
 
   Drafts live in src/game/studio.ts keyed by id and persist across routes, so
   "Save draft"/dirty state survive navigating to the Library and back.
@@ -28,26 +27,29 @@ import {
   useEditorDraft
 } from '../composables/useEditorDraft'
 import { loadCreateRequest, usePresetCreation } from '../composables/usePresetCreation'
-import {
-  ensureCharDraft,
-  isCharDirty,
-  saveCharDraft,
-  STRANGER_STANCES,
-  suggestCharacter
-} from '../game/studio'
+import { ensureCharDraft, isCharDirty, saveCharDraft, STRANGER_STANCES } from '../game/studio'
 import { packCharacter, unpackCharacter } from '../game/studioFields'
+import {
+  CHARACTER_STEPS,
+  emptyCount,
+  fieldsOnStep,
+  portraitPrompt,
+  writingContext,
+  writingFields,
+  type FieldSpec,
+  type WritableKey
+} from '../game/characterForm'
+import { fillFields } from '../api/worldsim'
 import CharacterPreviewPanel from '../components/studio/CharacterPreviewPanel.vue'
-import PortraitCard from '../components/studio/PortraitCard.vue'
+import PortraitPicker from '../components/studio/PortraitPicker.vue'
+import OverviewCard from '../components/studio/OverviewCard.vue'
 import InlineStepper from '../components/studio/InlineStepper.vue'
 import ChipEditor from '../components/studio/ChipEditor.vue'
-import CollapseBox from '../components/studio/CollapseBox.vue'
-import SuggestButton from '../components/studio/SuggestButton.vue'
 import StudioSelect from '../components/studio/StudioSelect.vue'
 import SaveBar from '../components/ui/SaveBar.vue'
+import MenuButton from '../components/MenuButton.vue'
 import IconSparkle from '../components/icons/IconSparkle.vue'
-import IconBook from '../components/icons/IconBook.vue'
 import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
-import IconArrowRight from '../components/icons/IconArrowRight.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -66,6 +68,25 @@ onMounted(() => {
     const kept = loadLocalPreset('character', id.value)
     if (kept) {
       for (const key of [
+        'overview',
+        'age',
+        'race',
+        'sex',
+        'hair',
+        'eyes',
+        'height',
+        'body',
+        'marks',
+        'history',
+        'traits',
+        'habits',
+        'tone',
+        'wears',
+        'carries',
+        'condition',
+        'appearanceExtra',
+        'portraitAssetId',
+        'portraitFrames',
         'want',
         'avoid',
         'pressure',
@@ -113,16 +134,20 @@ function retryPresets(): void {
   void presets.load(presetAbort.signal)
 }
 
-/* The breadcrumb + return target depend on which flow opened the studio. */
+/* The return target depends on which flow opened the studio. */
 const fromLibrary = computed(() => route.meta.from === 'library')
-const originCrumb = computed(() => (fromLibrary.value ? 'Library' : 'New Story'))
 const originRoute = computed(() => (fromLibrary.value ? '/library?tab=characters' : '/new-story'))
 
 const draft = computed(() => ensureCharDraft(id.value))
 
-// DEMO: the 4-step stepper is cosmetic for now — production will gate
-// Continue on per-step validation and route each step (…/step/:n).
-const step = ref(2)
+/* Five steps, each its own part of the form; any step can be opened. */
+const step = ref(1)
+const stepInfo = computed(() => CHARACTER_STEPS[step.value - 1]!)
+const lastStep = CHARACTER_STEPS.length
+function goStep(n: number): void {
+  step.value = Math.min(lastStep, Math.max(1, n))
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 /* ————— save / dirty ————— */
 const dirty = computed(() => isCharDirty(id.value))
@@ -410,45 +435,79 @@ onBeforeUnmount(() => {
 })
 
 /* ————— advance ————— */
-const nextLabel = computed(() =>
-  step.value <= 2 ? 'Background' : step.value === 3 ? 'Review' : 'Finish'
-)
+const nextLabel = computed(() => CHARACTER_STEPS[step.value]?.title ?? '')
+const nameMissing = computed(() => isNew.value && !draft.value.presetName.trim())
 async function advance(): Promise<void> {
-  if (step.value < 4) {
-    step.value++
-    return
-  }
-  // Navigation waits for persistence: a failed save keeps the user here
-  // with their edits intact instead of leaving anyway.
-  if (await save()) router.push(originRoute.value)
+  if (step.value < lastStep) return goStep(step.value + 1)
+  if (isNew.value) await createCharacter()
+  else await publish()
 }
 
-/* ————— suggest ————— */
-function suggest(): void {
-  suggestCharacter(draft.value)
+/* ————— writing help: fill what is empty from the overview ————— */
+const filling = ref(false)
+const fillNote = ref<string | null>(null)
+/** Fields the helper wrote, marked until the player edits them. */
+const helped = ref(new Set<WritableKey>())
+const displayNameForm = computed(() =>
+  isNew.value ? draft.value.presetName.trim() : (record.value?.name ?? '')
+)
+
+async function fill(onStep?: number): Promise<void> {
+  if (filling.value) return
+  filling.value = true
+  fillNote.value = null
+  const only = onStep ? (f: FieldSpec) => f.step === onStep : undefined
+  try {
+    const made = await fillFields({
+      kind: 'character',
+      overview: draft.value.overview,
+      name: displayNameForm.value,
+      fields: [...writingFields(draft.value, only), ...writingContext(draft.value)],
+      places: [],
+      add_places: 0
+    })
+    let count = 0
+    for (const [key, value] of Object.entries(made.values)) {
+      const k = key as WritableKey
+      // Written while the player waited? Theirs wins.
+      if (k in draft.value && !draft.value[k].trim()) {
+        draft.value[k] = value
+        helped.value.add(k)
+        count++
+      }
+    }
+    fillNote.value = count
+      ? `Filled ${count} field${count === 1 ? '' : 's'} for $${Number(made.cost_usd).toFixed(4)} — they are marked; look them over and change anything.`
+      : 'Nothing new to fill.'
+  } catch (err) {
+    fillNote.value = err instanceof Error ? err.message : 'Could not fill the fields this time.'
+  } finally {
+    filling.value = false
+  }
 }
+
+function edited(key: WritableKey): void {
+  helped.value.delete(key)
+}
+
+const SEXES = ['Male', 'Female', 'Other']
+const HEIGHTS = ['Tall', 'Average', 'Short']
+const paintWords = computed(() => portraitPrompt(draft.value))
 </script>
 
 <template>
-  <main class="studio">
+  <main class="studio cstudio">
     <div class="studio__body">
       <!-- ————————————————— form column ————————————————— -->
       <div class="studio__left">
-        <nav class="crumbs" aria-label="Breadcrumb">
-          <router-link :to="originRoute">{{ originCrumb }}</router-link>
-          <span class="crumbs__sep">/</span>
-          <router-link :to="originRoute">Characters</router-link>
-          <span class="crumbs__sep">/</span>
-          <span class="crumbs__here">{{ isNew ? 'New character' : displayName }}</span>
-        </nav>
-
         <div class="studio__head">
           <h1 class="studio__title">
-            {{ isNew ? 'Give them a voice' : `Give ${displayName} a voice` }}
+            {{ isNew ? draft.presetName.trim() || 'New character' : displayName }}
           </h1>
-          <span class="draft-badge"><span class="draft-badge__dot"></span>Draft</span>
+          <span v-if="dirty" class="draft-badge"
+            ><span class="draft-badge__dot"></span>Unsaved</span
+          >
         </div>
-        <p class="studio__sub">Shape how they think, react, and speak.</p>
         <p v-if="recordLoading" class="studio__state" role="status">Reading the archive…</p>
         <p v-else-if="recordFailed" class="studio__state" role="alert">
           The archive did not answer ({{ presets.error.value }}) —
@@ -460,143 +519,206 @@ function suggest(): void {
 
         <InlineStepper
           class="studio__stepper"
-          :steps="[
-            'Identity & appearance',
-            'Personality & voice',
-            'Background & connections',
-            'Review'
-          ]"
+          :steps="CHARACTER_STEPS.map((s) => s.title)"
           :current="step"
-          @go="step = $event" />
+          @go="goStep" />
 
-        <PortraitCard
-          :name="isNew ? draft.presetName || 'The character' : displayName"
-          :asset-id="draft.portraitAssetId"
-          :frames="draft.portraitFrames"
-          @change="
-            (assetId, frames) => {
-              draft.portraitAssetId = assetId
-              draft.portraitFrames = frames
-            }
-          " />
+        <Transition name="cstep" mode="out-in">
+          <div :key="step" class="cstudio__step">
+            <p class="cstudio__sub">{{ stepInfo.sub }}</p>
 
-        <section class="card ev-card">
-          <header class="card__head">
-            <h2 class="card__title"><IconSparkle :size="15" /> What drives {{ displayName }}?</h2>
-            <SuggestButton @suggest="suggest" />
-          </header>
-          <div class="grid2">
-            <div>
-              <label class="ev-field-label" for="c-want">What do they want?</label>
-              <textarea
-                id="c-want"
-                v-model="draft.want"
-                class="ev-input"
-                placeholder="The want under the want…" />
-            </div>
-            <div>
-              <label class="ev-field-label" for="c-avoid">What do they avoid?</label>
-              <textarea
-                id="c-avoid"
-                v-model="draft.avoid"
-                class="ev-input"
-                placeholder="The thing they’ll never say out loud…" />
-            </div>
-            <div>
-              <label class="ev-field-label" for="c-pressure">Under pressure</label>
-              <textarea
-                id="c-pressure"
-                v-model="draft.pressure"
-                class="ev-input"
-                placeholder="How the mask slips…" />
-            </div>
-            <div>
-              <label class="ev-field-label" for="c-contradiction">A defining contradiction</label>
-              <textarea
-                id="c-contradiction"
-                v-model="draft.contradiction"
-                class="ev-input"
-                placeholder="Two truths that don’t fit…" />
-            </div>
-          </div>
-        </section>
+            <!-- 1 · overview -->
+            <template v-if="step === 1">
+              <section class="card ev-card">
+                <div class="grid2">
+                  <div>
+                    <label class="ev-field-label" for="c-name">Name</label>
+                    <input
+                      v-if="isNew"
+                      id="c-name"
+                      v-model="draft.presetName"
+                      class="ev-input"
+                      maxlength="64"
+                      placeholder="What are they called?" />
+                    <p v-else id="c-name" class="cstudio__fixed">{{ displayName }}</p>
+                  </div>
+                  <div>
+                    <label class="ev-field-label" for="c-pronouns">Pronouns</label>
+                    <input
+                      id="c-pronouns"
+                      v-model="draft.pronouns"
+                      class="ev-input"
+                      maxlength="40"
+                      placeholder="she/her, he/him, they/them… (optional)" />
+                  </div>
+                </div>
+              </section>
+              <OverviewCard
+                v-model="draft.overview"
+                kind="character"
+                :name="displayNameForm"
+                placeholder="Who are they? e.g. A young tinker from the hill villages, cheerful and nosy, who ran away after breaking her master's best clock. Good with her hands, bad with secrets."
+                :empty="emptyCount(draft)"
+                :filling="filling"
+                :fill-note="fillNote"
+                @fill="fill()" />
+            </template>
 
-        <section class="card ev-card">
-          <header class="card__head">
-            <h2 class="card__title"><IconBook :size="19" /> How they speak</h2>
-          </header>
-          <div class="grid2">
-            <div>
-              <label class="ev-field-label" for="c-pronouns">Pronouns</label>
-              <input
-                id="c-pronouns"
-                v-model="draft.pronouns"
-                class="ev-input"
-                maxlength="40"
-                placeholder="she/her, he/him, they/them… (leave empty if unstated)" />
-            </div>
-            <div>
-              <span class="ev-field-label">Speaking style</span>
-              <ChipEditor v-model="draft.styleTags" />
-            </div>
-            <div>
-              <label class="ev-field-label" for="c-strangers">With strangers</label>
-              <StudioSelect
-                id="c-strangers"
-                v-model="draft.withStrangers"
-                :options="STRANGER_STANCES" />
-            </div>
-            <div>
-              <label class="ev-field-label" for="c-care">When they care</label>
-              <input
-                id="c-care"
-                v-model="draft.whenTheyCare"
-                class="ev-input"
-                placeholder="Care looks like…" />
-            </div>
-            <div>
-              <label class="ev-field-label" for="c-line">Example line</label>
-              <input id="c-line" v-model="draft.exampleLine" class="ev-input" placeholder="“…”" />
-            </div>
-          </div>
-          <CollapseBox title="Boundaries & deeper motivations" class="card__more">
-            <div class="grid2">
-              <div>
-                <label class="ev-field-label" for="c-bounds">Will not cross</label>
-                <textarea
-                  id="c-bounds"
-                  v-model="draft.boundaries"
-                  class="ev-input"
-                  placeholder="Even for someone they love…" />
+            <!-- 2 · appearance -->
+            <section v-else-if="step === 2" class="card ev-card">
+              <div class="cstudio__grid">
+                <div v-for="f in fieldsOnStep(2)" :key="f.key" :class="`cf cf--${f.key}`">
+                  <label class="ev-field-label" :for="`c-${f.key}`">{{ f.label }}</label>
+                  <div
+                    v-if="f.key === 'sex' || f.key === 'height'"
+                    class="seg"
+                    :class="{ 'seg--helped': helped.has(f.key) }"
+                    role="group"
+                    :aria-label="f.label">
+                    <button
+                      v-for="opt in f.key === 'sex' ? SEXES : HEIGHTS"
+                      :key="opt"
+                      type="button"
+                      class="seg__opt"
+                      :class="{
+                        'seg__opt--on': draft[f.key].toLowerCase() === opt.toLowerCase()
+                      }"
+                      :aria-pressed="draft[f.key].toLowerCase() === opt.toLowerCase()"
+                      @click="
+                        draft[f.key] = draft[f.key].toLowerCase() === opt.toLowerCase() ? '' : opt
+                        edited(f.key)
+                      ">
+                      {{ opt }}
+                    </button>
+                  </div>
+                  <textarea
+                    v-else-if="f.max > 150"
+                    :id="`c-${f.key}`"
+                    v-model="draft[f.key]"
+                    class="ev-input"
+                    :class="{ 'is-helped': helped.has(f.key) }"
+                    :maxlength="f.max"
+                    :placeholder="f.hint"
+                    rows="2"
+                    @input="edited(f.key)" />
+                  <input
+                    v-else
+                    :id="`c-${f.key}`"
+                    v-model="draft[f.key]"
+                    class="ev-input"
+                    :class="{ 'is-helped': helped.has(f.key) }"
+                    :maxlength="f.max"
+                    :placeholder="f.hint"
+                    @input="edited(f.key)" />
+                </div>
+                <div v-if="draft.appearanceExtra" class="cf cf--wide">
+                  <label class="ev-field-label" for="c-appx">Earlier description</label>
+                  <textarea
+                    id="c-appx"
+                    v-model="draft.appearanceExtra"
+                    class="ev-input"
+                    rows="2"
+                    maxlength="1500" />
+                </div>
               </div>
-              <div>
-                <label class="ev-field-label" for="c-fear">Secret fear</label>
-                <textarea
-                  id="c-fear"
-                  v-model="draft.secretFear"
-                  class="ev-input"
-                  placeholder="The one that gets quieter, not louder…" />
-              </div>
-            </div>
-          </CollapseBox>
-        </section>
+              <PortraitPicker
+                :name="displayNameForm || 'The character'"
+                :asset-id="draft.portraitAssetId"
+                :frames="draft.portraitFrames"
+                :paint-prompt="paintWords"
+                @change="
+                  (assetId, frames) => {
+                    draft.portraitAssetId = assetId
+                    draft.portraitFrames = frames
+                  }
+                " />
+            </section>
 
-        <section class="card ev-card" aria-label="Publication">
-          <header class="card__head">
-            <h2 class="card__title">Publication</h2>
-          </header>
-          <div v-if="isNew">
-            <p class="studio__state" role="status">
-              New characters live on this device until first publication.
+            <!-- 3 · background & personality, 4 · voice, 5 · review -->
+            <section v-else class="card ev-card">
+              <header v-if="step === 5" class="card__head">
+                <h2 class="card__title">What they have, and how they are</h2>
+              </header>
+              <div class="cstudio__grid">
+                <div
+                  v-for="f in fieldsOnStep(step)"
+                  :key="f.key"
+                  class="cf"
+                  :class="{ 'cf--wide': f.max > 500 }">
+                  <label class="ev-field-label" :for="`c-${f.key}`">{{ f.label }}</label>
+                  <textarea
+                    :id="`c-${f.key}`"
+                    v-model="draft[f.key]"
+                    class="ev-input"
+                    :class="{ 'is-helped': helped.has(f.key) }"
+                    :maxlength="f.max"
+                    :placeholder="f.hint"
+                    :rows="f.max > 500 ? 4 : 2"
+                    @input="edited(f.key)" />
+                </div>
+                <template v-if="step === 4">
+                  <div class="cf">
+                    <span class="ev-field-label">Speaking style</span>
+                    <ChipEditor v-model="draft.styleTags" />
+                  </div>
+                  <div class="cf">
+                    <label class="ev-field-label" for="c-strangers">With strangers</label>
+                    <StudioSelect
+                      id="c-strangers"
+                      v-model="draft.withStrangers"
+                      :options="STRANGER_STANCES" />
+                  </div>
+                </template>
+                <template v-if="step === 3 && (draft.backgroundExtra || draft.personalityExtra)">
+                  <div v-if="draft.backgroundExtra" class="cf cf--wide">
+                    <label class="ev-field-label" for="c-bgx">Earlier background notes</label>
+                    <textarea
+                      id="c-bgx"
+                      v-model="draft.backgroundExtra"
+                      class="ev-input"
+                      rows="2"
+                      maxlength="3000" />
+                  </div>
+                  <div v-if="draft.personalityExtra" class="cf cf--wide">
+                    <label class="ev-field-label" for="c-psx">Earlier personality notes</label>
+                    <textarea
+                      id="c-psx"
+                      v-model="draft.personalityExtra"
+                      class="ev-input"
+                      rows="2"
+                      maxlength="1500" />
+                  </div>
+                </template>
+              </div>
+              <div class="cstudio__fill">
+                <button
+                  type="button"
+                  class="cstudio__fillbtn"
+                  :disabled="filling || emptyCount(draft, step) === 0"
+                  @click="fill(step)">
+                  <IconSparkle :size="14" />
+                  {{
+                    filling
+                      ? 'Writing…'
+                      : emptyCount(draft, step) === 0
+                        ? 'All filled on this step'
+                        : step === 5
+                          ? 'Suggest from everything above'
+                          : `Fill the ${emptyCount(draft, step)} empty here from the overview`
+                  }}
+                </button>
+                <span v-if="fillNote" class="cstudio__fillnote" role="status">{{ fillNote }}</span>
+              </div>
+            </section>
+          </div>
+        </Transition>
+
+        <!-- the last step makes it real: create, or publish the changes -->
+        <section v-if="step === lastStep" class="card ev-card cstudio__finish">
+          <template v-if="isNew">
+            <p v-if="nameMissing" class="studio__state" role="status">
+              Give them a name on the Overview step to create them.
             </p>
-            <div>
-              <span class="ev-field-label">Name</span>
-              <input
-                v-model="draft.presetName"
-                class="ev-input"
-                maxlength="64"
-                placeholder="Name this character" />
-            </div>
             <p v-if="creation.status.value === 'failed'" class="studio__state" role="alert">
               {{ creation.error.value }}
             </p>
@@ -604,84 +726,50 @@ function suggest(): void {
               v-if="creation.pending.value && creationFormDiffers"
               class="studio__state"
               role="status">
-              An earlier creation is still unresolved — retrying replays the original request under
-              its original key. Newer edits stay in the form and are never sent implicitly.
+              An earlier creation is still unresolved — creating again replays the original request,
+              so it never makes a duplicate. Newer edits stay in the form.
             </p>
             <p
               v-if="creation.pending.value && !creation.requestPersisted.value"
               class="studio__state"
               role="alert">
-              The creation request is in memory only (storage unavailable) — retry works in this
-              tab, but a reload before the receipt lands may create a duplicate. Keep this tab open.
+              The creation request is in memory only (storage unavailable) — keep this tab open
+              until it lands.
             </p>
             <div v-if="creation.recoveredId.value" class="preview__actions">
-              <p v-if="!creation.noticeDismissed.value" class="studio__state" role="status">
-                Recovered preset {{ creation.recoveredId.value }} from the original request.
+              <p class="studio__state" role="status">
+                This draft already created a character.
                 <template v-if="creation.supersededEdits.value">
-                  Newer edits are still in the form — open the preset to apply them there, or create
-                  a separate preset explicitly.
+                  Newer edits are still in the form — open it to apply them there, or create a
+                  separate one.
                 </template>
               </p>
-              <p v-else class="studio__state" role="status">
-                This draft already created preset {{ creation.recoveredId.value }}.
-              </p>
               <button type="button" class="cta cta--sm" @click="openRecoveredCharacter">
-                Open preset
+                Open the character
               </button>
               <button type="button" class="ghost ghost--sm" @click="createSeparateCharacter">
-                Create a separate preset
+                Create a separate one
               </button>
               <button
                 v-if="creation.supersededEdits.value"
                 type="button"
                 class="ghost ghost--sm"
-                title="Forget the set-aside edits. The created preset stays associated with this draft."
                 @click="creation.discardNewerEdits()">
                 Discard newer edits
               </button>
-              <button
-                v-if="!creation.noticeDismissed.value"
-                type="button"
-                class="ghost ghost--sm"
-                title="Hide this notice. The created preset and any set-aside edits are kept."
-                @click="creation.dismissRecovery()">
-                Dismiss
-              </button>
             </div>
-            <div v-else class="preview__actions">
-              <button
-                type="button"
-                class="cta cta--sm"
-                :disabled="creation.status.value === 'creating'"
-                @click="createCharacter">
-                {{
-                  creation.status.value === 'creating'
-                    ? 'Creating…'
-                    : creation.pending.value
-                      ? 'Retry creation'
-                      : 'Create preset'
-                }}
-              </button>
-              <button
-                v-if="creation.pending.value && creationFormDiffers"
-                type="button"
-                class="ghost ghost--sm"
-                title="The unresolved request may already have created a preset; use only if you intend a second one."
-                @click="createSeparateCharacter">
-                Create a separate preset instead
-              </button>
-            </div>
-            <p v-if="deviceSavedFlash" class="studio__state" role="status">Saved on this device.</p>
-            <p v-if="deviceStorageFailed" class="studio__state" role="alert">
-              This device would not keep the draft (storage unavailable) — keep this tab open until
-              you can save elsewhere.
+            <p v-else class="cstudio__finishnote">
+              Creating puts them in your library, ready for any story. Until then they are kept on
+              this device whenever you save the draft.
             </p>
-          </div>
-          <div v-else>
+            <p v-if="deviceStorageFailed" class="studio__state" role="alert">
+              This device would not keep the draft (storage unavailable) — keep this tab open.
+            </p>
+          </template>
+          <template v-else>
             <p v-if="pubStatus" class="studio__state" role="status">{{ pubStatus }}</p>
             <p v-if="unsavedAfterPublish" class="studio__state" role="status">
-              Newer edits are still unsaved — save or publish again before leaving, or finish from
-              the button below once everything is saved.
+              Newer edits are still unsaved — save or publish again before leaving.
             </p>
             <p v-if="editor.status.value === 'failed'" class="studio__state" role="alert">
               <button type="button" class="studio__link" @click="retryLast()">
@@ -695,50 +783,207 @@ function suggest(): void {
                 Resume saved draft
               </button>
             </p>
-            <div class="preview__actions">
-              <button
-                type="button"
-                class="cta cta--sm"
-                :disabled="
-                  editor.status.value === 'publishing' || editor.status.value === 'loading'
-                "
-                @click="publish">
-                {{
-                  editor.status.value === 'publishing'
-                    ? 'Publishing…'
-                    : editor.pendingPublication.value
-                      ? 'Retry publish'
-                      : 'Publish new revision'
-                }}
-              </button>
-              <button
-                v-if="editor.status.value === 'published'"
-                type="button"
-                class="ghost ghost--sm"
-                @click="finishAndReturn">
-                Finish &amp; return
-              </button>
-            </div>
-          </div>
+            <p class="cstudio__finishnote">
+              Publishing makes these changes the version new stories use. Stories already under way
+              keep the version they started with.
+            </p>
+            <button
+              v-if="editor.status.value === 'published'"
+              type="button"
+              class="ghost ghost--sm"
+              @click="finishAndReturn">
+              Back to the {{ fromLibrary ? 'library' : 'new story' }}
+            </button>
+          </template>
         </section>
       </div>
 
-      <CharacterPreviewPanel />
+      <CharacterPreviewPanel :draft="draft" :name="displayNameForm" />
     </div>
 
     <!-- ————————————————— footer ————————————————— -->
     <SaveBar :dirty="dirty" :saved="savedFlash" secondary-label="Save draft" @secondary="save">
       <template #start>
-        <button type="button" class="ghost" @click="router.back()">
-          <IconArrowLeft :size="14" /> Back
+        <button
+          type="button"
+          class="ghost"
+          @click="step > 1 ? goStep(step - 1) : router.push(originRoute)">
+          <IconArrowLeft :size="15" /> {{ step > 1 ? 'Back' : 'Leave' }}
         </button>
       </template>
       <template #end>
-        <button type="button" class="cta cta--foot" @click="advance">
-          {{ step < 4 ? `Continue to ${nextLabel}` : 'Finish & save' }}
-          <IconArrowRight :size="14" />
-        </button>
+        <MenuButton
+          class="cstudio__next"
+          :disabled="
+            step === lastStep &&
+            (isNew
+              ? nameMissing || creation.status.value === 'creating' || !!creation.recoveredId.value
+              : editor.status.value === 'publishing' || editor.status.value === 'loading')
+          "
+          @click="advance">
+          {{
+            step < lastStep
+              ? `Continue to ${nextLabel}`
+              : isNew
+                ? creation.status.value === 'creating'
+                  ? 'Creating…'
+                  : 'Create character'
+                : editor.status.value === 'publishing'
+                  ? 'Publishing…'
+                  : editor.pendingPublication.value
+                    ? 'Retry publish'
+                    : 'Publish changes'
+          }}
+        </MenuButton>
       </template>
     </SaveBar>
   </main>
 </template>
+
+<style scoped>
+.cstudio__sub {
+  margin: 2px 0 12px;
+  font-size: 17px;
+  color: var(--ink-3);
+}
+.cstudio__step {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cstudio__fixed {
+  padding: 10px 2px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.cstudio__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 18px;
+}
+.cf {
+  min-width: 0;
+}
+.cf--wide,
+.cf--body,
+.cf--marks {
+  grid-column: 1 / -1;
+}
+.is-helped {
+  border-color: #e0b07a !important;
+  background: linear-gradient(180deg, #fff8ec, #fdf1de) !important;
+  box-shadow: inset 3px 0 0 var(--ember) !important;
+}
+/* two or three choices side by side */
+.seg {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 3px;
+  margin: -3px;
+  border-radius: 12px;
+}
+.seg--helped {
+  box-shadow: inset 3px 0 0 var(--ember);
+  background: #fdf1de;
+}
+.seg__opt {
+  flex: 1 1 0;
+  min-width: 72px;
+  height: 42px;
+  border-radius: 9px;
+  border: 1px solid #b9cfd1;
+  background: #f7faf8;
+  font-size: 16px;
+  color: var(--ink-2);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.2s var(--ease-spring);
+}
+.seg__opt:hover {
+  border-color: #5f9488;
+}
+.seg__opt--on {
+  background: linear-gradient(180deg, var(--teal-hi), var(--teal));
+  border-color: #0c3f46;
+  color: var(--cream-on-teal);
+  transform: scale(1.02);
+}
+.cstudio__fill {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+.cstudio__fillbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 15px;
+  border-radius: 9px;
+  border: 1px solid #d9b48a;
+  background: linear-gradient(180deg, #fdf3e6, #f8e6cf);
+  color: #7a3f17;
+  font-size: 15px;
+  font-weight: 500;
+  transition: transform 0.18s var(--ease-out);
+}
+.cstudio__fillbtn svg {
+  color: var(--ember);
+}
+.cstudio__fillbtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.cstudio__fillbtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.cstudio__fillnote {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--ink-3);
+}
+.cstudio__finish {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cstudio__finishnote {
+  font-size: 16px;
+  color: var(--ink-2);
+}
+.cstudio__next {
+  width: auto;
+  min-width: 240px;
+}
+.cstep-enter-active {
+  transition:
+    opacity 0.28s ease,
+    transform 0.32s var(--ease-out);
+}
+.cstep-leave-active {
+  transition: opacity 0.12s ease;
+}
+.cstep-enter-from {
+  opacity: 0;
+  transform: translateX(18px);
+}
+.cstep-leave-to {
+  opacity: 0;
+}
+@media (max-width: 760px) {
+  .cstudio__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cstudio__next {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+}
+</style>

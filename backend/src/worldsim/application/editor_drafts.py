@@ -251,20 +251,27 @@ def _records(value: object) -> list[dict[str, Any]]:
     ]
 
 
-def keep_drawn_maps(base: dict[str, Any], merged: dict[str, Any]) -> dict[str, Any]:
+def keep_drawn_maps(newest: dict[str, Any], merged: dict[str, Any]) -> dict[str, Any]:
     """Maps survive an editor that never shows them.
 
-    The editor replaces the places list wholesale with names and
-    descriptions only: each place keeps the map of its own it had (by
-    key), and the world map forgets pins and roads of deleted places.
+    Maps are drawn on their own pages, each making a new revision, while
+    an editor draft may still sit on an older one: the maps always come
+    from the newest revision. The editor replaces the places list
+    wholesale with names and descriptions only: each place keeps the map
+    of its own (by key), and the world map forgets pins and roads of
+    deleted places.
     """
-    before = {place.get("key"): place.get("map") for place in _records(base.get("locations"))}
+    before = {place.get("key"): place.get("map") for place in _records(newest.get("locations"))}
     places = [
-        place if "map" in place else {**place, "map": before.get(place.get("key"))}
+        {**place, "map": before[place.get("key")]}
+        if place.get("key") in before
+        else place
+        if "map" in place
+        else {**place, "map": None}
         for place in _records(merged.get("locations"))
     ]
-    out = {**merged, "locations": places}
-    world_map = merged.get("map")
+    out = {**merged, "locations": places, "map": newest.get("map")}
+    world_map = out.get("map")
     if isinstance(world_map, dict):
         drawn = cast("dict[str, Any]", world_map)
         keys = {place.get("key") for place in places}
@@ -325,7 +332,12 @@ async def publish_draft(
             merged.update({k: v for k, v in draft.fields.items() if k != "kind"})
             merged["kind"] = preset.kind.value
             if preset.kind.value == "world":
-                merged = keep_drawn_maps(base.payload.model_dump(mode="json"), merged)
+                newest = (
+                    base
+                    if preset.current_revision == draft.base_revision
+                    else await uow.presets.get_revision(preset_id, preset.current_revision)
+                )
+                merged = keep_drawn_maps(newest.payload.model_dump(mode="json"), merged)
             parsed = _parse_strict(preset.kind.value, merged)
             content_hash = canonical_payload_hash(parsed)
             # An identical retry that committed and lost its response

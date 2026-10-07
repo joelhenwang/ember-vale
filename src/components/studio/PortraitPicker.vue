@@ -1,27 +1,39 @@
 <!--
-  PortraitCard — a character's own picture in the studio: import one, say
-  where its portrait (2:3) and face (square, round on tokens) are, adjust or
-  remove it. The picture is kept whole on the server; the frames travel
-  with the character (studioFields packCharacter) and every card, sheet and
-  token shows its part.
+  PortraitPicker — a character's picture on the Appearance step: paint one
+  from how they look (Generate image), or import one and say where its
+  portrait (2:3) and face (round on tokens) are. The picture is kept whole
+  on the server; the frames travel with the character (studioFields
+  packCharacter) and every card, sheet and token shows its part.
 -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import FramedImage from '../ui/FramedImage.vue'
 import PictureFramer, { type FrameStep, type PreviewShape } from '../ui/PictureFramer.vue'
 import IconImage from '../icons/IconImage.vue'
-import { findFace, libraryAssetUrl, uploadPortrait } from '../../api/worldsim'
-import { defaultFace, faceFromBox, frameFromList, type Frame, type Size } from '../../game/framing'
+import { findFace, libraryAssetUrl, paintPortrait, uploadPortrait } from '../../api/worldsim'
+import {
+  defaultFace,
+  faceFromBox,
+  fit,
+  frameFromList,
+  type Frame,
+  type Size
+} from '../../game/framing'
+import IconSparkle from '../icons/IconSparkle.vue'
 import type { PortraitFrames } from '../../game/studio'
 
 const props = defineProps<{
   name: string
   assetId: string | null
   frames: PortraitFrames | null
+  /** Words to paint them from (how they look); empty: nothing to paint yet. */
+  paintPrompt: string
 }>()
 const emit = defineEmits<{ change: [assetId: string | null, frames: PortraitFrames | null] }>()
 
 const busy = ref(false)
+const painting = ref(false)
+const note = ref<string | null>(null)
 const error = ref<string | null>(null)
 /** The picture being framed (a new upload, or the current one to adjust). */
 const framing = ref<{ assetId: string; src: string; size: Size } | null>(null)
@@ -117,6 +129,39 @@ async function suggest(step: string, frames: Record<string, Frame>): Promise<Fra
   return box ? faceFromBox(box, frames['portrait']!, framing.value.size) : null
 }
 
+/**
+ * Paint them from how they look, then frame the picture without asking:
+ * the portrait is its centred 2:3, the face is where the map reader sees
+ * it (or where faces usually are). "Adjust the frames" is always there.
+ */
+async function paint(): Promise<void> {
+  if (!props.paintPrompt || painting.value) return
+  painting.value = true
+  busy.value = true
+  error.value = null
+  note.value = null
+  const started = performance.now()
+  try {
+    const made = await paintPortrait(props.paintPrompt)
+    const size = { width: made.width, height: made.height }
+    const portrait = fit(2 / 3, size)
+    let face = defaultFace(portrait, size)
+    try {
+      const box = frameFromList((await findFace(made.asset_id)).face)
+      if (box) face = faceFromBox(box, portrait, size)
+    } catch {
+      // keep the usual place for a face
+    }
+    emit('change', made.asset_id, { portrait, face })
+    note.value = `Painted in ${Math.round((performance.now() - started) / 1000)} s. Not quite them? Change the appearance and paint again.`
+  } catch (err) {
+    error.value = message(err, 'Could not paint them this time.')
+  } finally {
+    painting.value = false
+    busy.value = false
+  }
+}
+
 function done(frames: Record<string, Frame>): void {
   if (!framing.value) return
   emit('change', framing.value.assetId, { portrait: frames['portrait']!, face: frames['face']! })
@@ -131,41 +176,60 @@ const initial = computed(() =>
 </script>
 
 <template>
-  <section class="card ev-card portrait">
-    <header class="card__head">
-      <h2 class="card__title"><IconImage :size="17" /> {{ name }}’s picture</h2>
-    </header>
-    <div class="portrait__body">
-      <div v-if="assetId && frames" class="portrait__shots">
-        <span class="portrait__card"><FramedImage :src="src" :frame="frames.portrait" /></span>
-        <span class="portrait__token"><FramedImage :src="src" :frame="frames.face" /></span>
-      </div>
-      <p v-else class="portrait__empty">
-        No picture of their own: one is painted for each story. Import one to use it everywhere
-        instead, on cards, sheets and map tokens.
+  <div class="pick">
+    <div class="pick__shots" :class="{ 'pick__shots--busy': painting }">
+      <span class="pick__card">
+        <FramedImage v-if="assetId && frames" :src="src" :frame="frames.portrait" :alt="name" />
+        <span v-else class="pick__empty"><IconImage :size="30" /></span>
+        <span v-if="painting" class="pick__painting" aria-hidden="true"></span>
+      </span>
+      <span v-if="assetId && frames" class="pick__token">
+        <FramedImage :src="src" :frame="frames.face" />
+      </span>
+    </div>
+    <div class="pick__side">
+      <p class="pick__lead">
+        {{
+          painting
+            ? 'Painting them… this takes about fifteen seconds.'
+            : assetId
+              ? 'Their picture, on every card, sheet and map token.'
+              : 'No picture yet. Paint one from the appearance above, or bring your own.'
+        }}
       </p>
-      <div class="portrait__actions">
-        <label class="ghost portrait__pick" :class="{ 'is-busy': busy }">
+      <div class="pick__actions">
+        <button
+          type="button"
+          class="cta pick__paint"
+          :disabled="busy || !paintPrompt"
+          :title="paintPrompt ? paintPrompt : 'Fill in some of the appearance first'"
+          @click="paint">
+          <IconSparkle :size="15" />
+          {{ painting ? 'Painting…' : assetId ? 'Generate again' : 'Generate image' }}
+        </button>
+        <label class="ghost pick__import" :class="{ 'is-busy': busy }">
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp"
             :disabled="busy"
             @change="onFile" />
-          {{ busy ? 'Opening…' : assetId ? 'Import a different picture' : 'Import a picture' }}
+          <IconImage :size="15" /> Import image
         </label>
-        <button v-if="assetId" type="button" class="ghost" :disabled="busy" @click="adjust">
-          Adjust the frames
+      </div>
+      <div v-if="assetId" class="pick__more">
+        <button type="button" class="studio__link" :disabled="busy" @click="adjust">
+          Adjust the framing
         </button>
         <button
-          v-if="assetId"
           type="button"
-          class="ghost portrait__remove"
+          class="studio__link pick__remove"
           :disabled="busy"
           @click="emit('change', null, null)">
-          Remove
+          Remove the picture
         </button>
       </div>
-      <p v-if="error" class="portrait__error" role="alert">{{ error }}</p>
+      <p v-if="note && !error" class="pick__note" role="status">{{ note }}</p>
+      <p v-if="error" class="pick__error" role="alert">{{ error }}</p>
     </div>
     <PictureFramer
       v-if="framing"
@@ -178,65 +242,117 @@ const initial = computed(() =>
       :suggest="initial ? undefined : suggest"
       @done="done"
       @cancel="framing = null" />
-  </section>
+  </div>
 </template>
 
 <style scoped>
-.portrait__body {
+.pick {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px 22px;
-  align-items: center;
+  gap: 18px 24px;
+  align-items: flex-start;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--line);
 }
-.portrait__shots {
+.pick__shots {
+  position: relative;
   display: flex;
-  gap: 16px;
+  gap: 14px;
   align-items: flex-end;
 }
-.portrait__card {
+.pick__card {
+  position: relative;
   display: block;
-  width: 96px;
-  height: 144px;
-  border-radius: 10px;
+  width: 160px;
+  height: 240px;
+  border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--line);
+  background: linear-gradient(180deg, #efe4c8, #e6d6b0);
+  box-shadow: var(--card-shadow);
 }
-.portrait__token {
+.pick__empty {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: #b49a63;
+}
+/* a slow shimmer while the picture is being painted */
+.pick__painting {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 20%,
+    rgba(255, 240, 210, 0.65) 45%,
+    transparent 70%
+  );
+  background-size: 250% 100%;
+  animation: pick-shimmer 1.4s linear infinite;
+}
+@keyframes pick-shimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+.pick__token {
   display: block;
-  width: 52px;
-  height: 52px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   overflow: hidden;
   border: 2px solid var(--cream-on-teal);
-  box-shadow: 0 1px 4px rgba(46, 39, 24, 0.3);
+  box-shadow: 0 2px 6px rgba(46, 39, 24, 0.35);
 }
-.portrait__empty {
+.pick__side {
   flex: 1 1 260px;
-  font-size: 15px;
-  color: var(--ink-2);
-  max-width: 60ch;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
-.portrait__actions {
+.pick__lead {
+  font-size: 16px;
+  color: var(--ink-2);
+}
+.pick__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
-.portrait__pick {
+.pick__paint svg {
+  color: #ffd9a8;
+}
+.pick__import {
   position: relative;
   cursor: pointer;
 }
-.portrait__pick input {
+.pick__import input {
   position: absolute;
   inset: 0;
   opacity: 0;
   cursor: pointer;
 }
-.portrait__remove {
+.pick__more {
+  display: flex;
+  gap: 18px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+}
+.pick__remove {
   color: #b3542e;
 }
-.portrait__error {
-  flex-basis: 100%;
+.pick__note {
+  font-size: 14.5px;
+  color: var(--ink-3);
+}
+.pick__error {
   color: #b3542e;
-  font-size: 14px;
+  font-size: 14.5px;
 }
 </style>

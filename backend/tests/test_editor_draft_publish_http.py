@@ -111,3 +111,79 @@ def test_publish_replay_names_older_revision_after_newer_lands(client: ApiClient
     assert body["published_revision"] == 2
     assert body["detail"]["current_revision"] == 3
     assert body["detail"]["revision"]["name"] == "Miri of the ford"
+
+
+def test_a_place_picture_saved_while_the_editor_is_open_survives_its_publish(
+    client: ApiClient,
+) -> None:
+    """The studio's place pictures make new revisions while its editor
+    draft sits on an older one: publishing the draft keeps them."""
+    import base64
+    import io
+
+    from PIL import Image
+
+    made = client.post(
+        "/api/v1/library/presets",
+        json={
+            "kind": "world",
+            "name": "Reedmarsh",
+            "payload": {
+                "name": "Reedmarsh",
+                "locations": [
+                    {"key": "ford", "name": "The Ford"},
+                    {"key": "mill", "name": "Mill"},
+                ],
+                "travel": [["ford", "mill"]],
+                "starting_location_key": "ford",
+            },
+        },
+        headers={},
+    )
+    assert made.status_code == 200, made.text
+    preset_id = made.json()["id"]
+    draft = _open(client, preset_id, 1)
+
+    out = io.BytesIO()
+    Image.new("RGB", (40, 30), (90, 120, 80)).save(out, format="PNG")
+    picture = client.post(
+        "/api/v1/library/maps",
+        json={"data_url": "data:image/png;base64," + base64.b64encode(out.getvalue()).decode()},
+        headers={},
+    )
+    assert picture.status_code == 200, picture.text
+    asset_id = picture.json()["asset_id"]
+    try:
+        placed = client.put(
+            f"/api/v1/library/presets/{preset_id}/places/ford/map",
+            json={"asset_id": asset_id, "spots": [], "expected_version": 0},
+            headers={},
+        )
+        assert placed.status_code == 200, placed.text
+        assert placed.json()["current_revision"] == 2
+
+        saved = _save(
+            client,
+            preset_id,
+            draft["id"],
+            1,
+            {
+                "description": "Reeds and herons.",
+                "locations": [
+                    {"key": "ford", "name": "The Ford", "description": "Stepping stones."},
+                    {"key": "mill", "name": "Mill"},
+                ],
+            },
+        )
+        published = _publish(
+            client, preset_id, draft["id"], saved["version"], placed.json()["version"]
+        )
+        assert published.status_code == 200, published.text
+        payload = published.json()["detail"]["revision"]
+        ford = next(p for p in payload["locations"] if p["key"] == "ford")
+        assert payload["description"] == "Reeds and herons."
+        assert ford["description"] == "Stepping stones."
+        assert ford["map"]["asset_id"] == asset_id
+    finally:
+        for found in (ROOT / "content" / "assets" / "generated" / "maps").glob(f"{asset_id}.*"):
+            found.unlink()

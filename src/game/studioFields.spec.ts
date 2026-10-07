@@ -11,11 +11,29 @@ import {
   resolveConnectionKeys,
   slugPlaceKey,
   unpackCharacter,
-  unpackWorld
+  unpackWorld,
+  characterBlurb
 } from './studioFields'
 import type { CharacterDraft, WorldDraft } from './studio'
 
 const charDraft: CharacterDraft = {
+  overview: '',
+  age: '',
+  race: '',
+  sex: '',
+  hair: '',
+  eyes: '',
+  height: '',
+  body: '',
+  marks: '',
+  history: '',
+  traits: '',
+  habits: '',
+  tone: '',
+  wears: '',
+  carries: '',
+  condition: '',
+  appearanceExtra: '',
   want: 'Find their missing brother.',
   avoid: 'Making promises they cannot keep.',
   pressure: 'Jokes first, then direct.',
@@ -107,6 +125,68 @@ describe('studio field bridge', () => {
       personalityExtra: '',
       backgroundExtra: ''
     })
+  })
+
+  it('packs how they look, who they are and what they carry into the payload text', () => {
+    const full: CharacterDraft = {
+      ...charDraft,
+      overview: 'A ferrywoman who knows every eddy.',
+      age: '41',
+      race: 'Human',
+      sex: 'Female',
+      hair: 'Grey braid',
+      eyes: 'Green',
+      height: 'tall',
+      body: 'Broad shoulders, rope-scarred hands',
+      marks: 'A notch in her left ear',
+      history: 'Took the ferry over from her mother.',
+      traits: 'Patient, stubborn',
+      habits: 'Hums while she poles',
+      tone: 'Dry and warm',
+      wears: 'Oilskin coat',
+      carries: 'Ferry pole; tin of mints',
+      condition: 'Sore knee'
+    }
+    const packed = packCharacter(full)
+    expect(packed.appearance).toContain('Age: 41')
+    expect(packed.appearance).toContain('Build: Broad shoulders, rope-scarred hands')
+    expect(packed.appearance).toContain('Carries: Ferry pole; tin of mints')
+    expect(packed.background).toContain('Overview: A ferrywoman who knows every eddy.')
+    expect(packed.personality).toContain('Tone: Dry and warm')
+    const restored = unpackCharacter(packed as Record<string, unknown>)
+    for (const key of [
+      'overview',
+      'age',
+      'race',
+      'sex',
+      'hair',
+      'eyes',
+      'height',
+      'body',
+      'marks',
+      'history',
+      'traits',
+      'habits',
+      'tone',
+      'wears',
+      'carries',
+      'condition'
+    ] as const)
+      expect(restored[key]).toBe(full[key])
+    expect(characterBlurb(packed as Record<string, unknown>)).toBe(full.overview)
+  })
+
+  it('keeps appearance prose from before the form had fields, and shows it on cards', () => {
+    const restored = unpackCharacter({ appearance: 'Steady stance, weather-worn cloak.' })
+    expect(restored.appearanceExtra).toBe('Steady stance, weather-worn cloak.')
+    expect(restored.hair).toBe('')
+    const repacked = packCharacter({ ...charDraft, ...restored, hair: 'Black' })
+    expect(repacked.appearance).toBe(
+      ['Steady stance, weather-worn cloak.', 'Hair: Black'].join('\n')
+    )
+    expect(characterBlurb({ appearance: 'Steady stance, weather-worn cloak.' })).toBe(
+      'Steady stance, weather-worn cloak.'
+    )
   })
 
   it('packs stated pronouns as their own field and restores them', () => {

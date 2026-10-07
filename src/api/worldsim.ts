@@ -67,7 +67,10 @@ import type {
   MapRoadsView,
   WorldMapRequest,
   PlaceMapRequest,
-  FaceView
+  FaceView,
+  WritingEnhanceView,
+  WritingFillRequest,
+  WritingFillView
 } from '../../content/clients/worldsim'
 import { apiFetch, type Role } from './http'
 
@@ -780,6 +783,47 @@ export function uploadPortrait(dataUrl: string, opts: CallOptions = {}): Promise
     ...opts,
     method: 'POST',
     body: { data_url: dataUrl }
+  })
+}
+
+/**
+ * Paint a character from how they look, in the house style (the image
+ * service; free, ~15 s, longer when it first switches its model).
+ */
+export function paintPortrait(prompt: string, opts: CallOptions = {}): Promise<MapImageView> {
+  return apiFetch<MapImageView>('/library/portraits/paint', {
+    timeoutMs: 240000,
+    ...opts,
+    method: 'POST',
+    body: { prompt }
+  })
+}
+
+/** A fuller overview from the player's rough one (a small text model; a fraction of a cent). */
+export function enhanceOverview(
+  kind: 'character' | 'world',
+  overview: string,
+  name: string,
+  opts: CallOptions = {}
+): Promise<WritingEnhanceView> {
+  return apiFetch<WritingEnhanceView>('/library/writing/enhance', {
+    timeoutMs: 120000,
+    ...opts,
+    method: 'POST',
+    body: { kind, overview, name }
+  })
+}
+
+/** Text for the fields the player left empty, from their overview; filled ones stay theirs. */
+export function fillFields(
+  body: WritingFillRequest,
+  opts: CallOptions = {}
+): Promise<WritingFillView> {
+  return apiFetch<WritingFillView>('/library/writing/fill', {
+    timeoutMs: 150000,
+    ...opts,
+    method: 'POST',
+    body
   })
 }
 

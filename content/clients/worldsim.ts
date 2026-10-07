@@ -822,6 +822,59 @@ export interface FaceView {
   seconds: unknown;
 }
 
+export interface PortraitPaintRequest {
+  prompt: string;
+}
+
+export interface WritingField {
+  hint?: string;
+  key: string;
+  label: string;
+  max_length?: number;
+  value?: string;
+}
+
+export interface WritingPlace {
+  description?: string;
+  name: string;
+}
+
+export interface WritingEnhanceRequest {
+  kind: string;
+  name?: string;
+  overview: string;
+}
+
+export interface WritingEnhanceView {
+  cost_usd: unknown;
+  model: string;
+  seconds: unknown;
+  text: string;
+}
+
+export interface WritingFillRequest {
+  add_places?: number;
+  fields?: WritingField[];
+  kind: string;
+  name?: string;
+  overview?: string;
+  places?: WritingPlace[];
+}
+
+export interface WritingFilledPlace {
+  description: string;
+  name: string;
+  new: boolean;
+}
+
+export interface WritingFillView {
+  cost_usd: unknown;
+  model: string;
+  places: WritingFilledPlace[];
+  seconds: unknown;
+  values: Record<string, string>;
+}
+
 export interface PresentationResponse {
   absolute_index: number;
   activities?: ActivityView[];

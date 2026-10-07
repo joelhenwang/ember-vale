@@ -3,9 +3,9 @@
  *
  * The studio forms predate the server schemas, so this mapping is explicit
  * and tested: every packed key names a real payload field, and unpacking
- * restores the form. Keys the editor never exposes (character appearance
- * and tags, world name/cast/style-pack) are never packed, so the server
- * merge preserves them verbatim.
+ * restores the form. Keys the editor never exposes (character tags,
+ * world name/cast/style-pack) are never packed, so the server merge
+ * preserves them verbatim.
  *
  * Location identity is key-based, never name-based: each form place
  * carries a stable `key` that survives renames, travel pairs reference
@@ -31,17 +31,34 @@ import type { Frame } from './framing'
 import type { CharacterDraft, PlaceDraft, PortraitFrames, WorldDraft } from './studio'
 
 const PERSONALITY_PREFIXES = [
+  'Personality',
   'Wants',
   'Avoids',
   'Under pressure',
   'Contradiction',
+  'Habits',
   'With strangers',
   'When they care',
+  'Tone',
   'Example line',
   'Styles'
 ] as const
 
-const BACKGROUND_PREFIXES = ['Boundaries', 'Secret fear'] as const
+const BACKGROUND_PREFIXES = ['Overview', 'History', 'Boundaries', 'Secret fear'] as const
+
+const APPEARANCE_PREFIXES = [
+  'Age',
+  'Race',
+  'Sex',
+  'Hair',
+  'Eyes',
+  'Height',
+  'Build',
+  'Marks',
+  'Wears',
+  'Carries',
+  'Condition'
+] as const
 
 const LORE_PREFIXES = ['Terrain', 'Climate', 'Architecture', 'Exclusions'] as const
 
@@ -99,6 +116,7 @@ function prevString(prev: Record<string, unknown>, key: string): string {
 }
 
 export interface CharacterServerFields {
+  appearance?: string
   personality?: string
   background?: string
   pronouns?: string
@@ -111,21 +129,40 @@ export function packCharacter(
   draft: CharacterDraft,
   prev: Record<string, unknown> = {}
 ): CharacterServerFields {
+  const appearance = combineSections(draft.appearanceExtra, [
+    ['Age', draft.age],
+    ['Race', draft.race],
+    ['Sex', draft.sex],
+    ['Hair', draft.hair],
+    ['Eyes', draft.eyes],
+    ['Height', draft.height],
+    ['Build', draft.body],
+    ['Marks', draft.marks],
+    ['Wears', draft.wears],
+    ['Carries', draft.carries],
+    ['Condition', draft.condition]
+  ])
   const personality = combineSections(draft.personalityExtra, [
+    ['Personality', draft.traits],
     ['Wants', draft.want],
     ['Avoids', draft.avoid],
     ['Under pressure', draft.pressure],
     ['Contradiction', draft.contradiction],
+    ['Habits', draft.habits],
     ['With strangers', draft.withStrangers],
     ['When they care', draft.whenTheyCare],
+    ['Tone', draft.tone],
     ['Example line', draft.exampleLine],
     ['Styles', draft.styleTags.join('; ')]
   ])
   const background = combineSections(draft.backgroundExtra, [
+    ['Overview', draft.overview],
+    ['History', draft.history],
     ['Boundaries', draft.boundaries],
     ['Secret fear', draft.secretFear]
   ])
   const out: CharacterServerFields = {}
+  if (appearance !== prevString(prev, 'appearance')) out.appearance = appearance
   if (personality !== prevString(prev, 'personality')) out.personality = personality
   if (background !== prevString(prev, 'background')) out.background = background
   const pronouns = draft.pronouns.trim()
@@ -148,6 +185,9 @@ export function unpackCharacter(fields: Record<string, unknown>): Partial<Charac
   const out: Partial<CharacterDraft> = {}
   if (typeof fields['personality'] === 'string') {
     const s = splitSections(fields['personality'], PERSONALITY_PREFIXES)
+    out.traits = s.values['Personality'] ?? ''
+    out.habits = s.values['Habits'] ?? ''
+    out.tone = s.values['Tone'] ?? ''
     out.want = s.values['Wants'] ?? ''
     out.avoid = s.values['Avoids'] ?? ''
     out.pressure = s.values['Under pressure'] ?? ''
@@ -166,9 +206,26 @@ export function unpackCharacter(fields: Record<string, unknown>): Partial<Charac
   }
   if (typeof fields['background'] === 'string') {
     const s = splitSections(fields['background'], BACKGROUND_PREFIXES)
+    out.overview = s.values['Overview'] ?? ''
+    out.history = s.values['History'] ?? ''
     out.boundaries = s.values['Boundaries'] ?? ''
     out.secretFear = s.values['Secret fear'] ?? ''
     out.backgroundExtra = s.rest
+  }
+  if (typeof fields['appearance'] === 'string') {
+    const s = splitSections(fields['appearance'], APPEARANCE_PREFIXES)
+    out.age = s.values['Age'] ?? ''
+    out.race = s.values['Race'] ?? ''
+    out.sex = s.values['Sex'] ?? ''
+    out.hair = s.values['Hair'] ?? ''
+    out.eyes = s.values['Eyes'] ?? ''
+    out.height = s.values['Height'] ?? ''
+    out.body = s.values['Build'] ?? ''
+    out.marks = s.values['Marks'] ?? ''
+    out.wears = s.values['Wears'] ?? ''
+    out.carries = s.values['Carries'] ?? ''
+    out.condition = s.values['Condition'] ?? ''
+    out.appearanceExtra = s.rest
   }
   if (typeof fields['pronouns'] === 'string') out.pronouns = fields['pronouns']
   if ('portrait_asset_id' in fields || 'portrait_frames' in fields) {
@@ -178,6 +235,22 @@ export function unpackCharacter(fields: Record<string, unknown>): Partial<Charac
     out.portraitFrames = out.portraitAssetId ? frames! : null
   }
   return out
+}
+
+/**
+ * The line a library card shows for a character: their overview, else
+ * what was written about them before the form had one.
+ */
+export function characterBlurb(fields: Record<string, unknown>): string {
+  const form = unpackCharacter(fields)
+  return (
+    form.overview ||
+    form.appearanceExtra ||
+    form.backgroundExtra ||
+    form.personalityExtra ||
+    [form.age && `${form.age} years`, form.race, form.sex].filter(Boolean).join(' · ') ||
+    ''
+  )
 }
 
 export function slugPlaceKey(name: string, fallback: string): string {

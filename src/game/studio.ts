@@ -59,6 +59,29 @@ export interface PlaceDraft {
 }
 
 export interface CharacterDraft {
+  /** The player's own overview: who they are, in a few lines or key points. */
+  overview: string
+  /* appearance ------------------------------------------------------------ */
+  age: string
+  race: string
+  sex: string
+  hair: string
+  eyes: string
+  /** tall / average / short */
+  height: string
+  body: string
+  /** Scars, tattoos, anything else that marks them out. */
+  marks: string
+  /* background & personality ---------------------------------------------- */
+  history: string
+  traits: string
+  habits: string
+  /* voice ----------------------------------------------------------------- */
+  tone: string
+  /* what they have on them, and how they are ------------------------------- */
+  wears: string
+  carries: string
+  condition: string
   want: string
   avoid: string
   pressure: string
@@ -86,6 +109,8 @@ export interface CharacterDraft {
    */
   personalityExtra: string
   backgroundExtra: string
+  /** Appearance prose from before the form had its own fields. */
+  appearanceExtra: string
   /** An imported picture (library asset) and where its portrait and face are. */
   portraitAssetId: string | null
   portraitFrames: PortraitFrames | null
@@ -141,6 +166,22 @@ export interface WorldDraft {
 }
 
 const blankCharacter = (): CharacterDraft => ({
+  overview: '',
+  age: '',
+  race: '',
+  sex: '',
+  hair: '',
+  eyes: '',
+  height: '',
+  body: '',
+  marks: '',
+  history: '',
+  traits: '',
+  habits: '',
+  tone: '',
+  wears: '',
+  carries: '',
+  condition: '',
   want: '',
   avoid: '',
   pressure: '',
@@ -156,6 +197,7 @@ const blankCharacter = (): CharacterDraft => ({
   presetName: '',
   personalityExtra: '',
   backgroundExtra: '',
+  appearanceExtra: '',
   portraitAssetId: null,
   portraitFrames: null
 })
@@ -186,6 +228,7 @@ export function ensureCharDraft(id: string): CharacterDraft {
   if (!charDrafts[id]) {
     if (id === 'wren') {
       charDrafts[id] = {
+        ...blankCharacter(),
         want: 'Find their missing brother and learn why he left.',
         avoid: 'Making promises they cannot keep.',
         pressure: 'Jokes first, then becomes unusually direct.',

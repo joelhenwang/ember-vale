@@ -330,6 +330,10 @@
 }
 
 /* buttons -------------------------------------------------------------------- */
+.cta,
+.ghost {
+  font-family: var(--font-ui);
+}
 .cta {
   display: inline-flex;
   align-items: center;
@@ -357,8 +361,9 @@
   transform: translateY(1px);
 }
 .cta:disabled {
-  filter: saturate(0.4) brightness(0.95);
-  cursor: wait;
+  filter: saturate(0.3);
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 .cta--full {
   width: 100%;
@@ -404,11 +409,15 @@
 
 /* footer ---------------------------------------------------------------------- */
 .studio__foot {
+  position: sticky;
+  bottom: 12px;
+  z-index: 6;
   display: flex;
   align-items: center;
   gap: 14px;
   margin-top: 14px;
-  padding: 12px 18px;
+  padding: 12px 14px 12px 18px;
+  box-shadow: var(--card-shadow-hover);
 }
 .studio__foot-spacer {
   flex: 1;
