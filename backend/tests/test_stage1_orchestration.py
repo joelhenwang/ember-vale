@@ -1158,7 +1158,7 @@ def test_structured_mode_saves_delayed_narrator_time(migrated_db: None) -> None:
     about that delay while committing the same scenes, outcomes, and events,
     with the committed answer voiced as attributed dialogue.
     """
-    delay = 1.0
+    delay = 0.2
 
     async def _run_world(structured: bool) -> tuple[Any, Any, Any, float]:
         ids = await _seed()

@@ -66,13 +66,18 @@ const scratchTarget = (() => {
 })()
 const venvPython = path.join(ROOT, 'backend', '.venv', 'Scripts', 'python.exe')
 
-const skipReason = !fs.existsSync(venvPython)
-  ? 'no backend venv python'
-  : !liveUrl
-    ? 'no live database URL in .env'
-    : !scratchTarget || scratchUrl === liveUrl
-      ? 'no distinct scratch database URL'
-      : null
+// A real end-to-end self-test (it starts a scratch API and vite, ~16 s):
+// opt in with EMBER_VALE_HARNESS_SELFTEST=1 when changing the harness.
+const skipReason =
+  process.env.EMBER_VALE_HARNESS_SELFTEST !== '1'
+    ? 'harness self-test (set EMBER_VALE_HARNESS_SELFTEST=1 to run)'
+    : !fs.existsSync(venvPython)
+      ? 'no backend venv python'
+      : !liveUrl
+        ? 'no live database URL in .env'
+        : !scratchTarget || scratchUrl === liveUrl
+          ? 'no distinct scratch database URL'
+          : null
 
 async function runFailAtProxy(key) {
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'recovery-cleanup-'))

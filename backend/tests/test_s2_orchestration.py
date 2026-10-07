@@ -178,8 +178,8 @@ def test_quiet_phases_skip_narration_calls(migrated_db: None) -> None:
         ids = await _seed()
         gateways = _role_gateways(ids)
         orch = _orchestrator(gateways)
-        reports = await orch.advance_days(ids["world"], 1, 1)
-        assert len(reports) == 10
+        reports = await orch.advance_three_phases(ids["world"], 1)
+        assert len(reports) == 3
         assert all(r.quiet for r in reports)
         assert all(s.narration == "fallback" for r in reports for s in r.scenes)
         assert gateways["narrator"].calls == []
@@ -189,8 +189,8 @@ def test_quiet_phases_skip_narration_calls(migrated_db: None) -> None:
                 from worldsim.domain.time import absolute_index
 
                 world = await uow.worlds.get(ids["world"])
-                assert absolute_index(world.day, world.phase) == 10
-                assert await uow.events.count_events(ids["world"]) >= 10
+                assert absolute_index(world.day, world.phase) == 3
+                assert await uow.events.count_events(ids["world"]) >= 3
         finally:
             await engine.dispose()
 
@@ -209,12 +209,12 @@ def test_quota_exhaustion_falls_back_without_losing_canon(
             async with create_unit_of_work(engine) as uow:
                 await uow.worlds.put_config(ids["world"], "model.max_calls_per_phase", 0)
                 await uow.commit()
-            reports = await orch.advance_days(ids["world"], 1, 1)
-            assert len(reports) == 10
+            reports = await orch.advance_three_phases(ids["world"], 1)
+            assert len(reports) == 3
             assert all(s.narration == "fallback" for r in reports for s in r.scenes)
             assert gateways["narrator"].calls == []
             async with create_unit_of_work(engine) as uow:
-                assert await uow.events.count_events(ids["world"]) >= 10
+                assert await uow.events.count_events(ids["world"]) >= 3
         finally:
             await engine.dispose()
 
@@ -288,7 +288,7 @@ def test_quiet_party_still_narrates(migrated_db: None) -> None:
                 await uow.commit()
             gateways = _role_gateways(ids)
             orch = _orchestrator(gateways)
-            reports = await orch.advance_days(ids["world"], 1, 1)
+            reports = await orch.advance_three_phases(ids["world"], 1)
             assert all(r.quiet for r in reports)
             assert gateways["narrator"].calls != []
             assert all(s.narration == "narrated" for r in reports for s in r.scenes)

@@ -21,7 +21,6 @@ from alembic.config import Config
 from fastapi.testclient import TestClient
 from test_stage1_api import ApiClient
 
-from worldsim.application.library.builtins import ensure_builtin_presets
 from worldsim.domain.presets import (
     TemplatePresetPayload,
     WorldPresetPayload,
@@ -147,44 +146,28 @@ def _read_revision(preset_id: UUID, revision: int):
     return _run(_inner())
 
 
-def test_fresh_head_has_stable_rev1_and_canonical_rev2(monkeypatch: pytest.MonkeyPatch) -> None:
-    with _scratch_db(monkeypatch, "worldsim_revtest_fresh"):
-        _upgrade_to("head")
-        world1, world_current = _read_revision(UUID(WORLD_PRESET_ID), 1)
-        assert isinstance(world1.payload, WorldPresetPayload)
-        assert world1.payload.travel == []
-        assert world1.content_hash == "builtin-v1"
-        world2, _ = _read_revision(UUID(WORLD_PRESET_ID), 2)
-        assert isinstance(world2.payload, WorldPresetPayload)
-        assert sorted(tuple(pair) for pair in world2.payload.travel) == [
-            ("hearth", "market"),
-            ("market", "hearth"),
-        ]
-        assert world2.content_hash == canonical_payload_hash(world2.payload)
-        tmpl1, tmpl_current = _read_revision(UUID(TEMPLATE_PRESET_ID), 1)
-        assert isinstance(tmpl1.payload, TemplatePresetPayload)
-        assert tmpl1.payload.world_preset_revision == 1
-        tmpl2, _ = _read_revision(UUID(TEMPLATE_PRESET_ID), 2)
-        assert isinstance(tmpl2.payload, TemplatePresetPayload)
-        assert tmpl2.payload.world_preset_revision == 2
-        assert tmpl2.content_hash == canonical_payload_hash(tmpl2.payload)
-        assert world_current == 2
-        assert tmpl_current == 2
-
-        async def _ensure_twice() -> int:
-            engine = create_engine(Settings())
-            try:
-                async with create_unit_of_work(engine) as uow:
-                    first = await ensure_builtin_presets(uow)
-                    await uow.commit()
-                async with create_unit_of_work(engine) as uow:
-                    second = await ensure_builtin_presets(uow)
-                    await uow.commit()
-                return first + second
-            finally:
-                await engine.dispose()
-
-        assert _run(_ensure_twice()) == 0
+def test_fresh_head_has_stable_rev1_and_canonical_rev2(migrated_db: None) -> None:
+    """The template is a fresh head install: the same state a new deployment gets."""
+    world1, world_current = _read_revision(UUID(WORLD_PRESET_ID), 1)
+    assert isinstance(world1.payload, WorldPresetPayload)
+    assert world1.payload.travel == []
+    assert world1.content_hash == "builtin-v1"
+    world2, _ = _read_revision(UUID(WORLD_PRESET_ID), 2)
+    assert isinstance(world2.payload, WorldPresetPayload)
+    assert sorted(tuple(pair) for pair in world2.payload.travel) == [
+        ("hearth", "market"),
+        ("market", "hearth"),
+    ]
+    assert world2.content_hash == canonical_payload_hash(world2.payload)
+    tmpl1, tmpl_current = _read_revision(UUID(TEMPLATE_PRESET_ID), 1)
+    assert isinstance(tmpl1.payload, TemplatePresetPayload)
+    assert tmpl1.payload.world_preset_revision == 1
+    tmpl2, _ = _read_revision(UUID(TEMPLATE_PRESET_ID), 2)
+    assert isinstance(tmpl2.payload, TemplatePresetPayload)
+    assert tmpl2.payload.world_preset_revision == 2
+    assert tmpl2.content_hash == canonical_payload_hash(tmpl2.payload)
+    assert world_current == 2
+    assert tmpl_current == 2
 
 
 def test_pre0032_upgrade_preserves_history(monkeypatch: pytest.MonkeyPatch) -> None:

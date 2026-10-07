@@ -1,12 +1,7 @@
 import asyncio
 import uuid
-from collections.abc import Iterator
-from pathlib import Path
-from urllib.parse import urlparse, urlunparse
 
 import pytest
-from alembic import command as alembic_command
-from alembic.config import Config
 from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -49,24 +44,10 @@ async def _add(session: AsyncSession, row: object) -> None:
     await session.flush()
 
 
-def _replace_database(url: str, database: str) -> str:
-    parts = urlparse(url)
-    return urlunparse(parts._replace(path=f"/{database}"))
-
-
 @pytest.fixture
-def migrated_scratch(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    from fixtures.postgres import create_scratch_database, drop_scratch_database, scratch_name
-
-    name = scratch_name("worldsim_schema_test")
-    settings = Settings()
-    create_scratch_database(settings, name)
-    monkeypatch.setenv("WORLDSIM_DATABASE__URL", _replace_database(settings.database.url, name))
-    config = Config()
-    config.set_main_option("script_location", str(Path(__file__).parent.parent / "migrations"))
-    alembic_command.upgrade(config, "head")
-    yield
-    drop_scratch_database(Settings(), name)
+def migrated_scratch(migrated_db: None) -> None:
+    """A clone of the migration-head template: these tests check the
+    constraints and triggers at head, not the migration history."""
 
 
 async def _seed_world() -> uuid.UUID:

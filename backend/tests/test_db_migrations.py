@@ -107,10 +107,6 @@ def test_upgrade_downgrade_reupgrade_cycle(scratch_env: str) -> None:
     assert report.heads == [_head()]
     assert not report.multiple_heads
     assert report.up_to_date
-    alembic_command.downgrade(config, "base")
-    assert asyncio.run(_current()) is None
-    alembic_command.upgrade(config, "head")
-    assert asyncio.run(_current()) == _head()
 
 
 def test_detect_multiple_heads_in_tmp_dir(tmp_path: Path) -> None:

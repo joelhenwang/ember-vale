@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import uuid
 from typing import Any
 from uuid import UUID
+
+import pytest
 
 from worldsim.application.macro.endings import evaluate_endings
 from worldsim.application.macro.engine import MacroEngine
@@ -289,18 +292,9 @@ def test_salient_fire_breaks_peace(migrated_db: None) -> None:
     _run(_inner())
 
 
-def test_era_rejects_empty_range(migrated_db: None) -> None:
-    async def _inner() -> None:
-        engine = create_engine(Settings())
-        try:
-            factory = lambda: create_unit_of_work(engine)  # noqa: E731
-            ids = await _seed(factory)
-            try:
-                await compose_era(factory, ids["world"], ids["owner"], 10, 10)
-                raise AssertionError("empty range composed")
-            except ValueError:
-                pass
-        finally:
-            await engine.dispose()
+def test_era_rejects_empty_range() -> None:
+    def never() -> Any:  # the range is refused before any database work
+        raise AssertionError("an empty range must not open a unit of work")
 
-    _run(_inner())
+    with pytest.raises(ValueError):
+        _run(compose_era(never, uuid.uuid4(), uuid.uuid4(), 10, 10))

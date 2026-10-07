@@ -20,28 +20,18 @@ def test_keyless_app_stays_open(migrated_db: None) -> None:
         assert raw.get("/api/v1/no-such-route").status_code == 404
 
 
-def test_keyed_app_rejects_anonymous(migrated_db: None) -> None:
+def test_keyed_app_needs_the_bearer_key_except_for_health(migrated_db: None) -> None:
     with _app("s3cr3t") as raw:
         denied = raw.get("/api/v1/no-such-route")
         assert denied.status_code == 401
         assert denied.json()["error"]["code"] == "UNAUTHORIZED"
         assert "X-Request-ID" in denied.headers
-
-
-def test_keyed_app_rejects_wrong_scheme_and_value(migrated_db: None) -> None:
-    with _app("s3cr3t") as raw:
-        assert raw.get(
-            "/api/v1/no-such-route", headers={"Authorization": "s3cr3t"}
-        ).status_code == (401)
-        assert (
-            raw.get("/api/v1/no-such-route", headers={"Authorization": "Bearer wrong"}).status_code
-            == 401
-        )
-
-
-def test_keyed_app_accepts_bearer_and_exempts_health(migrated_db: None) -> None:
-    headers = {"Authorization": "Bearer s3cr3t"}
-    with _app("s3cr3t") as raw:
+        for wrong in ("s3cr3t", "Bearer wrong"):  # no scheme, wrong value
+            assert (
+                raw.get("/api/v1/no-such-route", headers={"Authorization": wrong}).status_code
+                == 401
+            )
         assert raw.get("/api/v1/health/live").status_code == 200
         assert raw.get("/api/v1/health/ready").status_code == 200
-        assert raw.get("/api/v1/no-such-route", headers=headers).status_code == 404
+        bearer = {"Authorization": "Bearer s3cr3t"}
+        assert raw.get("/api/v1/no-such-route", headers=bearer).status_code == 404

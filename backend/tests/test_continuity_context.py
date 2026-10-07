@@ -442,9 +442,12 @@ def test_streak_counts_the_most_recent_run() -> None:
     assert streak({}) == 0
 
 
-def test_director_is_told_when_only_talk_happens(
+def test_long_talk_is_noticed_and_the_story_so_far_reaches_the_director(
     stage1_client: tuple[ApiClient, FakeGateway],
 ) -> None:
+    """Ten beats of only talk (one world, one app): the director and the
+    talkers are told talk is all that happens, and the director later hears
+    the story from before its recent window."""
     client, gateway = stage1_client
     ids = asyncio.run(_seed_two())
     base = _route_for(ids, {})
@@ -461,11 +464,32 @@ def test_director_is_told_when_only_talk_happens(
             )
         return base(request)
 
+    def directed() -> list[str]:
+        return [r.prompt for r in gateway.sent_requests if "You direct" in (r.system or "")]
+
     gateway.route = route
-    for index in range(1, 5):  # director runs at beats 1 and 4 (cooldown 3)
+    before = 0
+    for index in range(1, 5):  # the director runs at beats 1 and 4 (cooldown 3)
+        before = len(gateway.sent_requests)
         assert _advance(client, ids["world"], index).status_code == 200
-    director = [r.prompt for r in gateway.sent_requests if "You direct" in (r.system or "")]
-    assert "Talk-only beats in a row: 3" in director[-1]
+    assert "Story so far" not in directed()[0]  # nothing before the window yet
+    assert "Talk-only beats in a row: 3" in directed()[-1]
+    wren = [
+        r.prompt
+        for r in gateway.sent_requests[before:]
+        if "You decide" in (r.system or "") and "<<untrusted:identity>>Wren" in r.prompt
+    ]
+    assert wren and "only talked for your last 3 turns" in wren[0]
+
+    for index in range(5, 11):  # and at beats 7 and 10
+        assert _advance(client, ids["world"], index).status_code == 200
+    assert "Story so far, before the recent happenings:" in directed()[-1]
+    # Reactions are replies: never told to stop talking.
+    assert not [
+        r
+        for r in gateway.sent_requests
+        if "only talked" in r.prompt and "You decide" not in (r.system or "")
+    ]
 
 
 def test_long_lines_are_clipped_to_fit_an_observation() -> None:
@@ -621,33 +645,6 @@ def test_director_summary_keeps_settled_matters_and_earlier_story() -> None:
     assert summary.index("Story so far") < summary.index("Recent happenings")
 
 
-def test_director_hears_the_story_before_its_recent_window(
-    stage1_client: tuple[ApiClient, FakeGateway],
-) -> None:
-    client, gateway = stage1_client
-    ids = asyncio.run(_seed_two())
-    base = _route_for(ids, {})
-
-    def route(request: CompletionRequest) -> str | None:
-        system = request.system or ""
-        if "You direct" in system:
-            return json.dumps({"action": "noop", "reason": "watching"})
-        if "You decide" in system:
-            wren = "<<untrusted:identity>>Wren" in request.prompt
-            target = ids["ash"] if wren else ids["wren"]
-            return json.dumps(
-                {"family": "communicate", "target_character_id": str(target), "topic": "the tale"}
-            )
-        return base(request)
-
-    gateway.route = route
-    for index in range(1, 11):  # director runs at beats 1, 4, 7 and 10
-        assert _advance(client, ids["world"], index).status_code == 200
-    director = [r.prompt for r in gateway.sent_requests if "You direct" in (r.system or "")]
-    assert "Story so far" not in director[0]  # nothing before the window yet
-    assert "Story so far, before the recent happenings:\n- Day 1, " in director[-1]
-
-
 def test_streak_note_for_talk_or_idling() -> None:
     from worldsim.domain.intentions import streak_note
 
@@ -658,42 +655,6 @@ def test_streak_note_for_talk_or_idling() -> None:
     idle = ["wait", "observe", "wait"]
     assert streak_note(idle, None) is None  # nothing in mind: waiting is fine
     assert "while you mean to: fix the wheel" in (streak_note(idle, "fix the wheel") or "")
-
-
-def test_a_character_who_only_talks_is_told_so(
-    stage1_client: tuple[ApiClient, FakeGateway],
-) -> None:
-    client, gateway = stage1_client
-    ids = asyncio.run(_seed_two())
-    base = _route_for(ids, {})
-
-    def route(request: CompletionRequest) -> str | None:
-        if "You decide" in (request.system or ""):
-            wren = "<<untrusted:identity>>Wren" in request.prompt
-            target = ids["ash"] if wren else ids["wren"]
-            return json.dumps(
-                {"family": "communicate", "target_character_id": str(target), "topic": "heave"}
-            )
-        return base(request)
-
-    gateway.route = route
-    before = 0
-    for index in range(1, 5):
-        before = len(gateway.sent_requests)
-        assert _advance(client, ids["world"], index).status_code == 200
-    wren = [
-        r.prompt
-        for r in gateway.sent_requests[before:]
-        if "You decide" in (r.system or "") and "<<untrusted:identity>>Wren" in r.prompt
-    ]
-    assert wren and "You have only talked for your last 3 turns." in wren[0]
-    # Reactions are replies: never told to stop talking.
-    reacting = [
-        r
-        for r in gateway.sent_requests
-        if "only talked" in r.prompt and "You decide" not in (r.system or "")
-    ]
-    assert not reacting
 
 
 def test_narration_that_retells_the_recap_loses_that_sentence() -> None:

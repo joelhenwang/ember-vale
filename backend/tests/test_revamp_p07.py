@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import time
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -107,7 +106,6 @@ def test_force_travel_queued_then_applied_once(seeded_ids: dict[str, UUID]) -> N
 
     def route(request: Any) -> Any:
         if "game-master" in (request.system or ""):
-            time.sleep(0.2)
             return json.dumps(_travel_plan(ids["ash"], hearth))
         return base(request)
 

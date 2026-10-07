@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import time
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -78,7 +77,6 @@ def _gateway_for(plan: dict[str, Any] | None, ids: dict[str, UUID], max_index: i
 
     def route(request: Any) -> Any:
         if "game-master" in (request.system or ""):
-            time.sleep(0.1)
             return json.dumps(plan) if plan is not None else None
         return base(request)
 
