@@ -1,12 +1,14 @@
 <!--
-  WorldMapView — draw a world from its map: bring a picture (upload or
-  paint), let the map reader find the places and trace the roads, fix what
-  it got wrong, then say how long the shortest and the longest road take.
+  WorldMapView — draw a world from its map: bring a picture (upload, paint
+  or a blank parchment), let the map reader find the places and trace the
+  roads or put them down by hand, fix what it got wrong, then say how long
+  the shortest and the longest road take. Roads are drawn stretch by
+  stretch: click a place, click each bend, click the place it reaches.
   Saving pins the places, adds new ones and times every road (a new world
   revision). Pure board logic: src/game/worldMap.ts.
 -->
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SaveBar from '../components/ui/SaveBar.vue'
 import PageIntro from '../components/ui/PageIntro.vue'
@@ -31,24 +33,33 @@ import {
 } from '../api/worldsim'
 import { isVersionConflict } from '../api/http'
 import type { PresetDetail } from '../../content/clients/worldsim'
+import { parchmentDataUrl } from '../game/parchment'
 import {
+  MAX_BENDS,
   PHASES_PER_DAY,
+  SNAP,
   boardFromPreset,
   describePhases,
   keptPlaces,
   liveRoads,
   mapPrompt,
+  nearestPlace,
   placesFromReading,
   roadLine,
+  roadProblem,
   roadsFromReading,
   saveProblem,
   saveRequest,
   savedScale,
+  stretchMiddles,
   timedRoads,
   toPhases,
+  withBend,
   worldPlaces,
   type Board,
   type BoardPlace,
+  type BoardRoad,
+  type Point,
   type TimeUnit,
   type WorldPlace
 } from '../game/worldMap'
@@ -61,18 +72,30 @@ const detail = ref<PresetDetail | null>(null)
 const board = ref<Board | null>(null)
 const baseline = ref('')
 const loading = ref(true)
-const busy = ref<'' | 'upload' | 'paint' | 'places' | 'roads' | 'save' | 'copy'>('')
+const busy = ref<'' | 'upload' | 'paint' | 'parchment' | 'places' | 'roads' | 'save' | 'copy'>('')
 const error = ref<string | null>(null)
 const notice = ref<string | null>(null)
 const savedFlash = ref(false)
 const selected = ref<string | null>(null)
-const placing = ref(false)
+/** What a click on the map does: pick, put down a place, or draw a road. */
+const tool = ref<'select' | 'place' | 'road'>('select')
+const placing = computed(() => tool.value === 'place')
+/** The road being drawn: the place it starts at and its bends so far. */
+const drawing = ref<{ from: string; bends: Point[] } | null>(null)
+/** Where the pointer is over the map, for the stretch being drawn. */
+const cursor = ref<Point | null>(null)
+const roadNote = ref<string | null>(null)
+const selectedRoad = ref<BoardRoad | null>(null)
+/** The bend being dragged on the selected road. */
+const draggingBend = ref<number | null>(null)
+const frameEl = ref<HTMLElement | null>(null)
 const dragging = ref<string | null>(null)
 const showPaint = ref(false)
 const paintPrompt = ref('')
 const paintRatio = ref('16:9')
 const connectTo = ref('')
 const connectBy = ref('road')
+const ROAD_KINDS = ['road', 'path', 'sea', 'river', 'bridge', 'pass']
 
 const shortestAmount = ref(2)
 const shortestUnit = ref<TimeUnit>('phases')
@@ -114,6 +137,30 @@ const linesFor = computed(() =>
       }))
     : []
 )
+/** The place a click would reach while drawing (snapped). */
+const snapTarget = computed(() =>
+  board.value && drawing.value && cursor.value
+    ? nearestPlace(board.value, cursor.value, SNAP, drawing.value.from)
+    : null
+)
+/** The road being drawn, up to the pointer (or the place it would snap to). */
+const drawnLine = computed(() => {
+  if (!board.value || !drawing.value) return ''
+  const from = board.value.places.find((p) => p.id === drawing.value!.from)
+  if (!from) return ''
+  const end = snapTarget.value?.point ?? cursor.value
+  return [from.point, ...drawing.value.bends, ...(end ? [end] : [])]
+    .map(([x, y]) => `${x},${y}`)
+    .join(' ')
+})
+const selectedLine = computed<Point[]>(() =>
+  board.value && selectedRoad.value ? roadLine(board.value, selectedRoad.value) : []
+)
+const selectedMiddles = computed(() =>
+  selectedRoad.value && selectedRoad.value.points.length < MAX_BENDS
+    ? stretchMiddles(selectedLine.value)
+    : []
+)
 const otherPlaces = computed(() =>
   board.value && selected.value
     ? board.value.places.filter((p) => p.keep && p.id !== selected.value)
@@ -133,7 +180,15 @@ function setScale(phasesShort: number, phasesLong: number): void {
   ;[longestAmount.value, longestUnit.value] = pick(phasesLong)
 }
 
+function resetTools(): void {
+  tool.value = 'select'
+  drawing.value = null
+  selectedRoad.value = null
+  roadNote.value = null
+}
+
 function adopt(view: PresetDetail): void {
+  resetTools()
   detail.value = view
   board.value = boardFromPreset(view)
   const scale = savedScale(view)
@@ -164,6 +219,7 @@ function newBoard(view: { asset_id: string; width: number; height: number }): vo
   }
   selected.value = null
   notice.value = null
+  resetTools()
 }
 
 async function onFile(event: Event): Promise<void> {
@@ -206,6 +262,21 @@ async function paint(): Promise<void> {
   }
 }
 
+/** No picture: start on an empty parchment and put everything down by hand. */
+async function blankParchment(): Promise<void> {
+  busy.value = 'parchment'
+  error.value = null
+  try {
+    newBoard(await uploadMap(parchmentDataUrl()))
+    notice.value =
+      'A blank parchment. Add the places where you want them, then draw the roads between them.'
+  } catch (err) {
+    error.value = message(err, 'Could not lay out a parchment.')
+  } finally {
+    busy.value = ''
+  }
+}
+
 async function findPlaces(): Promise<void> {
   if (!board.value) return
   busy.value = 'places'
@@ -215,6 +286,7 @@ async function findPlaces(): Promise<void> {
     board.value.places = placesFromReading(reading.places, places.value)
     board.value.roads = []
     selected.value = null
+    resetTools()
     const kept = board.value.places.filter((p) => p.keep).length
     notice.value =
       `Found ${reading.places.length} places in ${Math.round(Number(reading.seconds))} s ` +
@@ -242,6 +314,7 @@ async function traceRoads(): Promise<void> {
       sent.map((p) => ({ name: p.name, kind: p.kind, point: p.point }))
     )
     board.value.roads = roadsFromReading(reading.roads, sent)
+    selectedRoad.value = null
     notice.value =
       `Traced ${board.value.roads.length} roads in ${Math.round(Number(reading.seconds))} s ` +
       `($${Number(reading.cost_usd).toFixed(4)}). Remove any that aren't there, add any it missed.`
@@ -264,9 +337,22 @@ function pointFrom(event: PointerEvent): [number, number] | null {
 }
 
 function onFrameClick(event: PointerEvent): void {
-  if (!board.value || !placing.value) return
+  if (!board.value) return
   const point = pointFrom(event)
   if (!point) return
+  if (tool.value === 'road') {
+    roadClick(point)
+    return
+  }
+  if (draggedBend) {
+    draggedBend = false
+    return
+  }
+  if (tool.value === 'select') {
+    selected.value = null
+    selectedRoad.value = null
+    return
+  }
   const place: BoardPlace = {
     id: `added-${Date.now()}`,
     name: 'New place',
@@ -277,11 +363,161 @@ function onFrameClick(event: PointerEvent): void {
   }
   board.value.places.push(place)
   selected.value = place.id
-  placing.value = false
+  tool.value = 'select'
+}
+
+/* drawing roads ------------------------------------------------------------ */
+function setTool(next: 'select' | 'place' | 'road'): void {
+  tool.value = tool.value === next ? 'select' : next
+  drawing.value = null
+  roadNote.value =
+    tool.value === 'road'
+      ? 'Click the place the road starts at, then each bend, then the place it reaches.'
+      : null
+  if (tool.value !== 'select') selectedRoad.value = null
+}
+
+/** A click on the map while drawing: start, bend, or reach a place. */
+function roadClick(point: Point): void {
+  if (!board.value) return
+  const near = nearestPlace(board.value, point, SNAP, drawing.value?.from ?? null)
+  if (near) {
+    roadAt(near)
+    return
+  }
+  if (!drawing.value) {
+    roadNote.value = 'A road starts at a place: click one of the pins.'
+    return
+  }
+  if (drawing.value.bends.length >= MAX_BENDS) {
+    roadNote.value = `A road has at most ${MAX_BENDS} bends: finish it at a place.`
+    return
+  }
+  drawing.value.bends.push(point)
+  roadNote.value = 'Keep clicking bends, or click the place it reaches. Backspace undoes a bend.'
+}
+
+/** A place clicked while drawing: the start, or the end of the road. */
+function roadAt(place: BoardPlace): void {
+  if (!board.value) return
+  if (!place.keep) {
+    roadNote.value = `${place.name} is left off the world: tick "A place to go" first.`
+    return
+  }
+  if (!drawing.value) {
+    drawing.value = { from: place.id, bends: [] }
+    roadNote.value = `From ${place.name}: click each bend, then the place it reaches.`
+    return
+  }
+  if (place.id === drawing.value.from) return
+  const { from, bends } = drawing.value
+  const problem = roadProblem(board.value, from, place.id, bends.length)
+  if (problem) {
+    roadNote.value = problem
+    return
+  }
+  const road: BoardRoad = { a: from, b: place.id, by: connectBy.value, points: [...bends] }
+  board.value.roads.push(road)
+  drawing.value = null
+  roadNote.value =
+    `Road drawn: ${nameOf(from)} to ${place.name}` +
+    (bends.length ? ` with ${bends.length} bend${bends.length === 1 ? '' : 's'}.` : '.') +
+    ' Click a place to start the next one.'
+}
+
+/** Backspace takes back the last bend (or the start); Escape stops drawing. */
+function onKey(event: KeyboardEvent): void {
+  const target = event.target as HTMLElement | null
+  if (target && ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)) return
+  if (tool.value !== 'road') return
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    if (drawing.value) {
+      drawing.value = null
+      roadNote.value = 'Stopped. Click a place to start a road.'
+    } else setTool('road')
+  } else if (event.key === 'Backspace' && drawing.value) {
+    event.preventDefault()
+    if (drawing.value.bends.length) drawing.value.bends.pop()
+    else drawing.value = null
+  }
+}
+
+/* editing a drawn road ------------------------------------------------------ */
+function pickRoad(road: BoardRoad): void {
+  if (tool.value !== 'select') return
+  selectedRoad.value = road
+  selected.value = null
+}
+
+/** Whether the grabbed bend has moved (a still press is a click, or half a double-click). */
+let bendMoved = false
+
+function grabBend(index: number): void {
+  draggingBend.value = index
+  bendMoved = false
+}
+
+/** Pull a new bend out of a stretch's middle and keep dragging it. */
+function grabMiddle(event: PointerEvent, stretch: number): void {
+  const road = selectedRoad.value
+  const point = selectedMiddles.value[stretch]
+  if (!road || !point) return
+  road.points = withBend(road.points, stretch, point)
+  grabBend(stretch)
+  // The dot pressed is gone (it became the bend): the map takes the pointer now.
+  bendMoved = true
+  frameEl.value?.setPointerCapture(event.pointerId)
+}
+
+function removeBend(index: number): void {
+  const road = selectedRoad.value
+  if (!road) return
+  road.points = road.points.filter((_, i) => i !== index)
+}
+
+function removeSelectedRoad(): void {
+  if (!board.value || !selectedRoad.value) return
+  const road = selectedRoad.value
+  board.value.roads = board.value.roads.filter((r) => r !== road)
+  selectedRoad.value = null
+}
+
+function onFrameMove(event: PointerEvent): void {
+  if (tool.value === 'road' && drawing.value) cursor.value = pointFrom(event)
+  if (draggingBend.value === null || !selectedRoad.value) return
+  const point = pointFrom(event)
+  if (!point) return
+  if (!bendMoved) {
+    // Only a real drag takes the pointer: a still press stays a click on the bend.
+    bendMoved = true
+    frameEl.value?.setPointerCapture(event.pointerId)
+  }
+  const at = draggingBend.value
+  selectedRoad.value.points = selectedRoad.value.points.map((p, i) => (i === at ? point : p))
+}
+
+/** The click that ends a bend drag lands on the map: it must not deselect. */
+let draggedBend = false
+
+function onFrameUp(): void {
+  dragging.value = null
+  if (draggingBend.value !== null && bendMoved) draggedBend = true
+  draggingBend.value = null
+}
+
+function onPinClick(place: BoardPlace): void {
+  if (tool.value === 'road') roadAt(place)
+  else {
+    selected.value = place.id
+    selectedRoad.value = null
+  }
 }
 
 function startDrag(event: PointerEvent, place: BoardPlace): void {
+  if (tool.value === 'road') return
   selected.value = place.id
+  selectedRoad.value = null
   dragging.value = place.id
   ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
 }
@@ -296,6 +532,7 @@ function removeRoad(index: number): void {
   if (!board.value) return
   const road = liveRoads(board.value)[index]
   board.value.roads = board.value.roads.filter((r) => r !== road)
+  if (selectedRoad.value === road) selectedRoad.value = null
 }
 
 function addRoad(): void {
@@ -365,7 +602,11 @@ const ROAD_COLORS: Record<string, string> = {
 }
 const colorOf = (by: string) => ROAD_COLORS[by] ?? '#c0392b'
 
-onMounted(load)
+onMounted(() => {
+  void load()
+  window.addEventListener('keydown', onKey)
+})
+onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </script>
 
 <template>
@@ -405,7 +646,8 @@ onMounted(load)
             <div>
               <h2 class="card__title">1 · The map</h2>
               <p class="card__sub">
-                Upload a map you made, or paint one. Clear roads and labels help the map reader.
+                Upload a map you made, or paint one. Clear roads and labels help the map reader. No
+                picture? Start on a blank parchment and draw the places and roads yourself.
               </p>
             </div>
           </header>
@@ -426,6 +668,9 @@ onMounted(load)
               :disabled="busy !== ''"
               @click="showPaint = !showPaint">
               <IconSparkle :size="14" /> Paint one
+            </button>
+            <button type="button" class="ghost" :disabled="busy !== ''" @click="blankParchment">
+              {{ busy === 'parchment' ? 'Laying it out…' : 'Blank parchment' }}
             </button>
           </div>
           <div v-if="showPaint" class="paint">
@@ -453,8 +698,11 @@ onMounted(load)
             <div>
               <h2 class="card__title">2 · Places and roads</h2>
               <p class="card__sub">
-                Drag a pin to move it, click one to rename it or connect it.
-                <template v-if="board.places.length === 0">Start by finding the places.</template>
+                Drag a pin to move it, click one to rename it. Draw a road by clicking a place, each
+                bend, then the place it reaches; click a road to move its bends.
+                <template v-if="board.places.length === 0">
+                  Start by finding the places, or add them by hand.
+                </template>
               </p>
             </div>
           </header>
@@ -485,22 +733,54 @@ onMounted(load)
               type="button"
               class="ghost"
               :class="{ 'is-on': placing }"
+              :aria-pressed="placing"
               :disabled="busy !== ''"
-              @click="placing = !placing">
+              @click="setTool('place')">
               <IconPlus :size="14" /> {{ placing ? 'Click the map to place it' : 'Add a place' }}
             </button>
+            <button
+              type="button"
+              class="ghost"
+              :class="{ 'is-on': tool === 'road' }"
+              :aria-pressed="tool === 'road'"
+              :disabled="busy !== '' || keptCount < 2"
+              @click="setTool('road')">
+              <IconBranch :size="14" /> {{ tool === 'road' ? 'Done drawing' : 'Draw a road' }}
+            </button>
+            <select
+              v-if="tool === 'road'"
+              v-model="connectBy"
+              class="ev-input small"
+              aria-label="Kind of road to draw">
+              <option v-for="k in ROAD_KINDS" :key="k" :value="k">{{ k }}</option>
+            </select>
           </div>
           <p v-if="notice" class="card__note"><IconInfo :size="14" /> {{ notice }}</p>
+          <p v-if="roadNote" class="card__note card__note--road" role="status">
+            <IconBranch :size="14" /> {{ roadNote }}
+            <span v-if="tool === 'road'" class="keys">Backspace undoes a bend · Esc stops</span>
+          </p>
 
           <div class="boardwrap">
             <div
+              ref="frameEl"
               class="mapframe"
-              :class="{ 'mapframe--placing': placing }"
+              :class="{ 'mapframe--placing': placing || tool === 'road' }"
               :style="{ aspectRatio: aspect }"
-              @pointerup="dragging = null"
+              @pointermove="onFrameMove"
+              @pointerup="onFrameUp"
+              @pointerleave="cursor = null"
               @click="onFrameClick($event as PointerEvent)">
               <img :src="pictureUrl" :alt="`Map of ${worldName}`" draggable="false" />
               <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
+                <polyline
+                  v-if="selectedLine.length"
+                  :points="selectedLine.map(([x, y]) => `${x},${y}`).join(' ')"
+                  class="road-halo"
+                  fill="none"
+                  stroke-width="10"
+                  stroke-linejoin="round"
+                  vector-effect="non-scaling-stroke" />
                 <polyline
                   v-for="(line, i) in linesFor"
                   :key="i"
@@ -511,7 +791,58 @@ onMounted(load)
                   stroke-width="4"
                   stroke-linejoin="round"
                   vector-effect="non-scaling-stroke" />
+                <!-- wide, invisible: what a click on a road lands on -->
+                <polyline
+                  v-for="(line, i) in linesFor"
+                  :key="`hit-${i}`"
+                  :points="line.points"
+                  class="road-hit"
+                  :class="{ 'road-hit--live': tool === 'select' }"
+                  fill="none"
+                  stroke="transparent"
+                  stroke-width="16"
+                  vector-effect="non-scaling-stroke"
+                  @click.stop="pickRoad(line.road)" />
+                <polyline
+                  v-if="drawnLine"
+                  :points="drawnLine"
+                  :stroke="colorOf(connectBy)"
+                  stroke-dasharray="8 6"
+                  fill="none"
+                  stroke-width="4"
+                  stroke-linejoin="round"
+                  vector-effect="non-scaling-stroke" />
               </svg>
+              <span
+                v-for="(b, i) in drawing?.bends ?? []"
+                :key="`drawn-${i}`"
+                class="bend bend--drawn"
+                :style="{ left: `${b[0] / 10}%`, top: `${b[1] / 10}%` }" />
+              <template v-if="selectedRoad && tool === 'select'">
+                <button
+                  v-for="(m, i) in selectedMiddles"
+                  :key="`mid-${i}`"
+                  type="button"
+                  class="bend bend--middle"
+                  :style="{ left: `${m[0] / 10}%`, top: `${m[1] / 10}%` }"
+                  :aria-label="`Add a bend to this stretch`"
+                  title="Drag to add a bend"
+                  @click.stop
+                  @pointerdown.stop.prevent="grabMiddle($event, i)" />
+                <button
+                  v-for="(b, i) in selectedRoad.points"
+                  :key="`bend-${i}`"
+                  type="button"
+                  class="bend"
+                  :style="{ left: `${b[0] / 10}%`, top: `${b[1] / 10}%` }"
+                  :aria-label="`Bend ${i + 1}: drag to move, double-click or Delete to remove`"
+                  title="Drag to move · double-click to remove"
+                  @click.stop
+                  @dblclick.stop="removeBend(i)"
+                  @keydown.delete.prevent="removeBend(i)"
+                  @keydown.backspace.prevent="removeBend(i)"
+                  @pointerdown.stop.prevent="grabBend(i)" />
+              </template>
               <button
                 v-for="p in board.places"
                 :key="p.id"
@@ -519,12 +850,13 @@ onMounted(load)
                 class="pin"
                 :class="{
                   'pin--off': !p.keep,
-                  'pin--on': p.id === selected,
-                  'pin--new': p.keep && !p.key
+                  'pin--on': p.id === selected || p.id === drawing?.from,
+                  'pin--new': p.keep && !p.key,
+                  'pin--target': p.id === snapTarget?.id
                 }"
                 :style="{ left: `${p.point[0] / 10}%`, top: `${p.point[1] / 10}%` }"
                 :title="p.name"
-                @click.stop="selected = p.id"
+                @click.stop="onPinClick(p)"
                 @pointerdown.stop="startDrag($event, p)"
                 @pointermove="onDrag($event, p)"
                 @pointerup="dragging = null">
@@ -534,7 +866,35 @@ onMounted(load)
             </div>
 
             <aside class="side">
-              <div v-if="selectedPlace" class="inspect">
+              <div v-if="selectedRoad" class="inspect">
+                <p class="field__label">
+                  {{ nameOf(selectedRoad.a) }} — {{ nameOf(selectedRoad.b) }}
+                </p>
+                <label class="field">
+                  <span class="field__label">By</span>
+                  <select v-model="selectedRoad.by" class="ev-input">
+                    <option v-for="k in ROAD_KINDS" :key="k" :value="k">{{ k }}</option>
+                  </select>
+                </label>
+                <p class="card__note">
+                  <IconInfo :size="14" />
+                  {{ selectedRoad.points.length }} of {{ MAX_BENDS }} bends. Drag a bend to move it,
+                  drag a hollow dot to add one, double-click a bend to remove it.
+                </p>
+                <div class="row">
+                  <button
+                    type="button"
+                    class="ghost"
+                    :disabled="!selectedRoad.points.length"
+                    @click="selectedRoad.points = []">
+                    Straighten
+                  </button>
+                  <button type="button" class="ghost danger" @click="removeSelectedRoad">
+                    Remove this road
+                  </button>
+                </div>
+              </div>
+              <div v-else-if="selectedPlace" class="inspect">
                 <label class="field">
                   <span class="field__label">Name</span>
                   <input v-model="selectedPlace.name" class="ev-input" maxlength="128" />
@@ -589,7 +949,9 @@ onMounted(load)
                   </div>
                 </div>
               </div>
-              <p v-else class="card__note"><IconInfo :size="14" /> Click a pin to edit it.</p>
+              <p v-else class="card__note">
+                <IconInfo :size="14" /> Click a pin or a road to edit it.
+              </p>
 
               <ul class="legend">
                 <li><span class="sw sw--new"></span> New place</li>
@@ -657,7 +1019,15 @@ onMounted(load)
               </thead>
               <tbody>
                 <tr v-for="(t, i) in timed" :key="`${t.road.a}-${t.road.b}`">
-                  <td><IconBranch :size="13" /> {{ nameOf(t.road.a) }} — {{ nameOf(t.road.b) }}</td>
+                  <td>
+                    <button
+                      type="button"
+                      class="roadname"
+                      :class="{ 'is-on': t.road === selectedRoad }"
+                      @click="((tool = 'select'), pickRoad(t.road))">
+                      <IconBranch :size="13" /> {{ nameOf(t.road.a) }} — {{ nameOf(t.road.b) }}
+                    </button>
+                  </td>
                   <td>
                     <span class="by" :style="{ color: colorOf(t.road.by) }">{{ t.road.by }}</span>
                   </td>
@@ -862,6 +1232,68 @@ onMounted(load)
 }
 .mapframe svg {
   pointer-events: none;
+}
+.road-halo {
+  stroke: rgba(255, 252, 240, 0.9);
+}
+.road-hit--live {
+  pointer-events: stroke;
+  cursor: pointer;
+}
+.bend {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #2e2718;
+  cursor: move;
+  touch-action: none;
+  padding: 0;
+}
+.bend:focus-visible {
+  outline: 3px solid var(--gold-soft);
+}
+.bend--middle {
+  width: 11px;
+  height: 11px;
+  background: rgba(255, 255, 255, 0.35);
+  border-style: dashed;
+  cursor: copy;
+}
+.bend--drawn {
+  width: 9px;
+  height: 9px;
+  pointer-events: none;
+}
+.pin--target .pin__dot {
+  box-shadow: 0 0 0 5px rgba(242, 201, 76, 0.7);
+}
+.card__note--road {
+  color: var(--teal-ink);
+  flex-wrap: wrap;
+}
+.keys {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.roadname {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  text-align: left;
+  color: inherit;
+  padding: 2px 4px;
+  border-radius: 6px;
+}
+.roadname:hover,
+.roadname.is-on {
+  color: var(--teal-ink);
+  background: rgba(31, 106, 94, 0.08);
+}
+.danger {
+  color: #b3542e;
 }
 .pin {
   position: absolute;

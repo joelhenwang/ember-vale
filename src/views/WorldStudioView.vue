@@ -56,6 +56,7 @@ import CollapseBox from '../components/studio/CollapseBox.vue'
 import SuggestButton from '../components/studio/SuggestButton.vue'
 import StudioSelect from '../components/studio/StudioSelect.vue'
 import CoverCard from '../components/studio/CoverCard.vue'
+import MapPreview from '../components/studio/MapPreview.vue'
 import SaveBar from '../components/ui/SaveBar.vue'
 import IconSparkle from '../components/icons/IconSparkle.vue'
 import IconBook from '../components/icons/IconBook.vue'
@@ -1046,19 +1047,21 @@ function suggest(): void {
           class="preview__pane"
           role="tabpanel"
           aria-labelledby="wpanel-tab-map">
-          <div class="scene-img scene-img--tall">
-            <img :src="mapUrl" :alt="`${worldName} map`" />
-          </div>
-          <p class="ev-info">
-            <IconInfo :size="14" />
-            A cartographer’s pass over the valley floor — places you’ve defined appear here as you
-            add them.
-          </p>
+          <MapPreview :preset-id="id" :revision="record?.revision ?? null">
+            <div class="scene-img scene-img--tall">
+              <img :src="mapUrl" :alt="`${worldName} map`" />
+            </div>
+            <p class="ev-info">
+              <IconInfo :size="14" />
+              No map yet. Draw one from a picture, a painting or a blank parchment: put the places
+              down and draw the roads between them.
+            </p>
+          </MapPreview>
           <RouterLink
             v-if="id !== 'new'"
             class="ghost maplink"
             :to="{ name: 'library-world-map', params: { id } }">
-            Draw this world from a map: places, roads and travel times
+            Draw or change this world’s map: places, roads and travel times
           </RouterLink>
           <RouterLink
             v-if="id !== 'new'"

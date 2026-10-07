@@ -340,3 +340,68 @@ export function mapPrompt(worldName: string, places: WorldPlace[]): string {
     'readable labels, parchment border.'
   )
 }
+
+/* drawing roads by hand ---------------------------------------------------- */
+
+/** Bends a road may have between its two places (domain MapRoad). */
+export const MAX_BENDS = 16
+/** A click this close to a place (in units of the picture's longer side) is on it. */
+export const SNAP = 28
+
+/** Distance between two map points, measured on the picture (see roadLength). */
+export function mapDistance(a: Point, b: Point, width: number, height: number): number {
+  return roadLength([a, b], width, height)
+}
+
+/** The kept place nearest a point, if it is within `within`; `except` is skipped. */
+export function nearestPlace(
+  board: Board,
+  point: Point,
+  within = SNAP,
+  except: string | null = null
+): BoardPlace | null {
+  let best: BoardPlace | null = null
+  let bestDistance = within
+  for (const place of keptPlaces(board)) {
+    if (place.id === except) continue
+    const d = mapDistance(place.point, point, board.width, board.height)
+    if (d <= bestDistance) {
+      best = place
+      bestDistance = d
+    }
+  }
+  return best
+}
+
+/** Why a road from a to b with these bends cannot be added, or null. */
+export function roadProblem(board: Board, a: string, b: string, bends: number): string | null {
+  if (a === b) return 'A road joins two different places.'
+  const exists = board.roads.some((r) => (r.a === a && r.b === b) || (r.a === b && r.b === a))
+  if (exists) {
+    const name = (id: string) => board.places.find((p) => p.id === id)?.name ?? '?'
+    return `There is already a road between ${name(a)} and ${name(b)}.`
+  }
+  if (bends > MAX_BENDS) return `A road has at most ${MAX_BENDS} bends.`
+  return null
+}
+
+/** The middle of each stretch of a drawn line (where a new bend can be pulled out). */
+export function stretchMiddles(line: Point[]): Point[] {
+  const out: Point[] = []
+  for (let i = 1; i < line.length; i += 1) {
+    const [x1, y1] = line[i - 1]!
+    const [x2, y2] = line[i]!
+    out.push([Math.round((x1 + x2) / 2), Math.round((y1 + y2) / 2)])
+  }
+  return out
+}
+
+/**
+ * A road's bends with one added in stretch `stretch` (0: between the first
+ * place and the first bend); unchanged when it already has the most.
+ */
+export function withBend(bends: Point[], stretch: number, point: Point): Point[] {
+  if (bends.length >= MAX_BENDS) return bends
+  const at = Math.max(0, Math.min(bends.length, stretch))
+  return [...bends.slice(0, at), point, ...bends.slice(at)]
+}

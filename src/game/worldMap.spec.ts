@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import type { PresetDetail } from '../../content/clients/worldsim'
 import {
+  MAX_BENDS,
+  SNAP,
   boardFromPreset,
   describePhases,
+  nearestPlace,
+  roadProblem,
+  stretchMiddles,
+  withBend,
   placesFromReading,
   roadLength,
   roadsFromReading,
@@ -157,5 +163,59 @@ describe('the board', () => {
     expect(board.roads).toEqual([
       { a: board.places[0]!.id, b: board.places[1]!.id, by: 'sea', points: [[20, 30]] }
     ])
+  })
+})
+
+describe('drawing roads by hand', () => {
+  const board = (): Board => ({
+    assetId: 'm',
+    width: 2000,
+    height: 1000,
+    places: [
+      { id: 'h', name: 'Hearth', kind: 'inn', point: [100, 100], key: 'hearth', keep: true },
+      { id: 'm', name: 'Market', kind: 'market', point: [900, 100], key: 'market', keep: true },
+      { id: 'o', name: 'Rocks', kind: 'rocks', point: [500, 500], key: null, keep: false }
+    ],
+    roads: []
+  })
+
+  it('snaps a click near a kept place onto it, measured on the picture', () => {
+    // 20 units across a 2:1 picture is 20 on the long side; 20 down is only 10.
+    expect(nearestPlace(board(), [120, 100])?.id).toBe('h')
+    expect(nearestPlace(board(), [100, 150])?.id).toBe('h')
+    expect(nearestPlace(board(), [160, 100])).toBeNull()
+    expect(nearestPlace(board(), [500, 500])).toBeNull() // left off: not a place to go
+    expect(nearestPlace(board(), [120, 100], SNAP, 'h')).toBeNull()
+  })
+
+  it('refuses a road to itself, a second road, and too many bends', () => {
+    const b = board()
+    expect(roadProblem(b, 'h', 'h', 0)).toMatch(/two different/)
+    expect(roadProblem(b, 'h', 'm', MAX_BENDS)).toBeNull()
+    expect(roadProblem(b, 'h', 'm', MAX_BENDS + 1)).toMatch(/at most 16/)
+    b.roads.push({ a: 'm', b: 'h', by: 'road', points: [] })
+    expect(roadProblem(b, 'h', 'm', 0)).toBe('There is already a road between Hearth and Market.')
+  })
+
+  it('pulls a new bend out of the middle of a stretch', () => {
+    const line: Array<[number, number]> = [
+      [0, 0],
+      [100, 0],
+      [100, 100]
+    ]
+    expect(stretchMiddles(line)).toEqual([
+      [50, 0],
+      [100, 50]
+    ])
+    expect(withBend([[100, 0]], 0, [50, 0])).toEqual([
+      [50, 0],
+      [100, 0]
+    ])
+    expect(withBend([[100, 0]], 1, [100, 50])).toEqual([
+      [100, 0],
+      [100, 50]
+    ])
+    const full = Array.from({ length: MAX_BENDS }, (_, i): [number, number] => [i, i])
+    expect(withBend(full, 0, [9, 9])).toBe(full)
   })
 })
