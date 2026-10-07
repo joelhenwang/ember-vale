@@ -16,7 +16,6 @@ import FramedImage from './ui/FramedImage.vue'
 import MomentDialog from './story/MomentDialog.vue'
 import { storyLocation } from '../game/storyRoute'
 import IconSparkle from './icons/IconSparkle.vue'
-import IconArrowRight from './icons/IconArrowRight.vue'
 
 const router = useRouter()
 const story = computed(() => menuState.current)
@@ -68,7 +67,7 @@ function openLatest(): void {
       </button>
     </div>
 
-    <div v-if="story" class="hero__body" :class="{ 'hero__body--moment': latest }">
+    <div v-if="story" class="hero__body">
       <img
         v-if="playing?.portraitUrl"
         class="hero__portrait"
@@ -90,26 +89,31 @@ function openLatest(): void {
             <template v-if="playing?.lastLine">Last time: {{ playing.lastLine }}</template>
             <template v-else>{{ story.logline }}</template>
           </p>
-          <MenuButton
-            class="hero__continue"
-            size="md"
-            arrow="circle"
-            @click="router.push(storyLocation(story.id, story.pov))">
-            {{ playing ? `Continue as ${playing.name}` : 'Continue story' }}
-          </MenuButton>
         </div>
       </div>
 
-      <button v-if="latest" class="hero__event" type="button" @click="openLatest">
-        <span class="ev-eyebrow">Latest key moment</span>
-        <span class="hero__event-title">{{ momentTitle(latest) }}</span>
-        <span class="hero__event-line">{{ latest.caption }}</span>
-        <span class="hero__event-more">
-          Read this moment
-          <template v-if="moments.length > 1">· {{ moments.length }} in all</template>
-          <IconArrowRight :size="12" />
-        </span>
-      </button>
+      <!-- the latest key moment (opens it), and Continue under it -->
+      <div class="hero__aside" :class="{ 'hero__aside--moment': latest }">
+        <button
+          v-if="latest"
+          class="hero__event"
+          type="button"
+          :title="
+            moments.length > 1 ? `Open this moment (${moments.length} in all)` : 'Open this moment'
+          "
+          @click="openLatest">
+          <span class="ev-eyebrow">Latest key moment</span>
+          <span class="hero__event-title">{{ momentTitle(latest) }}</span>
+          <span class="hero__event-line">{{ latest.caption }}</span>
+        </button>
+        <MenuButton
+          class="hero__continue"
+          size="md"
+          arrow="circle"
+          @click="router.push(storyLocation(story.id, story.pov))">
+          {{ playing ? `Continue as ${playing.name}` : 'Continue story' }}
+        </MenuButton>
+      </div>
     </div>
 
     <div v-else class="hero__body hero__body--empty">
@@ -196,13 +200,10 @@ function openLatest(): void {
 /* body ---------------------------------------------------------------------- */
 .hero__body {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 26px;
-  align-items: start;
-  padding: 18px 16px 10px;
-}
-.hero__body--moment {
   grid-template-columns: auto minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 26px;
+  align-items: stretch;
+  padding: 18px 16px 10px;
 }
 .hero__body--empty {
   grid-template-columns: minmax(0, 1fr) auto;
@@ -245,9 +246,6 @@ function openLatest(): void {
   color: var(--ink);
 }
 .hero__resume {
-  display: flex;
-  align-items: center;
-  gap: 22px;
   margin-top: 14px;
   padding-top: 14px;
   border-top: 1px solid var(--line-soft);
@@ -265,13 +263,27 @@ function openLatest(): void {
   width: 260px;
 }
 
+/* right column: the moment on top, Continue at the foot, level with "Last time" */
+.hero__aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 18px;
+  min-width: 0;
+  padding-bottom: 6px;
+}
+.hero__aside--moment {
+  justify-content: space-between;
+  padding-left: 24px;
+  border-left: 1px solid var(--line);
+}
 .hero__event {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
-  padding: 4px 0 4px 24px;
-  border-left: 1px solid var(--line);
+  padding: 4px 0;
   text-align: left;
   cursor: pointer;
 }
@@ -289,32 +301,22 @@ function openLatest(): void {
   line-height: 1.45;
   color: var(--ink-2);
 }
-.hero__event-more {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 6px;
-  font-family: var(--font-ui);
-  font-size: 15px;
-  color: var(--teal-ink);
-}
 .hero__event:hover .hero__event-title,
 .hero__event:focus-visible .hero__event-title {
   color: var(--teal-ink);
 }
 
 @media (max-width: 1280px) {
-  .hero__body--moment {
+  .hero__body {
     grid-template-columns: auto minmax(0, 1fr);
   }
-  .hero__body--moment .hero__event {
+  .hero__aside {
     grid-column: 1 / -1;
+  }
+  .hero__aside--moment {
     padding: 14px 0 0;
     border-left: 0;
     border-top: 1px solid var(--line-soft);
-  }
-  .hero__resume {
-    flex-wrap: wrap;
   }
 }
 @media (max-width: 720px) {
@@ -322,7 +324,6 @@ function openLatest(): void {
     width: 70%;
   }
   .hero__body,
-  .hero__body--moment,
   .hero__body--empty {
     grid-template-columns: minmax(0, 1fr);
     gap: 14px;
