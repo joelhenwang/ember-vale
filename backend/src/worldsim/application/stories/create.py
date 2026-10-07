@@ -255,12 +255,19 @@ async def _instantiate(
     if payload.story.tone:
         await uow.worlds.put_config(world_id, "tone", {"text": payload.story.tone})
     travel_pairs = _validated_travel_pairs(world_preset, location_ids)
+    world_map = world_preset.map
+
+    def phases(src: str, dst: str) -> int:
+        """A road drawn on the world's map takes its timed phases."""
+        timed = world_map.phases_between(src, dst) if world_map else None
+        return timed or 1
+
     embedded_routes: dict[str, list[Route]] = {
         key: [
             Route(
                 id=new_route_id(),
                 destination_location_id=location_ids[dst],
-                duration_phases=1,
+                duration_phases=phases(src, dst),
                 stamina_cost=0,
             )
             for (src, dst) in travel_pairs
@@ -287,7 +294,7 @@ async def _instantiate(
                 world_id=world_id,
                 from_location_id=location_ids[src],
                 to_location_id=location_ids[dst],
-                duration_phases=1,
+                duration_phases=phases(src, dst),
                 stamina_cost=0,
             )
         )

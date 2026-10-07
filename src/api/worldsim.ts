@@ -61,7 +61,11 @@ import type {
   StoryProviderView,
   StorySetupView,
   SuggestionView,
-  TimelineResponse
+  TimelineResponse,
+  MapImageView,
+  MapPlacesView,
+  MapRoadsView,
+  WorldMapRequest
 } from '../../content/clients/worldsim'
 import { apiFetch, type Role } from './http'
 
@@ -739,5 +743,76 @@ export function cancelIntervention(
     ...opts,
     method: 'POST',
     body
+  })
+}
+
+/* World maps -------------------------------------------------------------- */
+
+/** Same-origin URL for an unscoped library picture (a world's map). */
+export function libraryAssetUrl(assetId: string): string {
+  return `/api/v1/library/assets/${assetId}/bytes`
+}
+
+export function uploadMap(dataUrl: string, opts: CallOptions = {}): Promise<MapImageView> {
+  return apiFetch<MapImageView>('/library/maps', {
+    timeoutMs: 120000,
+    ...opts,
+    method: 'POST',
+    body: { data_url: dataUrl }
+  })
+}
+
+export function paintMap(
+  prompt: string,
+  ratio: string,
+  opts: CallOptions = {}
+): Promise<MapImageView> {
+  // The image service may first switch its model (~35 s), then paint.
+  return apiFetch<MapImageView>('/library/maps/paint', {
+    timeoutMs: 300000,
+    ...opts,
+    method: 'POST',
+    body: { prompt, ratio }
+  })
+}
+
+export function readMapPlaces(assetId: string, opts: CallOptions = {}): Promise<MapPlacesView> {
+  return apiFetch<MapPlacesView>(`/library/maps/${assetId}/places`, {
+    timeoutMs: 420000,
+    ...opts,
+    method: 'POST'
+  })
+}
+
+export function readMapRoads(
+  assetId: string,
+  places: Array<{ name: string; kind: string; point: [number, number] }>,
+  opts: CallOptions = {}
+): Promise<MapRoadsView> {
+  return apiFetch<MapRoadsView>(`/library/maps/${assetId}/roads`, {
+    timeoutMs: 420000,
+    ...opts,
+    method: 'POST',
+    body: { places }
+  })
+}
+
+export function saveWorldMap(
+  presetId: string,
+  body: WorldMapRequest,
+  opts: CallOptions = {}
+): Promise<PresetDetail> {
+  // expected_version guards concurrent edits (VERSION_CONFLICT on mismatch).
+  return apiFetch<PresetDetail>(`/library/presets/${presetId}/map`, {
+    ...opts,
+    method: 'PUT',
+    body
+  })
+}
+
+export function duplicatePreset(presetId: string, opts: CallOptions = {}): Promise<PresetDetail> {
+  return apiFetch<PresetDetail>(`/library/presets/${presetId}/duplicate`, {
+    ...opts,
+    method: 'POST'
   })
 }

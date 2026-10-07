@@ -229,6 +229,21 @@ class SecuritySettings(BaseModel):
     api_key: SecretStr | None = None
 
 
+class MapSettings(BaseModel):
+    """Reading world maps (places, then roads) with vision models on OpenRouter.
+
+    Uses the provider's OpenRouter key. Measured in docs/evidence/map-detect-001
+    and map-routes-001.
+    """
+
+    places_model: str = "openai/gpt-6-luna"
+    roads_model: str = "anthropic/claude-sonnet-5.5"
+    reasoning: Literal["minimal", "low", "medium", "high"] | None = "low"
+    #: Thinking included: some models think at length even at low effort.
+    max_tokens: int = Field(default=40000, ge=1000, le=128000)
+    timeout_s: float = Field(default=400.0, gt=0, le=900)
+
+
 class Settings(BaseSettings):
     """Root settings; validated once at startup."""
 
@@ -244,6 +259,7 @@ class Settings(BaseSettings):
     security: SecuritySettings = SecuritySettings()
     autoplay: AutoplaySettings = AutoplaySettings()
     images: ImageSettings = ImageSettings()
+    maps: MapSettings = MapSettings()
     local_models: LocalModelSettings = LocalModelSettings()
 
     @model_validator(mode="after")

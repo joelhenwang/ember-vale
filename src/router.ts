@@ -49,6 +49,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'World — Ember Vale', from: 'library' }
   },
   {
+    path: '/library/world/:id/map',
+    name: 'library-world-map',
+    component: () => import('./views/WorldMapView.vue'),
+    meta: { title: 'World map — Ember Vale', from: 'library' }
+  },
+  {
     path: '/new-story/world/:id',
     name: 'wizard-world-studio',
     component: () => import('./views/WorldStudioView.vue'),

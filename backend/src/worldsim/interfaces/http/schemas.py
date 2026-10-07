@@ -1742,3 +1742,83 @@ class StoryPromptsUpdate(BaseModel):
     image_suffix: str = Field(default="", max_length=400)
     characters: list[CharacterPromptUpdate] = Field(default_factory=list)
     expected_version: int = Field(ge=0)
+
+
+class MapUploadRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    #: A PNG, JPEG or WebP picture as a data URL.
+    data_url: str = Field(min_length=32, max_length=24_000_000)
+
+
+class MapPaintRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    prompt: str = Field(min_length=1, max_length=2000)
+    ratio: str = "16:9"
+
+
+class MapImageView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    asset_id: UUID
+    width: int
+    height: int
+
+
+class MapPlaceView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    name: str = Field(min_length=1, max_length=128)
+    kind: str = Field(default="", max_length=32)
+    point: tuple[int, int]
+
+
+class MapRoadView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    #: Indexes into the places sent with it.
+    a: int = Field(ge=0)
+    b: int = Field(ge=0)
+    by: str = Field(default="road", max_length=16)
+    points: list[tuple[int, int]] = Field(default_factory=list, max_length=16)
+
+
+class MapPlacesView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    places: list[MapPlaceView]
+    model: str
+    seconds: float
+    cost_usd: float
+
+
+class MapRoadsRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    places: list[MapPlaceView] = Field(min_length=2, max_length=64)
+
+
+class MapRoadsView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    roads: list[MapRoadView]
+    model: str
+    seconds: float
+    cost_usd: float
+
+
+class WorldMapPlace(MapPlaceView):
+    #: The world location this pin is; absent mints a new place.
+    key: str | None = Field(default=None, max_length=64)
+
+
+class WorldMapRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    asset_id: UUID
+    places: list[WorldMapPlace] = Field(min_length=1, max_length=64)
+    roads: list[MapRoadView] = Field(default_factory=list, max_length=256)
+    shortest_phases: int = Field(ge=1, le=999)
+    longest_phases: int = Field(ge=1, le=999)
+    expected_version: int = Field(ge=0)

@@ -201,7 +201,7 @@ def test_a_first_meeting_is_painted_with_faces_and_the_place(
     ids = asyncio.run(_seed_two_at_hearth())
     asyncio.run(_give_wren_a_portrait(ids, tmp_path))
     krea = _Krea()
-    raw.app.state.app_state._images = krea.client()  # pyright: ignore[reportAttributeAccessIssue]
+    raw.app.state.app_state._images = krea.client()  # pyright: ignore[reportAttributeAccessIssue, reportFunctionMemberAccess]
     selected = api.post(
         "/api/v1/stage2/roles/select",
         json={"world_id": str(ids["world"]), "role": "player", "character_id": str(ids["wren"])},

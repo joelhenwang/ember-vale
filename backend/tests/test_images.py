@@ -18,6 +18,7 @@ from test_story_travel import MIGRATIONS, SEED_DIR, _create, _draft
 
 from worldsim.application.images import compose_prompt, load_style_pack, provider_ratio
 from worldsim.application.ports.images import (
+    CharacterCard,
     GeneratedImage,
     ImageGenerationError,
     ImageRequest,
@@ -124,6 +125,9 @@ class _Painter:
             self._failures -= 1
             raise ImageGenerationError("krea HTTP 503: model is still loading")
         return GeneratedImage(data=PNG, mime="image/png", width=1024, height=1024, seed=1)
+
+    async def ensure_character(self, card: CharacterCard) -> None:
+        del card
 
 
 def _story(client: ApiClient, *, curated: bool = False) -> UUID:

@@ -17,6 +17,7 @@ import worldsim
 from worldsim.application.orchestration.background import BackgroundNarration
 from worldsim.application.orchestration.service import PhaseOrchestrator
 from worldsim.application.orchestration.stage1 import Stage1Orchestrator
+from worldsim.application.ports.map_reader import MapReader
 from worldsim.application.ports.model_gateway import ModelGateway
 from worldsim.application.ports.traces import TraceExporter
 from worldsim.application.settings.resolution import PinnedRuntime
@@ -25,6 +26,7 @@ from worldsim.application.tracing.service import TraceService
 from worldsim.application.transactions.canonical import CanonicalTransaction
 from worldsim.domain.rules.dnd import DataTables, load_data
 from worldsim.infrastructure.db.engine import create_engine
+from worldsim.infrastructure.geography.openrouter import OpenRouterMapReader
 from worldsim.infrastructure.images.krea import KreaImageGenerator
 from worldsim.infrastructure.local_models.client import LocalModelsClient
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
@@ -73,6 +75,7 @@ class AppState:
     narration: BackgroundNarration | None = None
     #: The image service client (Krea), when images are switched on.
     _images: KreaImageGenerator | None = None
+    _map_reader: MapReader | None = None
 
     def uow_factory(self) -> Callable[[], SqlAlchemyUnitOfWork]:
         engine = self.engine
@@ -147,6 +150,23 @@ class AppState:
         if self._images is None and images.provider == "krea" and images.krea_base_url:
             self._images = KreaImageGenerator(images.krea_base_url, timeout_s=images.krea_timeout_s)
         return self._images
+
+    def map_reader(self) -> MapReader | None:
+        """The map reader, when an OpenRouter key is configured."""
+        if self._map_reader is None:
+            key = self.settings.provider.openrouter_api_key
+            if key is not None and key.get_secret_value().strip():
+                maps = self.settings.maps
+                self._map_reader = OpenRouterMapReader(
+                    key.get_secret_value().strip(),
+                    self.settings.provider.openrouter_base_url,
+                    maps.places_model,
+                    maps.roads_model,
+                    reasoning=maps.reasoning,
+                    max_tokens=maps.max_tokens,
+                    timeout_s=maps.timeout_s,
+                )
+        return self._map_reader
 
 
 MIGRATIONS_DIR = Path("backend/migrations")

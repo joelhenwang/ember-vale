@@ -1047,6 +1047,12 @@ function suggest(): void {
             A cartographer’s pass over the valley floor — places you’ve defined appear here as you
             add them.
           </p>
+          <RouterLink
+            v-if="id !== 'new'"
+            class="ghost maplink"
+            :to="{ name: 'library-world-map', params: { id } }">
+            Draw this world from a map: places, roads and travel times
+          </RouterLink>
           <ul class="maplegend">
             <li v-for="p in draft.places" :key="p.id">
               <span class="maplegend__dot"></span>{{ p.name }}
@@ -1167,5 +1173,11 @@ function suggest(): void {
 }
 .places__foot > div {
   min-width: 220px;
+}
+.maplink {
+  align-self: flex-start;
+  height: auto;
+  padding: 8px 14px;
+  font-size: 14.5px;
 }
 </style>

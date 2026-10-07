@@ -62,7 +62,7 @@ def _summary_view(preset: Preset) -> api.PresetSummary:
     )
 
 
-async def _detail(
+async def preset_detail(
     request: Request, preset_id: UUID, revision: int | None = None
 ) -> api.PresetDetail:
     state = request.app.state.app_state
@@ -146,16 +146,16 @@ async def create_preset(
             await uow.presets.add_preset(preset)
             await uow.presets.add_revision(revision)
             await uow.commit()
-        return await _detail(request, preset.id, 1)
+        return await preset_detail(request, preset.id, 1)
     preset_id = await create_one(state.uow_factory(), body.kind, body.name, body.payload, key)
-    return await _detail(request, preset_id, 1)
+    return await preset_detail(request, preset_id, 1)
 
 
 @router.get("/library/presets/{preset_id}", response_model=api.PresetDetail)
 async def read_preset(
     preset_id: UUID, request: Request, revision: int | None = None
 ) -> api.PresetDetail:
-    return await _detail(request, preset_id, revision)
+    return await preset_detail(request, preset_id, revision)
 
 
 @router.post("/library/presets/{preset_id}/revisions", response_model=api.PresetDetail)
@@ -184,7 +184,7 @@ async def add_revision(
             body.expected_version,
         )
         await uow.commit()
-    return await _detail(request, preset_id, next_revision)
+    return await preset_detail(request, preset_id, next_revision)
 
 
 def _draft_view(draft: EditorDraft, replayed: bool = False) -> api.EditorDraftView:
@@ -284,7 +284,7 @@ async def publish_editor_draft(
         body.expected_version,
         body.preset_expected_version,
     )
-    detail = await _detail(request, preset_id, revision.revision)
+    detail = await preset_detail(request, preset_id, revision.revision)
     return api.PresetPublishView(published_revision=revision.revision, detail=detail)
 
 
@@ -296,7 +296,7 @@ async def archive_preset(
     async with state.uow_factory()() as uow:
         await uow.presets.set_archived(preset_id, utcnow(), body.expected_version)
         await uow.commit()
-    return await _detail(request, preset_id)
+    return await preset_detail(request, preset_id)
 
 
 @router.post("/library/presets/{preset_id}/unarchive", response_model=api.PresetDetail)
@@ -307,13 +307,13 @@ async def unarchive_preset(
     async with state.uow_factory()() as uow:
         await uow.presets.set_archived(preset_id, None, body.expected_version)
         await uow.commit()
-    return await _detail(request, preset_id)
+    return await preset_detail(request, preset_id)
 
 
 @router.get("/library/presets/{preset_id}/export")
 async def export_preset(preset_id: UUID, request: Request) -> dict[str, Any]:
     """Versioned redacted preset JSON; referenced assets travel by ID."""
-    detail = await _detail(request, preset_id)
+    detail = await preset_detail(request, preset_id)
     return {
         "schema_version": 1,
         "kind": "preset-export",
@@ -393,7 +393,7 @@ async def duplicate_preset(preset_id: UUID, request: Request) -> api.PresetDetai
             )
         )
         await uow.commit()
-    return await _detail(request, copy.id, 1)
+    return await preset_detail(request, copy.id, 1)
 
 
 @router.get("/library/assets", response_model=list[api.AssetView])
@@ -408,7 +408,7 @@ async def list_library_assets(request: Request, kind: str = "portrait") -> list[
 @router.get("/library/presets/{preset_id}/assets")
 async def preset_assets(preset_id: UUID, request: Request) -> dict[str, Any]:
     """Resolve a preset revision's asset references with explicit miss warnings."""
-    detail = await _detail(request, preset_id)
+    detail = await preset_detail(request, preset_id)
     refs: list[str] = []
     portrait = detail.revision.get("portrait_asset_id")
     if isinstance(portrait, str) and portrait:

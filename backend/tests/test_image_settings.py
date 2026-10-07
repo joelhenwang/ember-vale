@@ -180,7 +180,7 @@ def test_runner_draws_with_saved_choices_and_waits_when_off(
 
 def test_service_view_and_preview(client: tuple[ApiClient, TestClient]) -> None:
     api, raw = client
-    state: Any = raw.app.state.app_state  # pyright: ignore[reportAttributeAccessIssue]
+    state: Any = raw.app.state.app_state  # pyright: ignore[reportAttributeAccessIssue, reportFunctionMemberAccess]
     if state.settings.images.provider != "krea":
         assert api.get("/api/v1/settings/images/service").json()["configured"] is False
         preview = api.post("/api/v1/settings/images/preview", json={"prompt": "x"})

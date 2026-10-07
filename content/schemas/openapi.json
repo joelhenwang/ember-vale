@@ -3522,6 +3522,31 @@
         "title": "MapAnchorView",
         "type": "object"
       },
+      "MapImageView": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "format": "uuid",
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "height": {
+            "title": "Height",
+            "type": "integer"
+          },
+          "width": {
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "asset_id",
+          "width",
+          "height"
+        ],
+        "title": "MapImageView",
+        "type": "object"
+      },
       "MapManifestView": {
         "additionalProperties": false,
         "properties": {
@@ -3563,6 +3588,27 @@
           "schematic"
         ],
         "title": "MapManifestView",
+        "type": "object"
+      },
+      "MapPaintRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "prompt": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "ratio": {
+            "default": "16:9",
+            "title": "Ratio",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "title": "MapPaintRequest",
         "type": "object"
       },
       "MapPlace": {
@@ -3617,6 +3663,75 @@
         "title": "MapPlace",
         "type": "object"
       },
+      "MapPlaceView": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "default": "",
+            "maxLength": 32,
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "point": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Point",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "point"
+        ],
+        "title": "MapPlaceView",
+        "type": "object"
+      },
+      "MapPlacesView": {
+        "additionalProperties": false,
+        "properties": {
+          "cost_usd": {
+            "title": "Cost Usd",
+            "type": "number"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "places": {
+            "items": {
+              "$ref": "#/components/schemas/MapPlaceView"
+            },
+            "title": "Places",
+            "type": "array"
+          },
+          "seconds": {
+            "title": "Seconds",
+            "type": "number"
+          }
+        },
+        "required": [
+          "places",
+          "model",
+          "seconds",
+          "cost_usd"
+        ],
+        "title": "MapPlacesView",
+        "type": "object"
+      },
       "MapResponse": {
         "additionalProperties": false,
         "properties": {
@@ -3639,6 +3754,102 @@
         "title": "MapResponse",
         "type": "object"
       },
+      "MapRoadView": {
+        "additionalProperties": false,
+        "properties": {
+          "a": {
+            "minimum": 0.0,
+            "title": "A",
+            "type": "integer"
+          },
+          "b": {
+            "minimum": 0.0,
+            "title": "B",
+            "type": "integer"
+          },
+          "by": {
+            "default": "road",
+            "maxLength": 16,
+            "title": "By",
+            "type": "string"
+          },
+          "points": {
+            "items": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array"
+            },
+            "maxItems": 16,
+            "title": "Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "a",
+          "b"
+        ],
+        "title": "MapRoadView",
+        "type": "object"
+      },
+      "MapRoadsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "places": {
+            "items": {
+              "$ref": "#/components/schemas/MapPlaceView"
+            },
+            "maxItems": 64,
+            "minItems": 2,
+            "title": "Places",
+            "type": "array"
+          }
+        },
+        "required": [
+          "places"
+        ],
+        "title": "MapRoadsRequest",
+        "type": "object"
+      },
+      "MapRoadsView": {
+        "additionalProperties": false,
+        "properties": {
+          "cost_usd": {
+            "title": "Cost Usd",
+            "type": "number"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "roads": {
+            "items": {
+              "$ref": "#/components/schemas/MapRoadView"
+            },
+            "title": "Roads",
+            "type": "array"
+          },
+          "seconds": {
+            "title": "Seconds",
+            "type": "number"
+          }
+        },
+        "required": [
+          "roads",
+          "model",
+          "seconds",
+          "cost_usd"
+        ],
+        "title": "MapRoadsView",
+        "type": "object"
+      },
       "MapRoute": {
         "additionalProperties": false,
         "properties": {
@@ -3657,6 +3868,22 @@
           "duration_phases"
         ],
         "title": "MapRoute",
+        "type": "object"
+      },
+      "MapUploadRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "data_url": {
+            "maxLength": 24000000,
+            "minLength": 32,
+            "title": "Data Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "data_url"
+        ],
+        "title": "MapUploadRequest",
         "type": "object"
       },
       "ModelRunView": {
@@ -7113,6 +7340,108 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "WorldMapPlace": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
+          "kind": {
+            "default": "",
+            "maxLength": 32,
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "point": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Point",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "point"
+        ],
+        "title": "WorldMapPlace",
+        "type": "object"
+      },
+      "WorldMapRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "format": "uuid",
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "expected_version": {
+            "minimum": 0.0,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "longest_phases": {
+            "maximum": 999.0,
+            "minimum": 1.0,
+            "title": "Longest Phases",
+            "type": "integer"
+          },
+          "places": {
+            "items": {
+              "$ref": "#/components/schemas/WorldMapPlace"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "title": "Places",
+            "type": "array"
+          },
+          "roads": {
+            "items": {
+              "$ref": "#/components/schemas/MapRoadView"
+            },
+            "maxItems": 256,
+            "title": "Roads",
+            "type": "array"
+          },
+          "shortest_phases": {
+            "maximum": 999.0,
+            "minimum": 1.0,
+            "title": "Shortest Phases",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "asset_id",
+          "places",
+          "shortest_phases",
+          "longest_phases",
+          "expected_version"
+        ],
+        "title": "WorldMapRequest",
+        "type": "object"
+      },
       "WorldResponse": {
         "additionalProperties": false,
         "properties": {
@@ -7873,6 +8202,184 @@
         ]
       }
     },
+    "/api/v1/library/maps": {
+      "post": {
+        "operationId": "upload_map_api_v1_library_maps_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MapUploadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapImageView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Map",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/v1/library/maps/paint": {
+      "post": {
+        "operationId": "paint_map_api_v1_library_maps_paint_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MapPaintRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapImageView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Paint Map",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/v1/library/maps/{asset_id}/places": {
+      "post": {
+        "operationId": "read_places_api_v1_library_maps__asset_id__places_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapPlacesView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Places",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/v1/library/maps/{asset_id}/roads": {
+      "post": {
+        "operationId": "read_roads_api_v1_library_maps__asset_id__roads_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MapRoadsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapRoadsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Roads",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/api/v1/library/presets": {
       "get": {
         "operationId": "list_presets_api_v1_library_presets_get",
@@ -8606,6 +9113,60 @@
           }
         },
         "summary": "Export Preset",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/v1/library/presets/{preset_id}/map": {
+      "put": {
+        "description": "Pin the world's places on the map and time its roads: a new revision.",
+        "operationId": "save_world_map_api_v1_library_presets__preset_id__map_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "preset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Preset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorldMapRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresetDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save World Map",
         "tags": [
           "library"
         ]

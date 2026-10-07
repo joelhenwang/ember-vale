@@ -6744,6 +6744,99 @@
           "title": "CharacterPresetPayload",
           "type": "object"
         },
+        "MapPin": {
+          "additionalProperties": false,
+          "description": "Where one world location is drawn.",
+          "properties": {
+            "key": {
+              "maxLength": 64,
+              "minLength": 1,
+              "title": "Key",
+              "type": "string"
+            },
+            "kind": {
+              "default": "",
+              "maxLength": 32,
+              "title": "Kind",
+              "type": "string"
+            },
+            "point": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "title": "Point",
+              "type": "array"
+            }
+          },
+          "required": [
+            "key",
+            "point"
+          ],
+          "title": "MapPin",
+          "type": "object"
+        },
+        "MapRoad": {
+          "additionalProperties": false,
+          "description": "One drawn connection between two pinned locations, both ways.",
+          "properties": {
+            "a": {
+              "maxLength": 64,
+              "minLength": 1,
+              "title": "A",
+              "type": "string"
+            },
+            "b": {
+              "maxLength": 64,
+              "minLength": 1,
+              "title": "B",
+              "type": "string"
+            },
+            "by": {
+              "default": "road",
+              "maxLength": 16,
+              "title": "By",
+              "type": "string"
+            },
+            "phases": {
+              "default": 1,
+              "maximum": 999,
+              "minimum": 1,
+              "title": "Phases",
+              "type": "integer"
+            },
+            "points": {
+              "items": {
+                "maxItems": 2,
+                "minItems": 2,
+                "prefixItems": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "type": "array"
+              },
+              "maxItems": 16,
+              "title": "Points",
+              "type": "array"
+            }
+          },
+          "required": [
+            "a",
+            "b"
+          ],
+          "title": "MapRoad",
+          "type": "object"
+        },
         "StylePackPayload": {
           "additionalProperties": false,
           "properties": {
@@ -6855,6 +6948,28 @@
           "title": "TemplatePresetPayload",
           "type": "object"
         },
+        "TravelScale": {
+          "additionalProperties": false,
+          "description": "The player's anchor: the shortest and the longest road, in phases.",
+          "properties": {
+            "longest_phases": {
+              "default": 10,
+              "maximum": 999,
+              "minimum": 1,
+              "title": "Longest Phases",
+              "type": "integer"
+            },
+            "shortest_phases": {
+              "default": 1,
+              "maximum": 999,
+              "minimum": 1,
+              "title": "Shortest Phases",
+              "type": "integer"
+            }
+          },
+          "title": "TravelScale",
+          "type": "object"
+        },
         "WorldLocationPreset": {
           "additionalProperties": false,
           "properties": {
@@ -6889,6 +7004,54 @@
             "name"
           ],
           "title": "WorldLocationPreset",
+          "type": "object"
+        },
+        "WorldMap": {
+          "additionalProperties": false,
+          "description": "A world preset's map: the picture, its pins and its timed roads.",
+          "properties": {
+            "asset_id": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Asset Id",
+              "type": "string"
+            },
+            "height": {
+              "minimum": 1,
+              "title": "Height",
+              "type": "integer"
+            },
+            "pins": {
+              "items": {
+                "$ref": "#/$defs/MapPin"
+              },
+              "maxItems": 64,
+              "title": "Pins",
+              "type": "array"
+            },
+            "roads": {
+              "items": {
+                "$ref": "#/$defs/MapRoad"
+              },
+              "maxItems": 256,
+              "title": "Roads",
+              "type": "array"
+            },
+            "scale": {
+              "$ref": "#/$defs/TravelScale"
+            },
+            "width": {
+              "minimum": 1,
+              "title": "Width",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "asset_id",
+            "width",
+            "height"
+          ],
+          "title": "WorldMap",
           "type": "object"
         },
         "WorldPresetPayload": {
@@ -6941,6 +7104,17 @@
               ],
               "default": null,
               "title": "Lore"
+            },
+            "map": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/WorldMap"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
             },
             "name": {
               "maxLength": 128,

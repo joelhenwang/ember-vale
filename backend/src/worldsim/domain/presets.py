@@ -14,8 +14,9 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from worldsim.domain.geography import WorldMap
 from worldsim.domain.ids import EditorDraftId, PresetId
 from worldsim.domain.time import utcnow
 
@@ -47,6 +48,18 @@ class WorldPresetPayload(BaseModel):
     starting_location_key: str = Field(min_length=1, max_length=64)
     default_cast: list[str] = Field(default_factory=list)
     style_pack_id: str | None = Field(default=None, max_length=128)
+    #: Where the places are drawn and how long the roads take; travel
+    #: pairs stay the source of which places connect.
+    map: WorldMap | None = None
+
+    @model_validator(mode="after")
+    def _pins_are_places(self) -> WorldPresetPayload:
+        if self.map is not None:
+            keys = {place.key for place in self.locations}
+            stray = [pin.key for pin in self.map.pins if pin.key not in keys]
+            if stray:
+                raise ValueError(f"map pins name unknown places: {stray}")
+        return self
 
 
 class CharacterPresetPayload(BaseModel):
@@ -112,7 +125,12 @@ def canonical_payload_hash(payload: PresetPayload) -> str:
     initializer) and tests must use this; migrations freeze computed
     literals instead of importing application code.
     """
-    canonical = json.dumps(payload.model_dump(mode="json"), sort_keys=True)
+    data = payload.model_dump(mode="json")
+    # Fields added later hash as if absent while unset, so every revision
+    # written before them keeps its hash.
+    if data.get("kind") == "world" and data.get("map") is None:
+        data.pop("map", None)
+    canonical = json.dumps(data, sort_keys=True)
     return hashlib.sha256(canonical.encode()).hexdigest()
 
 

@@ -53,6 +53,7 @@ from worldsim.interfaces.http.routes import (
     stories,
     story_prompts,
     world,
+    world_maps,
 )
 from worldsim.interfaces.http.routes import (
     settings as settings_routes,
@@ -189,5 +190,6 @@ def create_app(
     app.include_router(interventions.router, prefix="/api/v1")
     app.include_router(stories.router, prefix="/api/v1")
     app.include_router(library.router, prefix="/api/v1")
+    app.include_router(world_maps.router, prefix="/api/v1")
     app.include_router(autoplay.router, prefix="/api/v1")
     return app

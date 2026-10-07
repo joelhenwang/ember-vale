@@ -722,6 +722,68 @@ export interface CharacterPromptUpdate {
   suffix?: string;
 }
 
+export interface MapUploadRequest {
+  data_url: string;
+}
+
+export interface MapPaintRequest {
+  prompt: string;
+  ratio?: string;
+}
+
+export interface MapImageView {
+  asset_id: string;
+  height: number;
+  width: number;
+}
+
+export interface MapPlaceView {
+  kind?: string;
+  name: string;
+  point: unknown[];
+}
+
+export interface MapRoadView {
+  a: number;
+  b: number;
+  by?: string;
+  points?: unknown[][];
+}
+
+export interface MapPlacesView {
+  cost_usd: unknown;
+  model: string;
+  places: MapPlaceView[];
+  seconds: unknown;
+}
+
+export interface MapRoadsRequest {
+  places: MapPlaceView[];
+}
+
+export interface MapRoadsView {
+  cost_usd: unknown;
+  model: string;
+  roads: MapRoadView[];
+  seconds: unknown;
+}
+
+export interface WorldMapPlace {
+  key?: string | null;
+  kind?: string;
+  name: string;
+  point: unknown[];
+}
+
+export interface WorldMapRequest {
+  asset_id: string;
+  expected_version: number;
+  longest_phases: number;
+  places: WorldMapPlace[];
+  roads?: MapRoadView[];
+  shortest_phases: number;
+}
+
 export interface PresentationResponse {
   absolute_index: number;
   activities?: ActivityView[];
