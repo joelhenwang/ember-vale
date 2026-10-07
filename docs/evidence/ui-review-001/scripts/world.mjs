@@ -1,0 +1,43 @@
+import { chromium } from 'file:///C:/Users/JoelWang/Documents/dev/ember-vale/node_modules/playwright-core/index.mjs'
+const [out, live] = process.argv.slice(2)
+const browser = await chromium.launch({ channel: 'msedge', headless: true })
+const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } })
+page.on('pageerror', (e) => console.log('page error:', e.message))
+page.on('console', (m) => m.type() === 'error' && console.log('console error:', m.text()))
+await page.goto('http://localhost:5180/library/world/new', { waitUntil: 'load', timeout: 90000 })
+await page.waitForSelector('.wstudio', { timeout: 60000 })
+await page.waitForTimeout(800)
+await page.fill('#w-name', 'The Saltreach')
+await page.fill('.ovw__text', 'salt-marsh islands, ferry clans keep water roads, tides set the calendar, drowned city under the bay rings bells at low tide. no gunpowder.')
+if (live === 'live') {
+  const t = Date.now()
+  await page.locator('.ovw__btn--fill').click()
+  await page.waitForFunction(() => !document.querySelector('.ovw__btn--fill')?.textContent?.includes('Filling'), null, { timeout: 200000 })
+  console.log('fill took', (Date.now() - t) / 1000, 's', await page.locator('.ovw__note').allTextContents())
+}
+await page.screenshot({ path: `${out}/1-overview.png`, fullPage: true })
+for (const n of [2, 3, 4]) {
+  await page.locator('.istep__step button').nth(n - 1).click()
+  await page.waitForTimeout(700)
+  await page.screenshot({ path: `${out}/${n}-step.png`, fullPage: true })
+}
+if (live === 'live') {
+  await page.locator('.istep__step button').nth(2).click()
+  await page.waitForTimeout(500)
+  console.log('places:', await page.locator('.places__tab').allTextContents())
+  const t2 = Date.now()
+  await page.locator('.wpv .cta').first().click()
+  await page.waitForFunction(() => !document.querySelector('.wpv .cta')?.textContent?.includes('Painting'), null, { timeout: 300000 })
+  console.log('paint took', (Date.now() - t2) / 1000, 's', await page.locator('.wpv__error').allTextContents())
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: `${out}/5-painted.png`, fullPage: true })
+  await page.getByRole('tab', { name: 'Place' }).click()
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: `${out}/6-place-tab.png`, fullPage: true })
+}
+console.log('overflow', await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth))
+await page.setViewportSize({ width: 400, height: 900 })
+await page.waitForTimeout(500)
+console.log('phone overflow', await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth))
+await page.screenshot({ path: `${out}/phone.png`, fullPage: true })
+await browser.close()
