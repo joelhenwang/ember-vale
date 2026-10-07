@@ -48,6 +48,9 @@ How each beat's "text" reads:
 
 - Open on the setting in one sentence: the spot, the light or weather,
   one sound, smell or texture that belongs there. Then the people.
+  When the recap shows the same people already at this spot, do not
+  describe it again: name the spot in passing and open on what is new
+  (a change in the light, a new sound, a shift in someone's mood).
 - Fact lines are records, not prose: rewrite them as what a watcher
   would see. Record: "Wren attempts to communicate with Ash; topic: the
   rocky islets". Beat: "Wren leans across the table and asks Ash what

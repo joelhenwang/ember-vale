@@ -1,0 +1,460 @@
+[
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 0,
+    "prompt_tokens": 4629,
+    "completion_tokens": 575,
+    "repaired": true,
+    "first_denial": "speaker outside the audience: f01c6baf-0996-42fd-a9b9-4a97cb6a7af3",
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Market square in Saltmarket is bustling with activity, the morning sun casting a warm glow on the cobblestones. Wren and Ash stand near the center, the scent of fresh bread wafting from a nearby stall. Wren leans in, their voice low as they begin to speak.\", \"cited_fact_keys\": [\"spots\", \"attempt:communicate\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"f01c6baf-0996-42fd-a9b9-4a97cb6a7af3\", \"text\": \"The Fisher's Lost Catch is a tale that has been passed down through generations. It speaks of a fisher who lost their catch in the treacherous waters of the rocky islets.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash listens intently, their eyes reflecting a mix of curiosity and concern. They nod, acknowledging the weight of the story, and then turn the conversation to the recent events.\", \"cited_fact_keys\": [\"attempt:communicate\", \"reaction:2\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash speaks of the distress call from the rocky islets, their voice tinged with a sense of urgency. The two of them seem to be piecing together the puzzle of the mysterious events unfolding in the sea.\", \"cited_fact_keys\": [\"reaction:2\"]}\n]",
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Market square in Saltmarket is bustling with activity, the morning sun casting a warm glow over the cobblestones. Ash and Wren stand near the center, their conversation a quiet contrast to the lively market around them.\", \"cited_fact_keys\": [\"place\", \"spots\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren leans in, their voice hushed as they speak of the Fisher's Lost Catch, a tale of a fisher's perilous encounter with the rocky islets.\", \"cited_fact_keys\": [\"attempt:communicate\", \"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash nods, their expression thoughtful, as they bring up the distress call from the rocky islets, a mystery that has piqued their curiosity.\", \"cited_fact_keys\": [\"attempt:communicate\", \"reaction:2\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The Market square in Saltmarket is bustling with activity, the morning sun casting a warm glow over the cobblestones. Ash and Wren stand near the center, their conversation a quiet contrast to the lively market around them. Wren leans in, their voice hushed as they speak of the Fisher's Lost Catch, a tale of a fisher's perilous encounter with the rocky islets. Ash nods, their expression thoughtful, as they bring up the distress call from the rocky islets, a mystery that has piqued their curiosity.",
+    "beats": 3,
+    "words": 85,
+    "stock": 0,
+    "spot": "Market square",
+    "has_spots": true
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 1,
+    "prompt_tokens": 4693,
+    "completion_tokens": 525,
+    "repaired": true,
+    "first_denial": "speaker outside the audience: f01c6baf-0996-42fd-a9b9-4a97cb6a7af3",
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The morning sun casts a golden glow over Old Bram’s farm, where the scent of earth and hay lingers in the air. Wren and Ash stand near the barn, their conversation from the previous dawn still fresh in their minds. Ash, with a thoughtful expression, turns to Wren, eager to discuss the rocky islets south of Corvane.\", \"cited_fact_keys\": [\"spots\", \"previously\", \"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash speaks to Wren about the tales of Ember Vale, their voice carrying a hint of curiosity and intrigue.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"f01c6baf-0996-42fd-a9b9-4a97cb6a7af3\", \"text\": \"The rocky islets south of Corvane are indeed a place of mystery and intrigue. What do you think might be the reason behind the Fisher's Lost Catch?\", \"cited_fact_keys\": [\"reaction:2\"]}\n]",
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The morning sun casts a golden glow over Old Bram’s farm, where the scent of earth and hay lingers in the air. Ash and Wren stand in the farmyard, their conversation from the previous dawn still fresh in their minds. Ash, with a thoughtful expression, begins to speak about the tales of Ember Vale, a topic that has clearly captured their interest.\", \"cited_fact_keys\": [\"place\", \"spots\", \"previously\", \"attempt:communicate\", \"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren, intrigued, leans in as Ash shares their thoughts, the rustling of the nearby trees adding a gentle backdrop to their discussion.\", \"cited_fact_keys\": [\"attempt:communicate\", \"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash, with a hint of curiosity, asks Wren about the rocky islets south of Corvane, a place shrouded in mystery.\", \"cited_fact_keys\": [\"attempt:communicate\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The morning sun casts a golden glow over Old Bram’s farm, where the scent of earth and hay lingers in the air. Ash and Wren stand in the farmyard, their conversation from the previous dawn still fresh in their minds. Ash, with a thoughtful expression, begins to speak about the tales of Ember Vale, a topic that has clearly captured their interest. Wren, intrigued, leans in as Ash shares their thoughts, the rustling of the nearby trees adding a gentle backdrop to their discussion. Ash, with a hint of curiosity, asks Wren about the rocky islets south of Corvane, a place shrouded in mystery.",
+    "beats": 3,
+    "words": 104,
+    "stock": 0,
+    "spot": "Old Bram’s farm",
+    "has_spots": true
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 2,
+    "prompt_tokens": 2171,
+    "completion_tokens": 213,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The morning sun casts a golden glow over Old Bram’s farm, where the scent of fresh hay lingers in the air. Ash and Wren stand near the barn, their eyes meeting as they prepare to share their thoughts.\", \"cited_fact_keys\": [\"place\", \"spots\", \"previously\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash leans against the barn door, their voice steady as they begin to speak about the tales of Ember Vale.\", \"cited_fact_keys\": [\"attempt:communicate\", \"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren nods, their expression thoughtful, as they listen to Ash's words, then they respond, sharing their own insights on the tales.\", \"cited_fact_keys\": [\"attempt:communicate\", \"reaction:2\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The morning sun casts a golden glow over Old Bram’s farm, where the scent of fresh hay lingers in the air. Ash and Wren stand near the barn, their eyes meeting as they prepare to share their thoughts. Ash leans against the barn door, their voice steady as they begin to speak about the tales of Ember Vale. Wren nods, their expression thoughtful, as they listen to Ash's words, then they respond, sharing their own insights on the tales.",
+    "beats": 3,
+    "words": 79,
+    "stock": 0,
+    "spot": "Old Bram’s farm",
+    "has_spots": true
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 3,
+    "prompt_tokens": 2076,
+    "completion_tokens": 280,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The sun hangs low in the sky, casting long shadows across the Market square. The air is crisp, and the scent of fresh bread wafts from the nearby baker's stall. Wren and Ash stand near the Market well, their conversation from the previous night still lingering in the air.\", \"cited_fact_keys\": [\"place\", \"spots\", \"previously\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren leans in, their voice barely above a whisper, asking Ash about the rocky islets south of Corvane, their eyes searching for understanding.\", \"cited_fact_keys\": [\"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash stands quietly, their gaze fixed on the ground, waiting for Wren to continue, their expression unreadable.\", \"cited_fact_keys\": [\"attempt:wait\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash then speaks to Wren, their voice steady, discussing the rocky islets south of Corvane, their words measured and thoughtful.\", \"cited_fact_keys\": [\"reaction:1\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The sun hangs low in the sky, casting long shadows across the Market square. The air is crisp, and the scent of fresh bread wafts from the nearby baker's stall. Wren and Ash stand near the Market well, their conversation from the previous night still lingering in the air. Wren leans in, their voice barely above a whisper, asking Ash about the rocky islets south of Corvane, their eyes searching for understanding. Ash stands quietly, their gaze fixed on the ground, waiting for Wren to continue, their expression unreadable. Ash then speaks to Wren, their voice steady, discussing the rocky islets south of Corvane, their words measured and thoughtful.",
+    "beats": 4,
+    "words": 109,
+    "stock": 1,
+    "spot": "Market square",
+    "has_spots": true
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 4,
+    "prompt_tokens": 2166,
+    "completion_tokens": 211,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Hearth is quiet, the fire crackling softly, as Wren and Ash sit across from each other, the weight of the rocky islets south of Corvane hanging in the air.\", \"cited_fact_keys\": [\"spots\", \"previously\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren leans forward, their voice low and urgent, asking Ash about the rocky islets, their eyes searching for understanding.\", \"cited_fact_keys\": [\"attempt:communicate\", \"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash nods, their gaze steady, and they begin to speak, their words measured, as they share their thoughts on the rocky islets with Wren.\", \"cited_fact_keys\": [\"attempt:communicate\", \"reaction:2\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The Hearth is quiet, the fire crackling softly, as Wren and Ash sit across from each other, the weight of the rocky islets south of Corvane hanging in the air. Wren leans forward, their voice low and urgent, asking Ash about the rocky islets, their eyes searching for understanding. Ash nods, their gaze steady, and they begin to speak, their words measured, as they share their thoughts on the rocky islets with Wren.",
+    "beats": 3,
+    "words": 73,
+    "stock": 0,
+    "spot": "the Hearth",
+    "has_spots": true
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 5,
+    "prompt_tokens": 2176,
+    "completion_tokens": 363,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Hearth hums with the low murmur of evening chatter, the scent of woodsmoke lingering in the air. Wren and Ash sit at a corner table, the flickering candlelight casting shadows on their faces. Wren leans forward, their voice barely above a whisper, as they attempt to communicate with Ash about the rocky islets south of Corvane.\", \"cited_fact_keys\": [\"spots\", \"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash, listening intently, nods slowly, their eyes reflecting the candle's glow. They speak to Wren about the rocky islets, their voice steady and thoughtful, as they recall the tale of the Fisher's Lost Catch.\", \"cited_fact_keys\": [\"reaction:1\", \"previously\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren's eyes light up, and they lean back, their hands resting on the table. They speak to Ash about the Fisher's Lost Catch, their voice filled with a mix of curiosity and wonder, as they delve deeper into the story.\", \"cited_fact_keys\": [\"reaction:2\", \"previously\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash waits, their gaze fixed on Wren, as if searching for something in their words. The candle flickers, casting a warm glow over the table, and the sound of distant laughter from the inn's patrons fills the air.\", \"cited_fact_keys\": [\"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The Hearth hums with the low murmur of evening chatter, the scent of woodsmoke lingering in the air. Wren and Ash sit at a corner table, the flickering candlelight casting shadows on their faces. Wren leans forward, their voice barely above a whisper, as they attempt to communicate with Ash about the rocky islets south of Corvane. Ash, listening intently, nods slowly, their eyes reflecting the candle's glow. They speak to Wren about the rocky islets, their voice steady and thoughtful, as they recall the tale of the Fisher's Lost Catch. Wren's eyes light up, and they lean back, their hands resting on the table. They speak to Ash about the Fisher's Lost Catch, their voice filled with a mix of curiosity and wonder, as they delve deeper into the story. Ash waits, their gaze fixed on Wren, as if searching for something in their words. The candle flickers, casting a warm glow over the table, and the sound of distant laughter from the inn's patrons fills the air.",
+    "beats": 4,
+    "words": 169,
+    "stock": 1,
+    "spot": "the Hearth",
+    "has_spots": true
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 6,
+    "prompt_tokens": 2180,
+    "completion_tokens": 244,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The sun rises over Old Bram’s farm, casting a golden glow on the dew-kissed fields. Ash and Wren stand in the farmyard, the scent of earth and hay filling the air. Ash leans against the fence, their eyes meeting Wren's with a mix of curiosity and concern.\", \"cited_fact_keys\": [\"place\", \"spots\", \"previously\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash turns to Wren, their voice steady as they ask, \\\"Wren, what brings you to Ember Vale?\\\"\", \"cited_fact_keys\": [\"attempt:communicate\", \"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren pauses, their gaze shifting to the horizon, before they respond, \\\"I've been here for a while, Ash. I'm here to discuss the Fisher's Lost Catch.\\\"\", \"cited_fact_keys\": [\"attempt:communicate\", \"reaction:2\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The sun rises over Old Bram’s farm, casting a golden glow on the dew-kissed fields. Ash and Wren stand in the farmyard, the scent of earth and hay filling the air. Ash leans against the fence, their eyes meeting Wren's with a mix of curiosity and concern. Ash turns to Wren, their voice steady as they ask, \"Wren, what brings you to Ember Vale?\" Wren pauses, their gaze shifting to the horizon, before they respond, \"I've been here for a while, Ash. I'm here to discuss the Fisher's Lost Catch.\"",
+    "beats": 3,
+    "words": 90,
+    "stock": 0,
+    "spot": "Old Bram’s farm",
+    "has_spots": true
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 7,
+    "prompt_tokens": 2144,
+    "completion_tokens": 316,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The market square in Corvane is bustling with activity, the air filled with the scent of fresh produce and the sound of lively chatter. Ash and Wren stand amidst the crowd, their eyes meeting as they both seem to have something on their minds.\", \"cited_fact_keys\": [\"place\", \"spots\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash leans in, their voice barely audible over the market's din, asking Wren about the market at Saltmarket, a topic that seems to weigh heavily on their thoughts.\", \"cited_fact_keys\": [\"attempt:communicate\", \"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren, in turn, looks at Ash with a mix of curiosity and concern, their gaze lingering as they consider the journey to Ember Vale, a place that holds significance for both of them.\", \"cited_fact_keys\": [\"attempt:communicate\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\", \"text\": \"I've been here for a while, Wren. What brings you to Ember Vale?\", \"cited_fact_keys\": [\"reaction:2\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The market square in Corvane is bustling with activity, the air filled with the scent of fresh produce and the sound of lively chatter. Ash and Wren stand amidst the crowd, their eyes meeting as they both seem to have something on their minds. Ash leans in, their voice barely audible over the market's din, asking Wren about the market at Saltmarket, a topic that seems to weigh heavily on their thoughts. Wren, in turn, looks at Ash with a mix of curiosity and concern, their gaze lingering as they consider the journey to Ember Vale, a place that holds significance for both of them. I've been here for a while, Wren. What brings you to Ember Vale?",
+    "beats": 4,
+    "words": 118,
+    "stock": 0,
+    "spot": "Market square",
+    "has_spots": true
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 8,
+    "prompt_tokens": 1778,
+    "completion_tokens": 151,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Rocky islets south of Corvane are bathed in the soft glow of dawn, the sea and sky merging into a vast, silent expanse. Fisher stands quietly, their gaze fixed on the horizon, as if waiting for something to emerge from the mist.\", \"cited_fact_keys\": [\"previously\", \"place\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Fisher's patience is palpable, their body still as they continue to wait, the only sound the gentle lapping of waves against the rocky shore.\", \"cited_fact_keys\": [\"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The Rocky islets south of Corvane are bathed in the soft glow of dawn, the sea and sky merging into a vast, silent expanse. Fisher stands quietly, their gaze fixed on the horizon, as if waiting for something to emerge from the mist. Fisher's patience is palpable, their body still as they continue to wait, the only sound the gentle lapping of waves against the rocky shore.",
+    "beats": 2,
+    "words": 67,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 9,
+    "prompt_tokens": 1751,
+    "completion_tokens": 85,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The rocky islets, a jagged silhouette against the dawn, stretch out into the sea. The air is crisp with salt and the promise of a new day. Fisher stands on the shore, eyes scanning the horizon, waiting.\", \"cited_fact_keys\": [\"previously\", \"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The rocky islets, a jagged silhouette against the dawn, stretch out into the sea. The air is crisp with salt and the promise of a new day. Fisher stands on the shore, eyes scanning the horizon, waiting.",
+    "beats": 1,
+    "words": 37,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 10,
+    "prompt_tokens": 1747,
+    "completion_tokens": 91,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The rocky islets south of Corvane are quiet, the waves lapping gently against the shore. Fisher stands on the highest point, their gaze fixed on the horizon, waiting. The air is cool and salty, a reminder of the vast sea that surrounds them.\", \"cited_fact_keys\": [\"place\", \"previously\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The rocky islets south of Corvane are quiet, the waves lapping gently against the shore. Fisher stands on the highest point, their gaze fixed on the horizon, waiting. The air is cool and salty, a reminder of the vast sea that surrounds them.",
+    "beats": 1,
+    "words": 43,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 11,
+    "prompt_tokens": 1753,
+    "completion_tokens": 138,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Rocky islets south of Corvane stretch out under the starlit sky, the waves lapping gently against the rocks. Fisher stands on the shore, their gaze still fixed on the horizon, waiting.\", \"cited_fact_keys\": [\"previously\", \"place\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Fisher's patience is unwavering, their breath steady as they continue to wait, the night air cool and salty around them.\", \"cited_fact_keys\": [\"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The Rocky islets south of Corvane stretch out under the starlit sky, the waves lapping gently against the rocks. Fisher stands on the shore, their gaze still fixed on the horizon, waiting. Fisher's patience is unwavering, their breath steady as they continue to wait, the night air cool and salty around them.",
+    "beats": 2,
+    "words": 52,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 12,
+    "prompt_tokens": 1774,
+    "completion_tokens": 84,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The waves lap gently against the shore of the rocky islets, the fading light of dusk casting a soft glow on the glistening sea. Fisher stands, their patience unwavering, as they continue to wait.\", \"cited_fact_keys\": [\"previously\", \"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The waves lap gently against the shore of the rocky islets, the fading light of dusk casting a soft glow on the glistening sea. Fisher stands, their patience unwavering, as they continue to wait.",
+    "beats": 1,
+    "words": 34,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 13,
+    "prompt_tokens": 1730,
+    "completion_tokens": 102,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The sun dips below the horizon, casting a golden glow over the rocky islets south of Corvane. The waves lap gently against the shore, and the salty sea air fills the air. Fisher stands on the shore, their gaze fixed on the horizon, waiting for something to appear.\", \"cited_fact_keys\": [\"place\", \"previously\", \"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The sun dips below the horizon, casting a golden glow over the rocky islets south of Corvane. The waves lap gently against the shore, and the salty sea air fills the air. Fisher stands on the shore, their gaze fixed on the horizon, waiting for something to appear.",
+    "beats": 1,
+    "words": 48,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 14,
+    "prompt_tokens": 1748,
+    "completion_tokens": 150,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The jagged rocks of the islets south of Corvane stretch out under the fading light of sunset, the air carrying the briny scent of the sea. Fisher stands there, a solitary figure against the backdrop of the setting sun, the long shadows from the afternoon sun still lingering across the terrain.\", \"cited_fact_keys\": [\"previously\", \"place\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Fisher remains still, their gaze fixed on the horizon, as if waiting for something or someone to appear.\", \"cited_fact_keys\": [\"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The jagged rocks of the islets south of Corvane stretch out under the fading light of sunset, the air carrying the briny scent of the sea. Fisher stands there, a solitary figure against the backdrop of the setting sun, the long shadows from the afternoon sun still lingering across the terrain. Fisher remains still, their gaze fixed on the horizon, as if waiting for something or someone to appear.",
+    "beats": 2,
+    "words": 69,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 15,
+    "prompt_tokens": 1991,
+    "completion_tokens": 250,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The Saltmarket is alive with the scent of salt and the sound of waves lapping against the docks. Wren and Ash are seated at a weathered table, the setting sun casting long shadows across the wooden planks. Wren leans forward, their eyes meeting Ash's, as they bring up the tale of the Fisher's Lost Catch.\", \"cited_fact_keys\": [\"place\", \"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren speaks of the Fisher's Lost Catch, their voice low and thoughtful, as if recalling a story from a distant past. Ash listens, their expression unreadable, as they wait for Wren to continue.\", \"cited_fact_keys\": [\"reaction:1\", \"attempt:wait\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash then responds, their tone measured, as they share their own thoughts on the tale, the conversation flowing like the tide.\", \"cited_fact_keys\": [\"reaction:2\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The Saltmarket is alive with the scent of salt and the sound of waves lapping against the docks. Wren and Ash are seated at a weathered table, the setting sun casting long shadows across the wooden planks. Wren leans forward, their eyes meeting Ash's, as they bring up the tale of the Fisher's Lost Catch. Wren speaks of the Fisher's Lost Catch, their voice low and thoughtful, as if recalling a story from a distant past. Ash listens, their expression unreadable, as they wait for Wren to continue. Ash then responds, their tone measured, as they share their own thoughts on the tale, the conversation flowing like the tide.",
+    "beats": 3,
+    "words": 109,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 16,
+    "prompt_tokens": 2052,
+    "completion_tokens": 305,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The bustling Saltmarket is alive with the scent of fresh fish and the chatter of merchants. Wren, having followed Ash's lead, finds themself in the heart of the market, where Ash stands, seemingly lost in thought. Wren approaches, eager to discuss the tales of Ember Vale.\", \"cited_fact_keys\": [\"previously\", \"place\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren leans in, their voice hushed, as they speak to Ash about 'the Fisher's Lost Catch', a tale that has piqued their curiosity.\", \"cited_fact_keys\": [\"reaction:1\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash, who has been waiting, turns to Wren, their expression thoughtful, as they ponder the significance of the tales.\", \"cited_fact_keys\": [\"attempt:wait\"]},\n  {\"kind\": \"dialogue\", \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\", \"text\": \"\\\"Ember Vale's tales are as varied as its people, Wren. What's on your mind?\\\"\", \"cited_fact_keys\": [\"reaction:2\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The bustling Saltmarket is alive with the scent of fresh fish and the chatter of merchants. Wren, having followed Ash's lead, finds themself in the heart of the market, where Ash stands, seemingly lost in thought. Wren approaches, eager to discuss the tales of Ember Vale. Wren leans in, their voice hushed, as they speak to Ash about 'the Fisher's Lost Catch', a tale that has piqued their curiosity. Ash, who has been waiting, turns to Wren, their expression thoughtful, as they ponder the significance of the tales. \"Ember Vale's tales are as varied as its people, Wren. What's on your mind?\"",
+    "beats": 4,
+    "words": 102,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 17,
+    "prompt_tokens": 1725,
+    "completion_tokens": 89,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The rocky islets south of Corvane are bathed in the soft light of the afternoon sun, the waves lapping gently against the shore. Fisher stands on the shore, eyes scanning the horizon, waiting for something or someone.\", \"cited_fact_keys\": [\"place\", \"previously\", \"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The rocky islets south of Corvane are bathed in the soft light of the afternoon sun, the waves lapping gently against the shore. Fisher stands on the shore, eyes scanning the horizon, waiting for something or someone.",
+    "beats": 1,
+    "words": 37,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 18,
+    "prompt_tokens": 1742,
+    "completion_tokens": 86,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The rocky islets south of Corvane are bathed in the soft light of dusk, the waves lapping gently against the shore. Fisher stands on the shore, their gaze fixed on the horizon, waiting.\", \"cited_fact_keys\": [\"previously\", \"place\", \"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The rocky islets south of Corvane are bathed in the soft light of dusk, the waves lapping gently against the shore. Fisher stands on the shore, their gaze fixed on the horizon, waiting.",
+    "beats": 1,
+    "words": 33,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 19,
+    "prompt_tokens": 1857,
+    "completion_tokens": 106,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The bustling Saltmarket is alive with the scent of fresh bread and the chatter of merchants. Wren, having followed Ash's lead, arrives at the market, their eyes scanning the crowd. Ash, already there, stands near the stalls, waiting patiently, their gaze fixed on the horizon.\", \"cited_fact_keys\": [\"place\", \"attempt:move\", \"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The bustling Saltmarket is alive with the scent of fresh bread and the chatter of merchants. Wren, having followed Ash's lead, arrives at the market, their eyes scanning the crowd. Ash, already there, stands near the stalls, waiting patiently, their gaze fixed on the horizon.",
+    "beats": 1,
+    "words": 45,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 20,
+    "prompt_tokens": 1930,
+    "completion_tokens": 226,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The morning sun casts a golden glow over Corvane, its light dancing on the cobblestones of the market square. Wren stands near the bustling stalls, the scent of fresh bread and saltwater mingling in the air. Ash, having just arrived, is already making their way towards Saltmarket, their steps quick and purposeful.\", \"cited_fact_keys\": [\"place\", \"attempt:move\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Wren, noticing Ash's departure, leans in and asks about the tales of Ember Vale, their voice filled with curiosity and a hint of urgency.\", \"cited_fact_keys\": [\"attempt:communicate\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Ash, in response, shares their thoughts on the tales, their words carrying a tone of wisdom and experience.\", \"cited_fact_keys\": [\"reaction:1\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The morning sun casts a golden glow over Corvane, its light dancing on the cobblestones of the market square. Wren stands near the bustling stalls, the scent of fresh bread and saltwater mingling in the air. Ash, having just arrived, is already making their way towards Saltmarket, their steps quick and purposeful. Wren, noticing Ash's departure, leans in and asks about the tales of Ember Vale, their voice filled with curiosity and a hint of urgency. Ash, in response, shares their thoughts on the tales, their words carrying a tone of wisdom and experience.",
+    "beats": 3,
+    "words": 94,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 21,
+    "prompt_tokens": 1742,
+    "completion_tokens": 178,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The rocky islets south of Corvane are quiet, the waves lapping gently against the shore. Fisher stands on the beach, gazing out at the sea, their expression unreadable. The sun is rising, casting a golden glow over the water.\", \"cited_fact_keys\": [\"previously\", \"place\"]},\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"Fisher's patience is evident as they continue to wait, their eyes scanning the horizon. The sound of seagulls fills the air, and the salty scent of the ocean is strong. Fisher's stance is firm, their hands clasped behind their back, a picture of anticipation.\", \"cited_fact_keys\": [\"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The rocky islets south of Corvane are quiet, the waves lapping gently against the shore. Fisher stands on the beach, gazing out at the sea, their expression unreadable. The sun is rising, casting a golden glow over the water. Fisher's patience is evident as they continue to wait, their eyes scanning the horizon. The sound of seagulls fills the air, and the salty scent of the ocean is strong. Fisher's stance is firm, their hands clasped behind their back, a picture of anticipation.",
+    "beats": 2,
+    "words": 83,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 22,
+    "prompt_tokens": 1699,
+    "completion_tokens": 76,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The wind whips through the rocky islets, carrying the scent of salt and seaweed. Fisher stands on the jagged shore, eyes scanning the horizon, waiting for something unseen.\", \"cited_fact_keys\": [\"place\", \"attempt:wait\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The wind whips through the rocky islets, carrying the scent of salt and seaweed. Fisher stands on the jagged shore, eyes scanning the horizon, waiting for something unseen.",
+    "beats": 1,
+    "words": 28,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "venice-uncensored-1-2",
+    "i": 23,
+    "prompt_tokens": 1808,
+    "completion_tokens": 117,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\"kind\": \"narration\", \"speaker_id\": null, \"text\": \"The heavy night still clings to Hearth, the distant mill window a faint beacon in the gloom. Wren stands at the edge of the village, their eyes fixed on the shimmering light, a familiar outline just beyond grasp. They reach out, as if to touch the elusive form, but it flickers and slips away, half-revealed, half-hidden.\", \"cited_fact_keys\": [\"previously\", \"attempt:interact\"]}\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The heavy night still clings to Hearth, the distant mill window a faint beacon in the gloom. Wren stands at the edge of the village, their eyes fixed on the shimmering light, a familiar outline just beyond grasp. They reach out, as if to touch the elusive form, but it flickers and slips away, half-revealed, half-hidden.",
+    "beats": 1,
+    "words": 56,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  }
+]

@@ -31,6 +31,7 @@ from pydantic import SecretStr, TypeAdapter, ValidationError
 from worldsim.application.graphs.narrate import (
     beats_valid,
     drop_recap_only,
+    drop_retold,
     render_system_prompt,
     repair_instruction,
     schema_denial,
@@ -62,6 +63,7 @@ STOCK = (
 )
 MAX_TOKENS = 1536
 _BEATS = TypeAdapter(list[BeatProposal])
+SENTENCE = re.compile(r"(?<=[.!?])\s+")
 
 
 def facts_of(prompt: str) -> dict[str, str]:
@@ -117,7 +119,16 @@ def check(prompt: str, raw: str, finish: str | None) -> tuple[list[BeatProposal]
     return proposals, denial
 
 
+def sentences(proposals: list[BeatProposal]) -> int:
+    return sum(len([s for s in SENTENCE.split(p.text) if s.strip()]) for p in proposals)
+
+
 def score(prompt: str, proposals: list[BeatProposal], denial: str | None) -> dict[str, Any]:
+    # The app drops sentences that retell the recap before storing them.
+    recap = facts_of(prompt).get("previously")
+    before = sentences(proposals)
+    proposals = drop_retold(proposals, recap) if denial is None else proposals
+    after = sentences(proposals)
     text = " ".join(p.text for p in proposals)
     lowered = text.lower()
     spots = spots_of(prompt)
@@ -130,6 +141,7 @@ def score(prompt: str, proposals: list[BeatProposal], denial: str | None) -> dic
         "stock": sum(lowered.count(s) for s in STOCK),
         "spot": spot_named(text, spots) if spots else None,
         "has_spots": bool(spots),
+        "retold": before - after,
     }
 
 
@@ -198,6 +210,7 @@ async def run(
             f"({sum(1 for r in valid if r.get('repaired'))} after repair), "
             f"spot named {sum(1 for r in with_spots if r.get('spot'))}/{len(with_spots)}, "
             f"stock phrases {sum(r.get('stock', 0) for r in valid)}, "
+            f"retold sentences dropped {sum(r.get('retold', 0) for r in valid)}, "
             f"words/answer {sum(r.get('words', 0) for r in valid) / max(1, len(valid)):.0f}, "
             f"tokens in/out {sum(r.get('prompt_tokens', 0) for r in ok)}/"
             f"{sum(r.get('completion_tokens', 0) for r in ok)}"
