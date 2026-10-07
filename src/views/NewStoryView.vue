@@ -4,6 +4,7 @@ import { storyLocation } from '../game/storyRoute'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import CreateCharacterTile from '../components/newstory/CreateCharacterTile.vue'
 import SearchField from '../components/ui/SearchField.vue'
+import FramedImage from '../components/ui/FramedImage.vue'
 import ChipGroup from '../components/ui/ChipGroup.vue'
 import SortSelect from '../components/ui/SortSelect.vue'
 import CastCard from '../components/newstory/CastCard.vue'
@@ -1031,9 +1032,17 @@ onMounted(() => {
             <button
               type="button"
               class="nsv__world"
-              :class="{ 'nsv__world--on': sel.worldId === world.id }"
+              :class="{
+                'nsv__world--on': sel.worldId === world.id,
+                'nsv__world--pictured': world.cover
+              }"
               :aria-pressed="sel.worldId === world.id"
               @click="chooseWorld(world)">
+              <FramedImage
+                v-if="world.cover"
+                class="nsv__world-pic"
+                :src="world.cover.src"
+                :frame="world.cover.frame" />
               <span class="nsv__world-name">{{ world.name }}</span>
               <span class="nsv__world-rev">Preset rev {{ world.revision }}</span>
               <span class="nsv__world-desc">{{ world.description }}</span>
@@ -1453,6 +1462,32 @@ onMounted(() => {
   cursor: pointer;
   font: inherit;
   color: inherit;
+}
+.nsv__world--pictured {
+  grid-template-columns: 168px minmax(0, 1fr);
+  column-gap: 14px;
+}
+.nsv__world--pictured > :not(.nsv__world-pic) {
+  grid-column: 2;
+}
+.nsv__world-pic {
+  grid-column: 1;
+  grid-row: 1 / span 4;
+  align-self: center;
+  aspect-ratio: 16 / 7;
+  height: auto;
+  border-radius: 8px;
+}
+@media (max-width: 520px) {
+  .nsv__world--pictured {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .nsv__world--pictured > :not(.nsv__world-pic) {
+    grid-column: 1;
+  }
+  .nsv__world-pic {
+    grid-row: auto;
+  }
 }
 .nsv__world--on {
   border-color: #1f4d3f;

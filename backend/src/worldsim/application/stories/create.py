@@ -13,7 +13,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from uuid import UUID, uuid4
 
 from sqlalchemy.exc import IntegrityError
@@ -30,7 +30,7 @@ from worldsim.domain.characters import Character, CharacterCard
 from worldsim.domain.enums import EventType, LifeStatus, PhaseName, PhaseRunState, UserRole
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.events import WorldEvent
-from worldsim.domain.framing import as_list
+from worldsim.domain.framing import Frame, as_list
 from worldsim.domain.geography import MAP_SPAN, WorldMap, road_stamina
 from worldsim.domain.ids import (
     new_asset_id,
@@ -44,6 +44,7 @@ from worldsim.domain.ids import (
 from worldsim.domain.phases import PhaseRun
 from worldsim.domain.presets import (
     CharacterPresetPayload,
+    WorldCover,
     WorldLocationPreset,
     WorldPresetPayload,
 )
@@ -337,6 +338,54 @@ async def _adopt_portrait(
     await uow.worlds.put_config(world_id, PORTRAIT_FRAMES, frames_by_character)
 
 
+#: World config key holding the story's cover: its world's own picture.
+COVER = "cover"
+
+
+@dataclass(frozen=True)
+class StoryCover:
+    asset_id: UUID
+    frame: Frame
+
+
+def story_cover(raw: object) -> StoryCover | None:
+    """The cover a story kept, from its config (unreadable: none)."""
+    if not isinstance(raw, dict):
+        return None
+    entry = cast("dict[str, object]", raw)
+    try:
+        x, y, w, h = cast("list[float]", entry["frame"])
+        return StoryCover(UUID(str(entry["asset_id"])), Frame(x=x, y=y, w=w, h=h))
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+async def _adopt_cover(uow: UnitOfWork, world_id: UUID, cover: WorldCover | None) -> UUID | None:
+    """Keep the world's picture with the story (its cards show it), even if
+    the world later gets another; its frame goes in the story's config."""
+    if cover is None:
+        return None
+    try:
+        source = await uow.assets.get_asset(UUID(cover.asset_id))
+    except (DomainError, ValueError):
+        return None  # the picture is gone: the story has no cover
+    art = AssetRecord(
+        id=new_asset_id(),
+        world_id=world_id,
+        kind=AssetKind.BACKGROUND,
+        content_ref=source.content_ref,
+        mime=source.mime,
+        width=source.width,
+        height=source.height,
+        style_pack_version=source.style_pack_version,
+    )
+    await uow.assets.add_asset(art)
+    await uow.worlds.put_config(
+        world_id, COVER, {"asset_id": str(art.id), "frame": as_list(cover.frame)}
+    )
+    return art.id
+
+
 async def _adopt_place_maps(
     uow: UnitOfWork,
     world_id: UUID,
@@ -452,6 +501,7 @@ async def _instantiate(
     if world_map is not None:
         await _adopt_map(uow, world_id, world_map, location_ids, copied)
     await _adopt_place_maps(uow, world_id, world_preset.locations, location_ids, copied)
+    cover_id = await _adopt_cover(uow, world_id, world_preset.cover)
     runtime_characters: dict[str, UUID] = {}
     portrait_frames: dict[str, object] = {}
     for member in payload.cast:
@@ -551,7 +601,9 @@ async def _instantiate(
         )
     )
     await uow.stories.put_catalog(
-        StoryCatalogEntry(world_id=world_id, title=title, created_at=utcnow())
+        StoryCatalogEntry(
+            world_id=world_id, title=title, created_at=utcnow(), cover_asset_id=cover_id
+        )
     )
     await uow.stories.save_draft(
         draft.model_copy(update={"created_world_id": world_id, "updated_at": utcnow()}),

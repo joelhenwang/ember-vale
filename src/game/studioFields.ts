@@ -27,6 +27,7 @@
  * the merge.
  */
 
+import type { Frame } from './framing'
 import type { CharacterDraft, PlaceDraft, PortraitFrames, WorldDraft } from './studio'
 
 const PERSONALITY_PREFIXES = [
@@ -204,6 +205,7 @@ export interface WorldServerFields {
   locations?: WorldServerLocation[]
   starting_location_key?: string
   travel?: string[][]
+  cover?: { asset_id: string; frame: Frame } | null
 }
 
 function packPlaceEntries(p: PlaceDraft): Array<[string, string]> {
@@ -361,12 +363,21 @@ export function packWorld(
     // say so explicitly instead of silently keeping the old map.
     out.locations = []
   }
+  const cover = draft.cover ? { asset_id: draft.cover.assetId, frame: draft.cover.frame } : null
+  if (JSON.stringify(cover) !== JSON.stringify(prev['cover'] ?? null)) out.cover = cover
   return out
 }
 
 /** Restore the world form from packed (or server) fields. */
 export function unpackWorld(fields: Record<string, unknown>): Partial<WorldDraft> {
   const out: Partial<WorldDraft> = {}
+  if ('cover' in fields) {
+    const cover = fields['cover'] as { asset_id?: unknown; frame?: Frame } | null | undefined
+    out.cover =
+      cover && typeof cover.asset_id === 'string' && cover.frame
+        ? { assetId: cover.asset_id, frame: cover.frame }
+        : null
+  }
   if (typeof fields['description'] === 'string') out.details = fields['description']
   if (typeof fields['lore'] === 'string') {
     const s = splitSections(fields['lore'], LORE_PREFIXES)

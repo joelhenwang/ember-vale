@@ -8,7 +8,7 @@
  */
 
 import { computed, ref } from 'vue'
-import type { CharacterDef, FramedPortrait, ImageSlot, WorldDef } from '../game/model'
+import type { CharacterDef, FramedCover, FramedPortrait, ImageSlot, WorldDef } from '../game/model'
 import type { Frame } from '../game/framing'
 import { getPreset, libraryAssetUrl, listPresets } from '../api/worldsim'
 
@@ -31,6 +31,7 @@ export interface PresetWorld {
   name: string
   description: string
   places: { key: string; name: string }[]
+  cover: FramedCover | null
 }
 
 const PORTRAIT_BY_NAME: Record<string, ImageSlot> = {
@@ -55,6 +56,13 @@ const WORLD_IMAGE_BY_NAME: Record<string, ImageSlot> = {
  * explicit metadata instead. Anything without curated art gets the
  * neutral fallback, never another face.
  */
+/** A world revision's own picture with its banner frame. */
+export function worldCover(rev: Record<string, unknown>): FramedCover | null {
+  const cover = rev['cover'] as { asset_id?: unknown; frame?: Frame } | null | undefined
+  if (!cover || typeof cover.asset_id !== 'string' || !cover.frame) return null
+  return { src: libraryAssetUrl(cover.asset_id), frame: cover.frame }
+}
+
 /** A preset revision's imported picture with its frames, when it has both. */
 export function framedPortrait(rev: Record<string, unknown>): FramedPortrait | null {
   const id = rev['portrait_asset_id']
@@ -91,6 +99,7 @@ export function toLibraryWorld(p: PresetWorld): WorldDef {
     blurb: p.description,
     tags: [],
     imageSlot: WORLD_IMAGE_BY_NAME[p.name] ?? 'world.map',
+    cover: p.cover,
     places: p.places.length,
     usedInStories: null,
     status: 'ready',
@@ -130,7 +139,8 @@ export function usePresets() {
             revision: d.current_revision,
             name: d.name,
             description: (rev['description'] as string | undefined) ?? '',
-            places: places.map((p) => ({ key: p.key, name: p.name }))
+            places: places.map((p) => ({ key: p.key, name: p.name })),
+            cover: worldCover(rev)
           }
         })
         .sort((a, b) => a.name.localeCompare(b.name))

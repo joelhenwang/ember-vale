@@ -1285,6 +1285,10 @@ class StoryDetail(BaseModel):
     archived_at: datetime | None = None
     status: str
     metadata_version: int
+    #: The world's own picture, kept with the story, and its 16:7 banner
+    #: frame [x, y, w, h]; None: the story has no cover.
+    cover_asset_id: UUID | None = None
+    cover_frame: list[float] | None = None
 
 
 class StoryListResponse(BaseModel):

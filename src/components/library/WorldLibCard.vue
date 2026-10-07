@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { WorldDef } from '../../game/model'
 import StoryImage from '../StoryImage.vue'
+import FramedImage from '../ui/FramedImage.vue'
 import TagPill from '../ui/TagPill.vue'
 import IconSparkle from '../icons/IconSparkle.vue'
 import IconEllipsis from '../icons/IconEllipsis.vue'
@@ -20,7 +21,14 @@ defineEmits<{ open: [] }>()
     @keydown.enter="$emit('open')"
     @keydown.space.prevent="$emit('open')">
     <div class="worldcard__media">
+      <FramedImage
+        v-if="world.cover"
+        :src="world.cover.src"
+        :frame="world.cover.frame"
+        :alt="`${world.name} vista`"
+        class="worldcard__img" />
       <StoryImage
+        v-else
         :image-slot="world.imageSlot"
         :alt="`${world.name} vista`"
         class="worldcard__img" />

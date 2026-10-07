@@ -764,6 +764,16 @@ export function uploadMap(dataUrl: string, opts: CallOptions = {}): Promise<MapI
   })
 }
 
+/** Keep a world's own picture (unscoped; the preset keeps its banner frame). */
+export function uploadCover(dataUrl: string, opts: CallOptions = {}): Promise<MapImageView> {
+  return apiFetch<MapImageView>('/library/covers', {
+    timeoutMs: 120000,
+    ...opts,
+    method: 'POST',
+    body: { data_url: dataUrl }
+  })
+}
+
 export function uploadPortrait(dataUrl: string, opts: CallOptions = {}): Promise<MapImageView> {
   return apiFetch<MapImageView>('/library/portraits', {
     timeoutMs: 120000,

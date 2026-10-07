@@ -5,6 +5,7 @@ import type { StorySummary } from '../game/model'
 
 const router = useRouter()
 import StoryImage from './StoryImage.vue'
+import FramedImage from './ui/FramedImage.vue'
 import IconSparkle from './icons/IconSparkle.vue'
 import IconFeather from './icons/IconFeather.vue'
 import IconArrowInCircle from './icons/IconArrowInCircle.vue'
@@ -43,7 +44,14 @@ function resume(story: StorySummary): void {
         @click="resume(story)"
         @keydown.enter="resume(story)"
         @keydown.space.prevent="resume(story)">
+        <FramedImage
+          v-if="story.cover"
+          class="recent__img"
+          :src="story.cover.src"
+          :frame="story.cover.frame"
+          :alt="`${story.title}: its world`" />
         <StoryImage
+          v-else
           class="recent__img"
           :image-slot="story.imageSlot"
           :alt="`${story.title} — scene`" />

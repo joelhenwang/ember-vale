@@ -55,6 +55,7 @@ import ChipEditor from '../components/studio/ChipEditor.vue'
 import CollapseBox from '../components/studio/CollapseBox.vue'
 import SuggestButton from '../components/studio/SuggestButton.vue'
 import StudioSelect from '../components/studio/StudioSelect.vue'
+import CoverCard from '../components/studio/CoverCard.vue'
 import SaveBar from '../components/ui/SaveBar.vue'
 import IconSparkle from '../components/icons/IconSparkle.vue'
 import IconBook from '../components/icons/IconBook.vue'
@@ -283,6 +284,7 @@ function applyWorldRestore(restored: ReturnType<typeof unpackWorld>): void {
   if (restored.details !== undefined) d.details = restored.details
   if (restored.exclusions !== undefined) d.exclusions = restored.exclusions
   if (restored.loreExtra !== undefined) d.loreExtra = restored.loreExtra
+  if (restored.cover !== undefined) d.cover = restored.cover
   if (restored.travelExtra !== undefined) {
     d.travelExtra = restored.travelExtra.map((leg) => [...leg])
   }
@@ -698,6 +700,11 @@ function suggest(): void {
           :steps="['Concept', 'Places & appearance', 'Rules & knowledge', 'Review']"
           :current="step"
           @go="step = $event" />
+
+        <CoverCard
+          :name="isNew ? draft.presetName || 'The world' : worldName"
+          :cover="draft.cover"
+          @change="draft.cover = $event" />
 
         <section class="card ev-card">
           <header class="card__head">

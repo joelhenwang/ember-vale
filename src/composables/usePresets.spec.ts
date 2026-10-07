@@ -41,7 +41,8 @@ const vale: PresetWorld = {
   places: [
     { key: 'hearth', name: 'Hearth' },
     { key: 'market', name: 'Market' }
-  ]
+  ],
+  cover: null
 }
 
 describe('server preset library mapping', () => {

@@ -962,6 +962,8 @@ export interface StorySummary {
 export interface StoryDetail {
   absolute_index: number;
   archived_at?: string | null;
+  cover_asset_id?: string | null;
+  cover_frame?: unknown[] | null;
   day: number;
   last_played_at?: string | null;
   metadata_version: number;

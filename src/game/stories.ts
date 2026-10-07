@@ -1,6 +1,6 @@
 import { reactive } from 'vue'
 import type { SortMode } from './filters'
-import type { ImageSlot } from './model'
+import type { FramedCover, ImageSlot } from './model'
 
 /**
  * The Stories shelf — every saved tale the player can return to.
@@ -20,6 +20,8 @@ export interface StoryRecord {
   world: string
   /** Banner slot — the scene art shown on the card. */
   sceneSlot: ImageSlot
+  /** Its world's picture, kept with the story; shown instead of the slot. */
+  cover?: FramedCover | null
   status: StoryStatus
   /** Watcher stories have no player avatar; player stories name one. */
   mode: { kind: 'watcher' } | { kind: 'player'; characterId: string }

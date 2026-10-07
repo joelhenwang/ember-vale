@@ -78,7 +78,8 @@ function worldDraft(): WorldDraft {
     activePlace: 'market',
     startPlace: 'hearth',
     loreExtra: '',
-    travelExtra: []
+    travelExtra: [],
+    cover: null
   }
 }
 
@@ -441,7 +442,8 @@ describe('studio field bridge', () => {
       activePlace: restored.activePlace!,
       startPlace: restored.startPlace!,
       loreExtra: '',
-      travelExtra: restored.travelExtra ?? []
+      travelExtra: restored.travelExtra ?? [],
+      cover: restored.cover ?? null
     }
     const packed = packWorld(draft, server)
     expect(packed.description).toBe('Mossy riverbanks, at dawn.')
@@ -510,7 +512,8 @@ describe('studio field bridge', () => {
       activePlace: places[0]!.id,
       startPlace: places[2]!.id,
       loreExtra: '',
-      travelExtra: []
+      travelExtra: [],
+      cover: null
     }
     const packed = packWorld(draft, server)
     expect(packed.travel).toBeUndefined()
@@ -547,7 +550,8 @@ describe('studio field bridge', () => {
       activePlace: restored.activePlace!,
       startPlace: restored.startPlace!,
       loreExtra: '',
-      travelExtra: restored.travelExtra ?? []
+      travelExtra: restored.travelExtra ?? [],
+      cover: restored.cover ?? null
     }
     const packed = packWorld(draft, server)
     expect(packed.description).toBe('Mossy riverbanks.')
@@ -579,7 +583,8 @@ describe('studio field bridge', () => {
       activePlace: restored.activePlace!,
       startPlace: restored.startPlace!,
       loreExtra: '',
-      travelExtra: restored.travelExtra ?? []
+      travelExtra: restored.travelExtra ?? [],
+      cover: restored.cover ?? null
     }
     // Editing the loft's purpose regenerates only the loft's record.
     draft.places[1]!.purpose = 'Storage.'
@@ -664,5 +669,23 @@ describe('an imported portrait', () => {
       portraitAssetId: null,
       portraitFrames: null
     })
+  })
+})
+
+describe("a world's own picture", () => {
+  const cover = { assetId: 'c1', frame: { x: 0, y: 0.2, w: 1, h: 0.44 } }
+
+  it('saves the picture with its banner, and nothing when unchanged', () => {
+    const packed = packWorld({ ...worldDraft(), cover })
+    expect(packed.cover).toEqual({ asset_id: 'c1', frame: cover.frame })
+    expect('cover' in packWorld({ ...worldDraft(), cover }, { ...packed })).toBe(false)
+    expect('cover' in packWorld(worldDraft())).toBe(false)
+    expect(packWorld(worldDraft(), { ...packed }).cover).toBeNull()
+  })
+
+  it('restores the picture only with its banner', () => {
+    expect(unpackWorld({ cover: { asset_id: 'c1', frame: cover.frame } }).cover).toEqual(cover)
+    expect(unpackWorld({ cover: { asset_id: 'c1' } }).cover).toBeNull()
+    expect('cover' in unpackWorld({})).toBe(false)
   })
 })

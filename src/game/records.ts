@@ -8,12 +8,23 @@
 
 import type { StoryDetail, StorySummary as ApiStorySummary } from '../../content/clients/worldsim'
 import { lastPlayedLabel, phaseLabel, phaseToTimeOfDay } from './format'
-import type { CurrentStory, StorySummary } from './model'
+import { assetUrl } from '../api/worldsim'
+import { frameFromList } from './framing'
+import type { CurrentStory, FramedCover, StorySummary } from './model'
 import type { StoryRecord } from './stories'
 
 export interface ResolvedWorld {
   name: string
   description: string
+}
+
+/** The story's cover: its world's picture, framed to the banner. */
+export function storyCover(detail: StoryDetail): FramedCover | null {
+  if (!detail.cover_asset_id) return null
+  return {
+    src: assetUrl(detail.world_id, detail.cover_asset_id),
+    frame: frameFromList(detail.cover_frame as number[] | null | undefined)
+  }
 }
 
 export function toStoryRecord(detail: StoryDetail, world: ResolvedWorld): StoryRecord {
@@ -22,6 +33,7 @@ export function toStoryRecord(detail: StoryDetail, world: ResolvedWorld): StoryR
     title: detail.title,
     world: world.name,
     sceneSlot: 'hero.currentStory',
+    cover: storyCover(detail),
     status: detail.archived_at ? 'archived' : 'in-progress',
     mode: detail.mode === 'player' ? { kind: 'player', characterId: '' } : { kind: 'watcher' },
     day: detail.day,
@@ -63,6 +75,7 @@ export function toMenuCurrent(detail: StoryDetail, world: ResolvedWorld): Curren
     beat: { day: detail.day, timeOfDay: phaseToTimeOfDay(detail.phase), location: world.name },
     logline: world.description || `Day ${detail.day} · ${phaseLabel(detail.phase)}`,
     imageSlot: 'hero.currentStory',
+    cover: storyCover(detail),
     mark: 'spark',
     pov: detail.mode === 'player' ? 'Player' : 'Watcher',
     epigraph: ''
@@ -76,6 +89,7 @@ export function toMenuRecent(detail: StoryDetail, world: ResolvedWorld): StorySu
     beat: { day: detail.day, timeOfDay: phaseToTimeOfDay(detail.phase), location: world.name },
     logline: world.description || `Day ${detail.day} · ${phaseLabel(detail.phase)}`,
     imageSlot: 'hero.currentStory',
+    cover: storyCover(detail),
     mark: 'spark',
     pov: detail.mode === 'player' ? 'Player' : 'Watcher'
   }

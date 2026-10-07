@@ -1,8 +1,10 @@
-"""Pictures a player brings for a character: kept whole, framed by data.
+"""Pictures a player brings for a character or a world: kept whole, framed by data.
 
-The upload is an unscoped PORTRAIT asset (at most 2048 px a side); the
-character preset keeps where its portrait and face are on it
+A character's upload is an unscoped PORTRAIT asset (at most 2048 px a
+side); the character preset keeps where its portrait and face are on it
 (domain/framing.py). The face can be suggested by the map reader's model.
+A world's is an unscoped BACKGROUND asset; the world preset keeps its
+16:7 banner frame.
 """
 
 from __future__ import annotations
@@ -27,6 +29,8 @@ router = APIRouter(tags=["library"])
 
 #: Imported portraits are shown on cards and tokens, never printed.
 PORTRAIT_MAX_SIDE = 2048
+#: World pictures fill wide banners.
+COVER_MAX_SIDE = 2560
 
 
 @router.post("/library/portraits", response_model=api.MapImageView)
@@ -38,6 +42,18 @@ async def upload_portrait(body: api.MapUploadRequest, request: Request) -> api.M
         folder="portraits",
         style="imported-portrait",
         max_side=PORTRAIT_MAX_SIDE,
+    )
+
+
+@router.post("/library/covers", response_model=api.MapImageView)
+async def upload_cover(body: api.MapUploadRequest, request: Request) -> api.MapImageView:
+    return await keep_picture(
+        request,
+        picture_bytes(body.data_url),
+        kind=AssetKind.BACKGROUND,
+        folder="covers",
+        style="imported-cover",
+        max_side=COVER_MAX_SIDE,
     )
 
 

@@ -16,7 +16,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from worldsim.domain.framing import PictureFrames
+from worldsim.domain.framing import Frame, PictureFrames
 from worldsim.domain.geography import PlaceMap, WorldMap
 from worldsim.domain.ids import EditorDraftId, PresetId
 from worldsim.domain.time import utcnow
@@ -39,6 +39,15 @@ class WorldLocationPreset(BaseModel):
     map: PlaceMap | None = None
 
 
+class WorldCover(BaseModel):
+    """A picture the player brought for a world, and its 16:7 banner."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    asset_id: str = Field(min_length=1, max_length=128)
+    frame: Frame
+
+
 class WorldPresetPayload(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -54,6 +63,8 @@ class WorldPresetPayload(BaseModel):
     #: Where the places are drawn and how long the roads take; travel
     #: pairs stay the source of which places connect.
     map: WorldMap | None = None
+    #: The world's own picture (library and story cards); None: none yet.
+    cover: WorldCover | None = None
 
     @model_validator(mode="after")
     def _pins_are_places(self) -> WorldPresetPayload:
@@ -136,8 +147,9 @@ def canonical_payload_hash(payload: PresetPayload) -> str:
     if data.get("kind") == "character" and data.get("portrait_frames") is None:
         data.pop("portrait_frames", None)
     if data.get("kind") == "world":
-        if data.get("map") is None:
-            data.pop("map", None)
+        for added in ("map", "cover"):
+            if data.get(added) is None:
+                data.pop(added, None)
         for place in data.get("locations", []):
             if place.get("map") is None:
                 place.pop("map", None)

@@ -6940,6 +6940,27 @@
           "title": "TravelScale",
           "type": "object"
         },
+        "WorldCover": {
+          "additionalProperties": false,
+          "description": "A picture the player brought for a world, and its 16:7 banner.",
+          "properties": {
+            "asset_id": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Asset Id",
+              "type": "string"
+            },
+            "frame": {
+              "$ref": "#/$defs/Frame"
+            }
+          },
+          "required": [
+            "asset_id",
+            "frame"
+          ],
+          "title": "WorldCover",
+          "type": "object"
+        },
         "WorldLocationPreset": {
           "additionalProperties": false,
           "properties": {
@@ -7038,6 +7059,17 @@
         "WorldPresetPayload": {
           "additionalProperties": false,
           "properties": {
+            "cover": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/WorldCover"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
             "default_cast": {
               "items": {
                 "type": "string"

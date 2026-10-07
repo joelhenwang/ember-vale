@@ -132,6 +132,7 @@ def test_worlds_without_a_map_keep_their_hash() -> None:
     world = _world()
     data = world.model_dump(mode="json")
     assert data.pop("map") is None
+    assert data.pop("cover") is None
     for place in data["locations"]:
         assert place.pop("map") is None
     legacy = hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()

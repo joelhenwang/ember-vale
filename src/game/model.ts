@@ -44,6 +44,8 @@ export interface StorySummary {
   /** Two-ish lines of the latest scene state, written by the narrator. */
   logline: string
   imageSlot: ImageSlot
+  /** Its world's picture, kept with the story; shown instead of the slot. */
+  cover?: FramedCover | null
   mark: 'spark' | 'leaf'
   /** "Watcher" (observer run) or "Player" (protagonist run). */
   pov: 'Watcher' | 'Player'
@@ -85,6 +87,12 @@ export interface Tag {
 }
 
 /** An imported picture and where its portrait and face are on it. */
+/** A world's own picture and the banner part of it cards show. */
+export interface FramedCover {
+  src: string
+  frame: Frame | null
+}
+
 export interface FramedPortrait {
   src: string
   portrait: Frame
@@ -119,6 +127,8 @@ export interface WorldDef {
   blurb: string
   tags: Tag[]
   imageSlot: ImageSlot
+  /** The world's own picture, shown instead of the stock slot. */
+  cover?: FramedCover | null
   places: number
   /** Null until story shelves report real usage — never display null as a count. */
   usedInStories: number | null

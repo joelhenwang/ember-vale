@@ -13,7 +13,7 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 from test_stage1_api import ApiClient
-from test_story_travel import MIGRATIONS, SEED_DIR
+from test_story_travel import MIGRATIONS, SEED_DIR, _create, _draft
 
 from worldsim.application.ports.map_reader import Reading
 from worldsim.domain.framing import Frame, PictureFrames, as_list, framed_face, within
@@ -208,4 +208,33 @@ def test_large_imports_are_kept_smaller(client: ApiClient) -> None:
         assert (uploaded.json()["width"], uploaded.json()["height"]) == (1536, 2048)
     finally:
         for stored in (ASSETS / "generated" / "portraits").glob(f"{asset_id}.*"):
+            stored.unlink()
+
+
+def test_a_world_picture_becomes_its_stories_cover(client: ApiClient) -> None:
+    uploaded = client.post("/api/v1/library/covers", json={"data_url": _picture((1600, 900))})
+    assert uploaded.status_code == 200, uploaded.text
+    asset_id = uploaded.json()["asset_id"]
+    try:
+        banner = {"x": 0.0, "y": 0.1, "w": 1.0, "h": 0.778}
+        base = client.get(f"/api/v1/library/presets/{WORLD_PRESET_ID}?revision=2").json()
+        payload = {**base["revision"], "cover": {"asset_id": asset_id, "frame": banner}}
+        made = client.post(
+            "/api/v1/library/presets",
+            json={"kind": "world", "name": "Covered Vale", "payload": payload},
+        )
+        assert made.status_code == 200, made.text
+        created = _create(client, _draft(client, made.json()["id"], 1), "covered-story")
+        assert created.status_code == 200, created.text
+        story = client.get(f"/api/v1/stories/{created.json()['story_id']}").json()
+        assert story["cover_asset_id"] not in (None, asset_id)  # the story's own record
+        assert story["cover_frame"] == pytest.approx([0.0, 0.1, 1.0, 0.778])
+        art = client.get(
+            f"/api/v1/assets/{story['cover_asset_id']}",
+            params={"world_id": story["world_id"]},
+            headers={"X-Worldsim-Role": "watcher"},
+        )
+        assert art.status_code == 200 and art.content[:2] == b"\xff\xd8"
+    finally:
+        for stored in (ASSETS / "generated" / "covers").glob(f"{asset_id}.*"):
             stored.unlink()

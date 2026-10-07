@@ -13,6 +13,7 @@ import type { Component } from 'vue'
 import { catalog } from '../../game/catalog'
 import { resolveImage } from '../../game/images'
 import type { StoryRecord } from '../../game/stories'
+import FramedImage from '../ui/FramedImage.vue'
 import IconArchive from '../icons/IconArchive.vue'
 import IconArrowRight from '../icons/IconArrowRight.vue'
 import IconBook from '../icons/IconBook.vue'
@@ -75,7 +76,13 @@ function menuArchive(): void {
 <template>
   <article class="scard ev-card" :class="{ 'scard--list': layout === 'list' }">
     <div class="scard__art">
-      <img :src="artUrl" :alt="`${story.title} — scene from ${story.world}`" />
+      <FramedImage
+        v-if="story.cover"
+        class="scard__cover"
+        :src="story.cover.src"
+        :frame="story.cover.frame"
+        :alt="`${story.title}: ${story.world}`" />
+      <img v-else :src="artUrl" :alt="`${story.title} — scene from ${story.world}`" />
       <span class="scard__world">{{ story.world }}</span>
     </div>
 
@@ -175,6 +182,10 @@ function menuArchive(): void {
   height: 100%;
   object-fit: cover;
   display: block;
+}
+.scard__cover {
+  position: absolute;
+  inset: 0;
 }
 .scard__world {
   position: absolute;

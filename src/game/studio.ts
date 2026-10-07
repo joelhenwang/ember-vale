@@ -97,6 +97,12 @@ export interface PortraitFrames {
   face: Frame
 }
 
+/** A world's own picture (library asset) and its 16:7 banner frame. */
+export interface WorldCover {
+  assetId: string
+  frame: Frame
+}
+
 export interface WorldDraft {
   /**
    * Name for first publication. The server requires it at creation, but
@@ -130,6 +136,8 @@ export interface WorldDraft {
    * Pruned explicitly when a place is removed.
    */
   travelExtra: string[][]
+  /** The world's own picture; null: none (cards show a stock one). */
+  cover: WorldCover | null
 }
 
 const blankCharacter = (): CharacterDraft => ({
@@ -257,7 +265,8 @@ export function ensureWorldDraft(id: string): WorldDraft {
         activePlace: 'market',
         startPlace: 'market',
         loreExtra: '',
-        travelExtra: []
+        travelExtra: [],
+        cover: null
       }
     } else if (id === 'silverleaf-coast') {
       worldDrafts[id] = {
@@ -287,7 +296,8 @@ export function ensureWorldDraft(id: string): WorldDraft {
         activePlace: 'lighthouse',
         startPlace: 'lighthouse',
         loreExtra: '',
-        travelExtra: []
+        travelExtra: [],
+        cover: null
       }
     } else {
       worldDrafts[id] = {
@@ -301,7 +311,8 @@ export function ensureWorldDraft(id: string): WorldDraft {
         activePlace: 'boot',
         startPlace: 'boot',
         loreExtra: '',
-        travelExtra: []
+        travelExtra: [],
+        cover: null
       }
       const p = worldDrafts[id].places[0]!
       worldDrafts[id].activePlace = p.id

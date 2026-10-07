@@ -12,8 +12,10 @@ from uuid import UUID
 from fastapi import APIRouter, Header, Request
 
 from worldsim.application.settings.resolution import resolve_pin
+from worldsim.application.stories.create import COVER, story_cover
 from worldsim.application.stories.validation import validate_draft as validate_draft_payload
 from worldsim.domain.errors import DomainError, ErrorCode
+from worldsim.domain.framing import as_list
 from worldsim.domain.ids import new_story_draft_id
 from worldsim.domain.stories import (
     DraftPayload,
@@ -118,6 +120,7 @@ async def read_story(story_id: UUID, request: Request) -> api.StoryDetail:
     state = request.app.state.app_state
     async with state.uow_factory()() as uow:
         entry = await uow.stories.get_catalog(story_id)
+        cover = story_cover((await uow.worlds.get_config(summary.world_id)).get(COVER))
     return api.StoryDetail(
         story_id=summary.story_id,
         world_id=summary.world_id,
@@ -131,6 +134,13 @@ async def read_story(story_id: UUID, request: Request) -> api.StoryDetail:
         archived_at=entry.archived_at,
         status=summary.status,
         metadata_version=entry.metadata_version,
+        cover_asset_id=entry.cover_asset_id,
+        # The frame is for the world's picture; another cover shows whole.
+        cover_frame=(
+            as_list(cover.frame)
+            if cover is not None and cover.asset_id == entry.cover_asset_id
+            else None
+        ),
     )
 
 

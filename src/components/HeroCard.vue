@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { menuState } from '../game/state'
 import { useGameImage } from '../game/images'
 import MenuButton from './MenuButton.vue'
+import FramedImage from './ui/FramedImage.vue'
 import { storyLocation } from '../game/storyRoute'
 import IconSparkle from './icons/IconSparkle.vue'
 import IconInfo from './icons/IconInfo.vue'
@@ -16,12 +17,21 @@ const fallbackCover = useGameImage('hero.currentStory')
 const playing = computed(() => story.value?.playing ?? null)
 /** Where your character stands, when the place has its own art. */
 const cover = computed(() => playing.value?.sceneUrl ?? fallbackCover.value)
+/** Otherwise the story's world picture, when it has one. */
+const worldCover = computed(() => (playing.value?.sceneUrl ? null : (story.value?.cover ?? null)))
 </script>
 
 <template>
   <section class="hero ev-card" aria-label="Current story">
     <div class="hero__frame">
+      <FramedImage
+        v-if="worldCover"
+        class="hero__img"
+        :src="worldCover.src"
+        :frame="worldCover.frame"
+        :alt="`${story?.title ?? 'Ember Vale'}: its world`" />
       <img
+        v-else
         class="hero__img"
         :src="cover"
         :alt="`${story?.title ?? 'Ember Vale'} — scene illustration`" />
