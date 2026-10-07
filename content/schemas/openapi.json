@@ -1012,6 +1012,17 @@
             "title": "Sequence",
             "type": "integer"
           },
+          "spot_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spot Key"
+          },
           "text": {
             "anyOf": [
               {

@@ -175,6 +175,7 @@ onUnmounted(() => {
           :place-name="placeOf(insideMap.location_id) ?? 'This place'"
           :cast="view.cast ?? []"
           :activities="view.activities ?? []"
+          :scenes="obs.entries.value"
           :focus-id="focusId"
           @select="openLatestFor"
           @leave="insideId = null" />

@@ -914,6 +914,9 @@ class ChronicleEntry(BaseModel):
     text: str | None = None
     participant_ids: list[UUID] = Field(default_factory=list)
     location_id: UUID | None = None
+    #: The spot inside the place the scene's prose names, when the place
+    #: has a map of its own.
+    spot_key: str | None = None
     scene_id: UUID | None = None
     absolute_index: int
     revision: int = 0

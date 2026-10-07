@@ -18,6 +18,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy.exc import IntegrityError
 
+from worldsim.application.geography import PLACE_MAPS
 from worldsim.application.images import queue_image
 from worldsim.application.library.builtins import WORLD_PRESET_ID
 from worldsim.application.orchestration.stage1 import UnitOfWorkFactory
@@ -226,8 +227,6 @@ def _inline_character(member: DraftCastMember) -> CharacterPresetPayload:
 
 #: World config key holding the story's own map layout (see presentation).
 MAP_LAYOUT = "map_layout"
-#: World config key holding the places' own maps, by location id.
-PLACE_MAPS = "place_maps"
 
 
 def _fraction(point: tuple[int, int]) -> list[float]:

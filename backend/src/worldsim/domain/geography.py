@@ -10,6 +10,7 @@ linearly with its drawn length.
 from __future__ import annotations
 
 import math
+import re
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -203,3 +204,30 @@ def timed_roads(
         road.model_copy(update={"phases": phases})
         for road, phases in zip(roads, travel_phases(lengths, scale), strict=True)
     ]
+
+
+def spot_named(text: str, spots: list[tuple[str, str]]) -> str | None:
+    """The spot (key) a scene's prose says it happens at, or None.
+
+    Spots are (key, name) pairs. A name counts when written as a whole
+    phrase; a one-word name ("Mill", "Well") only when capitalised as on
+    the map or after "the", so "as well" or "mill about" never place
+    anyone. The spot named most wins; a tie goes to the first named.
+    """
+    best: tuple[int, int, str] | None = None
+    for key, name in spots:
+        core = re.sub(r"^the\s+", "", name.strip(), flags=re.IGNORECASE)
+        if not core:
+            continue
+        escaped = re.escape(core)
+        if " " in core:
+            pattern = re.compile(rf"\b{escaped}\b", re.IGNORECASE)
+        else:
+            pattern = re.compile(rf"(?:\b{escaped}\b|(?i:\bthe\s+{escaped}\b))")
+        hits = [m.start() for m in pattern.finditer(text)]
+        if not hits:
+            continue
+        rank = (len(hits), -hits[0], key)
+        if best is None or rank[:2] > best[:2]:
+            best = rank
+    return best[2] if best else None

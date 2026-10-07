@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type {
   ActivityView,
   CastEntry,
+  ChronicleEntry,
   PlaceMapView,
   PresetDetail
 } from '../../content/clients/worldsim'
@@ -135,5 +136,33 @@ describe('who is where inside a place', () => {
     expect(tokens[0]!.x).toBeLessThan(0.4)
     expect(tokens[1]!.x).toBeGreaterThan(0.4)
     expect(tokens[0]!.y).toBe(0.4)
+  })
+
+  it('stands people where their latest scene was set', () => {
+    const scene = (sequence: number, who: string[], spot: string | null, where = 'vale') =>
+      ({
+        sequence,
+        participant_ids: who,
+        location_id: where,
+        spot_key: spot
+      }) as ChronicleEntry
+    const cast = [member('wren', 'Wren'), member('ash', 'Ash'), member('kip', 'Kip')]
+    const tokens = layoutSpotTokens(
+      village,
+      cast,
+      [doing('wren', 'rest'), doing('kip', 'rest')],
+      [
+        scene(1, ['wren', 'ash'], 'mill'),
+        scene(2, ['ash'], 'smithy'), // Ash's latest scene wins
+        scene(3, ['wren'], 'smithy', 'elsewhere'), // set somewhere else: rule applies
+        scene(4, ['kip'], 'no-such-spot'),
+        scene(5, ['ash'], null) // named no spot: Ash stays at the smithy
+      ]
+    )
+    expect(Object.fromEntries(tokens.map((t) => [t.name, t.spot]))).toEqual({
+      Ash: 'Smithy',
+      Wren: 'the Hearth',
+      Kip: 'the Hearth'
+    })
   })
 })

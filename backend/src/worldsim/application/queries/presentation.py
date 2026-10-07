@@ -14,12 +14,14 @@ import math
 from pathlib import Path
 from uuid import UUID
 
-from pydantic import BaseModel, Field, TypeAdapter, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from worldsim.application.capabilities import capabilities_for, is_omniscient
+from worldsim.application.geography import PLACE_MAPS, story_place_maps
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.activities import Activity
 from worldsim.domain.enums import NarrativeStatus, UserRole, Visibility
+from worldsim.domain.geography import spot_named
 from worldsim.domain.journey import Journey, level_floor, level_for, title_for
 from worldsim.domain.narrative import NarrativeHook
 from worldsim.domain.time import absolute_index
@@ -109,7 +111,7 @@ async def presentation(
         manifest=manifest,
         place_maps=[
             place_map
-            for place_map in _place_maps(config.get("place_maps"))
+            for place_map in _place_maps(config.get(PLACE_MAPS))
             if place_map.location_id in visible_locations
         ],
         cast=cast,
@@ -228,6 +230,7 @@ async def chronicle(
     """
     omniscient = is_omniscient(role)
     events = await uow.events.list_range(world_id, after, limit)
+    place_maps = story_place_maps((await uow.worlds.get_config(world_id)).get(PLACE_MAPS))
     entries: list[api.ChronicleEntry] = []
     for event in events:
         if (
@@ -245,6 +248,13 @@ async def chronicle(
                 if scene.event_id == event.id:
                     scene_id = scene.id
                     break
+        location_id = _as_uuid(event.summary.get("location_id"))
+        inside = place_maps.get(location_id) if location_id is not None else None
+        spot_key = (
+            spot_named(text, [(s.key, s.name) for s in inside.spots])
+            if inside is not None and text
+            else None
+        )
         entries.append(
             api.ChronicleEntry(
                 sequence=event.sequence,
@@ -253,7 +263,8 @@ async def chronicle(
                 title=title,
                 text=text,
                 participant_ids=list(event.participant_ids),
-                location_id=_as_uuid(event.summary.get("location_id")),
+                location_id=location_id,
+                spot_key=spot_key,
                 scene_id=scene_id,
                 absolute_index=event.absolute_index,
                 idle=event.summary.get("idle") == "1",
@@ -373,48 +384,19 @@ def _drawn_manifest(world_id: UUID, raw: object) -> api.MapManifestView | None:
         return None
 
 
-class _Spot(BaseModel):
-    key: str
-    name: str
-    kind: str = ""
-    point: tuple[float, float]
-
-
-class _PlaceMap(BaseModel):
-    """One entry story creation stored under the world config "place_maps"."""
-
-    asset_id: UUID
-    spots: list[_Spot] = Field(default_factory=list)
-
-
-_ENTRIES = TypeAdapter(dict[UUID, object])
-
-
 def _place_maps(raw: object) -> list[api.PlaceMapView]:
-    """The places' own maps a story took from its world; unreadable ones are skipped."""
-    try:
-        entries = _ENTRIES.validate_python(raw)
-    except ValidationError:
-        return []
-    out: list[api.PlaceMapView] = []
-    for location_id, entry in entries.items():
-        try:
-            place = _PlaceMap.model_validate(entry)
-            out.append(
-                api.PlaceMapView(
-                    location_id=location_id,
-                    asset_id=place.asset_id,
-                    spots=[
-                        api.PlaceSpotView(
-                            key=s.key, name=s.name, kind=s.kind, x=s.point[0], y=s.point[1]
-                        )
-                        for s in place.spots
-                    ],
-                )
-            )
-        except ValidationError:
-            continue
-    return out
+    """The places' own maps a story took from its world."""
+    return [
+        api.PlaceMapView(
+            location_id=location_id,
+            asset_id=place.asset_id,
+            spots=[
+                api.PlaceSpotView(key=s.key, name=s.name, kind=s.kind, x=s.point[0], y=s.point[1])
+                for s in place.spots
+            ],
+        )
+        for location_id, place in story_place_maps(raw).items()
+    ]
 
 
 def _curated_manifest(assets_root: Path, locations: list[Location]) -> api.MapManifestView | None:

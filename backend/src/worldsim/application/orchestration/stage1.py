@@ -44,6 +44,7 @@ from worldsim.application.commands.knowledge import fold_claim
 from worldsim.application.commands.party import recruit_companion
 from worldsim.application.conditions import tick_conditions
 from worldsim.application.context.assembler import assemble, to_manifest_dict
+from worldsim.application.geography import PLACE_MAPS, StorySpot, story_spots
 from worldsim.application.graphs.character import (
     CHARACTER_PROMPT_VERSION,
     CharacterGraphDeps,
@@ -61,6 +62,7 @@ from worldsim.application.graphs.narrate import (
     NARRATOR_PROMPT_VERSION,
     RECAP_FACT_KEY,
     SETTING_FACT_KEYS,
+    SPOTS_FACT_KEY,
     NarratorGraphDeps,
     attempt_speech_facts,
     build_narration_graph,
@@ -170,6 +172,7 @@ from worldsim.domain.enums import (
 )
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.events import WorldEvent
+from worldsim.domain.geography import spot_named
 from worldsim.domain.ids import (
     derive_attempt_id,
     derive_combat_event_id,
@@ -872,17 +875,60 @@ async def _previously(uow: Any, world_id: UUID, event_id: UUID) -> str | None:
     return None
 
 
-async def _event_place_name(uow: Any, event_id: UUID) -> str | None:
-    """Name of the place a scene event recorded (None for older events)."""
+async def _last_spot(
+    uow: Any, world_id: UUID, event_id: UUID, location_id: UUID, spots: Sequence[StorySpot]
+) -> StorySpot | None:
+    """The spot these people's latest scenes here were set at: the newest
+    earlier scene shared with them that named one, while they stayed in
+    this place."""
+    event = await uow.events.get_event(event_id)
+    people = set(event.participant_ids)
+    if not people or not spots:
+        return None
+    high = await uow.events.max_sequence(world_id)
+    window = await uow.events.list_range(world_id, max(0, high - 40), 40)
+    for prior in reversed(window):
+        if prior.event_type != EventType.ACTION_RESOLVED or prior.id == event_id:
+            continue
+        if prior.absolute_index >= event.absolute_index or not people & set(prior.participant_ids):
+            continue
+        if prior.summary.get("location_id") != str(location_id):
+            return None  # they came from elsewhere
+        beats = await uow.scenes.narrations_for_event(prior.id)
+        key = spot_named(" ".join(b.text for b in beats), [(s.key, s.name) for s in spots])
+        if key is not None:
+            return next((s for s in spots if s.key == key), None)
+        # A scene that named no spot leaves them where they were.
+    return None
+
+
+async def _event_place(uow: Any, event_id: UUID) -> Location | None:
+    """The place a scene event recorded (None for older events)."""
     event = await uow.events.get_event(event_id)
     raw = event.summary.get("location_id")
     if not raw:
         return None
     try:
-        place = await uow.locations.get(UUID(raw))
+        return cast("Location", await uow.locations.get(UUID(raw)))
     except (DomainError, ValueError):
         return None
-    return str(place.name)
+
+
+def spots_fact(spots: Sequence[StorySpot], last: StorySpot | None = None) -> str | None:
+    """The spots inside the scene's place, for the narrator to set it at one;
+    where these people last were, so a scene does not hop without cause."""
+    if not spots:
+        return None
+    listed = "; ".join(f"{s.name} ({s.kind})" if s.kind else s.name for s in spots)
+    stay = (
+        f" They were last at {last.name}: keep the scene there unless what happens moves them."
+        if last is not None
+        else ""
+    )
+    return (
+        f"Spots in this place: {listed}. Set the scene at the one spot that fits "
+        f"what happens, and name it in the first beat as written here.{stay}"
+    )
 
 
 def _recall_focus(
@@ -3805,7 +3851,8 @@ class Stage1Orchestrator:
             ]
             roster = await uow.party.list_for_world(world_id)
             config = await uow.worlds.get_config(world_id)
-            place_name = await _event_place_name(uow, event_id)
+            scene_place = await _event_place(uow, event_id)
+            place_name = scene_place.name if scene_place is not None else None
             place_names = {loc.id: loc.name for loc in await uow.locations.list_for_world(world_id)}
             previously = await _previously(uow, world_id, event_id)
         if existing:
@@ -3826,6 +3873,15 @@ class Stage1Orchestrator:
         # where the traveller set out and ends where the others wait.
         ends = whereabouts(characters, participants, place_names)
         setting = scene_place_facts(place_name, ends)
+        # A place with a map of its own lists its spots, so the scene is
+        # set at one (the story-watch map then stands people there).
+        if scene_place is not None and set(ends.values()) <= {scene_place.name}:
+            inside = story_spots(config.get(PLACE_MAPS), scene_place.id)
+            async with self._factory() as uow:
+                last = await _last_spot(uow, world_id, event_id, scene_place.id, inside)
+            spots = spots_fact(inside, last)
+            if spots is not None:
+                setting.append((SPOTS_FACT_KEY, spots))
         if previously is not None:
             setting.append((RECAP_FACT_KEY, previously))
         for key, value in reversed(setting):

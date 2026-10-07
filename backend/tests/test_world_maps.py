@@ -26,7 +26,13 @@ from worldsim.application.geography import (
     world_with_place_map,
 )
 from worldsim.application.ports.map_reader import Reading, ReadPlace, ReadRoad
-from worldsim.domain.geography import PlaceMap, TravelScale, road_length, travel_phases
+from worldsim.domain.geography import (
+    PlaceMap,
+    TravelScale,
+    road_length,
+    spot_named,
+    travel_phases,
+)
 from worldsim.domain.presets import (
     WorldLocationPreset,
     WorldPresetPayload,
@@ -201,6 +207,25 @@ def test_editing_places_keeps_their_maps() -> None:
     assert kept.locations[0].name == "The Hearth" and kept.locations[0].map == inside
     assert kept.map is not None
     assert [p.key for p in kept.map.pins] == ["hearth"] and kept.map.roads == []
+
+
+def test_a_scene_is_at_the_spot_it_names() -> None:
+    spots = [
+        ("hearth", "the Hearth"),
+        ("mill", "Mill"),
+        ("well", "Well"),
+        ("square", "Market square"),
+        ("smithy", "Smithy"),
+    ]
+    assert spot_named("Wren pushes open the door of the Hearth.", spots) == "hearth"
+    # Common words are not places: "mill about", "as well".
+    assert spot_named("They mill about, and it goes well enough.", spots) is None
+    # The spot named most wins, lower case after "the" included.
+    assert spot_named("At the smithy sparks fly; the market square, then the Smithy.", spots) == (
+        "smithy"
+    )
+    assert spot_named("Wren reaches the market square. The Mill turns.", spots) == "square"
+    assert spot_named("Nothing here.", spots) is None
 
 
 def test_reader_answers_are_cleaned() -> None:

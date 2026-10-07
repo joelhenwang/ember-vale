@@ -5,7 +5,12 @@
  * (src/game/placeMap.ts). Positions never come from model output.
  */
 import { computed } from 'vue'
-import type { ActivityView, CastEntry, PlaceMapView } from '../../../content/clients/worldsim'
+import type {
+  ActivityView,
+  CastEntry,
+  ChronicleEntry,
+  PlaceMapView
+} from '../../../content/clients/worldsim'
 import { layoutSpotTokens } from '../../game/placeMap'
 import { assetUrl } from '../../api/worldsim'
 import IconArrowLeft from '../icons/IconArrowLeft.vue'
@@ -16,12 +21,16 @@ const props = defineProps<{
   placeName: string
   cast: CastEntry[]
   activities: ActivityView[]
+  /** The story so far: a scene set at a spot stands its people there. */
+  scenes?: ChronicleEntry[]
   focusId?: string | null
 }>()
 
 const emit = defineEmits<{ select: [characterId: string]; leave: [] }>()
 
-const tokens = computed(() => layoutSpotTokens(props.placeMap, props.cast, props.activities))
+const tokens = computed(() =>
+  layoutSpotTokens(props.placeMap, props.cast, props.activities, props.scenes ?? [])
+)
 const busy = computed(() => new Set(tokens.value.map((t) => t.spotKey)))
 const art = computed(() => assetUrl(props.worldId, props.placeMap.asset_id))
 

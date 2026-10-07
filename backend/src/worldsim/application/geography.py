@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from uuid import UUID
+
+from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
 from worldsim.domain.geography import (
     MapPin,
@@ -134,3 +137,47 @@ def world_with_place_map(
         for place in world.locations
     ]
     return WorldPresetPayload.model_validate(world.model_dump() | {"locations": locations})
+
+
+#: World config key holding a story's place maps, by location id.
+PLACE_MAPS = "place_maps"
+
+
+class StorySpot(BaseModel):
+    """A spot inside one of a story's places; point as picture fractions."""
+
+    key: str
+    name: str
+    kind: str = ""
+    point: tuple[float, float]
+
+
+class StoryPlaceMap(BaseModel):
+    """What story creation stored for one place under PLACE_MAPS."""
+
+    asset_id: UUID
+    spots: list[StorySpot] = Field(default_factory=list)
+
+
+_ENTRIES = TypeAdapter(dict[UUID, object])
+
+
+def story_place_maps(raw: object) -> dict[UUID, StoryPlaceMap]:
+    """A story's place maps by location id; unreadable entries are skipped."""
+    try:
+        entries = _ENTRIES.validate_python(raw)
+    except ValidationError:
+        return {}
+    out: dict[UUID, StoryPlaceMap] = {}
+    for location_id, entry in entries.items():
+        try:
+            out[location_id] = StoryPlaceMap.model_validate(entry)
+        except ValidationError:
+            continue
+    return out
+
+
+def story_spots(raw: object, location_id: UUID) -> list[StorySpot]:
+    """The spots inside one of a story's places (none without a map)."""
+    place = story_place_maps(raw).get(location_id)
+    return list(place.spots) if place is not None else []

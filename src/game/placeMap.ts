@@ -10,6 +10,7 @@
 import type {
   ActivityView,
   CastEntry,
+  ChronicleEntry,
   MapPlaceView,
   PlaceMapRequest,
   PlaceMapView,
@@ -203,16 +204,46 @@ export interface SpotToken extends Token {
 }
 
 /** Spacing between tokens at one spot, as a fraction of the picture width. */
-const TOKEN_GAP = 0.05
+const TOKEN_GAP = 0.065
 
 /**
- * Tokens for the living characters in this place, each at their spot.
- * Travellers are on the road, not here. Several at one spot sit in a row.
+ * Where each character's scenes say they are: the spot named by their
+ * newest scene in this place that named one, while they stayed here.
+ */
+export function spotsFromScenes(
+  placeMap: PlaceMapView,
+  scenes: ChronicleEntry[]
+): Map<string, string> {
+  const keys = new Set((placeMap.spots ?? []).map((s) => s.key))
+  const newestFirst = [...scenes].sort((a, b) => b.sequence - a.sequence)
+  const out = new Map<string, string>()
+  const settled = new Set<string>()
+  for (const entry of newestFirst) {
+    for (const id of entry.participant_ids ?? []) {
+      if (settled.has(id)) continue
+      // Scenes elsewhere end the search: they came from there.
+      if (entry.location_id !== placeMap.location_id) settled.add(id)
+      else if (entry.spot_key && keys.has(entry.spot_key)) {
+        out.set(id, entry.spot_key)
+        settled.add(id)
+      }
+      // A scene here that named no spot leaves them where they were.
+    }
+  }
+  return out
+}
+
+/**
+ * Tokens for the living characters in this place, each at their spot:
+ * where their latest scene was set, else one that suits what they are
+ * doing. Travellers are on the road, not here. Several at one spot sit
+ * in a row.
  */
 export function layoutSpotTokens(
   placeMap: PlaceMapView,
   cast: CastEntry[],
-  activities: ActivityView[] = []
+  activities: ActivityView[] = [],
+  scenes: ChronicleEntry[] = []
 ): SpotToken[] {
   const doing = new Map<string, string>()
   for (const a of activities) if (a.status === 'active') doing.set(a.character_id, a.kind)
@@ -225,9 +256,13 @@ export function layoutSpotTokens(
     )
     .sort((a, b) => a.name.localeCompare(b.name) || a.character_id.localeCompare(b.character_id))
   const spots = placeMap.spots ?? []
+  const told = spotsFromScenes(placeMap, scenes)
   const bySpot = new Map<string, CastEntry[]>()
   for (const member of here) {
-    const spot = spotFor(member.character_id, doing.get(member.character_id) ?? null, spots)
+    const named = told.get(member.character_id)
+    const spot =
+      spots.find((s) => s.key === named) ??
+      spotFor(member.character_id, doing.get(member.character_id) ?? null, spots)
     if (!spot) continue
     bySpot.set(spot.key, [...(bySpot.get(spot.key) ?? []), member])
   }

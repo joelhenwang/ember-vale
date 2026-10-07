@@ -584,6 +584,7 @@ export interface ChronicleEntry {
   revision?: number;
   scene_id?: string | null;
   sequence: number;
+  spot_key?: string | null;
   text?: string | null;
   title: string;
 }

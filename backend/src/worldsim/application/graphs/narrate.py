@@ -49,8 +49,10 @@ from worldsim.domain.scenes import Intent, Reaction
 NARRATOR_PROMPT_VERSION = "narrator.v3"
 #: What the audience last saw of these people: continuity, never news.
 RECAP_FACT_KEY = "previously"
+#: The spots inside the scene's place, when it has a map of its own.
+SPOTS_FACT_KEY = "spots"
 #: Facts that set the scene rather than report an event (no fallback beat).
-SETTING_FACT_KEYS = frozenset({"place", "pronouns", RECAP_FACT_KEY})
+SETTING_FACT_KEYS = frozenset({"place", "pronouns", RECAP_FACT_KEY, SPOTS_FACT_KEY})
 
 _BEATS_ADAPTER: TypeAdapter[list[BeatProposal]] = TypeAdapter(list[BeatProposal])
 

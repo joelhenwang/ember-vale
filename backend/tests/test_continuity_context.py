@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from test_stage1_api import MIGRATIONS, SEED_DIR, ApiClient, _advance, _route_for, _seed_two
 
 from worldsim.application.context.assembler import assemble
+from worldsim.application.geography import PLACE_MAPS
 from worldsim.application.orchestration.stage1 import (
     SealedPhase,
     Stage1Orchestrator,
@@ -257,6 +258,77 @@ def test_narrator_is_told_where_the_scene_happens(
     narrator = [r.prompt for r in gateway.sent_requests if "You narrate" in (r.system or "")]
     assert any("The scene takes place at Hearth." in p for p in narrator)
     assert any("The scene takes place at Market." in p for p in narrator)
+
+
+def test_the_narrator_sets_a_scene_at_a_spot(
+    stage1_client: tuple[ApiClient, FakeGateway],
+) -> None:
+    client, gateway = stage1_client
+    ids = asyncio.run(_seed_two())
+
+    async def give_the_hearth_a_map() -> str:
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                hearth = next(
+                    p
+                    for p in await uow.locations.list_for_world(ids["world"])
+                    if p.name == "Hearth"
+                )
+                spot = {"kind": "", "point": [0.5, 0.5]}
+                await uow.worlds.put_config(
+                    ids["world"],
+                    PLACE_MAPS,
+                    {
+                        str(hearth.id): {
+                            "asset_id": str(uuid.uuid4()),
+                            "spots": [
+                                {**spot, "key": "taproom", "name": "the Taproom", "kind": "inn"},
+                                {**spot, "key": "well", "name": "Well"},
+                            ],
+                        }
+                    },
+                )
+                await uow.commit()
+                return str(hearth.id)
+        finally:
+            await engine.dispose()
+
+    hearth_id = asyncio.run(give_the_hearth_a_map())
+    base = _route_for(ids, {})
+
+    def route(request: CompletionRequest) -> str | None:
+        if "You decide" in (request.system or ""):
+            return json.dumps({"family": "observe", "focus": "the room"})
+        if "You narrate" in (request.system or "") and "Spots in this place" in request.prompt:
+            return json.dumps(
+                [{"text": "Wren watches the room from the taproom.", "cited_fact_keys": ["place"]}]
+            )
+        return base(request)
+
+    gateway.route = route
+    assert _advance(client, ids["world"], 1).status_code == 200
+    narrator = [r.prompt for r in gateway.sent_requests if "You narrate" in (r.system or "")]
+    told = [p for p in narrator if "Spots in this place:" in p]
+    assert len(told) == 1  # the Hearth has a map; the Market does not
+    assert "the Taproom (inn); Well." in told[0]
+    entries = client.get(
+        "/api/v1/world/chronicle", params={"world_id": ids["world"]}, headers=WATCHER
+    ).json()["entries"]
+    at_hearth = [e for e in entries if e["location_id"] == hearth_id and e["text"]]
+    assert at_hearth and at_hearth[-1]["spot_key"] == "taproom", at_hearth
+    # The next scene there is told where they were, so it does not hop.
+    before = len(gateway.sent_requests)
+    assert _advance(client, ids["world"], 2).status_code == 200
+    later = [
+        r.prompt
+        for r in gateway.sent_requests[before:]
+        if "You narrate" in (r.system or "") and "Spots in this place:" in r.prompt
+    ]
+    assert later and "They were last at the Taproom" in later[0]
+
+
+WATCHER = {"X-Worldsim-Role": "watcher"}
 
 
 def test_director_summary_lists_ids_places_and_stalls() -> None:
