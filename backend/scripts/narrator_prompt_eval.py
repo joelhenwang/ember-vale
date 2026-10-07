@@ -81,7 +81,8 @@ def facts_of(prompt: str) -> dict[str, str]:
 
 def audience_of(prompt: str) -> frozenset[str]:
     m = re.search(r"^Audience: (.*)$", prompt, re.M)
-    return frozenset(p.strip() for p in m.group(1).split(",")) if m else frozenset()
+    # The line ends with a full stop: "Audience: <id>, <id>."
+    return frozenset(p.strip().rstrip(".") for p in m.group(1).split(",")) if m else frozenset()
 
 
 def budget_of(prompt: str) -> int:
@@ -228,6 +229,31 @@ async def run(
     return results
 
 
+def rescore(fixture: list[dict[str, Any]], run_dir: Path) -> None:
+    """Score a run's saved answers again (no model calls): the first saved
+    answer that passes counts, as the app would have stored it."""
+    for path in sorted(run_dir.glob("narrator.v*.json")):
+        rows = json.loads(path.read_text(encoding="utf-8"))
+        scored: list[dict[str, Any]] = []
+        for row in rows:
+            if "error" in row or not isinstance(row.get("raw"), list):
+                continue
+            prompt = str(fixture[int(row["i"])]["prompt"])
+            for n, raw in enumerate(row["raw"]):
+                proposals, denial = check(prompt, raw, None)
+                if denial is None or n == len(row["raw"]) - 1:
+                    scored.append({**score(prompt, proposals, denial), "repaired": n > 0})
+                    break
+        valid = [r for r in scored if r["valid"]]
+        spotted = [r for r in valid if r["has_spots"]]
+        print(
+            f"{run_dir.name} {path.stem}: {len(valid)}/{len(scored)} valid "
+            f"({sum(1 for r in valid if r['repaired'])} after repair), "
+            f"spot named {sum(1 for r in spotted if r['spot'])}/{len(spotted)}, "
+            f"stock {sum(r['stock'] for r in valid)}, retold {sum(r['retold'] for r in valid)}"
+        )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--live", action="store_true", help="required: this spends money")
@@ -237,10 +263,16 @@ def main() -> None:
     parser.add_argument("--model", default=None)
     parser.add_argument("--reasoning", default="off", help="as the app sends it (off)")
     parser.add_argument("--parallel", type=int, default=4)
-    parser.add_argument("--out", required=True)
+    parser.add_argument("--out", default=None)
+    parser.add_argument("--rescore", nargs="*", help="run folders to score again, offline")
     args = parser.parse_args()
-    if not args.live:
-        sys.exit("refusing to call a paid model without --live")
+    if args.rescore:
+        fixture = json.loads(Path(args.fixture).read_text(encoding="utf-8"))
+        for folder in args.rescore:
+            rescore(fixture, Path(folder))
+        return
+    if not args.live or not args.out:
+        sys.exit("refusing to call a paid model without --live and --out")
     fixture = json.loads(Path(args.fixture).read_text(encoding="utf-8"))
     systems = {
         version: render_system_prompt((PROMPTS / f"{version}.md").read_text(encoding="utf-8"))

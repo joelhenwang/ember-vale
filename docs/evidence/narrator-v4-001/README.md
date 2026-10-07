@@ -5,6 +5,25 @@
 attempts to communicate with Ash about…") and named a listed spot in about a third of
 scenes. Does a more guided system prompt fix both without losing structural validity?
 
+> **Correction (rescore).** The harness read the prompt's `Audience:` line with its final
+> full stop attached to the last id, so one fixture scene failed "speaker outside the
+> audience" in every run and version. The app never had that problem: it narrated that scene
+> normally. `narrator_prompt_eval.py --rescore` scores the saved answers again with the fix
+> (no model calls); the corrected numbers are below and supersede the validity columns in
+> the tables further down. **Validity is level: both prompts pass 23-24/24 on both
+> models.** v4's gains are the spots, the record wording and the retelling.
+>
+> | run | model | prompt | valid (after repair) | spot named | stock phrases | retold cut |
+> | --- | --- | --- | --- | --- | --- | --- |
+> | run-3 | Venice | v3 | 24/24 (0) | 3/8 | 28 | 12 |
+> | run-7 | Venice | v3 | 24/24 (1) | 2/8 | 28 | 10 |
+> | run-7 | Venice | v4 final | 24/24 (0) | 8/8 | 10 | 2 |
+> | run-8 | Venice | v4 final | 24/24 (0) | 7/8 | 7 | 5 |
+> | run-5 | DeepSeek V4 Flash | v3 | 24/24 (0) | 6/8 | 10 | 4 |
+> | run-7 | DeepSeek V4 Flash | v3 | 24/24 (1) | 4/8 | 6 | 8 |
+> | run-7 | DeepSeek V4 Flash | v4 final | 23/24 (1) | 6/7 | 1 | 2 |
+> | run-8 | DeepSeek V4 Flash | v4 final | 24/24 (2) | 7/8 | 1 | 2 |
+
 **Method.** `fixture.json`: 24 narrator user prompts the app actually sent (from
 `model_call`, prompt version narrator.v3), 8 of them listing spots (from the "Inside
 Corvane" story; two with the older optional wording). `backend/scripts/narrator_prompt_eval.py`
@@ -75,8 +94,8 @@ What each revision fixed:
 - **Varied examples, not to be reused (run-8):** the replay never showed the copying the
   live play did; with three examples, one or two copied phrases in 24 answers remain.
 
-The two answers no version gets right are one fixture scene whose speaker is not in its
-audience (`speaker outside the audience`), in every run and both models.
+The two answers no version got right in the original tables were a harness bug (see the
+correction above), not the narrators.
 
 Same scene, v3 then v4 (Venice):
 
