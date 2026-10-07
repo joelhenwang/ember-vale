@@ -165,6 +165,7 @@ onUnmounted(() => {
           :world-id="storyId"
           :map-asset-id="view.manifest.asset_id ?? null"
           :anchors="view.manifest.anchors ?? []"
+          :roads="view.manifest.roads ?? []"
           :places="obs.places.value"
           :tokens="obs.tokens.value"
           :active-place-id="activePlaceId"

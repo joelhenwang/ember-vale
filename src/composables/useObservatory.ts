@@ -122,7 +122,12 @@ export function useObservatory(worldId: Ref<string>, options: ObservatoryOptions
   const playing = computed(() => autoplay.value?.status === 'playing')
   const tokens = computed(() =>
     presentation.value
-      ? layoutTokens(presentation.value.manifest.anchors ?? [], presentation.value.cast ?? [])
+      ? layoutTokens(
+          presentation.value.manifest.anchors ?? [],
+          presentation.value.cast ?? [],
+          presentation.value.manifest.roads ?? [],
+          presentation.value.activities ?? []
+        )
       : []
   )
   const feed = computed(() => groupFeed(entries.value))

@@ -289,6 +289,24 @@ def test_read_a_map_and_time_the_new_story(stack: tuple[ApiClient, _Reader]) -> 
         assert legs[("Hearth", "Market")] == (2, 0)
         assert legs[("Old Mill", "Market")] == (7, 0)
         assert legs[("Market", "Old Mill")] == (7, 0)
+        # The story keeps the map: its art, its pins and its roads as drawn.
+        story = created.json()["world_id"]
+        manifest = api.get(
+            "/api/v1/world/presentation",
+            params={"world_id": story},
+            headers={"X-Worldsim-Role": "watcher"},
+        ).json()["manifest"]
+        assert manifest["schematic"] is False and manifest["id"] == f"drawn:{UUID(story).hex}"
+        anchors = {a["x"]: a["y"] for a in manifest["anchors"]}
+        assert anchors[0.1] == 0.1 and anchors[0.9] == 0.9  # Hearth and Old Mill pins
+        drawn = [(r["by"], len(r["points"])) for r in manifest["roads"]]
+        assert drawn == [("road", 2), ("path", 2)]
+        art = api.get(
+            f"/api/v1/assets/{manifest['asset_id']}",
+            params={"world_id": story},
+            headers={"X-Worldsim-Role": "watcher"},
+        )
+        assert art.status_code == 200 and art.content[:4] == b"\x89PNG"
     finally:
         for stored in (ASSETS / "generated" / "maps").glob(f"{asset_id}.*"):
             stored.unlink()

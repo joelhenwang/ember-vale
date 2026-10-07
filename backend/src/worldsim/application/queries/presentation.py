@@ -14,6 +14,8 @@ import math
 from pathlib import Path
 from uuid import UUID
 
+from pydantic import BaseModel, Field, ValidationError
+
 from worldsim.application.capabilities import capabilities_for, is_omniscient
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.activities import Activity
@@ -71,7 +73,12 @@ async def presentation(
         if omniscient or character.location_id in visible_locations or character.id == viewer
     ]
     manifest = _schematic_manifest(world_id, locations)
-    if assets_root is not None:
+    drawn = _drawn_manifest(world_id, (await uow.worlds.get_config(world_id)).get("map_layout"))
+    if drawn is not None:
+        manifest = drawn.model_copy(
+            update={"anchors": [*drawn.anchors, *_neighbour_anchors(drawn.anchors, locations)]}
+        )
+    elif assets_root is not None:
         curated = _curated_manifest(assets_root, locations)
         if curated is not None:
             manifest = curated
@@ -314,6 +321,50 @@ def _activity_view(activity: Activity) -> api.ActivityView:
         else None,
         version=activity.version,
     )
+
+
+class _LayoutRoad(BaseModel):
+    from_: UUID = Field(alias="from")
+    to: UUID
+    by: str = "road"
+    points: list[tuple[float, float]] = Field(default_factory=list)
+
+
+class _Layout(BaseModel):
+    """What story creation stored under the world config "map_layout"."""
+
+    asset_id: UUID
+    anchors: dict[UUID, tuple[float, float]]
+    roads: list[_LayoutRoad] = Field(default_factory=list)
+
+
+def _drawn_manifest(world_id: UUID, raw: object) -> api.MapManifestView | None:
+    """The map a story took from its world: art, pins and the roads as drawn."""
+    if raw is None:
+        return None
+    try:
+        layout = _Layout.model_validate(raw)
+        return api.MapManifestView(
+            id=f"drawn:{world_id.hex}",
+            version=1,
+            schematic=False,
+            asset_id=layout.asset_id,
+            anchors=[
+                api.MapAnchorView(location_id=key, x=x, y=y)
+                for key, (x, y) in layout.anchors.items()
+            ],
+            roads=[
+                api.MapRoadLineView(
+                    from_location_id=road.from_,
+                    to_location_id=road.to,
+                    by=road.by,
+                    points=road.points,
+                )
+                for road in layout.roads
+            ],
+        )
+    except ValidationError:
+        return None
 
 
 def _curated_manifest(assets_root: Path, locations: list[Location]) -> api.MapManifestView | None:

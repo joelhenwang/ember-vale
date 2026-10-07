@@ -7,10 +7,12 @@
  */
 
 import type {
+  ActivityView,
   AutoplayView,
   CastEntry,
   ChronicleEntry,
-  MapAnchorView
+  MapAnchorView,
+  MapRoadLineView
 } from '../../content/clients/worldsim'
 
 /** World clock order (backend PhaseName); ten phases per day. */
@@ -135,6 +137,42 @@ export interface Token {
   x: number
   y: number
   portraitAssetId: string | null
+  /** On the road between two places. */
+  travelling?: boolean
+}
+
+type Xy = { x: number; y: number }
+
+/** How far along their road a traveller shows at the very least (share). */
+const ON_THE_WAY = 0.12
+
+/** The point a share (0..1) of the way along a line of points. */
+export function alongLine(line: Xy[], share: number): Xy | null {
+  if (line.length === 0) return null
+  const legs = line.slice(1).map((p, i) => Math.hypot(p.x - line[i]!.x, p.y - line[i]!.y))
+  const total = legs.reduce((a, b) => a + b, 0)
+  let left = Math.max(0, Math.min(1, share)) * total
+  for (let i = 0; i < legs.length; i += 1) {
+    const leg = legs[i]!
+    if (left <= leg || i === legs.length - 1) {
+      const t = leg > 0 ? Math.min(1, left / leg) : 0
+      const a = line[i]!
+      const b = line[i + 1]!
+      return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }
+    }
+    left -= leg
+  }
+  return line[0]!
+}
+
+/** The drawn road from one place to another (reversed if drawn the other way). */
+export function roadBetween(roads: MapRoadLineView[], from: string, to: string): Xy[] | null {
+  for (const road of roads) {
+    const line = (road.points ?? []).map((p) => ({ x: Number(p[0]), y: Number(p[1]) }))
+    if (road.from_location_id === from && road.to_location_id === to) return line
+    if (road.from_location_id === to && road.to_location_id === from) return line.reverse()
+  }
+  return null
 }
 
 /** Spacing between clustered tokens, as a fraction of the map width. */
@@ -147,16 +185,51 @@ const PER_ROW = 4
  * order is by name, then id, so tokens do not jump between refreshes.
  * Characters at a place without an anchor, and the dead, are left out.
  */
-export function layoutTokens(anchors: MapAnchorView[], cast: CastEntry[]): Token[] {
+export function layoutTokens(
+  anchors: MapAnchorView[],
+  cast: CastEntry[],
+  roads: MapRoadLineView[] = [],
+  activities: ActivityView[] = []
+): Token[] {
   const at = new Map(anchors.map((a) => [a.location_id, { x: Number(a.x), y: Number(a.y) }]))
   const byPlace = new Map<string, CastEntry[]>()
+  const tokens: Token[] = []
+  // Travellers walk their road: as far along it as their journey has gone.
+  const journeys = new Map(
+    activities
+      .filter((a) => a.kind === 'travel' && a.status === 'active')
+      .map((a) => [a.character_id, a])
+  )
   for (const member of cast) {
+    const trip = journeys.get(member.character_id)
+    if (member.life_status !== 'alive' || !trip?.from_location_id || !trip.to_location_id) continue
+    const from = at.get(trip.from_location_id)
+    const to = at.get(trip.to_location_id)
+    if (!from || !to) continue
+    const line = roadBetween(roads, trip.from_location_id, trip.to_location_id) ?? [from, to]
+    const done = trip.effective_progress_phases ?? trip.progress_phases
+    // Never quite at either end, so a traveller reads as on the way.
+    const share = trip.duration_phases > 0 ? done / trip.duration_phases : 0
+    const spot = alongLine(line, Math.max(ON_THE_WAY, Math.min(1 - ON_THE_WAY, share)))
+    if (!spot) continue
+    tokens.push({
+      id: member.character_id,
+      name: member.name,
+      locationId: member.location_id,
+      x: spot.x,
+      y: spot.y,
+      portraitAssetId: member.portrait_asset_id ?? null,
+      travelling: true
+    })
+  }
+  const onRoad = new Set(tokens.map((t) => t.id))
+  for (const member of cast) {
+    if (onRoad.has(member.character_id)) continue
     if (member.life_status !== 'alive' || !at.has(member.location_id)) continue
     const list = byPlace.get(member.location_id) ?? []
     list.push(member)
     byPlace.set(member.location_id, list)
   }
-  const tokens: Token[] = []
   for (const [placeId, members] of byPlace) {
     const anchor = at.get(placeId)!
     const sorted = [...members].sort(

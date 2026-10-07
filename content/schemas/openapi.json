@@ -3573,6 +3573,13 @@
             "title": "Id",
             "type": "string"
           },
+          "roads": {
+            "items": {
+              "$ref": "#/components/schemas/MapRoadLineView"
+            },
+            "title": "Roads",
+            "type": "array"
+          },
           "schematic": {
             "title": "Schematic",
             "type": "boolean"
@@ -3752,6 +3759,50 @@
           "world_id"
         ],
         "title": "MapResponse",
+        "type": "object"
+      },
+      "MapRoadLineView": {
+        "additionalProperties": false,
+        "description": "A road as drawn on the map art: both ends included, map fractions.",
+        "properties": {
+          "by": {
+            "default": "road",
+            "title": "By",
+            "type": "string"
+          },
+          "from_location_id": {
+            "format": "uuid",
+            "title": "From Location Id",
+            "type": "string"
+          },
+          "points": {
+            "items": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            "title": "Points",
+            "type": "array"
+          },
+          "to_location_id": {
+            "format": "uuid",
+            "title": "To Location Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from_location_id",
+          "to_location_id"
+        ],
+        "title": "MapRoadLineView",
         "type": "object"
       },
       "MapRoadView": {

@@ -98,6 +98,7 @@ WANTED = (
     "PresentationCapabilities",
     "MapAnchorView",
     "MapManifestView",
+    "MapRoadLineView",
     "CastEntry",
     "RumourView",
     "JourneyView",

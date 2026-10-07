@@ -24,12 +24,14 @@ from worldsim.application.orchestration.stage1 import UnitOfWorkFactory
 from worldsim.application.stories.validation import validate_draft
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.activities import TravelRoute
-from worldsim.domain.assets import AssetKind
+from worldsim.domain.assets import AssetKind, AssetRecord
 from worldsim.domain.characters import Character, CharacterCard
 from worldsim.domain.enums import EventType, LifeStatus, PhaseName, PhaseRunState, UserRole
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.events import WorldEvent
+from worldsim.domain.geography import MAP_SPAN, WorldMap
 from worldsim.domain.ids import (
+    new_asset_id,
     new_card_id,
     new_character_id,
     new_location_id,
@@ -218,6 +220,62 @@ def _inline_character(member: DraftCastMember) -> CharacterPresetPayload:
     return CharacterPresetPayload(name=member.name)
 
 
+#: World config key holding the story's own map layout (see presentation).
+MAP_LAYOUT = "map_layout"
+
+
+async def _adopt_map(
+    uow: UnitOfWork, world_id: UUID, world_map: WorldMap, location_ids: dict[str, UUID]
+) -> None:
+    """Give the story its world's map: the art, the pins and the drawn roads.
+
+    The art is registered again for this world (same stored bytes), so the
+    story keeps it even if the world later draws a new map.
+    """
+    try:
+        source = await uow.assets.get_asset(UUID(world_map.asset_id))
+    except (DomainError, ValueError):
+        return  # the picture is gone: the story falls back to a schematic map
+    art = AssetRecord(
+        id=new_asset_id(),
+        world_id=world_id,
+        kind=AssetKind.MAP,
+        content_ref=source.content_ref,
+        mime=source.mime,
+        width=source.width,
+        height=source.height,
+        style_pack_version=source.style_pack_version,
+    )
+    await uow.assets.add_asset(art)
+    where = {pin.key: pin.point for pin in world_map.pins}
+
+    def fraction(point: tuple[int, int]) -> list[float]:
+        return [point[0] / MAP_SPAN, point[1] / MAP_SPAN]
+
+    await uow.worlds.put_config(
+        world_id,
+        MAP_LAYOUT,
+        {
+            "asset_id": str(art.id),
+            "anchors": {
+                str(location_ids[key]): fraction(point)
+                for key, point in where.items()
+                if key in location_ids
+            },
+            "roads": [
+                {
+                    "from": str(location_ids[road.a]),
+                    "to": str(location_ids[road.b]),
+                    "by": road.by,
+                    "points": [fraction(p) for p in [where[road.a], *road.points, where[road.b]]],
+                }
+                for road in world_map.roads
+                if road.a in location_ids and road.b in location_ids
+            ],
+        },
+    )
+
+
 async def _instantiate(
     uow: UnitOfWork,
     draft: StoryDraft,
@@ -298,6 +356,8 @@ async def _instantiate(
                 stamina_cost=0,
             )
         )
+    if world_map is not None:
+        await _adopt_map(uow, world_id, world_map, location_ids)
     runtime_characters: dict[str, UUID] = {}
     for member in payload.cast:
         character_id = new_character_id()

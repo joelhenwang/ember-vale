@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import type { AutoplayView, CastEntry, ChronicleEntry } from '../../content/clients/worldsim'
+import type {
+  ActivityView,
+  AutoplayView,
+  CastEntry,
+  ChronicleEntry
+} from '../../content/clients/worldsim'
 import {
+  alongLine,
   autoplayStatus,
   beatTimeLabel,
   groupFeed,
@@ -127,6 +133,53 @@ describe('layoutTokens', () => {
       member('t', 'Traveller', 'road')
     ])
     expect(tokens).toEqual([])
+  })
+
+  const trip = (progress: number): ActivityView => ({
+    id: 't1',
+    world_id: 'w',
+    character_id: 'w',
+    kind: 'travel',
+    status: 'active',
+    start_absolute: 0,
+    duration_phases: 4,
+    progress_phases: progress,
+    from_location_id: 'market',
+    to_location_id: 'hearth',
+    version: 1
+  })
+
+  it('walks a traveller along the road as drawn, from where they set out', () => {
+    // Drawn hearth -> bend -> market; the trip runs market -> hearth.
+    const roads = [
+      {
+        from_location_id: 'hearth',
+        to_location_id: 'market',
+        by: 'road',
+        points: [
+          [0.2, 0.3],
+          [0.2, 0.9],
+          [0.8, 0.9],
+          [0.8, 0.4]
+        ]
+      }
+    ]
+    const cast = [member('w', 'Wren', 'market'), member('a', 'Ash', 'market')]
+    const tokens = layoutTokens(anchors, cast, roads, [trip(2)])
+    const wren = tokens.find((t) => t.id === 'w')!
+    expect(wren.travelling).toBe(true)
+    expect(wren.x).toBeCloseTo(0.45) // 0.85 of 1.7: 0.35 into the bottom leg
+    expect(wren.y).toBeCloseTo(0.9)
+    expect(tokens.find((t) => t.id === 'a')).toMatchObject({ x: 0.8, y: 0.4 }) // alone now
+  })
+
+  it('takes the straight line when no road is drawn', () => {
+    const [wren] = layoutTokens(anchors, [member('w', 'Wren', 'market')], [], [trip(1)])
+    expect(wren).toMatchObject({ travelling: true })
+    expect(wren!.x).toBeCloseTo(0.65)
+    expect(alongLine([], 0.5)).toBeNull()
+    const [setOut] = layoutTokens(anchors, [member('w', 'Wren', 'market')], [], [trip(0)])
+    expect(setOut!.x).toBeLessThan(0.8) // already a little way along, not on the place
   })
 })
 

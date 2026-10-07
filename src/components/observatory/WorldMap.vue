@@ -5,7 +5,7 @@
  * and the cast's current places, never from model output.
  */
 import { computed } from 'vue'
-import type { MapAnchorView, MapPlace } from '../../../content/clients/worldsim'
+import type { MapAnchorView, MapPlace, MapRoadLineView } from '../../../content/clients/worldsim'
 import type { Token } from '../../game/observatory'
 import { assetUrl } from '../../api/worldsim'
 
@@ -14,6 +14,8 @@ const props = defineProps<{
   mapAssetId: string | null
   anchors: MapAnchorView[]
   places: MapPlace[]
+  /** Roads as drawn on the art; places joined otherwise get straight lines. */
+  roads?: MapRoadLineView[]
   tokens: Token[]
   /** Place of the latest scene: gently highlighted. */
   activePlaceId: string | null
@@ -31,9 +33,19 @@ const labels = computed(() =>
     .filter((p) => at.value.has(p.id))
     .map((p) => ({ id: p.id, name: p.name, ...at.value.get(p.id)! }))
 )
-/** Each route once, drawn between the two anchors it joins. */
+/** Drawn roads, in the 0..1000 box the overlay uses. */
+const drawn = computed(() =>
+  (props.roads ?? []).map((road) => ({
+    key: [road.from_location_id, road.to_location_id].sort().join('|'),
+    by: road.by ?? 'road',
+    points: (road.points ?? [])
+      .map((p) => `${Number(p[0]) * 1000},${Number(p[1]) * 1000}`)
+      .join(' ')
+  }))
+)
+/** Each route once, drawn between the two anchors it joins, unless drawn above. */
 const routes = computed(() => {
-  const seen = new Set<string>()
+  const seen = new Set<string>(drawn.value.map((d) => d.key))
   const lines: { key: string; x1: number; y1: number; x2: number; y2: number }[] = []
   for (const place of props.places) {
     const from = at.value.get(place.id)
@@ -62,6 +74,16 @@ function initials(name: string): string {
 <template>
   <div class="wm" :class="{ 'wm--schematic': !art }">
     <img v-if="art" class="wm__art" :src="art" alt="" draggable="false" />
+    <svg class="wm__routes" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
+      <g v-for="d in drawn" :key="d.key">
+        <polyline class="wm__road-under" :points="d.points" vector-effect="non-scaling-stroke" />
+        <polyline
+          class="wm__road"
+          :class="{ 'wm__road--sea': d.by === 'sea' || d.by === 'river' }"
+          :points="d.points"
+          vector-effect="non-scaling-stroke" />
+      </g>
+    </svg>
     <svg class="wm__routes" aria-hidden="true">
       <g v-for="r in routes" :key="r.key">
         <line
@@ -92,7 +114,7 @@ function initials(name: string): string {
       :key="token.id"
       type="button"
       class="wm__token"
-      :class="{ 'wm__token--focus': token.id === focusId }"
+      :class="{ 'wm__token--focus': token.id === focusId, 'wm__token--road': token.travelling }"
       :style="{ left: `${token.x * 100}%`, top: `${token.y * 100}%` }"
       :title="token.name"
       :aria-label="`${token.name}`"
@@ -149,6 +171,19 @@ function initials(name: string): string {
   stroke-width: 2.5px;
   stroke-dasharray: 10px 8px;
   stroke-linecap: round;
+}
+.wm__routes polyline {
+  fill: none;
+  stroke-linejoin: round;
+}
+.wm__road--sea {
+  stroke: #d8ecf5;
+}
+.wm__token--road {
+  border-style: dashed;
+  transition:
+    left 0.8s ease,
+    top 0.8s ease;
 }
 .wm__place {
   position: absolute;

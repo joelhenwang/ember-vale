@@ -622,8 +622,16 @@ export interface MapManifestView {
   anchors?: MapAnchorView[];
   asset_id?: string | null;
   id: string;
+  roads?: MapRoadLineView[];
   schematic: boolean;
   version: number;
+}
+
+export interface MapRoadLineView {
+  by?: string;
+  from_location_id: string;
+  points?: unknown[][];
+  to_location_id: string;
 }
 
 export interface CastEntry {

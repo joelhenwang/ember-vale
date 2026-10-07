@@ -947,6 +947,17 @@ class MapAnchorView(BaseModel):
     y: float = Field(ge=0, le=1)
 
 
+class MapRoadLineView(BaseModel):
+    """A road as drawn on the map art: both ends included, map fractions."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    from_location_id: UUID
+    to_location_id: UUID
+    by: str = "road"
+    points: list[tuple[float, float]] = Field(default_factory=list)
+
+
 class MapManifestView(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -955,6 +966,8 @@ class MapManifestView(BaseModel):
     schematic: bool
     asset_id: UUID | None = None
     anchors: list[MapAnchorView] = Field(default_factory=list)
+    #: Roads drawn on the art; empty means straight lines between anchors.
+    roads: list[MapRoadLineView] = Field(default_factory=list)
 
 
 class CastEntry(BaseModel):
