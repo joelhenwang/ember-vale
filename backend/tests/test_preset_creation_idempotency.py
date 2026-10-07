@@ -79,25 +79,13 @@ def test_same_key_and_request_replays_same_preset(client: ApiClient) -> None:
     before = _count(client)
     first = _create(client, "first-key", _body())
     assert first.status_code == 200, first.text
+    # A retry whose first response was lost gets that same preset back,
+    # byte-identical, instead of a second one.
     again = _create(client, "first-key", _body())
     assert again.status_code == 200, again.text
-    assert again.json()["id"] == first.json()["id"]
+    assert again.json() == first.json()
     assert again.json()["current_revision"] == 1
     assert _count(client) == before + 1
-
-
-def test_retry_after_committed_response_lost_returns_same_preset(
-    client: ApiClient,
-) -> None:
-    """The first response committed server-side but never reached the
-    caller: retrying the identical request must return that preset,
-    byte-identical, instead of minting a second one."""
-    first = _create(client, "lost-key", _body())
-    assert first.status_code == 200, first.text
-    committed = first.json()
-    retry = _create(client, "lost-key", _body())
-    assert retry.status_code == 200, retry.text
-    assert retry.json() == committed
 
 
 def test_same_key_with_different_content_conflicts(client: ApiClient) -> None:

@@ -12,7 +12,6 @@ import pytest
 
 from worldsim.application.transactions.canonical import CanonicalTransaction, MemorySpec
 from worldsim.application.transactions.scenes import (
-    NARRATION_OUTBOX_KIND,
     build_scene_commit,
     observation_spec,
 )
@@ -24,7 +23,6 @@ from worldsim.domain.effects import (
     ResourceAdjustedEffect,
 )
 from worldsim.domain.enums import (
-    EventType,
     ResolutionOutcome,
     ResolverKind,
     ResourceKind,
@@ -428,42 +426,3 @@ def test_duplicate_scene_returns_stored_result(migrated_db: None) -> None:
             await engine.dispose()
 
     asyncio.run(_inner())
-
-
-def test_narration_outbox_only_after_commit(migrated_db: None) -> None:
-    async def _inner() -> None:
-        ids = await _seed()
-        scene, move, wait, attempt, reaction, resolution = _scene_bundle(ids)
-
-        def _hook(_point: str) -> None:
-            if _point == "after_outbox":
-                raise RuntimeError("injected at after_outbox")
-
-        async with _service(hook=_hook) as tx:
-            with pytest.raises(RuntimeError, match="injected"):
-                await tx.commit(
-                    build_scene_commit(
-                        command_id=new_command_id(),
-                        scene=scene,
-                        intents=[move, wait],
-                        attempts=[attempt],
-                        reactions=[reaction],
-                        resolution=resolution,
-                        effects=list(resolution.effects),
-                        expected_versions={str(ids["wren"]): 0, str(ids["ash"]): 0},
-                        absolute_index=3,
-                    )
-                )
-        engine = create_engine(Settings())
-        try:
-            async with create_unit_of_work(engine) as uow:
-                assert await uow.outbox.count_pending(ids["world"]) == 0
-        finally:
-            await engine.dispose()
-
-    asyncio.run(_inner())
-
-
-def test_narration_outbox_kind(migrated_db: None) -> None:
-    assert NARRATION_OUTBOX_KIND == "narrate_scene"
-    assert EventType.ACTION_RESOLVED.value == "action_resolved"

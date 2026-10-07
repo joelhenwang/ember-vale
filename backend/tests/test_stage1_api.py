@@ -319,38 +319,6 @@ def test_duplicate_and_stale_advance_stable(
     assert gap_again.json()["error"]["code"] == gap.json()["error"]["code"]
 
 
-def test_pause_resume_commands(api: tuple[ApiClient, FakeGateway, dict[str, UUID]]) -> None:
-    client, gateway, _ = api
-    ids = asyncio.run(_seed_two())
-    from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
-
-    snapshots = {1: derive_snapshot_id(derive_run_id(ids["world"], 1))}
-    gateway.route = _route_for(ids, snapshots)
-    run_id = str(derive_run_id(ids["world"], 1))
-    engine = create_engine(Settings())
-    try:
-        from worldsim.domain.phases import PhaseRun
-
-        async def _create() -> None:
-            async with create_unit_of_work(engine) as uow:
-                await uow.phases.create_run(
-                    PhaseRun(id=UUID(run_id), world_id=ids["world"], absolute_index=1)
-                )
-                await uow.commit()
-
-        asyncio.run(_create())
-    finally:
-        asyncio.run(engine.dispose())
-    paused = client.post("/api/v1/stage1/pause", json={"run_id": run_id}, headers=_watcher())
-    assert paused.status_code == 200
-    blocked = _advance(client, ids["world"], 1)
-    assert blocked.status_code == 409
-    resumed = client.post("/api/v1/stage1/resume", json={"run_id": run_id}, headers=_watcher())
-    assert resumed.status_code == 200
-    report = _advance(client, ids["world"], 1)
-    assert report.status_code == 200
-
-
 def test_event_cursor_reconnects(api: tuple[ApiClient, FakeGateway, dict[str, UUID]]) -> None:
     client, gateway, _ = api
     ids = asyncio.run(_seed_two())

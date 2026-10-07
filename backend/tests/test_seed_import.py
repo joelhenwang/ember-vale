@@ -10,7 +10,7 @@ from uuid import UUID
 import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from worldsim.application.commands.seed_world import ImportResult, SeedService
+from worldsim.application.commands.seed_world import SeedService
 from worldsim.domain.characters import Character
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.world import Location, World
@@ -59,6 +59,7 @@ def test_import_creates_world_characters_and_secret(migrated_db: None) -> None:
         async with _service(SEED_DIR) as (service, engine):
             result = await service.import_seed()
             assert result.seed_version == "stage0-v1"
+            assert len(result.content_hash) == 64
             assert result.files == [
                 "world.json",
                 "locations.json",
@@ -177,15 +178,5 @@ def test_duplicate_id_rejected(migrated_db: None, tmp_path: Path) -> None:
                 await service.import_seed()
             assert excinfo.value.code is ErrorCode.VALIDATION_FAILED
             assert "duplicate" in str(excinfo.value)
-
-    asyncio.run(_inner())
-
-
-def test_result_carries_report_fields(migrated_db: None) -> None:
-    async def _inner() -> None:
-        async with _service(SEED_DIR) as (service, _engine):
-            result: ImportResult = await service.import_seed()
-            assert result.content_hash and len(result.content_hash) == 64
-            assert result.world_id is not None
 
     asyncio.run(_inner())

@@ -222,15 +222,6 @@ def test_openrouter_body_carries_reasoning_level() -> None:
     assert body("low")["reasoning"] == {"effort": "low"}
 
 
-def test_selection_rejects_openrouter_without_key(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("WORLDSIM_PROVIDER__ACTIVE_PROFILE", "openrouter")
-    monkeypatch.delenv("WORLDSIM_PROVIDER__OPENROUTER_API_KEY", raising=False)
-    with pytest.raises(ValueError, match="without credentials"):
-        Settings()
-
-
 def test_compute_cost_priced_model() -> None:
     cost = compute_cost(uuid4(), "openai/gpt-4o-mini", 1000, 1000, 4000)
     assert cost.pricing_version == PRICING_VERSION

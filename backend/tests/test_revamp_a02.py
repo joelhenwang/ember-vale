@@ -184,5 +184,7 @@ def test_director_status_pause_resume(
     assert status.json()["world_id"] == str(ids["world"])
     paused = client.post("/api/v1/stage1/pause", json={"run_id": str(run_id)}, headers=_director())
     assert paused.status_code == 200, paused.text
+    blocked = _advance(client, ids["world"], 1, headers=_director())
+    assert blocked.status_code == 409  # a paused run admits no beat
     resumed = client.post("/api/v1/stage1/resume", json={"run_id": str(run_id)}, headers=_deity())
     assert resumed.status_code == 200, resumed.text

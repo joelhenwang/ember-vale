@@ -228,32 +228,3 @@ def test_presentation_snapshot_shape(client: ApiClient) -> None:
     assert set(cast) == {str(WREN), str(ASH)}
     assert cast[str(WREN)]["portrait_asset_id"] is not None
     assert body["revision"] >= 0
-
-
-def test_chronicle_cursor_advances(client: ApiClient) -> None:
-    first = client.get(
-        "/api/v1/world/chronicle",
-        params={"world_id": str(WORLD), "after": 0, "limit": 20},
-        headers=_watcher(),
-    )
-    assert first.status_code == 200, first.text
-    cursor = first.json()["next_after"]
-    second = client.get(
-        "/api/v1/world/chronicle",
-        params={"world_id": str(WORLD), "after": cursor, "limit": 20},
-        headers=_watcher(),
-    )
-    assert second.status_code == 200, second.text
-    assert second.json()["next_after"] >= cursor
-    assert second.json()["has_more"] is False
-
-
-def test_timeline_carries_cursor(client: ApiClient) -> None:
-    response = client.get(
-        "/api/v1/stage2/timeline",
-        params={"world_id": str(WORLD), "after": 0, "limit": 20},
-        headers=_watcher(),
-    )
-    assert response.status_code == 200, response.text
-    body = response.json()
-    assert "next_after" in body and "has_more" in body

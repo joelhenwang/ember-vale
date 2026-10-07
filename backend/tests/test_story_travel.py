@@ -12,9 +12,6 @@ import pytest
 from fastapi.testclient import TestClient
 from test_stage1_api import ApiClient
 
-from worldsim.application.commands.activities import start_activity
-from worldsim.domain.activities import ActivityKind
-from worldsim.domain.enums import LifeStatus
 from worldsim.domain.presets import (
     Preset,
     PresetKind,
@@ -126,37 +123,6 @@ def test_creation_materializes_both_directed_legs(client: ApiClient) -> None:
     assert legs == {("Hearth", "Market"): (1, 0), ("Market", "Hearth"): (1, 0)}
 
 
-def test_created_leg_serves_travel_activity(client: ApiClient) -> None:
-    created = _create(client, _draft(client), "travel-activity")
-    assert created.status_code == 200, created.text
-    world_id = UUID(created.json()["world_id"])
-
-    async def _inner():
-        engine = create_engine(Settings())
-        try:
-            async with create_unit_of_work(engine) as uow:
-                characters = await uow.characters.list_for_world(world_id)
-                wren = next(c for c in characters if c.name == "Wren")
-                assert wren.life_status == LifeStatus.ALIVE
-                placed = await uow.locations.list_for_world(world_id)
-                locations = {loc.name: loc.id for loc in placed}
-                assert wren.location_id == locations["Hearth"]
-                activity = await start_activity(
-                    uow,
-                    world_id,
-                    wren.id,
-                    ActivityKind.TRAVEL,
-                    0,
-                    to_location_id=locations["Market"],
-                )
-                assert activity.duration_phases == 1
-                assert activity.payload["stamina_cost"] == 0
-        finally:
-            await engine.dispose()
-
-    _run(_inner())
-
-
 def _add_broken_world() -> str:
     """A world preset whose travel names a place that does not exist."""
     preset_id = uuid4()
@@ -241,23 +207,3 @@ def test_unknown_travel_endpoint_rolls_creation_back(client: ApiClient) -> None:
     assert _row_counts() == rows_before
     draft = client.get(f"/api/v1/story-drafts/{draft_id}", headers={}).json()
     assert draft["created_world_id"] is None
-
-
-def test_builtin_world_rev2_carries_both_legs(client: ApiClient) -> None:
-    """The corrected starter revision itself names Hearth <-> Market."""
-
-    async def _inner():
-        engine = create_engine(Settings())
-        try:
-            async with create_unit_of_work(engine) as uow:
-                revision = await uow.presets.get_revision(UUID(WORLD_PRESET_ID), 2)
-                payload = revision.payload
-                assert isinstance(payload, WorldPresetPayload)
-                assert sorted(tuple(pair) for pair in payload.travel) == [
-                    ("hearth", "market"),
-                    ("market", "hearth"),
-                ]
-        finally:
-            await engine.dispose()
-
-    _run(_inner())

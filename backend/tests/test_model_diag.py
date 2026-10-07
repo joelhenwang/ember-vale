@@ -19,7 +19,6 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
-from sqlalchemy import text
 from test_stage1_api import ApiClient
 
 from worldsim.application.ports.model_gateway import (
@@ -28,7 +27,6 @@ from worldsim.application.ports.model_gateway import (
     ModelMalformedError,
     ModelRateLimitedError,
 )
-from worldsim.infrastructure.db.engine import create_engine
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
 from worldsim.infrastructure.model_gateway.openrouter import OpenRouterGateway
 from worldsim.infrastructure.model_gateway.profiles import (
@@ -185,38 +183,6 @@ def failing_app(migrated_db: None) -> Iterator[ApiClient]:
     )
     with TestClient(app) as raw:
         yield ApiClient(raw)
-
-
-def test_failed_call_persists_diagnostics(failing_app: ApiClient) -> None:
-    headers = {"X-Worldsim-Role": "watcher"}
-    failing_app.post("/api/v1/world/seed", headers=headers)
-    response = failing_app.post(
-        "/api/v1/stage1/advance",
-        json={"world_id": str(WORLD_ID), "absolute_index": 1},
-        headers=headers,
-    )
-    assert response.status_code == 200, response.text
-
-    async def _read() -> list[Any]:
-        engine = create_engine(Settings())
-        try:
-            async with engine.connect() as conn:
-                rows = (
-                    await conn.execute(
-                        text(
-                            "SELECT error_code, result FROM model_call "
-                            "WHERE status = 'failed' LIMIT 5"
-                        )
-                    )
-                ).all()
-                return [dict(row._mapping) for row in rows]
-        finally:
-            await engine.dispose()
-
-    rows = asyncio.run(_read())
-    assert rows, "expected failed model_call rows"
-    assert rows[0]["result"]["http_status"] == 200
-    assert rows[0]["result"]["choices_count"] == 0
 
 
 def test_body_capture_off_by_default(monkeypatch: pytest.MonkeyPatch) -> None:

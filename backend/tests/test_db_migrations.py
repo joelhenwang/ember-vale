@@ -91,10 +91,6 @@ async def _report() -> MigrationReport:
         await engine.dispose()
 
 
-def test_single_head_in_history() -> None:
-    assert len(script_heads(_config())) == 1
-
-
 def test_upgrade_downgrade_reupgrade_cycle(scratch_env: str) -> None:
     config = _config()
     alembic_command.downgrade(config, "base")

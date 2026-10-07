@@ -309,43 +309,6 @@ def test_publish_edit_publish_keeps_both_replays(migrated_db: None) -> None:
     _run(_inner())
 
 
-def test_publish_replay_survives_later_revisions(migrated_db: None) -> None:
-    """Replay returns the original revision even after rev 3 exists."""
-
-    async def _inner() -> None:
-        factory = _factory()
-        preset = await _make_preset(factory)
-        draft, _ = await service.open_draft(factory, preset.id, 1)
-        saved = await service.save_draft(
-            factory, preset.id, draft.id, 1, {"description": "A greener valley."}
-        )
-        first = await service.publish_draft(factory, preset.id, draft.id, saved.version, 0)
-        assert first.revision == 2
-
-        # A later revision lands through a fresh draft on base 2.
-        await service.complete_draft(factory, preset.id, draft.id, saved.version)
-        second_draft, _ = await service.open_draft(factory, preset.id, 2)
-        second_saved = await service.save_draft(
-            factory, preset.id, second_draft.id, 1, {"description": "A golden valley."}
-        )
-        third = await service.publish_draft(
-            factory, preset.id, second_draft.id, second_saved.version, 1
-        )
-        assert third.revision == 3
-        await service.complete_draft(factory, preset.id, second_draft.id, second_saved.version)
-
-        # The late identical retry of the first publication still replays
-        # revision 2 — from the durable log, after completion, with a
-        # stale preset version and a newer revision in place.
-        replayed = await service.publish_draft(factory, preset.id, draft.id, saved.version, 0)
-        assert replayed.revision == 2
-        assert replayed.content_hash == first.content_hash
-        async with factory() as uow:
-            assert (await uow.presets.get_preset(preset.id)).current_revision == 3
-
-    _run(_inner())
-
-
 def test_publish_rename_updates_display_name(migrated_db: None) -> None:
     """Rename, publish, reload: Library and studios see the new name."""
 

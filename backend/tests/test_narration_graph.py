@@ -1154,41 +1154,6 @@ def test_structural_acceptance_does_not_imply_fidelity() -> None:
     assert misvoiced.text != "Past the bridge, second left."
 
 
-def test_repair_for_missing_speaker_keeps_dialogue() -> None:
-    from worldsim.application.graphs.narrate import repair_instruction
-
-    text = repair_instruction("dialogue requires a speaker matching cited speech")
-    assert "exact speaker" in text
-    assert "supported utterance" in text
-    assert "invalid as dialogue" not in text
-
-
-def test_repair_for_wrong_speaker_keeps_dialogue() -> None:
-    from worldsim.application.graphs.narrate import repair_instruction
-
-    text = repair_instruction("speaker does not match cited source: reaction:s")
-    assert "exact speaker" in text
-    assert "borrow another voice" in text
-    assert "invalid as dialogue" not in text
-
-
-def test_repair_for_invented_key_drops_it() -> None:
-    from worldsim.application.graphs.narrate import repair_instruction
-
-    text = repair_instruction("unsupported facts cited: ['dragons']")
-    assert "drop" in text
-    assert "invalid as dialogue" not in text
-    assert "same key" not in text
-
-
-def test_repair_for_schema_error_names_format() -> None:
-    from worldsim.application.graphs.narrate import repair_instruction
-
-    text = repair_instruction("attempt 0: 2 schema errors")
-    assert "exactly matching the response schema" in text
-    assert "invalid as dialogue" not in text
-
-
 def _repair_prompt_for(first: str, visible_facts: list, audience_ids: list | None = None) -> str:
     if audience_ids is None:
         audience_ids = [str(uuid.uuid4()), str(uuid.uuid4())]

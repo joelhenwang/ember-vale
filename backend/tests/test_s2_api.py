@@ -99,6 +99,7 @@ def test_timeline_and_map_filter_by_role(client: ApiClient) -> None:
     assert timeline.status_code == 200, timeline.text
     assert timeline.json()["total"] == 0
     assert timeline.json()["entries"] == []
+    assert {"next_after", "has_more"} <= set(timeline.json())  # pages by cursor
     world_map = client.get(
         "/api/v1/stage2/map",
         params={"world_id": str(ids["world"])},

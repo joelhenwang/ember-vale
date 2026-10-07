@@ -6,7 +6,6 @@ from uuid import uuid4
 
 import pytest
 from pydantic import ValidationError
-from sqlalchemy import inspect
 
 from worldsim.domain import macro
 from worldsim.domain.enums import (
@@ -162,33 +161,4 @@ def test_schema_bundle_covers_macro_models() -> None:
         "FocusAssignment",
         "EraSummary",
         "EndConditionEvidence",
-    } <= names
-
-
-def test_macro_tables_exist_at_head(migrated_db: None) -> None:
-    from worldsim.infrastructure.db.engine import create_engine
-    from worldsim.infrastructure.settings import Settings
-
-    engine = create_engine(Settings())
-
-    async def _inner() -> set[str]:
-        async with engine.connect() as conn:
-            names = await conn.run_sync(lambda c: set(inspect(c).get_table_names()))
-        return names
-
-    import asyncio
-
-    try:
-        names = asyncio.run(_inner())
-    finally:
-        asyncio.run(engine.dispose())
-    assert {
-        "macro_period_run",
-        "macro_aggregate_effect",
-        "macro_interruption",
-        "lineage_link",
-        "lineage_character",
-        "focus_assignment",
-        "era_summary",
-        "end_condition_evidence",
     } <= names

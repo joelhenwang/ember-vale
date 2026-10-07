@@ -172,6 +172,20 @@ def test_travel_direction_executes_and_arrives(
     ids = asyncio.run(_seed_market_world())
     world = ids["world"]
 
+    # A player may direct only their own character.
+    denied = client.post(
+        "/api/v1/interventions",
+        headers={"X-Worldsim-Role": "player"},
+        json={
+            "world_id": str(world),
+            "client_request_id": "e6-http-deny-1",
+            "text": "Send Ash to Market",
+            "mode": "attempt",
+            "scope": {"kind": "character", "character_ids": [str(ids["ash"])]},
+        },
+    )
+    assert denied.status_code == 403
+
     filed = client.post(
         "/api/v1/interventions",
         headers=_deity(),
@@ -277,25 +291,3 @@ def test_cancelled_direction_never_applies(
     activities = client.get(f"/api/v1/stage2/activities?world_id={world}", headers=_deity()).json()
     assert activities.get("members", []) == []
     assert _wren_place(client, world) == "Hearth"
-
-
-def test_player_cannot_direct_others(
-    directed_app: tuple[TestClient, FakeGateway],
-) -> None:
-    import asyncio
-
-    client, _gateway = directed_app
-    ids = asyncio.run(_seed_market_world())
-
-    denied = client.post(
-        "/api/v1/interventions",
-        headers={"X-Worldsim-Role": "player"},
-        json={
-            "world_id": str(ids["world"]),
-            "client_request_id": "e6-http-deny-1",
-            "text": "Send Ash to Market",
-            "mode": "attempt",
-            "scope": {"kind": "character", "character_ids": [str(ids["ash"])]},
-        },
-    )
-    assert denied.status_code == 403
