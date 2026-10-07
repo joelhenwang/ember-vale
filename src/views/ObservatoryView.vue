@@ -9,6 +9,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import type { ChronicleEntry } from '../../content/clients/worldsim'
 import WorldMap from '../components/observatory/WorldMap.vue'
+import PlaceMap from '../components/observatory/PlaceMap.vue'
 import EventFeed from '../components/observatory/EventFeed.vue'
 import EventModal from '../components/observatory/EventModal.vue'
 import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
@@ -26,6 +27,8 @@ const beatLimit = ref(BEAT_LIMITS[1])
 const panel = ref<'map' | 'events'>('map')
 const opened = ref<ChronicleEntry | null>(null)
 const focusId = ref<string | null>(null)
+/** The place being looked inside, when it has a map of its own. */
+const insideId = ref<string | null>(null)
 
 // Re-render the countdown every second without refetching.
 const now = ref(Date.now())
@@ -49,6 +52,11 @@ const activePlaceId = computed(() => {
   }
   return null
 })
+
+const placeMaps = computed(() => view.value?.place_maps ?? [])
+const insideMap = computed(
+  () => placeMaps.value.find((m) => m.location_id === insideId.value) ?? null
+)
 
 function nameOf(id: string): string {
   return names.value.get(id) ?? 'Someone'
@@ -160,8 +168,18 @@ onUnmounted(() => {
 
     <div class="obs__grid" :data-panel="panel">
       <div class="obs__map">
+        <PlaceMap
+          v-if="view && insideMap"
+          :world-id="storyId"
+          :place-map="insideMap"
+          :place-name="placeOf(insideMap.location_id) ?? 'This place'"
+          :cast="view.cast ?? []"
+          :activities="view.activities ?? []"
+          :focus-id="focusId"
+          @select="openLatestFor"
+          @leave="insideId = null" />
         <WorldMap
-          v-if="view"
+          v-else-if="view"
           :world-id="storyId"
           :map-asset-id="view.manifest.asset_id ?? null"
           :anchors="view.manifest.anchors ?? []"
@@ -170,7 +188,9 @@ onUnmounted(() => {
           :tokens="obs.tokens.value"
           :active-place-id="activePlaceId"
           :focus-id="focusId"
-          @select="openLatestFor" />
+          :inside="placeMaps.map((m) => m.location_id)"
+          @select="openLatestFor"
+          @enter="insideId = $event" />
         <p v-else class="obs__notice">Loading the map…</p>
       </div>
       <EventFeed

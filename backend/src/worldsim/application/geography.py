@@ -5,7 +5,15 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from worldsim.domain.geography import MapPin, MapRoad, TravelScale, WorldMap, timed_roads
+from worldsim.domain.geography import (
+    MapPin,
+    MapRoad,
+    PlaceMap,
+    PlaceSpot,
+    TravelScale,
+    WorldMap,
+    timed_roads,
+)
 from worldsim.domain.presets import WorldLocationPreset, WorldPresetPayload
 
 
@@ -98,3 +106,31 @@ def world_with_map(
     return WorldPresetPayload.model_validate(
         world.model_dump() | {"locations": locations, "travel": travel, "map": world_map}
     )
+
+
+def spots_with_keys(places: list[PinnedPlace]) -> list[PlaceSpot]:
+    """Spots from read places, each keyed by its name (made distinct)."""
+    spots: list[PlaceSpot] = []
+    used: set[str] = set()
+    for place in places:
+        base, n = _slug(place.name), 1
+        key = base
+        while key in used:
+            n += 1
+            key = f"{base}-{n}"
+        used.add(key)
+        spots.append(PlaceSpot(key=key, name=place.name, kind=place.kind, point=place.point))
+    return spots
+
+
+def world_with_place_map(
+    world: WorldPresetPayload, key: str, place_map: PlaceMap | None
+) -> WorldPresetPayload:
+    """The world with one place's own map set (or taken away)."""
+    if all(place.key != key for place in world.locations):
+        raise ValueError(f"no place {key!r} in this world")
+    locations = [
+        place.model_copy(update={"map": place_map}) if place.key == key else place
+        for place in world.locations
+    ]
+    return WorldPresetPayload.model_validate(world.model_dump() | {"locations": locations})

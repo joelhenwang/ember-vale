@@ -1,0 +1,151 @@
+{
+  "model": "openai/gpt-6-luna",
+  "seconds": 10.2,
+  "cost_usd": 0.00061005,
+  "spots": [
+    {
+      "name": "Old Bram’s farm",
+      "kind": "farm",
+      "point": [
+        143,
+        181
+      ]
+    },
+    {
+      "name": "Farm garden",
+      "kind": "garden",
+      "point": [
+        274,
+        297
+      ]
+    },
+    {
+      "name": "Chapel",
+      "kind": "chapel",
+      "point": [
+        516,
+        164
+      ]
+    },
+    {
+      "name": "Graveyard",
+      "kind": "graveyard",
+      "point": [
+        585,
+        265
+      ]
+    },
+    {
+      "name": "Sheep Track",
+      "kind": "path",
+      "point": [
+        837,
+        170
+      ]
+    },
+    {
+      "name": "the Hearth",
+      "kind": "inn",
+      "point": [
+        418,
+        398
+      ]
+    },
+    {
+      "name": "Market square",
+      "kind": "square",
+      "point": [
+        460,
+        516
+      ]
+    },
+    {
+      "name": "Market well",
+      "kind": "well",
+      "point": [
+        444,
+        556
+      ]
+    },
+    {
+      "name": "Smithy",
+      "kind": "smithy",
+      "point": [
+        695,
+        454
+      ]
+    },
+    {
+      "name": "Mill",
+      "kind": "mill",
+      "point": [
+        158,
+        606
+      ]
+    },
+    {
+      "name": "Mill Road",
+      "kind": "road",
+      "point": [
+        543,
+        810
+      ]
+    },
+    {
+      "name": "Stone bridge",
+      "kind": "bridge",
+      "point": [
+        330,
+        737
+      ]
+    },
+    {
+      "name": "River",
+      "kind": "river",
+      "point": [
+        472,
+        909
+      ]
+    },
+    {
+      "name": "Whispering Wood",
+      "kind": "forest",
+      "point": [
+        856,
+        755
+      ]
+    },
+    {
+      "name": "Village house, west of the market",
+      "kind": "house",
+      "point": [
+        335,
+        531
+      ]
+    },
+    {
+      "name": "Village house, south of the market",
+      "kind": "house",
+      "point": [
+        365,
+        628
+      ]
+    },
+    {
+      "name": "Village house, southeast of the market",
+      "kind": "house",
+      "point": [
+        568,
+        600
+      ]
+    },
+    {
+      "name": "Village house, east of the market",
+      "kind": "house",
+      "point": [
+        608,
+        544
+      ]
+    }
+  ]
+}

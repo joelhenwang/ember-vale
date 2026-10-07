@@ -1053,6 +1053,12 @@ function suggest(): void {
             :to="{ name: 'library-world-map', params: { id } }">
             Draw this world from a map: places, roads and travel times
           </RouterLink>
+          <RouterLink
+            v-if="id !== 'new'"
+            class="ghost maplink"
+            :to="{ name: 'library-place-maps', params: { id } }">
+            Draw inside its places: the inn, the market, who is where
+          </RouterLink>
           <ul class="maplegend">
             <li v-for="p in draft.places" :key="p.id">
               <span class="maplegend__dot"></span>{{ p.name }}

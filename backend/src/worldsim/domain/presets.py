@@ -16,7 +16,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from worldsim.domain.geography import WorldMap
+from worldsim.domain.geography import PlaceMap, WorldMap
 from worldsim.domain.ids import EditorDraftId, PresetId
 from worldsim.domain.time import utcnow
 
@@ -34,6 +34,8 @@ class WorldLocationPreset(BaseModel):
     key: str = Field(min_length=1, max_length=64)
     name: str = Field(min_length=1, max_length=128)
     description: str | None = Field(default=None, max_length=2000)
+    #: The place's own map, where its spots are; optional.
+    map: PlaceMap | None = None
 
 
 class WorldPresetPayload(BaseModel):
@@ -128,8 +130,12 @@ def canonical_payload_hash(payload: PresetPayload) -> str:
     data = payload.model_dump(mode="json")
     # Fields added later hash as if absent while unset, so every revision
     # written before them keeps its hash.
-    if data.get("kind") == "world" and data.get("map") is None:
-        data.pop("map", None)
+    if data.get("kind") == "world":
+        if data.get("map") is None:
+            data.pop("map", None)
+        for place in data.get("locations", []):
+            if place.get("map") is None:
+                place.pop("map", None)
     canonical = json.dumps(data, sort_keys=True)
     return hashlib.sha256(canonical.encode()).hexdigest()
 

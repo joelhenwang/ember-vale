@@ -21,9 +21,12 @@ const props = defineProps<{
   activePlaceId: string | null
   /** Character to emphasise (e.g. hovered in the feed). */
   focusId?: string | null
+  /** Places with a map of their own, which can be looked inside. */
+  inside?: string[]
 }>()
 
-const emit = defineEmits<{ select: [characterId: string] }>()
+const emit = defineEmits<{ select: [characterId: string]; enter: [placeId: string] }>()
+const enterable = computed(() => new Set(props.inside ?? []))
 
 const at = computed(
   () => new Map(props.anchors.map((a) => [a.location_id, { x: Number(a.x), y: Number(a.y) }]))
@@ -107,7 +110,15 @@ function initials(name: string): string {
       :class="{ 'wm__place--active': place.id === activePlaceId }"
       :style="{ left: `${place.x * 100}%`, top: `${place.y * 100}%` }">
       <span class="wm__pin" aria-hidden="true" />
-      <span class="wm__label">{{ place.name }}</span>
+      <button
+        v-if="enterable.has(place.id)"
+        type="button"
+        class="wm__label wm__label--enter"
+        :title="`Look inside ${place.name}`"
+        @click="emit('enter', place.id)">
+        {{ place.name }} <span class="wm__enter">Inside ›</span>
+      </button>
+      <span v-else class="wm__label">{{ place.name }}</span>
     </div>
     <button
       v-for="token in tokens"
@@ -216,6 +227,28 @@ function initials(name: string): string {
   background: rgba(249, 242, 225, 0.88);
   border: 1px solid var(--line);
   white-space: nowrap;
+}
+.wm__label--enter {
+  pointer-events: auto;
+  cursor: pointer;
+  border-color: var(--teal);
+}
+.wm__label--enter:hover,
+.wm__label--enter:focus-visible {
+  background: var(--cream-on-teal);
+  color: var(--teal-ink);
+}
+.wm__enter {
+  margin-left: 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: 2px;
+  background: var(--teal);
+  color: var(--cream-on-teal);
 }
 .wm__token {
   position: absolute;

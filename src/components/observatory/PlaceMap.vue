@@ -1,0 +1,216 @@
+<script setup lang="ts">
+/**
+ * Inside one place: its own map art, the spots on it, and the characters
+ * who are there, each at the spot that suits what they are doing
+ * (src/game/placeMap.ts). Positions never come from model output.
+ */
+import { computed } from 'vue'
+import type { ActivityView, CastEntry, PlaceMapView } from '../../../content/clients/worldsim'
+import { layoutSpotTokens } from '../../game/placeMap'
+import { assetUrl } from '../../api/worldsim'
+import IconArrowLeft from '../icons/IconArrowLeft.vue'
+
+const props = defineProps<{
+  worldId: string
+  placeMap: PlaceMapView
+  placeName: string
+  cast: CastEntry[]
+  activities: ActivityView[]
+  focusId?: string | null
+}>()
+
+const emit = defineEmits<{ select: [characterId: string]; leave: [] }>()
+
+const tokens = computed(() => layoutSpotTokens(props.placeMap, props.cast, props.activities))
+const busy = computed(() => new Set(tokens.value.map((t) => t.spotKey)))
+const art = computed(() => assetUrl(props.worldId, props.placeMap.asset_id))
+
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .map((part) => part.charAt(0))
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+}
+</script>
+
+<template>
+  <section class="pm" :aria-label="`Inside ${placeName}`">
+    <header class="pm__bar">
+      <button type="button" class="pm__back" @click="emit('leave')">
+        <IconArrowLeft :size="14" /> World map
+      </button>
+      <h2 class="pm__title">{{ placeName }}</h2>
+      <p class="pm__count">
+        {{
+          tokens.length === 0
+            ? 'Nobody is here'
+            : tokens.length === 1
+              ? '1 person here'
+              : `${tokens.length} people here`
+        }}
+      </p>
+    </header>
+    <div class="pm__frame">
+      <img class="pm__art" :src="art" :alt="`${placeName} up close`" draggable="false" />
+      <div
+        v-for="spot in placeMap.spots ?? []"
+        :key="spot.key"
+        class="pm__spot"
+        :class="{ 'pm__spot--busy': busy.has(spot.key) }"
+        :style="{ left: `${Number(spot.x) * 100}%`, top: `${Number(spot.y) * 100}%` }"
+        :title="spot.name">
+        <span class="pm__dot" aria-hidden="true" />
+        <span v-if="busy.has(spot.key)" class="pm__label">{{ spot.name }}</span>
+      </div>
+      <button
+        v-for="token in tokens"
+        :key="token.id"
+        type="button"
+        class="pm__token"
+        :class="{ 'pm__token--focus': token.id === focusId }"
+        :style="{ left: `${token.x * 100}%`, top: `${token.y * 100}%` }"
+        :title="`${token.name} · ${token.spot}`"
+        :aria-label="`${token.name}, at ${token.spot}`"
+        @click="emit('select', token.id)">
+        <img
+          v-if="token.portraitAssetId"
+          :src="assetUrl(worldId, token.portraitAssetId)"
+          alt=""
+          draggable="false" />
+        <span v-else>{{ initials(token.name) }}</span>
+        <em class="pm__name">{{ token.name }}</em>
+      </button>
+    </div>
+  </section>
+</template>
+
+<style scoped>
+.pm {
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  box-shadow: var(--card-shadow);
+}
+.pm__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.pm__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 14.5px var(--font-body);
+  color: var(--teal-ink);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.pm__title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--ink);
+}
+.pm__count {
+  font-size: 14px;
+  color: var(--ink-3);
+}
+.pm__frame {
+  position: relative;
+  user-select: none;
+}
+.pm__art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.pm__spot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0.7;
+}
+.pm__spot--busy {
+  opacity: 1;
+  z-index: 1;
+}
+.pm__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: 2px solid var(--cream-on-teal);
+  box-shadow: 0 0 0 1px rgba(46, 39, 24, 0.35);
+}
+.pm__label {
+  margin-top: 3px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  background: rgba(249, 242, 225, 0.82);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.pm__token {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 10px));
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--cream-on-teal);
+  background: var(--teal);
+  color: var(--cream-on-teal);
+  font: 600 15px var(--font-body);
+  box-shadow: 0 2px 6px rgba(46, 39, 24, 0.35);
+  cursor: pointer;
+  transition:
+    left 0.8s ease,
+    top 0.8s ease,
+    transform 0.15s ease;
+}
+.pm__token img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top;
+}
+.pm__token:hover,
+.pm__token:focus-visible,
+.pm__token--focus {
+  transform: translate(-50%, calc(-100% - 10px)) scale(1.12);
+  border-color: var(--gold-soft);
+  z-index: 2;
+}
+.pm__name {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  margin-top: 2px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-style: normal;
+  font-size: 13px;
+  color: var(--ink);
+  background: rgba(249, 242, 225, 0.9);
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pm__token {
+    transition: none;
+  }
+}
+</style>

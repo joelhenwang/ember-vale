@@ -4556,6 +4556,109 @@
         "title": "PlaceArtView",
         "type": "object"
       },
+      "PlaceMapRequest": {
+        "additionalProperties": false,
+        "description": "A place's own map and its spots; no picture takes the map away.",
+        "properties": {
+          "asset_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
+          "expected_version": {
+            "minimum": 0.0,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "spots": {
+            "items": {
+              "$ref": "#/components/schemas/MapPlaceView"
+            },
+            "maxItems": 32,
+            "title": "Spots",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expected_version"
+        ],
+        "title": "PlaceMapRequest",
+        "type": "object"
+      },
+      "PlaceMapView": {
+        "additionalProperties": false,
+        "description": "A place's own map in a story: its art and the spots on it.",
+        "properties": {
+          "asset_id": {
+            "format": "uuid",
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "location_id": {
+            "format": "uuid",
+            "title": "Location Id",
+            "type": "string"
+          },
+          "spots": {
+            "items": {
+              "$ref": "#/components/schemas/PlaceSpotView"
+            },
+            "title": "Spots",
+            "type": "array"
+          }
+        },
+        "required": [
+          "location_id",
+          "asset_id"
+        ],
+        "title": "PlaceMapView",
+        "type": "object"
+      },
+      "PlaceSpotView": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "x": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "x",
+          "y"
+        ],
+        "title": "PlaceSpotView",
+        "type": "object"
+      },
       "PreferencesPatchRequest": {
         "additionalProperties": false,
         "properties": {
@@ -4765,6 +4868,13 @@
               "$ref": "#/components/schemas/PlaceArtView"
             },
             "title": "Place Art",
+            "type": "array"
+          },
+          "place_maps": {
+            "items": {
+              "$ref": "#/components/schemas/PlaceMapView"
+            },
+            "title": "Place Maps",
             "type": "array"
           },
           "recent_event_id": {
@@ -8431,6 +8541,50 @@
         ]
       }
     },
+    "/api/v1/library/maps/{asset_id}/spots": {
+      "post": {
+        "description": "The spots inside one place, read off a closer picture of it.",
+        "operationId": "read_spots_api_v1_library_maps__asset_id__spots_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapPlacesView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Spots",
+        "tags": [
+          "library"
+        ]
+      }
+    },
     "/api/v1/library/presets": {
       "get": {
         "operationId": "list_presets_api_v1_library_presets_get",
@@ -9218,6 +9372,69 @@
           }
         },
         "summary": "Save World Map",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/v1/library/presets/{preset_id}/places/{key}/map": {
+      "put": {
+        "description": "Give one place its own map and spots (or take it away): a new revision.",
+        "operationId": "save_place_map_api_v1_library_presets__preset_id__places__key__map_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "preset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Preset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaceMapRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresetDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Place Map",
         "tags": [
           "library"
         ]

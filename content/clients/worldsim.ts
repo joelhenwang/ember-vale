@@ -634,6 +634,20 @@ export interface MapRoadLineView {
   to_location_id: string;
 }
 
+export interface PlaceSpotView {
+  key: string;
+  kind?: string;
+  name: string;
+  x: unknown;
+  y: unknown;
+}
+
+export interface PlaceMapView {
+  asset_id: string;
+  location_id: string;
+  spots?: PlaceSpotView[];
+}
+
 export interface CastEntry {
   character_id: string;
   life_status: string;
@@ -792,6 +806,12 @@ export interface WorldMapRequest {
   shortest_phases: number;
 }
 
+export interface PlaceMapRequest {
+  asset_id?: string | null;
+  expected_version: number;
+  spots?: MapPlaceView[];
+}
+
 export interface PresentationResponse {
   absolute_index: number;
   activities?: ActivityView[];
@@ -804,6 +824,7 @@ export interface PresentationResponse {
   open_run_id?: string | null;
   phase: string;
   place_art?: PlaceArtView[];
+  place_maps?: PlaceMapView[];
   recent_event_id?: string | null;
   revision: number;
   rumours?: RumourView[];

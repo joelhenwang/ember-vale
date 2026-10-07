@@ -10,18 +10,25 @@ from __future__ import annotations
 import base64
 import binascii
 import io
+from collections.abc import Callable
 from uuid import UUID
 
 from fastapi import APIRouter, Request
 from PIL import Image
 
-from worldsim.application.geography import DrawnRoad, PinnedPlace, world_with_map
+from worldsim.application.geography import (
+    DrawnRoad,
+    PinnedPlace,
+    spots_with_keys,
+    world_with_map,
+    world_with_place_map,
+)
 from worldsim.application.images import image_request
 from worldsim.application.ports.images import ImageGenerationError
 from worldsim.application.ports.map_reader import MapReader, MapReadingError, ReadPlace
 from worldsim.domain.assets import AssetKind, AssetRecord
 from worldsim.domain.errors import DomainError, ErrorCode
-from worldsim.domain.geography import TravelScale
+from worldsim.domain.geography import PlaceMap, TravelScale
 from worldsim.domain.ids import new_asset_id
 from worldsim.domain.presets import (
     PresetKind,
@@ -156,6 +163,22 @@ async def read_places(asset_id: UUID, request: Request) -> api.MapPlacesView:
     )
 
 
+@router.post("/library/maps/{asset_id}/spots", response_model=api.MapPlacesView)
+async def read_spots(asset_id: UUID, request: Request) -> api.MapPlacesView:
+    """The spots inside one place, read off a closer picture of it."""
+    asset, data = await _map_bytes(request, asset_id)
+    try:
+        reading = await _reader(request).spots(data, asset.mime)
+    except MapReadingError as exc:
+        raise DomainError(ErrorCode.PRECONDITION_FAILED, str(exc)) from exc
+    return api.MapPlacesView(
+        places=[api.MapPlaceView(name=p.name, kind=p.kind, point=p.point) for p in reading.found],
+        model=reading.model,
+        seconds=reading.seconds,
+        cost_usd=reading.cost_usd,
+    )
+
+
 @router.post("/library/maps/{asset_id}/roads", response_model=api.MapRoadsView)
 async def read_roads(
     asset_id: UUID, body: api.MapRoadsRequest, request: Request
@@ -176,18 +199,13 @@ async def read_roads(
     )
 
 
-@router.put("/library/presets/{preset_id}/map", response_model=api.PresetDetail)
-async def save_world_map(
-    preset_id: UUID, body: api.WorldMapRequest, request: Request
+async def _revise_world(
+    request: Request,
+    preset_id: UUID,
+    expected_version: int,
+    change: Callable[[WorldPresetPayload], WorldPresetPayload],
 ) -> api.PresetDetail:
-    """Pin the world's places on the map and time its roads: a new revision."""
-    asset, _ = await _map_bytes(request, body.asset_id)
-    try:
-        scale = TravelScale(
-            shortest_phases=body.shortest_phases, longest_phases=body.longest_phases
-        )
-    except ValueError as exc:
-        raise DomainError(ErrorCode.VALIDATION_FAILED, str(exc)) from exc
+    """Write the world's next revision with one change applied."""
     state = request.app.state.app_state
     async with state.uow_factory()() as uow:
         preset = await uow.presets.get_preset(preset_id)
@@ -198,15 +216,7 @@ async def save_world_map(
         current = await uow.presets.get_revision(preset_id, preset.current_revision)
         assert isinstance(current.payload, WorldPresetPayload)
         try:
-            payload = world_with_map(
-                current.payload,
-                str(asset.id),
-                asset.width,
-                asset.height,
-                [PinnedPlace(p.name, p.kind, p.point, p.key) for p in body.places],
-                [DrawnRoad(r.a, r.b, r.by, tuple(r.points)) for r in body.roads],
-                scale,
-            )
+            payload = change(current.payload)
         except ValueError as exc:
             raise DomainError(ErrorCode.VALIDATION_FAILED, f"invalid map: {exc}") from exc
         next_revision = preset.current_revision + 1
@@ -222,7 +232,60 @@ async def save_world_map(
         )
         await uow.presets.save_preset(
             preset.model_copy(update={"current_revision": next_revision}),
-            body.expected_version,
+            expected_version,
         )
         await uow.commit()
     return await preset_detail(request, preset_id, next_revision)
+
+
+@router.put("/library/presets/{preset_id}/map", response_model=api.PresetDetail)
+async def save_world_map(
+    preset_id: UUID, body: api.WorldMapRequest, request: Request
+) -> api.PresetDetail:
+    """Pin the world's places on the map and time its roads: a new revision."""
+    asset, _ = await _map_bytes(request, body.asset_id)
+    try:
+        scale = TravelScale(
+            shortest_phases=body.shortest_phases, longest_phases=body.longest_phases
+        )
+    except ValueError as exc:
+        raise DomainError(ErrorCode.VALIDATION_FAILED, str(exc)) from exc
+    return await _revise_world(
+        request,
+        preset_id,
+        body.expected_version,
+        lambda world: world_with_map(
+            world,
+            str(asset.id),
+            asset.width,
+            asset.height,
+            [PinnedPlace(p.name, p.kind, p.point, p.key) for p in body.places],
+            [DrawnRoad(r.a, r.b, r.by, tuple(r.points)) for r in body.roads],
+            scale,
+        ),
+    )
+
+
+@router.put("/library/presets/{preset_id}/places/{key}/map", response_model=api.PresetDetail)
+async def save_place_map(
+    preset_id: UUID, key: str, body: api.PlaceMapRequest, request: Request
+) -> api.PresetDetail:
+    """Give one place its own map and spots (or take it away): a new revision."""
+    place_map: PlaceMap | None = None
+    if body.asset_id is not None:
+        asset, _ = await _map_bytes(request, body.asset_id)
+        try:
+            place_map = PlaceMap(
+                asset_id=str(asset.id),
+                width=asset.width,
+                height=asset.height,
+                spots=spots_with_keys([PinnedPlace(p.name, p.kind, p.point) for p in body.spots]),
+            )
+        except ValueError as exc:
+            raise DomainError(ErrorCode.VALIDATION_FAILED, f"invalid map: {exc}") from exc
+    return await _revise_world(
+        request,
+        preset_id,
+        body.expected_version,
+        lambda world: world_with_place_map(world, key, place_map),
+    )

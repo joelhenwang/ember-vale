@@ -171,7 +171,9 @@ def test_publish_merges_and_preserves_unexposed_fields(migrated_db: None) -> Non
         assert body["description"] == "A greener valley."
         # Never shown in the editor, never lost.
         assert body["lore"] == "Old roads."
-        assert body["locations"] == [{"key": "hearth", "name": "Hearth", "description": None}]
+        assert body["locations"] == [
+            {"key": "hearth", "name": "Hearth", "description": None, "map": None}
+        ]
         async with factory() as uow:
             current = await uow.presets.get_preset(preset.id)
             assert current.current_revision == 2

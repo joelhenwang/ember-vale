@@ -1,4 +1,5 @@
-"""Map reading port: a world map picture in, its places and roads out."""
+"""Map reading port: a world map picture in, its places and roads out
+(or, for a closer picture of one place, the spots inside it)."""
 
 from __future__ import annotations
 
@@ -38,6 +39,9 @@ class MapReadingError(Exception):
 
 class MapReader(Protocol):
     async def places(self, image: bytes, mime: str) -> Reading[ReadPlace]: ...
+
+    #: Spots inside one place, from a closer picture of it.
+    async def spots(self, image: bytes, mime: str) -> Reading[ReadPlace]: ...
 
     async def roads(
         self, image: bytes, mime: str, places: list[ReadPlace]

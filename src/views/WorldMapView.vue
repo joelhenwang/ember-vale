@@ -553,6 +553,15 @@ onMounted(load)
                     </option>
                   </select>
                 </label>
+                <RouterLink
+                  v-if="selectedPlace.key && !dirty"
+                  class="inside"
+                  :to="{
+                    name: 'library-place-maps',
+                    params: { id: presetId, key: selectedPlace.key }
+                  }">
+                  Draw inside {{ selectedPlace.name }} →
+                </RouterLink>
                 <label class="check">
                   <input v-model="selectedPlace.keep" type="checkbox" /> A place to go
                   <small>({{ selectedPlace.kind || 'place' }})</small>
@@ -924,6 +933,10 @@ onMounted(load)
   gap: 8px;
   font-size: 15px;
   color: var(--ink-2);
+}
+.inside {
+  font-size: 14px;
+  color: var(--teal-ink);
 }
 .check small {
   color: var(--muted);

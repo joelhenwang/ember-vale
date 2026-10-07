@@ -17,9 +17,16 @@ from PIL import Image
 from test_stage1_api import ApiClient
 from test_story_travel import ASH_PRESET_ID, MIGRATIONS, SEED_DIR, WREN_PRESET_ID, _routes
 
-from worldsim.application.geography import DrawnRoad, PinnedPlace, world_with_map
+from worldsim.application.editor_drafts import keep_drawn_maps
+from worldsim.application.geography import (
+    DrawnRoad,
+    PinnedPlace,
+    spots_with_keys,
+    world_with_map,
+    world_with_place_map,
+)
 from worldsim.application.ports.map_reader import Reading, ReadPlace, ReadRoad
-from worldsim.domain.geography import TravelScale, road_length, travel_phases
+from worldsim.domain.geography import PlaceMap, TravelScale, road_length, travel_phases
 from worldsim.domain.presets import (
     WorldLocationPreset,
     WorldPresetPayload,
@@ -119,6 +126,8 @@ def test_worlds_without_a_map_keep_their_hash() -> None:
     world = _world()
     data = world.model_dump(mode="json")
     assert data.pop("map") is None
+    for place in data["locations"]:
+        assert place.pop("map") is None
     legacy = hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
     assert canonical_payload_hash(world) == legacy
     with pytest.raises(ValueError):  # a pin must be one of the world's places
@@ -130,6 +139,68 @@ def test_worlds_without_a_map_keep_their_hash() -> None:
                 "pins": [{"key": "nowhere", "point": [1, 1]}],
             }
         )
+
+
+def test_a_place_gets_its_own_map() -> None:
+    spots = spots_with_keys(
+        [
+            PinnedPlace("The Hearth", "inn", (400, 400)),
+            PinnedPlace("Market square", "square", (450, 520)),
+            PinnedPlace("the hearth", "house", (10, 10)),  # same name: its own key
+        ]
+    )
+    assert [s.key for s in spots] == ["the-hearth", "market-square", "the-hearth-2"]
+    inside = PlaceMap(asset_id="village", width=1672, height=941, spots=spots)
+    world = world_with_place_map(_world(), "market", inside)
+    assert world.locations[1].map == inside
+    assert world.locations[0].map is None
+    assert canonical_payload_hash(world) != canonical_payload_hash(_world())
+    # Drawing the world map again keeps the places' own maps.
+    redrawn = world_with_map(
+        world,
+        "a",
+        10,
+        10,
+        [PinnedPlace("Market", "market", (5, 5))],
+        [],
+        TravelScale(),
+    )
+    assert redrawn.locations[1].map == inside
+    assert world_with_place_map(world, "market", None).locations[1].map is None
+    with pytest.raises(ValueError):
+        world_with_place_map(world, "nowhere", inside)
+    with pytest.raises(ValueError):
+        PlaceMap(asset_id="v", width=1, height=1, spots=[spots[0], spots[0]])
+
+
+def test_editing_places_keeps_their_maps() -> None:
+    inside = PlaceMap(asset_id="village", width=10, height=10)
+    world = world_with_map(
+        world_with_place_map(_world(), "hearth", inside),
+        "a",
+        10,
+        10,
+        [
+            PinnedPlace("Hearth", "inn", (1, 1), key="hearth"),
+            PinnedPlace("Cellar", "cave", (9, 9), key="cellar"),
+        ],
+        [DrawnRoad(0, 1, "road", ())],
+        TravelScale(),
+    )
+    base = world.model_dump(mode="json")
+    # The studio sends names and descriptions only, and the cellar is gone.
+    edited = {
+        **base,
+        "locations": [
+            {"key": "hearth", "name": "The Hearth", "description": "An inn."},
+            {"key": "market", "name": "Market", "description": None},
+        ],
+        "travel": [["hearth", "market"]],
+    }
+    kept = WorldPresetPayload.model_validate(keep_drawn_maps(base, edited))
+    assert kept.locations[0].name == "The Hearth" and kept.locations[0].map == inside
+    assert kept.map is not None
+    assert [p.key for p in kept.map.pins] == ["hearth"] and kept.map.roads == []
 
 
 def test_reader_answers_are_cleaned() -> None:
@@ -158,6 +229,13 @@ class _Reader:
             ReadPlace("Old Mill", "mill", (900, 900)),
         )
         return Reading(found, "fake/places", 0.1, 0.001)
+
+    async def spots(self, image: bytes, mime: str) -> Reading[ReadPlace]:
+        found = (
+            ReadPlace("The Forge", "smithy", (200, 500)),
+            ReadPlace("Well", "well", (600, 400)),
+        )
+        return Reading(found, "fake/spots", 0.1, 0.0005)
 
     async def roads(self, image: bytes, mime: str, places: list[ReadPlace]) -> Reading[ReadRoad]:
         self.asked.append(places)
@@ -249,11 +327,31 @@ def test_read_a_map_and_time_the_new_story(stack: tuple[ApiClient, _Reader]) -> 
         )
         assert stale.status_code == 409
 
+        # The market gets its own map, with the spots read off it.
+        spots = api.post(f"/api/v1/library/maps/{asset_id}/spots").json()
+        assert spots["model"] == "fake/spots"
+        inside = api.put(
+            f"/api/v1/library/presets/{copy['id']}/places/market/map",
+            json={
+                "asset_id": asset_id,
+                "spots": spots["places"],
+                "expected_version": saved.json()["version"],
+            },
+        )
+        assert inside.status_code == 200, inside.text
+        market = next(p for p in inside.json()["revision"]["locations"] if p["key"] == "market")
+        assert [s["key"] for s in market["map"]["spots"]] == ["the-forge", "well"]
+        nowhere = api.put(
+            f"/api/v1/library/presets/{copy['id']}/places/nowhere/map",
+            json={"asset_id": None, "expected_version": inside.json()["version"]},
+        )
+        assert nowhere.status_code == 422
+
         draft = api.post(
             "/api/v1/story-drafts",
             json={
                 "payload": {
-                    "world": {"preset_id": copy["id"], "preset_revision": 2},
+                    "world": {"preset_id": copy["id"], "preset_revision": 3},
                     "cast": [
                         {
                             "instance_key": "cast-wren",
@@ -291,11 +389,21 @@ def test_read_a_map_and_time_the_new_story(stack: tuple[ApiClient, _Reader]) -> 
         assert legs[("Market", "Old Mill")] == (7, 0)
         # The story keeps the map: its art, its pins and its roads as drawn.
         story = created.json()["world_id"]
-        manifest = api.get(
+        shown = api.get(
             "/api/v1/world/presentation",
             params={"world_id": story},
             headers={"X-Worldsim-Role": "watcher"},
-        ).json()["manifest"]
+        ).json()
+        manifest = shown["manifest"]
+        # The market's own map came along, spots as fractions of its picture.
+        ash = next(c for c in shown["cast"] if c["name"] == "Ash")
+        [place_map] = shown["place_maps"]
+        assert place_map["location_id"] == ash["location_id"]
+        assert place_map["asset_id"] != asset_id  # registered again for the story
+        assert [(s["name"], s["x"], s["y"]) for s in place_map["spots"]] == [
+            ("The Forge", 0.2, 0.5),
+            ("Well", 0.6, 0.4),
+        ]
         assert manifest["schematic"] is False and manifest["id"] == f"drawn:{UUID(story).hex}"
         anchors = {a["x"]: a["y"] for a in manifest["anchors"]}
         assert anchors[0.1] == 0.1 and anchors[0.9] == 0.9  # Hearth and Old Mill pins

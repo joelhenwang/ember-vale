@@ -970,6 +970,26 @@ class MapManifestView(BaseModel):
     roads: list[MapRoadLineView] = Field(default_factory=list)
 
 
+class PlaceSpotView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    key: str
+    name: str
+    kind: str = ""
+    x: float = Field(ge=0, le=1)
+    y: float = Field(ge=0, le=1)
+
+
+class PlaceMapView(BaseModel):
+    """A place's own map in a story: its art and the spots on it."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    location_id: UUID
+    asset_id: UUID
+    spots: list[PlaceSpotView] = Field(default_factory=list)
+
+
 class CastEntry(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -1077,6 +1097,8 @@ class PresentationResponse(BaseModel):
     revision: int
     capabilities: PresentationCapabilities
     manifest: MapManifestView
+    #: Places with their own map, among those the viewer can see.
+    place_maps: list[PlaceMapView] = Field(default_factory=list)
     cast: list[CastEntry] = Field(default_factory=list)
     activities: list[ActivityView] = Field(default_factory=list)
     recent_event_id: UUID | None = None
@@ -1819,6 +1841,16 @@ class MapRoadsView(BaseModel):
     model: str
     seconds: float
     cost_usd: float
+
+
+class PlaceMapRequest(BaseModel):
+    """A place's own map and its spots; no picture takes the map away."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    asset_id: UUID | None = None
+    spots: list[MapPlaceView] = Field(default_factory=list, max_length=32)
+    expected_version: int = Field(ge=0)
 
 
 class WorldMapPlace(MapPlaceView):

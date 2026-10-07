@@ -240,6 +240,44 @@ async def _replay_from_log(
     )
 
 
+def _records(value: object) -> list[dict[str, Any]]:
+    """The objects in a JSON list; anything else is skipped."""
+    if not isinstance(value, list):
+        return []
+    return [
+        cast("dict[str, Any]", item)
+        for item in cast("list[object]", value)
+        if isinstance(item, dict)
+    ]
+
+
+def keep_drawn_maps(base: dict[str, Any], merged: dict[str, Any]) -> dict[str, Any]:
+    """Maps survive an editor that never shows them.
+
+    The editor replaces the places list wholesale with names and
+    descriptions only: each place keeps the map of its own it had (by
+    key), and the world map forgets pins and roads of deleted places.
+    """
+    before = {place.get("key"): place.get("map") for place in _records(base.get("locations"))}
+    places = [
+        place if "map" in place else {**place, "map": before.get(place.get("key"))}
+        for place in _records(merged.get("locations"))
+    ]
+    out = {**merged, "locations": places}
+    world_map = merged.get("map")
+    if isinstance(world_map, dict):
+        drawn = cast("dict[str, Any]", world_map)
+        keys = {place.get("key") for place in places}
+        out["map"] = {
+            **drawn,
+            "pins": [p for p in _records(drawn.get("pins")) if p.get("key") in keys],
+            "roads": [
+                r for r in _records(drawn.get("roads")) if r.get("a") in keys and r.get("b") in keys
+            ],
+        }
+    return out
+
+
 async def publish_draft(
     factory: Callable[[], UnitOfWork],
     preset_id: UUID,
@@ -286,6 +324,8 @@ async def publish_draft(
             merged = base.payload.model_dump(mode="json")
             merged.update({k: v for k, v in draft.fields.items() if k != "kind"})
             merged["kind"] = preset.kind.value
+            if preset.kind.value == "world":
+                merged = keep_drawn_maps(base.payload.model_dump(mode="json"), merged)
             parsed = _parse_strict(preset.kind.value, merged)
             content_hash = canonical_payload_hash(parsed)
             # An identical retry that committed and lost its response

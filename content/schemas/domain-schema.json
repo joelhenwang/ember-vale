@@ -6837,6 +6837,88 @@
           "title": "MapRoad",
           "type": "object"
         },
+        "PlaceMap": {
+          "additionalProperties": false,
+          "description": "A place's own map: a closer picture and the spots on it.",
+          "properties": {
+            "asset_id": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Asset Id",
+              "type": "string"
+            },
+            "height": {
+              "minimum": 1,
+              "title": "Height",
+              "type": "integer"
+            },
+            "spots": {
+              "items": {
+                "$ref": "#/$defs/PlaceSpot"
+              },
+              "maxItems": 32,
+              "title": "Spots",
+              "type": "array"
+            },
+            "width": {
+              "minimum": 1,
+              "title": "Width",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "asset_id",
+            "width",
+            "height"
+          ],
+          "title": "PlaceMap",
+          "type": "object"
+        },
+        "PlaceSpot": {
+          "additionalProperties": false,
+          "description": "One spot inside a place, where a person could be found.",
+          "properties": {
+            "key": {
+              "maxLength": 64,
+              "minLength": 1,
+              "title": "Key",
+              "type": "string"
+            },
+            "kind": {
+              "default": "",
+              "maxLength": 32,
+              "title": "Kind",
+              "type": "string"
+            },
+            "name": {
+              "maxLength": 128,
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            },
+            "point": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "title": "Point",
+              "type": "array"
+            }
+          },
+          "required": [
+            "key",
+            "name",
+            "point"
+          ],
+          "title": "PlaceSpot",
+          "type": "object"
+        },
         "StylePackPayload": {
           "additionalProperties": false,
           "properties": {
@@ -6991,6 +7073,17 @@
               "minLength": 1,
               "title": "Key",
               "type": "string"
+            },
+            "map": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/PlaceMap"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
             },
             "name": {
               "maxLength": 128,

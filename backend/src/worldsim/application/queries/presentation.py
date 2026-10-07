@@ -14,7 +14,7 @@ import math
 from pathlib import Path
 from uuid import UUID
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
 from worldsim.application.capabilities import capabilities_for, is_omniscient
 from worldsim.application.unit_of_work import UnitOfWork
@@ -72,8 +72,9 @@ async def presentation(
         for character in characters
         if omniscient or character.location_id in visible_locations or character.id == viewer
     ]
+    config = await uow.worlds.get_config(world_id)
     manifest = _schematic_manifest(world_id, locations)
-    drawn = _drawn_manifest(world_id, (await uow.worlds.get_config(world_id)).get("map_layout"))
+    drawn = _drawn_manifest(world_id, config.get("map_layout"))
     if drawn is not None:
         manifest = drawn.model_copy(
             update={"anchors": [*drawn.anchors, *_neighbour_anchors(drawn.anchors, locations)]}
@@ -106,6 +107,11 @@ async def presentation(
             capabilities=[c.value for c in sorted(capabilities_for(role))],
         ),
         manifest=manifest,
+        place_maps=[
+            place_map
+            for place_map in _place_maps(config.get("place_maps"))
+            if place_map.location_id in visible_locations
+        ],
         cast=cast,
         activities=[_activity_view(activity) for activity in activities],
         recent_event_id=recent[0].id if recent else None,
@@ -365,6 +371,50 @@ def _drawn_manifest(world_id: UUID, raw: object) -> api.MapManifestView | None:
         )
     except ValidationError:
         return None
+
+
+class _Spot(BaseModel):
+    key: str
+    name: str
+    kind: str = ""
+    point: tuple[float, float]
+
+
+class _PlaceMap(BaseModel):
+    """One entry story creation stored under the world config "place_maps"."""
+
+    asset_id: UUID
+    spots: list[_Spot] = Field(default_factory=list)
+
+
+_ENTRIES = TypeAdapter(dict[UUID, object])
+
+
+def _place_maps(raw: object) -> list[api.PlaceMapView]:
+    """The places' own maps a story took from its world; unreadable ones are skipped."""
+    try:
+        entries = _ENTRIES.validate_python(raw)
+    except ValidationError:
+        return []
+    out: list[api.PlaceMapView] = []
+    for location_id, entry in entries.items():
+        try:
+            place = _PlaceMap.model_validate(entry)
+            out.append(
+                api.PlaceMapView(
+                    location_id=location_id,
+                    asset_id=place.asset_id,
+                    spots=[
+                        api.PlaceSpotView(
+                            key=s.key, name=s.name, kind=s.kind, x=s.point[0], y=s.point[1]
+                        )
+                        for s in place.spots
+                    ],
+                )
+            )
+        except ValidationError:
+            continue
+    return out
 
 
 def _curated_manifest(assets_root: Path, locations: list[Location]) -> api.MapManifestView | None:

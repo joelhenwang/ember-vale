@@ -120,6 +120,44 @@ class WorldMap(BaseModel):
         return None
 
 
+#: Spots a place's own map may hold.
+MAX_SPOTS = 32
+
+
+class PlaceSpot(BaseModel):
+    """One spot inside a place, where a person could be found."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    key: str = Field(min_length=1, max_length=64)
+    name: str = Field(min_length=1, max_length=128)
+    kind: str = Field(default="", max_length=32)
+    point: Point
+
+    @model_validator(mode="after")
+    def _point(self) -> PlaceSpot:
+        _in_span(self.point)
+        return self
+
+
+class PlaceMap(BaseModel):
+    """A place's own map: a closer picture and the spots on it."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    asset_id: str = Field(min_length=1, max_length=128)
+    width: int = Field(ge=1)
+    height: int = Field(ge=1)
+    spots: list[PlaceSpot] = Field(default_factory=list, max_length=MAX_SPOTS)
+
+    @model_validator(mode="after")
+    def _distinct(self) -> PlaceMap:
+        keys = [spot.key for spot in self.spots]
+        if len(set(keys)) != len(keys):
+            raise ValueError("two spots share a key")
+        return self
+
+
 def road_length(line: list[Point], width: int, height: int) -> float:
     """Drawn length of a polyline, in map units of the image's longer side.
 

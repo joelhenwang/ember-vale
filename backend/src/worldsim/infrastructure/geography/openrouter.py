@@ -2,7 +2,8 @@
 
 Two questions, two models: one finds the places, another traces the
 roads between the places the player kept. The prompts are the ones
-measured in docs/evidence/map-detect-001 and map-routes-001.
+measured in docs/evidence/map-detect-001 and map-routes-001; the spots
+inside one place (its own map) in docs/evidence/place-spots-001.
 """
 
 from __future__ import annotations
@@ -56,6 +57,23 @@ For each connection give:
 
 Answer with JSON only:
 {{"connections": [{{"from": 1, "to": 2, "by": "road", "points": [[x, y], [x, y], [x, y]]}}]}}"""
+
+SPOTS_PROMPT = """This is a picture of one place in a fantasy world: a town, village, castle,
+port or similar, seen from above or at an angle. List the spots inside it where a person
+could be found:
+- buildings: inn, tavern, house, hall, manor, keep, chapel, temple, shrine, smithy, mill,
+  shop, workshop, stable, barn, warehouse, barracks, tower, gate
+- open places: square, market, yard, garden, field, farm, graveyard, dock, pier, well,
+  bridge, landmark, camp
+- edges: forest, river, lake, road, path
+
+For each spot give:
+- "name": the label written on the picture for it, if there is one; otherwise a short description
+- "kind": one word from the lists above
+- "point": [x, y], the centre of the spot's drawing (not of its label), as integers from 0 to
+  1000 across the image's width (x) and height (y); [0, 0] is the top-left corner
+
+Answer with JSON only: {"places": [{"name": "...", "kind": "...", "point": [x, y]}]}"""
 
 #: Larger pictures cost more and read no better.
 MAX_SIDE = 2048
@@ -219,6 +237,11 @@ class OpenRouterMapReader:
     async def places(self, image: bytes, mime: str) -> Reading[ReadPlace]:
         del mime
         text, seconds, cost = await self._ask(self._places_model, image, PLACES_PROMPT)
+        return Reading(tuple(parse_places(text)), self._places_model, seconds, cost)
+
+    async def spots(self, image: bytes, mime: str) -> Reading[ReadPlace]:
+        del mime
+        text, seconds, cost = await self._ask(self._places_model, image, SPOTS_PROMPT)
         return Reading(tuple(parse_places(text)), self._places_model, seconds, cost)
 
     async def roads(self, image: bytes, mime: str, places: list[ReadPlace]) -> Reading[ReadRoad]:

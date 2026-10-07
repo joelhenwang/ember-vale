@@ -40,7 +40,11 @@ from worldsim.domain.ids import (
     new_world_id,
 )
 from worldsim.domain.phases import PhaseRun
-from worldsim.domain.presets import CharacterPresetPayload, WorldPresetPayload
+from worldsim.domain.presets import (
+    CharacterPresetPayload,
+    WorldLocationPreset,
+    WorldPresetPayload,
+)
 from worldsim.domain.roles import RoleGrant
 from worldsim.domain.stories import (
     DraftCastMember,
@@ -222,20 +226,26 @@ def _inline_character(member: DraftCastMember) -> CharacterPresetPayload:
 
 #: World config key holding the story's own map layout (see presentation).
 MAP_LAYOUT = "map_layout"
+#: World config key holding the places' own maps, by location id.
+PLACE_MAPS = "place_maps"
 
 
-async def _adopt_map(
-    uow: UnitOfWork, world_id: UUID, world_map: WorldMap, location_ids: dict[str, UUID]
-) -> None:
-    """Give the story its world's map: the art, the pins and the drawn roads.
+def _fraction(point: tuple[int, int]) -> list[float]:
+    return [point[0] / MAP_SPAN, point[1] / MAP_SPAN]
 
-    The art is registered again for this world (same stored bytes), so the
-    story keeps it even if the world later draws a new map.
-    """
+
+async def _copy_art(
+    uow: UnitOfWork, world_id: UUID, asset_id: str, copied: dict[str, UUID]
+) -> UUID | None:
+    """Register a library map picture again for this world (same stored bytes),
+    so the story keeps it even if the world later draws a new one. A picture
+    used twice (the world's map and a place's) is registered once."""
+    if asset_id in copied:
+        return copied[asset_id]
     try:
-        source = await uow.assets.get_asset(UUID(world_map.asset_id))
+        source = await uow.assets.get_asset(UUID(asset_id))
     except (DomainError, ValueError):
-        return  # the picture is gone: the story falls back to a schematic map
+        return None  # the picture is gone
     art = AssetRecord(
         id=new_asset_id(),
         world_id=world_id,
@@ -247,18 +257,30 @@ async def _adopt_map(
         style_pack_version=source.style_pack_version,
     )
     await uow.assets.add_asset(art)
-    where = {pin.key: pin.point for pin in world_map.pins}
+    copied[asset_id] = art.id
+    return art.id
 
-    def fraction(point: tuple[int, int]) -> list[float]:
-        return [point[0] / MAP_SPAN, point[1] / MAP_SPAN]
+
+async def _adopt_map(
+    uow: UnitOfWork,
+    world_id: UUID,
+    world_map: WorldMap,
+    location_ids: dict[str, UUID],
+    copied: dict[str, UUID],
+) -> None:
+    """Give the story its world's map: the art, the pins and the drawn roads."""
+    art_id = await _copy_art(uow, world_id, world_map.asset_id, copied)
+    if art_id is None:
+        return  # the story falls back to a schematic map
+    where = {pin.key: pin.point for pin in world_map.pins}
 
     await uow.worlds.put_config(
         world_id,
         MAP_LAYOUT,
         {
-            "asset_id": str(art.id),
+            "asset_id": str(art_id),
             "anchors": {
-                str(location_ids[key]): fraction(point)
+                str(location_ids[key]): _fraction(point)
                 for key, point in where.items()
                 if key in location_ids
             },
@@ -267,13 +289,39 @@ async def _adopt_map(
                     "from": str(location_ids[road.a]),
                     "to": str(location_ids[road.b]),
                     "by": road.by,
-                    "points": [fraction(p) for p in [where[road.a], *road.points, where[road.b]]],
+                    "points": [_fraction(p) for p in [where[road.a], *road.points, where[road.b]]],
                 }
                 for road in world_map.roads
                 if road.a in location_ids and road.b in location_ids
             ],
         },
     )
+
+
+async def _adopt_place_maps(
+    uow: UnitOfWork,
+    world_id: UUID,
+    places: list[WorldLocationPreset],
+    location_ids: dict[str, UUID],
+    copied: dict[str, UUID],
+) -> None:
+    """Give the story each place's own map: its art and its spots."""
+    adopted: dict[str, object] = {}
+    for place in places:
+        if place.map is None or place.key not in location_ids:
+            continue
+        art_id = await _copy_art(uow, world_id, place.map.asset_id, copied)
+        if art_id is None:
+            continue
+        adopted[str(location_ids[place.key])] = {
+            "asset_id": str(art_id),
+            "spots": [
+                {"key": s.key, "name": s.name, "kind": s.kind, "point": _fraction(s.point)}
+                for s in place.map.spots
+            ],
+        }
+    if adopted:
+        await uow.worlds.put_config(world_id, PLACE_MAPS, adopted)
 
 
 async def _instantiate(
@@ -356,8 +404,10 @@ async def _instantiate(
                 stamina_cost=0,
             )
         )
+    copied: dict[str, UUID] = {}
     if world_map is not None:
-        await _adopt_map(uow, world_id, world_map, location_ids)
+        await _adopt_map(uow, world_id, world_map, location_ids, copied)
+    await _adopt_place_maps(uow, world_id, world_preset.locations, location_ids, copied)
     runtime_characters: dict[str, UUID] = {}
     for member in payload.cast:
         character_id = new_character_id()

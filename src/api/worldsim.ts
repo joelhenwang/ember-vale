@@ -65,7 +65,8 @@ import type {
   MapImageView,
   MapPlacesView,
   MapRoadsView,
-  WorldMapRequest
+  WorldMapRequest,
+  PlaceMapRequest
 } from '../../content/clients/worldsim'
 import { apiFetch, type Role } from './http'
 
@@ -784,6 +785,14 @@ export function readMapPlaces(assetId: string, opts: CallOptions = {}): Promise<
   })
 }
 
+export function readMapSpots(assetId: string, opts: CallOptions = {}): Promise<MapPlacesView> {
+  return apiFetch<MapPlacesView>(`/library/maps/${assetId}/spots`, {
+    timeoutMs: 420000,
+    ...opts,
+    method: 'POST'
+  })
+}
+
 export function readMapRoads(
   assetId: string,
   places: Array<{ name: string; kind: string; point: [number, number] }>,
@@ -808,6 +817,19 @@ export function saveWorldMap(
     method: 'PUT',
     body
   })
+}
+
+export function savePlaceMap(
+  presetId: string,
+  placeKey: string,
+  body: PlaceMapRequest,
+  opts: CallOptions = {}
+): Promise<PresetDetail> {
+  // A null asset_id takes the place's map away; expected_version as above.
+  return apiFetch<PresetDetail>(
+    `/library/presets/${presetId}/places/${encodeURIComponent(placeKey)}/map`,
+    { ...opts, method: 'PUT', body }
+  )
 }
 
 export function duplicatePreset(presetId: string, opts: CallOptions = {}): Promise<PresetDetail> {

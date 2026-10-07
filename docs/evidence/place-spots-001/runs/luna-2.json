@@ -1,0 +1,135 @@
+{
+  "model": "openai/gpt-6-luna",
+  "seconds": 9.5,
+  "cost_usd": 0.0003435,
+  "spots": [
+    {
+      "name": "Old Bram’s farm",
+      "kind": "farm",
+      "point": [
+        140,
+        185
+      ]
+    },
+    {
+      "name": "Farmhouse",
+      "kind": "house",
+      "point": [
+        126,
+        174
+      ]
+    },
+    {
+      "name": "Farm barn",
+      "kind": "barn",
+      "point": [
+        43,
+        168
+      ]
+    },
+    {
+      "name": "Farm garden",
+      "kind": "garden",
+      "point": [
+        257,
+        292
+      ]
+    },
+    {
+      "name": "Chapel",
+      "kind": "chapel",
+      "point": [
+        524,
+        178
+      ]
+    },
+    {
+      "name": "Chapel graveyard",
+      "kind": "graveyard",
+      "point": [
+        589,
+        267
+      ]
+    },
+    {
+      "name": "Sheep Track",
+      "kind": "path",
+      "point": [
+        858,
+        210
+      ]
+    },
+    {
+      "name": "the Hearth",
+      "kind": "inn",
+      "point": [
+        412,
+        407
+      ]
+    },
+    {
+      "name": "Market square",
+      "kind": "square",
+      "point": [
+        456,
+        507
+      ]
+    },
+    {
+      "name": "Smithy",
+      "kind": "smithy",
+      "point": [
+        697,
+        448
+      ]
+    },
+    {
+      "name": "Mill",
+      "kind": "mill",
+      "point": [
+        161,
+        589
+      ]
+    },
+    {
+      "name": "Mill Road",
+      "kind": "road",
+      "point": [
+        559,
+        807
+      ]
+    },
+    {
+      "name": "Stone bridge",
+      "kind": "bridge",
+      "point": [
+        320,
+        742
+      ]
+    },
+    {
+      "name": "River",
+      "kind": "river",
+      "point": [
+        447,
+        852
+      ]
+    },
+    {
+      "name": "Whispering Wood",
+      "kind": "forest",
+      "point": [
+        866,
+        700
+      ]
+    },
+    {
+      "name": "Village houses",
+      "kind": "house",
+      "point": [
+        484,
+        611
+      ]
+    }
+  ]
+}
