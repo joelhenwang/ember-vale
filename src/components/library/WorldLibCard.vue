@@ -52,13 +52,7 @@ defineEmits<{ open: []; pick: [key: string] }>()
       <div class="worldcard__foot">
         <p class="worldcard__used">
           <IconBook :size="15" />
-          {{ world.places }} places ·
-          <template v-if="world.usedInStories !== null">
-            Used in {{ world.usedInStories }}
-            {{ world.usedInStories === 1 ? 'story' : 'stories' }}
-          </template>
-          <template v-else>usage not tracked yet</template>
-          <template v-if="world.revision !== null"> · rev {{ world.revision }}</template>
+          {{ world.places }} {{ world.places === 1 ? 'place' : 'places' }}
         </p>
       </div>
     </div>

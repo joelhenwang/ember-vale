@@ -4,7 +4,6 @@ import FramedImage from '../ui/FramedImage.vue'
 import StoryImage from '../StoryImage.vue'
 import TagPill from '../ui/TagPill.vue'
 import IconSparkle from '../icons/IconSparkle.vue'
-import IconBook from '../icons/IconBook.vue'
 import CardMenu, { type CardMenuItem } from '../ui/CardMenu.vue'
 
 defineProps<{ character: CharacterDef; menu: CardMenuItem[] }>()
@@ -34,7 +33,7 @@ defineEmits<{ open: []; pick: [key: string] }>()
       <div class="libcard__head">
         <div>
           <h3 class="libcard__name">{{ character.name }}</h3>
-          <p class="libcard__role">{{ character.role }}</p>
+          <p v-if="character.role" class="libcard__role">{{ character.role }}</p>
         </div>
         <CardMenu
           :items="menu"
@@ -42,19 +41,11 @@ defineEmits<{ open: []; pick: [key: string] }>()
           @pick="$emit('pick', $event)" />
       </div>
       <div class="libcard__rule" aria-hidden="true"><IconSparkle :size="10" /></div>
-      <p class="libcard__bio">{{ character.bio }}</p>
+      <p v-if="character.bio" class="libcard__bio">{{ character.bio }}</p>
+      <p v-else class="libcard__bio libcard__bio--empty">No description yet: open to write one.</p>
       <div class="libcard__tags">
         <TagPill v-for="t in character.tags" :key="t.label" :tag="t" />
       </div>
-      <p class="libcard__used">
-        <IconBook :size="14" />
-        <template v-if="character.usedInStories !== null">
-          Used in {{ character.usedInStories }}
-          {{ character.usedInStories === 1 ? 'story' : 'stories' }}
-        </template>
-        <template v-else>Usage not tracked yet</template>
-        <template v-if="character.revision !== null"> · rev {{ character.revision }}</template>
-      </p>
     </div>
   </article>
 </template>
@@ -113,6 +104,15 @@ defineEmits<{ open: []; pick: [key: string] }>()
   flex: 1;
   height: 1px;
   background: linear-gradient(90deg, #d8c393, transparent);
+}
+.libcard__bio--empty {
+  font-style: italic;
+  color: var(--muted);
+}
+.libcard__role {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .libcard__bio {
   font-size: 14px;

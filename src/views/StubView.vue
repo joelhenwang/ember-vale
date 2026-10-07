@@ -13,7 +13,7 @@ import MountainRidge from '../components/decor/MountainRidge.vue'
         The narrator hasn't reached this page yet. Wander back to the common room while the ink
         dries.
       </p>
-      <router-link to="/" class="stub__link">← Return home</router-link>
+      <router-link to="/" class="stub__link">Return home</router-link>
     </section>
   </main>
 </template>
@@ -30,7 +30,7 @@ import MountainRidge from '../components/decor/MountainRidge.vue'
   position: relative;
   overflow: hidden;
   max-width: 560px;
-  padding: 44px 48px 48px;
+  padding: 44px 48px 110px;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -63,6 +63,15 @@ import MountainRidge from '../components/decor/MountainRidge.vue'
   color: var(--ink-3);
 }
 .stub__link {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  margin-top: 6px;
+  padding: 9px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: #fffaf0;
+  font-family: var(--font-ui);
   position: relative;
   margin-top: 20px;
   font-size: 16px;

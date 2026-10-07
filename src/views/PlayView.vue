@@ -369,14 +369,17 @@ function loadBeatDetails(eventIds: string[]): void {
         <span v-else-if="story.effectiveRole.value === 'player' && !story.grantLoaded.value">
           Resolving player…
         </span>
-        <span>Beat {{ detail.absolute_index }}</span>
-        <button type="button" class="play__link" @click="showSetup = true">
-          Initial configuration
-        </button>
+        <span>Turn {{ detail.absolute_index }}</span>
+        <button type="button" class="play__link" @click="showSetup = true">How it began</button>
         <RouterLink class="play__link" :to="{ name: 'story-watch', params: { storyId } }">
-          Open the observatory
+          Watch on the world map
         </RouterLink>
-        <span class="play__as">Mode set by the story grant</span>
+        <RouterLink
+          v-if="story.effectiveRole.value === 'player'"
+          class="play__link play__as"
+          :to="{ name: 'story-adventure', params: { storyId } }">
+          Play this story ›
+        </RouterLink>
       </p>
       <p v-if="controlledMissing" class="play__notice play__notice--error" role="alert">
         The controlled character is not on the map — travel is unavailable until they appear.
@@ -505,7 +508,7 @@ function loadBeatDetails(eventIds: string[]): void {
           </div>
           <h3>Advance the story</h3>
           <MenuButton :disabled="!beatReady" :title="beatBlockedTitle" @click="advance()">
-            {{ story.advancing.value ? 'Committing beat…' : `Commit beat ${nextIndex}` }}
+            {{ story.advancing.value ? 'Telling the next turn…' : `Next turn (${nextIndex})` }}
           </MenuButton>
           <p v-if="story.effectiveRole.value !== 'player'" class="play__empty">
             Watching: beats advance the world without your actions. Player mode is chosen when the
@@ -519,8 +522,8 @@ function loadBeatDetails(eventIds: string[]): void {
           <h2>Speak as {{ controlledName }}</h2>
           <p v-if="myJourney" class="play__journey" role="status">
             You are on the road to {{ myJourney.to }}, about {{ myJourney.left }}
-            {{ myJourney.left === 1 ? 'phase' : 'phases' }} from arriving. Commit beats to travel
-            on; you can speak again when you get there.
+            {{ myJourney.left === 1 ? 'phase' : 'phases' }} from arriving. Take turns to travel on;
+            you can speak again when you get there.
           </p>
           <p class="play__empty">
             Your words file with the next committed beat — the cast's reactions, the resolution and

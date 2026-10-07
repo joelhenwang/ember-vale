@@ -123,4 +123,17 @@ const emit = defineEmits<{ go: [index: number] }>()
     gap: 7px;
   }
 }
+/* A column too narrow for every name: only the current step is named. */
+@container (max-width: 860px) {
+  .istep__step:not(.istep__step--active) .istep__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .istep__link {
+    width: 28px;
+  }
+}
 </style>

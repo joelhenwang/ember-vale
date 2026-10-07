@@ -127,6 +127,7 @@ const library = computed(() => [
     transform 0.3s var(--ease-spring);
 }
 .library__count {
+  white-space: nowrap;
   font-family: var(--font-ui);
   font-size: 16.5px;
   font-weight: 500;

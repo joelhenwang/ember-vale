@@ -236,11 +236,12 @@ export function portraitPrompt(draft: CharacterDraft): string {
 /** One line under their name: age, race, sex, height. */
 export function identityLine(draft: CharacterDraft): string {
   const age = draft.age.trim()
+  const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
   return [
     age ? (/^\d+$/.test(age) ? `${age} years` : age) : '',
-    draft.race.trim(),
-    draft.sex.trim(),
-    draft.height.trim()
+    cap(draft.race.trim()),
+    cap(draft.sex.trim()),
+    cap(draft.height.trim())
   ]
     .filter(Boolean)
     .join(' · ')

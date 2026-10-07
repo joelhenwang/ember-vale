@@ -24,6 +24,8 @@ const props = defineProps<{
   focusId?: string | null
   /** Places with a map of their own, which can be looked inside. */
   inside?: string[]
+  /** A small map beside other things: no explanatory note. */
+  compact?: boolean
 }>()
 
 const emit = defineEmits<{ select: [characterId: string]; enter: [placeId: string] }>()
@@ -138,7 +140,7 @@ function initials(name: string): string {
       <span v-else>{{ initials(token.name) }}</span>
       <em class="wm__name">{{ token.name }}</em>
     </button>
-    <p v-if="!art" class="wm__note">
+    <p v-if="!art && !compact" class="wm__note">
       No map art for this world yet. Places are shown schematically.
     </p>
   </div>

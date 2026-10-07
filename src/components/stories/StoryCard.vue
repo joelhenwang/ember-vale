@@ -44,7 +44,7 @@ const dayIcon = computed<Component>(() =>
 const player = computed(() => {
   const mode = props.story.mode
   if (mode.kind !== 'player') return null
-  return catalog.characters.find((c) => c.id === mode.characterId)?.name ?? '—'
+  return catalog.characters.find((c) => c.id === mode.characterId)?.name ?? null
 })
 
 const cast = computed(() =>
@@ -83,7 +83,6 @@ function menuArchive(): void {
         :frame="story.cover.frame"
         :alt="`${story.title}: ${story.world}`" />
       <img v-else :src="artUrl" :alt="`${story.title} — scene from ${story.world}`" />
-      <span class="scard__world">{{ story.world }}</span>
     </div>
 
     <div class="scard__main">
@@ -117,8 +116,8 @@ function menuArchive(): void {
 
       <p class="scard__tags">
         <span class="tchip"><IconBook :size="13" /> {{ story.world }}</span>
-        <span v-if="player" class="tchip tchip--tan">
-          <IconUser :size="13" /> Player · {{ player }}
+        <span v-if="story.mode.kind === 'player'" class="tchip tchip--tan">
+          <IconUser :size="13" /> {{ player ? `Playing as ${player}` : 'You play' }}
         </span>
         <span v-else class="tchip tchip--teal"><IconEye :size="13" /> Watcher</span>
       </p>
@@ -144,7 +143,7 @@ function menuArchive(): void {
           <IconPlay :size="12" /> Continue
         </button>
         <button type="button" class="scard__config" @click="emit('configure')">
-          <IconInfo :size="16" /> Initial configuration
+          <IconInfo :size="16" /> How it began
         </button>
       </div>
 

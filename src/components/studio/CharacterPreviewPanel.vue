@@ -50,7 +50,8 @@ const traits = computed(() =>
   props.draft.traits
     .split(/[,;]/)
     .map((t) => t.trim())
-    .filter(Boolean)
+    // a short word or two each; longer phrases read badly as chips
+    .filter((t) => t && t.length <= 24)
     .slice(0, 6)
 )
 </script>

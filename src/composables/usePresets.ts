@@ -12,7 +12,7 @@ import type { CharacterDef, FramedCover, FramedPortrait, ImageSlot, WorldDef } f
 import type { Frame } from '../game/framing'
 import { getPreset, libraryAssetUrl, listPresets } from '../api/worldsim'
 import type { PresetDetail } from '../../content/clients/worldsim'
-import { characterBlurb } from '../game/studioFields'
+import { characterBlurb, unpackCharacter } from '../game/studioFields'
 
 export interface PresetCharacter {
   id: string
@@ -47,9 +47,13 @@ const PORTRAIT_BY_NAME: Record<string, ImageSlot> = {
   Ash: 'character.ash'
 }
 
-function roleFromTags(tags: string[]): string {
+/** A line under the name: a tag that says what they are, else who they are. */
+function roleFromTags(tags: string[], rev: Record<string, unknown>): string {
   const skip = new Set(['Human', 'Player-ready', 'NPC'])
-  return tags.find((t) => !skip.has(t)) ?? 'Wanderer'
+  const tagged = tags.find((t) => !skip.has(t))
+  if (tagged) return tagged
+  const form = unpackCharacter(rev)
+  return [form.age && `${form.age} years`, form.race, form.sex].filter(Boolean).join(' · ')
 }
 
 const WORLD_IMAGE_BY_NAME: Record<string, ImageSlot> = {
@@ -196,7 +200,7 @@ export function usePresets() {
             version: versions.get(d.id) ?? d.version,
             builtin: d.builtin,
             name,
-            role: roleFromTags(tags),
+            role: roleFromTags(tags, rev),
             blurb: characterBlurb(rev),
             tags,
             startKey: (rev['starting_location_key'] as string | undefined) ?? null,

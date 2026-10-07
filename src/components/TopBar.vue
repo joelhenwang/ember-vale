@@ -3,7 +3,6 @@ import { menuState } from '../game/state'
 import { useGameImage } from '../game/images'
 import IconEmblem from './icons/IconEmblem.vue'
 import IconHelp from './icons/IconHelp.vue'
-import IconChevronDown from './icons/IconChevronDown.vue'
 import HelpDialog from './HelpDialog.vue'
 import { nextTick, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -61,11 +60,14 @@ watch(
           <span>Help</span>
         </button>
         <span class="vr" aria-hidden="true"></span>
-        <button class="profile" type="button" :aria-label="`Menu for ${menuState.player.name}`">
-          <img class="profile__avatar" :src="avatarUrl" :alt="menuState.player.name" />
+        <router-link
+          class="profile"
+          to="/settings"
+          :title="`${menuState.player.name}: settings`"
+          :aria-label="`${menuState.player.name}: settings`">
+          <img class="profile__avatar" :src="avatarUrl" alt="" />
           <span class="profile__name">{{ menuState.player.name }}</span>
-          <IconChevronDown :size="15" class="profile__chev" />
-        </button>
+        </router-link>
       </div>
     </div>
     <HelpDialog :open="helpOpen" @close="helpOpen = false" />

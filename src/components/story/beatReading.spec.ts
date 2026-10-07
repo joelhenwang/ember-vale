@@ -203,8 +203,8 @@ describe('sceneCitations', () => {
 
 describe('event labels', () => {
   it('names story events in plain words', () => {
-    expect(eventLabel('action_resolved')).toBe('What happened')
-    expect(eventLabel('world_ticked')).toBe('Time passes')
+    expect(eventLabel('action_resolved')).toBe('')
+    expect(eventLabel('world_seeded')).toBe('The story begins')
     expect(eventLabel('something_new')).toBe('something new')
   })
 })

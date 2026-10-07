@@ -218,6 +218,15 @@ const canContinue = computed(() => {
   return true
 })
 
+/** "Hearth · Market · Mill" — the first six, then how many more. */
+function placeList(places: { name: string }[]): string {
+  const shown = places.slice(0, 6).map((p) => p.name)
+  const more = places.length - shown.length
+  return `${places.length} ${places.length === 1 ? 'place' : 'places'}: ${shown.join(' · ')}${
+    more > 0 ? ` and ${more} more` : ''
+  }`
+}
+
 function chooseWorld(world: { id: string; revision: number }): void {
   sel.worldId = world.id
   sel.worldRev = world.revision
@@ -1043,11 +1052,13 @@ onMounted(() => {
                 :src="world.cover.src"
                 :frame="world.cover.frame" />
               <span class="nsv__world-name">{{ world.name }}</span>
-              <span class="nsv__world-rev">Preset rev {{ world.revision }}</span>
+              <span
+                v-if="presets.worlds.value.filter((w) => w.name === world.name).length > 1"
+                class="nsv__world-rev"
+                >Version {{ world.revision }}</span
+              >
               <span class="nsv__world-desc">{{ world.description }}</span>
-              <span class="nsv__world-places">{{
-                world.places.map((p) => p.name).join(' · ')
-              }}</span>
+              <span class="nsv__world-places">{{ placeList(world.places) }}</span>
             </button>
           </li>
         </ul>

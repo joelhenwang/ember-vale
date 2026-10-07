@@ -31,7 +31,7 @@ const PLACEHOLDER_URLS: Record<ImageSlot, string> = {
   'character.miri': '/images/character-miri.webp',
   'character.thomas': '/images/character-thomas.webp',
   'character.nessa': '/images/character-nessa.webp',
-  'world.emberVale': '/images/world-ember-vale.webp',
+  'world.emberVale': '/images/hero-ember-vale.webp',
   'world.silverleaf': '/images/world-silverleaf.webp',
   'world.map': '/images/hero-ember-vale.webp',
   'character.wren.fullbody': '/images/character-wren-fullbody.webp',

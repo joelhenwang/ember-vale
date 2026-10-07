@@ -6,16 +6,22 @@
 import MountainRidge from '../decor/MountainRidge.vue'
 import IconEmblem from '../icons/IconEmblem.vue'
 
-defineProps<{ title: string; copy: string }>()
+defineProps<{ title: string; copy: string; soon?: boolean }>()
 defineEmits<{ create: [] }>()
 </script>
 
 <template>
-  <button type="button" class="create-tile" @click="$emit('create')">
+  <button
+    type="button"
+    class="create-tile"
+    :class="{ 'create-tile--soon': soon }"
+    :disabled="soon"
+    @click="$emit('create')">
     <MountainRidge class="create-tile__ridge" />
     <IconEmblem :size="42" class="create-tile__mark" />
     <span class="create-tile__title">{{ title }}</span>
     <span class="ev-quote create-tile__copy">{{ copy }}</span>
+    <span v-if="soon" class="create-tile__soon">Coming soon</span>
   </button>
 </template>
 
@@ -39,7 +45,22 @@ defineEmits<{ create: [] }>()
     transform 0.22s var(--ease-out),
     box-shadow 0.22s var(--ease-out);
 }
-.create-tile:hover {
+.create-tile--soon {
+  cursor: default;
+  opacity: 0.7;
+}
+.create-tile__soon {
+  position: relative;
+  margin-top: 10px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #ece1c6;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  color: #7a6a49;
+}
+.create-tile:not(.create-tile--soon):hover {
   border-color: var(--ember);
   border-style: solid;
   background: #fbf1dc;
@@ -62,7 +83,7 @@ defineEmits<{ create: [] }>()
     color 0.2s ease,
     transform 0.5s var(--ease-spring);
 }
-.create-tile:hover .create-tile__mark {
+.create-tile:not(.create-tile--soon):hover .create-tile__mark {
   color: var(--ember);
   transform: rotate(90deg) scale(1.12);
 }

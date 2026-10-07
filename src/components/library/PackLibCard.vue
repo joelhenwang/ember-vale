@@ -3,7 +3,6 @@ import type { PackDef } from '../../game/model'
 import TagPill from '../ui/TagPill.vue'
 import IconSparkle from '../icons/IconSparkle.vue'
 import IconBook from '../icons/IconBook.vue'
-import IconPencil from '../icons/IconPencil.vue'
 
 defineProps<{ pack: PackDef }>()
 </script>
@@ -24,7 +23,6 @@ defineProps<{ pack: PackDef }>()
         <IconBook :size="14" />
         Used in {{ pack.usedInStories }} {{ pack.usedInStories === 1 ? 'story' : 'stories' }}
       </p>
-      <button type="button" class="packcard__edit"><IconPencil :size="12" /> Edit</button>
     </div>
   </article>
 </template>

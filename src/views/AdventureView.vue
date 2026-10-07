@@ -630,7 +630,10 @@ onMounted(() => {
           <template v-if="drives.length">
             <h3>What drives you</h3>
             <ul class="sheet__drives">
-              <li v-for="d in drives" :key="d">{{ d }}</li>
+              <li v-for="d in drives" :key="d">
+                <b>{{ d.slice(0, d.indexOf(':') + 1) }}</b
+                >{{ d.slice(d.indexOf(':') + 1) }}
+              </li>
             </ul>
           </template>
           <h3><IconSatchel :size="16" /> Carrying</h3>
@@ -651,7 +654,8 @@ onMounted(() => {
             :places="adv.places.value"
             :tokens="tokens"
             :active-place-id="adv.hereId.value"
-            :focus-id="adv.me.value" />
+            :focus-id="adv.me.value"
+            compact />
         </section>
 
         <section v-if="rumours.length || settled.length" class="rumours ev-card">

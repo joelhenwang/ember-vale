@@ -290,9 +290,13 @@ your next story."
 
         <!-- style packs -->
         <div v-else-if="tab === 'style-packs'" class="ev-rise lib__cards lib__cards--packs">
-          <p class="lib__none">Preview samples — persistence arrives with editor drafts.</p>
+          <p class="lib__soon">
+            Coming soon: style packs can be looked at, not made or changed yet. Every story uses the
+            house style for now.
+          </p>
           <PackLibCard v-for="p in packs" :key="p.id" :pack="p" />
           <CreateLibTile
+            soon
             title="Create a style pack"
             copy="Find the voice
 of your tales." />
@@ -300,9 +304,13 @@ of your tales." />
 
         <!-- templates -->
         <div v-else class="ev-rise lib__cards lib__cards--worlds">
-          <p class="lib__none">Preview samples — persistence arrives with editor drafts.</p>
+          <p class="lib__soon">
+            Coming soon: templates can be looked at, not made or changed yet. Start a story from New
+            Story for now.
+          </p>
           <PackLibCard v-for="p in templates" :key="p.id" :pack="p" />
           <CreateLibTile
+            soon
             title="Create a template"
             copy="A first draft of
 every future story." />
@@ -441,6 +449,15 @@ every future story." />
   font-style: italic;
   color: var(--muted);
   padding: 18px 0 6px;
+}
+.lib__soon {
+  grid-column: 1 / -1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px dashed var(--line-strong);
+  background: #fbf3e2;
+  font-size: 15.5px;
+  color: var(--ink-2);
 }
 .lib__link {
   font: inherit;

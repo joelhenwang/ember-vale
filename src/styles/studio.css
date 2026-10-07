@@ -15,6 +15,7 @@
   align-items: start;
 }
 .studio__left {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   gap: 14px;

@@ -80,7 +80,7 @@ const worldCover = computed(() => (playing.value?.sceneUrl ? null : (story.value
               @click="router.push(storyLocation(story.id, story.pov))">
               {{ playing ? `Continue as ${playing.name}` : 'Continue Story' }}
             </MenuButton>
-            <div class="ev-divider hero__rule" aria-hidden="true"></div>
+            <div v-if="story.epigraph" class="ev-divider hero__rule" aria-hidden="true"></div>
             <p v-if="story.epigraph" class="ev-quote hero__epigraph">“{{ story.epigraph }}”</p>
           </div>
         </div>
