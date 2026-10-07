@@ -16,7 +16,7 @@ from test_stage1_api import ApiClient
 from test_story_travel import MIGRATIONS, SEED_DIR
 
 from worldsim.application.ports.map_reader import Reading
-from worldsim.domain.framing import Frame, PictureFrames, within
+from worldsim.domain.framing import Frame, PictureFrames, as_list, framed_face, within
 from worldsim.domain.presets import CharacterPresetPayload, canonical_payload_hash
 from worldsim.infrastructure.geography.openrouter import parse_face
 from worldsim.infrastructure.images.runner import imported_portrait
@@ -46,6 +46,16 @@ def test_frames_stay_inside_their_picture_and_portrait() -> None:
     on_crop = within(portrait, face)
     assert (on_crop.x, on_crop.y, on_crop.w, on_crop.h) == pytest.approx((0.25, 0.1, 0.5, 0.25))
     assert portrait.pixels(400, 300) == (100, 0, 300, 300)
+
+
+def test_a_found_face_frames_a_painted_portrait() -> None:
+    # A square painting: the 2:3 portrait is its middle; the face square gets room.
+    frames = framed_face(Frame(x=0.4, y=0.15, w=0.2, h=0.25), 1024, 1024)
+    assert as_list(frames.portrait) == pytest.approx([1 / 6, 0.0, 2 / 3, 1.0])
+    assert as_list(frames.face) == pytest.approx([0.34375, 0.118, 0.3125, 0.3125], abs=1e-3)
+    # A face at the edge is pulled inside the portrait.
+    edge = framed_face(Frame(x=0.0, y=0.0, w=0.1, h=0.1), 1024, 1024)
+    assert edge.portrait.contains(edge.face) and edge.face.x == pytest.approx(1 / 6)
 
 
 def test_characters_without_a_picture_keep_their_hash() -> None:

@@ -70,6 +70,33 @@ def within(outer: Frame, inner: Frame) -> Frame:
     )
 
 
+#: Portraits are 2:3 (width:height); faces are square.
+PORTRAIT_RATIO = 2 / 3
+#: Room around a found face (forehead to chin), as on the framer.
+FACE_ROOM = 1.25
+
+
+def fit(ratio: float, width: int, height: int) -> Frame:
+    """The largest centred frame of this ratio (width:height in pixels)."""
+    w, h = 1.0, (width / ratio) / height
+    if h > 1:
+        w, h = (height * ratio) / width, 1.0
+    return Frame(x=(1 - w) / 2, y=(1 - h) / 2, w=w, h=h)
+
+
+def framed_face(box: Frame, width: int, height: int) -> PictureFrames:
+    """A painted portrait's frames from the box around its face: the whole
+    2:3 picture, and a square with a little room around the face inside it."""
+    portrait = fit(PORTRAIT_RATIO, width, height)
+    side = max(box.w * width, box.h * height) * FACE_ROOM
+    side = min(side, portrait.w * width, portrait.h * height)
+    w, h = side / width, side / height
+    cx, cy = box.x + box.w / 2, box.y + box.h / 2
+    x = min(max(cx - w / 2, portrait.x), portrait.x + portrait.w - w)
+    y = min(max(cy - h / 2, portrait.y), portrait.y + portrait.h - h)
+    return PictureFrames(portrait=portrait, face=Frame(x=x, y=y, w=w, h=h))
+
+
 #: Kept so a frame list in JSON reads [x, y, w, h].
 FrameList = list[float]
 

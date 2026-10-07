@@ -120,6 +120,7 @@ def _image_runner(state: AppState) -> ImageJobRunner | None:
         content / "visual-styles",
         pixel=images.krea_pixel,
         poll_seconds=images.poll_seconds,
+        faces=state.map_reader(),
     )
 
 

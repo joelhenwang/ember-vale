@@ -6,7 +6,7 @@ import asyncio
 import json
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 import httpx
@@ -23,6 +23,7 @@ from worldsim.application.ports.images import (
     ImageGenerationError,
     ImageRequest,
 )
+from worldsim.application.ports.map_reader import MapReader, Reading
 from worldsim.domain.assets import MAX_JOB_ATTEMPTS, AssetKind, ImageJob, JobStatus
 from worldsim.infrastructure.db.engine import create_engine
 from worldsim.infrastructure.images.krea import KreaImageGenerator
@@ -152,7 +153,21 @@ async def _drop_portraits(world_id: UUID) -> None:
         await engine.dispose()
 
 
-def _work(world_id: UUID, painter: _Painter, root: Path) -> list[ImageJob]:
+class _Faces:
+    """Stand-in face reader: the same face on every portrait."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    async def face(self, image: bytes, mime: str) -> Reading[tuple[int, int, int, int]]:
+        del image, mime
+        self.calls += 1
+        return Reading(((400, 150, 600, 400),), "face-reader", 0.1, 0.0005)
+
+
+def _work(
+    world_id: UUID, painter: _Painter, root: Path, faces: _Faces | None = None
+) -> list[ImageJob]:
     """Run the runner over one world until it is idle; return every job after."""
 
     async def run() -> list[ImageJob]:
@@ -164,6 +179,7 @@ def _work(world_id: UUID, painter: _Painter, root: Path) -> list[ImageJob]:
                 LocalStorage(root),
                 PACKS,
                 world_id=world_id,
+                faces=cast("MapReader | None", faces),
             )
             while await runner.run_once():
                 pass
@@ -205,20 +221,26 @@ def test_runner_paints_portraits_that_presentation_shows(
     tmp_path: Path,
 ) -> None:
     world_id = _story(client)
-    painter = _Painter()
-    jobs = _work(world_id, painter, tmp_path)
+    painter, faces = _Painter(), _Faces()
+    jobs = _work(world_id, painter, tmp_path, faces)
     assert jobs and all(job.status == JobStatus.READY for job in jobs)
+    assert faces.calls == len(jobs)
     assert len(painter.requests) == len(jobs)
     assert all(r.ratio == "1:1" and r.prompt.startswith("Portrait of ") for r in painter.requests)
     assert all(r.style == "kreanima-lora-r32" and r.pixel is None for r in painter.requests)
     stored = list((tmp_path / "generated" / str(world_id)).iterdir())
     assert len(stored) == len(jobs) and all(f.read_bytes() == PNG for f in stored)
-    cast = client.get(
+    members = client.get(
         "/api/v1/world/presentation",
         params={"world_id": str(world_id)},
         headers={"X-Worldsim-Role": "watcher"},
     ).json()["cast"]
-    assert cast and all(member["portrait_asset_id"] for member in cast)
+    assert members and all(member["portrait_asset_id"] for member in members)
+    # Each painted portrait carries where its face is, for round tokens.
+    for member in members:
+        x, y, w, h = member["face_frame"]
+        assert x <= 0.4 and x + w >= 0.6 and y <= 0.15 and y + h >= 0.4
+        assert member["portrait_frame"] == pytest.approx([1 / 6, 0.0, 2 / 3, 1.0])
 
 
 def test_a_failed_attempt_is_retried_then_succeeds(

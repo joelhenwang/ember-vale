@@ -29,11 +29,14 @@ from worldsim.application.ports.images import (
     ImageGenerator,
     ImageRequest,
 )
+from worldsim.application.ports.map_reader import MapReader, MapReadingError
 from worldsim.application.ports.storage import StoragePort
+from worldsim.application.stories.create import PORTRAIT_FRAMES
 from worldsim.application.unit_of_work import UnitOfWork
-from worldsim.domain.assets import AssetKind, ImageJob, JobStatus
+from worldsim.domain.assets import AssetKind, AssetRecord, ImageJob, JobStatus
 from worldsim.domain.errors import DomainError
-from worldsim.domain.framing import Frame
+from worldsim.domain.framing import Frame, as_list, framed_face
+from worldsim.domain.geography import MAP_SPAN
 from worldsim.domain.settings import ImagePrefs
 from worldsim.infrastructure.assets.fixture import FixtureImageGateway
 from worldsim.infrastructure.images.shrink import crop, shrink
@@ -58,6 +61,44 @@ def imported_portrait(raw: object, character_id: UUID, asset_id: UUID) -> Frame 
         return None
 
 
+async def frame_face(
+    factory: Callable[[], UnitOfWork], faces: MapReader, asset: AssetRecord, data: bytes
+) -> Frame | None:
+    """Note where the face is on a painted portrait, so round tokens show it.
+
+    Returns the face frame; None (tokens keep their usual crop) when the
+    reader fails or finds no face.
+    """
+    if asset.world_id is None or asset.subject_id is None:
+        return None
+    try:
+        reading = await faces.face(data, asset.mime)
+    except MapReadingError as exc:
+        _log.warning("no face found on portrait %s: %s", asset.id, exc)
+        return None
+    if not reading.found:
+        return None
+    left, top, right, bottom = reading.found[0]
+    box = Frame(
+        x=left / MAP_SPAN,
+        y=top / MAP_SPAN,
+        w=(right - left) / MAP_SPAN,
+        h=(bottom - top) / MAP_SPAN,
+    )
+    frames = framed_face(box, asset.width, asset.height)
+    async with factory() as uow:
+        raw = (await uow.worlds.get_config(asset.world_id)).get(PORTRAIT_FRAMES)
+        by_character = dict(cast("dict[str, object]", raw)) if isinstance(raw, dict) else {}
+        by_character[str(asset.subject_id)] = {
+            "asset_id": str(asset.id),
+            "portrait": as_list(frames.portrait),
+            "face": as_list(frames.face),
+        }
+        await uow.worlds.put_config(asset.world_id, PORTRAIT_FRAMES, by_character)
+        await uow.commit()
+    return frames.face
+
+
 class ImageJobRunner:
     def __init__(
         self,
@@ -70,6 +111,7 @@ class ImageJobRunner:
         operator: str = "local",
         poll_seconds: float = 2.0,
         world_id: UUID | None = None,
+        faces: MapReader | None = None,
     ) -> None:
         self._factory = factory
         self._generator = generator
@@ -81,6 +123,8 @@ class ImageJobRunner:
         self._poll_seconds = poll_seconds
         #: Work only this world's jobs (None: every world).
         self._world_id = world_id
+        #: Finds the face on a painted portrait, for round tokens.
+        self._faces = faces
         self._jobs = FixtureImageGateway(factory)
         self._stopping = asyncio.Event()
 
@@ -108,7 +152,11 @@ class ImageJobRunner:
         extension = "webp" if image.mime == "image/webp" else "png"
         ref = f"generated/{job.world_id or 'shared'}/{job.kind.value}-{job.id}.{extension}"
         await self._storage.write(ref, image.data, image.mime)
-        await self._jobs.complete(job.id, self._storage, ref, image.mime, image.width, image.height)
+        asset = await self._jobs.complete(
+            job.id, self._storage, ref, image.mime, image.width, image.height
+        )
+        if job.kind == AssetKind.PORTRAIT and self._faces is not None:
+            await frame_face(self._factory, self._faces, asset, image.data)
 
     async def _already_drawn(self, job: ImageJob) -> bool:
         """Curated or earlier art for this subject wins: bind it, draw nothing.
