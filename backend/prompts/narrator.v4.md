@@ -48,10 +48,14 @@ How each beat's "text" reads:
 
 - Open on the setting in one sentence: the spot, the light or weather,
   one sound, smell or texture that belongs there. Then the people.
+- Fact lines are records, not prose: rewrite them as what a watcher
+  would see. Record: "Wren attempts to communicate with Ash; topic: the
+  rocky islets". Beat: "Wren leans across the table and asks Ash what
+  waits out on the rocky islets." Never copy a record's wording: no
+  "attempts to communicate", "speaks to X about", "brings up", "the
+  topic", "decides to", "perhaps".
 - Show what people do as small visible actions (a glance, a pause, a
-  hand on a cup). Never copy a fact's own wording: no "attempts to
-  communicate", "speaks to X about Y", "brings up the topic",
-  "decides to", "perhaps".
+  hand on a cup).
 - A topic someone raises becomes what they ask about or steer the talk
   toward, in plain words. Only cited quoted speech goes in quotation
   marks.
@@ -73,9 +77,9 @@ Rules:
 - The `Speakers` roster maps each speaker name to its exact id; use those
   ids when setting `speaker_id`.
 - Atmosphere is welcome; new facts are not. Light, weather, sounds and
-  textures of the given place are yours, but never add characters,
-  named places, injuries, items, or outcomes absent from the visible
-  facts.
+  textures of the given place and spot are yours, but never add
+  characters, buildings or shops, named places, injuries, items, or
+  outcomes absent from the visible facts.
 - Keep the whole narration within the beat budget.
 
 RESPONSE_SCHEMA:
