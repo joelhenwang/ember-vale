@@ -1,4 +1,5 @@
-"""Writing help in the library studios: enhance an overview, fill empty fields.
+"""Writing help in the library studios: enhance an overview, fill empty fields,
+hear a character speak.
 
 Both ask a small text model on OpenRouter, so they cost a little: each
 answer says how much. Fill never overwrites what the player wrote; the
@@ -17,6 +18,8 @@ from worldsim.application.library.writing import (
     fill_prompt,
     parse_enhanced,
     parse_filled,
+    parse_sample,
+    sample_prompt,
 )
 from worldsim.application.ports.writer import Writer, WritingError
 from worldsim.domain.errors import DomainError, ErrorCode
@@ -67,6 +70,30 @@ async def fill(body: api.WritingFillRequest, request: Request) -> api.WritingFil
         places=[
             api.WritingFilledPlace(name=p.name, description=p.description, new=p.new, kind=p.kind)
             for p in filled
+        ],
+        model=written.model,
+        seconds=written.seconds,
+        cost_usd=written.cost_usd,
+    )
+
+
+@router.post("/library/writing/sample", response_model=api.WritingSampleView)
+async def sample(body: api.WritingSampleRequest, request: Request) -> api.WritingSampleView:
+    """A few lines in the character's voice; only when the player asks."""
+    fields = [Field(f.key, f.label, f.hint, f.value, f.max_length) for f in body.fields]
+    other = body.other.strip()
+    try:
+        written = await _writer(request).write(
+            sample_prompt(body.name, fields, body.situation, other)
+        )
+        lines = parse_sample(written.text)
+    except (WritingError, WritingAnswerError) as exc:
+        raise DomainError(ErrorCode.PRECONDITION_FAILED, str(exc)) from exc
+    return api.WritingSampleView(
+        other=other,
+        lines=[
+            api.WritingSampleLine(who="them" if line.who == "them" else "other", text=line.text)
+            for line in lines
         ],
         model=written.model,
         seconds=written.seconds,

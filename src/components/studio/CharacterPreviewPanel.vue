@@ -16,7 +16,7 @@ import IconCoat from '../icons/IconCoat.vue'
 import IconSatchel from '../icons/IconSatchel.vue'
 import IconHeart from '../icons/IconHeart.vue'
 
-const props = defineProps<{ draft: CharacterDraft; name: string }>()
+const props = defineProps<{ draft: CharacterDraft; name: string; title?: string }>()
 
 const src = computed(() =>
   props.draft.portraitAssetId ? libraryAssetUrl(props.draft.portraitAssetId) : ''
@@ -60,7 +60,7 @@ const traits = computed(() =>
   <aside class="card ev-card preview cpv" aria-label="Character preview">
     <header class="preview__head">
       <IconEmblem :size="22" class="preview__emblem" />
-      <h2 class="preview__title">Preview</h2>
+      <h2 class="preview__title">{{ title ?? 'Preview' }}</h2>
     </header>
 
     <div class="cpv__hero">
@@ -107,6 +107,10 @@ const traits = computed(() =>
 .cpv {
   position: sticky;
   top: 76px;
+  /* never taller than the window above the save bar: it scrolls inside */
+  max-height: calc(100vh - 186px);
+  overflow-y: auto;
+  scrollbar-width: thin;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -253,6 +257,7 @@ const traits = computed(() =>
 @media (max-width: 1240px) {
   .cpv {
     position: static;
+    max-height: none;
   }
 }
 @media (max-width: 480px) {

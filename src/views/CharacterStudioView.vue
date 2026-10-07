@@ -30,9 +30,12 @@ import { loadCreateRequest, usePresetCreation } from '../composables/usePresetCr
 import { ensureCharDraft, isCharDirty, saveCharDraft, STRANGER_STANCES } from '../game/studio'
 import { packCharacter, unpackCharacter } from '../game/studioFields'
 import {
+  CHARACTER_FIELDS,
   CHARACTER_STEPS,
+  DEEPER_KEYS,
   emptyCount,
   fieldsOnStep,
+  stepSummaries,
   portraitPrompt,
   writingContext,
   writingFields,
@@ -41,7 +44,8 @@ import {
 } from '../game/characterForm'
 import { fillFields } from '../api/worldsim'
 import CharacterPreviewPanel from '../components/studio/CharacterPreviewPanel.vue'
-import PortraitPicker from '../components/studio/PortraitPicker.vue'
+import CharacterSidePanel from '../components/studio/CharacterSidePanel.vue'
+import CollapseBox from '../components/studio/CollapseBox.vue'
 import OverviewCard from '../components/studio/OverviewCard.vue'
 import InlineStepper from '../components/studio/InlineStepper.vue'
 import ChipEditor from '../components/studio/ChipEditor.vue'
@@ -50,6 +54,7 @@ import SaveBar from '../components/ui/SaveBar.vue'
 import MenuButton from '../components/MenuButton.vue'
 import IconSparkle from '../components/icons/IconSparkle.vue'
 import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
+import IconArrowRight from '../components/icons/IconArrowRight.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -504,6 +509,78 @@ function choose(key: WritableKey, option: string): void {
 const SEXES = ['Male', 'Female', 'Other']
 const HEIGHTS = ['Tall', 'Average', 'Short']
 const paintWords = computed(() => portraitPrompt(draft.value))
+
+function setPortrait(assetId: string | null, frames: typeof draft.value.portraitFrames): void {
+  draft.value.portraitAssetId = assetId
+  draft.value.portraitFrames = frames
+}
+
+/* Each step's fields in named groups, beside the panel that helps with them. */
+interface FieldGroup {
+  kind: string
+  title: string
+  sub?: string
+  fields: FieldSpec[]
+}
+const byKey = (keys: WritableKey[]): FieldSpec[] =>
+  keys.flatMap((k) => CHARACTER_FIELDS.filter((f) => f.key === k))
+/** Fields that take the whole row. */
+const WIDE = new Set<WritableKey>(['history', 'exampleLine', 'marks', 'condition'])
+const DEEPER_FIELDS = byKey(DEEPER_KEYS)
+const deeperFilled = computed(() => DEEPER_KEYS.filter((k) => draft.value[k].trim()).length)
+const groups = computed<FieldGroup[]>(() => {
+  const short = (displayNameForm.value || 'they').split(/\s+/)[0]
+  switch (step.value) {
+    case 2:
+      return [
+        { kind: 'basics', title: 'Basics', fields: byKey(['age', 'race', 'sex']) },
+        { kind: 'features', title: 'Features', fields: byKey(['hair', 'eyes', 'height', 'body']) },
+        { kind: 'details', title: 'Distinctive details', fields: byKey(['marks']) }
+      ]
+    case 3:
+      return [
+        {
+          kind: 'origins',
+          title: 'Origins',
+          sub: 'Where they come from.',
+          fields: byKey(['history'])
+        },
+        {
+          kind: 'personality',
+          title: 'Personality',
+          sub: 'How they meet the world.',
+          fields: byKey(['traits', 'habits'])
+        },
+        {
+          kind: 'motives',
+          title: 'Motivations',
+          sub: 'What they want, and what they avoid.',
+          fields: byKey(['want', 'avoid'])
+        }
+      ]
+    case 4:
+      return [
+        {
+          kind: 'voice',
+          title: `How ${short} speaks`,
+          sub: 'Their voice, and a few things they would say.',
+          fields: byKey(['tone', 'whenTheyCare', 'exampleLine'])
+        }
+      ]
+    case 5:
+      return [
+        {
+          kind: 'gear',
+          title: 'Gear & condition',
+          sub: 'What they carry, and how they are as the story begins.',
+          fields: fieldsOnStep(5)
+        }
+      ]
+    default:
+      return []
+  }
+})
+const summaries = computed(() => stepSummaries(draft.value))
 </script>
 
 <template>
@@ -513,8 +590,10 @@ const paintWords = computed(() => portraitPrompt(draft.value))
       <div class="studio__left">
         <div class="studio__head">
           <h1 class="studio__title">
+            <span class="cstudio__eyebrow">Character studio</span>
             {{ isNew ? draft.presetName.trim() || 'New character' : displayName }}
           </h1>
+          <span class="cstudio__mode">{{ isNew ? 'New character' : 'Editing character' }}</span>
           <span v-if="dirty" class="draft-badge"
             ><span class="draft-badge__dot"></span>Unsaved</span
           >
@@ -549,7 +628,7 @@ const paintWords = computed(() => portraitPrompt(draft.value))
 
         <Transition name="cstep" mode="out-in">
           <div :key="step" class="cstudio__step">
-            <p class="cstudio__sub">{{ stepInfo.sub }}</p>
+            <p v-if="step === 1" class="cstudio__sub">{{ stepInfo.sub }}</p>
 
             <!-- 1 · overview -->
             <template v-if="step === 1">
@@ -588,129 +667,129 @@ const paintWords = computed(() => portraitPrompt(draft.value))
                 @fill="fill()" />
             </template>
 
-            <!-- 2 · appearance -->
-            <section v-else-if="step === 2" class="card ev-card">
-              <div class="cstudio__grid">
-                <div v-for="f in fieldsOnStep(2)" :key="f.key" :class="`cf cf--${f.key}`">
-                  <label class="ev-field-label" :for="`c-${f.key}`">{{ f.label }}</label>
+            <!-- 2–5 · the fields in named groups; 3 folds its deeper ones away -->
+            <section v-else class="card ev-card">
+              <div
+                v-for="group in groups"
+                :key="group.title"
+                class="grp"
+                :class="`grp--${group.kind}`">
+                <header class="grp__head">
+                  <h2 class="grp__title">{{ group.title }}</h2>
+                  <p v-if="group.sub" class="grp__sub">{{ group.sub }}</p>
+                </header>
+                <div class="cstudio__grid">
                   <div
-                    v-if="f.key === 'sex' || f.key === 'height'"
-                    class="seg"
-                    :class="{ 'seg--helped': helped.has(f.key) }"
-                    role="group"
-                    :aria-label="f.label">
-                    <button
-                      v-for="opt in f.key === 'sex' ? SEXES : HEIGHTS"
-                      :key="opt"
-                      type="button"
-                      class="seg__opt"
-                      :class="{
-                        'seg__opt--on': draft[f.key].toLowerCase() === opt.toLowerCase()
-                      }"
-                      :aria-pressed="draft[f.key].toLowerCase() === opt.toLowerCase()"
-                      @click="choose(f.key, opt)">
-                      {{ opt }}
-                    </button>
+                    v-for="f in group.fields"
+                    :key="f.key"
+                    class="cf"
+                    :class="[`cf--${f.key}`, { 'cf--wide': WIDE.has(f.key) }]">
+                    <label class="ev-field-label" :for="`c-${f.key}`">{{ f.label }}</label>
+                    <div
+                      v-if="f.key === 'sex' || f.key === 'height'"
+                      class="seg"
+                      :class="{ 'seg--helped': helped.has(f.key) }"
+                      role="group"
+                      :aria-label="f.label">
+                      <button
+                        v-for="opt in f.key === 'sex' ? SEXES : HEIGHTS"
+                        :key="opt"
+                        type="button"
+                        class="seg__opt"
+                        :class="{
+                          'seg__opt--on': draft[f.key].toLowerCase() === opt.toLowerCase()
+                        }"
+                        :aria-pressed="draft[f.key].toLowerCase() === opt.toLowerCase()"
+                        @click="choose(f.key, opt)">
+                        {{ opt }}
+                      </button>
+                    </div>
+                    <input
+                      v-else-if="f.max <= 150"
+                      :id="`c-${f.key}`"
+                      v-model="draft[f.key]"
+                      class="ev-input"
+                      :class="{ 'is-helped': helped.has(f.key) }"
+                      :maxlength="f.max"
+                      :placeholder="f.hint"
+                      @input="edited(f.key)" />
+                    <textarea
+                      v-else
+                      :id="`c-${f.key}`"
+                      v-model="draft[f.key]"
+                      class="ev-input"
+                      :class="{ 'is-helped': helped.has(f.key) }"
+                      :maxlength="f.max"
+                      :placeholder="f.hint"
+                      :rows="f.key === 'exampleLine' ? 4 : f.max > 500 ? 3 : 2"
+                      @input="edited(f.key)" />
                   </div>
-                  <textarea
-                    v-else-if="f.max > 150"
-                    :id="`c-${f.key}`"
-                    v-model="draft[f.key]"
-                    class="ev-input"
-                    :class="{ 'is-helped': helped.has(f.key) }"
-                    :maxlength="f.max"
-                    :placeholder="f.hint"
-                    rows="2"
-                    @input="edited(f.key)" />
-                  <input
-                    v-else
-                    :id="`c-${f.key}`"
-                    v-model="draft[f.key]"
-                    class="ev-input"
-                    :class="{ 'is-helped': helped.has(f.key) }"
-                    :maxlength="f.max"
-                    :placeholder="f.hint"
-                    @input="edited(f.key)" />
+                  <template v-if="group.kind === 'voice'">
+                    <div class="cf">
+                      <span class="ev-field-label">Speaking style</span>
+                      <ChipEditor v-model="draft.styleTags" />
+                    </div>
+                    <div class="cf">
+                      <label class="ev-field-label" for="c-strangers">With strangers</label>
+                      <StudioSelect
+                        id="c-strangers"
+                        v-model="draft.withStrangers"
+                        :options="STRANGER_STANCES" />
+                    </div>
+                  </template>
                 </div>
-                <div v-if="draft.appearanceExtra" class="cf cf--wide">
-                  <label class="ev-field-label" for="c-appx">Earlier description</label>
+              </div>
+
+              <CollapseBox
+                v-if="step === 3"
+                class="grp__more"
+                :title="`More about them · ${deeperFilled} of ${DEEPER_FIELDS.length} written`">
+                <div class="cstudio__grid">
+                  <div v-for="f in DEEPER_FIELDS" :key="f.key" class="cf">
+                    <label class="ev-field-label" :for="`c-${f.key}`">{{ f.label }}</label>
+                    <textarea
+                      :id="`c-${f.key}`"
+                      v-model="draft[f.key]"
+                      class="ev-input"
+                      :class="{ 'is-helped': helped.has(f.key) }"
+                      :maxlength="f.max"
+                      :placeholder="f.hint"
+                      rows="2"
+                      @input="edited(f.key)" />
+                  </div>
+                </div>
+              </CollapseBox>
+
+              <div v-if="step === 2 && draft.appearanceExtra" class="cf">
+                <label class="ev-field-label" for="c-appx">Earlier description</label>
+                <textarea
+                  id="c-appx"
+                  v-model="draft.appearanceExtra"
+                  class="ev-input"
+                  rows="2"
+                  maxlength="1500" />
+              </div>
+              <template v-if="step === 3 && (draft.backgroundExtra || draft.personalityExtra)">
+                <div v-if="draft.backgroundExtra" class="cf">
+                  <label class="ev-field-label" for="c-bgx">Earlier background notes</label>
                   <textarea
-                    id="c-appx"
-                    v-model="draft.appearanceExtra"
+                    id="c-bgx"
+                    v-model="draft.backgroundExtra"
+                    class="ev-input"
+                    rows="2"
+                    maxlength="3000" />
+                </div>
+                <div v-if="draft.personalityExtra" class="cf">
+                  <label class="ev-field-label" for="c-psx">Earlier personality notes</label>
+                  <textarea
+                    id="c-psx"
+                    v-model="draft.personalityExtra"
                     class="ev-input"
                     rows="2"
                     maxlength="1500" />
                 </div>
-              </div>
-              <PortraitPicker
-                :name="displayNameForm || 'The character'"
-                :asset-id="draft.portraitAssetId"
-                :frames="draft.portraitFrames"
-                :paint-prompt="paintWords"
-                @change="
-                  (assetId, frames) => {
-                    draft.portraitAssetId = assetId
-                    draft.portraitFrames = frames
-                  }
-                " />
-            </section>
+              </template>
 
-            <!-- 3 · background & personality, 4 · voice, 5 · review -->
-            <section v-else class="card ev-card">
-              <header v-if="step === 5" class="card__head">
-                <h2 class="card__title">What they have, and how they are</h2>
-              </header>
-              <div class="cstudio__grid">
-                <div
-                  v-for="f in fieldsOnStep(step)"
-                  :key="f.key"
-                  class="cf"
-                  :class="{ 'cf--wide': f.max > 500 }">
-                  <label class="ev-field-label" :for="`c-${f.key}`">{{ f.label }}</label>
-                  <textarea
-                    :id="`c-${f.key}`"
-                    v-model="draft[f.key]"
-                    class="ev-input"
-                    :class="{ 'is-helped': helped.has(f.key) }"
-                    :maxlength="f.max"
-                    :placeholder="f.hint"
-                    :rows="f.max > 500 ? 4 : 2"
-                    @input="edited(f.key)" />
-                </div>
-                <template v-if="step === 4">
-                  <div class="cf">
-                    <span class="ev-field-label">Speaking style</span>
-                    <ChipEditor v-model="draft.styleTags" />
-                  </div>
-                  <div class="cf">
-                    <label class="ev-field-label" for="c-strangers">With strangers</label>
-                    <StudioSelect
-                      id="c-strangers"
-                      v-model="draft.withStrangers"
-                      :options="STRANGER_STANCES" />
-                  </div>
-                </template>
-                <template v-if="step === 3 && (draft.backgroundExtra || draft.personalityExtra)">
-                  <div v-if="draft.backgroundExtra" class="cf cf--wide">
-                    <label class="ev-field-label" for="c-bgx">Earlier background notes</label>
-                    <textarea
-                      id="c-bgx"
-                      v-model="draft.backgroundExtra"
-                      class="ev-input"
-                      rows="2"
-                      maxlength="3000" />
-                  </div>
-                  <div v-if="draft.personalityExtra" class="cf cf--wide">
-                    <label class="ev-field-label" for="c-psx">Earlier personality notes</label>
-                    <textarea
-                      id="c-psx"
-                      v-model="draft.personalityExtra"
-                      class="ev-input"
-                      rows="2"
-                      maxlength="1500" />
-                  </div>
-                </template>
-              </div>
               <div class="cstudio__fill">
                 <button
                   type="button"
@@ -731,11 +810,30 @@ const paintWords = computed(() => portraitPrompt(draft.value))
                 <span v-if="fillNote" class="cstudio__fillnote" role="status">{{ fillNote }}</span>
               </div>
             </section>
+
+            <!-- 5 · each step at a glance, one click from changing it -->
+            <section v-if="step === 5" class="card ev-card">
+              <header class="grp__head">
+                <h2 class="grp__title">Review your character</h2>
+                <p class="grp__sub">Each step at a glance; open one to change it.</p>
+              </header>
+              <ul class="recap">
+                <li v-for="line in summaries" :key="line.step" class="recap__row">
+                  <span class="recap__step">{{ CHARACTER_STEPS[line.step - 1]!.title }}</span>
+                  <span class="recap__text" :class="{ 'recap__text--empty': !line.text }">
+                    {{ line.text || 'Nothing written yet' }}
+                  </span>
+                  <button type="button" class="recap__edit" @click="goStep(line.step)">
+                    Edit <IconArrowRight :size="12" />
+                  </button>
+                </li>
+              </ul>
+            </section>
           </div>
         </Transition>
 
         <!-- the last step makes it real: create, or publish the changes -->
-        <section v-if="step === lastStep" class="card ev-card cstudio__finish">
+        <section v-if="step === lastStep" class="cstudio__finish">
           <template v-if="isNew">
             <p v-if="nameMissing" class="studio__state" role="status">
               Give them a name on the Overview step to create them.
@@ -807,7 +905,19 @@ const paintWords = computed(() => portraitPrompt(draft.value))
         </section>
       </div>
 
-      <CharacterPreviewPanel :draft="draft" :name="displayNameForm" />
+      <CharacterPreviewPanel
+        v-if="step === lastStep"
+        title="Character sheet"
+        :draft="draft"
+        :name="displayNameForm" />
+      <CharacterSidePanel
+        v-else
+        :step="step"
+        :draft="draft"
+        :name="displayNameForm"
+        :paint-words="paintWords"
+        @go="goStep"
+        @portrait="setPortrait" />
     </div>
 
     <!-- ————————————————— footer ————————————————— -->
@@ -850,6 +960,22 @@ const paintWords = computed(() => portraitPrompt(draft.value))
 </template>
 
 <style scoped>
+.cstudio__eyebrow {
+  display: block;
+  margin-bottom: 4px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+.cstudio__mode {
+  align-self: flex-end;
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+  font-family: var(--font-ui);
+  font-size: 15.5px;
+  color: var(--ink-3);
+}
 .cstudio__sub {
   margin: 2px 0 12px;
   font-size: 17px;
@@ -875,10 +1001,87 @@ const paintWords = computed(() => portraitPrompt(draft.value))
 .cf {
   min-width: 0;
 }
-.cf--wide,
-.cf--body,
-.cf--marks {
+.cf--wide {
   grid-column: 1 / -1;
+}
+/* named groups of fields, divided by a hairline */
+.grp + .grp {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line-soft);
+}
+.grp__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin-bottom: 12px;
+}
+.grp__title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.grp__sub {
+  font-family: var(--font-ui);
+  font-size: 14.5px;
+  color: var(--ink-3);
+}
+.grp--basics .cstudio__grid {
+  grid-template-columns: minmax(80px, 0.5fr) minmax(0, 1fr) minmax(0, 1.4fr);
+}
+.grp__more {
+  margin-top: 20px;
+}
+.grp__more .cstudio__grid {
+  padding: 4px 2px 6px;
+}
+.recap {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.recap__row {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: #f6eedb;
+}
+.recap__step {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--ink);
+}
+.recap__text {
+  min-width: 0;
+  font-size: 15.5px;
+  line-height: 1.4;
+  color: var(--ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.recap__text--empty {
+  font-style: italic;
+  color: var(--muted);
+}
+.recap__edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--teal-ink);
+}
+.recap__edit:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .is-helped {
   border-color: #e0b07a !important;
@@ -958,14 +1161,20 @@ const paintWords = computed(() => portraitPrompt(draft.value))
   font-size: 15px;
   color: var(--ink-3);
 }
+/* the last step's note: a quiet line under the review, not a card of its own */
 .cstudio__finish {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #efe6d1;
+  border: 1px solid var(--line-soft);
 }
 .cstudio__finishnote {
-  font-size: 16px;
-  color: var(--ink-2);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--ink-3);
 }
 .cstudio__next {
   width: auto;
@@ -987,8 +1196,17 @@ const paintWords = computed(() => portraitPrompt(draft.value))
   opacity: 0;
 }
 @media (max-width: 760px) {
-  .cstudio__grid {
+  .cstudio__grid,
+  .grp--basics .cstudio__grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .recap__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .recap__text {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    white-space: normal;
   }
   .cstudio__next {
     min-width: 0;

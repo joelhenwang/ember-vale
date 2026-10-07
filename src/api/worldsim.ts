@@ -71,6 +71,8 @@ import type {
   WritingEnhanceView,
   WritingFillRequest,
   WritingFillView,
+  WritingSampleRequest,
+  WritingSampleView,
   TerrainView
 } from '../../content/clients/worldsim'
 import { apiFetch, type Role } from './http'
@@ -812,6 +814,19 @@ export function enhanceOverview(
     ...opts,
     method: 'POST',
     body: { kind, overview, name }
+  })
+}
+
+/** A few lines in a character's voice, in a situation the player picked. */
+export function sampleVoice(
+  body: WritingSampleRequest,
+  opts: CallOptions = {}
+): Promise<WritingSampleView> {
+  return apiFetch<WritingSampleView>('/library/writing/sample', {
+    timeoutMs: 120000,
+    ...opts,
+    method: 'POST',
+    body
   })
 }
 

@@ -191,3 +191,43 @@ def test_a_character_is_painted_from_how_they_look(raw: TestClient) -> None:
     finally:
         for found in Path(ASSETS / "generated" / "portraits").glob(f"{asset_id}.*"):
             found.unlink()
+
+
+def test_a_voice_sample_is_a_short_exchange_in_their_voice(raw: TestClient) -> None:
+    from worldsim.application.library.writing import parse_sample, sample_prompt
+
+    tone = Field("tone", "Tone", "", "dry, practical", 300)
+    prompt = sample_prompt("Mara", [tone, HAIR], "Hearing a distant bell", "A stranger")
+    assert "situation: Hearing a distant bell." in prompt and "- Tone: dry, practical" in prompt
+    assert "Hair" not in prompt  # empty fields are not context
+    with pytest.raises(WritingAnswerError):
+        parse_sample('{"lines": [{"who": "other", "text": "Hello?"}]}')
+
+    client = ApiClient(raw)
+    state = raw.app.state.app_state  # pyright: ignore[reportAttributeAccessIssue, reportFunctionMemberAccess]
+    state._writer = _Writer(
+        json.dumps(
+            {
+                "other": "A stranger",
+                "lines": [
+                    {"who": "other", "text": "Did you hear that?"},
+                    {"who": "them", "text": "“That wasn't the wind.”"},
+                    {"who": "who knows", "text": "  "},
+                ],
+            }
+        )
+    )
+    said = client.post(
+        "/api/v1/library/writing/sample",
+        json={
+            "name": "Mara",
+            "fields": [{"key": "tone", "label": "Tone", "value": "dry, practical"}],
+            "situation": "Hearing a distant bell",
+        },
+    )
+    assert said.status_code == 200, said.text
+    assert said.json()["lines"] == [
+        {"who": "other", "text": "Did you hear that?"},
+        {"who": "them", "text": "That wasn't the wind."},
+    ]
+    assert said.json()["other"] == "A stranger"

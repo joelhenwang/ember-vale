@@ -232,3 +232,59 @@ def parse_filled(
             added += 1
             filled.append(FilledPlace(name, description, new=True, kind=kind))
     return values, filled
+
+
+#: Lines in a voice sample: someone speaks, the character answers.
+SAMPLE_LINES = (3, 6)
+
+SAMPLE_PROMPT = """You are helping someone hear how a character they are writing speaks.
+Write a short exchange, {least} to {most} lines, in this situation: {situation}
+
+Someone else ({other}) speaks first; {name} answers in their own voice. Keep {name} \
+exactly as described below: their tone, how they treat strangers, the kind of things \
+they say. Do not reuse their example lines word for word. Spoken words only: no \
+narration, no stage directions, no quotation marks.
+
+{name}:
+{about}
+
+Answer with JSON only:
+{{"other": "{other}", "lines": [{{"who": "other", "text": "..."}}, \
+{{"who": "them", "text": "..."}}]}}"""
+
+
+@dataclass(frozen=True)
+class SampleLine:
+    #: "them" (the character) or "other".
+    who: str
+    text: str
+
+
+def sample_prompt(name: str, fields: list[Field], situation: str, other: str) -> str:
+    about = "\n".join(f"- {f.label}: {f.value.strip()}" for f in fields if f.value.strip())
+    return SAMPLE_PROMPT.format(
+        least=SAMPLE_LINES[0],
+        most=SAMPLE_LINES[1],
+        situation=situation.strip().rstrip(".") + ".",
+        other=other,
+        name=name.strip() or "The character",
+        about=about or "- (only a name so far)",
+    )
+
+
+def parse_sample(text: str) -> list[SampleLine]:
+    """The exchange, at most the longest asked for; quotes trimmed."""
+    raw = _json(text).get("lines")
+    listed = cast("list[object]", raw) if isinstance(raw, list) else []
+    lines: list[SampleLine] = []
+    for item in listed:
+        if not isinstance(item, dict):
+            continue
+        entry = cast("dict[str, object]", item)
+        who = "them" if _clean(entry.get("who"), 10).lower() == "them" else "other"
+        said = _clean(entry.get("text"), 400).strip("\"“”' ")
+        if said:
+            lines.append(SampleLine(who, said))
+    if not any(line.who == "them" for line in lines):
+        raise WritingAnswerError("the writer's sample has no line for the character")
+    return lines[: SAMPLE_LINES[1]]

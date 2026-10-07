@@ -8082,6 +8082,104 @@
         ],
         "title": "WritingPlace",
         "type": "object"
+      },
+      "WritingSampleLine": {
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "who": {
+            "enum": [
+              "them",
+              "other"
+            ],
+            "title": "Who",
+            "type": "string"
+          }
+        },
+        "required": [
+          "who",
+          "text"
+        ],
+        "title": "WritingSampleLine",
+        "type": "object"
+      },
+      "WritingSampleRequest": {
+        "additionalProperties": false,
+        "description": "Hear a character speak: a short exchange in a situation the player picks.",
+        "properties": {
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/WritingField"
+            },
+            "maxItems": 20,
+            "title": "Fields",
+            "type": "array"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 128,
+            "title": "Name",
+            "type": "string"
+          },
+          "other": {
+            "default": "A stranger",
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Other",
+            "type": "string"
+          },
+          "situation": {
+            "maxLength": 300,
+            "minLength": 3,
+            "title": "Situation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "situation"
+        ],
+        "title": "WritingSampleRequest",
+        "type": "object"
+      },
+      "WritingSampleView": {
+        "additionalProperties": false,
+        "properties": {
+          "cost_usd": {
+            "title": "Cost Usd",
+            "type": "number"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/WritingSampleLine"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "other": {
+            "title": "Other",
+            "type": "string"
+          },
+          "seconds": {
+            "title": "Seconds",
+            "type": "number"
+          }
+        },
+        "required": [
+          "other",
+          "lines",
+          "model",
+          "seconds",
+          "cost_usd"
+        ],
+        "title": "WritingSampleView",
+        "type": "object"
       }
     }
   },
@@ -10300,6 +10398,48 @@
           }
         },
         "summary": "Fill",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/v1/library/writing/sample": {
+      "post": {
+        "description": "A few lines in the character's voice; only when the player asks.",
+        "operationId": "sample_api_v1_library_writing_sample_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WritingSampleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WritingSampleView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sample",
         "tags": [
           "library"
         ]

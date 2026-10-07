@@ -1911,6 +1911,37 @@ class WritingEnhanceView(BaseModel):
     cost_usd: float
 
 
+class WritingSampleRequest(BaseModel):
+    """Hear a character speak: a short exchange in a situation the player picks."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    name: str = Field(default="", max_length=128)
+    #: What the studio knows of their voice (tone, example lines, manner).
+    fields: list[WritingField] = Field(default_factory=list, max_length=20)
+    situation: str = Field(min_length=3, max_length=300)
+    #: Who speaks to them ("A stranger", "An old friend").
+    other: str = Field(default="A stranger", min_length=1, max_length=60)
+
+
+class WritingSampleLine(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    #: "them" (the character) or "other".
+    who: Literal["them", "other"]
+    text: str
+
+
+class WritingSampleView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    other: str
+    lines: list[WritingSampleLine]
+    model: str
+    seconds: float
+    cost_usd: float
+
+
 class WritingFillRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 

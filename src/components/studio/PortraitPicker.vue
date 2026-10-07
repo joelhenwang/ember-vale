@@ -28,6 +28,8 @@ const props = defineProps<{
   frames: PortraitFrames | null
   /** Words to paint them from (how they look); empty: nothing to paint yet. */
   paintPrompt: string
+  /** "panel": a tall picture with its uses below (the studio's side panel). */
+  variant?: 'inline' | 'panel'
 }>()
 const emit = defineEmits<{ change: [assetId: string | null, frames: PortraitFrames | null] }>()
 
@@ -176,14 +178,14 @@ const initial = computed(() =>
 </script>
 
 <template>
-  <div class="pick">
+  <div class="pick" :class="{ 'pick--panel': variant === 'panel' }">
     <div class="pick__shots" :class="{ 'pick__shots--busy': painting }">
       <span class="pick__card">
         <FramedImage v-if="assetId && frames" :src="src" :frame="frames.portrait" :alt="name" />
         <span v-else class="pick__empty"><IconImage :size="30" /></span>
         <span v-if="painting" class="pick__painting" aria-hidden="true"></span>
       </span>
-      <span v-if="assetId && frames" class="pick__token">
+      <span v-if="assetId && frames && variant !== 'panel'" class="pick__token">
         <FramedImage :src="src" :frame="frames.face" />
       </span>
     </div>
@@ -230,6 +232,17 @@ const initial = computed(() =>
       </div>
       <p v-if="note && !error" class="pick__note" role="status">{{ note }}</p>
       <p v-if="error" class="pick__error" role="alert">{{ error }}</p>
+      <div v-if="variant === 'panel' && assetId && frames" class="pick__uses">
+        <p>Where it shows</p>
+        <div class="pick__use">
+          <span class="pick__use-card"><FramedImage :src="src" :frame="frames.portrait" /></span>
+          <span>Cards and sheets</span>
+        </div>
+        <div class="pick__use">
+          <span class="pick__use-token"><FramedImage :src="src" :frame="frames.face" /></span>
+          <span>Map and story</span>
+        </div>
+      </div>
     </div>
     <PictureFramer
       v-if="framing"
@@ -354,5 +367,72 @@ const initial = computed(() =>
 .pick__error {
   color: #b3542e;
   font-size: 14.5px;
+}
+
+/* the side panel: the picture large, its actions and uses under it */
+.pick--panel {
+  flex-direction: column;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  gap: 14px;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.pick--panel .pick__shots {
+  justify-content: center;
+}
+.pick--panel .pick__card {
+  width: auto;
+  height: clamp(240px, 42vh, 460px);
+  aspect-ratio: 2 / 3;
+}
+.pick--panel .pick__side {
+  flex: none;
+  align-items: center;
+  text-align: center;
+}
+.pick--panel .pick__actions,
+.pick--panel .pick__more {
+  justify-content: center;
+}
+.pick__uses {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 22px;
+  width: 100%;
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--ink-3);
+}
+.pick__uses > p {
+  flex-basis: 100%;
+}
+.pick__use {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pick__use-card,
+.pick__use-token {
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 3px rgba(46, 39, 24, 0.25);
+}
+.pick__use-card {
+  width: 44px;
+  height: 66px;
+  border-radius: 6px;
+}
+.pick__use-token {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
 }
 </style>

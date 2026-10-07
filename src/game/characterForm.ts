@@ -61,14 +61,14 @@ export const CHARACTER_FIELDS: FieldSpec[] = [
   {
     key: 'body',
     step: 2,
-    label: 'Body',
+    label: 'Build',
     hint: 'e.g. wide muscular chest, long arms and legs',
     max: 300
   },
   {
     key: 'marks',
     step: 2,
-    label: 'Extra',
+    label: 'Marks and keepsakes',
     hint: 'e.g. a scar over the right eye, a tattoo, anything that marks them out',
     max: 300
   },
@@ -245,4 +245,103 @@ export function identityLine(draft: CharacterDraft): string {
   ]
     .filter(Boolean)
     .join(' · ')
+}
+
+/* Step panels ---------------------------------------------------------------
+ * What the studio's side panel shows on each step: read from the draft as it
+ * stands, never invented. An empty field shows as not written yet.
+ */
+
+export interface PanelRow {
+  key: WritableKey
+  label: string
+  text: string
+}
+
+/** The first sentence, at most `max` characters (cut at a word, with "…"). */
+export function gist(text: string, max = 160): string {
+  const clean = text.trim().replace(/\s+/g, ' ')
+  const first = clean.match(/^.+?[.!?…](?=\s|$)/)?.[0] ?? clean
+  if (first.length <= max) return first
+  const cut = first.slice(0, max - 1)
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), max / 2)).replace(/[,;:\s]+$/, '')}…`
+}
+
+/** Overview step: where they belong, what draws them on, what they keep close. */
+export function conceptRows(draft: CharacterDraft): PanelRow[] {
+  const kept = draft.carries.split(/[,;]| and /)[0]?.trim() ?? ''
+  return [
+    { key: 'history', label: 'Where they come from', text: gist(draft.history) },
+    { key: 'want', label: 'What draws them on', text: gist(draft.want) },
+    { key: 'carries', label: 'What they keep close', text: gist(kept || draft.marks, 120) }
+  ]
+}
+
+/** The heart of them, beside the background step. */
+export function compassRows(draft: CharacterDraft): PanelRow[] {
+  return [
+    { key: 'want', label: 'Wants', text: draft.want.trim() },
+    { key: 'secretFear', label: 'Fears', text: draft.secretFear.trim() },
+    { key: 'boundaries', label: 'Will not cross', text: draft.boundaries.trim() },
+    { key: 'contradiction', label: 'Inner tension', text: draft.contradiction.trim() },
+    { key: 'pressure', label: 'Under pressure', text: draft.pressure.trim() }
+  ]
+}
+
+/** Background fields kept folded under "More about them" (the compass shows them). */
+export const DEEPER_KEYS: WritableKey[] = ['pressure', 'contradiction', 'boundaries', 'secretFear']
+
+/** Their example lines, one per line, without quote marks. */
+export function sayings(draft: CharacterDraft): string[] {
+  return draft.exampleLine
+    .split('\n')
+    .map((l) => l.trim().replace(/^["“]|["”]$/g, ''))
+    .filter(Boolean)
+}
+
+/** Situations to hear them in (the player may write their own). */
+export const VOICE_SITUATIONS = [
+  'A stranger asks for directions',
+  'Hearing a distant, unexplained sound',
+  'Someone they love is in danger',
+  'Being accused of something they did not do',
+  'Bargaining over a price',
+  'Saying goodbye'
+] as const
+
+/** What the sample writer needs of their voice. */
+export function voiceFields(draft: CharacterDraft) {
+  const keys: WritableKey[] = ['traits', 'tone', 'whenTheyCare', 'exampleLine']
+  return [
+    ...CHARACTER_FIELDS.filter((f) => keys.includes(f.key) && draft[f.key].trim()).map((f) => ({
+      key: f.key,
+      label: f.label,
+      hint: '',
+      value: draft[f.key],
+      max_length: f.max
+    })),
+    ...writingContext(draft).filter((e) => e.key !== 'pronouns')
+  ]
+}
+
+/** One line per step for the review: what each step says, at a glance. */
+export function stepSummaries(draft: CharacterDraft): { step: number; text: string }[] {
+  const join = (...parts: string[]) =>
+    parts
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .join(' · ')
+  return [
+    { step: 1, text: gist(draft.overview, 110) },
+    {
+      step: 2,
+      text: join(
+        identityLine(draft),
+        draft.hair && gist(draft.hair, 40),
+        draft.eyes && `${gist(draft.eyes, 30)}${/eye/i.test(draft.eyes) ? '' : ' eyes'}`
+      )
+    },
+    { step: 3, text: join(gist(draft.traits, 60), draft.want && gist(draft.want, 60)) },
+    { step: 4, text: join(gist(draft.tone, 60), draft.withStrangers) }
+  ]
 }

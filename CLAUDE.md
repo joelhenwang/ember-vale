@@ -129,9 +129,9 @@ of these features.
 
 ### 3.10 Library and studios
 - Presets with immutable revisions, editor drafts, publish receipts, archive/duplicate (E3, Sept). Built-ins are the world Ember Vale (Hearth, Market), Wren, Ash, the Anime Saga style and the "Ember Vale opening" template (`application/library/builtins.py`).
-- **Character studio** (be5d3ac) works in steps: Overview → Appearance (paint or import a picture) → Background & personality → Voice → Review. **World studio** (a4065f7): Overview → The world → Places → Review, with World/Place/Summary preview tabs.
-- **Writing help**: `POST /library/writing/enhance` and `/fill` (`application/library/writing.py`, `infrastructure/writing/openrouter.py`, `WORLDSIM_WRITING__MODEL` default `openai/gpt-6-luna`). Fill writes only the empty fields, at ~$0.0003 per fill.
-- Packed fields: studio fields pack into the existing payload text (`characterForm.ts`/`worldForm.ts`). `appearancePlain` turns them into prose for the opening.
+- **Character studio** (be5d3ac) works in steps: Overview → Appearance → Background & personality → Voice → Review. The right panel changes per step (`CharacterSidePanel.vue`, helpers in `characterForm.ts`): concept, portrait studio (PortraitPicker `variant="panel"`), compass, voice (lines + "Hear a sample"); Review shows the full sheet (`CharacterPreviewPanel.vue`) and one line per step with Edit. Evidence `character-studio-panels-001`. **World studio** (a4065f7): Overview → The world → Places → Review, with World/Place/Summary preview tabs.
+- **Writing help**: `POST /library/writing/enhance` and `/fill` (`application/library/writing.py`, `infrastructure/writing/openrouter.py`, `WORLDSIM_WRITING__MODEL` default `openai/gpt-6-luna`). Fill writes only the empty fields, at ~$0.0003 per fill. `POST /library/writing/sample`: a 3–6 line exchange in the character's voice for a chosen situation, only on request (~$0.0001, ~2 s).
+- Packed fields: studio fields pack into the existing payload text (`characterForm.ts`/`worldForm.ts`). `appearancePlain` (frontend) and `plain_looks` (backend, `application/pictures.py`, for painters) turn them into prose.
 - Look and feel: Libron reading font, Alegreya Sans UI font, Cormorant for display, ember accent, KeepAlive pages, carousel slides (d3a47e0).
 
 ### 3.11 Stories, settings, providers

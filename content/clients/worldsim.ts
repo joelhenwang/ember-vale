@@ -903,6 +903,26 @@ export interface WritingFillView {
   values: Record<string, string>;
 }
 
+export interface WritingSampleRequest {
+  fields?: WritingField[];
+  name?: string;
+  other?: string;
+  situation: string;
+}
+
+export interface WritingSampleLine {
+  text: string;
+  who: string;
+}
+
+export interface WritingSampleView {
+  cost_usd: unknown;
+  lines: WritingSampleLine[];
+  model: string;
+  other: string;
+  seconds: unknown;
+}
+
 export interface PresentationResponse {
   absolute_index: number;
   activities?: ActivityView[];

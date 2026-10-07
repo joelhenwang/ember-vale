@@ -123,8 +123,15 @@ const emit = defineEmits<{ go: [index: number] }>()
     gap: 7px;
   }
 }
-/* A column too narrow for every name: only the current step is named. */
-@container (max-width: 860px) {
+/* A narrower column keeps every name with shorter links between them… */
+@container (max-width: 900px) {
+  .istep__link {
+    width: 22px;
+    margin: 0 7px;
+  }
+}
+/* …and one too narrow for every name names only the current step. */
+@container (max-width: 740px) {
   .istep__step:not(.istep__step--active) .istep__label {
     position: absolute;
     width: 1px;
