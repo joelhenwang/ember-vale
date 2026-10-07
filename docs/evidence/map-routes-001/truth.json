@@ -1,0 +1,472 @@
+{
+  "_about": "Ground truth for map-routes-001: the places of map-detect-001 (same maps, ../map-detect-001/maps) and the direct connections between them. Direct connections a traveller can use, hand-traced from zoomed crops. 'required' entries are clearly drawn; an entry with ' / ' accepts any one of its pairs (e.g. the chapel path meets the Hearth and the square). 'optional' entries are faint or ambiguous: predicting them neither helps nor hurts. Any other predicted pair counts as wrong, including shortcuts that pass through another listed place.",
+  "maps_dir": "../map-detect-001/maps",
+  "maps": {
+    "map-1": {
+      "labelled": true,
+      "style": "parchment kingdom",
+      "places": [
+        {
+          "name": "Aldermoor",
+          "kind": "city",
+          "x": 51,
+          "y": 31
+        },
+        {
+          "name": "Saltreach",
+          "kind": "port",
+          "x": 16,
+          "y": 33
+        },
+        {
+          "name": "Brindle",
+          "kind": "village",
+          "x": 68,
+          "y": 58
+        },
+        {
+          "name": "Oakhollow",
+          "kind": "village",
+          "x": 32,
+          "y": 57
+        },
+        {
+          "name": "Warden's Gate",
+          "kind": "checkpoint",
+          "x": 62,
+          "y": 46
+        },
+        {
+          "name": "Duskfall",
+          "kind": "cave",
+          "x": 90,
+          "y": 52
+        },
+        {
+          "name": "Sunken Keep",
+          "kind": "ruin",
+          "x": 59,
+          "y": 76
+        },
+        {
+          "name": "Thornwood",
+          "kind": "forest",
+          "x": 45,
+          "y": 13,
+          "area": true
+        },
+        {
+          "name": "Greyspine",
+          "kind": "mountains",
+          "x": 88,
+          "y": 35,
+          "area": true
+        },
+        {
+          "name": "Ashwater",
+          "kind": "river",
+          "x": 67,
+          "y": 33,
+          "area": true
+        }
+      ],
+      "edges": {
+        "required": [
+          "Saltreach|Aldermoor",
+          "Aldermoor|Oakhollow",
+          "Aldermoor|Warden's Gate",
+          "Warden's Gate|Brindle",
+          "Oakhollow|Brindle"
+        ],
+        "optional": [
+          "Brindle|Duskfall",
+          "Warden's Gate|Duskfall",
+          "Aldermoor|Thornwood",
+          "Saltreach|Thornwood",
+          "Oakhollow|Sunken Keep",
+          "Brindle|Sunken Keep",
+          "Duskfall|Greyspine",
+          "Brindle|Greyspine",
+          "Aldermoor|Greyspine",
+          "Warden's Gate|Greyspine",
+          "Aldermoor|Ashwater",
+          "Saltreach|Ashwater",
+          "Oakhollow|Ashwater",
+          "Warden's Gate|Ashwater",
+          "Greyspine|Ashwater",
+          "Thornwood|Greyspine",
+          "Brindle|Ashwater"
+        ]
+      }
+    },
+    "map-2": {
+      "labelled": false,
+      "style": "parchment kingdom, icons only",
+      "places": [
+        {
+          "name": "castle city",
+          "kind": "city",
+          "x": 50,
+          "y": 45
+        },
+        {
+          "name": "harbour town",
+          "kind": "port",
+          "x": 12,
+          "y": 42
+        },
+        {
+          "name": "northern village",
+          "kind": "village",
+          "x": 65,
+          "y": 18
+        },
+        {
+          "name": "south-west village",
+          "kind": "village",
+          "x": 26,
+          "y": 75
+        },
+        {
+          "name": "fortified gate",
+          "kind": "checkpoint",
+          "x": 57,
+          "y": 30
+        },
+        {
+          "name": "cave",
+          "kind": "cave",
+          "x": 93,
+          "y": 37
+        },
+        {
+          "name": "ruined tower",
+          "kind": "ruin",
+          "x": 73,
+          "y": 77
+        },
+        {
+          "name": "northern forest",
+          "kind": "forest",
+          "x": 40,
+          "y": 15,
+          "area": true
+        },
+        {
+          "name": "eastern mountains",
+          "kind": "mountains",
+          "x": 88,
+          "y": 35,
+          "area": true
+        },
+        {
+          "name": "river",
+          "kind": "river",
+          "x": 63,
+          "y": 44,
+          "area": true
+        },
+        {
+          "name": "swamp",
+          "kind": "swamp",
+          "x": 70,
+          "y": 75,
+          "area": true
+        }
+      ],
+      "edges": {
+        "required": [
+          "harbour town|castle city",
+          "castle city|fortified gate",
+          "fortified gate|northern village",
+          "castle city|south-west village",
+          "castle city|ruined tower / castle city|swamp"
+        ],
+        "optional": [
+          "castle city|swamp",
+          "swamp|ruined tower",
+          "northern village|eastern mountains",
+          "northern village|cave",
+          "cave|eastern mountains",
+          "northern forest|castle city",
+          "northern forest|harbour town",
+          "northern forest|northern village",
+          "northern forest|fortified gate",
+          "castle city|river",
+          "harbour town|river",
+          "river|eastern mountains",
+          "northern village|river",
+          "south-west village|swamp",
+          "fortified gate|river"
+        ]
+      }
+    },
+    "map-3": {
+      "labelled": false,
+      "style": "painted anime overworld",
+      "places": [
+        {
+          "name": "lakeside village",
+          "kind": "village",
+          "x": 22,
+          "y": 70
+        },
+        {
+          "name": "hilltop monastery",
+          "kind": "monastery",
+          "x": 17,
+          "y": 12
+        },
+        {
+          "name": "woodcutters' camp",
+          "kind": "camp",
+          "x": 37,
+          "y": 40
+        },
+        {
+          "name": "stone bridge",
+          "kind": "bridge",
+          "x": 54,
+          "y": 55
+        },
+        {
+          "name": "watchtower",
+          "kind": "tower",
+          "x": 86,
+          "y": 45
+        },
+        {
+          "name": "mountain pass checkpoint",
+          "kind": "checkpoint",
+          "x": 68,
+          "y": 14
+        },
+        {
+          "name": "abandoned mine",
+          "kind": "mine",
+          "x": 88,
+          "y": 23
+        },
+        {
+          "name": "tribal encampment",
+          "kind": "camp",
+          "x": 84,
+          "y": 77
+        }
+      ],
+      "edges": {
+        "required": [
+          "lakeside village|stone bridge",
+          "hilltop monastery|lakeside village / hilltop monastery|woodcutters' camp",
+          "stone bridge|mountain pass checkpoint",
+          "stone bridge|tribal encampment",
+          "mountain pass checkpoint|abandoned mine / stone bridge|abandoned mine"
+        ],
+        "optional": [
+          "woodcutters' camp|lakeside village",
+          "hilltop monastery|woodcutters' camp",
+          "woodcutters' camp|stone bridge",
+          "hilltop monastery|lakeside village",
+          "stone bridge|abandoned mine",
+          "watchtower|stone bridge",
+          "watchtower|tribal encampment",
+          "watchtower|mountain pass checkpoint",
+          "watchtower|abandoned mine"
+        ]
+      }
+    },
+    "map-4": {
+      "labelled": true,
+      "style": "ink and watercolour archipelago",
+      "places": [
+        {
+          "name": "Corvane",
+          "kind": "city",
+          "x": 27,
+          "y": 52
+        },
+        {
+          "name": "Gullsend",
+          "kind": "village",
+          "x": 11,
+          "y": 26
+        },
+        {
+          "name": "Tidemark",
+          "kind": "village",
+          "x": 48,
+          "y": 24
+        },
+        {
+          "name": "Pell",
+          "kind": "village",
+          "x": 57,
+          "y": 82
+        },
+        {
+          "name": "Ochre Clans",
+          "kind": "tribe",
+          "x": 16,
+          "y": 10
+        },
+        {
+          "name": "Hollow Isle",
+          "kind": "cave",
+          "x": 56,
+          "y": 55
+        },
+        {
+          "name": "Farpoint",
+          "kind": "lighthouse",
+          "x": 96,
+          "y": 44
+        },
+        {
+          "name": "Blackreef",
+          "kind": "ruin",
+          "x": 16,
+          "y": 73
+        },
+        {
+          "name": "Saltmarket",
+          "kind": "port",
+          "x": 75,
+          "y": 36
+        },
+        {
+          "name": "Ixquel",
+          "kind": "temple",
+          "x": 84,
+          "y": 70
+        },
+        {
+          "name": "Witchmire",
+          "kind": "swamp",
+          "x": 73,
+          "y": 10,
+          "area": true
+        }
+      ],
+      "edges": {
+        "required": [
+          "Gullsend|Corvane",
+          "Tidemark|Corvane",
+          "Corvane|Saltmarket",
+          "Saltmarket|Ixquel",
+          "Pell|Ixquel",
+          "Hollow Isle|Pell",
+          "Ochre Clans|Gullsend",
+          "Ochre Clans|Tidemark",
+          "Tidemark|Saltmarket",
+          "Saltmarket|Farpoint"
+        ],
+        "optional": [
+          "Corvane|Hollow Isle",
+          "Corvane|Pell",
+          "Corvane|Blackreef",
+          "Blackreef|Pell",
+          "Saltmarket|Hollow Isle",
+          "Hollow Isle|Ixquel",
+          "Tidemark|Witchmire",
+          "Witchmire|Saltmarket",
+          "Ochre Clans|Witchmire",
+          "Gullsend|Blackreef",
+          "Farpoint|Ixquel"
+        ]
+      }
+    },
+    "map-5": {
+      "labelled": true,
+      "style": "painted storybook village",
+      "places": [
+        {
+          "name": "the Hearth",
+          "kind": "inn",
+          "x": 40,
+          "y": 40
+        },
+        {
+          "name": "Market square",
+          "kind": "market",
+          "x": 45,
+          "y": 55
+        },
+        {
+          "name": "Mill",
+          "kind": "mill",
+          "x": 18,
+          "y": 61
+        },
+        {
+          "name": "Chapel",
+          "kind": "chapel",
+          "x": 52,
+          "y": 17
+        },
+        {
+          "name": "Smithy",
+          "kind": "smithy",
+          "x": 71,
+          "y": 47
+        },
+        {
+          "name": "Old Bram's farm",
+          "kind": "farm",
+          "x": 13,
+          "y": 18
+        },
+        {
+          "name": "stone cairn",
+          "kind": "landmark",
+          "x": 89,
+          "y": 4
+        },
+        {
+          "name": "Sheep Track",
+          "kind": "path",
+          "x": 85,
+          "y": 25,
+          "area": true
+        },
+        {
+          "name": "Mill Road",
+          "kind": "road",
+          "x": 55,
+          "y": 85,
+          "area": true
+        },
+        {
+          "name": "Whispering Wood",
+          "kind": "forest",
+          "x": 88,
+          "y": 70,
+          "area": true
+        }
+      ],
+      "edges": {
+        "required": [
+          "the Hearth|Market square",
+          "Market square|Mill / the Hearth|Mill",
+          "Chapel|the Hearth / Chapel|Market square",
+          "Market square|Smithy / the Hearth|Smithy",
+          "Smithy|Sheep Track",
+          "Sheep Track|stone cairn",
+          "Market square|Mill Road"
+        ],
+        "optional": [
+          "Old Bram's farm|the Hearth",
+          "Old Bram's farm|Mill",
+          "Old Bram's farm|Market square",
+          "Old Bram's farm|Chapel",
+          "Mill|Mill Road",
+          "Smithy|Whispering Wood",
+          "Mill Road|Whispering Wood",
+          "Sheep Track|Whispering Wood",
+          "the Hearth|Mill Road",
+          "Chapel|Smithy",
+          "Chapel|Sheep Track"
+        ]
+      }
+    }
+  }
+}

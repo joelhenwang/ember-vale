@@ -1,0 +1,330 @@
+{
+  "model": "qwen/qwen3-vl-235b-a22b-instruct",
+  "prompt": "These are the places on this fantasy map, with where each is drawn\n([x, y] from 0 to 1000 across the image's width and height; [0, 0] is the top-left corner):\n{places}\n\nList every direct connection a traveller could use between two of these places, as drawn on\nthe map: roads, paths and tracks, bridges, sea or river routes drawn as lines, mountain passes.\n\"Direct\" means the route goes from one place to the other without passing through a third\nlisted place; if it does, list the two shorter legs instead. Only include connections you can\nsee drawn; leave a place unconnected if no drawn route reaches it.\n\nFor each connection give:\n- \"from\" and \"to\": the place numbers\n- \"by\": one of road, path, sea, river, bridge, pass\n- \"points\": 3 to 8 [x, y] points along the drawn route, from the first place to the second\n\nAnswer with JSON only:\n{{\"connections\": [{{\"from\": 1, \"to\": 2, \"by\": \"road\", \"points\": [[x, y], [x, y], [x, y]]}}]}}",
+  "maps": {
+    "map-1": {
+      "seconds": 134.2,
+      "cost_usd": 0.00124444,
+      "raw": "{\n  \"connections\": [\n    {\n      \"from\": 1,\n      \"to\": 2,\n      \"by\": \"road\",\n      \"points\": [\n        [510, 310],\n        [420, 350],\n        [300, 380],\n        [200, 360],\n        [160, 330]\n      ]\n    },\n    {\n      \"from\": 1,\n      \"to\": 3,\n      \"by\": \"road\",\n      \"points\": [\n        [510, 310],\n        [580, 400],\n        [650, 480],\n        [680, 580]\n      ]\n    },\n    {\n      \"from\": 1,\n      \"to\": 4,\n      \"by\": \"road\",\n      \"points\": [\n        [510, 310],\n        [450, 400],\n        [380, 500],\n        [320, 570]\n      ]\n    },\n    {\n      \"from\": 1,\n      \"to\": 5,\n      \"by\": \"bridge\",\n      \"points\": [\n        [510, 310],\n        [560, 380],\n        [620, 460]\n      ]\n    },\n    {\n      \"from\": 3,\n      \"to\": 5,\n      \"by\": \"road\",\n      \"points\": [\n        [680, 580],\n        [650, 520],\n        [620, 460]\n      ]\n    },\n    {\n      \"from\": 4,\n      \"to\": 5,\n      \"by\": \"road\",\n      \"points\": [\n        [320, 570],\n        [400, 550],\n        [500, 500],\n        [620, 460]\n      ]\n    },\n    {\n      \"from\": 5,\n      \"to\": 9,\n      \"by\": \"pass\",\n      \"points\": [\n        [620, 460],\n        [750, 400],\n        [880, 350]\n      ]\n    },\n    {\n      \"from\": 9,\n      \"to\": 6,\n      \"by\": \"path\",\n      \"points\": [\n        [880, 350],\n        [890, 450],\n        [900, 520]\n      ]\n    },\n    {\n      \"from\": 1,\n      \"to\": 10,\n      \"by\": \"river\",\n      \"points\": [\n        [510, 310],\n        [550, 350],\n        [670, 330]\n      ]\n    },\n    {\n      \"from\": 10,\n      \"to\": 7,\n      \"by\": \"river\",\n      \"points\": [\n        [670, 330],\n        [600, 500],\n        [590, 760]\n      ]\n    },\n    {\n      \"from\": 2,\n      \"to\": 10,\n      \"by\": \"river\",\n      \"points\": [\n        [160, 330],\n        [250, 380],\n        [350, 450],\n        [450, 500],\n        [550, 550],\n        [670, 330]\n      ]\n    },\n    {\n      \"from\": 2,\n      \"to\": 1,\n      \"by\": \"sea\",\n      \"points\": [\n        [160, 330],\n        [200, 300],\n        [300, 280],\n        [400, 280],\n        [510, 310]\n      ]\n    },\n    {\n      \"from\": 1,\n      \"to\": 8,\n      \"by\": \"path\",\n      \"points\": [\n        [510, 310],\n        [480, 250],\n        [450, 130]\n      ]\n    }\n  ]\n}",
+      "connections": [
+        {
+          "a": "Aldermoor",
+          "b": "Saltreach",
+          "by": "road",
+          "points": [
+            [
+              51.0,
+              31.0
+            ],
+            [
+              42.0,
+              35.0
+            ],
+            [
+              30.0,
+              38.0
+            ],
+            [
+              20.0,
+              36.0
+            ],
+            [
+              16.0,
+              33.0
+            ]
+          ]
+        },
+        {
+          "a": "Aldermoor",
+          "b": "Brindle",
+          "by": "road",
+          "points": [
+            [
+              51.0,
+              31.0
+            ],
+            [
+              58.0,
+              40.0
+            ],
+            [
+              65.0,
+              48.0
+            ],
+            [
+              68.0,
+              58.0
+            ]
+          ]
+        },
+        {
+          "a": "Aldermoor",
+          "b": "Oakhollow",
+          "by": "road",
+          "points": [
+            [
+              51.0,
+              31.0
+            ],
+            [
+              45.0,
+              40.0
+            ],
+            [
+              38.0,
+              50.0
+            ],
+            [
+              32.0,
+              57.0
+            ]
+          ]
+        },
+        {
+          "a": "Aldermoor",
+          "b": "Warden's Gate",
+          "by": "bridge",
+          "points": [
+            [
+              51.0,
+              31.0
+            ],
+            [
+              56.0,
+              38.0
+            ],
+            [
+              62.0,
+              46.0
+            ]
+          ]
+        },
+        {
+          "a": "Brindle",
+          "b": "Warden's Gate",
+          "by": "road",
+          "points": [
+            [
+              68.0,
+              58.0
+            ],
+            [
+              65.0,
+              52.0
+            ],
+            [
+              62.0,
+              46.0
+            ]
+          ]
+        },
+        {
+          "a": "Oakhollow",
+          "b": "Warden's Gate",
+          "by": "road",
+          "points": [
+            [
+              32.0,
+              57.0
+            ],
+            [
+              40.0,
+              55.0
+            ],
+            [
+              50.0,
+              50.0
+            ],
+            [
+              62.0,
+              46.0
+            ]
+          ]
+        },
+        {
+          "a": "Warden's Gate",
+          "b": "Greyspine",
+          "by": "pass",
+          "points": [
+            [
+              62.0,
+              46.0
+            ],
+            [
+              75.0,
+              40.0
+            ],
+            [
+              88.0,
+              35.0
+            ]
+          ]
+        },
+        {
+          "a": "Greyspine",
+          "b": "Duskfall",
+          "by": "path",
+          "points": [
+            [
+              88.0,
+              35.0
+            ],
+            [
+              89.0,
+              45.0
+            ],
+            [
+              90.0,
+              52.0
+            ]
+          ]
+        },
+        {
+          "a": "Aldermoor",
+          "b": "Ashwater",
+          "by": "river",
+          "points": [
+            [
+              51.0,
+              31.0
+            ],
+            [
+              55.0,
+              35.0
+            ],
+            [
+              67.0,
+              33.0
+            ]
+          ]
+        },
+        {
+          "a": "Ashwater",
+          "b": "Sunken Keep",
+          "by": "river",
+          "points": [
+            [
+              67.0,
+              33.0
+            ],
+            [
+              60.0,
+              50.0
+            ],
+            [
+              59.0,
+              76.0
+            ]
+          ]
+        },
+        {
+          "a": "Saltreach",
+          "b": "Ashwater",
+          "by": "river",
+          "points": [
+            [
+              16.0,
+              33.0
+            ],
+            [
+              25.0,
+              38.0
+            ],
+            [
+              35.0,
+              45.0
+            ],
+            [
+              45.0,
+              50.0
+            ],
+            [
+              55.0,
+              55.0
+            ],
+            [
+              67.0,
+              33.0
+            ]
+          ]
+        },
+        {
+          "a": "Saltreach",
+          "b": "Aldermoor",
+          "by": "sea",
+          "points": [
+            [
+              16.0,
+              33.0
+            ],
+            [
+              20.0,
+              30.0
+            ],
+            [
+              30.0,
+              28.0
+            ],
+            [
+              40.0,
+              28.0
+            ],
+            [
+              51.0,
+              31.0
+            ]
+          ]
+        },
+        {
+          "a": "Aldermoor",
+          "b": "Thornwood",
+          "by": "path",
+          "points": [
+            [
+              51.0,
+              31.0
+            ],
+            [
+              48.0,
+              25.0
+            ],
+            [
+              45.0,
+              13.0
+            ]
+          ]
+        }
+      ],
+      "error": null
+    },
+    "map-2": {
+      "seconds": 2.0,
+      "cost_usd": 0.0,
+      "raw": "",
+      "connections": [],
+      "error": "KeyError: 'choices'; {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'qwen/qwen3-vl-235b-a22b-instruct is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations', 'provider_name': 'DeepInfr"
+    },
+    "map-3": {
+      "seconds": 0.9,
+      "cost_usd": 0.0,
+      "raw": "",
+      "connections": [],
+      "error": "KeyError: 'choices'; {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'qwen/qwen3-vl-235b-a22b-instruct is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations', 'provider_name': 'DeepInfr"
+    },
+    "map-4": {
+      "seconds": 1.5,
+      "cost_usd": 0.0,
+      "raw": "",
+      "connections": [],
+      "error": "KeyError: 'choices'; {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'qwen/qwen3-vl-235b-a22b-instruct is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations', 'provider_name': 'DeepInfr"
+    },
+    "map-5": {
+      "seconds": 2.2,
+      "cost_usd": 0.0,
+      "raw": "",
+      "connections": [],
+      "error": "KeyError: 'choices'; {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'qwen/qwen3-vl-235b-a22b-instruct is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations', 'provider_name': 'DeepInfr"
+    }
+  },
+  "cost_usd": 0.0012
+}

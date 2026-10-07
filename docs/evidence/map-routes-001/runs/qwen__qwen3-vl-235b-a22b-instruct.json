@@ -1,0 +1,714 @@
+{
+  "model": "qwen/qwen3-vl-235b-a22b-instruct",
+  "prompt": "These are the places on this fantasy map, with where each is drawn\n([x, y] from 0 to 1000 across the image's width and height; [0, 0] is the top-left corner):\n{places}\n\nList every direct connection a traveller could use between two of these places, as drawn on\nthe map: roads, paths and tracks, bridges, sea or river routes drawn as lines, mountain passes.\n\"Direct\" means the route goes from one place to the other without passing through a third\nlisted place; if it does, list the two shorter legs instead. Only include connections you can\nsee drawn; leave a place unconnected if no drawn route reaches it.\n\nFor each connection give:\n- \"from\" and \"to\": the place numbers\n- \"by\": one of road, path, sea, river, bridge, pass\n- \"points\": 3 to 8 [x, y] points along the drawn route, from the first place to the second\n\nAnswer with JSON only:\n{{\"connections\": [{{\"from\": 1, \"to\": 2, \"by\": \"road\", \"points\": [[x, y], [x, y], [x, y]]}}]}}",
+  "maps": {
+    "map-1": {
+      "seconds": 194.0,
+      "cost_usd": 0.0014178,
+      "raw": "{\n  \"connections\": [\n    {\n      \"from\": 1,\n      \"to\": 2,\n      \"by\": \"road\",\n      \"points\": [\n        [510, 310],\n        [420, 350],\n        [300, 380],\n        [200, 360],\n        [160, 330]\n      ]\n    },\n    {\n      \"from\": 1,\n      \"to\": 3,\n      \"by\": \"road\",\n      \"points\": [\n        [510, 310],\n        [580, 400],\n        [650, 500],\n        [680, 580]\n      ]\n    },\n    {\n      \"from\": 1,\n      \"to\": 4,\n      \"by\": \"road\",\n      \"points\": [\n        [510, 310],\n        [450, 400],\n        [380, 500],\n        [320, 570]\n      ]\n    },\n    {\n      \"from\": 1,\n      \"to\": 5,\n      \"by\": \"bridge\",\n      \"points\": [\n        [510, 310],\n        [550, 380],\n        [620, 460]\n      ]\n    },\n    {\n      \"from\": 5,\n      \"to\": 3,\n      \"by\": \"road\",\n      \"points\": [\n        [620, 460],\n        [650, 500],\n        [680, 580]\n      ]\n    },\n    {\n      \"from\": 4,\n      \"to\": 3,\n      \"by\": \"road\",\n      \"points\": [\n        [320, 570],\n        [450, 580],\n        [580, 580],\n        [680, 580]\n      ]\n    },\n    {\n      \"from\": 1,\n      \"to\": 10,\n      \"by\": \"river\",\n      \"points\": [\n        [510, 310],\n        [550, 380],\n        [670, 330]\n      ]\n    },\n    {\n      \"from\": 10,\n      \"to\": 5,\n      \"by\": \"bridge\",\n      \"points\": [\n        [670, 330],\n        [620, 460]\n      ]\n    },\n    {\n      \"from\": 10,\n      \"to\": 7,\n      \"by\": \"river\",\n      \"points\": [\n        [670, 330],\n        [550, 500],\n        [590, 760]\n      ]\n    },\n    {\n      \"from\": 3,\n      \"to\": 9,\n      \"by\": \"path\",\n      \"points\": [\n        [680, 580],\n        [750, 500],\n        [880, 350]\n      ]\n    },\n    {\n      \"from\": 9,\n      \"to\": 6,\n      \"by\": \"pass\",\n      \"points\": [\n        [880, 350],\n        [890, 450],\n        [900, 520]\n      ]\n    },\n    {\n      \"from\": 2,\n      \"to\": 10,\n      \"by\": \"sea\",\n      \"points\": [\n        [160, 330],\n        [250, 350],\n        [350, 400],\n        [450, 450],\n        [550, 500],\n        [670, 330]\n      ]\n    },\n    {\n      \"from\": 2,\n      \"to\": 4,\n      \"by\": \"road\",\n      \"points\": [\n        [160, 330],\n        [200, 360],\n        [250, 450],\n        [320, 570]\n      ]\n    },\n    {\n      \"from\": 4,\n      \"to\": 7,\n      \"by\": \"path\",\n      \"points\": [\n        [320, 570],\n        [400, 650],\n        [500, 700],\n        [590, 760]\n      ]\n    },\n    {\n      \"from\": 1,\n      \"to\": 8,\n      \"by\": \"path\",\n      \"points\": [\n        [510, 310],\n        [480, 250],\n        [450, 130]\n      ]\n    },\n    {\n      \"from\": 8,\n      \"to\": 10,\n      \"by\": \"river\",\n      \"points\": [\n        [450, 130],\n        [500, 200],\n        [550, 250],\n        [670, 330]\n      ]\n    }\n  ]\n}",
+      "connections": [
+        {
+          "a": "Aldermoor",
+          "b": "Saltreach",
+          "by": "road",
+          "points": [
+            [
+              51.0,
+              31.0
+            ],
+            [
+              42.0,
+              35.0
+            ],
+            [
+              30.0,
+              38.0
+            ],
+            [
+              20.0,
+              36.0
+            ],
+            [
+              16.0,
+              33.0
+            ]
+          ]
+        },
+        {
+          "a": "Aldermoor",
+          "b": "Brindle",
+          "by": "road",
+          "points": [
+            [
+              51.0,
+              31.0
+            ],
+            [
+              58.0,
+              40.0
+            ],
+            [
+              65.0,
+              50.0
+            ],
+            [
+              68.0,
+              58.0
+            ]
+          ]
+        },
+        {
+          "a": "Aldermoor",
+          "b": "Oakhollow",
+          "by": "road",
+          "points": [
+            [
+              51.0,
+              31.0
+            ],
+            [
+              45.0,
+              40.0
+            ],
+            [
+              38.0,
+              50.0
+            ],
+            [
+              32.0,
+              57.0
+            ]
+          ]
+        },
+        {
+          "a": "Aldermoor",
+          "b": "Warden's Gate",
+          "by": "bridge",
+          "points": [
+            [
+              51.0,
+              31.0
+            ],
+            [
+              55.0,
+              38.0
+            ],
+            [
+              62.0,
+              46.0
+            ]
+          ]
+        },
+        {
+          "a": "Warden's Gate",
+          "b": "Brindle",
+          "by": "road",
+          "points": [
+            [
+              62.0,
+              46.0
+            ],
+            [
+              65.0,
+              50.0
+            ],
+            [
+              68.0,
+              58.0
+            ]
+          ]
+        },
+        {
+          "a": "Oakhollow",
+          "b": "Brindle",
+          "by": "road",
+          "points": [
+            [
+              32.0,
+              57.0
+            ],
+            [
+              45.0,
+              58.0
+            ],
+            [
+              58.0,
+              58.0
+            ],
+            [
+              68.0,
+              58.0
+            ]
+          ]
+        },
+        {
+          "a": "Aldermoor",
+          "b": "Ashwater",
+          "by": "river",
+          "points": [
+            [
+              51.0,
+              31.0
+            ],
+            [
+              55.0,
+              38.0
+            ],
+            [
+              67.0,
+              33.0
+            ]
+          ]
+        },
+        {
+          "a": "Ashwater",
+          "b": "Warden's Gate",
+          "by": "bridge",
+          "points": [
+            [
+              67.0,
+              33.0
+            ],
+            [
+              62.0,
+              46.0
+            ]
+          ]
+        },
+        {
+          "a": "Ashwater",
+          "b": "Sunken Keep",
+          "by": "river",
+          "points": [
+            [
+              67.0,
+              33.0
+            ],
+            [
+              55.0,
+              50.0
+            ],
+            [
+              59.0,
+              76.0
+            ]
+          ]
+        },
+        {
+          "a": "Brindle",
+          "b": "Greyspine",
+          "by": "path",
+          "points": [
+            [
+              68.0,
+              58.0
+            ],
+            [
+              75.0,
+              50.0
+            ],
+            [
+              88.0,
+              35.0
+            ]
+          ]
+        },
+        {
+          "a": "Greyspine",
+          "b": "Duskfall",
+          "by": "pass",
+          "points": [
+            [
+              88.0,
+              35.0
+            ],
+            [
+              89.0,
+              45.0
+            ],
+            [
+              90.0,
+              52.0
+            ]
+          ]
+        },
+        {
+          "a": "Saltreach",
+          "b": "Ashwater",
+          "by": "sea",
+          "points": [
+            [
+              16.0,
+              33.0
+            ],
+            [
+              25.0,
+              35.0
+            ],
+            [
+              35.0,
+              40.0
+            ],
+            [
+              45.0,
+              45.0
+            ],
+            [
+              55.0,
+              50.0
+            ],
+            [
+              67.0,
+              33.0
+            ]
+          ]
+        },
+        {
+          "a": "Saltreach",
+          "b": "Oakhollow",
+          "by": "road",
+          "points": [
+            [
+              16.0,
+              33.0
+            ],
+            [
+              20.0,
+              36.0
+            ],
+            [
+              25.0,
+              45.0
+            ],
+            [
+              32.0,
+              57.0
+            ]
+          ]
+        },
+        {
+          "a": "Oakhollow",
+          "b": "Sunken Keep",
+          "by": "path",
+          "points": [
+            [
+              32.0,
+              57.0
+            ],
+            [
+              40.0,
+              65.0
+            ],
+            [
+              50.0,
+              70.0
+            ],
+            [
+              59.0,
+              76.0
+            ]
+          ]
+        },
+        {
+          "a": "Aldermoor",
+          "b": "Thornwood",
+          "by": "path",
+          "points": [
+            [
+              51.0,
+              31.0
+            ],
+            [
+              48.0,
+              25.0
+            ],
+            [
+              45.0,
+              13.0
+            ]
+          ]
+        },
+        {
+          "a": "Thornwood",
+          "b": "Ashwater",
+          "by": "river",
+          "points": [
+            [
+              45.0,
+              13.0
+            ],
+            [
+              50.0,
+              20.0
+            ],
+            [
+              55.0,
+              25.0
+            ],
+            [
+              67.0,
+              33.0
+            ]
+          ]
+        }
+      ],
+      "error": null
+    },
+    "map-2": {
+      "seconds": 163.0,
+      "cost_usd": 0.00135664,
+      "raw": "{\n  \"connections\": [\n    {\n      \"from\": 1,\n      \"to\": 2,\n      \"by\": \"road\",\n      \"points\": [\n        [500, 450],\n        [400, 450],\n        [300, 420],\n        [200, 400],\n        [150, 410],\n        [120, 420]\n      ]\n    },\n    {\n      \"from\": 1,\n      \"to\": 3,\n      \"by\": \"road\",\n      \"points\": [\n        [500, 450],\n        [550, 380],\n        [600, 300],\n        [650, 250],\n        [650, 180]\n      ]\n    },\n    {\n      \"from\": 1,\n      \"to\": 4,\n      \"by\": \"road\",\n      \"points\": [\n        [500, 450],\n        [450, 550],\n        [350, 650],\n        [260, 750]\n      ]\n    },\n    {\n      \"from\": 1,\n      \"to\": 5,\n      \"by\": \"road\",\n      \"points\": [\n        [500, 450],\n        [530, 400],\n        [570, 300]\n      ]\n    },\n    {\n      \"from\": 1,\n      \"to\": 10,\n      \"by\": \"river\",\n      \"points\": [\n        [500, 450],\n        [550, 440],\n        [630, 440]\n      ]\n    },\n    {\n      \"from\": 2,\n      \"to\": 10,\n      \"by\": \"river\",\n      \"points\": [\n        [120, 420],\n        [200, 400],\n        [300, 420],\n        [400, 450],\n        [500, 450],\n        [630, 440]\n      ]\n    },\n    {\n      \"from\": 3,\n      \"to\": 5,\n      \"by\": \"road\",\n      \"points\": [\n        [650, 180],\n        [600, 250],\n        [570, 300]\n      ]\n    },\n    {\n      \"from\": 3,\n      \"to\": 9,\n      \"by\": \"pass\",\n      \"points\": [\n        [650, 180],\n        [750, 250],\n        [880, 350]\n      ]\n    },\n    {\n      \"from\": 4,\n      \"to\": 11,\n      \"by\": \"path\",\n      \"points\": [\n        [260, 750],\n        [350, 700],\n        [450, 650],\n        [550, 600],\n        [650, 650],\n        [700, 750]\n      ]\n    },\n    {\n      \"from\": 5,\n      \"to\": 10,\n      \"by\": \"river\",\n      \"points\": [\n        [570, 300],\n        [600, 350],\n        [630, 440]\n      ]\n    },\n    {\n      \"from\": 10,\n      \"to\": 9,\n      \"by\": \"river\",\n      \"points\": [\n        [630, 440],\n        [700, 400],\n        [750, 350],\n        [800, 300],\n        [850, 250],\n        [880, 350]\n      ]\n    },\n    {\n      \"from\": 10,\n      \"to\": 11,\n      \"by\": \"river\",\n      \"points\": [\n        [630, 440],\n        [650, 500],\n        [700, 750]\n      ]\n    },\n    {\n      \"from\": 11,\n      \"to\": 7,\n      \"by\": \"path\",\n      \"points\": [\n        [700, 750],\n        [720, 760],\n        [730, 770]\n      ]\n    },\n    {\n      \"from\": 9,\n      \"to\": 6,\n      \"by\": \"path\",\n      \"points\": [\n        [880, 350],\n        [900, 360],\n        [930, 370]\n      ]\n    }\n  ]\n}",
+      "connections": [
+        {
+          "a": "castle city",
+          "b": "harbour town",
+          "by": "road",
+          "points": [
+            [
+              50.0,
+              45.0
+            ],
+            [
+              40.0,
+              45.0
+            ],
+            [
+              30.0,
+              42.0
+            ],
+            [
+              20.0,
+              40.0
+            ],
+            [
+              15.0,
+              41.0
+            ],
+            [
+              12.0,
+              42.0
+            ]
+          ]
+        },
+        {
+          "a": "castle city",
+          "b": "northern village",
+          "by": "road",
+          "points": [
+            [
+              50.0,
+              45.0
+            ],
+            [
+              55.0,
+              38.0
+            ],
+            [
+              60.0,
+              30.0
+            ],
+            [
+              65.0,
+              25.0
+            ],
+            [
+              65.0,
+              18.0
+            ]
+          ]
+        },
+        {
+          "a": "castle city",
+          "b": "south-west village",
+          "by": "road",
+          "points": [
+            [
+              50.0,
+              45.0
+            ],
+            [
+              45.0,
+              55.0
+            ],
+            [
+              35.0,
+              65.0
+            ],
+            [
+              26.0,
+              75.0
+            ]
+          ]
+        },
+        {
+          "a": "castle city",
+          "b": "fortified gate",
+          "by": "road",
+          "points": [
+            [
+              50.0,
+              45.0
+            ],
+            [
+              53.0,
+              40.0
+            ],
+            [
+              57.0,
+              30.0
+            ]
+          ]
+        },
+        {
+          "a": "castle city",
+          "b": "river",
+          "by": "river",
+          "points": [
+            [
+              50.0,
+              45.0
+            ],
+            [
+              55.0,
+              44.0
+            ],
+            [
+              63.0,
+              44.0
+            ]
+          ]
+        },
+        {
+          "a": "harbour town",
+          "b": "river",
+          "by": "river",
+          "points": [
+            [
+              12.0,
+              42.0
+            ],
+            [
+              20.0,
+              40.0
+            ],
+            [
+              30.0,
+              42.0
+            ],
+            [
+              40.0,
+              45.0
+            ],
+            [
+              50.0,
+              45.0
+            ],
+            [
+              63.0,
+              44.0
+            ]
+          ]
+        },
+        {
+          "a": "northern village",
+          "b": "fortified gate",
+          "by": "road",
+          "points": [
+            [
+              65.0,
+              18.0
+            ],
+            [
+              60.0,
+              25.0
+            ],
+            [
+              57.0,
+              30.0
+            ]
+          ]
+        },
+        {
+          "a": "northern village",
+          "b": "eastern mountains",
+          "by": "pass",
+          "points": [
+            [
+              65.0,
+              18.0
+            ],
+            [
+              75.0,
+              25.0
+            ],
+            [
+              88.0,
+              35.0
+            ]
+          ]
+        },
+        {
+          "a": "south-west village",
+          "b": "swamp",
+          "by": "path",
+          "points": [
+            [
+              26.0,
+              75.0
+            ],
+            [
+              35.0,
+              70.0
+            ],
+            [
+              45.0,
+              65.0
+            ],
+            [
+              55.0,
+              60.0
+            ],
+            [
+              65.0,
+              65.0
+            ],
+            [
+              70.0,
+              75.0
+            ]
+          ]
+        },
+        {
+          "a": "fortified gate",
+          "b": "river",
+          "by": "river",
+          "points": [
+            [
+              57.0,
+              30.0
+            ],
+            [
+              60.0,
+              35.0
+            ],
+            [
+              63.0,
+              44.0
+            ]
+          ]
+        },
+        {
+          "a": "river",
+          "b": "eastern mountains",
+          "by": "river",
+          "points": [
+            [
+              63.0,
+              44.0
+            ],
+            [
+              70.0,
+              40.0
+            ],
+            [
+              75.0,
+              35.0
+            ],
+            [
+              80.0,
+              30.0
+            ],
+            [
+              85.0,
+              25.0
+            ],
+            [
+              88.0,
+              35.0
+            ]
+          ]
+        },
+        {
+          "a": "river",
+          "b": "swamp",
+          "by": "river",
+          "points": [
+            [
+              63.0,
+              44.0
+            ],
+            [
+              65.0,
+              50.0
+            ],
+            [
+              70.0,
+              75.0
+            ]
+          ]
+        },
+        {
+          "a": "swamp",
+          "b": "ruined tower",
+          "by": "path",
+          "points": [
+            [
+              70.0,
+              75.0
+            ],
+            [
+              72.0,
+              76.0
+            ],
+            [
+              73.0,
+              77.0
+            ]
+          ]
+        },
+        {
+          "a": "eastern mountains",
+          "b": "cave",
+          "by": "path",
+          "points": [
+            [
+              88.0,
+              35.0
+            ],
+            [
+              90.0,
+              36.0
+            ],
+            [
+              93.0,
+              37.0
+            ]
+          ]
+        }
+      ],
+      "error": null
+    },
+    "map-3": {
+      "seconds": 1.6,
+      "cost_usd": 0.0,
+      "raw": "",
+      "connections": [],
+      "error": "KeyError: 'choices'; {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'qwen/qwen3-vl-235b-a22b-instruct is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations', 'provider_name': 'DeepInfr"
+    },
+    "map-4": {
+      "seconds": 1.0,
+      "cost_usd": 0.0,
+      "raw": "",
+      "connections": [],
+      "error": "KeyError: 'choices'; {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'qwen/qwen3-vl-235b-a22b-instruct is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations', 'provider_name': 'DeepInfr"
+    },
+    "map-5": {
+      "seconds": 1.5,
+      "cost_usd": 0.0,
+      "raw": "",
+      "connections": [],
+      "error": "KeyError: 'choices'; {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'qwen/qwen3-vl-235b-a22b-instruct is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations', 'provider_name': 'DeepInfr"
+    }
+  },
+  "cost_usd": 0.0028
+}

@@ -1,0 +1,227 @@
+<title>Map Route Tracing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a surveyor's report. Verdict, scoreboard, then one map at a time with a tab per model. */
+:root {
+  --bg: #eef0ec;
+  --sheet: #f8f9f6;
+  --ink: #1d2a2b;
+  --muted: #5c6b6a;
+  --line: #c9d1cc;
+  --accent: #1f6f78;
+  --accent-soft: #d6e8e7;
+  --good: #2f7d46;
+  --warn: #9a6a12;
+  --bad: #a83a32;
+  --font-display: "IM Fell English SC", "Iowan Old Style", Georgia, serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121a1b; --sheet: #182324; --ink: #e3ebe8; --muted: #9aaba8; --line: #2c3c3d;
+    --accent: #6cc3cb; --accent-soft: #1e3a3d; --good: #6fcf8c; --warn: #e0b45a; --bad: #f08a80;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121a1b; --sheet: #182324; --ink: #e3ebe8; --muted: #9aaba8; --line: #2c3c3d;
+  --accent: #6cc3cb; --accent-soft: #1e3a3d; --good: #6fcf8c; --warn: #e0b45a; --bad: #f08a80;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font: 15.5px/1.55 var(--font-body); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 56px; display: flex; flex-direction: column; gap: 28px; }
+h1, h2 { font-family: var(--font-display); font-weight: 400; text-wrap: balance; letter-spacing: .01em; }
+h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.1; }
+h2 { font-size: 26px; }
+.eyebrow { font: 500 12px/1 var(--font-data); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+.lead { max-width: 68ch; }
+.lead strong { color: var(--accent); font-weight: 600; }
+.head { display: flex; flex-direction: column; gap: 10px; }
+.sheet { background: var(--sheet); border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 12px/1.2 var(--font-data); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+td.num { font-family: var(--font-data); white-space: nowrap; }
+tr.best td { background: var(--accent-soft); }
+.model { font-weight: 600; }
+.model small { display: block; font: 12px var(--font-data); color: var(--muted); font-weight: 400; }
+.pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font: 500 12px/1.6 var(--font-data); border: 1px solid currentColor; }
+.pill.good { color: var(--good); } .pill.warn { color: var(--warn); } .pill.bad { color: var(--bad); }
+.note { font-size: 13.5px; color: var(--muted); max-width: 80ch; }
+.viewer { display: flex; flex-direction: column; gap: 14px; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bar .label { font: 500 12px var(--font-data); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); min-width: 64px; }
+.tab { font: 500 13.5px var(--font-body); padding: 6px 12px; border-radius: 7px; border: 1px solid var(--line); background: var(--sheet); color: var(--ink); cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--sheet); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+figure img { width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line); display: block; max-width: 100%; }
+figcaption { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px var(--font-data); color: var(--muted); }
+figcaption b { color: var(--ink); font-weight: 500; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); }
+.swatch { display: inline-block; width: 22px; height: 6px; border-radius: 3px; margin-right: 6px; vertical-align: 2px; }
+.pin { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; border: 1.5px solid #000; background: #ffdc3c; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+.cols > div { min-width: 0; }
+.cols h3 { font: 600 15px var(--font-body); margin-bottom: 6px; }
+.cols p, .cols li { font-size: 14.5px; }
+.cols ul { padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+@media (prefers-reduced-motion: no-preference) { .tab { transition: background .12s, color .12s; } }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <span class="eyebrow">Ember Vale · map-routes-001 · 7 Oct 2026</span>
+    <h1>Can an AI trace which places connect?</h1>
+    <p class="lead">
+      Yes, with the right model. Given the places on each of your five maps, <strong>Claude Sonnet 5.5
+      found 31 of the 32 clearly drawn connections and claimed no wrong ones</strong>: roads, mountain
+      paths, a village track up to a cairn, and the dotted sea lanes between islands. About 20 seconds
+      and 3 cents per map. Its traced points follow the drawn roads closely enough to compare route
+      lengths.
+    </p>
+  </header>
+
+  <section class="sheet">
+    <h2>Scoreboard</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Model</th><th>Clear connections found</th><th>Wrong ones claimed</th><th>Time per map</th><th>Cost, 5 maps</th><th>Verdict</th></tr>
+        </thead>
+        <tbody>
+          <tr class="best">
+            <td class="model">Claude Sonnet 5.5<small>anthropic/claude-sonnet-5.5</small></td>
+            <td class="num">31 / 32</td><td class="num">0</td><td class="num">14–29 s</td><td class="num">$0.14</td>
+            <td><span class="pill good">use this</span></td>
+          </tr>
+          <tr>
+            <td class="model">Gemini 3.1 Pro<small>google/gemini-3.1-pro-preview</small></td>
+            <td class="num">29 / 32</td><td class="num">1</td><td class="num">5–65 s</td><td class="num">$0.16</td>
+            <td><span class="pill good">good backup</span></td>
+          </tr>
+          <tr>
+            <td class="model">Gemini 3.8 Flash<small>google/gemini-3.8-flash</small></td>
+            <td class="num">26 / 32</td><td class="num">0</td><td class="num">30–133 s</td><td class="num">$0.20</td>
+            <td><span class="pill warn">misses sea lanes, slow</span></td>
+          </tr>
+          <tr>
+            <td class="model">GPT-5 mini<small>openai/gpt-5-mini</small></td>
+            <td class="num">25 / 32</td><td class="num">1</td><td class="num">37–54 s</td><td class="num">$0.05</td>
+            <td><span class="pill bad">broke on one map</span></td>
+          </tr>
+          <tr>
+            <td class="model">Qwen3-VL 235B<small>qwen/qwen3-vl-235b-a22b-instruct</small></td>
+            <td class="num">9 / 10*</td><td class="num">6</td><td class="num">~3 min</td><td class="num">$0.004</td>
+            <td><span class="pill bad">too many wrong links</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">
+      I traced the connections by hand from close-up crops. A connection is direct when no other listed
+      place sits on it; a shortcut through a town counts as wrong. Faint or unclear tracks are marked
+      optional and count neither way. *Qwen was rate-limited by its provider after two maps, twice; its
+      numbers cover those two maps only. GPT-5 mini answered the painted valley with broken JSON.
+      Total for this test: $0.73, including two failed runs kept on record.
+    </p>
+  </section>
+
+  <section class="sheet viewer" aria-labelledby="viewer-title">
+    <h2 id="viewer-title">The routes each model traced</h2>
+    <div class="legend">
+      <span><span class="pin"></span>a place, given to the model</span>
+      <span><span class="swatch" style="background:#1e82ff"></span>route that is clearly drawn</span>
+      <span><span class="swatch" style="background:#969696"></span>route that is faint or unclear (not scored)</span>
+      <span><span class="swatch" style="background:#f02d37"></span>route that is not there</span>
+    </div>
+    <div class="bar" role="tablist" aria-label="Map" id="maps"></div>
+    <div class="bar" role="tablist" aria-label="Model" id="models"></div>
+    <figure>
+      <img id="shot" alt="" width="1672" height="941">
+      <figcaption id="caption"></figcaption>
+    </figure>
+  </section>
+
+  <section class="sheet cols">
+    <div>
+      <h3>The one miss</h3>
+      <p>
+        On the archipelago, the sea lane from Corvane to Saltmarket joins the Tidemark lane partway
+        across. Every model followed Corvane's other lane to Hollow Isle (also really there) and missed
+        the merge. Junctions where two routes meet are the hard case.
+      </p>
+    </div>
+    <div>
+      <h3>What this means for the world graph</h3>
+      <p>
+        Places (Gemini 3.8 Flash, test 1) plus connections (Sonnet 5.5, this test) give the whole graph
+        from a painted map for about 4 cents and half a minute. The player confirms it, and the traced
+        routes give each connection a length to turn into turns or days.
+      </p>
+    </div>
+    <div>
+      <h3>Next</h3>
+      <ul>
+        <li>Terrain: label a grid of the map (road, plains, forest, mountain, water) to weigh routes.</li>
+        <li>Calibration: the shortest and longest route in turns or days.</li>
+        <li>Compare with drawing the layout first and painting the map from it.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script>
+const MAPS = [
+  { id: "map-1", name: "Kingdom", note: "labelled" },
+  { id: "map-2", name: "Kingdom", note: "icons only" },
+  { id: "map-3", name: "Valley", note: "painted" },
+  { id: "map-4", name: "Archipelago", note: "sea lanes" },
+  { id: "map-5", name: "Village", note: "paths" }
+];
+const MODELS = [
+  { id: "anthropic__claude-sonnet-5.5", name: "Sonnet 5.5" },
+  { id: "google__gemini-3.1-pro-preview", name: "Gemini 3.1 Pro" },
+  { id: "google__gemini-3.8-flash", name: "Gemini 3.8 Flash" },
+  { id: "openai__gpt-5-mini", name: "GPT-5 mini" }
+];
+// found, required, wrong, listed
+const SCORES = {
+  "anthropic__claude-sonnet-5.5": { "map-1": [5,5,0,8], "map-2": [5,5,0,5], "map-3": [5,5,0,7], "map-4": [9,10,0,15], "map-5": [7,7,0,9] },
+  "google__gemini-3.1-pro-preview": { "map-1": [5,5,1,7], "map-2": [5,5,0,5], "map-3": [4,5,0,10], "map-4": [8,10,0,15], "map-5": [7,7,0,10] },
+  "google__gemini-3.8-flash": { "map-1": [5,5,0,5], "map-2": [4,5,0,4], "map-3": [5,5,0,8], "map-4": [5,10,0,11], "map-5": [7,7,0,10] },
+  "openai__gpt-5-mini": { "map-1": [5,5,0,12], "map-2": [5,5,1,13], "map-3": [0,5,0,0], "map-4": [8,10,0,14], "map-5": [7,7,0,11] }
+};
+let state = { map: "map-4", model: MODELS[0].id };
+try { const saved = JSON.parse(localStorage.getItem("map-routes-view") || "null"); if (saved) state = { ...state, ...saved }; } catch (e) {}
+if (/^map-[1-5]$/.test(location.hash.slice(1))) state.map = location.hash.slice(1);
+
+function tabs(el, items, key) {
+  el.innerHTML = `<span class="label">${key}</span>`;
+  for (const item of items) {
+    const b = document.createElement("button");
+    b.className = "tab"; b.type = "button"; b.setAttribute("role", "tab");
+    b.textContent = item.note ? `${item.name} · ${item.note}` : item.name;
+    b.setAttribute("aria-selected", String(state[key] === item.id));
+    b.addEventListener("click", () => { state[key] = item.id; render(); });
+    el.append(b);
+  }
+}
+function render() {
+  tabs(document.getElementById("maps"), MAPS, "map");
+  tabs(document.getElementById("models"), MODELS, "model");
+  const map = MAPS.find(m => m.id === state.map), model = MODELS.find(m => m.id === state.model);
+  const img = document.getElementById("shot");
+  img.src = `overlays/${state.map}__${state.model}.jpg`;
+  img.alt = `${map.name} map with the routes ${model.name} traced`;
+  const [found, need, wrong, listed] = SCORES[state.model][state.map];
+  document.getElementById("caption").innerHTML =
+    `<span>clear connections found <b>${found} / ${need}</b></span><span>wrong <b>${wrong}</b></span>` +
+    `<span>routes listed <b>${listed}</b></span>`;
+  try { localStorage.setItem("map-routes-view", JSON.stringify(state)); } catch (e) {}
+}
+render();
+</script>

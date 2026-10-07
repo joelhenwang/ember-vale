@@ -1,0 +1,290 @@
+{
+  "anthropic/claude-sonnet-5.5": {
+    "cost_usd": 0.1363,
+    "maps": {
+      "map-1": {
+        "found": 5,
+        "required": 5,
+        "missed": [],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 8
+      },
+      "map-2": {
+        "found": 5,
+        "required": 5,
+        "missed": [],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 5
+      },
+      "map-3": {
+        "found": 5,
+        "required": 5,
+        "missed": [],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 7
+      },
+      "map-4": {
+        "found": 9,
+        "required": 10,
+        "missed": [
+          "Corvane|Saltmarket"
+        ],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 15
+      },
+      "map-5": {
+        "found": 7,
+        "required": 7,
+        "missed": [],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 9
+      }
+    }
+  },
+  "google/gemini-3.1-pro-preview": {
+    "cost_usd": 0.1622,
+    "maps": {
+      "map-1": {
+        "found": 5,
+        "required": 5,
+        "missed": [],
+        "wrong": [
+          "Oakhollow - Saltreach"
+        ],
+        "precision": 0.83,
+        "claimed": 7
+      },
+      "map-2": {
+        "found": 5,
+        "required": 5,
+        "missed": [],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 5
+      },
+      "map-3": {
+        "found": 4,
+        "required": 5,
+        "missed": [
+          "stone bridge|mountain pass checkpoint"
+        ],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 10
+      },
+      "map-4": {
+        "found": 8,
+        "required": 10,
+        "missed": [
+          "Corvane|Saltmarket",
+          "Saltmarket|Ixquel"
+        ],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 15
+      },
+      "map-5": {
+        "found": 7,
+        "required": 7,
+        "missed": [],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 10
+      }
+    }
+  },
+  "google/gemini-3.8-flash": {
+    "cost_usd": 0.2038,
+    "maps": {
+      "map-1": {
+        "found": 5,
+        "required": 5,
+        "missed": [],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 5
+      },
+      "map-2": {
+        "found": 4,
+        "required": 5,
+        "missed": [
+          "harbour town|castle city"
+        ],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 4
+      },
+      "map-3": {
+        "found": 5,
+        "required": 5,
+        "missed": [],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 8
+      },
+      "map-4": {
+        "found": 5,
+        "required": 10,
+        "missed": [
+          "Corvane|Saltmarket",
+          "Saltmarket|Ixquel",
+          "Hollow Isle|Pell",
+          "Ochre Clans|Gullsend",
+          "Ochre Clans|Tidemark"
+        ],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 11
+      },
+      "map-5": {
+        "found": 7,
+        "required": 7,
+        "missed": [],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 10
+      }
+    }
+  },
+  "openai/gpt-5-mini": {
+    "cost_usd": 0.0494,
+    "maps": {
+      "map-1": {
+        "found": 5,
+        "required": 5,
+        "missed": [],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 12
+      },
+      "map-2": {
+        "found": 5,
+        "required": 5,
+        "missed": [],
+        "wrong": [
+          "eastern mountains - fortified gate"
+        ],
+        "precision": 0.83,
+        "claimed": 13
+      },
+      "map-3": {
+        "found": 0,
+        "required": 5,
+        "missed": [
+          "lakeside village|stone bridge",
+          "hilltop monastery|lakeside village / hilltop monastery|woodcutters' camp",
+          "stone bridge|mountain pass checkpoint",
+          "stone bridge|tribal encampment",
+          "mountain pass checkpoint|abandoned mine / stone bridge|abandoned mine"
+        ],
+        "wrong": [],
+        "precision": null,
+        "claimed": 0
+      },
+      "map-4": {
+        "found": 8,
+        "required": 10,
+        "missed": [
+          "Saltmarket|Ixquel",
+          "Ochre Clans|Gullsend"
+        ],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 14
+      },
+      "map-5": {
+        "found": 7,
+        "required": 7,
+        "missed": [],
+        "wrong": [],
+        "precision": 1.0,
+        "claimed": 11
+      }
+    }
+  },
+  "qwen/qwen3-vl-235b-a22b-instruct": {
+    "cost_usd": 0.0028,
+    "maps": {
+      "map-1": {
+        "found": 5,
+        "required": 5,
+        "missed": [],
+        "wrong": [
+          "Aldermoor - Brindle",
+          "Ashwater - Sunken Keep",
+          "Ashwater - Thornwood",
+          "Oakhollow - Saltreach"
+        ],
+        "precision": 0.56,
+        "claimed": 16
+      },
+      "map-2": {
+        "found": 4,
+        "required": 5,
+        "missed": [
+          "castle city|ruined tower / castle city|swamp"
+        ],
+        "wrong": [
+          "castle city - northern village",
+          "river - swamp"
+        ],
+        "precision": 0.67,
+        "claimed": 14
+      },
+      "map-3": {
+        "found": 0,
+        "required": 5,
+        "missed": [
+          "lakeside village|stone bridge",
+          "hilltop monastery|lakeside village / hilltop monastery|woodcutters' camp",
+          "stone bridge|mountain pass checkpoint",
+          "stone bridge|tribal encampment",
+          "mountain pass checkpoint|abandoned mine / stone bridge|abandoned mine"
+        ],
+        "wrong": [],
+        "precision": null,
+        "claimed": 0
+      },
+      "map-4": {
+        "found": 0,
+        "required": 10,
+        "missed": [
+          "Gullsend|Corvane",
+          "Tidemark|Corvane",
+          "Corvane|Saltmarket",
+          "Saltmarket|Ixquel",
+          "Pell|Ixquel",
+          "Hollow Isle|Pell",
+          "Ochre Clans|Gullsend",
+          "Ochre Clans|Tidemark",
+          "Tidemark|Saltmarket",
+          "Saltmarket|Farpoint"
+        ],
+        "wrong": [],
+        "precision": null,
+        "claimed": 0
+      },
+      "map-5": {
+        "found": 0,
+        "required": 7,
+        "missed": [
+          "the Hearth|Market square",
+          "Market square|Mill / the Hearth|Mill",
+          "Chapel|the Hearth / Chapel|Market square",
+          "Market square|Smithy / the Hearth|Smithy",
+          "Smithy|Sheep Track",
+          "Sheep Track|stone cairn",
+          "Market square|Mill Road"
+        ],
+        "wrong": [],
+        "precision": null,
+        "claimed": 0
+      }
+    }
+  }
+}
