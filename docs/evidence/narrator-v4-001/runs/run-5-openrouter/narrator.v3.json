@@ -1,0 +1,460 @@
+[
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 0,
+    "prompt_tokens": 3419,
+    "completion_tokens": 917,
+    "repaired": false,
+    "first_denial": "speaker outside the audience: f01c6baf-0996-42fd-a9b9-4a97cb6a7af3",
+    "raw": [
+      "```json\n[\n  {\n    \"text\": \"At Saltmarket, in the village yard near the well, Wren and Ash speak as the morning sun climbs over the roofs.\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"cited_fact_keys\": [\"place\", \"spots\", \"previously\"]\n  },\n  {\n    \"text\": \"Wren tries to reach Ash about the distress call they heard from the rocky islets.\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"cited_fact_keys\": [\"attempt:communicate\"]\n  },\n  {\n    \"text\": \"\\\"The Fisher's Lost Catch is a tale that has been passed down through generations. It speaks of a fisher who lost their catch in the treacherous waters of the rocky islets. The story is a reminder of the dangers of the sea and the importance of respecting its power.\\\"\",\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"f01c6baf-0996-42fd-a9b9-4a97cb6a7af3\",\n    \"cited_fact_keys\": [\"reaction:1\"]\n  },\n  {\n    \"text\": \"Ash, in turn, speaks to Wren about the distress call from the rocky islets, drawing the conversation back to that urgent signal.\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"cited_fact_keys\": [\"reaction:2\", \"attempt:communicate\"]\n  },\n  {\n    \"text\": \"Their words interweave—one voice anchored in the old tale, the other in the present cry—two attempts at understanding meeting in the middle.\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"cited_fact_keys\": [\"attempt:communicate\", \"attempt:communicate\"]\n  }\n]\n```",
+      "{\n  \"beats\": [\n    {\n      \"text\": \"At the Hearth, the day's first light filters through the windows as Wren and Ash settle near the fire.\",\n      \"cited_fact_keys\": [\"place\", \"previously\"],\n      \"emotion_hint\": \"quiet morning\",\n      \"kind\": \"narration\",\n      \"speaker_id\": null,\n      \"source_effect_ids\": []\n    },\n    {\n      \"text\": \"Wren turns to Ash, speaking of the tale that has been passed down through generations: \\\"The Fisher's Lost Catch is a tale that has been passed down through generations. It speaks of a fisher who lost their catch in the treacherous waters of the rocky islets. The story is a reminder of the dangers of the sea and the importance of respecting its power.\\\"\",\n      \"cited_fact_keys\": [\"reaction:1\"],\n      \"emotion_hint\": \"serious and reverent\",\n      \"kind\": \"dialogue\",\n      \"speaker_id\": \"f01c6baf-0996-42fd-a9b9-4a97cb6a7af3\",\n      \"source_effect_ids\": []\n    },\n    {\n      \"text\": \"Ash tries to respond, gesturing toward the sea and voicing a concern about the distress call from the rocky islets.\",\n      \"cited_fact_keys\": [\"attempt:communicate\", \"reaction:2\"],\n      \"emotion_hint\": \"urgent\",\n      \"kind\": \"narration\",\n      \"speaker_id\": null,\n      \"source_effect_ids\": []\n    },\n    {\n      \"text\": \"Wren, in turn, attempts to reach Ash, picking up on that same distress call to bridge their conversation.\",\n      \"cited_fact_keys\": [\"attempt:communicate\"],\n      \"emotion_hint\": \"focused\",\n      \"kind\": \"narration\",\n      \"speaker_id\": null,\n      \"source_effect_ids\": []\n    },\n    {\n      \"text\": \"The two settle into a halting back-and-forth, circling the islets' warning—one reciting the old caution, the other pointing at the immediate call.\",\n      \"cited_fact_keys\": [\"reaction:1\", \"reaction:2\"],\n      \"emotion_hint\": \"tension\",\n      \"kind\": \"narration\",\n      \"speaker_id\": null,\n      \"source_effect_ids\": []\n    }\n  ]\n}"
+    ],
+    "valid": false,
+    "denial": "1 schema errors",
+    "text": "",
+    "beats": 0,
+    "words": 0,
+    "stock": 0,
+    "spot": null,
+    "has_spots": true
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 1,
+    "prompt_tokens": 3501,
+    "completion_tokens": 1134,
+    "repaired": false,
+    "first_denial": "speaker outside the audience: f01c6baf-0996-42fd-a9b9-4a97cb6a7af3",
+    "raw": [
+      "```json\n[\n  {\n    \"text\": \"At Old Bram’s farm, day two dawns pale over the yard. The two travelers, Ash and Wren, stand where the morning before had left them—and now the air carries the weight of a conversation neither quite knows how to begin.\",\n    \"cited_fact_keys\": [\"place\", \"previously\"],\n    \"kind\": \"transition\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"tentative\"\n  },\n  {\n    \"text\": \"Wren tries to reach Ash, drawing on the old tales of Ember Vale to find common ground.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"hopeful\"\n  },\n  {\n    \"text\": \"Ash, for their part, reaches back—bringing up the rocky islets south of Corvane, an old thread of their own.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"searching\"\n  },\n  {\n    \"text\": \"Ash speaks to Wren about the tales of Ember Vale, the words slow and careful as if testing the ground between them.\",\n    \"cited_fact_keys\": [\"reaction:1\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"probing\"\n  },\n  {\n    \"text\": \"\\\"The rocky islets south of Corvane are indeed a place of mystery and intrigue. What do you think might be the reason behind the Fisher's Lost Catch?\\\"\",\n    \"cited_fact_keys\": [\"reaction:2\"],\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"f01c6baf-0996-42fd-a9b9-4a97cb6a7af3\",\n    \"emotion_hint\": \"inviting\"\n  },\n  {\n    \"text\": \"The question hangs between them, the farmyard quiet except for the wind. Both have spoken—each has tried, and now the next step belongs to whoever answers first.\",\n    \"cited_fact_keys\": [\"reaction:2\", \"place\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"stillness\"\n  }\n]\n```",
+      "```json\n[\n  {\n    \"text\": \"The morning sun lights the yard of Old Bram's farm as the two travelers stand near the garden's edge.\",\n    \"cited_fact_keys\": [\"place\", \"spots\", \"previously\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"emotion_hint\": \"grounded, quiet\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Wren turns toward Ash, making another attempt to bridge the gap between them—this time returning to the tales of Ember Vale that Ash had raised earlier.\",\n    \"cited_fact_keys\": [\"attempt:communicate\", \"reaction:1\", \"previously\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"emotion_hint\": \"persistent, seeking\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"\\\"The rocky islets south of Corvane are indeed a place of mystery and intrigue. What do you think might be the reason behind the Fisher's Lost Catch?\\\"\",\n    \"cited_fact_keys\": [\"reaction:2\"],\n    \"speaker_id\": \"f01c6baf-0996-42fd-a9b9-4a97cb6a7af3\",\n    \"kind\": \"dialogue\",\n    \"emotion_hint\": \"curious, probing\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Ash, who had been speaking of Ember Vale a moment ago, is now drawn back to the islets—and to Wren's question hanging in the air between them.\",\n    \"cited_fact_keys\": [\"reaction:1\", \"reaction:2\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"emotion_hint\": \"reflective, uncertain\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"The conversation has shifted from the tales Ash brought up to the mystery Wren now places before them—a quiet standoff of two attempts, each meeting the other's.\",\n    \"cited_fact_keys\": [\"attempt:communicate\", \"attempt:communicate\", \"previously\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"emotion_hint\": \"tentative, charged\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"For now, neither has fully answered the other; what was spoken hangs unfinished as the farmyard settles into a watchful quiet.\",\n    \"cited_fact_keys\": [\"previously\", \"reaction:2\"],\n    \"speaker_id\": null,\n    \"kind\": \"transition\",\n    \"emotion_hint\": \"expectant, still\",\n    \"source_effect_ids\": []\n  }\n]\n```"
+    ],
+    "valid": false,
+    "denial": "speaker outside the audience: f01c6baf-0996-42fd-a9b9-4a97cb6a7af3",
+    "text": "The morning sun lights the yard of Old Bram's farm as the two travelers stand near the garden's edge. Wren turns toward Ash, making another attempt to bridge the gap between them—this time returning to the tales of Ember Vale that Ash had raised earlier. \"The rocky islets south of Corvane are indeed a place of mystery and intrigue. What do you think might be the reason behind the Fisher's Lost Catch?\" Ash, who had been speaking of Ember Vale a moment ago, is now drawn back to the islets—and to Wren's question hanging in the air between them. The conversation has shifted from the tales Ash brought up to the mystery Wren now places before them—a quiet standoff of two attempts, each meeting the other's. For now, neither has fully answered the other; what was spoken hangs unfinished as the farmyard settles into a watchful quiet.",
+    "beats": 6,
+    "words": 147,
+    "stock": 0,
+    "spot": null,
+    "has_spots": true
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 2,
+    "prompt_tokens": 1586,
+    "completion_tokens": 383,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "```json\n[\n  {\n    \"text\": \"At Old Bram's farm, the night air holds the memory of midnight: Wren had just tried to speak of the rocky islets south of Corvane, and Ash was waiting. Now, as if picking up a thread they both recognize, Ash turns and attempts to share something — the tales of Ember Vale.\",\n    \"cited_fact_keys\": [\"place\", \"spots\", \"previously\", \"attempt:communicate\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"emotion_hint\": \"tentative, reaching out\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Wren, mirroring the gesture, also attempts to speak of Ember Vale — the same tales, offered from their own side, as if two hands trying to meet in the dark.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"emotion_hint\": \"mutual, hesitant\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Ash speaks to Wren about the tales of Ember Vale.\",\n    \"cited_fact_keys\": [\"reaction:1\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"emotion_hint\": \"focused, earnest\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Wren speaks to Ash about the tales of Ember Vale.\",\n    \"cited_fact_keys\": [\"reaction:2\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"emotion_hint\": \"open, attentive\",\n    \"source_effect_ids\": []\n  }\n]\n```"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "At Old Bram's farm, the night air holds the memory of midnight: Wren had just tried to speak of the rocky islets south of Corvane, and Ash was waiting. Now, as if picking up a thread they both recognize, Ash turns and attempts to share something — the tales of Ember Vale. Wren, mirroring the gesture, also attempts to speak of Ember Vale — the same tales, offered from their own side, as if two hands trying to meet in the dark. Ash speaks to Wren about the tales of Ember Vale. Wren speaks to Ash about the tales of Ember Vale.",
+    "beats": 4,
+    "words": 102,
+    "stock": 4,
+    "spot": null,
+    "has_spots": true
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 3,
+    "prompt_tokens": 1487,
+    "completion_tokens": 293,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "```json\n[\n  {\n    \"text\": \"At Saltmarket, somewhere between the dark mill and the stone bridge, Ash stands on the market square's edge where the cobbles fade into dirt. Ash waits quietly, listening to the Whispering Wood beyond the fields, the night air carrying the murmur of the farm and the chapel.\",\n    \"cited_fact_keys\": [\"place\", \"spots\", \"attempt:wait\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Wren steps up beside Ash, turning to face them. Wren tries to find the words for the rocky islets south of Corvane, speaking haltingly, as if piecing together a thought that does not sit easily in the mouth.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Ash hears Wren out, then speaks in turn about the same rocky islets south of Corvane, offering a reply that presses back against what Wren has said.\",\n    \"cited_fact_keys\": [\"reaction:1\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"source_effect_ids\": []\n  }\n]\n```"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "At Saltmarket, somewhere between the dark mill and the stone bridge, Ash stands on the market square's edge where the cobbles fade into dirt. Ash waits quietly, listening to the Whispering Wood beyond the fields, the night air carrying the murmur of the farm and the chapel. Wren steps up beside Ash, turning to face them. Wren tries to find the words for the rocky islets south of Corvane, speaking haltingly, as if piecing together a thought that does not sit easily in the mouth. Ash hears Wren out, then speaks in turn about the same rocky islets south of Corvane, offering a reply that presses back against what Wren has said.",
+    "beats": 3,
+    "words": 112,
+    "stock": 0,
+    "spot": "Stone bridge",
+    "has_spots": true
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 4,
+    "prompt_tokens": 1573,
+    "completion_tokens": 485,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "```json\n[\n  {\n    \"text\": \"Evening settles over Saltmarket, and the two of them have found a quiet corner at the Hearth, the inn's fire crackling low as the day's noise fades around them.\",\n    \"cited_fact_keys\": [\"place\", \"spots\", \"previously\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"emotion_hint\": \"quiet, expectant\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Wren leans forward, trying once more to get through to Ash about the rocky islets south of Corvane, gesturing vaguely toward the window as if the sea might be visible beyond the fields.\",\n    \"cited_fact_keys\": [\"attempt:communicate\", \"reaction:1\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"emotion_hint\": \"earnest, searching\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Ash watches, listening intently through Wren's attempt, their gaze steady, waiting for the meaning to surface.\",\n    \"cited_fact_keys\": [\"previously\", \"attempt:communicate\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"emotion_hint\": \"patient, focused\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Then Ash speaks in return, circling back to the same islets, trying to give the words back in a shape Wren might recognize.\",\n    \"cited_fact_keys\": [\"attempt:communicate\", \"reaction:2\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"emotion_hint\": \"reciprocal, reaching\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"The exchange stalls, two people talking past each other over water neither can fully name, the fire settling into a hush between them.\",\n    \"cited_fact_keys\": [\"reaction:1\", \"reaction:2\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"emotion_hint\": \"frustrated, unresolved\",\n    \"source_effect_ids\": []\n  }\n]\n```"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "Evening settles over Saltmarket, and the two of them have found a quiet corner at the Hearth, the inn's fire crackling low as the day's noise fades around them. Wren leans forward, trying once more to get through to Ash about the rocky islets south of Corvane, gesturing vaguely toward the window as if the sea might be visible beyond the fields. Ash watches, listening intently through Wren's attempt, their gaze steady, waiting for the meaning to surface. Then Ash speaks in return, circling back to the same islets, trying to give the words back in a shape Wren might recognize. The exchange stalls, two people talking past each other over water neither can fully name, the fire settling into a hush between them.",
+    "beats": 5,
+    "words": 124,
+    "stock": 0,
+    "spot": "the Hearth",
+    "has_spots": true
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 5,
+    "prompt_tokens": 1584,
+    "completion_tokens": 437,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "```json\n[\n  {\n    \"text\": \"At the Chapel graveyard, the long shadows of dusk settle over the weathered stones. Ash waits, still and patient, somewhere among the markers.\",\n    \"cited_fact_keys\": [\"place\", \"attempt:wait\"],\n    \"emotion_hint\": \"quiet patience\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Wren approaches, finding Ash among the graves, and tries to speak of the rocky islets south of Corvane, picking up the thread of what was left unsaid.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"emotion_hint\": \"earnest\",\n    \"kind\": \"action\",\n    \"speaker_id\": null,\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Ash turns to Wren, and speaks about the rocky islets south of Corvane,\",\n    \"cited_fact_keys\": [\"reaction:1\"],\n    \"emotion_hint\": \"engaged\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"reminding Wren of the day's earlier talk — of the Fisher's Lost Catch, and of the tale they had dipped into before dusk.\",\n    \"cited_fact_keys\": [\"previously\", \"reaction:2\"],\n    \"emotion_hint\": \"reflective\",\n    \"kind\": \"transition\",\n    \"speaker_id\": null,\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Wren, in turn, brings the Fisher's Lost Catch back around, measuring what it means against the empty sea to the south.\",\n    \"cited_fact_keys\": [\"reaction:2\"],\n    \"emotion_hint\": \"wistful\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"source_effect_ids\": []\n  }\n]\n```"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "At the Chapel graveyard, the long shadows of dusk settle over the weathered stones. Ash waits, still and patient, somewhere among the markers. Wren approaches, finding Ash among the graves, and tries to speak of the rocky islets south of Corvane, picking up the thread of what was left unsaid. Ash turns to Wren, and speaks about the rocky islets south of Corvane, reminding Wren of the day's earlier talk — of the Fisher's Lost Catch, and of the tale they had dipped into before dusk. Wren, in turn, brings the Fisher's Lost Catch back around, measuring what it means against the empty sea to the south.",
+    "beats": 5,
+    "words": 107,
+    "stock": 0,
+    "spot": "Chapel",
+    "has_spots": true
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 6,
+    "prompt_tokens": 1589,
+    "completion_tokens": 356,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "```json\n[\n  {\n    \"text\": \"The morning sun spills over Corvane, and in the quiet of the farmyard, Ash turns to Wren, trying once more to bridge the silence between them.\",\n    \"cited_fact_keys\": [\"place\", \"attempt:communicate\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"source_effect_ids\": [],\n    \"emotion_hint\": \"hopeful, tentative\"\n  },\n  {\n    \"text\": \"Ash speaks to Wren about their journey to Ember Vale, the words carrying the weight of an old question.\",\n    \"cited_fact_keys\": [\"reaction:1\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"source_effect_ids\": [],\n    \"emotion_hint\": \"earnest\"\n  },\n  {\n    \"text\": \"Wren, for their part, turns the conversation toward something else entirely — the Fisher's Lost Catch — as if steering away from the path Ash is trying to walk.\",\n    \"cited_fact_keys\": [\"reaction:2\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"source_effect_ids\": [],\n    \"emotion_hint\": \"deflective\"\n  },\n  {\n    \"text\": \"The two stand at an impasse, each reaching for a different thread, the morning air thick with what remains unsaid.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"source_effect_ids\": [],\n    \"emotion_hint\": \"tense\"\n  }\n]\n```"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The morning sun spills over Corvane, and in the quiet of the farmyard, Ash turns to Wren, trying once more to bridge the silence between them. Ash speaks to Wren about their journey to Ember Vale, the words carrying the weight of an old question. Wren, for their part, turns the conversation toward something else entirely — the Fisher's Lost Catch — as if steering away from the path Ash is trying to walk. The two stand at an impasse, each reaching for a different thread, the morning air thick with what remains unsaid.",
+    "beats": 4,
+    "words": 94,
+    "stock": 1,
+    "spot": null,
+    "has_spots": true
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 7,
+    "prompt_tokens": 1542,
+    "completion_tokens": 388,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "```json\n[\n  {\n    \"text\": \"At the market stalls in Corvane, Ash and Wren finally catch sight of one another.\",\n    \"cited_fact_keys\": [\"place\", \"reaction:2\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"source_effect_ids\": [],\n    \"emotion_hint\": \"relief at reunion\"\n  },\n  {\n    \"text\": \"Wren seems eager to convey something about Ash's journey to Ember Vale, while Ash appears to be trying to address the market at Saltmarket.\",\n    \"cited_fact_keys\": [\"attempt:communicate\", \"attempt:communicate\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"source_effect_ids\": [],\n    \"emotion_hint\": \"mutual urgency\"\n  },\n  {\n    \"text\": \"Wren speaks to Ash about the market at Saltmarket, but Ash hasn't quite caught the gist of it, and instead steers toward a question of their own.\",\n    \"cited_fact_keys\": [\"reaction:1\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"source_effect_ids\": [],\n    \"emotion_hint\": \"slight misalignment, gentle\"\n  },\n  {\n    \"text\": \"Ash says to Wren, \\\"I've been here for a while, Wren. What brings you to Ember Vale?\\\"\",\n    \"cited_fact_keys\": [\"reaction:2\"],\n    \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\",\n    \"kind\": \"dialogue\",\n    \"source_effect_ids\": [],\n    \"emotion_hint\": \"curious, warm\"\n  }\n]\n```"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "At the market stalls in Corvane, Ash and Wren finally catch sight of one another. Wren seems eager to convey something about Ash's journey to Ember Vale, while Ash appears to be trying to address the market at Saltmarket. Wren speaks to Ash about the market at Saltmarket, but Ash hasn't quite caught the gist of it, and instead steers toward a question of their own. Ash says to Wren, \"I've been here for a while, Wren. What brings you to Ember Vale?\"",
+    "beats": 4,
+    "words": 83,
+    "stock": 1,
+    "spot": "Market stalls",
+    "has_spots": true
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 8,
+    "prompt_tokens": 1215,
+    "completion_tokens": 86,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "```json\n[\n  {\n    \"cited_fact_keys\": [\"attempt:wait\", \"place\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Fisher stands motionless on the wet rock, the islets stretching south of Corvane behind them. They wait, unhurried, letting the silence of the empty sea do the talking.\"\n  }\n]\n```"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "Fisher stands motionless on the wet rock, the islets stretching south of Corvane behind them. They wait, unhurried, letting the silence of the empty sea do the talking.",
+    "beats": 1,
+    "words": 28,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 9,
+    "prompt_tokens": 1189,
+    "completion_tokens": 153,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "```json\n[\n  {\n    \"cited_fact_keys\": [\"place\", \"previously\"],\n    \"speaker_id\": null,\n    \"kind\": \"transition\",\n    \"text\": \"At dawn on the rocky islets south of Corvane, the sea still holds its silent expanse.\",\n    \"emotion_hint\": \"stillness\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"speaker_id\": null,\n    \"kind\": \"action\",\n    \"text\": \"Fisher stands motionless among the tide-worn rocks, waiting.\",\n    \"emotion_hint\": \"patience\",\n    \"source_effect_ids\": []\n  }\n]\n```"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "At dawn on the rocky islets south of Corvane, the sea still holds its silent expanse. Fisher stands motionless among the tide-worn rocks, waiting.",
+    "beats": 2,
+    "words": 24,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 10,
+    "prompt_tokens": 1180,
+    "completion_tokens": 138,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\n    \"text\": \"Fisher stands motionless on the slick rock of a low islet south of Corvane, scanning the dark waterline that merges with the sky. Not a ripple breaks the surface that could be a sail or a fin. They do not shift their weight, do not glance away, their patience unbroken as the minutes pass.\",\n    \"cited_fact_keys\": [\"place\", \"previously\", \"attempt:wait\", \"pronouns\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"steadfast vigilance\",\n    \"source_effect_ids\": []\n  }\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "Fisher stands motionless on the slick rock of a low islet south of Corvane, scanning the dark waterline that merges with the sky. Not a ripple breaks the surface that could be a sail or a fin. They do not shift their weight, do not glance away, their patience unbroken as the minutes pass.",
+    "beats": 1,
+    "words": 54,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 11,
+    "prompt_tokens": 1194,
+    "completion_tokens": 63,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "```json\n[\n  {\n    \"text\": \"Fisher waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"source_effect_ids\": [],\n    \"emotion_hint\": \"\"\n  }\n]\n```"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "Fisher waits.",
+    "beats": 1,
+    "words": 2,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 12,
+    "prompt_tokens": 1212,
+    "completion_tokens": 254,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "```json\n[\n  {\n    \"text\": \"The dusk deepens over the Rocky islets south of Corvane, the sea still stretching out in every direction. The fading light catches off the gently lapping waves.\",\n    \"cited_fact_keys\": [\"place\", \"previously\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"emotion_hint\": \"\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Fisher remains, patience unbroken against the rhythmic wash of the shore.\",\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"speaker_id\": null,\n    \"kind\": \"action\",\n    \"emotion_hint\": \"steadfast\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"The surface glitters under the last dusk light, and still Fisher's vigil continues, unyielding as the tide itself.\",\n    \"cited_fact_keys\": [\"place\", \"previously\", \"attempt:wait\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"emotion_hint\": \"quiet resolve\",\n    \"source_effect_ids\": []\n  }\n]\n```"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The dusk deepens over the Rocky islets south of Corvane, the sea still stretching out in every direction. The fading light catches off the gently lapping waves. Fisher remains, patience unbroken against the rhythmic wash of the shore. The surface glitters under the last dusk light, and still Fisher's vigil continues, unyielding as the tide itself.",
+    "beats": 3,
+    "words": 56,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 13,
+    "prompt_tokens": 1171,
+    "completion_tokens": 96,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\n    \"text\": \"Dusk settles over the rocky islets south of Corvane, and Fisher stands motionless among the stones, eyes locked on the distant horizon.\",\n    \"cited_fact_keys\": [\"place\", \"previously\", \"attempt:wait\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"emotion_hint\": \"anticipation\",\n    \"source_effect_ids\": []\n  }\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "Dusk settles over the rocky islets south of Corvane, and Fisher stands motionless among the stones, eyes locked on the distant horizon.",
+    "beats": 1,
+    "words": 22,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 14,
+    "prompt_tokens": 1186,
+    "completion_tokens": 238,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "```json\n[\n  {\n    \"cited_fact_keys\": [\"place\"],\n    \"emotion_hint\": \"steady, solitary\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"On the rocky islets south of Corvane, the ground stays uneven beneath Fisher's boots. The surf gnaws at the stone edges, and the sky holds the last amber of the afternoon.\"\n  },\n  {\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"emotion_hint\": \"patient\",\n    \"kind\": \"action\",\n    \"speaker_id\": null,\n    \"text\": \"Fisher waits, standing still among the jagged rocks, letting the minutes pass without hurry.\"\n  },\n  {\n    \"cited_fact_keys\": [\"attempt:wait\", \"place\"],\n    \"emotion_hint\": \"quiet resolve\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"No words are offered to the sea. Fisher simply holds their ground on the islet, watching the horizon as the light begins to soften further.\"\n  }\n]\n```"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "On the rocky islets south of Corvane, the ground stays uneven beneath Fisher's boots. The surf gnaws at the stone edges, and the sky holds the last amber of the afternoon. Fisher waits, standing still among the jagged rocks, letting the minutes pass without hurry. No words are offered to the sea. Fisher simply holds their ground on the islet, watching the horizon as the light begins to soften further.",
+    "beats": 3,
+    "words": 70,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 15,
+    "prompt_tokens": 1404,
+    "completion_tokens": 548,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\n    \"text\": \"At Saltmarket, as the sunset light begins to fade, the two travelers share a quiet moment.\",\n    \"cited_fact_keys\": [\"place\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"calm, reflective\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Ember Vale's tales are as varied as its people, Wren. What's on your mind?\",\n    \"cited_fact_keys\": [\"previously\"],\n    \"kind\": \"dialogue\",\n    \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\",\n    \"emotion_hint\": \"inviting, curious\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Wren picks at the hem of their sleeve, considering how to bring up an old tale.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"kind\": \"action\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"hesitant\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Wren finally speaks up, sharing something about the Fisher's Lost Catch.\",\n    \"cited_fact_keys\": [\"reaction:1\", \"attempt:communicate\"],\n    \"kind\": \"action\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"tentative\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Wren mentions a tale called 'the Fisher's Lost Catch'.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"subtle, hinting\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Ash, steady and patient, waits for Wren to continue.\",\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"kind\": \"action\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"patient, attentive\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Ash then offers a thought of their own about the Fisher's Lost Catch.\",\n    \"cited_fact_keys\": [\"reaction:2\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"thoughtful\",\n    \"source_effect_ids\": []\n  }\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "At Saltmarket, as the sunset light begins to fade, the two travelers share a quiet moment. Wren picks at the hem of their sleeve, considering how to bring up an old tale. Wren finally speaks up, sharing something about the Fisher's Lost Catch. Wren mentions a tale called 'the Fisher's Lost Catch'. Ash, steady and patient, waits for Wren to continue. Ash then offers a thought of their own about the Fisher's Lost Catch.",
+    "beats": 6,
+    "words": 74,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 16,
+    "prompt_tokens": 1453,
+    "completion_tokens": 385,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "```json\n[\n  {\n    \"text\": \"Wren arrives at Saltmarket, the market's stalls and carts laid out under the afternoon light, and finds Ash waiting there.\",\n    \"cited_fact_keys\": [\"place\", \"previously\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Wren moves to speak, bringing up the subject of the tales of Ember Vale as a way to break the silence.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Wren tells Ash about a particular story called \\\"the Fisher's Lost Catch,\\\" one of the tales from Ember Vale.\",\n    \"cited_fact_keys\": [\"reaction:1\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"\\\"Ember Vale's tales are as varied as its people, Wren. What's on your mind?\\\"\",\n    \"cited_fact_keys\": [\"reaction:2\"],\n    \"speaker_id\": \"908cf9cf-ffa4-4b05-9d65-60aff655b513\",\n    \"kind\": \"dialogue\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Ash waits quietly for Wren's answer, letting the question hang in the air between them.\",\n    \"cited_fact_keys\": [\"attempt:wait\", \"reaction:2\"],\n    \"speaker_id\": null,\n    \"kind\": \"narration\",\n    \"source_effect_ids\": []\n  }\n]\n```"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "Wren arrives at Saltmarket, the market's stalls and carts laid out under the afternoon light, and finds Ash waiting there. Wren moves to speak, bringing up the subject of the tales of Ember Vale as a way to break the silence. Wren tells Ash about a particular story called \"the Fisher's Lost Catch,\" one of the tales from Ember Vale. \"Ember Vale's tales are as varied as its people, Wren. What's on your mind?\" Ash waits quietly for Wren's answer, letting the question hang in the air between them.",
+    "beats": 5,
+    "words": 89,
+    "stock": 1,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 17,
+    "prompt_tokens": 1165,
+    "completion_tokens": 87,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "```json\n[\n  {\n    \"cited_fact_keys\": [\"place\", \"attempt:wait\", \"previously\"],\n    \"emotion_hint\": \"quiet patience\",\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Fisher still stands on the rocky islets south of Corvane, where the sea breeze carries the afternoon's lingering warmth.\"\n  }\n]\n```"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "Fisher still stands on the rocky islets south of Corvane, where the sea breeze carries the afternoon's lingering warmth.",
+    "beats": 1,
+    "words": 19,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 18,
+    "prompt_tokens": 1179,
+    "completion_tokens": 100,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\n    \"text\": \"On the rocky islets south of Corvane, the noon sun hangs still and the sea laps at the stone. Fisher stands patient, scanning the horizon — waiting.\",\n    \"cited_fact_keys\": [\"place\", \"previously\", \"attempt:wait\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"quiet patience\",\n    \"source_effect_ids\": []\n  }\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "On the rocky islets south of Corvane, the noon sun hangs still and the sea laps at the stone. Fisher stands patient, scanning the horizon — waiting.",
+    "beats": 1,
+    "words": 27,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 19,
+    "prompt_tokens": 1285,
+    "completion_tokens": 276,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "```json\n[\n  {\n    \"kind\": \"transition\",\n    \"speaker_id\": null,\n    \"text\": \"Saltmarket.\",\n    \"cited_fact_keys\": [\"place\"],\n    \"emotion_hint\": \"arrival, quiet expectation\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"After the conversation earlier — Wren raising the tales of Ember Vale, and Ash deciding to come here, leaving Corvane behind — Ash had reached Saltmarket while Wren stayed away. Now the picture shifts: Wren moves toward Saltmarket too.\",\n    \"cited_fact_keys\": [\"previously\", \"attempt:move\"],\n    \"emotion_hint\": \"a change of position, converging paths\"\n  },\n  {\n    \"kind\": \"action\",\n    \"speaker_id\": null,\n    \"text\": \"Wren goes to Saltmarket.\",\n    \"cited_fact_keys\": [\"attempt:move\"],\n    \"emotion_hint\": \"deliberate approach\"\n  },\n  {\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"text\": \"Ash waits.\",\n    \"cited_fact_keys\": [\"attempt:wait\"],\n    \"emotion_hint\": \"stillness, patience\"\n  }\n]\n```"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "Saltmarket. After the conversation earlier — Wren raising the tales of Ember Vale, and Ash deciding to come here, leaving Corvane behind — Ash had reached Saltmarket while Wren stayed away. Now the picture shifts: Wren moves toward Saltmarket too. Wren goes to Saltmarket. Ash waits.",
+    "beats": 4,
+    "words": 46,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 20,
+    "prompt_tokens": 1347,
+    "completion_tokens": 525,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "[\n  {\n    \"text\": \"The morning at Corvane carries the quiet of a place that has not yet decided what it wants to be. Ash stands near the edge of the settlement, the salt wind tugging at their collar as Wren approaches.\",\n    \"cited_fact_keys\": [\"place\", \"previously\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"quiet, anticipatory\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Wren tries to catch Ash's attention, to draw them into talk of Ember Vale — the tales Ash has heard so many times, the ones that seem to hang in the air between them like smoke.\",\n    \"cited_fact_keys\": [\"attempt:communicate\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"earnest, reaching\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Ash turns, and the words come out — their voice steady even as the topic weighs on them. They speak to Wren about the tales of Ember Vale, as if trying to set the record straight, or at least to understand it.\",\n    \"cited_fact_keys\": [\"reaction:1\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"measured, reflective\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"But the conversation pulls at something in Ash's chest. After a pause, they nod to Wren and turn away — a decision settling in their stride as they move toward Saltmarket, leaving Corvane behind for now.\",\n    \"cited_fact_keys\": [\"attempt:move\", \"whereabouts\", \"attempt:communicate\"],\n    \"kind\": \"action\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"resolved, parting\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Wren stays at Corvane, watching Ash go. The name Ember Vale still lingers between them, a tale unfinished — but the morning moves on without it.\",\n    \"cited_fact_keys\": [\"whereabouts\", \"reaction:1\"],\n    \"kind\": \"transition\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"unfinished, lingering\",\n    \"source_effect_ids\": []\n  }\n]"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The morning at Corvane carries the quiet of a place that has not yet decided what it wants to be. Ash stands near the edge of the settlement, the salt wind tugging at their collar as Wren approaches. Wren tries to catch Ash's attention, to draw them into talk of Ember Vale — the tales Ash has heard so many times, the ones that seem to hang in the air between them like smoke. Ash turns, and the words come out — their voice steady even as the topic weighs on them. They speak to Wren about the tales of Ember Vale, as if trying to set the record straight, or at least to understand it. But the conversation pulls at something in Ash's chest. After a pause, they nod to Wren and turn away — a decision settling in their stride as they move toward Saltmarket, leaving Corvane behind for now. Wren stays at Corvane, watching Ash go. The name Ember Vale still lingers between them, a tale unfinished — but the morning moves on without it.",
+    "beats": 5,
+    "words": 178,
+    "stock": 1,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 21,
+    "prompt_tokens": 1178,
+    "completion_tokens": 94,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "```json\n[\n  {\n    \"text\": \"The surf hisses over the rocky islets south of Corvane, the morning light catching on the wet stone. Fisher waits, patient and still.\",\n    \"cited_fact_keys\": [\"place\", \"previously\", \"attempt:wait\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"steady, patient\"\n  }\n]\n```"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The surf hisses over the rocky islets south of Corvane, the morning light catching on the wet stone. Fisher waits, patient and still.",
+    "beats": 1,
+    "words": 23,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 22,
+    "prompt_tokens": 1142,
+    "completion_tokens": 79,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "```json\n[\n  {\n    \"text\": \"Fisher waits at the rocky islets south of Corvane.\",\n    \"cited_fact_keys\": [\"place\", \"attempt:wait\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"patient stillness\",\n    \"source_effect_ids\": []\n  }\n]\n```"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "Fisher waits at the rocky islets south of Corvane.",
+    "beats": 1,
+    "words": 9,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "i": 23,
+    "prompt_tokens": 1235,
+    "completion_tokens": 265,
+    "repaired": false,
+    "first_denial": null,
+    "raw": [
+      "```json\n[\n  {\n    \"text\": \"The night at Hearth presses close, heavy and still, as Wren once more turns their gaze toward that distant light in the mill window.\",\n    \"cited_fact_keys\": [\"place\", \"previously\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"quiet determination\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"Wren tries again to look into the light, to hold the shape that shimmers at the edge of sight.\",\n    \"cited_fact_keys\": [\"attempt:interact\", \"previously\"],\n    \"kind\": \"action\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"straining focus\",\n    \"source_effect_ids\": []\n  },\n  {\n    \"text\": \"The image brightens, strains, and then slips partway — a familiar outline nearly within reach, but not quite.\",\n    \"cited_fact_keys\": [\"attempt:interact\", \"previously\"],\n    \"kind\": \"narration\",\n    \"speaker_id\": null,\n    \"emotion_hint\": \"frustrated longing\",\n    \"source_effect_ids\": []\n  }\n]\n```"
+    ],
+    "valid": true,
+    "denial": null,
+    "text": "The night at Hearth presses close, heavy and still, as Wren once more turns their gaze toward that distant light in the mill window. Wren tries again to look into the light, to hold the shape that shimmers at the edge of sight. The image brightens, strains, and then slips partway — a familiar outline nearly within reach, but not quite.",
+    "beats": 3,
+    "words": 61,
+    "stock": 0,
+    "spot": null,
+    "has_spots": false
+  }
+]

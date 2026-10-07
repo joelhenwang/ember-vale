@@ -56,9 +56,10 @@ How each beat's "text" reads:
   topic", "decides to", "perhaps".
 - Show what people do as small visible actions (a glance, a pause, a
   hand on a cup).
-- A topic someone raises becomes what they ask about or steer the talk
-  toward, in plain words. Only cited quoted speech goes in quotation
-  marks.
+- A topic someone raises, and an attributed summary of what someone
+  said, become a narration beat about what they ask or tell, in plain
+  words, with `speaker_id` null. Only a quoted-speech fact becomes a
+  `dialogue` beat or goes in quotation marks.
 - Present tense, third person, one to three sentences per beat, strong
   verbs, varied rhythm. End on an image or a feeling, not a summary.
 
