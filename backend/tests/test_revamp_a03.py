@@ -15,6 +15,7 @@ from test_stage1_api import ApiClient
 
 from worldsim.application.library.builtins import (
     WREN_PRESET_ID,
+    builtin_definitions,
     ensure_builtin_presets,
 )
 from worldsim.domain.ids import new_world_id
@@ -92,10 +93,11 @@ def test_builtin_presets_import_idempotent(client: ApiClient) -> None:
     assert asyncio.run(_ensure()) == 0
     listed = client.get("/api/v1/library/presets", headers={})
     assert listed.status_code == 200, listed.text
-    assert len(listed.json()) == 5
+    builtins = len(builtin_definitions())
+    assert len(listed.json()) == builtins
     assert asyncio.run(_ensure()) == 0
     again = client.get("/api/v1/library/presets", headers={})
-    assert len(again.json()) == 5
+    assert len(again.json()) == builtins
     wren = client.get(f"/api/v1/library/presets/{WREN_PRESET_ID}", headers={})
     assert wren.status_code == 200, wren.text
     assert wren.json()["revision"]["name"] == "Wren"

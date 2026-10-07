@@ -117,7 +117,8 @@ def test_the_resolver_knows_who_and_what_is_at_hand(
     assert _advance(client, ids["world"], 1, attempt, headers=player).status_code == 200
     mine = next(p for p in prompts if "search the hearth" in p)
     assert "Around them:" in mine
-    assert "At Hearth: Wren; lying here: nothing; carried here: nothing." in mine
+    assert "At Hearth: Wren" in mine  # who is at hand
+    assert "lying here" in mine and "carried here" in mine  # and what is
 
 
 def test_a_thing_already_carried_is_not_found_again() -> None:

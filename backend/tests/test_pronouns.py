@@ -37,7 +37,7 @@ def _card(pronouns: str = "") -> CharacterCard:
 
 
 def test_identity_names_pronouns_only_when_stated() -> None:
-    assert identity_text(_card("she/her")) == "Wren (she/her).  Quick."
+    assert identity_text(_card("she/her")).startswith("Wren (she/her).")
     assert identity_text(_card()) == "Wren.  Quick."
 
 

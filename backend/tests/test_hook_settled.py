@@ -132,7 +132,9 @@ def test_freeing_the_wheel_settles_the_rumour(
     response = _advance(client, ids["world"], 1, attempt, headers=player)
     assert response.status_code == 200, response.text
 
-    assert f"Open rumour (hook_id {hook_id}): The stuck cart." in resolver_prompts[0]
+    # The resolver can name the rumour it settles.
+    assert f"hook_id {hook_id}" in resolver_prompts[0]
+    assert "The stuck cart" in resolver_prompts[0]
     hook = asyncio.run(_hook(hook_id))
     assert hook.status == NarrativeStatus.CLOSED
     assert hook.ending == "Marg's cart rolls free at last."

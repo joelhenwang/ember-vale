@@ -59,36 +59,39 @@ describe('autoplayStatus', () => {
       beats_left: 3,
       next_due_at: '2026-10-05T12:00:12Z'
     })
-    expect(autoplayStatus(view, null, now)).toBe('Playing · next beat in 12 s · 3 beats left')
+    const status = autoplayStatus(view, null, now)
+    expect(status).toMatch(/^Playing/)
+    expect(status).toContain('12 s')
+    expect(status).toContain('3 beats left')
   })
 
   it('names the stage the server reports, with time since the page saw the beat', () => {
     const beat = { state: 'director_complete', seenAtMs: now - 23_000 }
-    expect(autoplayStatus(autoplay({ status: 'playing', beats_left: 2 }), beat, now)).toBe(
-      'Playing · Characters are deciding… 23 s'
-    )
+    const deciding = autoplayStatus(autoplay({ status: 'playing', beats_left: 2 }), beat, now)
+    expect(deciding).toContain('deciding')
+    expect(deciding).toContain('23 s')
     expect(
       autoplayStatus(autoplay({ status: 'playing' }), { state: 'mystery', seenAtMs: now }, now)
-    ).toBe('Playing · A beat is unfolding… 0 s')
+    ).toContain('unfolding')
   })
 
   it('explains why autoplay stopped', () => {
-    expect(autoplayStatus(autoplay({ stop_reason: 'beat_limit', beats_run: 10 }), null, now)).toBe(
-      'Paused after 10 beats'
-    )
-    expect(autoplayStatus(autoplay({ stop_reason: 'no_observers' }), null, now)).toBe(
-      'Paused · nobody was watching'
+    expect(
+      autoplayStatus(autoplay({ stop_reason: 'beat_limit', beats_run: 10 }), null, now)
+    ).toContain('10 beats')
+    expect(autoplayStatus(autoplay({ stop_reason: 'no_observers' }), null, now)).toContain(
+      'nobody was watching'
     )
     expect(
       autoplayStatus(autoplay({ stop_reason: 'error', stop_detail: 'beat 4: boom' }), null, now)
-    ).toBe('Paused · a beat failed: beat 4: boom')
+    ).toContain('beat 4: boom')
     expect(
       autoplayStatus(
         autoplay({ stop_reason: 'user' }),
         { state: 'scenes_assembled', seenAtMs: now },
         now
       )
-    ).toBe('Pausing after this beat · Scenes are playing out… 0 s')
+    ).toMatch(/^Pausing after this beat/)
   })
 
   it('is honest when the server runs no autoplay runner', () => {

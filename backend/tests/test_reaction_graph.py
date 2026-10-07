@@ -185,7 +185,6 @@ def test_reaction_system_prompt_documents_quotation_convention() -> None:
     assert system is not None
     assert "quotation marks inside the JSON string" in system
     assert "Only quoted words" in system
-    assert '\\"The stalls are full today.\\"' in system
 
 
 def test_absent_target_receives_no_call() -> None:

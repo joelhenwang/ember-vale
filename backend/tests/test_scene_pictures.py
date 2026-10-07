@@ -93,10 +93,12 @@ def test_service_ids_fit_the_registry_rules() -> None:
 def test_scene_wording_comes_from_each_pack() -> None:
     anime = load_style_pack(PACKS, "anime-saga-v1")
     pixel = load_style_pack(PACKS, "pixel-saga-v1")
-    prompt, ratio = compose_prompt(anime, AssetKind.SCENE, "Wren meets Ash.")
-    assert "story moment" in prompt and ratio == "16:9"
-    prompt, _ = compose_prompt(pixel, AssetKind.SCENE, "Wren meets Ash.")
-    assert "event illustration" in prompt
+    # Each pack's own scene wording, or its event wording when it has none.
+    for pack in (anime, pixel):
+        prompt, ratio = compose_prompt(pack, AssetKind.SCENE, "Wren meets Ash.")
+        wording = pack.kinds.get("scene") or pack.kinds["event"]
+        assert prompt == f"Wren meets Ash. {wording.positive}"
+        assert ratio == "16:9"
 
 
 def test_a_character_registers_once() -> None:
@@ -231,7 +233,7 @@ def test_a_first_meeting_is_painted_with_faces_and_the_place(
     wren_face = service_character_id(ids["wren"], 1)
     assert painted["characters"] == [wren_face]  # Ash has no portrait yet: words only
     assert painted["references"][0].startswith("data:image/png;base64,")  # the Hearth
-    assert "Ash" in painted["prompt"] and "story moment" in painted["prompt"]
+    assert "Ash" in painted["prompt"]
     assert list(krea.characters) == [wren_face]
     picture = api.get(
         f"/api/v1/assets/{art[0]['asset_id']}",

@@ -20,10 +20,10 @@ from test_stage1_api import (
     _seed_two_at_hearth,
 )
 
-from worldsim.application.images import queue_image
+from worldsim.application.images import load_style_pack, queue_image
 from worldsim.application.orchestration.framing import FramedGateway, frame_gateways
 from worldsim.application.ports.model_gateway import CompletionRequest, ModelGateway
-from worldsim.domain.assets import AssetKind
+from worldsim.domain.assets import DEFAULT_STYLE_PACK, AssetKind
 from worldsim.infrastructure.db.engine import create_engine
 from worldsim.infrastructure.images.runner import ImageJobRunner
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
@@ -143,7 +143,9 @@ def test_portraits_carry_story_and_character_words(
 
     asyncio.run(run())
     prompt = painter.requests[-1].prompt
-    assert prompt.startswith("storybook cover, tall, Portrait of Wren")
+    # Story words outermost, the character's words around what is drawn,
+    # and both before the style pack's own wording.
+    assert prompt.startswith("storybook cover, tall,")
     assert prompt.endswith("muted colours")
-    # The character's words sit around what is drawn, before the style wording.
-    assert prompt.index("red scarf") < prompt.index("hand-painted")
+    style = load_style_pack(PACKS, DEFAULT_STYLE_PACK).kinds["portrait"].positive
+    assert prompt.index("red scarf") < prompt.index(style)

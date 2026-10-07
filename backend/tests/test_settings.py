@@ -1,6 +1,9 @@
+import platform
+
 import pytest
 from pydantic import ValidationError
 
+import worldsim
 from worldsim.infrastructure.settings import Settings, dependency_report
 
 
@@ -51,8 +54,8 @@ def test_openrouter_without_key_rejected(monkeypatch: pytest.MonkeyPatch):
 
 def test_dependency_report_contains_versions():
     report = dependency_report(Settings())
-    assert report["worldsim_version"] == "0.1.0"
-    assert report["python_version"].startswith("3.12.")
+    assert report["worldsim_version"] == worldsim.__version__
+    assert report["python_version"] == platform.python_version()
     assert report["active_profile"] == "fake"
     assert "OPENROUTER" not in str(report.values()).upper()
 
