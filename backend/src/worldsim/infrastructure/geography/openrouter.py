@@ -67,8 +67,13 @@ could be found:
   bridge, landmark, camp
 - edges: forest, river, lake, road, path
 
+List each distinct spot once. Ordinary houses only when one stands out, at most three.
+
 For each spot give:
-- "name": the label written on the picture for it, if there is one; otherwise a short description
+- "name": the label written on the picture for it, if there is one; otherwise a short name a
+  local would call it by, from what it is and how it looks ("the Red Tower", "Fishmarket
+  Steps", "the Old Gatehouse"); never words about the picture itself (left, right, upper,
+  lower, foreground, background, centre, corner, near)
 - "kind": one word from the lists above
 - "point": [x, y], the centre of the spot's drawing (not of its label), as integers from 0 to
   1000 across the image's width (x) and height (y); [0, 0] is the top-left corner

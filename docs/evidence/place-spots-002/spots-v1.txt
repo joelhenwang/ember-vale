@@ -1,0 +1,16 @@
+This is a picture of one place in a fantasy world: a town, village, castle,
+port or similar, seen from above or at an angle. List the spots inside it where a person
+could be found:
+- buildings: inn, tavern, house, hall, manor, keep, chapel, temple, shrine, smithy, mill,
+  shop, workshop, stable, barn, warehouse, barracks, tower, gate
+- open places: square, market, yard, garden, field, farm, graveyard, dock, pier, well,
+  bridge, landmark, camp
+- edges: forest, river, lake, road, path
+
+For each spot give:
+- "name": the label written on the picture for it, if there is one; otherwise a short description
+- "kind": one word from the lists above
+- "point": [x, y], the centre of the spot's drawing (not of its label), as integers from 0 to
+  1000 across the image's width (x) and height (y); [0, 0] is the top-left corner
+
+Answer with JSON only: {"places": [{"name": "...", "kind": "...", "point": [x, y]}]}
