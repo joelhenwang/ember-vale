@@ -26,7 +26,22 @@ accepted text ("attempts to communicate", "speaks to", "brings up", "the topic",
 | run-5 | DeepSeek V4 Flash | v3 | 22/24 (0) | 4/6 | 8 | 64 | 36k/7.8k |
 | run-5 | DeepSeek V4 Flash | v4 (run-4) | 22/24 (3) | 5/6 | 2 | 74 | 55k/7.4k |
 | run-6 | Venice | v4 final | 24/24 (2) | 8/8 | 2 | 74 | 51k/5.0k |
-| run-6 | DeepSeek V4 Flash | v4 final | 22/24 (1) | 6/6 | 1 | 73 | 52k/6.0k |
+| run-6 | DeepSeek V4 Flash | v4 (run-6) | 22/24 (1) | 6/6 | 1 | 73 | 52k/6.0k |
+
+Run-7 adds the app's `drop_retold` step (sentences that copy the recap are cut before
+storage) and counts what it cut, after a live play showed v4 re-describing a spot the
+recap had just described (the whole opening beat was cut, leaving bare dialogue):
+
+| run | model | prompt | valid (after repair) | spot named | stock phrases | retold sentences cut | words/answer | tokens in/out |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| run-7 | Venice | v3 | 22/24 (1) | 1/6 | 23 | 9 | 23 | 39k/5.1k |
+| run-7 | Venice | v4 final | 24/24 (2) | 8/8 | 8 | 2 | 65 | 52k/4.6k |
+| run-7 | DeepSeek V4 Flash | v3 | 22/24 (1) | 3/6 | 5 | 7 | 71 | 37k/9.2k |
+| run-7 | DeepSeek V4 Flash | v4 final | 21/24 (1) | 5/5 | 1 | 2 | 60 | 56k/6.2k |
+
+DeepSeek's one extra failure in run-7 is an invented key (`places`) and one summary
+rendered as dialogue that survived the repair; run-6 had it level with v3 (22/24). A
+failed narration falls back to the deterministic beats, as before.
 
 \* run-1's harness skipped the app's recap drop, dialogue softening and repair, so it
 under-counts both versions; kept as the record of the draft's format failure.
@@ -45,6 +60,8 @@ What each revision fixed:
   on the rocky islets." Stock wording fell from 19 to 4.
 - **Summaries stay narration (run-6):** DeepSeek had turned attributed summaries into
   dialogue (3 repairs in run-5); one repair left.
+- **No re-describing (run-7):** "When the recap shows the same people already at this
+  spot, do not describe it again". Retold sentences fell from 9 (v3) to 2 on Venice.
 
 The two answers no version gets right are one fixture scene whose speaker is not in its
 audience (`speaker outside the audience`), in every run and both models.
@@ -68,6 +85,6 @@ Same scene, v3 then v4 (Venice):
 **Costs and trade-offs.** v4's system prompt is about 600 tokens longer: prompt tokens per
 call rise ~35–45 %; answers run about twice as long on Venice. Small inventions of
 atmosphere remain ("the nearby baker's stall") although the prompt forbids new buildings.
-OpenRouter spend for runs 5–6 was $0.017 (DeepSeek); Venice is billed separately.
+OpenRouter spend for runs 5–7 was $0.022 (DeepSeek); Venice is billed separately.
 
 **Decision.** `NARRATOR_PROMPT_VERSION = "narrator.v4"`; v3 stays on disk for replays.

@@ -61,6 +61,14 @@ STOCK = (
     "the scene",
     "attempts to",
 )
+#: Wording from the prompts' own examples, which small models copy.
+EXAMPLES = (
+    "leans across the table",
+    "sleeve",
+    "counting the bells",
+    "down the lane",
+    "how the harvest",
+)
 MAX_TOKENS = 1536
 _BEATS = TypeAdapter(list[BeatProposal])
 SENTENCE = re.compile(r"(?<=[.!?])\s+")
@@ -142,6 +150,7 @@ def score(prompt: str, proposals: list[BeatProposal], denial: str | None) -> dic
         "spot": spot_named(text, spots) if spots else None,
         "has_spots": bool(spots),
         "retold": before - after,
+        "copied": sum(lowered.count(s) for s in EXAMPLES),
     }
 
 
@@ -211,6 +220,7 @@ async def run(
             f"spot named {sum(1 for r in with_spots if r.get('spot'))}/{len(with_spots)}, "
             f"stock phrases {sum(r.get('stock', 0) for r in valid)}, "
             f"retold sentences dropped {sum(r.get('retold', 0) for r in valid)}, "
+            f"copied example wording {sum(r.get('copied', 0) for r in valid)}, "
             f"words/answer {sum(r.get('words', 0) for r in valid) / max(1, len(valid)):.0f}, "
             f"tokens in/out {sum(r.get('prompt_tokens', 0) for r in ok)}/"
             f"{sum(r.get('completion_tokens', 0) for r in ok)}"

@@ -42,7 +42,8 @@ Source categories (every fact line states its own):
 Where it happens: when a `spots` fact lists spots inside the place, set
 the scene at exactly one of them (where the people were last, else the
 one that suits what they do) and name it, spelled as listed, in the
-first beat, citing `spots` beside a fact about what happens.
+first beat, citing `spots` beside a fact about what happens. Never set
+it anywhere not on that list.
 
 How each beat's "text" reads:
 
@@ -51,12 +52,15 @@ How each beat's "text" reads:
   When the recap shows the same people already at this spot, do not
   describe it again: name the spot in passing and open on what is new
   (a change in the light, a new sound, a shift in someone's mood).
-- Fact lines are records, not prose: rewrite them as what a watcher
-  would see. Record: "Wren attempts to communicate with Ash; topic: the
-  rocky islets". Beat: "Wren leans across the table and asks Ash what
-  waits out on the rocky islets." Never copy a record's wording: no
-  "attempts to communicate", "speaks to X about", "brings up", "the
-  topic", "decides to", "perhaps".
+- Fact lines are records, not prose: rewrite each as what a watcher
+  would see, in your own words for this moment. The records "A attempts
+  to communicate with B; topic: the harvest", "A waits", "A moves to the
+  mill" could become, say, "A catches B's sleeve and asks how the
+  harvest looks", "A lingers by the door, counting the bells", "A sets
+  off down the lane toward the mill". These only show the idea: never
+  reuse their wording, and never copy a record's: no "attempts to
+  communicate", "speaks to X about", "brings up", "the topic",
+  "decides to", "perhaps".
 - Show what people do as small visible actions (a glance, a pause, a
   hand on a cup).
 - A topic someone raises, and an attributed summary of what someone
