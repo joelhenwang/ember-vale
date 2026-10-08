@@ -4488,6 +4488,43 @@
         "title": "PictureCharacter",
         "type": "object"
       },
+      "PicturePromptView": {
+        "additionalProperties": false,
+        "description": "The whole prompt a scene picture was (or will be) painted from.",
+        "properties": {
+          "edited": {
+            "title": "Edited",
+            "type": "boolean"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "repaint_job_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repaint Job Id"
+          },
+          "repainting": {
+            "default": false,
+            "title": "Repainting",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "prompt",
+          "edited"
+        ],
+        "title": "PicturePromptView",
+        "type": "object"
+      },
       "PictureSuggestion": {
         "additionalProperties": false,
         "description": "What \"Paint this scene\" offers before the player edits it.",
@@ -5929,6 +5966,28 @@
         "title": "RelationshipView",
         "type": "object"
       },
+      "RepaintRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "prompt": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "world_id": {
+            "format": "uuid",
+            "title": "World Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "world_id",
+          "prompt"
+        ],
+        "title": "RepaintRequest",
+        "type": "object"
+      },
       "ResolutionView": {
         "additionalProperties": false,
         "properties": {
@@ -6126,6 +6185,11 @@
             "format": "uuid",
             "title": "Picture Id",
             "type": "string"
+          },
+          "repainting": {
+            "default": false,
+            "title": "Repainting",
+            "type": "boolean"
           },
           "scene_id": {
             "format": "uuid",
@@ -14871,6 +14935,114 @@
         "summary": "Get Current Phase",
         "tags": [
           "world"
+        ]
+      }
+    },
+    "/api/v1/world/pictures/{picture_id}/prompt": {
+      "get": {
+        "description": "The whole prompt the image service gets for this picture.",
+        "operationId": "picture_prompt_api_v1_world_pictures__picture_id__prompt_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "picture_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Picture Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "world_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "World Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PicturePromptView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Picture Prompt",
+        "tags": [
+          "pictures"
+        ]
+      }
+    },
+    "/api/v1/world/pictures/{picture_id}/repaint": {
+      "post": {
+        "description": "Paint the picture again from the player's whole prompt, sent as written.",
+        "operationId": "repaint_picture_api_v1_world_pictures__picture_id__repaint_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "picture_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Picture Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepaintRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PicturePromptView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Repaint Picture",
+        "tags": [
+          "pictures"
         ]
       }
     },

@@ -1,4 +1,4 @@
-"""Scene pictures (table ``scene_picture``, migrations 0052 and 0054)."""
+"""Scene pictures (table ``scene_picture``, migrations 0052, 0054 and 0055)."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from worldsim.domain.pictures import PictureMoment, ScenePicture
 
 _COLUMNS = (
     "id, world_id, scene_id, job_id, moment, caption, prompt, character_ids, "
-    "location_id, created_phase_index, title"
+    "location_id, created_phase_index, title, raw_prompt, repaint_job_id"
 )
 
 
@@ -37,6 +37,8 @@ def _picture(row: Sequence[Any]) -> ScenePicture:
         location_id=row[8],
         created_phase_index=row[9],
         title=row[10],
+        raw_prompt=bool(row[11]),
+        repaint_job_id=row[12],
     )
 
 
@@ -49,12 +51,28 @@ class SqlAlchemyPictureRepository:
             text(
                 f"INSERT INTO scene_picture ({_COLUMNS}) VALUES (:id, :world_id, :scene_id, "
                 ":job_id, :moment, :caption, :prompt, CAST(:character_ids AS jsonb), "
-                ":location_id, :created_phase_index, :title)"
+                ":location_id, :created_phase_index, :title, :raw_prompt, :repaint_job_id)"
             ),
             {
                 **picture.model_dump(exclude={"character_ids", "moment"}),
                 "moment": picture.moment.value,
                 "character_ids": json.dumps([str(i) for i in picture.character_ids]),
+            },
+        )
+
+    async def update(self, picture: ScenePicture) -> None:
+        """Save what can change after queuing: words, the job shown, a repaint."""
+        await self._session.execute(
+            text(
+                "UPDATE scene_picture SET prompt = :prompt, raw_prompt = :raw_prompt, "
+                "job_id = :job_id, repaint_job_id = :repaint_job_id WHERE id = :id"
+            ),
+            {
+                "id": picture.id,
+                "prompt": picture.prompt,
+                "raw_prompt": picture.raw_prompt,
+                "job_id": picture.job_id,
+                "repaint_job_id": picture.repaint_job_id,
             },
         )
 

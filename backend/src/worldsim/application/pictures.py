@@ -20,6 +20,7 @@ import re
 from dataclasses import dataclass
 from uuid import UUID, uuid4
 
+from worldsim.application.images import StylePack, compose_prompt, image_additions
 from worldsim.application.ports.images import CharacterCard
 from worldsim.application.ports.writer import Writer, WritingError
 from worldsim.application.unit_of_work import UnitOfWork
@@ -530,3 +531,53 @@ async def queue_moment(
             if picture is not None:
                 return picture
     return None
+
+
+async def scene_words(uow: UnitOfWork, picture: ScenePicture) -> str:
+    """What the picture shows, in plain words: the player's or the suggestion's."""
+    if picture.prompt:
+        return picture.prompt
+    first = picture.character_ids[0] if picture.character_ids else None
+    return (await suggest(uow, picture.world_id, picture.scene_id, first)).prompt
+
+
+async def scene_prompt(uow: UnitOfWork, pack: StylePack, picture: ScenePicture) -> str:
+    """The whole prompt the image service gets for this picture.
+
+    Story and character words wrap the scene's words, and the style pack's
+    scene wording follows; a prompt the player edited is sent as written.
+    """
+    words = await scene_words(uow, picture)
+    if picture.raw_prompt:
+        return words
+    added = await image_additions(uow, picture.world_id, picture.character_ids)
+    prompt, _ratio = compose_prompt(pack, AssetKind.SCENE, added.subject(words))
+    return added.whole(prompt)
+
+
+def repaint_key() -> str:
+    """A repaint's job key: never reused, so it always paints anew."""
+    return f"scene:repaint:{uuid4().hex}"
+
+
+async def repaint(uow: UnitOfWork, picture: ScenePicture, prompt: str, style_pack: str) -> ImageJob:
+    """Queue a new painting of a picture from the player's whole prompt.
+
+    The picture keeps showing its current painting until the new one is
+    done (the image runner then swaps it in).
+    """
+    job = ImageJob(
+        id=new_job_id(),
+        world_id=picture.world_id,
+        kind=AssetKind.SCENE,
+        subject_id=picture.id,
+        style_pack_version=style_pack,
+        idempotency_key=repaint_key(),
+    )
+    await uow.assets.add_job(job)
+    await uow.pictures.update(
+        picture.model_copy(
+            update={"prompt": prompt.strip(), "raw_prompt": True, "repaint_job_id": job.id}
+        )
+    )
+    return job

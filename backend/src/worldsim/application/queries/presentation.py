@@ -200,6 +200,10 @@ async def _scene_art(
             if viewer not in {p.character_id for p in scene.participants}:
                 continue
         job = await uow.assets.get_job(picture.job_id)
+        repainting = False
+        if picture.repaint_job_id is not None:
+            again = await uow.assets.get_job(picture.repaint_job_id)
+            repainting = again.status.value in ("pending", "running")
         shown.append(
             api.SceneArtView(
                 picture_id=picture.id,
@@ -211,6 +215,7 @@ async def _scene_art(
                 asset_id=job.result_asset_id,
                 phase_index=picture.created_phase_index,
                 location_id=picture.location_id,
+                repainting=repainting,
             )
         )
     return shown

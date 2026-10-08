@@ -22,7 +22,7 @@ from worldsim.application.images import (
     load_style_pack,
     subject_text,
 )
-from worldsim.application.pictures import character_card, newest_asset, suggest
+from worldsim.application.pictures import character_card, newest_asset, scene_words
 from worldsim.application.ports.images import (
     CharacterCard,
     ImageGenerationError,
@@ -157,8 +157,21 @@ class ImageJobRunner:
         )
         if job.kind == AssetKind.PORTRAIT and self._faces is not None:
             await frame_face(self._factory, self._faces, asset, image.data)
+        if job.kind == AssetKind.SCENE and job.subject_id is not None:
+            async with self._factory() as uow:
+                picture = await uow.pictures.get(job.subject_id)
+                if picture.repaint_job_id == job.id:
+                    await uow.pictures.update(
+                        picture.model_copy(update={"job_id": job.id, "repaint_job_id": None})
+                    )
+                    await uow.commit()
 
     async def _already_drawn(self, job: ImageJob) -> bool:
+        if job.idempotency_key.startswith("scene:repaint:"):
+            return False  # asked for anew: never the old painting
+        return await self._bound_to_existing(job)
+
+    async def _bound_to_existing(self, job: ImageJob) -> bool:
         """Curated or earlier art for this subject wins: bind it, draw nothing.
 
         Built-in characters ship hand-made portraits; a generated one would
@@ -185,8 +198,9 @@ class ImageJobRunner:
         characters: tuple[str, ...] = ()
         references: tuple[str, ...] = ()
         people: list[UUID] = []
+        raw = False
         if job.kind == AssetKind.SCENE:
-            subject, characters, references, people = await self._scene_parts(job)
+            subject, characters, references, people, raw = await self._scene_parts(job)
         else:
             async with self._factory() as uow:
                 subject = await subject_text(uow, job)
@@ -195,8 +209,9 @@ class ImageJobRunner:
         async with self._factory() as uow:
             added = await image_additions(uow, job.world_id, people)
         prompt, ratio = compose_prompt(pack, job.kind, added.subject(subject))
+        # A prompt the player edited whole is sent exactly as written.
         return image_request(
-            added.whole(prompt),
+            subject if raw else added.whole(prompt),
             ratio,
             job.kind,
             prefs,
@@ -209,7 +224,7 @@ class ImageJobRunner:
 
     async def _scene_parts(
         self, job: ImageJob
-    ) -> tuple[str, tuple[str, ...], tuple[str, ...], list[UUID]]:
+    ) -> tuple[str, tuple[str, ...], tuple[str, ...], list[UUID], bool]:
         """A scene picture's words, its people's faces, and its place's art.
 
         Each person with a portrait is registered with the image service
@@ -222,17 +237,8 @@ class ImageJobRunner:
         place_art: tuple[str, ...] = ()
         async with self._factory() as uow:
             picture = await uow.pictures.get(job.subject_id)
-            words = (
-                picture.prompt
-                or (
-                    await suggest(
-                        uow,
-                        picture.world_id,
-                        picture.scene_id,
-                        picture.character_ids[0] if picture.character_ids else None,
-                    )
-                ).prompt
-            )
+            words = await scene_words(uow, picture)
+            raw = picture.raw_prompt
             for character_id in picture.character_ids:
                 portrait = await newest_asset(
                     uow, picture.world_id, AssetKind.PORTRAIT, character_id
@@ -261,7 +267,7 @@ class ImageJobRunner:
                     place_art = (f"data:{art.mime};base64,{data}",)
         for card in cards:
             await self._generator.ensure_character(card)
-        return words, tuple(card.id for card in cards), place_art, picture.character_ids
+        return words, tuple(card.id for card in cards), place_art, picture.character_ids, raw
 
     async def run_forever(self) -> None:
         while not self._stopping.is_set():

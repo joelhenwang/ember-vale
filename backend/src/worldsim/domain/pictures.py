@@ -45,8 +45,14 @@ class ScenePicture(BaseModel):
     #: Shown under the picture in the story.
     caption: str = Field(min_length=1, max_length=400)
     #: The words to paint from, when the player wrote or edited them.
-    prompt: str | None = Field(default=None, max_length=2000)
+    prompt: str | None = Field(default=None, max_length=4000)
     #: Who keeps their face in the picture (registered references).
     character_ids: list[UUID] = Field(default_factory=list, max_length=MAX_PICTURE_CHARACTERS)
     location_id: UUID | None = None
     created_phase_index: int = Field(default=0, ge=0)
+    #: ``prompt`` is the whole prompt as the player edited it: sent as written,
+    #: with no style or story words added.
+    raw_prompt: bool = False
+    #: A new painting asked for; the picture keeps showing ``job_id`` until
+    #: this one is done, then takes it.
+    repaint_job_id: UUID | None = None

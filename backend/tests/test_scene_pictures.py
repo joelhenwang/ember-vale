@@ -370,3 +370,69 @@ def test_studio_looks_read_as_one_phrase() -> None:
     )
     assert look_of("Mara", studio).startswith("Mara: 17-year-old human female, lean")
     assert plain_looks("A tall woman with a scar.") is None
+
+
+def test_a_picture_is_repainted_from_its_edited_prompt(
+    stack: tuple[ApiClient, TestClient, FakeGateway], tmp_path: Path
+) -> None:
+    api, raw, gateway = stack
+    ids = asyncio.run(_seed_two_at_hearth())
+    krea = _Krea()
+    raw.app.state.app_state._images = krea.client()  # pyright: ignore[reportAttributeAccessIssue, reportFunctionMemberAccess]
+    api.post(
+        "/api/v1/stage2/roles/select",
+        json={"world_id": str(ids["world"]), "role": "player", "character_id": str(ids["wren"])},
+        headers=_watcher(),
+    )
+    gateway.route = _ash_greets_wren(ids)
+    assert _advance(api, ids["world"], 1, headers=_player(ids["wren"])).status_code == 200
+    _paint_all(ids["world"], krea, tmp_path)
+    world = {"world_id": str(ids["world"])}
+
+    def art() -> dict[str, Any]:
+        return api.get(
+            "/api/v1/world/presentation", params=world, headers=_player(ids["wren"])
+        ).json()["scene_art"][0]
+
+    first = art()
+    # The prompt shown is the one the image service was sent.
+    shown = api.get(
+        f"/api/v1/world/pictures/{first['picture_id']}/prompt",
+        params=world,
+        headers=_player(ids["wren"]),
+    ).json()
+    assert shown["prompt"] == krea.generated[-1]["prompt"] and not shown["edited"]
+
+    mine = "Wren and Ash under a lantern, rain on the hearth window, ink wash"
+    asked = api.post(
+        f"/api/v1/world/pictures/{first['picture_id']}/repaint",
+        json={**world, "prompt": mine},
+        headers=_player(ids["wren"]),
+    )
+    assert asked.status_code == 200, asked.text
+    assert asked.json()["repainting"] and asked.json()["repaint_job_id"]
+    # The old painting stays while the new one is made.
+    during = art()
+    assert during["repainting"] and during["asset_id"] == first["asset_id"]
+    again = api.post(
+        f"/api/v1/world/pictures/{first['picture_id']}/repaint",
+        json={**world, "prompt": mine},
+        headers=_player(ids["wren"]),
+    )
+    assert again.status_code == 409, again.text
+
+    _paint_all(ids["world"], krea, tmp_path)
+    assert krea.generated[-1]["prompt"] == mine  # sent exactly as written
+    after = art()
+    assert not after["repainting"] and after["asset_id"] != first["asset_id"]
+    shown = api.get(
+        f"/api/v1/world/pictures/{first['picture_id']}/prompt",
+        params=world,
+        headers=_player(ids["wren"]),
+    ).json()
+    assert shown == {
+        "prompt": mine,
+        "edited": True,
+        "repainting": False,
+        "repaint_job_id": None,
+    }

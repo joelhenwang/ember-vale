@@ -6,7 +6,14 @@
  * Previous and Next walk the story's other painted moments.
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { assetUrl, getSceneNarration, type CallOptions } from '../../api/worldsim'
+import {
+  assetUrl,
+  getImageJob,
+  getPicturePrompt,
+  getSceneNarration,
+  repaintPicture,
+  type CallOptions
+} from '../../api/worldsim'
 import type { SceneArtView } from '../../../content/clients/worldsim'
 import {
   momentLines,
@@ -30,16 +37,103 @@ const props = defineProps<{
   places: ReadonlyMap<string, string>
   opts: CallOptions
 }>()
-const emit = defineEmits<{ close: []; 'update:index': [index: number] }>()
+const emit = defineEmits<{ close: []; 'update:index': [index: number]; repainted: [] }>()
 
 const lines = ref<MomentLine[]>([])
 const loading = ref(false)
 const problem = ref(false)
 
 const moment = computed(() => (props.index === null ? null : (props.moments[props.index] ?? null)))
-const picture = computed(() =>
-  moment.value?.asset_id ? assetUrl(props.worldId, moment.value.asset_id) : null
-)
+/** Paintings made here, shown before the story's own view catches up. */
+const repainted = ref(new Map<string, string>())
+const picture = computed(() => {
+  const m = moment.value
+  if (!m) return null
+  const id = repainted.value.get(m.picture_id) ?? m.asset_id
+  return id ? assetUrl(props.worldId, id) : null
+})
+
+/* ————— the prompt: read it, edit it, paint again ————— */
+const promptOpen = ref(false)
+const promptText = ref('')
+const promptShown = ref('')
+const promptEdited = ref(false)
+const promptError = ref<string | null>(null)
+const painting = ref(false)
+const elapsed = ref(0)
+let clockTimer: ReturnType<typeof setInterval> | undefined
+let pollTimer: ReturnType<typeof setTimeout> | undefined
+const clock = computed(() => `${elapsed.value.toFixed(1)} s`)
+
+function stopPainting(): void {
+  if (clockTimer) clearInterval(clockTimer)
+  if (pollTimer) clearTimeout(pollTimer)
+  clockTimer = pollTimer = undefined
+  painting.value = false
+}
+onBeforeUnmount(stopPainting)
+
+async function loadPrompt(): Promise<void> {
+  const m = moment.value
+  if (!m) return
+  promptError.value = null
+  try {
+    const shown = await getPicturePrompt(props.worldId, m.picture_id, props.opts)
+    if (moment.value?.picture_id !== m.picture_id) return
+    promptText.value = promptShown.value = shown.prompt
+    promptEdited.value = shown.edited
+    if (shown.repainting && shown.repaint_job_id) follow(m.picture_id, shown.repaint_job_id)
+  } catch (err) {
+    promptError.value = err instanceof Error ? err.message : 'Could not read the prompt.'
+  }
+}
+function togglePrompt(): void {
+  promptOpen.value = !promptOpen.value
+  if (promptOpen.value) void loadPrompt()
+}
+
+/** Watch the painting until it is done, the clock running in tenths. */
+function follow(pictureId: string, jobId: string): void {
+  stopPainting()
+  painting.value = true
+  const started = performance.now()
+  elapsed.value = 0
+  clockTimer = setInterval(() => (elapsed.value = (performance.now() - started) / 1000), 100)
+  const poll = async (): Promise<void> => {
+    try {
+      const job = await getImageJob(jobId, props.opts)
+      if (job.status === 'ready' && job.result_asset_id) {
+        repainted.value = new Map(repainted.value).set(pictureId, job.result_asset_id)
+        stopPainting()
+        emit('repainted')
+        return
+      }
+      if (job.status === 'failed') {
+        stopPainting()
+        promptError.value = job.error || 'The painting failed. Try again.'
+        return
+      }
+    } catch {
+      // a missed poll: try again
+    }
+    pollTimer = setTimeout(() => void poll(), 1000)
+  }
+  pollTimer = setTimeout(() => void poll(), 1000)
+}
+
+async function regenerate(): Promise<void> {
+  const m = moment.value
+  if (!m || painting.value || !promptText.value.trim()) return
+  promptError.value = null
+  try {
+    const asked = await repaintPicture(props.worldId, m.picture_id, promptText.value, props.opts)
+    promptEdited.value = true
+    promptShown.value = asked.prompt
+    if (asked.repaint_job_id) follow(m.picture_id, asked.repaint_job_id)
+  } catch (err) {
+    promptError.value = err instanceof Error ? err.message : 'Could not paint it again.'
+  }
+}
 const when = computed(() =>
   moment.value
     ? momentWhen(
@@ -54,6 +148,9 @@ watch(
   async (now) => {
     lines.value = []
     problem.value = false
+    promptOpen.value = false
+    promptError.value = null
+    stopPainting()
     if (!now) return
     loading.value = true
     try {
@@ -77,6 +174,7 @@ function go(step: number): void {
 
 function onKey(event: KeyboardEvent): void {
   if (props.index === null) return
+  if (event.target instanceof HTMLTextAreaElement && event.key !== 'Escape') return
   if (event.key === 'Escape') emit('close')
   else if (event.key === 'ArrowLeft') go(-1)
   else if (event.key === 'ArrowRight') go(1)
@@ -101,8 +199,16 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     :aria-label="momentTitle(moment)"
     @click.self="emit('close')">
     <article class="moment-dlg__card">
-      <div class="moment-dlg__art">
+      <div class="moment-dlg__art" :class="{ 'moment-dlg__art--busy': painting }">
         <img v-if="picture" :src="picture" :alt="moment.caption" />
+        <span v-if="painting" class="paint" role="status">
+          <span class="paint__ring" aria-hidden="true">
+            <span class="ev-progress-spin"></span><span class="ev-progress-spin"></span
+            ><span class="ev-progress-spin"></span>
+          </span>
+          <b class="paint__clock">{{ clock }}</b>
+          <span class="paint__label">Painting again…</span>
+        </span>
       </div>
       <div class="moment-dlg__page">
         <button class="moment-dlg__close" type="button" aria-label="Close" @click="emit('close')">
@@ -115,7 +221,45 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           <IconSparkle :size="14" />
           <span></span>
         </div>
-        <div class="moment-dlg__text">
+        <div v-if="promptOpen" class="moment-dlg__text moment-dlg__prompt">
+          <label class="ev-field-label" for="moment-prompt">
+            Prompt sent to the image service
+            <span v-if="promptEdited" class="moment-dlg__mine"
+              >Edited: sent exactly as written</span
+            >
+          </label>
+          <textarea
+            id="moment-prompt"
+            v-model="promptText"
+            class="ev-input"
+            rows="10"
+            maxlength="4000"
+            :disabled="painting" />
+          <div class="moment-dlg__promptacts">
+            <button
+              type="button"
+              class="cta"
+              :disabled="painting || !promptText.trim()"
+              @click="regenerate">
+              <IconSparkle :size="14" />
+              {{ painting ? `Painting… ${clock}` : 'Regenerate' }}
+            </button>
+            <button
+              v-if="promptText !== promptShown"
+              type="button"
+              class="moment-dlg__link"
+              :disabled="painting"
+              @click="promptText = promptShown">
+              Undo my changes
+            </button>
+          </div>
+          <p class="moment-dlg__quiet moment-dlg__note">
+            The new painting replaces this one when it is done. The text is sent exactly as written;
+            the faces of the people in the scene still guide it.
+          </p>
+          <p v-if="promptError" class="moment-dlg__error" role="alert">{{ promptError }}</p>
+        </div>
+        <div v-else class="moment-dlg__text">
           <p v-if="moment.title && moment.caption" class="moment-dlg__caption">
             {{ moment.caption }}
           </p>
@@ -149,7 +293,16 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
             <IconArrowLeft :size="14" />
             Previous
           </button>
-          <span class="moment-dlg__count">{{ (index ?? 0) + 1 }} of {{ moments.length }}</span>
+          <span class="moment-dlg__mid">
+            <span class="moment-dlg__count">{{ (index ?? 0) + 1 }} of {{ moments.length }}</span>
+            <button
+              type="button"
+              class="moment-dlg__link"
+              :aria-expanded="promptOpen"
+              @click="togglePrompt">
+              {{ promptOpen ? 'Back to the story' : 'See and edit the prompt' }}
+            </button>
+          </span>
           <button
             type="button"
             class="moment-dlg__step"
@@ -322,6 +475,110 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .moment-dlg__step:disabled {
   opacity: 0.4;
   cursor: default;
+}
+.moment-dlg__art {
+  position: relative;
+}
+.moment-dlg__art img {
+  transition: filter 0.4s ease;
+}
+.moment-dlg__art--busy img {
+  filter: blur(8px) saturate(0.75) brightness(1.04);
+}
+.paint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #3d3016;
+}
+.paint__ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 150px;
+  height: 150px;
+  margin: -75px 0 0 -75px;
+}
+.paint__ring span {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 4px solid transparent;
+  border-top-color: var(--teal);
+  border-right-color: rgba(20, 84, 90, 0.35);
+  animation: paint-turn 1.6s linear infinite;
+}
+.paint__ring span:nth-child(2) {
+  inset: 15px;
+  border-top-color: var(--ember);
+  border-right-color: rgba(194, 97, 42, 0.3);
+  animation-duration: 2.3s;
+  animation-direction: reverse;
+}
+.paint__ring span:nth-child(3) {
+  inset: 30px;
+  border-top-color: var(--gold);
+  animation-duration: 3.1s;
+}
+@keyframes paint-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.paint__clock {
+  position: relative;
+  font-family: var(--font-ui);
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px rgba(255, 250, 235, 0.9);
+}
+.paint__label {
+  position: relative;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  text-shadow: 0 1px 2px rgba(255, 250, 235, 0.9);
+}
+.moment-dlg__prompt {
+  gap: 10px;
+}
+.moment-dlg__prompt textarea {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.45;
+}
+.moment-dlg__mine {
+  margin-left: 8px;
+  font-weight: 400;
+  color: var(--ember);
+}
+.moment-dlg__promptacts {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.moment-dlg__note {
+  font-size: 14px;
+}
+.moment-dlg__error {
+  font-size: 14px;
+  color: #a2432c;
+}
+.moment-dlg__mid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.moment-dlg__link {
+  font-family: var(--font-ui);
+  font-size: 14.5px;
+  color: var(--teal-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .moment-dlg__count {
   font-size: 14px;

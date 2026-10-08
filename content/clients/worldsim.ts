@@ -690,6 +690,7 @@ export interface SceneArtView {
   moment: string;
   phase_index?: number;
   picture_id: string;
+  repainting?: boolean;
   scene_id: string;
   status: string;
   title?: string | null;
@@ -861,6 +862,31 @@ export interface PortraitPromptView {
   seed?: number | null;
   seed_mode: string;
   style?: string | null;
+}
+
+export interface PicturePromptView {
+  edited: boolean;
+  prompt: string;
+  repaint_job_id?: string | null;
+  repainting?: boolean;
+}
+
+export interface JobView {
+  attempt_count: number;
+  error?: string;
+  id: string;
+  kind: string;
+  result_asset_id?: string | null;
+  status: string;
+  style_pack_version: string;
+  subject_id?: string | null;
+  version: number;
+  world_id?: string | null;
+}
+
+export interface RepaintRequest {
+  prompt: string;
+  world_id: string;
 }
 
 export interface WritingField {

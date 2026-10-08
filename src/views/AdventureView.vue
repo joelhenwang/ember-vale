@@ -963,6 +963,7 @@ onMounted(() => {
       :places="placeNames"
       :opts="adv.opts.value"
       @update:index="openedMoment = $event"
+      @repainted="adv.onVisible()"
       @close="openedMoment = null" />
     <PaintSceneDialog
       :world-id="storyId"

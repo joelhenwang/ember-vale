@@ -1019,6 +1019,8 @@ class SceneArtView(BaseModel):
     #: The beat it was painted for (day and time of day follow from it).
     phase_index: int = 0
     location_id: UUID | None = None
+    #: A new painting from an edited prompt is under way (this one shows until then).
+    repainting: bool = False
 
 
 class PictureCharacter(BaseModel):
@@ -1044,6 +1046,26 @@ class PictureSuggestion(BaseModel):
     #: Story settings words added before and after the prompt when painting.
     added_before: str = ""
     added_after: str = ""
+
+
+class PicturePromptView(BaseModel):
+    """The whole prompt a scene picture was (or will be) painted from."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    prompt: str
+    #: The player edited it: sent as written, nothing added.
+    edited: bool
+    #: A repaint is under way.
+    repainting: bool = False
+    repaint_job_id: UUID | None = None
+
+
+class RepaintRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    world_id: UUID
+    prompt: str = Field(min_length=1, max_length=4000)
 
 
 class PaintSceneRequest(BaseModel):

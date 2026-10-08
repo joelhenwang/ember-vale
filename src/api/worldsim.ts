@@ -73,6 +73,8 @@ import type {
   WritingFillView,
   WritingSampleRequest,
   PortraitPromptView,
+  PicturePromptView,
+  JobView,
   WritingSampleView,
   TerrainView
 } from '../../content/clients/worldsim'
@@ -656,6 +658,38 @@ export function getPictureSuggestion(
     ...opts,
     method: 'GET'
   })
+}
+
+/** The whole prompt a scene picture is painted from, as the image service gets it. */
+export function getPicturePrompt(
+  worldId: string,
+  pictureId: string,
+  opts: CallOptions = {}
+): Promise<PicturePromptView> {
+  const query = `?world_id=${encodeURIComponent(worldId)}`
+  return apiFetch<PicturePromptView>(`/world/pictures/${pictureId}/prompt${query}`, {
+    ...opts,
+    method: 'GET'
+  })
+}
+
+/** Paint a picture again from the player's whole prompt, sent as written. */
+export function repaintPicture(
+  worldId: string,
+  pictureId: string,
+  prompt: string,
+  opts: CallOptions = {}
+): Promise<PicturePromptView> {
+  return apiFetch<PicturePromptView>(`/world/pictures/${pictureId}/repaint`, {
+    ...opts,
+    method: 'POST',
+    body: { world_id: worldId, prompt }
+  })
+}
+
+/** One image job, to follow a painting until it is done. */
+export function getImageJob(jobId: string, opts: CallOptions = {}): Promise<JobView> {
+  return apiFetch<JobView>(`/assets/jobs/${jobId}`, { ...opts, method: 'GET' })
 }
 
 export function paintScene(
