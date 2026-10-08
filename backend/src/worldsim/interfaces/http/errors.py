@@ -14,7 +14,8 @@ from uuid import uuid4
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.datastructures import MutableHeaders
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from worldsim.application.correlation import request_id_var
 from worldsim.domain.errors import DomainError, ErrorCode
@@ -70,31 +71,51 @@ async def unhandled_error_handler(request: Request, _exc: Exception) -> JSONResp
     )
 
 
-class RequestIdMiddleware(BaseHTTPMiddleware):
-    """Assign (or echo) a request ID, expose it to handlers and logs."""
+class RequestIdMiddleware:
+    """Assign (or echo) a request ID, expose it to handlers and logs.
 
-    async def dispatch(self, request: Request, call_next):  # type: ignore[no-untyped-def]
+    Pure ASGI rather than BaseHTTPMiddleware: no extra task and no
+    response re-wrapping on every request.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
         access = logging.getLogger("worldsim.access")
-        request_id = request.headers.get("X-Request-ID") or f"req-{uuid4().hex[:12]}"
-        request.state.request_id = request_id
+        incoming = ""
+        for name, value in scope["headers"]:
+            if name == b"x-request-id":
+                incoming = value.decode("latin-1")
+                break
+        request_id = incoming or f"req-{uuid4().hex[:12]}"
+        scope.setdefault("state", {})["request_id"] = request_id
         token = request_id_var.set(request_id)
         started = time.perf_counter()
         status = 500
+
+        async def send_with_id(message: Message) -> None:
+            nonlocal status
+            if message["type"] == "http.response.start":
+                status = message["status"]
+                MutableHeaders(scope=message)["X-Request-ID"] = request_id
+            await send(message)
+
+        method = scope.get("method", "")
+        path = scope.get("path", "")
         try:
-            response = await call_next(request)
-            response.headers["X-Request-ID"] = request_id
-            status = response.status_code
-        except Exception:
-            raise
+            await self.app(scope, receive, send_with_id)
         finally:
             latency_ms = int((time.perf_counter() - started) * 1000)
             access.info(
                 "%s %s -> %s (%sms)",
-                request.method,
-                request.url.path,
+                method,
+                path,
                 status,
                 latency_ms,
-                extra={"method": request.method, "path": request.url.path, "status": status},
+                extra={"method": method, "path": path, "status": status},
             )
             request_id_var.reset(token)
-        return response

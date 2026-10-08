@@ -10,29 +10,38 @@ from __future__ import annotations
 
 import secrets
 
-from fastapi import Request
 from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from worldsim.interfaces.http.errors import envelope
 
 EXEMPT_PATHS = frozenset({"/api/v1/health/live", "/api/v1/health/ready"})
 
 
-class ApiKeyMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app: ASGIApp, expected_key: str | None) -> None:
-        super().__init__(app)
-        self._expected = expected_key
+class ApiKeyMiddleware:
+    """Pure ASGI (no BaseHTTPMiddleware): no extra task or body buffering
+    per request, which capped simple routes at ~250 requests/s."""
 
-    async def dispatch(self, request: Request, call_next):  # type: ignore[no-untyped-def]
-        if self._expected and request.url.path not in EXEMPT_PATHS:
-            presented = request.headers.get("authorization", "")
-            scheme, _, token = presented.partition(" ")
-            if scheme.lower() != "bearer" or not secrets.compare_digest(token, self._expected):
-                request_id = getattr(request.state, "request_id", "")
-                return JSONResponse(
-                    status_code=401,
-                    content=envelope("UNAUTHORIZED", "valid bearer key required", request_id, {}),
-                )
-        return await call_next(request)
+    def __init__(self, app: ASGIApp, expected_key: str | None) -> None:
+        self.app = app
+        self._expected = expected_key.encode() if expected_key else None
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http" or not self._expected or scope["path"] in EXEMPT_PATHS:
+            await self.app(scope, receive, send)
+            return
+        presented = b""
+        for name, value in scope["headers"]:
+            if name == b"authorization":
+                presented = value
+                break
+        scheme, _, token = presented.partition(b" ")
+        if scheme.lower() != b"bearer" or not secrets.compare_digest(token, self._expected):
+            request_id = str(scope.get("state", {}).get("request_id", ""))
+            response = JSONResponse(
+                status_code=401,
+                content=envelope("UNAUTHORIZED", "valid bearer key required", request_id, {}),
+            )
+            await response(scope, receive, send)
+            return
+        await self.app(scope, receive, send)
