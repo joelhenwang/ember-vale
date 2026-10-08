@@ -1,0 +1,16 @@
+== long story, 4 processes, fingerprint off, 150 viewers, rep 1
+{"viewers": 50, "requests": 1785, "req_per_s": 59.5, "expected_req_per_s": 75.0, "p50_ms": 838.0, "p95_ms": 1344.4, "max_ms": 1964.4, "not_modified": 1090, "errors": 0}
+{"viewers": 50, "requests": 1779, "req_per_s": 59.3, "expected_req_per_s": 75.0, "p50_ms": 855.2, "p95_ms": 1355.8, "max_ms": 1948.4, "not_modified": 1086, "errors": 0}
+{"viewers": 50, "requests": 1785, "req_per_s": 59.5, "expected_req_per_s": 75.0, "p50_ms": 862.1, "p95_ms": 1369.1, "max_ms": 2009.8, "not_modified": 1090, "errors": 0}
+== long story, 4 processes, fingerprint off, 150 viewers, rep 2
+{"viewers": 50, "requests": 1629, "req_per_s": 54.3, "expected_req_per_s": 75.0, "p50_ms": 900.0, "p95_ms": 1605.8, "max_ms": 2434.7, "not_modified": 986, "errors": 0}
+{"viewers": 50, "requests": 1641, "req_per_s": 54.7, "expected_req_per_s": 75.0, "p50_ms": 876.4, "p95_ms": 1577.4, "max_ms": 2855.1, "not_modified": 994, "errors": 0}
+{"viewers": 50, "requests": 1647, "req_per_s": 54.9, "expected_req_per_s": 75.0, "p50_ms": 877.8, "p95_ms": 1583.0, "max_ms": 2987.0, "not_modified": 998, "errors": 0}
+== long story, 4 processes, fingerprint on, 150 viewers, rep 1
+{"viewers": 50, "requests": 1893, "req_per_s": 63.1, "expected_req_per_s": 75.0, "p50_ms": 736.6, "p95_ms": 1348.6, "max_ms": 2289.6, "not_modified": 1162, "errors": 0}
+{"viewers": 50, "requests": 1926, "req_per_s": 64.2, "expected_req_per_s": 75.0, "p50_ms": 718.2, "p95_ms": 1320.3, "max_ms": 2557.3, "not_modified": 1184, "errors": 0}
+{"viewers": 50, "requests": 1923, "req_per_s": 64.1, "expected_req_per_s": 75.0, "p50_ms": 722.3, "p95_ms": 1346.7, "max_ms": 1998.3, "not_modified": 1182, "errors": 0}
+== long story, 4 processes, fingerprint on, 150 viewers, rep 2
+{"viewers": 50, "requests": 2142, "req_per_s": 71.4, "expected_req_per_s": 75.0, "p50_ms": 545.9, "p95_ms": 1086.1, "max_ms": 1889.8, "not_modified": 1328, "errors": 0}
+{"viewers": 50, "requests": 2205, "req_per_s": 73.5, "expected_req_per_s": 75.0, "p50_ms": 516.9, "p95_ms": 970.6, "max_ms": 2178.5, "not_modified": 1370, "errors": 0}
+{"viewers": 50, "requests": 2148, "req_per_s": 71.6, "expected_req_per_s": 75.0, "p50_ms": 533.7, "p95_ms": 1051.0, "max_ms": 2053.5, "not_modified": 1332, "errors": 0}

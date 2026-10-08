@@ -6,7 +6,7 @@ browser. Steps up N and reports p50/p95 latency, achieved requests a second
 and errors per step. Read-only: it never advances the story.
 
     WORLDSIM_SECURITY__API_KEY=... python poll_load.py --story <world_id>
-        [--steps 10,25,50,100,200] [--seconds 30] [--every 2]
+        [--steps 10,25,50,100,200] [--seconds 30] [--every 2] [--character <id>]
 """
 
 from __future__ import annotations
@@ -23,18 +23,33 @@ import httpx
 
 
 async def viewer(
-    client: httpx.AsyncClient, story: str, every: float, stop: float, out: list[tuple[float, int]]
+    client: httpx.AsyncClient,
+    story: str,
+    every: float,
+    stop: float,
+    out: list[tuple[float, int]],
+    role: dict[str, str],
 ) -> None:
     tags: dict[str, str] = {}
-    cursor = 0
-    role = {"X-Worldsim-Role": "watcher"}
     await asyncio.sleep(random.uniform(0, every))
+    # Like chronicleReader: a one-entry probe learns the newest sequence, so
+    # polls start at the head instead of paging the whole story forward.
+    probe = await client.get(
+        "/world/chronicle",
+        params={"world_id": story, "after": 0, "limit": 1},
+        headers=role,
+    )
+    cursor = int(probe.json().get("watermark", 0)) if probe.status_code == 200 else 0
     while time.perf_counter() < stop:
         tick = time.perf_counter()
         reads = [
             ("p", "/world/presentation", {"world_id": story}),
             ("a", f"/stories/{story}/autoplay", {}),
-            ("c", "/world/chronicle", {"world_id": story, "after": cursor, "limit": 100}),
+            (
+                "c",
+                "/world/chronicle",
+                {"world_id": story, "after": cursor, "limit": 100},
+            ),
         ]
         for key, path, params in reads:
             headers = dict(role)
@@ -54,7 +69,15 @@ async def viewer(
         await asyncio.sleep(max(0.0, every - (time.perf_counter() - tick)))
 
 
-async def step(base: str, key: str, story: str, n: int, seconds: float, every: float) -> dict:
+async def step(
+    base: str,
+    key: str,
+    story: str,
+    n: int,
+    seconds: float,
+    every: float,
+    role: dict[str, str],
+) -> dict:
     out: list[tuple[float, int]] = []
     limits = httpx.Limits(max_connections=n * 2, max_keepalive_connections=n * 2)
     async with httpx.AsyncClient(
@@ -64,7 +87,9 @@ async def step(base: str, key: str, story: str, n: int, seconds: float, every: f
         limits=limits,
     ) as client:
         stop = time.perf_counter() + seconds
-        await asyncio.gather(*(viewer(client, story, every, stop, out) for _ in range(n)))
+        await asyncio.gather(
+            *(viewer(client, story, every, stop, out, role) for _ in range(n))
+        )
     ok = sorted(ms for ms, s in out if s in (200, 304))
     q = statistics.quantiles(ok, n=20) if len(ok) >= 20 else [0.0] * 19
     return {
@@ -88,11 +113,19 @@ def main() -> None:
     parser.add_argument("--seconds", type=float, default=30)
     parser.add_argument("--every", type=float, default=2.0)
     parser.add_argument("--json")
+    parser.add_argument("--character", help="poll as the player of this character")
     args = parser.parse_args()
+    role = (
+        {"X-Worldsim-Role": "player", "X-Worldsim-Character": args.character}
+        if args.character
+        else {"X-Worldsim-Role": "watcher"}
+    )
     key = os.environ.get("WORLDSIM_SECURITY__API_KEY", "")
     rows = []
     for n in (int(s) for s in args.steps.split(",")):
-        row = asyncio.run(step(args.base, key, args.story, n, args.seconds, args.every))
+        row = asyncio.run(
+            step(args.base, key, args.story, n, args.seconds, args.every, role)
+        )
         print(json.dumps(row), flush=True)
         rows.append(row)
     if args.json:

@@ -1,0 +1,26 @@
+== long story, 1 process, fingerprint off
+{"viewers": 25, "requests": 1122, "req_per_s": 37.4, "expected_req_per_s": 37.5, "p50_ms": 12.3, "p95_ms": 64.4, "max_ms": 206.8, "not_modified": 1047, "errors": 0}
+{"viewers": 50, "requests": 2229, "req_per_s": 74.3, "expected_req_per_s": 75.0, "p50_ms": 21.9, "p95_ms": 112.4, "max_ms": 395.3, "not_modified": 2079, "errors": 0}
+{"viewers": 75, "requests": 3354, "req_per_s": 111.8, "expected_req_per_s": 112.5, "p50_ms": 61.3, "p95_ms": 355.0, "max_ms": 816.6, "not_modified": 3129, "errors": 0}
+{"viewers": 90, "requests": 3279, "req_per_s": 109.3, "expected_req_per_s": 135.0, "p50_ms": 464.5, "p95_ms": 1891.9, "max_ms": 5049.4, "not_modified": 3008, "errors": 1}
+== long story, 1 process, fingerprint on
+{"viewers": 25, "requests": 1122, "req_per_s": 37.4, "expected_req_per_s": 37.5, "p50_ms": 9.2, "p95_ms": 16.5, "max_ms": 49.3, "not_modified": 1047, "errors": 0}
+{"viewers": 50, "requests": 2244, "req_per_s": 74.8, "expected_req_per_s": 75.0, "p50_ms": 11.7, "p95_ms": 23.9, "max_ms": 136.0, "not_modified": 2094, "errors": 0}
+{"viewers": 75, "requests": 3375, "req_per_s": 112.5, "expected_req_per_s": 112.5, "p50_ms": 15.9, "p95_ms": 33.0, "max_ms": 170.8, "not_modified": 3150, "errors": 0}
+{"viewers": 90, "requests": 2982, "req_per_s": 99.4, "expected_req_per_s": 135.0, "p50_ms": 467.4, "p95_ms": 2314.0, "max_ms": 6120.0, "not_modified": 2712, "errors": 0}
+== long story, 4 processes, fingerprint off, 150 viewers, rep 1
+{"viewers": 50, "requests": 2223, "req_per_s": 74.1, "expected_req_per_s": 75.0, "p50_ms": 30.9, "p95_ms": 264.8, "max_ms": 1182.2, "not_modified": 2073, "errors": 0}
+{"viewers": 50, "requests": 2220, "req_per_s": 74.0, "expected_req_per_s": 75.0, "p50_ms": 33.0, "p95_ms": 260.2, "max_ms": 1141.7, "not_modified": 2070, "errors": 0}
+{"viewers": 50, "requests": 2205, "req_per_s": 73.5, "expected_req_per_s": 75.0, "p50_ms": 28.7, "p95_ms": 242.1, "max_ms": 1115.3, "not_modified": 2055, "errors": 0}
+== long story, 4 processes, fingerprint off, 150 viewers, rep 2
+{"viewers": 50, "requests": 2241, "req_per_s": 74.7, "expected_req_per_s": 75.0, "p50_ms": 22.7, "p95_ms": 84.6, "max_ms": 354.3, "not_modified": 2091, "errors": 0}
+{"viewers": 50, "requests": 2238, "req_per_s": 74.6, "expected_req_per_s": 75.0, "p50_ms": 27.1, "p95_ms": 95.3, "max_ms": 359.6, "not_modified": 2088, "errors": 0}
+{"viewers": 50, "requests": 2238, "req_per_s": 74.6, "expected_req_per_s": 75.0, "p50_ms": 19.8, "p95_ms": 79.6, "max_ms": 322.7, "not_modified": 2088, "errors": 0}
+== long story, 4 processes, fingerprint on, 150 viewers, rep 1
+{"viewers": 50, "requests": 2199, "req_per_s": 73.3, "expected_req_per_s": 75.0, "p50_ms": 14.5, "p95_ms": 243.4, "max_ms": 1241.2, "not_modified": 2049, "errors": 0}
+{"viewers": 50, "requests": 2190, "req_per_s": 73.0, "expected_req_per_s": 75.0, "p50_ms": 16.3, "p95_ms": 241.4, "max_ms": 1115.1, "not_modified": 2040, "errors": 0}
+{"viewers": 50, "requests": 2187, "req_per_s": 72.9, "expected_req_per_s": 75.0, "p50_ms": 13.9, "p95_ms": 232.6, "max_ms": 1276.9, "not_modified": 2037, "errors": 0}
+== long story, 4 processes, fingerprint on, 150 viewers, rep 2
+{"viewers": 50, "requests": 2247, "req_per_s": 74.9, "expected_req_per_s": 75.0, "p50_ms": 11.3, "p95_ms": 53.8, "max_ms": 113.7, "not_modified": 2097, "errors": 0}
+{"viewers": 50, "requests": 2250, "req_per_s": 75.0, "expected_req_per_s": 75.0, "p50_ms": 13.8, "p95_ms": 58.3, "max_ms": 133.8, "not_modified": 2100, "errors": 0}
+{"viewers": 50, "requests": 2244, "req_per_s": 74.8, "expected_req_per_s": 75.0, "p50_ms": 12.7, "p95_ms": 54.7, "max_ms": 153.6, "not_modified": 2094, "errors": 0}

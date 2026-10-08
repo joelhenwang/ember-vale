@@ -223,3 +223,34 @@ A revalidated presentation takes 7–11 ms instead of 17. Under load the tail is
 **Decision: built, tested, off by default.** For one player it changes nothing measurable (about 10 ms either way). Turn it on when a process serves dozens of viewers. Every new feature that writes something the presentation shows must extend `_FINGERPRINT` and the scripted test; the comment on the query says so. Section 8's analysis of app-side bumps and triggers stands. The fingerprint avoids both problems: it needs no bumps and takes no locks.
 
 **Fingerprint cost on a long story.** On a 300-turn, 10-character bench story (1,367 events, 300 phase runs), the fingerprint took 1.65 ms p50. With 3,000 image jobs inserted it took 3.39 ms, all of the growth from hashing every job's status. Every status change goes through `save_job`, which raises the job's version, so that hash duplicated the version sum. It was removed: 1.55 ms p50 with the 3,000 jobs, and the staleness test still passes. A build of the presentation takes about 17 ms.
+
+## 10. Second and third story shapes
+
+Sections 7–9 used one short watcher story (8 turns, 2 people). Here are the same tests on two more shapes.
+
+**A long story: 1,340 events, 300 turns, 10 characters** (fake-model bench). The API container was pointed at the bench database. `poll_load.py` now opens like `chronicleReader`: a one-entry probe finds the newest event, and polls start there. An earlier run paged the whole chronicle forward from event 0, which no screen does; it is kept apart in `data/long-forward-read/` and is not a result.
+
+| Setup (`data/long_load_*.json`, `long_load_summary.txt`) | Viewers | p50 | p95 |
+|---|---|---|---|
+| 1 process, fingerprint off | 50 | 22 ms | 112 ms |
+| | 75 | 61 ms | 355 ms |
+| | 90 | 465 ms | 1.9 s (saturated) |
+| 1 process, fingerprint on | 50 | 12 ms | 24 ms |
+| | 75 | 16 ms | **33 ms** |
+| | 90 | 467 ms | 2.3 s (saturated) |
+| 4 processes, fingerprint off, 2 runs | 150 | 20–33 ms | 80–265 ms |
+| 4 processes, fingerprint on, 2 runs | 150 | 11–16 ms | 54–243 ms |
+
+There were no errors. The long story performs like the short one, which confirms that reads stay flat with story length. Fingerprint mode cuts the single-process tail about 10x at 75 viewers, and the tipping point stays near 85–90 viewers.
+
+**A player's view** (the quick-start story, as Wren; `data/player_load_*.json`):
+
+| Players | p95, fingerprint off | p95, fingerprint on |
+|---|---|---|
+| 25 | 41 ms | 18 ms |
+| 50 | 67 ms | 31 ms |
+| 75 | 481 ms | 296 ms |
+
+The gain is smaller at 75 because the player screen also computes renown.
+
+**Conclusions across the three shapes.** One process carries about 60–75 viewers or players at p95 under 0.5 s, and four processes about 150. Fingerprint mode helps in every shape. It stays off by default for the reason in section 9: for one player the difference is a few milliseconds, and a write it does not cover would show a stale screen.
