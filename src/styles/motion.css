@@ -478,6 +478,7 @@
     rgba(255, 250, 230, 0.35),
     transparent 70%
   );
+  mix-blend-mode: soft-light;
   opacity: 0;
   transition: opacity 0.3s ease;
 }

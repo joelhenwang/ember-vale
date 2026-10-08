@@ -19,6 +19,7 @@ import { setStoryArchived, storiesUi, storyShelf, type StoryRecord } from '../ga
 import { sortStoriesNewest, toStoryRecord, type ResolvedWorld } from '../game/records'
 import { archiveStory, getSetup, getStory, listStories, unarchiveStory } from '../api/worldsim'
 import { usePresets } from '../composables/usePresets'
+import { burst, flash } from '../composables/useEffects'
 import SetupDialog from '../components/story/SetupDialog.vue'
 import PageIntro from '../components/ui/PageIntro.vue'
 import SearchField from '../components/ui/SearchField.vue'
@@ -91,6 +92,10 @@ async function toggleArchive(story: StoryRecord, archived: boolean): Promise<voi
     if (archived) await archiveStory(story.id, detail.metadata_version)
     else await unarchiveStory(story.id, detail.metadata_version)
     setStoryArchived(story.id, archived)
+    // the card glows where it still shows; a restore throws a few sparks
+    const card = document.querySelector(`[data-story="${story.id}"]`)
+    flash(card)
+    if (!archived) burst(card, { count: 10, spread: 60 })
   } catch (err) {
     actionError.value = err instanceof Error ? err.message : 'could not update the story'
   }
@@ -114,6 +119,15 @@ async function refresh(quiet = false): Promise<void> {
   } finally {
     loading.value = false
   }
+}
+
+/** A card leaving the grid lifts out of the flow so the rest glide into place. */
+function pinLeaving(el: Element): void {
+  const e = el as HTMLElement
+  e.style.width = `${e.offsetWidth}px`
+  e.style.height = `${e.offsetHeight}px`
+  e.style.left = `${e.offsetLeft}px`
+  e.style.top = `${e.offsetTop}px`
 }
 
 // Kept alive: coming back refreshes quietly behind the shelf already shown.
@@ -150,26 +164,45 @@ onActivated(() => {
         <ViewToggle v-model="storiesUi.view" label="View mode" :options="viewOptions" />
       </div>
 
-      <p v-if="loading" class="stories__none" role="status">Opening the shelf…</p>
+      <div v-if="loading" class="stories__grid" role="status" aria-label="Opening the shelf…">
+        <span v-for="n in 3" :key="n" class="stories__ghost ev-card" aria-hidden="true">
+          <span class="stories__ghost-art ev-skeleton"></span>
+          <span class="stories__ghost-line ev-skeleton"></span>
+          <span class="stories__ghost-line ev-skeleton"></span>
+        </span>
+      </div>
       <p v-else-if="loadError" class="stories__none" role="alert">
         The library is unreachable ({{ loadError }}) — showing nothing rather than old tales.
       </p>
       <template v-else>
-        <p v-if="actionError" class="stories__none" role="alert">{{ actionError }}</p>
-        <div class="stories__grid" :class="{ 'stories__grid--list': storiesUi.view === 'list' }">
-          <StoryCard
-            v-for="s in list"
-            :key="s.id"
-            :story="s"
-            :layout="storiesUi.view"
-            @continue="openStory(s)"
-            @configure="openSetup(s)"
-            @saves="openStory(s)"
-            @settings="router.push({ name: 'story-settings', params: { storyId: s.id } })"
-            @archive="toggleArchive(s, $event)" />
-        </div>
+        <Transition name="ev-rise">
+          <p v-if="actionError" class="stories__none" role="alert">{{ actionError }}</p>
+        </Transition>
+        <Transition name="ev-swap" mode="out-in">
+          <TransitionGroup
+            :key="storiesUi.view"
+            tag="div"
+            name="ev-list"
+            appear
+            class="stories__grid"
+            :class="{ 'stories__grid--list': storiesUi.view === 'list' }"
+            @before-leave="pinLeaving">
+            <StoryCard
+              v-for="(s, i) in list"
+              :key="s.id"
+              :data-story="s.id"
+              :style="{ '--i': i }"
+              :story="s"
+              :layout="storiesUi.view"
+              @continue="openStory(s)"
+              @configure="openSetup(s)"
+              @saves="openStory(s)"
+              @settings="router.push({ name: 'story-settings', params: { storyId: s.id } })"
+              @archive="toggleArchive(s, $event)" />
+          </TransitionGroup>
+        </Transition>
 
-        <p v-if="!list.length" class="stories__none">
+        <p v-if="!list.length" class="stories__none ev-fade-in">
           {{
             storyShelf.length
               ? 'No stories in this drawer — try another word.'
@@ -206,6 +239,7 @@ onActivated(() => {
   padding: 20px 26px;
 }
 .stories__ridge {
+  animation: stories-ridge 1.4s var(--ease-settle) both;
   position: absolute;
   right: 0;
   bottom: 0;
@@ -215,8 +249,20 @@ onActivated(() => {
   opacity: 0.5;
   pointer-events: none;
 }
+@keyframes stories-ridge {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
 .stories__new {
   height: 46px;
+}
+.stories__new svg {
+  transition: transform 0.45s var(--ease-settle);
+}
+.stories__new:hover svg {
+  transform: rotate(90deg);
 }
 
 /* panel --------------------------------------------------------------------- */
@@ -239,6 +285,7 @@ onActivated(() => {
 }
 
 .stories__grid {
+  position: relative;
   margin-top: 16px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
@@ -246,6 +293,36 @@ onActivated(() => {
 }
 .stories__grid--list {
   grid-template-columns: 1fr;
+}
+/* cards arrive one after another (capped so the shelf reads as one beat) */
+.stories__grid > .ev-list-enter-active {
+  transition-delay: calc(min(var(--i, 0), 8) * 45ms);
+}
+.stories__grid > .ev-list-leave-active {
+  position: absolute;
+  margin: 0;
+}
+.stories__ghost {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 10px 18px;
+}
+.stories__ghost-art {
+  aspect-ratio: 16 / 9.4;
+  border-radius: 11px;
+}
+.stories__ghost-line {
+  height: 18px;
+  width: 60%;
+  margin: 0 6px;
+}
+.stories__ghost-line:last-child {
+  width: 85%;
+  height: 14px;
+}
+.ev-fade-in {
+  animation: ev-fade 0.4s var(--ease-out) both;
 }
 .stories__none {
   margin-top: 20px;
@@ -269,6 +346,7 @@ onActivated(() => {
 }
 .stories__footspark {
   color: var(--gold);
+  animation: ev-float 4.5s var(--ease-sine) infinite;
 }
 .stories__foot em {
   font-family: var(--font-display);

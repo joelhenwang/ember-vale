@@ -16,6 +16,7 @@ import { ref } from 'vue'
 
 const heroOpen = ref(false)
 import { storyLocation } from '../game/storyRoute'
+import { vTilt } from '../composables/useEffects'
 
 function resume(story: StorySummary): void {
   router.push(storyLocation(story.id, story.pov))
@@ -37,9 +38,11 @@ function resume(story: StorySummary): void {
 
     <div class="recent__grid">
       <article
-        v-for="story in menuState.recent"
+        v-for="(story, i) in menuState.recent"
         :key="story.id"
+        v-tilt="4"
         class="recent__card ev-card"
+        :style="{ '--i': i }"
         tabindex="0"
         role="button"
         :aria-label="`Resume ${story.title}`"
@@ -75,7 +78,7 @@ function resume(story: StorySummary): void {
           <IconArrowInCircle :size="24" />
         </span>
       </article>
-      <div class="recent__card recent__new ev-card">
+      <div class="recent__card recent__new ev-card" :style="{ '--i': menuState.recent.length }">
         <router-link
           class="recent__plus"
           :to="{ name: 'new-story' }"
@@ -123,6 +126,18 @@ function resume(story: StorySummary): void {
 .recent__spark {
   color: var(--gold);
   transform: translateY(-1px);
+  animation: recent-twinkle 4.8s var(--ease-sine) infinite;
+}
+@keyframes recent-twinkle {
+  0%,
+  70%,
+  100% {
+    transform: translateY(-1px) scale(1) rotate(0deg);
+  }
+  80% {
+    transform: translateY(-1px) scale(1.25) rotate(20deg);
+    color: var(--ember-hi);
+  }
 }
 
 /* cards ---------------------------------------------------------------------- */
@@ -138,20 +153,32 @@ function resume(story: StorySummary): void {
   padding: 8px 12px 8px 8px;
   min-height: 126px;
   cursor: pointer;
+  animation: recent-in 0.7s var(--ease-settle) backwards;
+  animation-delay: calc(0.25s + var(--i, 0) * 0.08s);
   transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease,
-    border-color 0.15s ease;
+    transform 0.5s var(--ease-settle),
+    box-shadow 0.3s var(--ease-settle),
+    border-color 0.2s ease;
+}
+@keyframes recent-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
 }
 .recent__card:hover {
-  transform: translateY(-1px);
   border-color: #c6b48a;
   box-shadow:
     var(--card-shadow),
     0 10px 22px -16px rgba(96, 74, 40, 0.5),
     inset 0 1px 0 rgba(255, 252, 240, 0.7);
 }
+/* the tilt's glare lights the card without washing out its words */
+.recent__card::before {
+  mix-blend-mode: soft-light;
+}
 .recent__img {
+  transition: filter 0.4s var(--ease-settle);
   width: 42%;
   max-width: 220px;
   height: 108px;
@@ -161,6 +188,9 @@ function resume(story: StorySummary): void {
   box-shadow:
     0 1px 2px rgba(96, 74, 40, 0.25),
     inset 0 0 0 1px rgba(120, 96, 56, 0.2);
+}
+.recent__card:hover .recent__img {
+  filter: brightness(1.05) saturate(1.08);
 }
 .recent__body {
   min-width: 0;
@@ -215,7 +245,11 @@ function resume(story: StorySummary): void {
 .recent__card:hover .recent__go {
   color: var(--teal-ink);
   border-color: #9db39b;
-  transform: translateX(2px);
+  transform: translateX(4px);
+}
+.recent__card:active:not(.recent__new) {
+  transform: scale(0.98);
+  transition-duration: 0.1s;
 }
 
 .recent__new {
@@ -258,6 +292,23 @@ function resume(story: StorySummary): void {
   border: 1px dashed var(--line-strong);
   background: var(--panel-2);
   color: var(--teal-ink);
+  transition:
+    transform 0.45s var(--ease-settle),
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+.recent__plus svg {
+  transition: transform 0.5s var(--ease-settle);
+}
+.recent__new:hover .recent__plus {
+  border-color: var(--teal-ink);
+  background-color: #eef3ec;
+}
+.recent__new:hover .recent__plus svg {
+  transform: rotate(90deg) scale(1.12);
+}
+.recent__plus:active {
+  transform: scale(0.94);
 }
 
 @media (max-width: 1180px) {

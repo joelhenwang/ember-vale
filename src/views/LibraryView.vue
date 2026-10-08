@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onActivated, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onActivated, onMounted, onUnmounted, ref } from 'vue'
 import type { Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { catalog, libraryUi, resetLibraryFilters } from '../game/catalog'
@@ -25,6 +25,8 @@ import IconStack from '../components/icons/IconStack.vue'
 import IconGrid from '../components/icons/IconGrid.vue'
 import IconList from '../components/icons/IconList.vue'
 import IconSparkle from '../components/icons/IconSparkle.vue'
+import EmberField from '../components/decor/EmberField.vue'
+import { burst, flash } from '../composables/useEffects'
 
 const route = useRoute()
 const router = useRouter()
@@ -174,6 +176,12 @@ async function onPick(kind: 'character' | 'world', id: string, key: string): Pro
       const copy = await duplicatePreset(id)
       await presets.load()
       tell(`Made “${copy.name}”.`)
+      // the new card glows and throws a few sparks where it lands
+      await nextTick()
+      const card = document.querySelector(`[data-preset="${copy.id}"]`)
+      card?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      flash(card)
+      burst(card, { count: 12 })
     } else if (key === 'archive') {
       const done = await setPresetArchived(id, true, preset.version)
       await presets.load()
@@ -189,9 +197,20 @@ async function restore(id: string, version: number, name: string): Promise<void>
     await setPresetArchived(id, false, version)
     await presets.load()
     tell(`“${name}” is back.`)
+    await nextTick()
+    flash(document.querySelector(`[data-preset="${id}"]`))
   } catch (err) {
     tell(err instanceof Error ? err.message : 'Could not bring it back.')
   }
+}
+
+/** A card leaving the grid lifts out of the flow so the rest glide into place. */
+function pinLeaving(el: Element): void {
+  const e = el as HTMLElement
+  e.style.width = `${e.offsetWidth}px`
+  e.style.height = `${e.offsetHeight}px`
+  e.style.left = `${e.offsetLeft}px`
+  e.style.top = `${e.offsetTop}px`
 }
 
 /** Studios are shared pages — the library opens its own flavor of each. */
@@ -209,8 +228,9 @@ function openWorld(id: string): void {
     <section class="lib__banner ev-card">
       <img class="lib__art" :src="bannerUrl" alt="" aria-hidden="true" />
       <div class="lib__fade" aria-hidden="true"></div>
+      <EmberField class="lib__dust" tone="dust" :count="12" :rise="180" />
       <div class="lib__banner-body">
-        <div class="lib__heading">
+        <div class="lib__heading ev-rise">
           <span class="ev-eyebrow"><IconSparkle :size="13" /> Your creative archive</span>
           <h1 class="lib__title">Library</h1>
           <p class="lib__sub">
@@ -238,83 +258,119 @@ function openWorld(id: string): void {
           <ViewToggle v-model="libraryUi.view" label="View mode" :options="viewOptions" />
         </div>
 
-        <!-- characters -->
-        <div v-if="tab === 'characters'" class="lib__cards lib__cards--people ev-rise">
-          <p v-if="presets.loading.value" class="lib__none" role="status">Reading the archive…</p>
-          <p v-else-if="presets.error.value" class="lib__none" role="alert">
-            The archive did not answer ({{ presets.error.value }}) —
-            <button type="button" class="lib__link" @click="retryPresets()">retry</button>
-          </p>
-          <template v-else>
-            <CharacterLibCard
-              v-for="c in characters"
-              :key="c.id"
-              :character="c"
-              :menu="menuFor('character', c.id)"
-              @open="openCharacter(c.id)"
-              @pick="onPick('character', c.id, $event)" />
-            <p v-if="!characters.length" class="lib__none">
-              Nothing in the archive matches — try another word.
+        <Transition name="ev-swap" mode="out-in">
+          <!-- characters -->
+          <TransitionGroup
+            v-if="tab === 'characters'"
+            :key="`characters-${libraryUi.view}`"
+            tag="div"
+            name="ev-list"
+            appear
+            class="lib__cards lib__cards--people"
+            @before-leave="pinLeaving">
+            <p v-if="presets.loading.value" key="loading" class="lib__none" role="status">
+              Reading the archive…
             </p>
-          </template>
-          <CreateLibTile
-            title="Create a character"
-            copy="New companions.
+            <p v-else-if="presets.error.value" key="error" class="lib__none" role="alert">
+              The archive did not answer ({{ presets.error.value }}) —
+              <button type="button" class="lib__link" @click="retryPresets()">retry</button>
+            </p>
+            <template v-else>
+              <CharacterLibCard
+                v-for="(c, i) in characters"
+                :key="c.id"
+                :data-preset="c.id"
+                :style="{ '--i': i }"
+                :character="c"
+                :menu="menuFor('character', c.id)"
+                @open="openCharacter(c.id)"
+                @pick="onPick('character', c.id, $event)" />
+              <p v-if="!characters.length" key="none" class="lib__none">
+                Nothing in the archive matches — try another word.
+              </p>
+            </template>
+            <CreateLibTile
+              key="create"
+              :style="{ '--i': characters.length }"
+              title="Create a character"
+              copy="New companions.
 New possibilities."
-            @create="openCharacter('new')" />
-        </div>
+              @create="openCharacter('new')" />
+          </TransitionGroup>
 
-        <!-- worlds -->
-        <div v-else-if="tab === 'worlds'" class="ev-rise lib__cards lib__cards--worlds">
-          <p v-if="presets.loading.value" class="lib__none" role="status">Reading the archive…</p>
-          <p v-else-if="presets.error.value" class="lib__none" role="alert">
-            The archive did not answer ({{ presets.error.value }}) —
-            <button type="button" class="lib__link" @click="retryPresets()">retry</button>
-          </p>
-          <template v-else>
-            <WorldLibCard
-              v-for="w in worlds"
-              :key="w.id"
-              :world="w"
-              :menu="menuFor('world', w.id)"
-              @open="openWorld(w.id)"
-              @pick="onPick('world', w.id, $event)" />
-            <p v-if="!worlds.length" class="lib__none">No worlds match — the map is blank.</p>
-          </template>
-          <CreateLibTile
-            title="Create a world"
-            copy="Shape the setting of
+          <!-- worlds -->
+          <TransitionGroup
+            v-else-if="tab === 'worlds'"
+            :key="`worlds-${libraryUi.view}`"
+            tag="div"
+            name="ev-list"
+            appear
+            class="lib__cards lib__cards--worlds"
+            @before-leave="pinLeaving">
+            <p v-if="presets.loading.value" key="loading" class="lib__none" role="status">
+              Reading the archive…
+            </p>
+            <p v-else-if="presets.error.value" key="error" class="lib__none" role="alert">
+              The archive did not answer ({{ presets.error.value }}) —
+              <button type="button" class="lib__link" @click="retryPresets()">retry</button>
+            </p>
+            <template v-else>
+              <WorldLibCard
+                v-for="(w, i) in worlds"
+                :key="w.id"
+                :data-preset="w.id"
+                :style="{ '--i': i }"
+                :world="w"
+                :menu="menuFor('world', w.id)"
+                @open="openWorld(w.id)"
+                @pick="onPick('world', w.id, $event)" />
+              <p v-if="!worlds.length" key="none" class="lib__none">
+                No worlds match — the map is blank.
+              </p>
+            </template>
+            <CreateLibTile
+              key="create"
+              :style="{ '--i': worlds.length }"
+              title="Create a world"
+              copy="Shape the setting of
 your next story."
-            @create="openWorld('new')" />
-        </div>
+              @create="openWorld('new')" />
+          </TransitionGroup>
 
-        <!-- style packs -->
-        <div v-else-if="tab === 'style-packs'" class="ev-rise lib__cards lib__cards--packs">
-          <p class="lib__soon">
-            Coming soon: style packs can be looked at, not made or changed yet. Every story uses the
-            house style for now.
-          </p>
-          <PackLibCard v-for="p in packs" :key="p.id" :pack="p" />
-          <CreateLibTile
-            soon
-            title="Create a style pack"
-            copy="Find the voice
+          <!-- style packs -->
+          <div
+            v-else-if="tab === 'style-packs'"
+            :key="`packs-${libraryUi.view}`"
+            class="ev-rise lib__cards lib__cards--packs">
+            <p class="lib__soon">
+              Coming soon: style packs can be looked at, not made or changed yet. Every story uses
+              the house style for now.
+            </p>
+            <PackLibCard v-for="p in packs" :key="p.id" :pack="p" />
+            <CreateLibTile
+              soon
+              title="Create a style pack"
+              copy="Find the voice
 of your tales." />
-        </div>
+          </div>
 
-        <!-- templates -->
-        <div v-else class="ev-rise lib__cards lib__cards--worlds">
-          <p class="lib__soon">
-            Coming soon: templates can be looked at, not made or changed yet. Start a story from New
-            Story for now.
-          </p>
-          <PackLibCard v-for="p in templates" :key="p.id" :pack="p" />
-          <CreateLibTile
-            soon
-            title="Create a template"
-            copy="A first draft of
+          <!-- templates -->
+          <div
+            v-else
+            :key="`templates-${libraryUi.view}`"
+            class="ev-rise lib__cards lib__cards--worlds">
+            <p class="lib__soon">
+              Coming soon: templates can be looked at, not made or changed yet. Start a story from
+              New Story for now.
+            </p>
+            <PackLibCard v-for="p in templates" :key="p.id" :pack="p" />
+            <CreateLibTile
+              soon
+              title="Create a template"
+              copy="A first draft of
 every future story." />
-        </div>
+          </div>
+        </Transition>
       </div>
     </section>
 
@@ -322,6 +378,8 @@ every future story." />
       <div v-if="notice" class="lib__toast" role="status">
         <span>{{ notice.text }}</span>
         <button v-if="notice.undo" type="button" @click="notice.undo?.()">Undo</button>
+        <!-- the time left to undo, running out -->
+        <span :key="notice.text" class="lib__toast-clock" aria-hidden="true"></span>
       </div>
     </Transition>
   </main>
@@ -356,6 +414,26 @@ every future story." />
   /* the picture melts into the paper on its left */
   -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.35) 22%, #000 52%);
   mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.35) 22%, #000 52%);
+  /* the picture slides in from the right, then pans slowly */
+  transform-origin: right center;
+  animation:
+    lib-art-in 1.3s var(--ease-settle) both,
+    lib-art-pan 28s var(--ease-sine) 1.3s infinite alternate;
+}
+@keyframes lib-art-in {
+  from {
+    opacity: 0;
+    transform: translateX(6%) scale(1.04);
+  }
+}
+@keyframes lib-art-pan {
+  to {
+    transform: scale(1.07) translateX(-1.5%);
+  }
+}
+.lib__dust {
+  z-index: 0;
+  left: 30%;
 }
 .lib__fade {
   position: absolute;
@@ -426,6 +504,7 @@ every future story." />
 }
 
 .lib__cards {
+  position: relative;
   margin-top: 16px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -458,6 +537,31 @@ every future story." />
   aspect-ratio: auto;
   max-height: none;
   border-radius: var(--radius-card) 0 0 var(--radius-card);
+}
+/* cards arrive one after another (capped so the shelf reads as one beat) */
+.lib__cards > .ev-list-enter-active {
+  transition:
+    opacity 0.32s var(--ease-out),
+    transform 0.46s var(--ease-settle);
+  transition-delay: calc(min(var(--i, 0), 8) * 40ms);
+}
+.lib__cards > .ev-list-enter-from {
+  opacity: 0;
+  transform: translateY(14px) scale(0.97);
+}
+.lib__cards > .ev-list-leave-active {
+  position: absolute;
+  margin: 0;
+  transition:
+    opacity 0.18s var(--ease-in),
+    transform 0.18s var(--ease-in);
+}
+.lib__cards > .ev-list-leave-to {
+  opacity: 0;
+  transform: scale(0.94);
+}
+.lib__cards > .ev-list-move {
+  transition: transform 0.46s var(--ease-settle);
 }
 .lib__none {
   grid-column: 1 / -1;
@@ -502,6 +606,22 @@ every future story." />
   color: #f4ecd7;
   font-size: 15.5px;
   box-shadow: 0 14px 30px -12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+.lib__toast-clock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--ember-hi);
+  transform-origin: left center;
+  animation: lib-toast-clock 7s linear both;
+}
+@keyframes lib-toast-clock {
+  to {
+    transform: scaleX(0);
+  }
 }
 .lib__toast button {
   font-weight: 700;
@@ -516,7 +636,12 @@ every future story." />
 .toast-leave-active {
   transition:
     opacity 0.25s ease,
-    transform 0.3s var(--ease-spring);
+    transform 0.42s var(--ease-spring);
+}
+.toast-leave-active {
+  transition:
+    opacity 0.18s var(--ease-in),
+    transform 0.2s var(--ease-in);
 }
 .toast-enter-from,
 .toast-leave-to {

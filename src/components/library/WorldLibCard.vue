@@ -7,6 +7,7 @@ import IconSparkle from '../icons/IconSparkle.vue'
 import IconBook from '../icons/IconBook.vue'
 import CardMenu, { type CardMenuItem } from '../ui/CardMenu.vue'
 import CompassRose from '../decor/CompassRose.vue'
+import { vTilt } from '../../composables/useEffects'
 
 defineProps<{ world: WorldDef; menu: CardMenuItem[] }>()
 defineEmits<{ open: []; pick: [key: string] }>()
@@ -14,7 +15,8 @@ defineEmits<{ open: []; pick: [key: string] }>()
 
 <template>
   <article
-    class="worldcard ev-card ev-lift"
+    v-tilt="4"
+    class="worldcard ev-card"
     role="button"
     tabindex="0"
     @click="$emit('open')"
@@ -64,6 +66,40 @@ defineEmits<{ open: []; pick: [key: string] }>()
   display: flex;
   flex-direction: column;
   cursor: pointer;
+  transition:
+    transform 0.5s var(--ease-settle),
+    box-shadow 0.3s var(--ease-settle),
+    border-color 0.2s ease;
+}
+/* a world leans toward you, and the camera pushes into its vista */
+.worldcard:hover {
+  border-color: #c4a86f;
+  box-shadow:
+    var(--card-shadow-hover),
+    inset 0 1px 0 rgba(255, 252, 240, 0.7);
+}
+/* the tilt's glare lights the card without washing out its words */
+.worldcard::before {
+  mix-blend-mode: soft-light;
+}
+.worldcard:active {
+  transform: scale(0.985);
+}
+.worldcard__media > * {
+  transition:
+    transform 1.4s var(--ease-settle),
+    filter 0.5s ease;
+}
+.worldcard:hover .worldcard__media > * {
+  transform: scale(1.07);
+  filter: saturate(1.1) brightness(1.03);
+}
+.worldcard__rule svg {
+  transition: transform 0.6s var(--ease-settle);
+}
+.worldcard:hover .worldcard__rule svg {
+  transform: rotate(180deg) scale(1.3);
+  color: var(--ember);
 }
 .worldcard__media {
   position: relative;

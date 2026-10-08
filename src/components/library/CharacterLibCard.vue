@@ -5,6 +5,7 @@ import StoryImage from '../StoryImage.vue'
 import TagPill from '../ui/TagPill.vue'
 import IconSparkle from '../icons/IconSparkle.vue'
 import CardMenu, { type CardMenuItem } from '../ui/CardMenu.vue'
+import { vTilt } from '../../composables/useEffects'
 
 defineProps<{ character: CharacterDef; menu: CardMenuItem[] }>()
 defineEmits<{ open: []; pick: [key: string] }>()
@@ -12,7 +13,8 @@ defineEmits<{ open: []; pick: [key: string] }>()
 
 <template>
   <article
-    class="libcard ev-card ev-lift"
+    v-tilt="5"
+    class="libcard ev-card"
     role="button"
     tabindex="0"
     @click="$emit('open')"
@@ -58,6 +60,42 @@ defineEmits<{ open: []; pick: [key: string] }>()
   flex-direction: column;
   cursor: pointer;
   overflow: hidden;
+  transition:
+    transform 0.5s var(--ease-settle),
+    box-shadow 0.3s var(--ease-settle),
+    border-color 0.2s ease;
+}
+/* held like a game card: it leans to the pointer and lifts its shadow */
+.libcard:hover {
+  border-color: #c4a86f;
+  box-shadow:
+    var(--card-shadow-hover),
+    inset 0 1px 0 rgba(255, 252, 240, 0.7);
+}
+/* the tilt's glare lights the card without washing out its words */
+.libcard::before {
+  mix-blend-mode: soft-light;
+}
+.libcard:active {
+  transform: scale(0.985);
+}
+.libcard__img :deep(img),
+img.libcard__img {
+  transition:
+    transform 1.1s var(--ease-settle),
+    filter 0.5s ease;
+}
+.libcard:hover .libcard__img :deep(img),
+.libcard:hover img.libcard__img {
+  transform: scale(1.05);
+  filter: saturate(1.08) brightness(1.03);
+}
+.libcard__rule svg {
+  transition: transform 0.6s var(--ease-settle);
+}
+.libcard:hover .libcard__rule svg {
+  transform: rotate(180deg) scale(1.3);
+  color: var(--ember);
 }
 .libcard__img {
   display: block;

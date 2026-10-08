@@ -16,6 +16,7 @@ import FramedImage from './ui/FramedImage.vue'
 import MomentDialog from './story/MomentDialog.vue'
 import { storyLocation } from '../game/storyRoute'
 import IconSparkle from './icons/IconSparkle.vue'
+import EmberField from './decor/EmberField.vue'
 
 const router = useRouter()
 const story = computed(() => menuState.current)
@@ -46,25 +47,31 @@ function openLatest(): void {
 <template>
   <section class="hero ev-card" aria-label="Current story">
     <div class="hero__banner" :class="{ 'hero__banner--paired': latestUrl }">
-      <FramedImage
-        v-if="worldCover"
-        class="hero__world"
-        :src="worldCover.src"
-        :frame="worldCover.frame"
-        :alt="`${story?.title ?? 'Ember Vale'}: its world`" />
-      <img
-        v-else
-        class="hero__world"
-        :src="plainCover"
-        :alt="`${story?.title ?? 'Ember Vale'}: a scene`" />
+      <!-- the camera drifts slowly over the world, as over a painting -->
+      <div class="hero__drift ev-drift">
+        <FramedImage
+          v-if="worldCover"
+          class="hero__world"
+          :src="worldCover.src"
+          :frame="worldCover.frame"
+          :alt="`${story?.title ?? 'Ember Vale'}: its world`" />
+        <img
+          v-else
+          class="hero__world"
+          :src="plainCover"
+          :alt="`${story?.title ?? 'Ember Vale'}: a scene`" />
+      </div>
       <button
         v-if="latestUrl && latest"
+        :key="latestUrl"
         class="hero__moment"
         type="button"
         :aria-label="`Open the latest key moment: ${momentTitle(latest)}`"
         @click="openLatest">
         <img :src="latestUrl" alt="" />
       </button>
+      <span class="hero__torch ev-flicker" aria-hidden="true"></span>
+      <EmberField :count="18" :rise="260" />
     </div>
 
     <div v-if="story" class="hero__body">
@@ -74,7 +81,7 @@ function openLatest(): void {
         :src="playing.portraitUrl"
         :alt="playing.name" />
 
-      <div class="hero__story">
+      <div class="hero__story ev-rise">
         <span class="ev-eyebrow">Current story</span>
         <h1 class="hero__title">{{ story.title }}</h1>
         <p class="hero__meta">
@@ -93,7 +100,7 @@ function openLatest(): void {
       </div>
 
       <!-- the latest key moment (opens it), and Continue under it -->
-      <div class="hero__aside" :class="{ 'hero__aside--moment': latest }">
+      <div class="hero__aside ev-rise" :class="{ 'hero__aside--moment': latest }">
         <button
           v-if="latest"
           class="hero__event"
@@ -106,18 +113,21 @@ function openLatest(): void {
           <span class="hero__event-title">{{ momentTitle(latest) }}</span>
           <span class="hero__event-line">{{ latest.caption }}</span>
         </button>
-        <MenuButton
-          class="hero__continue"
-          size="md"
-          arrow="circle"
-          @click="router.push(storyLocation(story.id, story.pov))">
-          {{ playing ? `Continue as ${playing.name}` : 'Continue story' }}
-        </MenuButton>
+        <span class="hero__go">
+          <MenuButton
+            class="hero__continue"
+            size="md"
+            arrow="circle"
+            @click="router.push(storyLocation(story.id, story.pov))">
+            {{ playing ? `Continue as ${playing.name}` : 'Continue story' }}
+          </MenuButton>
+          <span class="hero__shine" aria-hidden="true"></span>
+        </span>
       </div>
     </div>
 
     <div v-else class="hero__body hero__body--empty">
-      <div class="hero__story">
+      <div class="hero__story ev-rise">
         <span class="ev-eyebrow">
           <IconSparkle :size="13" />
           Ember Vale
@@ -127,13 +137,16 @@ function openLatest(): void {
           Choose a world and someone to be, and the vale will remember your story here.
         </p>
       </div>
-      <MenuButton
-        class="hero__continue"
-        size="md"
-        arrow="circle"
-        @click="router.push({ name: 'new-story' })">
-        Begin a story
-      </MenuButton>
+      <span class="hero__go">
+        <MenuButton
+          class="hero__continue"
+          size="md"
+          arrow="circle"
+          @click="router.push({ name: 'new-story' })">
+          Begin a story
+        </MenuButton>
+        <span class="hero__shine" aria-hidden="true"></span>
+      </span>
     </div>
 
     <MomentDialog
@@ -164,6 +177,10 @@ function openLatest(): void {
   background: var(--panel-2);
   box-shadow: inset 0 0 0 1px rgba(120, 96, 56, 0.25);
 }
+.hero__drift {
+  position: absolute;
+  inset: 0;
+}
 .hero__world {
   position: absolute;
   inset: 0;
@@ -185,16 +202,38 @@ function openLatest(): void {
   cursor: zoom-in;
   -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 34%);
   mask-image: linear-gradient(90deg, transparent 0, #000 34%);
+  overflow: hidden;
+  z-index: 1;
+  /* the moment slides in over the world, then drifts the other way */
+  animation: hero-moment-in 1.2s var(--ease-settle) 0.25s both;
 }
 .hero__moment img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.6s var(--ease-out);
+  animation: ev-drift 30s var(--ease-sine) -9s infinite alternate-reverse both;
+  transition: filter 0.6s var(--ease-out);
 }
 .hero__moment:hover img,
 .hero__moment:focus-visible img {
-  transform: scale(1.02);
+  filter: brightness(1.06) saturate(1.06);
+}
+@keyframes hero-moment-in {
+  from {
+    opacity: 0;
+    transform: translateX(8%);
+  }
+}
+/* warm torchlight pooling at the foot of the banner */
+.hero__torch {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(70% 55% at 18% 110%, rgba(255, 170, 90, 0.28), transparent 70%),
+    linear-gradient(180deg, transparent 55%, rgba(40, 24, 8, 0.16));
+  mix-blend-mode: soft-light;
 }
 
 /* body ---------------------------------------------------------------------- */
@@ -210,6 +249,10 @@ function openLatest(): void {
   align-items: center;
 }
 .hero__portrait {
+  animation: hero-portrait-in 0.8s var(--ease-settle) 0.15s both;
+  transition:
+    transform 0.4s var(--ease-settle),
+    box-shadow 0.4s var(--ease-settle);
   width: 172px;
   aspect-ratio: 4 / 5;
   margin-top: -64px;
@@ -218,6 +261,16 @@ function openLatest(): void {
   border: 3px solid var(--surface-2);
   box-shadow: var(--card-shadow);
   position: relative;
+}
+.hero__portrait:hover {
+  transform: translateY(-4px) rotate(-1deg);
+  box-shadow: var(--card-shadow-hover);
+}
+@keyframes hero-portrait-in {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.94);
+  }
 }
 .hero__story {
   min-width: 0;
@@ -262,6 +315,34 @@ function openLatest(): void {
   flex: none;
   width: 260px;
 }
+/* Continue breathes an ember glow and a sheen crosses it now and then */
+.hero__go {
+  position: relative;
+  display: inline-flex;
+  border-radius: 10px;
+  --ev-breathe-color: rgba(214, 112, 48, 0.32);
+  animation: ev-breathe 2.8s var(--ease-sine) 1.4s infinite;
+}
+.hero__shine {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.hero__shine::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 244, 214, 0.34) 48%,
+    transparent 61%
+  );
+  transform: translateX(-120%);
+  animation: ev-sheen 6s var(--ease-io) 2s infinite;
+}
 
 /* right column: the moment on top, Continue at the foot, level with "Last time" */
 .hero__aside {
@@ -279,6 +360,7 @@ function openLatest(): void {
   border-left: 1px solid var(--line);
 }
 .hero__event {
+  transition: transform 0.35s var(--ease-settle);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -304,6 +386,12 @@ function openLatest(): void {
 .hero__event:hover .hero__event-title,
 .hero__event:focus-visible .hero__event-title {
   color: var(--teal-ink);
+}
+.hero__event:hover {
+  transform: translateX(4px);
+}
+.hero__event-title {
+  transition: color 0.2s ease;
 }
 
 @media (max-width: 1280px) {
@@ -336,7 +424,8 @@ function openLatest(): void {
   .hero__title {
     font-size: 32px;
   }
-  .hero__continue {
+  .hero__continue,
+  .hero__go {
     width: 100%;
   }
 }

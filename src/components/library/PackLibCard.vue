@@ -33,16 +33,20 @@ defineProps<{ pack: PackDef }>()
   display: flex;
   flex-direction: column;
   transition:
-    transform 0.14s ease,
-    box-shadow 0.14s ease,
-    border-color 0.14s ease;
+    transform 0.35s var(--ease-settle),
+    box-shadow 0.3s var(--ease-settle),
+    border-color 0.2s ease;
 }
 .packcard:hover {
-  transform: translateY(-1px);
+  transform: translateY(-3px);
   border-color: #c6b48a;
   box-shadow:
     0 10px 20px -16px rgba(96, 74, 40, 0.55),
     inset 0 1px 0 rgba(255, 252, 240, 0.7);
+}
+.packcard:hover .packcard__spark {
+  transform: rotate(72deg) scale(1.25);
+  color: var(--ember);
 }
 .packcard__top {
   display: flex;
@@ -51,6 +55,9 @@ defineProps<{ pack: PackDef }>()
 }
 .packcard__spark {
   color: var(--gold);
+  transition:
+    transform 0.6s var(--ease-settle),
+    color 0.2s ease;
 }
 .packcard__name {
   font-family: var(--font-display);

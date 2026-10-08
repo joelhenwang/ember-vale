@@ -61,7 +61,8 @@ onBeforeUnmount(() => window.removeEventListener('resize', measure))
       @click="emit('update', tab.key)">
       <component :is="icons[tab.key]" :size="20" class="tabs__icon" />
       <span class="tabs__label">{{ tab.label }}</span>
-      <span class="tabs__count">{{ tab.count }}</span>
+      <!-- a new count pops in, like a score changing -->
+      <span :key="tab.count" class="tabs__count">{{ tab.count }}</span>
     </button>
     <span
       class="tabs__marker"
@@ -149,6 +150,18 @@ onBeforeUnmount(() => window.removeEventListener('resize', measure))
 }
 .tabs__tab--active .tabs__icon {
   color: var(--ember);
+  animation: tabs-icon-on 0.5s var(--ease-settle);
+}
+@keyframes tabs-icon-on {
+  from {
+    transform: scale(0.6) rotate(-20deg);
+  }
+}
+.tabs__count {
+  animation: ev-pop-in 0.4s var(--ease-settle);
+}
+.tabs__tab:active {
+  background: rgba(255, 250, 238, 0.8);
 }
 .tabs__tab--active .tabs__label {
   font-weight: 700;

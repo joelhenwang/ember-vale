@@ -83,9 +83,23 @@ defineEmits<{ create: [] }>()
     color 0.2s ease,
     transform 0.5s var(--ease-spring);
 }
+/* the emblem floats gently while it waits */
+.create-tile:not(.create-tile--soon) .create-tile__mark {
+  animation: ev-float 4.5s var(--ease-sine) infinite;
+}
 .create-tile:not(.create-tile--soon):hover .create-tile__mark {
+  animation: none;
   color: var(--ember);
   transform: rotate(90deg) scale(1.12);
+}
+.create-tile:not(.create-tile--soon):active {
+  transform: scale(0.98);
+}
+.create-tile__ridge {
+  transition: transform 1.2s var(--ease-settle);
+}
+.create-tile:not(.create-tile--soon):hover .create-tile__ridge {
+  transform: translateY(-6px) scale(1.04);
 }
 .create-tile__title {
   position: relative;

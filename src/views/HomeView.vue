@@ -129,14 +129,35 @@ onActivated(() => {
 
 <template>
   <main class="page">
-    <p v-if="error" class="page__state" role="alert">
-      The library is unreachable ({{ error }}) — showing nothing rather than old tales.
-    </p>
-    <p v-else-if="loading" class="page__state" role="status">Opening the library…</p>
-    <template v-else>
-      <HeroCard class="ev-rise" />
-      <RecentStories />
-    </template>
+    <Transition name="ev-fade" mode="out-in">
+      <p v-if="error" class="page__state" role="alert">
+        The library is unreachable ({{ error }}) — showing nothing rather than old tales.
+      </p>
+      <!-- loading: the shape of the page, shimmering, until the shelf is read -->
+      <div v-else-if="loading" class="page__loading" role="status">
+        <span class="ev-sr">Opening the library…</span>
+        <div class="ghost-hero ev-card" aria-hidden="true">
+          <span class="ghost-hero__banner ev-skeleton"></span>
+          <span class="ghost-hero__row">
+            <span class="ghost-hero__face ev-skeleton"></span>
+            <span class="ghost-hero__lines">
+              <span class="ev-skeleton"></span>
+              <span class="ev-skeleton"></span>
+              <span class="ev-skeleton"></span>
+            </span>
+          </span>
+        </div>
+        <div class="ghost-recent" aria-hidden="true">
+          <span v-for="n in 3" :key="n" class="ghost-recent__card ev-card">
+            <span class="ev-skeleton"></span>
+          </span>
+        </div>
+      </div>
+      <div v-else>
+        <HeroCard class="ev-rise" />
+        <RecentStories />
+      </div>
+    </Transition>
   </main>
 </template>
 
@@ -145,6 +166,73 @@ onActivated(() => {
   max-width: 1440px;
   margin: 0 auto;
   padding: 14px 16px 40px;
+}
+.ev-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.ghost-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 10px;
+}
+.ghost-hero__banner {
+  height: clamp(200px, 24vw, 350px);
+  border-radius: 9px;
+}
+.ghost-hero__row {
+  display: flex;
+  gap: 26px;
+  padding: 0 16px 14px;
+}
+.ghost-hero__face {
+  width: 172px;
+  height: 120px;
+  border-radius: 10px;
+}
+.ghost-hero__lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ghost-hero__lines span {
+  height: 16px;
+}
+.ghost-hero__lines span:first-child {
+  width: 40%;
+  height: 34px;
+}
+.ghost-hero__lines span:last-child {
+  width: 70%;
+}
+.ghost-recent {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.ghost-recent__card {
+  display: flex;
+  padding: 8px;
+  height: 126px;
+}
+.ghost-recent__card span {
+  width: 42%;
+  border-radius: 8px;
+}
+@media (max-width: 760px) {
+  .ghost-recent {
+    grid-template-columns: 1fr;
+  }
+  .ghost-hero__face {
+    display: none;
+  }
 }
 .page__state {
   padding: 18px;

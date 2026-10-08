@@ -25,6 +25,7 @@ import IconMoon from '../icons/IconMoon.vue'
 import IconPlay from '../icons/IconPlay.vue'
 import IconSun from '../icons/IconSun.vue'
 import IconUser from '../icons/IconUser.vue'
+import { vRipple } from '../../composables/useEffects'
 
 const props = defineProps<{ story: StoryRecord; layout: 'grid' | 'list' }>()
 const emit = defineEmits<{
@@ -74,7 +75,7 @@ function menuArchive(): void {
 </script>
 
 <template>
-  <article class="scard ev-card" :class="{ 'scard--list': layout === 'list' }">
+  <article class="scard ev-card ev-lift" :class="{ 'scard--list': layout === 'list' }">
     <div class="scard__art">
       <FramedImage
         v-if="story.cover"
@@ -98,19 +99,21 @@ function menuArchive(): void {
             @click.stop="menuOpen = !menuOpen">
             <IconDotsVertical :size="15" />
           </button>
-          <ul v-if="menuOpen" class="scard__menu" role="menu" @click.stop>
-            <li>
-              <button type="button" role="menuitem" @click="menuContinue">
-                <IconPlay :size="11" /> Continue reading
-              </button>
-            </li>
-            <li>
-              <button type="button" role="menuitem" @click="menuArchive">
-                <IconArchive :size="13" />
-                {{ isArchived ? 'Restore from archive' : 'Archive story' }}
-              </button>
-            </li>
-          </ul>
+          <Transition name="ev-pop">
+            <ul v-if="menuOpen" class="scard__menu ev-card" role="menu" @click.stop>
+              <li>
+                <button type="button" role="menuitem" @click="menuContinue">
+                  <IconPlay :size="11" /> Continue reading
+                </button>
+              </li>
+              <li>
+                <button type="button" role="menuitem" @click="menuArchive">
+                  <IconArchive :size="13" />
+                  {{ isArchived ? 'Restore from archive' : 'Archive story' }}
+                </button>
+              </li>
+            </ul>
+          </Transition>
         </div>
       </header>
 
@@ -139,7 +142,7 @@ function menuArchive(): void {
       </ul>
 
       <div class="scard__actions">
-        <button type="button" class="cta scard__continue" @click="emit('continue')">
+        <button v-ripple type="button" class="cta scard__continue" @click="emit('continue')">
           <IconPlay :size="12" /> Continue
         </button>
         <button type="button" class="scard__config" @click="emit('configure')">
@@ -185,6 +188,16 @@ function menuArchive(): void {
 .scard__cover {
   position: absolute;
   inset: 0;
+}
+/* hovering the card pushes the camera slowly into its picture */
+.scard__art > * {
+  transition:
+    transform 1.2s var(--ease-settle),
+    filter 0.5s ease;
+}
+.scard:hover .scard__art > * {
+  transform: scale(1.06);
+  filter: saturate(1.08) brightness(1.03);
 }
 .scard__world {
   position: absolute;
@@ -243,7 +256,14 @@ function menuArchive(): void {
 .scard__dots:hover {
   background: rgba(196, 172, 126, 0.2);
 }
+.scard__dots svg {
+  transition: transform 0.3s var(--ease-settle);
+}
+.scard__dots[aria-expanded='true'] svg {
+  transform: rotate(90deg);
+}
 .scard__menu {
+  transform-origin: top right;
   position: absolute;
   z-index: 30;
   top: 32px;
@@ -334,6 +354,9 @@ function menuArchive(): void {
   margin-top: 13px;
 }
 .scard__cast img {
+  transition:
+    transform 0.35s var(--ease-settle),
+    box-shadow 0.35s var(--ease-settle);
   width: 64px;
   height: 64px;
   border-radius: 10px;
@@ -341,6 +364,10 @@ function menuArchive(): void {
   display: block;
   border: 1px solid #d9c8a3;
   box-shadow: 0 1px 4px rgba(96, 74, 40, 0.18);
+}
+.scard__cast li:hover img {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 6px 14px -6px rgba(96, 74, 40, 0.45);
 }
 .scard__cast span {
   display: block;
@@ -377,6 +404,16 @@ function menuArchive(): void {
 }
 .scard__config:hover {
   color: var(--teal-ink);
+}
+.scard__config svg,
+.scard__saves svg {
+  transition: transform 0.3s var(--ease-settle);
+}
+.scard__config:hover svg {
+  transform: scale(1.15);
+}
+.scard__saves:hover svg {
+  transform: translateX(3px);
 }
 .scard__saveswrap {
   margin-top: 12px;

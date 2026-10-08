@@ -26,6 +26,7 @@ import IconX from '../icons/IconX.vue'
 import IconArrowLeft from '../icons/IconArrowLeft.vue'
 import IconArrowRight from '../icons/IconArrowRight.vue'
 import IconSparkle from '../icons/IconSparkle.vue'
+import { burst } from '../../composables/useEffects'
 
 const props = defineProps<{
   worldId: string
@@ -52,6 +53,20 @@ const picture = computed(() => {
   const id = repainted.value.get(m.picture_id) ?? m.asset_id
   return id ? assetUrl(props.worldId, id) : null
 })
+
+/* ————— motion: pages turn the way you go; a repaint fades in ————— */
+const art = ref<HTMLElement | null>(null)
+const pictureMotion = ref('moment-fade')
+const textMotion = ref('ev-swap')
+watch(
+  () => props.index,
+  (now, before) => {
+    if (now === null || before === null || before === undefined) return
+    const way = now > before ? 'next' : 'prev'
+    pictureMotion.value = `moment-${way}`
+    textMotion.value = `ev-step-${way}`
+  }
+)
 
 /* ————— the prompt: read it, edit it, paint again ————— */
 const promptOpen = ref(false)
@@ -88,6 +103,7 @@ async function loadPrompt(): Promise<void> {
   }
 }
 function togglePrompt(): void {
+  textMotion.value = 'ev-swap'
   promptOpen.value = !promptOpen.value
   if (promptOpen.value) void loadPrompt()
 }
@@ -103,8 +119,10 @@ function follow(pictureId: string, jobId: string): void {
     try {
       const job = await getImageJob(jobId, props.opts)
       if (job.status === 'ready' && job.result_asset_id) {
+        pictureMotion.value = 'moment-fade'
         repainted.value = new Map(repainted.value).set(pictureId, job.result_asset_id)
         stopPainting()
+        burst(art.value, { count: 22, spread: 140 })
         emit('repainted')
         return
       }
@@ -191,130 +209,155 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <div
-    v-if="moment"
-    class="moment-dlg"
-    role="dialog"
-    aria-modal="true"
-    :aria-label="momentTitle(moment)"
-    @click.self="emit('close')">
-    <article class="moment-dlg__card">
-      <div class="moment-dlg__art" :class="{ 'moment-dlg__art--busy': painting }">
-        <img v-if="picture" :src="picture" :alt="moment.caption" />
-        <span v-if="painting" class="paint" role="status">
-          <span class="paint__ring" aria-hidden="true">
-            <span class="ev-progress-spin"></span><span class="ev-progress-spin"></span
-            ><span class="ev-progress-spin"></span>
-          </span>
-          <b class="paint__clock">{{ clock }}</b>
-          <span class="paint__label">Painting again…</span>
-        </span>
-      </div>
-      <div class="moment-dlg__page">
-        <button class="moment-dlg__close" type="button" aria-label="Close" @click="emit('close')">
-          <IconX :size="20" />
-        </button>
-        <p class="ev-eyebrow moment-dlg__when">{{ when }}</p>
-        <h2 class="moment-dlg__title">{{ momentTitle(moment) }}</h2>
-        <div class="moment-dlg__rule" aria-hidden="true">
-          <span></span>
-          <IconSparkle :size="14" />
-          <span></span>
-        </div>
-        <div v-if="promptOpen" class="moment-dlg__text moment-dlg__prompt">
-          <label class="ev-field-label" for="moment-prompt">
-            Prompt sent to the image service
-            <span v-if="promptEdited" class="moment-dlg__mine"
-              >Edited: sent exactly as written</span
-            >
-          </label>
-          <textarea
-            id="moment-prompt"
-            v-model="promptText"
-            class="ev-input"
-            rows="10"
-            maxlength="4000"
-            :disabled="painting" />
-          <div class="moment-dlg__promptacts">
-            <button
-              type="button"
-              class="cta"
-              :disabled="painting || !promptText.trim()"
-              @click="regenerate">
-              <IconSparkle :size="14" />
-              {{ painting ? `Painting… ${clock}` : 'Regenerate' }}
-            </button>
-            <button
-              v-if="promptText !== promptShown"
-              type="button"
-              class="moment-dlg__link"
-              :disabled="painting"
-              @click="promptText = promptShown">
-              Undo my changes
-            </button>
+  <Transition name="ev-modal">
+    <div
+      v-if="moment"
+      class="moment-dlg"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="momentTitle(moment)"
+      @click.self="emit('close')">
+      <article class="moment-dlg__card">
+        <div ref="art" class="moment-dlg__art" :class="{ 'moment-dlg__art--busy': painting }">
+          <!-- the camera pushes in as the book opens; pages slide the way you turn -->
+          <div class="moment-dlg__frame ev-push-in">
+            <Transition :name="pictureMotion">
+              <img v-if="picture" :key="picture" :src="picture" :alt="moment.caption" />
+            </Transition>
           </div>
-          <p class="moment-dlg__quiet moment-dlg__note">
-            The new painting replaces this one when it is done. The text is sent exactly as written;
-            the faces of the people in the scene still guide it.
-          </p>
-          <p v-if="promptError" class="moment-dlg__error" role="alert">{{ promptError }}</p>
+          <span v-if="painting" class="paint" role="status">
+            <span class="paint__ring" aria-hidden="true">
+              <span class="ev-progress-spin"></span><span class="ev-progress-spin"></span
+              ><span class="ev-progress-spin"></span>
+            </span>
+            <b class="paint__clock">{{ clock }}</b>
+            <span class="paint__label">Painting again…</span>
+          </span>
         </div>
-        <div v-else class="moment-dlg__text">
-          <p v-if="moment.title && moment.caption" class="moment-dlg__caption">
-            {{ moment.caption }}
-          </p>
-          <p v-if="loading" class="moment-dlg__quiet">Finding the page…</p>
-          <p v-else-if="problem" class="moment-dlg__quiet">This page could not be read just now.</p>
-          <template v-else>
-            <template v-for="(line, i) in lines" :key="i">
-              <p v-if="line.kind === 'told'" class="moment-dlg__told">{{ line.text }}</p>
-              <div v-else class="moment-dlg__said">
-                <img
-                  v-if="line.speaker.portraitUrl"
-                  class="moment-dlg__face"
-                  :src="line.speaker.portraitUrl"
-                  alt="" />
-                <span v-else class="moment-dlg__face moment-dlg__face--blank" aria-hidden="true">
-                  {{ line.speaker.name.charAt(0) }}
-                </span>
-                <div class="moment-dlg__bubble">
-                  <b>{{ line.speaker.name }}</b>
-                  <span>{{ line.text }}</span>
-                </div>
-              </div>
-            </template>
-            <p v-if="!lines.length && !moment.title" class="moment-dlg__told">
-              {{ moment.caption }}
-            </p>
-          </template>
-        </div>
-        <footer class="moment-dlg__foot">
-          <button type="button" class="moment-dlg__step" :disabled="index === 0" @click="go(-1)">
-            <IconArrowLeft :size="14" />
-            Previous
+        <div class="moment-dlg__page">
+          <button class="moment-dlg__close" type="button" aria-label="Close" @click="emit('close')">
+            <IconX :size="20" />
           </button>
-          <span class="moment-dlg__mid">
-            <span class="moment-dlg__count">{{ (index ?? 0) + 1 }} of {{ moments.length }}</span>
+          <Transition :name="textMotion" mode="out-in">
+            <div :key="moment.picture_id" class="moment-dlg__head">
+              <p class="ev-eyebrow moment-dlg__when">{{ when }}</p>
+              <h2 class="moment-dlg__title">{{ momentTitle(moment) }}</h2>
+            </div>
+          </Transition>
+          <div class="moment-dlg__rule" aria-hidden="true">
+            <span></span>
+            <IconSparkle :size="14" />
+            <span></span>
+          </div>
+          <Transition :name="textMotion" mode="out-in">
+            <div v-if="promptOpen" key="prompt" class="moment-dlg__text moment-dlg__prompt">
+              <label class="ev-field-label" for="moment-prompt">
+                Prompt sent to the image service
+                <span v-if="promptEdited" class="moment-dlg__mine"
+                  >Edited: sent exactly as written</span
+                >
+              </label>
+              <textarea
+                id="moment-prompt"
+                v-model="promptText"
+                class="ev-input"
+                rows="10"
+                maxlength="4000"
+                :disabled="painting" />
+              <div class="moment-dlg__promptacts">
+                <button
+                  type="button"
+                  class="cta"
+                  :disabled="painting || !promptText.trim()"
+                  @click="regenerate">
+                  <IconSparkle :size="14" />
+                  {{ painting ? `Painting… ${clock}` : 'Regenerate' }}
+                </button>
+                <button
+                  v-if="promptText !== promptShown"
+                  type="button"
+                  class="moment-dlg__link"
+                  :disabled="painting"
+                  @click="promptText = promptShown">
+                  Undo my changes
+                </button>
+              </div>
+              <p class="moment-dlg__quiet moment-dlg__note">
+                The new painting replaces this one when it is done. The text is sent exactly as
+                written; the faces of the people in the scene still guide it.
+              </p>
+              <Transition name="ev-rise">
+                <p v-if="promptError" class="moment-dlg__error" role="alert">{{ promptError }}</p>
+              </Transition>
+            </div>
+            <div v-else :key="moment.picture_id" class="moment-dlg__text moment-dlg__lines ev-rise">
+              <p v-if="moment.title && moment.caption" class="moment-dlg__caption">
+                {{ moment.caption }}
+              </p>
+              <p v-if="loading" class="moment-dlg__quiet">Finding the page…</p>
+              <p v-else-if="problem" class="moment-dlg__quiet">
+                This page could not be read just now.
+              </p>
+              <template v-else>
+                <template v-for="(line, i) in lines" :key="i">
+                  <p v-if="line.kind === 'told'" class="moment-dlg__told">{{ line.text }}</p>
+                  <div v-else class="moment-dlg__said">
+                    <img
+                      v-if="line.speaker.portraitUrl"
+                      class="moment-dlg__face"
+                      :src="line.speaker.portraitUrl"
+                      alt="" />
+                    <span
+                      v-else
+                      class="moment-dlg__face moment-dlg__face--blank"
+                      aria-hidden="true">
+                      {{ line.speaker.name.charAt(0) }}
+                    </span>
+                    <div class="moment-dlg__bubble">
+                      <b>{{ line.speaker.name }}</b>
+                      <span>{{ line.text }}</span>
+                    </div>
+                  </div>
+                </template>
+                <p v-if="!lines.length && !moment.title" class="moment-dlg__told">
+                  {{ moment.caption }}
+                </p>
+              </template>
+            </div>
+          </Transition>
+          <footer class="moment-dlg__foot">
+            <button type="button" class="moment-dlg__step" :disabled="index === 0" @click="go(-1)">
+              <IconArrowLeft :size="14" />
+              Previous
+            </button>
+            <span class="moment-dlg__mid">
+              <span class="moment-dlg__count">
+                <Transition :name="textMotion" mode="out-in">
+                  <b :key="index ?? 0">{{ (index ?? 0) + 1 }}</b>
+                </Transition>
+                of {{ moments.length }}</span
+              >
+              <button
+                type="button"
+                class="moment-dlg__link"
+                :aria-expanded="promptOpen"
+                @click="togglePrompt">
+                {{ promptOpen ? 'Back to the story' : 'See and edit the prompt' }}
+              </button>
+            </span>
             <button
               type="button"
-              class="moment-dlg__link"
-              :aria-expanded="promptOpen"
-              @click="togglePrompt">
-              {{ promptOpen ? 'Back to the story' : 'See and edit the prompt' }}
+              class="moment-dlg__step"
+              :disabled="index === moments.length - 1"
+              @click="go(1)">
+              Next
+              <IconArrowRight :size="14" />
             </button>
-          </span>
-          <button
-            type="button"
-            class="moment-dlg__step"
-            :disabled="index === moments.length - 1"
-            @click="go(1)">
-            Next
-            <IconArrowRight :size="14" />
-          </button>
-        </footer>
-      </div>
-    </article>
-  </div>
+          </footer>
+        </div>
+      </article>
+    </div>
+  </Transition>
 </template>
 
 <style scoped>
@@ -342,11 +385,72 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   min-width: 0;
   background: #2b2416;
 }
+.moment-dlg__frame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
 .moment-dlg__art img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  /* a held picture still breathes */
+  animation: ev-drift 34s var(--ease-sine) 1s infinite alternate both;
+}
+.moment-dlg__art {
+  overflow: hidden;
+}
+/* turning to the next moment: the new picture slides in from the right */
+.moment-next-enter-active,
+.moment-prev-enter-active {
+  transition:
+    transform 0.62s var(--ease-settle),
+    opacity 0.4s var(--ease-out);
+}
+.moment-next-leave-active,
+.moment-prev-leave-active {
+  transition:
+    transform 0.5s var(--ease-in),
+    opacity 0.4s var(--ease-in);
+}
+.moment-next-enter-from {
+  opacity: 0;
+  transform: translateX(14%) scale(1.06);
+}
+.moment-next-leave-to {
+  opacity: 0;
+  transform: translateX(-10%) scale(1.02);
+}
+.moment-prev-enter-from {
+  opacity: 0;
+  transform: translateX(-14%) scale(1.06);
+}
+.moment-prev-leave-to {
+  opacity: 0;
+  transform: translateX(10%) scale(1.02);
+}
+/* a repainted picture develops over the old one */
+.moment-fade-enter-active {
+  transition:
+    opacity 1.1s var(--ease-out),
+    filter 1.4s var(--ease-out);
+}
+.moment-fade-leave-active {
+  transition: opacity 1.1s var(--ease-in);
+}
+.moment-fade-enter-from {
+  opacity: 0;
+  filter: blur(10px) brightness(1.3);
+}
+.moment-fade-leave-to {
+  opacity: 0;
+}
+.moment-dlg__count b {
+  display: inline-block;
+  font-weight: inherit;
 }
 .moment-dlg__page {
   position: relative;
@@ -370,6 +474,24 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .moment-dlg__close:hover {
   color: var(--ink);
   background: var(--panel-2);
+}
+.moment-dlg__close svg {
+  transition: transform 0.35s var(--ease-settle);
+}
+.moment-dlg__close:hover svg {
+  transform: rotate(90deg);
+}
+.moment-dlg__step svg {
+  transition: transform 0.3s var(--ease-settle);
+}
+.moment-dlg__step:hover:not(:disabled) svg:first-child {
+  transform: translateX(-3px);
+}
+.moment-dlg__step:hover:not(:disabled) svg:last-child {
+  transform: translateX(3px);
+}
+.moment-dlg__step:active:not(:disabled) {
+  transform: scale(0.96);
 }
 .moment-dlg__when {
   color: var(--teal-ink);
