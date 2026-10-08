@@ -101,6 +101,7 @@ class AppState:
         from worldsim.infrastructure.model_gateway.selection import (
             gateway_for_pin,
             gateways_for_settings,
+            hedge_after,
         )
 
         factory = self.uow_factory()
@@ -117,6 +118,11 @@ class AppState:
                 pin.connection,
                 env_gateway=gateways[role],
                 reasoning=self.settings.provider.reasoning_for(role),
+                hedge_after_s=hedge_after(
+                    role,
+                    self.settings.provider.hedge_after_s,
+                    self.settings.provider.role_hedge_after_s,
+                ),
             )
 
         return Stage1Orchestrator(
@@ -131,6 +137,7 @@ class AppState:
             narration=self.narration,
             paint_moments=self.images() is not None,
             moment_writer=self.writer() if self.images() is not None else None,
+            max_parallel_calls=self.settings.app.parallel_model_calls,
         )
 
     def local_models(self) -> LocalModelsClient | None:

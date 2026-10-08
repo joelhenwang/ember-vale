@@ -4,8 +4,11 @@ Live calls usually answer in 2-7 s, but now and then one takes 20 s or
 more (provider-side), and a turn waits for its slowest call. After
 ``after_s`` without an answer a second identical request starts; the
 first to succeed is used and the other is cancelled. Only slow calls
-pay for a duplicate. Failures are not hedged around: if a call fails
-before the hedge starts, the error propagates for the retry layer.
+pay for a duplicate, but they do pay: a cancelled request is still
+billed, so a result that needed a twin carries ``hedge`` (a failure's
+detail carries it too) for the trace and spend reports. Failures are not
+hedged around: if a call fails before the hedge starts, the error
+propagates for the retry layer.
 """
 
 from __future__ import annotations
@@ -19,6 +22,7 @@ from worldsim.application.ports.model_gateway import (
     EmbeddingRequest,
     EmbeddingResult,
     ModelGateway,
+    ModelGatewayError,
     ModelProfile,
     ProbeResult,
 )
@@ -49,9 +53,19 @@ class HedgedGateway:
                 finished, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
                 for task in finished:
                     if task.exception() is None:
-                        return task.result()
+                        hedge = {
+                            "twin_fired": True,
+                            "winner": "twin" if task is second else "first",
+                            "after_s": self._after_s,
+                        }
+                        return task.result().model_copy(update={"hedge": hedge})
                     error = task.exception()
             assert error is not None
+            if isinstance(error, ModelGatewayError):
+                error.detail = {
+                    **(error.detail or {}),
+                    "hedge": {"twin_fired": True, "winner": None, "after_s": self._after_s},
+                }
             raise error
         finally:
             for task in pending:

@@ -206,6 +206,8 @@ class SqlAlchemyTraceRepository:
             "response_id": completion.response_id,
             "attempts": list(completion.attempts),
             "cached_tokens": completion.cached_tokens,
+            "provider": completion.provider,
+            "hedge": completion.hedge,
         }
         await self._session.flush()
 

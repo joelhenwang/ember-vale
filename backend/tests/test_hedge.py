@@ -83,3 +83,43 @@ def test_both_failing_raises() -> None:
     hedged = HedgedGateway(inner, after_s=0.0001)
     with pytest.raises(ModelTimeoutError):
         asyncio.run(hedged.complete(REQUEST))
+
+
+def test_a_twin_is_recorded_with_its_winner() -> None:
+    fast = HedgedGateway(_Timed([0.01]), after_s=0.2)
+    assert asyncio.run(fast.complete(REQUEST)).hedge is None
+    twin_won = HedgedGateway(_Timed([2.0, 0.01]), after_s=0.05)
+    assert asyncio.run(twin_won.complete(REQUEST)).hedge == {
+        "twin_fired": True,
+        "winner": "twin",
+        "after_s": 0.05,
+    }
+    first_won = HedgedGateway(_Timed([0.2, 5.0]), after_s=0.05)
+    assert asyncio.run(first_won.complete(REQUEST)).hedge == {
+        "twin_fired": True,
+        "winner": "first",
+        "after_s": 0.05,
+    }
+
+
+def test_a_twin_that_also_failed_is_named_in_the_error() -> None:
+    class _BothFail(_Timed):
+        async def complete(self, request: CompletionRequest) -> CompletionResult:
+            self.calls += 1
+            await asyncio.sleep(0.05 if self.calls == 1 else 0.0)
+            raise ModelTimeoutError(f"call {self.calls} failed")
+
+    hedged = HedgedGateway(_BothFail([]), after_s=0.01)
+    with pytest.raises(ModelTimeoutError) as caught:
+        asyncio.run(hedged.complete(REQUEST))
+    assert (caught.value.detail or {})["hedge"]["twin_fired"] is True
+
+
+def test_background_summaries_are_not_hedged_and_roles_can_be_set() -> None:
+    from worldsim.infrastructure.model_gateway.selection import hedge_after
+
+    assert hedge_after("summary", None) == 0.0  # day-end summaries and digests
+    assert hedge_after("character", None) == 4.0
+    assert hedge_after("summary", None, {"summary": 10.0}) == 10.0
+    assert hedge_after("character", 12.0, {"character": 3.0}) == 3.0  # role wins
+    assert hedge_after("narrator", 12.0, {"character": 3.0}) == 12.0

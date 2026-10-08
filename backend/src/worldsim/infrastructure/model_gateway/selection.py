@@ -9,7 +9,7 @@ only the Stage 1 role set follows the active profile.
 from __future__ import annotations
 
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import replace
 
 import httpx
@@ -92,7 +92,7 @@ def gateways_for_settings(
                         reasoning=provider.reasoning_for(role),
                         sort=None if venice else provider.openrouter_sort,
                     ),
-                    hedge_after(role, provider.hedge_after_s),
+                    hedge_after(role, provider.hedge_after_s, provider.role_hedge_after_s),
                 )
             )
             for role in ROLE_NAMES
@@ -110,19 +110,29 @@ def gateways_for_settings(
 #: Per-role hedge waits. Live calls one at a time answer in ~1 s (p90
 #: ~2 s, scripts/routing_eval.py), but in play 9-12% of decisions,
 #: reactions and director calls took over 4 s and 3-5% over 10 s. Roles
-#: that write more (narrator, resolver) normally take longer.
+#: that write more (narrator, resolver) normally take longer. Day-end
+#: summaries and digests (the summary role) run in the background: a twin
+#: buys no felt speed, only a second bill (by call durations ~36% of them
+#: fired one), so they are not hedged.
 ROLE_HEDGE_AFTER_S: dict[str, float] = {
     "character": 4.0,
     "reaction": 4.0,
     "director": 5.0,
     "resolver": 7.0,
     "narrator": 7.0,
-    "summary": 10.0,
+    "summary": 0.0,
 }
 
 
-def hedge_after(role: str, configured: float | None) -> float:
-    """Seconds before a twin request for this role; 0 means never."""
+def hedge_after(
+    role: str, configured: float | None, per_role: Mapping[str, float] | None = None
+) -> float:
+    """Seconds before a twin request for this role; 0 means never.
+
+    A per-role setting wins, then the global one, then ROLE_HEDGE_AFTER_S.
+    """
+    if per_role and role in per_role:
+        return per_role[role]
     if configured is not None:
         return configured
     return ROLE_HEDGE_AFTER_S.get(role, 10.0)
@@ -166,6 +176,7 @@ def gateway_for_pin(
     env_gateway: ModelGateway | None = None,
     client: httpx.AsyncClient | None = None,
     reasoning: str | None = None,
+    hedge_after_s: float | None = None,
 ) -> ModelGateway:
     """Runtime gateway for a pinned revision; never mutates shared state.
 
@@ -188,14 +199,15 @@ def gateway_for_pin(
             )
         adapter = VeniceGateway if connection.adapter == AdapterKind.VENICE else OpenRouterGateway
         return RetryingGateway(
-            HedgedGateway(
+            hedged(
                 adapter(
                     profile,
                     api_key=SecretStr(secret),
                     base_url=connection.endpoint,
                     client=client,
                     reasoning=reasoning,
-                )
+                ),
+                hedge_after_s if hedge_after_s is not None else hedge_after(role, None),
             )
         )
     if isinstance(env_gateway, FakeGateway):

@@ -103,6 +103,11 @@ class CompletionResult(BaseModel):
     cached_tokens: int = Field(default=0, ge=0)
     #: What the provider billed for this call, when it reports it.
     cost_usd: float | None = Field(default=None, ge=0)
+    #: The upstream provider that served it (OpenRouter routes each call).
+    provider: str | None = Field(default=None, max_length=128)
+    #: Set when a slow call got a twin request: {"twin_fired", "winner",
+    #: "after_s"}. Both requests are billed, so spend reports need this.
+    hedge: dict[str, Any] | None = None
 
 
 class EmbeddingRequest(BaseModel):

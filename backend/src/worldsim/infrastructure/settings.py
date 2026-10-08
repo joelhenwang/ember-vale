@@ -104,6 +104,9 @@ class ProviderSettings(BaseModel):
     #: wins); 0 turns hedging off. Only slow calls pay for a duplicate.
     #: Unset uses per-role waits (ROLE_HEDGE_AFTER_S); a value applies to all.
     hedge_after_s: float | None = Field(default=None, ge=0, le=120)
+    #: Per-role hedge waits that win over both (0 = never), e.g.
+    #: WORLDSIM_PROVIDER__ROLE_HEDGE_AFTER_S__SUMMARY=10.
+    role_hedge_after_s: dict[str, float] = Field(default_factory=dict)
     #: OpenRouter provider routing: "throughput" sends each call to the
     #: fastest provider serving the model; "price" to the cheapest; unset
     #: keeps OpenRouter's default balancing.
@@ -139,6 +142,22 @@ class ProviderSettings(BaseModel):
         if unknown:
             raise ValueError(
                 f"unknown role(s) in WORLDSIM_PROVIDER__ROLE_REASONING: {unknown}; "
+                f"expected any of {list(MODEL_ROLES)}"
+            )
+        return normalized
+
+    @field_validator("role_hedge_after_s", mode="before")
+    @classmethod
+    def _known_hedge_roles(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+        normalized = {
+            str(role).lower(): wait for role, wait in cast("dict[object, object]", value).items()
+        }
+        unknown = sorted(set(normalized) - set(MODEL_ROLES))
+        if unknown:
+            raise ValueError(
+                f"unknown role(s) in WORLDSIM_PROVIDER__ROLE_HEDGE_AFTER_S: {unknown}; "
                 f"expected any of {list(MODEL_ROLES)}"
             )
         return normalized

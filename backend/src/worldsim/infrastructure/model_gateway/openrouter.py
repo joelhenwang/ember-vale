@@ -64,6 +64,10 @@ def _retry_after_s(response: httpx.Response) -> float | None:
         return None
 
 
+def _text_or_none(value: object) -> str | None:
+    return value[:128] if isinstance(value, str) and value else None
+
+
 #: How long a successful probe vouches for its endpoint and model.
 PROBE_TTL_S = 60.0
 _PROBE_CACHE: dict[tuple[str, str], tuple[float, ProbeResult]] = {}
@@ -321,6 +325,7 @@ class OpenRouterGateway:
             if isinstance(choice.get("finish_reason"), str)
             else None,
             response_id=payload.get("id") if isinstance(payload.get("id"), str) else None,
+            provider=_text_or_none(payload.get("provider")),
         )
 
     async def embed(self, request: EmbeddingRequest) -> EmbeddingResult:
