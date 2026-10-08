@@ -360,7 +360,7 @@ textarea.ev-input {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *:not(.ev-progress-spin) {
     transition: none !important;
     animation: none !important;
   }

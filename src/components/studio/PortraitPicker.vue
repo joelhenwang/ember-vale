@@ -263,7 +263,8 @@ const initial = computed(() =>
         <span v-else class="pick__empty"><IconImage :size="30" /></span>
         <span v-if="painting" class="pick__painting" role="status" aria-live="off">
           <span class="pick__ring" aria-hidden="true">
-            <span></span><span></span><span></span>
+            <span class="ev-progress-spin"></span><span class="ev-progress-spin"></span
+            ><span class="ev-progress-spin"></span>
           </span>
           <IconSparkle :size="22" class="pick__spark" />
           <span class="pick__clock">{{ clock }}</span>
@@ -457,20 +458,20 @@ const initial = computed(() =>
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 2px solid transparent;
+  border: 4px solid transparent;
   border-top-color: var(--teal);
   border-right-color: rgba(20, 84, 90, 0.35);
   animation: pick-turn 1.6s linear infinite;
 }
 .pick__ring span:nth-child(2) {
-  inset: 12px;
+  inset: 13px;
   border-top-color: var(--ember);
   border-right-color: rgba(194, 97, 42, 0.3);
   animation-duration: 2.3s;
   animation-direction: reverse;
 }
 .pick__ring span:nth-child(3) {
-  inset: 24px;
+  inset: 26px;
   border-top-color: var(--gold);
   animation-duration: 3.1s;
 }
@@ -504,8 +505,18 @@ const initial = computed(() =>
     opacity: 0.7;
   }
 }
+/* Asked for less motion: the rings still turn (they say work is under
+   way), only more slowly; the pulse and the shimmer stop. */
 @media (prefers-reduced-motion: reduce) {
-  .pick__ring span,
+  .pick__ring span {
+    animation-duration: 4s;
+  }
+  .pick__ring span:nth-child(2) {
+    animation-duration: 5.5s;
+  }
+  .pick__ring span:nth-child(3) {
+    animation-duration: 7s;
+  }
   .pick__spark,
   .pick__painting {
     animation: none;
