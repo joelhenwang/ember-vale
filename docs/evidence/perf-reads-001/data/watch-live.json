@@ -1,0 +1,45 @@
+{
+ "load": {
+  "requests": 6,
+  "not_modified": 0,
+  "errors": 0,
+  "kb": 4,
+  "by": {
+   "/stage2/roles": 1,
+   "/stage2/map": 1,
+   "/stories/:id": 1,
+   "/stories/:id/autoplay": 1,
+   "/world/presentation": 1,
+   "/world/chronicle": 1
+  }
+ },
+ "play": {
+  "requests": 104,
+  "not_modified": 0,
+  "errors": 0,
+  "kb": 456,
+  "by": {
+   "/stories/:id/autoplay/play": 1,
+   "/stories/:id/autoplay": 32,
+   "/world/presentation": 32,
+   "/world/chronicle": 32,
+   "/assets/:id": 3,
+   "/stories/:id/autoplay/presence": 3,
+   "/stories/:id/autoplay/pause": 1
+  }
+ },
+ "idle": {
+  "requests": 4,
+  "not_modified": 0,
+  "errors": 0,
+  "kb": 1,
+  "by": {
+   "/stories/:id/autoplay": 2,
+   "/world/presentation": 2
+  }
+ },
+ "long_tasks": 1,
+ "long_ms_max": 75,
+ "console_errors": [],
+ "feed_chars": 2546
+}

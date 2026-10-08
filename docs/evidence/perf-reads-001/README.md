@@ -104,3 +104,17 @@ A fresh quick-start story on the dev API (Venice), one turn, about $0.01. The ch
 - Portraits and map tokens load `?w=` variants.
 
 The Adventure stage loads its 1,672 px original on purpose. It covers a tall box (658×889 CSS px), so the picture is drawn about 1,580 px wide even at 1×.
+
+## 5. Watch screen under live autoplay
+
+A new watcher story (Wren and Ash on Venice): Play for 60 s, Pause, then 40 s idle. Headless Edge, script `data/watch-live.mjs`, raw output `data/watch-live.json`. The run took 8 turns and 45 model calls, about $0.04 at list price.
+
+| Window | Requests | Wire | Notes |
+|---|---|---|---|
+| Load | 6 | 4 KB | |
+| Playing, 60 s | 104 | 456 KB | 32 ticks at 2 s, each presentation + autoplay + chronicle (about 4 KB a tick); 3 paintings make up most of the bytes |
+| Paused, 40 s | 4 | 1 KB | presentation + autoplay every 15 s; the chronicle is skipped while nothing changes |
+
+The page had one long task (75 ms) and no console errors.
+
+Revalidation, checked directly: an unchanged presentation answers `304` with 0 bytes, but it takes 17 ms against 16.5 ms for the full answer. A 304 saves bytes, not server work, which is the case for the change stamp in section 3.
