@@ -26,6 +26,9 @@ const props = defineProps<{
   inside?: string[]
   /** A small map beside other things: no explanatory note. */
   compact?: boolean
+  /** The art's size from the manifest, so the box holds its shape at once. */
+  mapWidth?: number | null
+  mapHeight?: number | null
 }>()
 
 const emit = defineEmits<{ select: [characterId: string]; enter: [placeId: string] }>()
@@ -80,10 +83,13 @@ function knownRatio(id: string | null | undefined): number | null {
     return null
   }
 }
-const ratio = ref<number | null>(knownRatio(props.mapAssetId))
+function givenRatio(): number | null {
+  return props.mapWidth && props.mapHeight ? props.mapWidth / props.mapHeight : null
+}
+const ratio = ref<number | null>(givenRatio() ?? knownRatio(props.mapAssetId))
 watch(
-  () => props.mapAssetId,
-  (id) => (ratio.value = knownRatio(id))
+  () => [props.mapAssetId, props.mapWidth, props.mapHeight] as const,
+  ([id]) => (ratio.value = givenRatio() ?? knownRatio(id))
 )
 function artLoaded(event: Event): void {
   const img = event.target as HTMLImageElement

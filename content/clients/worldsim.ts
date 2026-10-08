@@ -622,10 +622,12 @@ export interface MapAnchorView {
 export interface MapManifestView {
   anchors?: MapAnchorView[];
   asset_id?: string | null;
+  height?: number | null;
   id: string;
   roads?: MapRoadLineView[];
   schematic: boolean;
   version: number;
+  width?: number | null;
 }
 
 export interface MapRoadLineView {

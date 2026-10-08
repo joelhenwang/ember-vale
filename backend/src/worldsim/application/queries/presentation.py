@@ -8,11 +8,13 @@ world row version, which every canonical write bumps.
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import json
 import math
 from collections import OrderedDict
 from pathlib import Path
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError
@@ -22,6 +24,7 @@ from worldsim.application.geography import PLACE_MAPS, story_place_maps
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.activities import Activity, effective_progress
 from worldsim.domain.enums import NarrativeStatus, UserRole, Visibility
+from worldsim.domain.errors import DomainError
 from worldsim.domain.geography import spot_named
 from worldsim.domain.journey import Journey, level_floor, level_for, title_for
 from worldsim.domain.narrative import NarrativeHook
@@ -152,6 +155,9 @@ async def presentation(
             maps = await uow.assets.list_ready_for_world(world_id, "map")
             if maps:
                 manifest = manifest.model_copy(update={"asset_id": maps[0].id})
+    if manifest.asset_id is not None:
+        size = await _art_size(uow, manifest.asset_id)
+        manifest = manifest.model_copy(update={"width": size[0], "height": size[1]})
     recent = await uow.events.list_range(world_id, max(0, high - 1), 1)
     journey = (
         await _journey(uow, world_id, viewer, hooks, high, journeys)
@@ -510,12 +516,35 @@ def _place_maps(raw: object) -> list[api.PlaceMapView]:
     ]
 
 
+#: Stored art never changes size under its id: one lookup per process.
+_ART_SIZES: dict[UUID, tuple[int | None, int | None]] = {}
+
+
+async def _art_size(uow: UnitOfWork, asset_id: UUID) -> tuple[int | None, int | None]:
+    if asset_id not in _ART_SIZES:
+        try:
+            asset = await uow.assets.get_asset(asset_id)
+        except DomainError:
+            return (None, None)
+        if len(_ART_SIZES) > 4096:
+            _ART_SIZES.clear()
+        _ART_SIZES[asset_id] = (asset.width or None, asset.height or None)
+    return _ART_SIZES[asset_id]
+
+
+@functools.lru_cache(maxsize=4)
+def _curated_file(path: Path) -> dict[str, Any] | None:
+    """The curated manifest ships with the app: read it once, not every poll."""
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, ValueError):
+        return None
+
+
 def _curated_manifest(assets_root: Path, locations: list[Location]) -> api.MapManifestView | None:
     """Curated anchors by location name; None unless every location resolves."""
-    manifest_path = assets_root / "revamp" / "ember-vale-manifest-v1.json"
-    try:
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except (FileNotFoundError, ValueError):
+    manifest = _curated_file(assets_root / "revamp" / "ember-vale-manifest-v1.json")
+    if manifest is None:
         return None
     by_name = {location.name: location.id for location in locations}
     anchors: list[api.MapAnchorView] = []

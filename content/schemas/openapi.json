@@ -3560,6 +3560,17 @@
             ],
             "title": "Asset Id"
           },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -3578,6 +3589,17 @@
           "version": {
             "title": "Version",
             "type": "integer"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
           }
         },
         "required": [

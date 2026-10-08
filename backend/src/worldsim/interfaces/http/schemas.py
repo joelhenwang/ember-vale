@@ -945,6 +945,9 @@ class MapManifestView(BaseModel):
     anchors: list[MapAnchorView] = Field(default_factory=list)
     #: Roads drawn on the art; empty means straight lines between anchors.
     roads: list[MapRoadLineView] = Field(default_factory=list)
+    #: The art's size, so a client can hold its shape before it loads.
+    width: int | None = None
+    height: int | None = None
 
 
 class PlaceSpotView(BaseModel):

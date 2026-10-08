@@ -223,6 +223,8 @@ def test_presentation_snapshot_shape(client: ApiClient) -> None:
     assert "advance" in body["capabilities"]["capabilities"]
     assert body["manifest"]["schematic"] is False
     assert body["manifest"]["asset_id"] is not None
+    # the art's size travels with it, so the map holds its shape before it loads
+    assert (body["manifest"]["width"], body["manifest"]["height"]) == (1536, 961)
     anchors = {a["location_id"]: (a["x"], a["y"]) for a in body["manifest"]["anchors"]}
     assert anchors[str(HEARTH)] == (0.22, 0.34)
     assert anchors[str(MARKET)] == (0.8, 0.44)
