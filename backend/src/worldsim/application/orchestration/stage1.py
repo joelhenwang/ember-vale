@@ -627,36 +627,52 @@ DIRECTOR_RECENT_EVENTS = 8
 _IDLE_FAMILIES = frozenset({ActionFamily.WAIT, ActionFamily.OBSERVE, ActionFamily.REST})
 
 
-async def _recent_happenings(uow: Any, world_id: UUID) -> tuple[list[str], int, int, list[str]]:
+async def _recent_happenings(
+    uow: Any, world_id: UUID, *, with_lines: bool = True
+) -> tuple[list[str], int, int, list[str]]:
     """Latest scene narrations (oldest first) and two stall signals.
 
     Idle streak: recent beats where every attempt was a wait, observe or
     rest. Talk streak: recent beats where nothing but conversation (and
     idling) happened — no move, take, handover, spar or appeal — which is
     how a loop of re-asked questions looks from outside.
+
+    Reads the last 60 events' scenes and intents in a handful of batched
+    queries (it ran 3 queries per event plus one per intent, ~600 a beat,
+    docs/evidence/perf-beat-001). ``with_lines=False`` skips the narration
+    lines for callers that only want what was said.
     """
     high = await uow.events.max_sequence(world_id)
     events = await uow.events.list_range(world_id, max(0, high - 60), 60)
     scenes = [e for e in events if e.event_type == EventType.ACTION_RESOLVED]
     lines: list[str] = []
-    for event in scenes[-DIRECTOR_RECENT_EVENTS:]:
-        beats = await uow.scenes.narrations_for_event(event.id)
-        if beats:
-            text = " ".join(b.text for b in beats)
-            lines.append(f"{phase_label(event.absolute_index)}: {text[:240]}")
+    if with_lines:
+        told = scenes[-DIRECTOR_RECENT_EVENTS:]
+        beats_by_event = await uow.scenes.narrations_for_events([e.id for e in told])
+        for event in told:
+            beats = beats_by_event.get(event.id, [])
+            if beats:
+                text = " ".join(b.text for b in beats)
+                lines.append(f"{phase_label(event.absolute_index)}: {text[:240]}")
+    run_scenes = [e for e in scenes if e.phase_run_id is not None]
+    by_event: dict[UUID, list[Scene]] = {}
+    for scene in await uow.scenes.scenes_for_events([e.id for e in run_scenes]):
+        if scene.event_id is not None:
+            by_event.setdefault(scene.event_id, []).append(scene)
+    intents = await uow.scenes.get_intents(
+        [i for told in by_event.values() for scene in told for i in scene.intent_ids]
+    )
     idle_by_index: dict[int, bool] = {}
     talk_by_index: dict[int, bool] = {}
     said: list[str] = []  # speech and attempts, for places mentioned but not mapped
-    for event in scenes:
-        if event.phase_run_id is None:
-            continue
+    for event in run_scenes:
         idle = idle_by_index.get(event.absolute_index, True)
         talk = talk_by_index.get(event.absolute_index, True)
-        for scene in await uow.scenes.list_for_run(event.phase_run_id):
-            if scene.event_id != event.id:
-                continue
+        for scene in by_event.get(event.id, []):
             for intent_id in scene.intent_ids:
-                intent = await uow.scenes.get_intent(intent_id)
+                intent = intents.get(intent_id)
+                if intent is None:
+                    intent = await uow.scenes.get_intent(intent_id)  # raises as before
                 family = intent.action.family
                 if isinstance(intent.action, CommunicateAction):
                     said.append(intent.action.topic)
@@ -709,11 +725,12 @@ async def _story_so_far(uow: Any, world_id: UUID) -> list[str]:
     )
     scenes = [e for e in events if e.event_type == EventType.ACTION_RESOLVED]
     told: list[tuple[int, str]] = []
-    for event in scenes[:-DIRECTOR_RECENT_EVENTS]:
-        if event.summary.get("idle") == "1":
-            continue
+    worth = [e for e in scenes[:-DIRECTOR_RECENT_EVENTS] if e.summary.get("idle") != "1"]
+    # One query for the whole window (it was one per event, up to 240).
+    seen_by_event = await uow.perception.observations_for_events([e.id for e in worth])
+    for event in worth:
         seen: list[str] = []
-        for obs in await uow.perception.observations_for_event(event.id):
+        for obs in seen_by_event.get(event.id, []):
             for fact in obs.facts:
                 if (
                     fact.key.startswith("attempt:")
@@ -1171,7 +1188,7 @@ class Stage1Orchestrator:
             locations = await uow.locations.list_for_world(world_id)
             characters = await uow.characters.list_for_world(world_id)
             hooks = await uow.narrative.list_hooks_for_world(world_id)
-            _recent, _quiet, _talk, said = await _recent_happenings(uow, world_id)
+            _recent, _quiet, _talk, said = await _recent_happenings(uow, world_id, with_lines=False)
             intentions = {
                 c.id: i.text
                 for c in characters

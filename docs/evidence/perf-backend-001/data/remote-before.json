@@ -1,0 +1,102 @@
+{
+  "story": "bdea0982-79bd-492e-b836-ad5717af4479",
+  "n": 20,
+  "rows": [
+    {
+      "name": "stories list",
+      "status": 200,
+      "p50_ms": 79.8,
+      "p95_ms": 90.6,
+      "max_ms": 95.9,
+      "kb": 6.0
+    },
+    {
+      "name": "library presets",
+      "status": 200,
+      "p50_ms": 5.4,
+      "p95_ms": 6.8,
+      "max_ms": 7.1,
+      "kb": 1.8
+    },
+    {
+      "name": "story detail",
+      "status": 200,
+      "p50_ms": 9.7,
+      "p95_ms": 11.8,
+      "max_ms": 14.5,
+      "kb": 0.4
+    },
+    {
+      "name": "presentation",
+      "status": 200,
+      "p50_ms": 24.7,
+      "p95_ms": 31.4,
+      "max_ms": 33.4,
+      "kb": 3.0
+    },
+    {
+      "name": "chronicle (200)",
+      "status": 422,
+      "p50_ms": 2.0,
+      "p95_ms": 2.5,
+      "max_ms": 2.7,
+      "kb": 0.1
+    },
+    {
+      "name": "map",
+      "status": 200,
+      "p50_ms": 11.8,
+      "p95_ms": 13.8,
+      "max_ms": 13.9,
+      "kb": 0.8
+    },
+    {
+      "name": "items",
+      "status": 200,
+      "p50_ms": 6.6,
+      "p95_ms": 7.8,
+      "max_ms": 8.3,
+      "kb": 0.1
+    },
+    {
+      "name": "autoplay",
+      "status": 200,
+      "p50_ms": 12.5,
+      "p95_ms": 19.9,
+      "max_ms": 22.3,
+      "kb": 0.2
+    },
+    {
+      "name": "settings providers",
+      "status": 200,
+      "p50_ms": 7.0,
+      "p95_ms": 8.9,
+      "max_ms": 8.9,
+      "kb": 5.6
+    },
+    {
+      "name": "story drafts",
+      "status": 200,
+      "p50_ms": 6.8,
+      "p95_ms": 10.2,
+      "max_ms": 10.6,
+      "kb": 13.7
+    },
+    {
+      "name": "character",
+      "status": 200,
+      "p50_ms": 5.9,
+      "p95_ms": 7.2,
+      "max_ms": 7.3,
+      "kb": 2.7
+    },
+    {
+      "name": "suggestions",
+      "status": 200,
+      "p50_ms": 11.1,
+      "p95_ms": 16.2,
+      "max_ms": 18.7,
+      "kb": 0.8
+    }
+  ]
+}

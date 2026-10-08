@@ -1,0 +1,136 @@
+{
+  "story": "bdea0982-79bd-492e-b836-ad5717af4479",
+  "n": 15,
+  "rows": [
+    {
+      "name": "stories list",
+      "status": 200,
+      "p50_ms": 709.0,
+      "p95_ms": 996.5,
+      "max_ms": 1058.8,
+      "kb": 6.0,
+      "queries": 81,
+      "checkouts": 41
+    },
+    {
+      "name": "library presets",
+      "status": 200,
+      "p50_ms": 14.2,
+      "p95_ms": 17.0,
+      "max_ms": 17.6,
+      "kb": 1.8,
+      "queries": 1,
+      "checkouts": 1
+    },
+    {
+      "name": "story detail",
+      "status": 200,
+      "p50_ms": 54.2,
+      "p95_ms": 68.3,
+      "max_ms": 69.5,
+      "kb": 0.4,
+      "queries": 6,
+      "checkouts": 3
+    },
+    {
+      "name": "presentation",
+      "status": 200,
+      "p50_ms": 155.4,
+      "p95_ms": 190.7,
+      "max_ms": 210.1,
+      "kb": 3.0,
+      "queries": 30,
+      "checkouts": 2
+    },
+    {
+      "name": "chronicle (100)",
+      "status": 200,
+      "p50_ms": 612.3,
+      "p95_ms": 874.0,
+      "max_ms": 884.8,
+      "kb": 14.5,
+      "queries": 168,
+      "checkouts": 2
+    },
+    {
+      "name": "map",
+      "status": 200,
+      "p50_ms": 38.8,
+      "p95_ms": 74.5,
+      "max_ms": 74.9,
+      "kb": 0.8,
+      "queries": 5,
+      "checkouts": 2
+    },
+    {
+      "name": "items",
+      "status": 200,
+      "p50_ms": 15.4,
+      "p95_ms": 30.9,
+      "max_ms": 34.6,
+      "kb": 0.1,
+      "queries": 1,
+      "checkouts": 1
+    },
+    {
+      "name": "autoplay",
+      "status": 200,
+      "p50_ms": 28.9,
+      "p95_ms": 39.8,
+      "max_ms": 44.7,
+      "kb": 0.2,
+      "queries": 3,
+      "checkouts": 1
+    },
+    {
+      "name": "settings providers",
+      "status": 200,
+      "p50_ms": 16.7,
+      "p95_ms": 21.2,
+      "max_ms": 41.8,
+      "kb": 5.6,
+      "queries": 1,
+      "checkouts": 1
+    },
+    {
+      "name": "story drafts",
+      "status": 200,
+      "p50_ms": 23.3,
+      "p95_ms": 30.4,
+      "max_ms": 32.8,
+      "kb": 11.5,
+      "queries": 1,
+      "checkouts": 1
+    },
+    {
+      "name": "character",
+      "status": 200,
+      "p50_ms": 27.7,
+      "p95_ms": 37.2,
+      "max_ms": 62.4,
+      "kb": 2.7,
+      "queries": 3,
+      "checkouts": 1
+    },
+    {
+      "name": "suggestions",
+      "status": 200,
+      "p50_ms": 75.6,
+      "p95_ms": 114.4,
+      "max_ms": 174.0,
+      "kb": 0.8,
+      "queries": 10,
+      "checkouts": 1
+    },
+    {
+      "name": "scene narration",
+      "status": 403,
+      "p50_ms": 23.7,
+      "p95_ms": 33.6,
+      "max_ms": 34.0,
+      "kb": 0.1,
+      "queries": 3,
+      "checkouts": 1
+    }
+  ]
+}
