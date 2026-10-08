@@ -15,6 +15,9 @@ import IconSparkle from '../icons/IconSparkle.vue'
 import IconCoat from '../icons/IconCoat.vue'
 import IconSatchel from '../icons/IconSatchel.vue'
 import IconHeart from '../icons/IconHeart.vue'
+import IconUser from '../icons/IconUser.vue'
+import IconBook from '../icons/IconBook.vue'
+import IconFeather from '../icons/IconFeather.vue'
 
 const props = defineProps<{ draft: CharacterDraft; name: string; title?: string }>()
 
@@ -45,6 +48,19 @@ const line = computed(
       .split('\n')
       .map((l) => l.trim().replace(/^["“]|["”]$/g, ''))
       .find(Boolean) ?? ''
+)
+/** Parts of the sheet still empty, said plainly so the sheet never looks broken. */
+const missing = computed(() =>
+  [
+    { icon: IconUser, label: 'Appearance', empty: !looks.value.length && !who.value },
+    {
+      icon: IconBook,
+      label: 'Background & personality',
+      empty: !props.draft.history.trim() && !props.draft.traits.trim()
+    },
+    { icon: IconFeather, label: 'Voice', empty: !props.draft.tone.trim() && !line.value },
+    { icon: IconSatchel, label: 'Gear & condition', empty: !gear.value.length }
+  ].filter((m) => m.empty)
 )
 const traits = computed(() =>
   props.draft.traits
@@ -100,17 +116,21 @@ const traits = computed(() =>
     </ul>
 
     <blockquote v-if="line" class="cpv__quote">“{{ line }}”</blockquote>
+
+    <ul v-if="missing.length" class="cpv__missing">
+      <li v-for="m in missing" :key="m.label">
+        <component :is="m.icon" :size="18" />
+        <span>
+          <b>{{ m.label }}</b>
+          Nothing written yet.
+        </span>
+      </li>
+    </ul>
   </aside>
 </template>
 
 <style scoped>
 .cpv {
-  position: sticky;
-  top: 76px;
-  /* never taller than the window above the save bar: it scrolls inside */
-  max-height: calc(100vh - 186px);
-  overflow-y: auto;
-  scrollbar-width: thin;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -202,6 +222,31 @@ const traits = computed(() =>
   -webkit-line-clamp: 8;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+.cpv__missing {
+  list-style: none;
+  display: grid;
+}
+.cpv__missing li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 2px;
+  border-top: 1px solid var(--line-soft);
+  font-style: italic;
+  color: var(--muted);
+}
+.cpv__missing svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--gold);
+}
+.cpv__missing b {
+  display: block;
+  font-family: var(--font-ui);
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ink-2);
 }
 .cpv__empty {
   font-style: italic;

@@ -110,10 +110,7 @@ function useProposal(): void {
       {{ note }}
     </p>
     <p v-if="fillNote" class="ovw__note" role="status">{{ fillNote }}</p>
-    <p class="ovw__hint">
-      The helpers never overwrite what you wrote: filling only writes into empty fields, and an
-      improved overview waits for you to choose it.
-    </p>
+    <p class="ovw__hint">Suggestions wait for your review. Only empty fields are filled.</p>
   </section>
 </template>
 

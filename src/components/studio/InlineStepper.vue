@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import IconCheck from '../icons/IconCheck.vue'
 
-defineProps<{ steps: string[]; current: number }>()
+defineProps<{ steps: string[]; current: number; stretch?: boolean }>()
 const emit = defineEmits<{ go: [index: number] }>()
 </script>
 
 <template>
-  <ol class="istep" aria-label="Creation progress">
+  <ol class="istep" :class="{ 'istep--stretch': stretch }" aria-label="Creation progress">
     <template v-for="(label, i) in steps" :key="label">
       <li
         class="istep__step"
@@ -92,6 +92,11 @@ const emit = defineEmits<{ go: [index: number] }>()
 .istep__step--todo .istep__label,
 .istep__step--todo .istep__circle {
   color: #8d7c5f;
+}
+/* across the page: the links share the room left over */
+.istep--stretch .istep__link {
+  flex: 1 1 22px;
+  width: auto;
 }
 .istep__link {
   width: 42px;

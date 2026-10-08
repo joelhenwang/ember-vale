@@ -34,6 +34,7 @@ import IconLock from '../icons/IconLock.vue'
 import IconBranch from '../icons/IconBranch.vue'
 import IconHeart from '../icons/IconHeart.vue'
 import IconUser from '../icons/IconUser.vue'
+import IconFeather from '../icons/IconFeather.vue'
 
 const props = defineProps<{
   step: number
@@ -137,6 +138,9 @@ async function hear(): Promise<void> {
       </span>
       <div class="side__id">
         <p class="side__name">{{ name || 'Unnamed' }}</p>
+        <p v-if="!name && step === 4" class="side__line side__hint">
+          Add a name to hear them in context.
+        </p>
         <p v-if="draft.pronouns" class="side__pron">{{ draft.pronouns }}</p>
         <p v-if="who" class="side__line">{{ who }}</p>
         <ul v-if="traits.length" class="side__traits">
@@ -224,7 +228,11 @@ async function hear(): Promise<void> {
             </span>
           </div>
         </template>
-        <p v-else class="side__quiet">Write a few things they would say, or hear a sample below.</p>
+        <div v-else class="side__waiting">
+          <IconFeather :size="22" />
+          <b>Your sample dialogue will appear here.</b>
+          <span>Add a tone and a few lines, then generate a sample to hear them in a scene.</span>
+        </div>
       </div>
       <div class="side__try">
         <label class="ev-field-label" for="voice-situation">Try a situation</label>
@@ -236,7 +244,7 @@ async function hear(): Promise<void> {
             aria-label="Situation" />
           <button type="button" class="ghost" :disabled="sampling" @click="hear">
             <IconSparkle :size="14" />
-            {{ sampling ? 'Writing…' : sample ? 'Another sample' : 'Hear a sample' }}
+            {{ sampling ? 'Writing…' : sample ? 'Another sample' : 'Generate a sample' }}
           </button>
         </div>
         <p v-if="sampleError" class="side__error" role="alert">{{ sampleError }}</p>
@@ -250,12 +258,6 @@ async function hear(): Promise<void> {
 
 <style scoped>
 .side {
-  position: sticky;
-  top: 76px;
-  /* never taller than the window above the save bar: it scrolls inside */
-  max-height: calc(100vh - 186px);
-  overflow-y: auto;
-  scrollbar-width: thin;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -363,7 +365,7 @@ async function hear(): Promise<void> {
   display: flex;
   gap: 14px;
   align-items: flex-start;
-  padding: 12px 14px;
+  padding: 10px 14px;
   border-radius: 10px;
   background: #f6eedb;
 }
@@ -476,11 +478,12 @@ async function hear(): Promise<void> {
 }
 .side__tryrow {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
 }
 .side__tryrow > :first-child {
-  flex: 1;
+  flex: 1 1 260px;
   min-width: 0;
 }
 .side__tryrow .ghost {
@@ -488,6 +491,34 @@ async function hear(): Promise<void> {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+.side__hint {
+  font-weight: 400;
+  color: var(--muted);
+}
+.side__waiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 26px 20px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  text-align: center;
+  color: var(--ink-3);
+}
+.side__waiting svg {
+  color: var(--gold);
+}
+.side__waiting b {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+.side__waiting span {
+  max-width: 34ch;
+  font-family: var(--font-ui);
+  font-size: 14.5px;
 }
 .side__quiet {
   font-size: 14.5px;

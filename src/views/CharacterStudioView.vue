@@ -585,51 +585,52 @@ const summaries = computed(() => stepSummaries(draft.value))
 
 <template>
   <main class="studio cstudio">
+    <!-- the title and the step bar run across the page, above both columns -->
+    <div class="cstudio__top">
+      <div class="studio__head">
+        <h1 class="studio__title">
+          <span class="cstudio__eyebrow">Character studio</span>
+          {{ isNew ? draft.presetName.trim() || 'New character' : displayName }}
+        </h1>
+        <span v-if="!isNew" class="cstudio__mode">Editing character</span>
+        <span v-if="dirty" class="draft-badge"><span class="draft-badge__dot"></span>Unsaved</span>
+      </div>
+      <p v-if="recordLoading" class="studio__state" role="status">Reading the archive…</p>
+      <p v-else-if="recordFailed" class="studio__state" role="alert">
+        The archive did not answer ({{ presets.error.value }}) —
+        <button type="button" class="studio__link" @click="retryPresets()">retry</button>
+      </p>
+      <p v-else-if="recordMissing" class="studio__state" role="alert">
+        No character answers to that id.
+      </p>
+      <p v-if="!isNew && editor.status.value === 'failed'" class="studio__state" role="alert">
+        {{ editor.error.value ?? 'Something went wrong.' }} —
+        <button type="button" class="studio__link" @click="retryLast()">
+          retry {{ editor.lastFailedOp.value ?? 'operation' }}
+        </button>
+        <button
+          v-if="editor.openConflict.value"
+          type="button"
+          class="studio__link"
+          @click="resumeSavedDraft()">
+          Resume saved draft
+        </button>
+      </p>
+
+      <InlineStepper
+        class="studio__stepper"
+        stretch
+        :steps="CHARACTER_STEPS.map((s) => s.title)"
+        :current="step"
+        @go="goStep" />
+      <p v-if="step === 1" class="cstudio__sub">{{ stepInfo.sub }}</p>
+    </div>
+
     <div class="studio__body">
       <!-- ————————————————— form column ————————————————— -->
       <div class="studio__left">
-        <div class="studio__head">
-          <h1 class="studio__title">
-            <span class="cstudio__eyebrow">Character studio</span>
-            {{ isNew ? draft.presetName.trim() || 'New character' : displayName }}
-          </h1>
-          <span class="cstudio__mode">{{ isNew ? 'New character' : 'Editing character' }}</span>
-          <span v-if="dirty" class="draft-badge"
-            ><span class="draft-badge__dot"></span>Unsaved</span
-          >
-        </div>
-        <p v-if="recordLoading" class="studio__state" role="status">Reading the archive…</p>
-        <p v-else-if="recordFailed" class="studio__state" role="alert">
-          The archive did not answer ({{ presets.error.value }}) —
-          <button type="button" class="studio__link" @click="retryPresets()">retry</button>
-        </p>
-        <p v-else-if="recordMissing" class="studio__state" role="alert">
-          No character answers to that id.
-        </p>
-        <p v-if="!isNew && editor.status.value === 'failed'" class="studio__state" role="alert">
-          {{ editor.error.value ?? 'Something went wrong.' }} —
-          <button type="button" class="studio__link" @click="retryLast()">
-            retry {{ editor.lastFailedOp.value ?? 'operation' }}
-          </button>
-          <button
-            v-if="editor.openConflict.value"
-            type="button"
-            class="studio__link"
-            @click="resumeSavedDraft()">
-            Resume saved draft
-          </button>
-        </p>
-
-        <InlineStepper
-          class="studio__stepper"
-          :steps="CHARACTER_STEPS.map((s) => s.title)"
-          :current="step"
-          @go="goStep" />
-
         <Transition name="cstep" mode="out-in">
           <div :key="step" class="cstudio__step">
-            <p v-if="step === 1" class="cstudio__sub">{{ stepInfo.sub }}</p>
-
             <!-- 1 · overview -->
             <template v-if="step === 1">
               <section class="card ev-card">
@@ -960,6 +961,26 @@ const summaries = computed(() => stepSummaries(draft.value))
 </template>
 
 <style scoped>
+/* both columns start on one line and end on one line: no gap under either */
+.cstudio__top {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.cstudio .studio__body {
+  align-items: stretch;
+}
+.cstudio .studio__left {
+  container-type: normal;
+}
+.cstudio__step {
+  flex: 1;
+}
+.cstudio__step > .card:last-child {
+  flex: 1;
+}
 .cstudio__eyebrow {
   display: block;
   margin-bottom: 4px;
