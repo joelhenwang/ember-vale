@@ -7,11 +7,15 @@
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import type { ChronicleEntry } from '../../content/clients/worldsim'
+import type { ChronicleEntry, SceneArtView } from '../../content/clients/worldsim'
 import WorldMap from '../components/observatory/WorldMap.vue'
 import PlaceMap from '../components/observatory/PlaceMap.vue'
 import EventFeed from '../components/observatory/EventFeed.vue'
 import EventModal from '../components/observatory/EventModal.vue'
+import MomentDialog from '../components/story/MomentDialog.vue'
+import PaintSceneDialog from '../components/story/PaintSceneDialog.vue'
+import { assetUrl } from '../api/worldsim'
+import { readyMoments, type Speaker } from '../game/moments'
 import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
 import IconPlay from '../components/icons/IconPlay.vue'
 import IconArrowRight from '../components/icons/IconArrowRight.vue'
@@ -69,6 +73,43 @@ function goInside(placeId: string): void {
 const insideMap = computed(
   () => placeMaps.value.find((m) => m.location_id === insideId.value) ?? null
 )
+
+/* ————— pictures: painted scenes, the moment view, and painting one ————— */
+const moments = computed(() => readyMoments(view.value?.scene_art))
+const pictured = computed(() => new Set(moments.value.map((m) => m.scene_id)))
+const openedMoment = ref<number | null>(null)
+const paintingScene = ref<string | null>(null)
+const callOpts = computed(() => ({
+  role: obs.role.value,
+  characterId: obs.grant.value?.character_id ?? undefined
+}))
+const speakers = computed(() => {
+  const out = new Map<string, Speaker>()
+  for (const c of view.value?.cast ?? []) {
+    out.set(c.character_id, {
+      name: c.name,
+      portraitUrl: c.portrait_asset_id ? assetUrl(storyId.value, c.portrait_asset_id, 160) : null
+    })
+  }
+  return out
+})
+/** The scene's newest picture that did not fail (ready, or still being painted). */
+function pictureFor(entry: ChronicleEntry): SceneArtView | null {
+  const mine = (view.value?.scene_art ?? []).filter(
+    (a) => a.scene_id === entry.scene_id && a.status !== 'failed'
+  )
+  return mine[mine.length - 1] ?? null
+}
+function openMoment(pictureId: string): void {
+  const at = moments.value.findIndex((m) => m.picture_id === pictureId)
+  if (at < 0) return
+  opened.value = null
+  openedMoment.value = at
+}
+function paint(sceneId: string): void {
+  opened.value = null
+  paintingScene.value = sceneId
+}
 
 function nameOf(id: string): string {
   return names.value.get(id) ?? 'Someone'
@@ -240,6 +281,7 @@ onUnmounted(() => {
         :beats="obs.feed.value"
         :name-of="nameOf"
         :place-of="placeOf"
+        :pictured="pictured"
         @open="opened = $event"
         @focus="focusId = $event" />
     </div>
@@ -249,10 +291,29 @@ onUnmounted(() => {
       :world-id="storyId"
       :entry="opened"
       :map-asset-id="view?.manifest.asset_id ?? null"
-      :opts="{ role: obs.role.value, characterId: obs.grant.value?.character_id ?? undefined }"
+      :opts="callOpts"
       :name-of="nameOf"
       :place-of="placeOf"
+      :picture="pictureFor(opened)"
+      @moment="openMoment"
+      @paint="paint"
       @close="opened = null" />
+    <MomentDialog
+      :world-id="storyId"
+      :moments="moments"
+      :index="openedMoment"
+      :speakers="speakers"
+      :places="placeNames"
+      :opts="callOpts"
+      @update:index="openedMoment = $event"
+      @repainted="obs.refresh()"
+      @close="openedMoment = null" />
+    <PaintSceneDialog
+      :world-id="storyId"
+      :scene-id="paintingScene"
+      :opts="callOpts"
+      @close="paintingScene = null"
+      @painted="obs.refresh()" />
   </main>
 </template>
 

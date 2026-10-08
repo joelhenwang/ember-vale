@@ -1,16 +1,20 @@
 <script setup lang="ts">
 /**
  * Event focus dialog: about 80% of the viewport, art on the left (~70%),
- * the scene's narration and dialogue on the right. Scene illustrations do
- * not exist yet, so the art pane shows the world map with an honest
- * label. A native <dialog> keeps focus inside and closes on Escape.
+ * the scene's narration and dialogue on the right. The art pane shows the
+ * scene's painted picture when it has one (opening the moment view), says
+ * so while one is being painted, and otherwise shows the world map with an
+ * honest label and a way to paint the scene. A native <dialog> keeps focus
+ * inside and closes on Escape.
  */
-import { onMounted, ref, watch } from 'vue'
-import type { BeatView, ChronicleEntry } from '../../../content/clients/worldsim'
+import { computed, onMounted, ref, watch } from 'vue'
+import type { BeatView, ChronicleEntry, SceneArtView } from '../../../content/clients/worldsim'
 import { assetUrl, getSceneNarration, type CallOptions } from '../../api/worldsim'
 import { beatTimeLabel } from '../../game/observatory'
+import { momentTitle } from '../../game/moments'
 import { moves } from '../../composables/useMotion'
 import IconX from '../icons/IconX.vue'
+import IconImage from '../icons/IconImage.vue'
 
 const props = defineProps<{
   worldId: string
@@ -19,9 +23,16 @@ const props = defineProps<{
   opts: CallOptions
   nameOf: (id: string) => string
   placeOf: (id: string | null | undefined) => string | null
+  /** This scene's newest picture that did not fail, if any. */
+  picture?: SceneArtView | null
 }>()
 
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: []; moment: [pictureId: string]; paint: [sceneId: string] }>()
+
+const ready = computed(() =>
+  props.picture?.status === 'ready' && props.picture.asset_id ? props.picture : null
+)
+const painting = computed(() => !!props.picture && !ready.value)
 
 const dialog = ref<HTMLDialogElement | null>(null)
 const beats = ref<BeatView[] | null>(null)
@@ -89,8 +100,40 @@ function onBackdrop(event: MouseEvent): void {
     @click="onBackdrop">
     <div class="em__frame">
       <figure class="em__art">
-        <img v-if="mapAssetId" class="ev-drift" :src="assetUrl(worldId, mapAssetId, 1280)" alt="" />
-        <figcaption>No illustration for this scene yet · showing the world map</figcaption>
+        <template v-if="ready && ready.asset_id">
+          <img
+            class="ev-drift em__picture"
+            :src="assetUrl(worldId, ready.asset_id, 1280)"
+            :alt="ready.caption ?? momentTitle(ready)" />
+          <figcaption class="em__caption">
+            <span>{{ momentTitle(ready) }}</span>
+            <button type="button" class="em__act" @click="emit('moment', ready.picture_id)">
+              See the moment
+            </button>
+          </figcaption>
+        </template>
+        <template v-else>
+          <img
+            v-if="mapAssetId"
+            class="ev-drift"
+            :src="assetUrl(worldId, mapAssetId, 1280)"
+            alt="" />
+          <figcaption class="em__caption">
+            <span v-if="painting"
+              >This scene is being painted<span class="ev-dots" aria-hidden="true"
+                ><span>.</span><span>.</span><span>.</span></span
+              ></span
+            >
+            <span v-else>No illustration for this scene yet · showing the world map</span>
+            <button
+              v-if="!painting && entry.scene_id"
+              type="button"
+              class="em__act"
+              @click="emit('paint', entry.scene_id)">
+              <IconImage :size="14" /> Paint this scene
+            </button>
+          </figcaption>
+        </template>
       </figure>
       <div class="em__story">
         <header>
@@ -194,16 +237,48 @@ function onBackdrop(event: MouseEvent): void {
   object-fit: cover;
   filter: saturate(0.85);
 }
-.em__art figcaption {
+.em__art img.em__picture {
+  filter: none;
+}
+.em__caption {
   animation: ev-fade 0.5s var(--ease-out) 0.6s both;
   position: absolute;
   left: 12px;
+  right: 12px;
   bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+}
+.em__caption > span {
   padding: 3px 10px;
   border-radius: 999px;
   font-size: 13px;
   background: rgba(249, 242, 225, 0.9);
   color: var(--ink-3);
+}
+.em__act {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    background-color var(--dur) ease,
+    scale var(--dur-quick) var(--ease-out);
+}
+.em__act:hover {
+  background: var(--panel);
 }
 .em__story {
   display: flex;

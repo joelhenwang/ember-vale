@@ -9,11 +9,14 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import type { ChronicleEntry } from '../../../content/clients/worldsim'
 import type { FeedBeat } from '../../game/observatory'
+import IconImage from '../icons/IconImage.vue'
 
 const props = defineProps<{
   beats: FeedBeat[]
   nameOf: (id: string) => string
   placeOf: (id: string | null | undefined) => string | null
+  /** Scenes with a painted picture: their entries carry a small mark. */
+  pictured?: ReadonlySet<string>
 }>()
 
 const emit = defineEmits<{
@@ -120,6 +123,14 @@ function body(entry: ChronicleEntry): string {
               <template v-if="placeOf(entry.location_id)">
                 · {{ placeOf(entry.location_id) }}
               </template>
+              <span
+                v-if="entry.scene_id && pictured?.has(entry.scene_id)"
+                class="ef__pictured"
+                role="img"
+                aria-label="Has a picture"
+                title="This scene has a picture">
+                <IconImage :size="13" />
+              </span>
             </span>
             <span class="ef__text">{{ body(entry) }}</span>
           </button>
@@ -296,6 +307,12 @@ function body(entry: ChronicleEntry): string {
 }
 .ef__entry:active {
   scale: 0.99;
+}
+.ef__pictured {
+  display: inline-flex;
+  vertical-align: -2px;
+  margin-left: 6px;
+  color: var(--gold);
 }
 .ef__where {
   font-size: 13px;

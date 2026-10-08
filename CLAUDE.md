@@ -107,6 +107,7 @@ of these features.
 
 ### 3.7 Watching: Observatory and story room
 - **Story watch / Observatory** `/stories/:id/watch` (ObservatoryView.vue, 020a09f): map with tokens, event feed, event modal, Step/Play/Pause driving **server-side autoplay** (`application/autoplay.py`, `/stories/{id}/autoplay/*`, migration 0041, 9a22ec2). Autoplay stops after 60 s without presence. Player stories cannot autoplay.
+- **Pictures in Watch** (watch-pictures-001): the event view shows the scene's picture and opens MomentDialog, says so while one is being painted, and otherwise offers "Paint this scene" (PaintSceneDialog); the feed marks scenes that have a picture.
 - The map is the world's own drawn map with its roads, and travellers walk along them by the clock (b6310b7, 8184722). Places with their own map get an "Inside" chip that opens PlaceMap.vue, where people stand at their newest named spot or at a spot that suits their activity (faf9b46, b364d5c, `src/game/placeMap.ts`).
 - **Story room** `/stories/:id/play` (PlayView.vue): the older form-driven room, used for the Director/God seats. It holds the **interventions** UI (typed interpret → queue → apply; `/interventions`, `useInterventions`) and the "You are on the road to X" banner for travelling players.
 - Which screen a story opens on: `src/game/storyRoute.ts` (player → adventure, watcher → watch, director/deity → play).
@@ -184,7 +185,7 @@ of these features.
 backend for it already exists.
 
 ### 3.14 Deliberately not built, or deferred
-- **Observatory event modal art**: it shows the world map with an honest caption. The scene pictures that presentation sends to watchers are not shown there (MomentDialog could be reused), and key moments are painted only for player stories.
+- **Automatic key moments for watched stories**: key moments are chosen from a player's point of view, so watcher stories get pictures only when the watcher paints a scene from Watch.
 - **Party combat (D&D-style, hit points, monsters)** exists in the backend (`/stage1/party*`, `tests/test_dnd_combat.py`) with no UI. Mockups with gold, HP bars and skill checks ("Arcana DC 12") would need that wired, not invented.
 - Full-body renders and profile→body lineage, visible equipment and injuries, checkpoints/branches, and backup/restore (plan packets E7–E9) are **not built**. `src/game/images.ts` keeps placeholder slots only.
 - Creating or editing style packs and templates: "Coming soon" (cf28f06).
