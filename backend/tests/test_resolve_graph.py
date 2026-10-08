@@ -495,3 +495,57 @@ def test_invented_move_is_dropped_never_committed() -> None:
     assert len(gateway.sent_requests) == 1
     effects = result["proposal"]["resolution"]["effects"]
     assert not any("11111111" in json.dumps(e) for e in effects)
+
+
+def test_a_crowded_scene_still_fits_the_resolver_packet() -> None:
+    import uuid as _uuid
+
+    from worldsim.domain.commands import CommunicateAction, WaitAction
+    from worldsim.domain.enums import ResolutionOutcome
+    from worldsim.domain.rules.resolution import (
+        MAX_PACKET_SUMMARIES,
+        FeasibilityEnvelope,
+        build_packet,
+    )
+    from worldsim.domain.scenes import Intent as _Intent
+
+    world, snapshot = _uuid.uuid4(), _uuid.uuid4()
+    people = [_uuid.uuid4() for _ in range(21)]
+
+    def intent(i: int, who: _uuid.UUID) -> _Intent:
+        action = (
+            CommunicateAction(
+                character_id=who, snapshot_id=snapshot, target_character_id=people[0], topic="hi"
+            )
+            if i < 3
+            else WaitAction(character_id=who, snapshot_id=snapshot)
+        )
+        return _Intent(
+            id=_uuid.uuid4(),
+            world_id=world,
+            snapshot_id=snapshot,
+            phase_run_id=_uuid.uuid4(),
+            author_character_id=who,
+            idempotency_key=f"k{i}",
+            action=action,
+        )
+
+    intents = [intent(i, who) for i, who in enumerate(people)]
+    packet = build_packet(
+        scene_id=_uuid.uuid4(),
+        world_id=world,
+        snapshot_id=snapshot,
+        intents=intents,
+        envelopes=[
+            FeasibilityEnvelope(
+                intent_id=intents[0].id,
+                author_character_id=people[0],
+                determined=False,
+                allowed_outcomes=[ResolutionOutcome.SUCCESS],
+            )
+        ],
+    )
+    assert len(packet.summaries) == MAX_PACKET_SUMMARIES
+    assert len(packet.intent_ids) == 21
+    assert packet.summaries[-1].startswith("...and 6 more")
+    assert sum("communicate" in s or "hi" in s for s in packet.summaries[:3]) == 3

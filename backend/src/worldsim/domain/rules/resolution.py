@@ -192,6 +192,11 @@ def merge_determined(
     return outcome, effects
 
 
+#: AmbiguityPacket.summaries holds at most this many lines.
+MAX_PACKET_SUMMARIES = 16
+_IDLE = frozenset({"wait", "observe", "rest"})
+
+
 def build_packet(
     *,
     view: WorldView | None = None,
@@ -215,10 +220,20 @@ def build_packet(
     determined: list[DomainEffect] = []
     for envelope in envelopes:
         determined.extend(envelope.candidate_effects)
+    ordered = sorted(intents, key=lambda i: str(i.id))
+    crowded = len(ordered) > MAX_PACKET_SUMMARIES
+    if crowded:
+        # A crowded scene (21 people at one place failed the beat): active
+        # attempts first, idle ones after, the rest folded into one line.
+        ordered = [i for i in ordered if i.action.family not in _IDLE] + [
+            i for i in ordered if i.action.family in _IDLE
+        ]
+    shown = ordered[: MAX_PACKET_SUMMARIES - 1] if crowded else ordered
     summaries = [
-        describe_intent(intent, view) if view is not None else _bare(intent)
-        for intent in sorted(intents, key=lambda i: str(i.id))
+        describe_intent(intent, view) if view is not None else _bare(intent) for intent in shown
     ]
+    if crowded:
+        summaries.append(f"...and {len(ordered) - len(shown)} more (mostly waiting or watching)")
     return AmbiguityPacket(
         scene_id=scene_id,
         world_id=world_id,
