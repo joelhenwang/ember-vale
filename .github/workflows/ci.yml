@@ -23,6 +23,9 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm test
+      # vue-tsc misses handlers prettier breaks; only the bundler catches them
+      # (CLAUDE.md "vite build is required", d3ceb25).
+      - run: npx vite build --outDir "$RUNNER_TEMP/build" --emptyOutDir
 
   backend:
     runs-on: ubuntu-latest

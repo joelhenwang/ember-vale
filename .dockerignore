@@ -1,0 +1,17 @@
+# The API image needs only the backend package and the content it reads.
+# Allow-list it: without this file every build sent the whole repo
+# (~4.3 GB: local-models weights, launcher/target, .venv, node_modules,
+# .git, and .env) to the Docker daemon. See docs/evidence/perf-infra-001.
+*
+!backend/pyproject.toml
+!backend/uv.lock
+!backend/src
+!backend/migrations
+!backend/prompts
+!backend/alembic.ini
+!content
+
+# generated art lives in the compose volume, never in the image
+content/assets/generated
+**/__pycache__
+**/*.pyc
