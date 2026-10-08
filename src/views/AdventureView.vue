@@ -422,362 +422,371 @@ onMounted(() => {
       </p>
     </section>
 
-    <div v-else class="adv__grid">
-      <!-- left: what you see, the land around you, and the thread to pull -->
-      <section class="adv__visual">
-        <div class="stage ev-card">
-          <img
-            v-if="latest && latestUrl"
-            class="stage__img"
-            :src="latestUrl"
-            :alt="latest.caption" />
-          <div v-else class="stage__img" :style="sceneStyle" />
-          <div
-            v-if="light"
-            class="scene__light"
-            :style="{ background: light }"
-            aria-hidden="true" />
-          <div class="stage__shade" aria-hidden="true" />
-          <span v-if="latest" class="stage__badge">
-            Latest illustrated moment<template v-if="latestElsewhere">
-              · {{ latestElsewhere }}</template
-            >
-          </span>
-          <button
-            v-if="latest"
-            type="button"
-            class="stage__expand"
-            :title="`Open “${momentTitle(latest)}”`"
-            aria-label="Open this moment"
-            @click="openMoment()">
-            <IconExpand :size="18" />
-          </button>
-          <div class="stage__foot">
-            <div class="stage__where">
-              <h2 class="scene__place">{{ adv.here.value?.name ?? 'On the road' }}</h2>
-              <p class="stage__when">
-                {{ timeLabel
-                }}<template v-if="adv.present.value.length === 0"> · No one else is here</template>
-              </p>
-            </div>
-            <ul class="scene__people" aria-label="Here with you">
-              <li v-for="c in adv.present.value" :key="c.character_id">
-                <button
-                  type="button"
-                  class="who"
-                  :title="`Talk to ${c.name}`"
-                  @click="talkTo(c.character_id)">
-                  <FramedImage
-                    v-if="portraits.get(c.character_id)"
-                    :src="portraits.get(c.character_id)!.src"
-                    :frame="portraits.get(c.character_id)!.face" />
-                  <span v-else>{{ initials(c.name) }}</span>
-                  <small>{{ c.name }}</small>
-                </button>
-              </li>
-              <li class="who who--me" :title="`${myName} (you)`">
-                <FramedImage
-                  v-if="portraits.get(adv.me.value)"
-                  :src="portraits.get(adv.me.value)!.src"
-                  :frame="portraits.get(adv.me.value)!.face" />
-                <span v-else>{{ initials(myName) }}</span>
-                <small>You</small>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div class="adv__under">
-          <section v-if="adv.presentation.value" class="minimap ev-card">
-            <h3 class="panel__title"><IconGlobe :size="16" /> Local map</h3>
-            <div class="minimap__map">
-              <WorldMap
-                :world-id="storyId"
-                :map-asset-id="adv.mapAssetId.value"
-                :anchors="adv.presentation.value.manifest.anchors ?? []"
-                :places="adv.places.value"
-                :tokens="tokens"
-                :active-place-id="adv.hereId.value"
-                :focus-id="adv.me.value"
-                compact />
-            </div>
-          </section>
-          <section class="lead ev-card">
-            <h3 class="panel__title"><IconDoc :size="16" /> Current story lead</h3>
-            <template v-if="mainLead">
-              <p class="lead__title">
-                {{ mainLead.title }}
-                <span v-if="isFresh(mainLead.since_index, nowIndex)" class="rumours__new">new</span>
-              </p>
-              <p v-if="mainLead.purpose" class="lead__text">{{ mainLead.purpose }}</p>
-            </template>
-            <p v-else class="lead__text lead__quiet">
-              No word yet. Look around, or talk to someone.
-            </p>
-            <button
-              v-if="otherLeads.length || settled.length"
-              type="button"
-              class="lead__more"
-              :aria-expanded="leadsOpen"
-              @click="leadsOpen = !leadsOpen">
-              {{
-                leadsOpen
-                  ? 'Show less'
-                  : [
-                      otherLeads.length ? `${otherLeads.length} more` : '',
-                      settled.length ? `${settled.length} settled` : ''
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')
-              }}
-            </button>
-            <div v-if="leadsOpen" class="rumours">
-              <ul>
-                <li v-for="r in otherLeads" :key="r.hook_id">
-                  <b>{{ r.title }}</b>
-                  <p v-if="r.purpose">{{ r.purpose }}</p>
-                </li>
-              </ul>
-              <ul v-if="settled.length" class="rumours__done">
-                <li v-for="r in settled" :key="r.hook_id">
-                  <b>✓ {{ r.title }}</b>
-                </li>
-              </ul>
-            </div>
-          </section>
-        </div>
-      </section>
-
-      <!-- right: the story, and what you do next -->
-      <section class="adv__stage ev-card">
-        <header class="story__head">
-          <IconBook :size="20" />
-          <h2>The story</h2>
-        </header>
-        <div ref="logEl" class="log" aria-live="polite">
-          <div v-if="intro.length" class="log__intro">
-            <p>{{ intro[0] }}</p>
-            <details v-if="intro.length > 1" class="log__more">
-              <summary>Character introduction</summary>
-              <p v-for="(text, i) in intro.slice(1)" :key="i">{{ text }}</p>
-            </details>
-            <p v-if="adv.log.value.length === 0" class="log__hint">
-              Type what you do below — or look around, speak to someone, or set out.
-            </p>
-          </div>
-          <TransitionGroup name="line" tag="div" class="log__lines">
+    <!-- one card: the picture, map and lead beside the story, who you are along the foot -->
+    <div v-else class="adv__frame ev-card">
+      <div class="adv__grid">
+        <!-- left: what you see, the land around you, and the thread to pull -->
+        <section class="adv__visual">
+          <div class="stage">
+            <img
+              v-if="latest && latestUrl"
+              class="stage__img"
+              :src="latestUrl"
+              :alt="latest.caption" />
+            <div v-else class="stage__img" :style="sceneStyle" />
             <div
-              v-for="line in adv.log.value"
-              :key="line.key"
-              :class="lineClass(line)"
-              :style="revealStyle(line.key)">
-              <template v-if="line.kind === 'time'">
-                <span class="log__time">{{ line.text }}</span>
-              </template>
-              <template v-else-if="line.kind === 'dialogue'">
-                <span class="log__face" :title="nameOf(line.speakerId)">
+              v-if="light"
+              class="scene__light"
+              :style="{ background: light }"
+              aria-hidden="true" />
+            <div class="stage__shade" aria-hidden="true" />
+            <span v-if="latest" class="stage__badge">
+              Latest illustrated moment<template v-if="latestElsewhere">
+                · {{ latestElsewhere }}</template
+              >
+            </span>
+            <button
+              v-if="latest"
+              type="button"
+              class="stage__expand"
+              :title="`Open “${momentTitle(latest)}”`"
+              aria-label="Open this moment"
+              @click="openMoment()">
+              <IconExpand :size="18" />
+            </button>
+            <div class="stage__foot">
+              <div class="stage__where">
+                <h2 class="scene__place">{{ adv.here.value?.name ?? 'On the road' }}</h2>
+                <p class="stage__when">
+                  {{ timeLabel
+                  }}<template v-if="adv.present.value.length === 0">
+                    · No one else is here</template
+                  >
+                </p>
+              </div>
+              <ul class="scene__people" aria-label="Here with you">
+                <li v-for="c in adv.present.value" :key="c.character_id">
+                  <button
+                    type="button"
+                    class="who"
+                    :title="`Talk to ${c.name}`"
+                    @click="talkTo(c.character_id)">
+                    <FramedImage
+                      v-if="portraits.get(c.character_id)"
+                      :src="portraits.get(c.character_id)!.src"
+                      :frame="portraits.get(c.character_id)!.face" />
+                    <span v-else>{{ initials(c.name) }}</span>
+                    <small>{{ c.name }}</small>
+                  </button>
+                </li>
+                <li class="who who--me" :title="`${myName} (you)`">
                   <FramedImage
-                    v-if="line.speakerId && portraits.get(line.speakerId)"
-                    :src="portraits.get(line.speakerId)!.src"
-                    :frame="portraits.get(line.speakerId)!.face" />
-                  <span v-else>{{ initials(nameOf(line.speakerId)) }}</span>
+                    v-if="portraits.get(adv.me.value)"
+                    :src="portraits.get(adv.me.value)!.src"
+                    :frame="portraits.get(adv.me.value)!.face" />
+                  <span v-else>{{ initials(myName) }}</span>
+                  <small>You</small>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="adv__under">
+            <section v-if="adv.presentation.value" class="minimap">
+              <h3 class="panel__title"><IconGlobe :size="16" /> Local map</h3>
+              <div class="minimap__map">
+                <WorldMap
+                  :world-id="storyId"
+                  :map-asset-id="adv.mapAssetId.value"
+                  :anchors="adv.presentation.value.manifest.anchors ?? []"
+                  :places="adv.places.value"
+                  :tokens="tokens"
+                  :active-place-id="adv.hereId.value"
+                  :focus-id="adv.me.value"
+                  compact />
+              </div>
+            </section>
+            <section class="lead">
+              <h3 class="panel__title"><IconDoc :size="16" /> Current story lead</h3>
+              <template v-if="mainLead">
+                <p class="lead__title">
+                  {{ mainLead.title }}
+                  <span v-if="isFresh(mainLead.since_index, nowIndex)" class="rumours__new"
+                    >new</span
+                  >
+                </p>
+                <p v-if="mainLead.purpose" class="lead__text">{{ mainLead.purpose }}</p>
+              </template>
+              <p v-else class="lead__text lead__quiet">
+                No word yet. Look around, or talk to someone.
+              </p>
+              <button
+                v-if="otherLeads.length || settled.length"
+                type="button"
+                class="lead__more"
+                :aria-expanded="leadsOpen"
+                @click="leadsOpen = !leadsOpen">
+                {{
+                  leadsOpen
+                    ? 'Show less'
+                    : [
+                        otherLeads.length ? `${otherLeads.length} more` : '',
+                        settled.length ? `${settled.length} settled` : ''
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')
+                }}
+              </button>
+              <div v-if="leadsOpen" class="rumours">
+                <ul>
+                  <li v-for="r in otherLeads" :key="r.hook_id">
+                    <b>{{ r.title }}</b>
+                    <p v-if="r.purpose">{{ r.purpose }}</p>
+                  </li>
+                </ul>
+                <ul v-if="settled.length" class="rumours__done">
+                  <li v-for="r in settled" :key="r.hook_id">
+                    <b>✓ {{ r.title }}</b>
+                  </li>
+                </ul>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- right: the story, and what you do next -->
+        <section class="adv__stage">
+          <header class="story__head">
+            <IconBook :size="20" />
+            <h2>The story</h2>
+          </header>
+          <div ref="logEl" class="log" aria-live="polite">
+            <div v-if="intro.length" class="log__intro">
+              <p>{{ intro[0] }}</p>
+              <details v-if="intro.length > 1" class="log__more">
+                <summary>Character introduction</summary>
+                <p v-for="(text, i) in intro.slice(1)" :key="i">{{ text }}</p>
+              </details>
+              <p v-if="adv.log.value.length === 0" class="log__hint">
+                Type what you do below — or look around, speak to someone, or set out.
+              </p>
+            </div>
+            <TransitionGroup name="line" tag="div" class="log__lines">
+              <div
+                v-for="line in adv.log.value"
+                :key="line.key"
+                :class="lineClass(line)"
+                :style="revealStyle(line.key)">
+                <template v-if="line.kind === 'time'">
+                  <span class="log__time">{{ line.text }}</span>
+                </template>
+                <template v-else-if="line.kind === 'dialogue'">
+                  <span class="log__face" :title="nameOf(line.speakerId)">
+                    <FramedImage
+                      v-if="line.speakerId && portraits.get(line.speakerId)"
+                      :src="portraits.get(line.speakerId)!.src"
+                      :frame="portraits.get(line.speakerId)!.face" />
+                    <span v-else>{{ initials(nameOf(line.speakerId)) }}</span>
+                  </span>
+                  <div class="log__bubble">
+                    <b>{{ line.mine ? 'You' : nameOf(line.speakerId) }}</b>
+                    <span>{{ line.text }}</span>
+                  </div>
+                </template>
+                <template v-else-if="line.kind === 'paint'">
+                  <button
+                    type="button"
+                    class="log__paint"
+                    title="Paint a picture of this scene"
+                    @click="paintingScene = line.paintScene ?? null">
+                    <IconImage :size="14" /> Paint this scene
+                  </button>
+                </template>
+                <template v-else-if="line.kind === 'picture' && line.picture">
+                  <button
+                    v-if="line.picture.status === 'ready' && line.picture.asset_id"
+                    type="button"
+                    class="log__picture"
+                    :title="`Open “${momentTitle(line.picture)}”`"
+                    @click="openPicture(line.picture.picture_id)">
+                    <img
+                      :src="assetUrl(storyId, line.picture.asset_id)"
+                      :alt="line.picture.caption"
+                      loading="lazy" />
+                    <span class="log__picture-text">
+                      <b>{{ momentTitle(line.picture) }}</b>
+                      <i>{{ line.picture.caption }}</i>
+                    </span>
+                  </button>
+                  <div v-else class="log__picture log__picture--wait" role="status">
+                    <span class="log__picture-wait"><IconImage :size="20" /></span>
+                    <span class="log__picture-text"><i>Painting this moment…</i></span>
+                  </div>
+                </template>
+                <template v-else-if="line.kind === 'elsewhere'">
+                  <span class="log__elsewhere">
+                    Meanwhile{{
+                      line.placeId && placeNames.get(line.placeId)
+                        ? ` at ${placeNames.get(line.placeId)}`
+                        : ''
+                    }}
+                    —
+                    {{
+                      trimPlaceLead(line.text, line.placeId ? placeNames.get(line.placeId) : null)
+                    }}
+                  </span>
+                </template>
+                <template v-else>
+                  <p class="log__prose">{{ line.text }}</p>
+                </template>
+              </div>
+            </TransitionGroup>
+            <div
+              v-if="adv.acting.value && echo"
+              class="log__echo"
+              :class="echo.kind === 'say' ? 'log__line--dialogue log__line--mine' : ''">
+              <template v-if="echo.kind === 'say'">
+                <span class="log__face">
+                  <FramedImage
+                    v-if="portraits.get(adv.me.value)"
+                    :src="portraits.get(adv.me.value)!.src"
+                    :frame="portraits.get(adv.me.value)!.face" />
+                  <span v-else>{{ initials(myName) }}</span>
                 </span>
                 <div class="log__bubble">
-                  <b>{{ line.mine ? 'You' : nameOf(line.speakerId) }}</b>
-                  <span>{{ line.text }}</span>
+                  <b>You</b>
+                  <span>{{ echo.text }}</span>
                 </div>
               </template>
-              <template v-else-if="line.kind === 'paint'">
-                <button
-                  type="button"
-                  class="log__paint"
-                  title="Paint a picture of this scene"
-                  @click="paintingScene = line.paintScene ?? null">
-                  <IconImage :size="14" /> Paint this scene
-                </button>
-              </template>
-              <template v-else-if="line.kind === 'picture' && line.picture">
-                <button
-                  v-if="line.picture.status === 'ready' && line.picture.asset_id"
-                  type="button"
-                  class="log__picture"
-                  :title="`Open “${momentTitle(line.picture)}”`"
-                  @click="openPicture(line.picture.picture_id)">
-                  <img
-                    :src="assetUrl(storyId, line.picture.asset_id)"
-                    :alt="line.picture.caption"
-                    loading="lazy" />
-                  <span class="log__picture-text">
-                    <b>{{ momentTitle(line.picture) }}</b>
-                    <i>{{ line.picture.caption }}</i>
-                  </span>
-                </button>
-                <div v-else class="log__picture log__picture--wait" role="status">
-                  <span class="log__picture-wait"><IconImage :size="20" /></span>
-                  <span class="log__picture-text"><i>Painting this moment…</i></span>
-                </div>
-              </template>
-              <template v-else-if="line.kind === 'elsewhere'">
-                <span class="log__elsewhere">
-                  Meanwhile{{
-                    line.placeId && placeNames.get(line.placeId)
-                      ? ` at ${placeNames.get(line.placeId)}`
-                      : ''
-                  }}
-                  —
-                  {{ trimPlaceLead(line.text, line.placeId ? placeNames.get(line.placeId) : null) }}
-                </span>
-              </template>
-              <template v-else>
-                <p class="log__prose">{{ line.text }}</p>
-              </template>
+              <p v-else class="log__prose log__mine">{{ echo.text }}</p>
             </div>
-          </TransitionGroup>
-          <div
-            v-if="adv.acting.value && echo"
-            class="log__echo"
-            :class="echo.kind === 'say' ? 'log__line--dialogue log__line--mine' : ''">
-            <template v-if="echo.kind === 'say'">
-              <span class="log__face">
-                <FramedImage
-                  v-if="portraits.get(adv.me.value)"
-                  :src="portraits.get(adv.me.value)!.src"
-                  :frame="portraits.get(adv.me.value)!.face" />
-                <span v-else>{{ initials(myName) }}</span>
-              </span>
-              <div class="log__bubble">
-                <b>You</b>
-                <span>{{ echo.text }}</span>
-              </div>
-            </template>
-            <p v-else class="log__prose log__mine">{{ echo.text }}</p>
+            <TransitionGroup
+              v-if="changes.length && !adv.acting.value"
+              name="badge"
+              tag="ul"
+              class="log__changes"
+              aria-label="What changed">
+              <li
+                v-for="(c, i) in changes"
+                :key="c.text"
+                :class="`badge badge--${c.tone}`"
+                :style="{ transitionDelay: `${i * 120}ms` }">
+                {{ c.text }}
+              </li>
+            </TransitionGroup>
+            <div v-if="adv.acting.value" class="log__thinking">
+              <IconFeather :size="18" class="log__quill" />
+              <span>{{ adv.stage.value }}… {{ elapsed }} s</span>
+            </div>
           </div>
-          <TransitionGroup
-            v-if="changes.length && !adv.acting.value"
-            name="badge"
-            tag="ul"
-            class="log__changes"
-            aria-label="What changed">
-            <li
-              v-for="(c, i) in changes"
-              :key="c.text"
-              :class="`badge badge--${c.tone}`"
-              :style="{ transitionDelay: `${i * 120}ms` }">
-              {{ c.text }}
-            </li>
-          </TransitionGroup>
-          <div v-if="adv.acting.value" class="log__thinking">
-            <IconFeather :size="18" class="log__quill" />
-            <span>{{ adv.stage.value }}… {{ elapsed }} s</span>
-          </div>
-        </div>
 
-        <form class="composer" @submit.prevent="submit">
-          <div class="composer__modes" role="tablist" aria-label="How you act">
-            <button type="button" role="tab" :aria-selected="mode === 'do'" @click="mode = 'do'">
-              Do
-            </button>
-            <button
-              type="button"
-              role="tab"
-              :aria-selected="mode === 'say'"
-              :disabled="!canSay"
-              :title="canSay ? '' : 'No one here to talk to'"
-              @click="mode = 'say'">
-              Say
-            </button>
-            <label v-if="mode === 'say' && adv.talkable.value.length > 1" class="composer__to">
-              to
-              <select v-model="sayTo">
-                <option
-                  v-for="c in adv.talkable.value"
-                  :key="c.character_id"
-                  :value="c.character_id">
-                  {{ c.name }}
-                </option>
-              </select>
-            </label>
-          </div>
-          <div class="composer__row">
-            <textarea
-              v-model="text"
-              class="composer__input"
-              rows="2"
-              maxlength="250"
-              :placeholder="placeholder"
-              :aria-description="suggestion ? `Press Tab to fill: ${suggestion}` : undefined"
-              :disabled="adv.acting.value || !adv.alive.value"
-              @keydown="onKey" />
-            <div class="composer__buttons">
-              <button type="submit" class="composer__act" :disabled="!ready">
-                Act <IconArrowRight :size="16" />
+          <form class="composer" @submit.prevent="submit">
+            <div class="composer__modes" role="tablist" aria-label="How you act">
+              <button type="button" role="tab" :aria-selected="mode === 'do'" @click="mode = 'do'">
+                Do
               </button>
               <button
                 type="button"
-                class="composer__wait"
+                role="tab"
+                :aria-selected="mode === 'say'"
+                :disabled="!canSay"
+                :title="canSay ? '' : 'No one here to talk to'"
+                @click="mode = 'say'">
+                Say
+              </button>
+              <label v-if="mode === 'say' && adv.talkable.value.length > 1" class="composer__to">
+                to
+                <select v-model="sayTo">
+                  <option
+                    v-for="c in adv.talkable.value"
+                    :key="c.character_id"
+                    :value="c.character_id">
+                    {{ c.name }}
+                  </option>
+                </select>
+              </label>
+            </div>
+            <div class="composer__row">
+              <textarea
+                v-model="text"
+                class="composer__input"
+                rows="2"
+                maxlength="250"
+                :placeholder="placeholder"
+                :aria-description="suggestion ? `Press Tab to fill: ${suggestion}` : undefined"
                 :disabled="adv.acting.value || !adv.alive.value"
-                title="Let a moment pass"
-                @click="pass()">
-                <IconClock :size="15" /> Wait
+                @keydown="onKey" />
+              <div class="composer__buttons">
+                <button type="submit" class="composer__act" :disabled="!ready">
+                  Act <IconArrowRight :size="16" />
+                </button>
+                <button
+                  type="button"
+                  class="composer__wait"
+                  :disabled="adv.acting.value || !adv.alive.value"
+                  title="Let a moment pass"
+                  @click="pass()">
+                  <IconClock :size="15" /> Wait
+                </button>
+              </div>
+            </div>
+            <div v-if="adv.chips.value.length || leads.length" class="composer__chips">
+              <button
+                v-for="lead in leads"
+                :key="lead.key"
+                type="button"
+                class="chip chip--lead"
+                :disabled="adv.acting.value || !adv.alive.value"
+                @click="followLead(lead)">
+                {{ lead.label }}
+              </button>
+              <button
+                v-for="s in adv.chips.value"
+                :key="s.id"
+                type="button"
+                class="chip"
+                :class="`chip--${s.family}`"
+                :disabled="adv.acting.value || !adv.alive.value"
+                :title="s.subtitle"
+                @click="chip(s)">
+                {{ s.title }}
               </button>
             </div>
-          </div>
-          <div v-if="adv.chips.value.length || leads.length" class="composer__chips">
-            <button
-              v-for="lead in leads"
-              :key="lead.key"
-              type="button"
-              class="chip chip--lead"
-              :disabled="adv.acting.value || !adv.alive.value"
-              @click="followLead(lead)">
-              {{ lead.label }}
-            </button>
-            <button
-              v-for="s in adv.chips.value"
-              :key="s.id"
-              type="button"
-              class="chip"
-              :class="`chip--${s.family}`"
-              :disabled="adv.acting.value || !adv.alive.value"
-              :title="s.subtitle"
-              @click="chip(s)">
-              {{ s.title }}
-            </button>
-          </div>
-          <p v-if="adv.actionError.value" class="composer__error" role="alert">
-            {{ adv.actionError.value }}
-          </p>
-        </form>
-      </section>
-    </div>
+            <p v-if="adv.actionError.value" class="composer__error" role="alert">
+              {{ adv.actionError.value }}
+            </p>
+          </form>
+        </section>
+      </div>
 
-    <!-- who you are, always in view -->
-    <footer v-if="!adv.loading.value && adv.me.value" class="status ev-card">
-      <span class="status__face">
-        <FramedImage
-          v-if="portraits.get(adv.me.value)"
-          :src="portraits.get(adv.me.value)!.src"
-          :frame="portraits.get(adv.me.value)!.face" />
-        <span v-else>{{ initials(myName) }}</span>
-      </span>
-      <b class="status__name">{{ myName }}</b>
-      <span v-if="journey" class="status__level" :title="`${journey.renown} renown`"
-        >Level {{ journey.level }} · {{ journey.title }}</span
-      >
-      <div class="bar bar--stamina status__bar">
-        <span>Stamina</span>
-        <div><i :style="{ width: `${barFraction(stats?.stamina) * 100}%` }" /></div>
-        <b>{{ stats?.stamina ?? '–' }}</b>
-      </div>
-      <div class="bar bar--mana status__bar">
-        <span>Mana</span>
-        <div><i :style="{ width: `${barFraction(stats?.mana) * 100}%` }" /></div>
-        <b>{{ stats?.mana ?? '–' }}</b>
-      </div>
-      <span v-if="!adv.alive.value" class="sheet__fallen">Fallen</span>
-      <button type="button" class="status__details" @click="detailsOpen = true">
-        <IconUser :size="16" /> Character details <IconChevronRight :size="14" />
-      </button>
-    </footer>
+      <!-- who you are, always in view -->
+      <footer class="status">
+        <span class="status__face">
+          <FramedImage
+            v-if="portraits.get(adv.me.value)"
+            :src="portraits.get(adv.me.value)!.src"
+            :frame="portraits.get(adv.me.value)!.face" />
+          <span v-else>{{ initials(myName) }}</span>
+        </span>
+        <b class="status__name">{{ myName }}</b>
+        <span v-if="journey" class="status__level" :title="`${journey.renown} renown`"
+          >Level {{ journey.level }} · {{ journey.title }}</span
+        >
+        <div class="bar bar--stamina status__bar">
+          <span>Stamina</span>
+          <div><i :style="{ width: `${barFraction(stats?.stamina) * 100}%` }" /></div>
+          <b>{{ stats?.stamina ?? '–' }}</b>
+        </div>
+        <div class="bar bar--mana status__bar">
+          <span>Mana</span>
+          <div><i :style="{ width: `${barFraction(stats?.mana) * 100}%` }" /></div>
+          <b>{{ stats?.mana ?? '–' }}</b>
+        </div>
+        <span v-if="!adv.alive.value" class="sheet__fallen">Fallen</span>
+        <button type="button" class="status__details" @click="detailsOpen = true">
+          <IconUser :size="16" /> Character details <IconChevronRight :size="14" />
+        </button>
+      </footer>
+    </div>
 
     <!-- the full sheet: renown, drives, what you carry -->
     <div
@@ -938,18 +947,26 @@ onMounted(() => {
   color: var(--teal-ink);
   text-decoration: underline;
 }
+/* One card holds everything; its parts are divided by hairlines, not gaps. */
+.adv__frame {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
 .adv__grid {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
-  gap: 14px;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
 }
 .adv__visual {
   min-height: 0;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) clamp(190px, 26vh, 240px);
-  gap: 14px;
+  grid-template-rows: minmax(0, 1fr) clamp(170px, 23vh, 220px);
+  border-right: 1px solid var(--line);
 }
 .adv__stage {
   min-height: 0;
@@ -963,6 +980,7 @@ onMounted(() => {
   position: relative;
   overflow: hidden;
   padding: 0;
+  border-radius: 0;
   background: #3a3220;
 }
 .stage__img {
@@ -1037,7 +1055,10 @@ onMounted(() => {
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 14px;
+  border-top: 1px solid var(--line);
+}
+.adv__under > .minimap {
+  border-right: 1px solid var(--line-soft);
 }
 .panel__title {
   display: flex;
@@ -1106,13 +1127,13 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 22px 10px;
+  padding: 8px 22px 6px;
   border-bottom: 1px solid var(--line-soft);
   color: var(--gold);
 }
 .story__head h2 {
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 21px;
   font-weight: 600;
   color: var(--ink);
 }
@@ -1132,7 +1153,9 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 22px;
-  padding: 8px 16px;
+  padding: 7px 16px;
+  border-top: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--panel), var(--panel-2));
 }
 .status__face img,
 .status__face > span {
@@ -1320,7 +1343,7 @@ button.who:hover > span {
 .log {
   flex: 1;
   overflow-y: auto;
-  padding: 18px 26px 10px;
+  padding: 12px 24px 8px;
   scroll-behavior: smooth;
 }
 .log__intro {
@@ -1634,7 +1657,7 @@ button.log__picture:hover {
   flex: none;
   border-top: 1px solid var(--line);
   background: linear-gradient(180deg, var(--panel), var(--panel-2));
-  padding: 10px 16px 12px;
+  padding: 8px 14px 10px;
 }
 .composer__modes {
   display: flex;
@@ -1992,8 +2015,13 @@ button.log__picture:hover {
   .adv__grid {
     grid-template-columns: 1fr;
   }
+  .adv__frame {
+    overflow: visible;
+  }
   .adv__visual {
     grid-template-rows: auto auto;
+    border-right: 0;
+    border-top: 1px solid var(--line);
   }
   .stage {
     aspect-ratio: 16 / 10;
@@ -2009,8 +2037,9 @@ button.log__picture:hover {
   }
   .status {
     position: sticky;
-    bottom: 8px;
+    bottom: 0;
     z-index: 4;
+    border-radius: 0 0 var(--radius-card) var(--radius-card);
     flex-wrap: wrap;
     gap: 8px 16px;
   }
