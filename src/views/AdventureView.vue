@@ -380,13 +380,66 @@ const seen = new Set<string>()
 let seeded = false
 const reveal = computed(() => {
   const delays = new Map<string, number>()
+  if (!seeded) return delays
+  const lines = adv.log.value
+  // Only lines after the newest one already shown unfold; older pages that
+  // fill in behind (chronicle backfill) simply appear.
+  let last = -1
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (seen.has(lines[i]!.key)) {
+      last = i
+      break
+    }
+  }
   let order = 0
-  for (const line of adv.log.value) {
-    if (seen.has(line.key)) continue
-    if (seeded) delays.set(line.key, order++ * 550)
+  for (let i = last + 1; i < lines.length; i++) {
+    if (!seen.has(lines[i]!.key)) delays.set(lines[i]!.key, order++ * 550)
   }
   return delays
 })
+
+/*
+ * A long story draws only its newest LOG_WINDOW lines; scrolling up to the
+ * top draws the next LOG_WINDOW earlier ones. The window is anchored on a
+ * line, so older pages arriving behind (backfill) never move what is shown,
+ * and the DOM stays small however long the story grows (perf-frontend-001).
+ */
+const LOG_WINDOW = 300
+const firstShown = ref<string | null>(null)
+watch(
+  () => adv.log.value.length,
+  (n) => {
+    if (firstShown.value === null && n > LOG_WINDOW)
+      firstShown.value = adv.log.value[n - LOG_WINDOW]!.key
+  }
+)
+const shownLog = computed(() => {
+  const all = adv.log.value
+  if (firstShown.value === null) return all
+  let i = all.findIndex((line) => line.key === firstShown.value)
+  if (i < 0) i = Math.max(0, all.length - LOG_WINDOW)
+  return all.slice(i)
+})
+const earlierHidden = computed(() => adv.log.value.length - shownLog.value.length)
+function showEarlier(): void {
+  const all = adv.log.value
+  const i = all.length - shownLog.value.length
+  firstShown.value = all[Math.max(0, i - LOG_WINDOW)]?.key ?? null
+}
+const earlierEl = ref<HTMLElement | null>(null)
+let earlierWatch: IntersectionObserver | null = null
+watch(earlierEl, (el) => {
+  earlierWatch?.disconnect()
+  if (!el || typeof IntersectionObserver === 'undefined') return
+  earlierWatch = new IntersectionObserver(
+    ([e]) => {
+      if (e?.isIntersecting) showEarlier()
+    },
+    { root: logEl.value, rootMargin: '600px 0px 0px 0px' }
+  )
+  earlierWatch.observe(el)
+})
+onUnmounted(() => earlierWatch?.disconnect())
 watch(
   () => adv.log.value,
   (lines) => {
@@ -408,7 +461,9 @@ async function scrollToEnd(): Promise<void> {
   if (el) el.scrollTop = el.scrollHeight
 }
 
-watch(() => adv.log.value.length, scrollToEnd)
+// Follow the newest line only: older pages filling in behind must not pull
+// a reader who scrolled up back to the bottom.
+watch(() => adv.log.value.at(-1)?.key, scrollToEnd)
 watch(
   () => adv.acting.value,
   (on) => {
@@ -500,6 +555,7 @@ onMounted(() => {
                   class="stage__img stage__img--moment ev-img-fade"
                   :class="{ 'is-loaded': loadedSrc === latestUrl }"
                   :src="latestUrl"
+                  fetchpriority="high"
                   :alt="latest.caption"
                   @load="loadedSrc = latestUrl"
                   @error="loadedSrc = latestUrl" />
@@ -716,9 +772,17 @@ onMounted(() => {
                 Type what you do below — or look around, speak to someone, or set out.
               </p>
             </div>
+            <button
+              v-if="earlierHidden"
+              ref="earlierEl"
+              type="button"
+              class="log__earlier"
+              @click="showEarlier">
+              Show earlier pages ({{ earlierHidden }} more lines)
+            </button>
             <TransitionGroup name="line" tag="div" class="log__lines">
               <div
-                v-for="line in adv.log.value"
+                v-for="line in shownLog"
                 :key="line.key"
                 :class="lineClass(line)"
                 :style="revealStyle(line.key)">
@@ -1913,10 +1977,25 @@ button.who:active img,
 button.who:active > span {
   transform: scale(0.96);
 }
-.who--me img,
-.who--me > span {
+.who--me {
+  position: relative;
   --ev-breathe-color: rgba(232, 198, 111, 0.55);
-  animation: ev-breathe 3s var(--ease-sine) infinite;
+  --ev-ring-scale: 1.3;
+}
+/* the ring sits on the face circle (the first 56 px of the column) */
+.who--me::before {
+  top: 0;
+  left: 50%;
+  width: 56px;
+  height: 56px;
+  margin-left: -28px;
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--ev-breathe-color, var(--ember-glow));
+  opacity: 0;
+  animation: ev-ring 3s var(--ease-out) infinite;
 }
 .who small {
   font-size: 12px;
@@ -1933,6 +2012,15 @@ button.who:active > span {
   overflow-y: auto;
   padding: 12px 24px 8px;
   scroll-behavior: smooth;
+}
+.log__earlier {
+  display: block;
+  margin: 0 auto 10px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--teal-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .log__intro {
   border: 1px solid var(--line-soft);
@@ -2789,6 +2877,11 @@ button.log__picture:hover .log__thumb img {
   .who > span {
     width: 40px;
     height: 40px;
+  }
+  .who--me::before {
+    width: 40px;
+    height: 40px;
+    margin-left: -20px;
   }
   .log {
     padding: 12px 14px 8px;

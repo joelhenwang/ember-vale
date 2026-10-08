@@ -6,7 +6,7 @@
  * list keeps their place (the scroll offset grows by the inserted height)
  * and a pill offers to jump back to the newest beat.
  */
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import type { ChronicleEntry } from '../../../content/clients/worldsim'
 import type { FeedBeat } from '../../game/observatory'
 
@@ -49,6 +49,31 @@ function onScroll(): void {
   if ((list.value?.scrollTop ?? 0) <= 24) unseen.value = 0
 }
 
+/*
+ * A long story draws its newest FEED_WINDOW beats; scrolling toward the end
+ * draws more. The DOM stays small however long the story grows
+ * (perf-frontend-001).
+ */
+const FEED_WINDOW = 120
+const limit = ref(FEED_WINDOW)
+const shown = computed(() =>
+  props.beats.length > limit.value ? props.beats.slice(0, limit.value) : props.beats
+)
+const more = ref<HTMLElement | null>(null)
+let moreWatch: IntersectionObserver | null = null
+watch(more, (el) => {
+  moreWatch?.disconnect()
+  if (!el || typeof IntersectionObserver === 'undefined') return
+  moreWatch = new IntersectionObserver(
+    ([e]) => {
+      if (e?.isIntersecting) limit.value += FEED_WINDOW
+    },
+    { root: list.value, rootMargin: '0px 0px 600px 0px' }
+  )
+  moreWatch.observe(el)
+})
+onBeforeUnmount(() => moreWatch?.disconnect())
+
 function body(entry: ChronicleEntry): string {
   return entry.text ?? entry.title
 }
@@ -70,7 +95,7 @@ function body(entry: ChronicleEntry): string {
       </p>
       <TransitionGroup name="ef" tag="div" class="ef__beats">
         <article
-          v-for="(beat, i) in beats"
+          v-for="(beat, i) in shown"
           :key="beat.index"
           class="ef__beat"
           :style="{ '--i': Math.min(i, 6) }">
@@ -100,6 +125,14 @@ function body(entry: ChronicleEntry): string {
           </button>
         </article>
       </TransitionGroup>
+      <button
+        v-if="beats.length > shown.length"
+        ref="more"
+        type="button"
+        class="ef__more"
+        @click="limit += FEED_WINDOW">
+        Show older beats
+      </button>
     </div>
   </section>
 </template>
@@ -122,15 +155,24 @@ function body(entry: ChronicleEntry): string {
   padding: 12px 16px 8px;
   border-bottom: 1px solid var(--line-soft);
 }
+.ef__more {
+  display: block;
+  margin: 8px auto 0;
+  font-size: 14px;
+  color: var(--teal-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .ef__head h2 {
   font-family: var(--font-display);
   font-size: 22px;
   color: var(--ink);
 }
 .ef__new {
+  position: relative;
   margin-left: auto;
-  animation: ev-breathe 2.4s var(--ease-sine) infinite;
   --ev-breathe-color: rgba(20, 84, 90, 0.4);
+  --ev-ring-scale: 1.2;
   font: inherit;
   font-size: 13px;
   padding: 2px 10px;
@@ -139,6 +181,16 @@ function body(entry: ChronicleEntry): string {
   background: var(--teal);
   color: var(--cream-on-teal);
   cursor: pointer;
+}
+.ef__new::after {
+  inset: 0;
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: 0 0 0 3px var(--ev-breathe-color, var(--ember-glow));
+  opacity: 0;
+  animation: ev-ring 2.4s var(--ease-out) infinite;
 }
 .ef__list {
   overflow-y: auto;

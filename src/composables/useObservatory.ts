@@ -23,14 +23,20 @@ import type {
   StoryDetail
 } from '../../content/clients/worldsim'
 import type { Role } from '../api/http'
-import { groupFeed, layoutTokens, mergeChronicle, type OpenBeat } from '../game/observatory'
+import { groupFeed, layoutTokens, type OpenBeat } from '../game/observatory'
+import { chronicleReader } from './chronicleReader'
 
 export interface ObservatoryApi {
   getRole(worldId: string): Promise<RoleGrantView | null>
   getStory(worldId: string, opts: CallOptions): Promise<StoryDetail>
   getMap(worldId: string, opts: CallOptions): Promise<MapResponse>
   getPresentation(worldId: string, opts: CallOptions): Promise<PresentationResponse>
-  getChronicle(worldId: string, after: number, opts: CallOptions): Promise<ChronicleResponse>
+  getChronicle(
+    worldId: string,
+    after: number,
+    opts: CallOptions,
+    limit?: number
+  ): Promise<ChronicleResponse>
   getAutoplay(worldId: string, opts: CallOptions): Promise<AutoplayView>
   playAutoplay(worldId: string, body: AutoplayPlayRequest, opts: CallOptions): Promise<AutoplayView>
   pauseAutoplay(worldId: string, opts: CallOptions): Promise<AutoplayView>
@@ -42,7 +48,7 @@ const LIVE_API: ObservatoryApi = {
   getStory: (id, o) => getStory(id, o),
   getMap: (id, o) => getMap(id, o),
   getPresentation: (id, o) => getPresentation(id, o),
-  getChronicle: (id, after, o) => getChronicle(id, after, o),
+  getChronicle: (id, after, o, limit) => getChronicle(id, after, o, limit),
   getAutoplay: (id, o) => getAutoplay(id, o),
   playAutoplay: (id, body, o) => playAutoplay(id, body, o),
   pauseAutoplay: (id, o) => pauseAutoplay(id, o),
@@ -102,7 +108,6 @@ export function useObservatory(worldId: Ref<string>, options: ObservatoryOptions
   const error = ref<string | null>(null)
   const actionError = ref<string | null>(null)
   const acting = ref(false)
-  let cursor = 0
   let cancelPoll: (() => void) | null = null
   let cancelPresence: (() => void) | null = null
   let disposed = false
@@ -132,19 +137,12 @@ export function useObservatory(worldId: Ref<string>, options: ObservatoryOptions
   )
   const feed = computed(() => groupFeed(entries.value))
 
-  async function readChronicle(): Promise<void> {
-    // Re-read from the first scene still waiting for its words, so late
-    // narration replaces the placeholder title without a reload.
-    const pending = entries.value.find((e) => e.scene_id && !e.text)
-    let after = pending ? Math.min(cursor, pending.sequence - 1) : cursor
-    for (let page = 0; page < 20; page++) {
-      const res = await api.getChronicle(worldId.value, after, opts.value)
-      entries.value = mergeChronicle(entries.value, res.entries ?? [])
-      after = res.next_after
-      cursor = Math.max(cursor, after)
-      if (!res.has_more) return
-    }
-  }
+  const chronicle = chronicleReader(
+    (after, limit) => api.getChronicle(worldId.value, after, opts.value, limit),
+    entries,
+    () => !disposed
+  )
+  const readChronicle = (): Promise<void> => chronicle.read()
 
   async function refresh(): Promise<void> {
     try {
@@ -217,7 +215,7 @@ export function useObservatory(worldId: Ref<string>, options: ObservatoryOptions
   async function load(): Promise<void> {
     loading.value = true
     entries.value = []
-    cursor = 0
+    chronicle.reset()
     try {
       grant.value = await api.getRole(worldId.value)
     } catch {

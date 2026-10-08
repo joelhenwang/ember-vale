@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { CallOptions } from '../api/worldsim'
 import type {
@@ -6,6 +6,7 @@ import type {
   PresentationResponse,
   RoleGrantView
 } from '../../content/clients/worldsim'
+import { CHRONICLE_TAIL } from './chronicleReader'
 import { IDLE_POLL_MS, STAGE_POLL_MS, useAdventure, type AdventureApi } from './useAdventure'
 
 const WORLD = 'w1'
@@ -76,6 +77,37 @@ function fakeApi(over: Partial<AdventureApi> = {}) {
 const never = (): (() => void) => () => undefined
 
 describe('useAdventure', () => {
+  it('opens a long story on its newest page, then fills in the older ones', async () => {
+    const TOTAL = 1000
+    const all = Array.from({ length: TOTAL }, (_, i) => entry(i + 1, `Line ${i + 1}`))
+    const asked: [number, number][] = []
+    const { api } = fakeApi({
+      getChronicle: async (_w, after, _o, limit = 50) => {
+        asked.push([after, limit])
+        const page = all.filter((e) => e.sequence > after).slice(0, limit)
+        const last = page.at(-1)?.sequence ?? after
+        return {
+          entries: page,
+          has_more: last < TOTAL,
+          next_after: last,
+          watermark: TOTAL
+        } as never
+      }
+    })
+    const adv = useAdventure(ref(WORLD), { api, schedule: never })
+    await adv.load()
+    // the probe, then the newest page: no walk from the beginning
+    expect(asked.slice(0, 2)).toEqual([
+      [0, 1],
+      [TOTAL - CHRONICLE_TAIL, CHRONICLE_TAIL]
+    ])
+    expect(adv.entries.value.at(-1)?.sequence).toBe(TOTAL)
+    // older pages arrive behind, newest first, until the start is there
+    await vi.waitFor(() => expect(adv.entries.value.length).toBe(TOTAL), { timeout: 3000 })
+    expect(adv.entries.value[0]?.sequence).toBe(1)
+    expect(asked[2]).toEqual([TOTAL - 2 * CHRONICLE_TAIL, CHRONICLE_TAIL])
+  })
+
   it('reads again soon while a scene is still being written', async () => {
     const waits: number[] = []
     const record = (_fn: () => void, ms: number): (() => void) => {

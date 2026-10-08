@@ -30,7 +30,8 @@ import type {
 } from '../../content/clients/worldsim'
 import type { Role } from '../api/http'
 import { buildLog, quickChips, scenesToLoad, waitIntent, type Intent } from '../game/adventure'
-import { beatStageLabel, mergeChronicle } from '../game/observatory'
+import { beatStageLabel } from '../game/observatory'
+import { chronicleReader } from './chronicleReader'
 
 export interface AdventureApi {
   getRole(worldId: string): Promise<RoleGrantView | null>
@@ -38,7 +39,12 @@ export interface AdventureApi {
   openStory(worldId: string, opts: CallOptions): Promise<StoryDetail>
   getMap(worldId: string, opts: CallOptions): Promise<MapResponse>
   getPresentation(worldId: string, opts: CallOptions): Promise<PresentationResponse>
-  getChronicle(worldId: string, after: number, opts: CallOptions): Promise<ChronicleResponse>
+  getChronicle(
+    worldId: string,
+    after: number,
+    opts: CallOptions,
+    limit?: number
+  ): Promise<ChronicleResponse>
   getSceneNarration(sceneId: string, opts: CallOptions): Promise<BeatView[]>
   getCharacter(characterId: string, opts: CallOptions): Promise<CharacterDetail>
   getSuggestions(characterId: string, opts: CallOptions): Promise<SuggestionView[]>
@@ -57,7 +63,7 @@ const LIVE_API: AdventureApi = {
   openStory: (id, o) => openStory(id, o),
   getMap: (id, o) => getMap(id, o),
   getPresentation: (id, o) => getPresentation(id, o),
-  getChronicle: (id, after, o) => getChronicle(id, after, o),
+  getChronicle: (id, after, o, limit) => getChronicle(id, after, o, limit),
   getSceneNarration: (id, o) => getSceneNarration(id, o),
   getCharacter: (id, o) => getCharacter(id, o),
   getSuggestions: (id, o) => getSuggestions(id, o),
@@ -83,6 +89,10 @@ export interface AdventureOptions {
 const defaultSchedule = (fn: () => void, ms: number): (() => void) => {
   const handle = setTimeout(fn, ms)
   return () => clearTimeout(handle)
+}
+
+function isHidden(): boolean {
+  return typeof document !== 'undefined' && document.visibilityState === 'hidden'
 }
 
 function message(err: unknown, fallback: string): string {
@@ -112,7 +122,6 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
   const actionError = ref<string | null>(null)
   const acting = ref(false)
   const runState = ref<string | null>(null)
-  let cursor = 0
   let cancelPoll: (() => void) | null = null
   let disposed = false
 
@@ -160,19 +169,12 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
     (presentation.value?.scene_art ?? []).some((a) => a.status === 'pending')
   )
 
-  async function readChronicle(): Promise<void> {
-    // Re-read from the first scene still waiting for its words, so late
-    // narration replaces "still being written" without a reload.
-    const pending = entries.value.find((e) => e.scene_id && !e.text)
-    let after = pending ? Math.min(cursor, pending.sequence - 1) : cursor
-    for (let page = 0; page < 20; page++) {
-      const res = await api.getChronicle(worldId.value, after, opts.value)
-      entries.value = mergeChronicle(entries.value, res.entries ?? [])
-      after = res.next_after
-      cursor = Math.max(cursor, after)
-      if (!res.has_more) return
-    }
-  }
+  const chronicle = chronicleReader(
+    (after, limit) => api.getChronicle(worldId.value, after, opts.value, limit),
+    entries,
+    () => !disposed
+  )
+  const readChronicle = (): Promise<void> => chronicle.read()
 
   async function readNarration(): Promise<void> {
     if (!me.value) return
@@ -233,6 +235,8 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
     if (disposed) return
     cancelPoll = schedule(
       () => {
+        // A hidden tab stops asking; onVisible() catches up when it returns.
+        if (!acting.value && isHidden()) return
         if (acting.value) {
           // During a turn only the beat's stage is read; the turn refreshes at its end.
           void api
@@ -258,7 +262,7 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
     loading.value = true
     entries.value = []
     beats.value = {}
-    cursor = 0
+    chronicle.reset()
     try {
       grant.value = await api.getRole(worldId.value)
     } catch {
