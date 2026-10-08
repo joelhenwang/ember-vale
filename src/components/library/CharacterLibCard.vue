@@ -51,25 +51,30 @@ defineEmits<{ open: []; pick: [key: string] }>()
 </template>
 
 <style scoped>
+/* A tall card: the portrait on top, then who they are at the full width,
+   so the role line ("17 years · Human · Female") never runs out of room. */
 .libcard {
   display: flex;
+  flex-direction: column;
   cursor: pointer;
-  min-height: 196px;
+  overflow: hidden;
 }
 .libcard__img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  max-height: 340px;
   overflow: hidden;
-  border-radius: var(--radius-card) 0 0 var(--radius-card);
-  width: 44%;
-  min-width: 158px;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
   object-fit: cover;
   object-position: 50% 16%;
-  box-shadow: inset -1px 0 0 rgba(190, 166, 118, 0.4);
+  box-shadow: inset 0 -1px 0 rgba(190, 166, 118, 0.4);
 }
 .libcard__body {
   position: relative;
   flex: 1;
   min-width: 0;
-  padding: 11px 13px 11px 15px;
+  padding: 12px 14px 14px;
   display: flex;
   flex-direction: column;
 }
@@ -79,17 +84,21 @@ defineEmits<{ open: []; pick: [key: string] }>()
   justify-content: space-between;
   gap: 8px;
 }
+.libcard__head > div {
+  min-width: 0;
+}
 .libcard__name {
   font-family: var(--font-display);
-  font-size: 24.5px;
+  font-size: 25px;
   font-weight: 600;
-  line-height: 1.02;
+  line-height: 1.05;
   color: #26200f;
 }
 .libcard__role {
-  margin-top: 1px;
+  margin-top: 2px;
   font-size: 15px;
   font-weight: 500;
+  line-height: 1.3;
   color: #55482f;
 }
 .libcard__rule {
@@ -105,17 +114,8 @@ defineEmits<{ open: []; pick: [key: string] }>()
   height: 1px;
   background: linear-gradient(90deg, #d8c393, transparent);
 }
-.libcard__bio--empty {
-  font-style: italic;
-  color: var(--muted);
-}
-.libcard__role {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .libcard__bio {
-  font-size: 14px;
+  font-size: 14.5px;
   line-height: 1.45;
   color: var(--ink-2);
   display: -webkit-box;
@@ -123,28 +123,27 @@ defineEmits<{ open: []; pick: [key: string] }>()
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+.libcard__bio--empty {
+  font-style: italic;
+  color: var(--muted);
+}
 .libcard__tags {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 8px;
-}
-.libcard__used {
   margin-top: auto;
-  padding-top: 9px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 13px;
-  color: #6c5f45;
-}
-.libcard__used svg {
-  color: var(--gold);
+  padding-top: 10px;
 }
 
-/* list mode: wider row */
+/* list mode: one row, the portrait at the side */
+:global(.lib--list) .libcard {
+  flex-direction: row;
+}
 :global(.lib--list) .libcard__img {
-  width: 240px;
-  min-width: 240px;
+  width: 200px;
+  min-width: 200px;
+  aspect-ratio: auto;
+  max-height: none;
+  border-radius: var(--radius-card) 0 0 var(--radius-card);
 }
 </style>

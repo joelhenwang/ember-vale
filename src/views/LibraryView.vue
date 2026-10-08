@@ -239,7 +239,7 @@ function openWorld(id: string): void {
         </div>
 
         <!-- characters -->
-        <div v-if="tab === 'characters'" class="lib__cards ev-rise">
+        <div v-if="tab === 'characters'" class="lib__cards lib__cards--people ev-rise">
           <p v-if="presets.loading.value" class="lib__none" role="status">Reading the archive…</p>
           <p v-else-if="presets.error.value" class="lib__none" role="alert">
             The archive did not answer ({{ presets.error.value }}) —
@@ -432,6 +432,9 @@ every future story." />
   gap: 16px;
   align-content: start;
 }
+.lib__cards--people {
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+}
 .lib__cards--worlds {
   grid-template-columns: repeat(auto-fill, minmax(292px, 1fr));
 }
@@ -439,6 +442,7 @@ every future story." />
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 }
 .lib--list .lib__cards,
+.lib--list .lib__cards--people,
 .lib--list .lib__cards--worlds,
 .lib--list .lib__cards--packs {
   grid-template-columns: 1fr;
