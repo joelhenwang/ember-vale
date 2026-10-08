@@ -428,6 +428,30 @@ def _tokens(text: str) -> set[str]:
     return {w for w in _WORD.findall(text.lower()) if len(w) > 2 and w not in _STOP}
 
 
+def reply_repetition_rate(lines_by_author: dict[str, list[tuple[bool, str]]]) -> float:
+    """Share of replies that mostly repeat one of the speaker's last few lines.
+
+    ``lines_by_author`` holds (is_reply, line) in the order spoken, turns
+    and replies together: a reply repeating the speaker's own turn counts.
+    """
+    total = repeats = 0
+    for lines in lines_by_author.values():
+        seen: list[set[str]] = []
+        for is_reply, line in lines:
+            words = _tokens(line)
+            if is_reply:
+                total += 1
+                if any(
+                    words
+                    and prior
+                    and len(words & prior) / min(len(words), len(prior)) >= REPEAT_OVERLAP
+                    for prior in seen[-REPEAT_WINDOW:]
+                ):
+                    repeats += 1
+            seen.append(words)
+    return repeats / total if total else 0.0
+
+
 def repetition_rate(topics_by_author: dict[str, list[str]]) -> float:
     """Share of lines that mostly repeat one of the speaker's last few lines."""
     total = repeats = 0
@@ -490,6 +514,20 @@ def score(
         " where pr.world_id = %s order by pr.absolute_index, c.name",
         (world,),
     ).fetchall()
+    replies = conn.execute(
+        "select pr.absolute_index, c.name, r.reaction->>'topic'"
+        " from reaction r join attempt a on a.id = r.attempt_id"
+        " join scene s on s.id = a.scene_id join phase_run pr on pr.id = s.phase_run_id"
+        " join character c on c.id = r.reactor_character_id"
+        " where r.world_id = %s and r.reaction->>'family' = 'communicate'"
+        " order by pr.absolute_index, r.created_at",
+        (world,),
+    ).fetchall()
+    reply_retries = conn.execute(
+        "select count(*) from model_call where world_id = %s and role = 'reaction'"
+        " and (request->>'prompt') like '%%You were about to say%%'",
+        (world,),
+    ).fetchone()[0]
     mix = Counter(family for _i, _n, family, _x in intents)
     topics: dict[str, list[str]] = {}
     by_beat: dict[int, set[str]] = {}
@@ -498,6 +536,14 @@ def score(
         if family == "communicate":
             action: dict[str, Any] = body.get("action") or {}
             topics.setdefault(name, []).append(str(action.get("topic") or ""))
+    spoken: dict[str, list[tuple[int, int, bool, str]]] = {}
+    for index, name, family, body in intents:
+        if family == "communicate":
+            turn: dict[str, Any] = body.get("action") or {}
+            spoken.setdefault(name, []).append((index, 0, False, str(turn.get("topic") or "")))
+    for index, name, topic in replies:
+        spoken.setdefault(name, []).append((index, 1, True, str(topic or "")))
+    talk = {name: [(r, t) for _i, _o, r, t in sorted(lines)] for name, lines in spoken.items()}
     idle = {"wait", "rest", "observe"}
     beats_sorted = [by_beat[i] for i in sorted(by_beat)]
     idle_flags = [families <= idle for families in beats_sorted]
@@ -564,6 +610,9 @@ def score(
         "est_usd": billed_usd(conn, world, prompt_tokens, completion_tokens, prices),
         "action_mix": dict(mix),
         "repetition_rate": repetition_rate(topics),
+        "replies": len(replies),
+        "reply_repetition_rate": reply_repetition_rate(talk),
+        "reply_retries": int(reply_retries),
         "longest_idle_streak": longest_streak(idle_flags),
         "longest_talk_streak": longest_streak(talk_flags),
         "moves_tried": moves_tried,

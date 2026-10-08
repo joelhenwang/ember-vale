@@ -1,0 +1,103 @@
+{
+  "meta": {
+    "commit": "d3f3da2 (no reply guard)",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 6,
+    "reacting_bystanders": 2,
+    "at": "2026-10-08T22:19:34+00:00",
+    "wall_seconds": 96,
+    "est_usd_total": 0.14043245999999995,
+    "scenarios": [
+      "crowd"
+    ]
+  },
+  "results": {
+    "crowd": {
+      "ids": {
+        "world": "f1b00128-569e-4687-95d3-7388b13bf042",
+        "place:Hearth": "d1c448c1-954b-4106-b5b3-acbc42fb13f5",
+        "place:Market": "7ace23f7-8bcf-4a9a-b0b9-74eac8e3d185",
+        "wren": "f6419848-8646-4b23-9288-d25af07d7820",
+        "ash": "551ffd67-f29b-49c0-98bf-f3e389d3dfb8",
+        "marg": "d03ee402-12b9-4238-a35b-34e7786421c2",
+        "tobin": "7d040a23-4b17-4bcc-bd1b-c84312498802",
+        "sela": "5425f96b-7e21-432c-9d62-a559922e69b5",
+        "brann": "2cd7be1d-6271-42a7-a154-65da7867e4b8",
+        "ivy": "0a402965-ca55-405c-86e3-f591b8afd003"
+      },
+      "beat_seconds": [
+        15.14100000000326,
+        10.171999999998661,
+        12.155999999995402,
+        10.10899999999674,
+        32.84300000000076,
+        15.406000000002678
+      ],
+      "error": null,
+      "score": {
+        "calls": 188,
+        "calls_by_role": {
+          "character_decision": 47,
+          "reaction": 120,
+          "director": 2,
+          "narrator": 9,
+          "resolver": 10
+        },
+        "summaries": 0,
+        "summaries_cut_off": 0,
+        "speakers": 8,
+        "failed_calls": 0,
+        "repairs": 5,
+        "repairs_by_role": {
+          "resolver": 3,
+          "narrator": 2
+        },
+        "repair_rate": 0.026595744680851064,
+        "est_usd": 0.14043246,
+        "action_mix": {
+          "observe": 7,
+          "communicate": 29,
+          "move": 4,
+          "wait": 4,
+          "interact": 3
+        },
+        "repetition_rate": 0.0,
+        "replies": 84,
+        "reply_repetition_rate": 0.03571428571428571,
+        "reply_retries": 0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 2,
+        "moves_tried": 4,
+        "moves_done": 4,
+        "interact_success": 3,
+        "hooks": [
+          {
+            "title": "The Missing Cart of Apples",
+            "powers": "spawn_npc",
+            "status": "closed",
+            "ending": "The apple cart is found overturned on the old mill road, its apples scattered but salvageable, and Maret returns it to the keeper before noon."
+          }
+        ],
+        "settled": 1,
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Hearth",
+          "Old Marg": "Market",
+          "Tobin": "Hearth",
+          "Sela": "Market",
+          "Brann": "Market",
+          "Ivy": "Market",
+          "Maret": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "8 people spoke (pass \u2265 4); repeated questions 0% (pass \u2264 20%)"
+      }
+    }
+  }
+}

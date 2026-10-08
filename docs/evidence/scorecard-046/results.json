@@ -1,0 +1,114 @@
+{
+  "meta": {
+    "commit": "reply guard (uncommitted)",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 6,
+    "reacting_bystanders": 2,
+    "at": "2026-10-08T22:28:11+00:00",
+    "wall_seconds": 120,
+    "est_usd_total": 0.11287472000000004,
+    "scenarios": [
+      "crowd"
+    ]
+  },
+  "results": {
+    "crowd": {
+      "ids": {
+        "world": "bec47af8-9135-4a7e-9138-b30ab77f9625",
+        "place:Hearth": "924d19fd-fd41-4f18-8256-5059efd94757",
+        "place:Market": "d479cc8b-ee09-487a-94d7-c43e8c125f73",
+        "wren": "609e86da-8024-4fb2-9caa-9e540c97326a",
+        "ash": "1814b1f1-a973-4524-891b-6af28d3b7f49",
+        "marg": "08494608-ed2f-45eb-b856-1c3418217b14",
+        "tobin": "dc5b91f7-61a3-4fce-8e24-5b0fd13fbb28",
+        "sela": "9082cf3f-d783-441d-b7d3-000ee7698f49",
+        "brann": "11444ac8-a5d3-478c-ad95-0db27630ce25",
+        "ivy": "729c61bf-916f-4e11-b0ef-746a0e03f23d"
+      },
+      "beat_seconds": [
+        26.73399999999674,
+        20.25,
+        16.093000000000757,
+        14.328000000001339,
+        24.264999999999418,
+        17.281000000002678
+      ],
+      "error": null,
+      "score": {
+        "calls": 186,
+        "calls_by_role": {
+          "character_decision": 48,
+          "reaction": 118,
+          "director": 2,
+          "resolver": 10,
+          "narrator": 8
+        },
+        "summaries": 0,
+        "summaries_cut_off": 0,
+        "speakers": 8,
+        "failed_calls": 0,
+        "repairs": 2,
+        "repairs_by_role": {
+          "resolver": 2
+        },
+        "repair_rate": 0.010752688172043012,
+        "est_usd": 0.11287471999999997,
+        "action_mix": {
+          "observe": 7,
+          "communicate": 26,
+          "interact": 6,
+          "move": 3,
+          "wait": 5
+        },
+        "repetition_rate": 0.0,
+        "replies": 72,
+        "reply_repetition_rate": 0.013888888888888888,
+        "reply_retries": 1,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 3,
+        "moves_done": 2,
+        "interact_success": 6,
+        "hooks": [
+          {
+            "title": "Wanderer's broken cart",
+            "powers": "spawn_npc",
+            "status": "closed",
+            "ending": "With Sela and Wren's steady hands, the cart's wheel was braced and the preserves unloaded into the shade before the sun could spoil them."
+          },
+          {
+            "title": "Old Marg's apples for the Keep",
+            "powers": "new_location",
+            "status": "closed",
+            "ending": "The last crate settles against the braced wheel, and the cart of Old Marg's best apples stands ready to roll to the Keep by sundown."
+          }
+        ],
+        "settled": 2,
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Market",
+          "Old Marg": "Market",
+          "Tobin": "Hearth",
+          "Sela": "Market",
+          "Brann": "Market",
+          "Ivy": "Market",
+          "Mara": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Keep"
+        ],
+        "items": {
+          "Wedge and rope brace": {
+            "holder": "Sela",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "8 people spoke (pass \u2265 4); repeated questions 0% (pass \u2264 20%)"
+      }
+    }
+  }
+}

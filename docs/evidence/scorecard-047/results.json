@@ -1,0 +1,109 @@
+{
+  "meta": {
+    "commit": "reply guard (uncommitted)",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 6,
+    "reacting_bystanders": 2,
+    "at": "2026-10-08T22:29:57+00:00",
+    "wall_seconds": 100,
+    "est_usd_total": 0.11212894000000001,
+    "scenarios": [
+      "crowd"
+    ]
+  },
+  "results": {
+    "crowd": {
+      "ids": {
+        "world": "924ed5f0-912f-4fc9-b03c-845ebde8f154",
+        "place:Hearth": "a4977b6f-77e4-454f-88d2-64ac8d5dbb10",
+        "place:Market": "858801b5-5e66-4e31-9662-2af2b5170014",
+        "wren": "1a21f749-637b-4375-9d5c-308c9459fb27",
+        "ash": "1edf615e-f360-46f5-a1b7-5e27e83ae201",
+        "marg": "1d96caf4-b5c8-4475-8df7-37b1c863969a",
+        "tobin": "0e07be2b-fff1-4352-902c-a35307397994",
+        "sela": "4d110649-cfa9-4ed0-8c63-813d30059fef",
+        "brann": "5a2fb82f-8eb2-4eaf-8a4e-ffe6f9ba5efa",
+        "ivy": "25fd0fc2-7278-42c8-87fd-c635a0a85d8b"
+      },
+      "beat_seconds": [
+        19.937999999994645,
+        12.780999999995402,
+        15.56199999999808,
+        17.9059999999954,
+        17.906999999999243,
+        15.656000000002678
+      ],
+      "error": null,
+      "score": {
+        "calls": 181,
+        "calls_by_role": {
+          "character_decision": 43,
+          "director": 2,
+          "reaction": 118,
+          "resolver": 9,
+          "narrator": 9
+        },
+        "summaries": 0,
+        "summaries_cut_off": 0,
+        "speakers": 7,
+        "failed_calls": 0,
+        "repairs": 8,
+        "repairs_by_role": {
+          "resolver": 3,
+          "narrator": 3,
+          "reaction": 2
+        },
+        "repair_rate": 0.04419889502762431,
+        "est_usd": 0.11212894000000001,
+        "action_mix": {
+          "observe": 7,
+          "communicate": 28,
+          "wait": 2,
+          "interact": 5
+        },
+        "repetition_rate": 0.03571428571428571,
+        "replies": 80,
+        "reply_repetition_rate": 0.0,
+        "reply_retries": 0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 3,
+        "moves_tried": 0,
+        "moves_done": 0,
+        "interact_success": 5,
+        "hooks": [
+          {
+            "title": "The Hearth's Stove is Cold",
+            "powers": "",
+            "status": "proposed",
+            "ending": ""
+          },
+          {
+            "title": "A basket of apples for the keep's cook",
+            "powers": "new_location",
+            "status": "closed",
+            "ending": "Old Marg's apples ride with Tobin on Brann's cart to the keep, and the cook's basket is filled before the gate closes."
+          }
+        ],
+        "settled": 1,
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Old Marg": "Market",
+          "Tobin": "Market",
+          "Sela": "Market",
+          "Brann": "Market",
+          "Ivy": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Keep"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "7 people spoke (pass \u2265 4); repeated questions 4% (pass \u2264 20%)"
+      }
+    }
+  }
+}

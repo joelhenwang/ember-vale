@@ -118,3 +118,68 @@ def test_a_repeated_question_gets_one_retry_with_the_answer(
     assert "Already asked and answered" in decisions[0]
     assert 'You were about to say "What brings you to the vale?"' in decisions[1]
     assert "The harvest fair, and a debt to settle." in decisions[1]
+
+
+def test_a_reply_that_repeats_an_answered_question_gets_one_retry(
+    client: tuple[ApiClient, FakeGateway],
+) -> None:
+    api, gateway = client
+    ids = asyncio.run(_seed_two_at_hearth())
+    base = _route_for(ids, {})
+    question = "What brings you to the vale?"
+    beat = {"n": 1}
+
+    def reply(who: str, to: str, topic: str) -> str:
+        snapshot = derive_snapshot_id(derive_run_id(ids["world"], beat["n"]))
+        return json.dumps(
+            {
+                "character_id": str(ids[who]),
+                "snapshot_id": str(snapshot),
+                "family": "communicate",
+                "target_character_id": str(ids[to]),
+                "topic": topic,
+            }
+        )
+
+    def route(request: CompletionRequest) -> str | None:
+        system, prompt = request.system or "", request.prompt
+        wren = "<<untrusted:identity>>Wren" in prompt
+        if "You decide" in system:
+            if wren and beat["n"] == 1:  # Wren asks; Ash answers below
+                return json.dumps(
+                    {
+                        "family": "communicate",
+                        "target_character_id": str(ids["ash"]),
+                        "topic": question,
+                    }
+                )
+            if not wren and beat["n"] == 2:  # Ash speaks; Wren replies below
+                return json.dumps(
+                    {
+                        "family": "communicate",
+                        "target_character_id": str(ids["wren"]),
+                        "topic": "Fine weather for the fair.",
+                    }
+                )
+            return json.dumps({"family": "wait"})
+        if "You react" in system and not wren and beat["n"] == 1:
+            return reply("ash", "wren", '"The harvest fair, and a debt to settle."')
+        if "You react" in system and wren and beat["n"] == 2:
+            again = "You were about to say" in prompt
+            return reply("wren", "ash", "Then walk there with me." if again else question)
+        return base(request)
+
+    gateway.route = route
+    assert _advance(api, ids["world"], 1).status_code == 200
+    beat["n"] = 2
+    before = len(gateway.sent_requests)
+    assert _advance(api, ids["world"], 2).status_code == 200
+    replies = [
+        r.prompt
+        for r in gateway.sent_requests[before:]
+        if "You react" in (r.system or "") and "<<untrusted:identity>>Wren" in r.prompt
+    ]
+    assert len(replies) == 2  # the repeat, then one retry
+    assert "Already asked and answered" in replies[0]
+    assert 'You were about to say "What brings you to the vale?"' in replies[1]
+    assert "The harvest fair, and a debt to settle." in replies[1]

@@ -69,7 +69,7 @@ of these features.
 - Actions: move (the server fills `route_id`, ccf4fe7), communicate, observe, wait, rest, take/transfer (66f08a5), **interact** = a free-text physical attempt that the resolver judges success/partial/failure (7c81df3), spar (only between characters with party sheets, 48af139).
 - Meet-up rule: crossing moves become one move plus a wait (fa1c687, `rules/meetups.py`).
 - Anti-idle: a streak note when a character's last 3 turns were all talk or all waiting (7f916bc).
-- **Repeat guard** (`domain/rules/repeats.py`): shows up to 3 answered exchanges, and a repeated question gets ONE retry (word overlap ≥0.6 or local cosine ≥0.85) (729a04a). Reactions are not guarded yet.
+- **Repeat guard** (`domain/rules/repeats.py`): shows up to 3 answered exchanges, and a repeated question gets ONE retry (word overlap ≥0.6 or local cosine ≥0.85) (729a04a). Replies get the same note and one retry (`reply-guard-001`; it rarely fires: replies repeat ~2%, mostly not answered questions). The scorecard's `repetition_rate` counts turns only; `reply_repetition_rate` and `reply_retries` count replies.
 - **Recall by relevance** with local embeddings (`_recall_by_relevance` in stage1.py, `recall_vector` table, migration 0048, 09a66c2). It falls back to recency and salience when the service is off.
 - Context budgets for decisions: observations 6000, memories/lore 3000, goals 2500 chars (00418d8).
 - Pronouns on cards, presets and NPCs (migration 0044, 1676706). Prompts and the narrator use them.

@@ -1,0 +1,114 @@
+{
+  "meta": {
+    "commit": "reply guard (uncommitted)",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 6,
+    "reacting_bystanders": 2,
+    "at": "2026-10-08T22:26:02+00:00",
+    "wall_seconds": 147,
+    "est_usd_total": 0.12372794000000001,
+    "scenarios": [
+      "crowd"
+    ]
+  },
+  "results": {
+    "crowd": {
+      "ids": {
+        "world": "bf23f566-1fb3-41cc-b6f2-ae68d6ef931d",
+        "place:Hearth": "a76e809c-d458-48d1-9e23-9d91279e62af",
+        "place:Market": "f9deb082-5392-48c1-90f6-d0014229944a",
+        "wren": "65293ac8-ea7d-417d-9f40-d3eaa77355ed",
+        "ash": "f7e7e76a-c302-4507-adfe-ef7973553044",
+        "marg": "4078c8d8-0f4c-4ae1-a3f1-5fa548e44ebc",
+        "tobin": "fa079648-acdc-45fe-85b2-eb7aa934335a",
+        "sela": "8c1e3db7-574b-4d9d-81c2-3b8fdf0e989f",
+        "brann": "de8fa271-a825-4190-ba1b-9b0d787eb5a3",
+        "ivy": "f4ad389c-5645-45a5-9682-3e443ef9208a"
+      },
+      "beat_seconds": [
+        28.889999999999418,
+        15.328000000001339,
+        21.859000000004016,
+        30.43800000000192,
+        22.514999999999418,
+        26.625
+      ],
+      "error": null,
+      "score": {
+        "calls": 195,
+        "calls_by_role": {
+          "character_decision": 49,
+          "director": 3,
+          "reaction": 126,
+          "resolver": 10,
+          "narrator": 7
+        },
+        "summaries": 0,
+        "summaries_cut_off": 0,
+        "speakers": 8,
+        "failed_calls": 0,
+        "repairs": 3,
+        "repairs_by_role": {
+          "resolver": 3
+        },
+        "repair_rate": 0.015384615384615385,
+        "est_usd": 0.12372794000000001,
+        "action_mix": {
+          "wait": 2,
+          "communicate": 32,
+          "observe": 5,
+          "interact": 5,
+          "move": 3
+        },
+        "repetition_rate": 0.0,
+        "replies": 87,
+        "reply_repetition_rate": 0.022988505747126436,
+        "reply_retries": 0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 3,
+        "moves_tried": 3,
+        "moves_done": 3,
+        "interact_success": 5,
+        "hooks": [
+          {
+            "title": "The caravan master's lost manifest",
+            "powers": "spawn_npc",
+            "status": "proposed",
+            "ending": ""
+          },
+          {
+            "title": "The Keep's gate lists a wagon of dyed wools waiting to be signed for",
+            "powers": "new_location",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 0,
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Old Marg": "Market",
+          "Tobin": "Market",
+          "Sela": "Market",
+          "Brann": "Market",
+          "Ivy": "Hearth",
+          "Cora": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Keep"
+        ],
+        "items": {
+          "Heavy crate settled": {
+            "holder": "Brann",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "8 people spoke (pass \u2265 4); repeated questions 0% (pass \u2264 20%)"
+      }
+    }
+  }
+}

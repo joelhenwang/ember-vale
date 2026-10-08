@@ -3064,9 +3064,11 @@ class Stage1Orchestrator:
         )
         return answered_exchanges([(phase, value) for phase, _o, value in lines], character.name)
 
-    async def _repeats_answered(self, intent: Intent, answered: Sequence[Exchange]) -> str | None:
-        """A retry note when a spoken decision repeats an answered exchange."""
-        action = intent.action
+    async def _repeats_answered(
+        self, proposed: Intent | Reaction, answered: Sequence[Exchange]
+    ) -> str | None:
+        """A retry note when a spoken decision or reply repeats an answered exchange."""
+        action = proposed.action
         if not isinstance(action, CommunicateAction) or not answered:
             return None
         line = action.topic.strip().strip('"')
@@ -3998,72 +4000,100 @@ class Stage1Orchestrator:
                 fresh_places = await uow.locations.list_for_world(world_id)
             if (fresh_reactor, fresh_places) != (reactor, locations):
                 raise AssertionError(f"shared reads changed {reactor.name}'s reaction input")
-        envelope, included, excluded = await self._context_for(
-            world_id, run_id, sealed.snapshot_id, reactor
+        # What this reactor already asked and heard answered: shown in the
+        # context, and a reply that asks it again gets one more try, as
+        # decisions do (729a04a). Read once per phase per reactor.
+        reads = phase_reads.active()
+        answered = await (
+            reads.get(("answered", world_id, reactor_id), lambda: self._answered(world_id, reactor))
+            if reads is not None
+            else self._answered(world_id, reactor)
         )
+
+        async def _attempt(task_run_id: UUID, extra_goal: str | None) -> dict[str, Any]:
+            envelope, included, excluded = await self._context_for(
+                world_id,
+                run_id,
+                sealed.snapshot_id,
+                reactor,
+                answered=answered,
+                extra_goal=extra_goal,
+            )
+            sources, dropped = to_manifest_dict(included, excluded)
+            spec = ManifestSpec(
+                role="reaction",
+                profile=runtime.profiles["reaction"],
+                prompt_version=REACTION_PROMPT_VERSION,
+                world_id=world_id,
+                phase_run_id=run_id,
+                task_run_id=task_run_id,
+                actor_id=reactor_id,
+                sources=sources,
+                budgets={},
+                tokens={"total": envelope.total_estimated_tokens},
+                dropped=dropped,
+                pin_profile_id=runtime.pin_id,
+                pin_profile_revision=runtime.pin_revision,
+            )
+            traced = TracedGateway(runtime.gateways["reaction"], self._traces, spec)
+            invocation = GraphInvocation(
+                graph_name="reaction",
+                graph_version="v1",
+                task_run_id=task_run_id,
+                world_id=world_id,
+                phase_run_id=run_id,
+                snapshot_id=sealed.snapshot_id,
+                scene_id=scene.id,
+                actor_id=reactor_id,
+                context_manifest_id=envelope.manifest_id,
+                role="reaction",
+                profile_version=traced.profile.version,
+                prompt_version=REACTION_PROMPT_VERSION,
+                input={
+                    "reactor_context": envelope.rendered,
+                    "observable_summary": attempt.observable_summary,
+                    "reactor_alive": True,
+                    "reactor_location_id": str(reactor.location_id),
+                    "event_location_id": str(sealed.locations.get(attempt.actor_character_id)),
+                    "participant_ids": participant_ids,
+                    "known_character_ids": [str(c) for c in sealed.locations],
+                    "known_characters": [
+                        {"id": str(c), "name": names.get(c, c.hex[:8])} for c in sealed.locations
+                    ],
+                    "location_ids": [str(loc.id) for loc in locations],
+                    "beats_remaining": scene.beat_budget,
+                    "attempt_id": str(attempt.id),
+                    "attempt_actor_id": str(attempt.actor_character_id),
+                },
+            )
+            sampling = runtime.sampling
+            graph = build_reaction_graph(
+                ReactionGraphDeps(
+                    gateway=traced,
+                    profile=runtime.profiles["reaction"],
+                    system_template=load_reaction_prompt(),
+                    temperature=sampling.temperature,
+                    top_p=sampling.top_p,
+                    top_k=sampling.top_k,
+                    max_tokens=sampling.max_tokens,
+                )
+            )
+            return await invoke(graph, invocation)
+
         # One task (and graph thread) per attempt and reactor, so a reactor's
         # replies to several attempts run side by side and resume apart.
-        task_run_id = derive_task_id(run_id, f"reaction:{attempt.id.hex}", reactor_id)
-        sources, dropped = to_manifest_dict(included, excluded)
-        spec = ManifestSpec(
-            role="reaction",
-            profile=runtime.profiles["reaction"],
-            prompt_version=REACTION_PROMPT_VERSION,
-            world_id=world_id,
-            phase_run_id=run_id,
-            task_run_id=task_run_id,
-            actor_id=reactor_id,
-            sources=sources,
-            budgets={},
-            tokens={"total": envelope.total_estimated_tokens},
-            dropped=dropped,
-            pin_profile_id=runtime.pin_id,
-            pin_profile_revision=runtime.pin_revision,
+        result = await _attempt(
+            derive_task_id(run_id, f"reaction:{attempt.id.hex}", reactor_id), None
         )
-        traced = TracedGateway(runtime.gateways["reaction"], self._traces, spec)
-        invocation = GraphInvocation(
-            graph_name="reaction",
-            graph_version="v1",
-            task_run_id=task_run_id,
-            world_id=world_id,
-            phase_run_id=run_id,
-            snapshot_id=sealed.snapshot_id,
-            scene_id=scene.id,
-            actor_id=reactor_id,
-            context_manifest_id=envelope.manifest_id,
-            role="reaction",
-            profile_version=traced.profile.version,
-            prompt_version=REACTION_PROMPT_VERSION,
-            input={
-                "reactor_context": envelope.rendered,
-                "observable_summary": attempt.observable_summary,
-                "reactor_alive": True,
-                "reactor_location_id": str(reactor.location_id),
-                "event_location_id": str(sealed.locations.get(attempt.actor_character_id)),
-                "participant_ids": participant_ids,
-                "known_character_ids": [str(c) for c in sealed.locations],
-                "known_characters": [
-                    {"id": str(c), "name": names.get(c, c.hex[:8])} for c in sealed.locations
-                ],
-                "location_ids": [str(loc.id) for loc in locations],
-                "beats_remaining": scene.beat_budget,
-                "attempt_id": str(attempt.id),
-                "attempt_actor_id": str(attempt.actor_character_id),
-            },
-        )
-        sampling = runtime.sampling
-        graph = build_reaction_graph(
-            ReactionGraphDeps(
-                gateway=traced,
-                profile=runtime.profiles["reaction"],
-                system_template=load_reaction_prompt(),
-                temperature=sampling.temperature,
-                top_p=sampling.top_p,
-                top_k=sampling.top_k,
-                max_tokens=sampling.max_tokens,
-            )
-        )
-        result = await invoke(graph, invocation)
+        if result["proposal"]["reacted"]:
+            first = Reaction.model_validate(result["proposal"]["reaction"])
+            again = await self._repeats_answered(first, answered)
+            if again is not None:
+                # The second answer stands, repeat or not.
+                result = await _attempt(
+                    derive_task_id(run_id, f"reaction:again:{attempt.id.hex}", reactor_id),
+                    again,
+                )
         await self._remember_intention(world_id, reactor_id, result.get("raw_response"))
         if not result["proposal"]["reacted"]:
             return None

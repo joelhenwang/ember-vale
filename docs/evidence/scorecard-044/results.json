@@ -1,0 +1,110 @@
+{
+  "meta": {
+    "commit": "d3f3da2 (no reply guard)",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 6,
+    "reacting_bystanders": 2,
+    "at": "2026-10-08T22:23:28+00:00",
+    "wall_seconds": 116,
+    "est_usd_total": 0.1078133,
+    "scenarios": [
+      "crowd"
+    ]
+  },
+  "results": {
+    "crowd": {
+      "ids": {
+        "world": "42c7e6cc-52ba-46b6-8866-b57409e3f8c9",
+        "place:Hearth": "074270e1-bd8b-4500-923e-4c718d3581ee",
+        "place:Market": "3785f351-2263-4176-ba62-acc835e7a4ee",
+        "wren": "e273a05a-ca0e-4581-8b31-3a35ad2798c2",
+        "ash": "17792cdf-6584-4f6b-bc6a-110764e5b2d1",
+        "marg": "90ab7177-5251-49a5-88e9-d401c1733f7f",
+        "tobin": "2f55b1f8-87ac-4fea-8f29-cb3003e00339",
+        "sela": "139dc5dc-ffc4-412d-9e47-727fb17e5bf5",
+        "brann": "a2545adb-2a7a-4644-a5fb-890b632451f2",
+        "ivy": "39e3ef81-2b12-43a5-9a4b-a21ddf0c5be1"
+      },
+      "beat_seconds": [
+        20.610000000000582,
+        12.875,
+        17.375,
+        25.7809999999954,
+        19.014999999999418,
+        19.139999999999418
+      ],
+      "error": null,
+      "score": {
+        "calls": 170,
+        "calls_by_role": {
+          "character_decision": 43,
+          "reaction": 106,
+          "director": 3,
+          "narrator": 9,
+          "resolver": 9
+        },
+        "summaries": 0,
+        "summaries_cut_off": 0,
+        "speakers": 7,
+        "failed_calls": 0,
+        "repairs": 4,
+        "repairs_by_role": {
+          "narrator": 2,
+          "resolver": 2
+        },
+        "repair_rate": 0.023529411764705882,
+        "est_usd": 0.1078133,
+        "action_mix": {
+          "observe": 5,
+          "communicate": 24,
+          "move": 6,
+          "interact": 6,
+          "wait": 1
+        },
+        "repetition_rate": 0.0,
+        "replies": 76,
+        "reply_repetition_rate": 0.013157894736842105,
+        "reply_retries": 0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 2,
+        "moves_tried": 6,
+        "moves_done": 6,
+        "interact_success": 6,
+        "hooks": [
+          {
+            "title": "The Miller's Missing Order",
+            "powers": "",
+            "status": "proposed",
+            "ending": ""
+          },
+          {
+            "title": "The miller's cart is still empty",
+            "powers": "new_location",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 0,
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Hearth",
+          "Old Marg": "Market",
+          "Tobin": "Hearth",
+          "Sela": "Market",
+          "Brann": "Hearth",
+          "Ivy": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Mill",
+          "Hollow"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "7 people spoke (pass \u2265 4); repeated questions 0% (pass \u2264 20%)"
+      }
+    }
+  }
+}

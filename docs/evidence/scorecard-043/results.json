@@ -1,0 +1,108 @@
+{
+  "meta": {
+    "commit": "d3f3da2 (no reply guard)",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 6,
+    "reacting_bystanders": 2,
+    "at": "2026-10-08T22:21:27+00:00",
+    "wall_seconds": 107,
+    "est_usd_total": 0.12082252000000003,
+    "scenarios": [
+      "crowd"
+    ]
+  },
+  "results": {
+    "crowd": {
+      "ids": {
+        "world": "e0ac9c60-a60a-4ebe-8525-c92fde3b7b27",
+        "place:Hearth": "a90db7b9-ac14-45b3-97da-9025e029bac5",
+        "place:Market": "0cca0bcd-fbae-4074-9300-2c14d250a990",
+        "wren": "c2a83165-6ddc-4623-9802-d3e53c21e792",
+        "ash": "70869868-2965-439a-9f4a-9532d7a99734",
+        "marg": "fd90bf40-da54-4d80-abf1-963957831936",
+        "tobin": "c1e718bc-952a-4772-bfa2-c2cbfe0d17bb",
+        "sela": "85721a8e-80f7-4657-a67c-f96a8c256ead",
+        "brann": "392b5024-6caa-4ae3-be3c-e155b865fdd0",
+        "ivy": "7aa2176c-8179-4e9f-8f1a-2a8ee67248ad"
+      },
+      "beat_seconds": [
+        17.796000000002095,
+        22.110000000000582,
+        12.343999999997322,
+        20.640999999995984,
+        19.0,
+        14.155999999995402
+      ],
+      "error": null,
+      "score": {
+        "calls": 186,
+        "calls_by_role": {
+          "character_decision": 47,
+          "reaction": 120,
+          "director": 2,
+          "resolver": 10,
+          "narrator": 7
+        },
+        "summaries": 0,
+        "summaries_cut_off": 0,
+        "speakers": 8,
+        "failed_calls": 0,
+        "repairs": 3,
+        "repairs_by_role": {
+          "resolver": 3
+        },
+        "repair_rate": 0.016129032258064516,
+        "est_usd": 0.12082252000000003,
+        "action_mix": {
+          "observe": 6,
+          "wait": 7,
+          "communicate": 26,
+          "interact": 2,
+          "move": 6
+        },
+        "repetition_rate": 0.0,
+        "replies": 79,
+        "reply_repetition_rate": 0.012658227848101266,
+        "reply_retries": 0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 2,
+        "moves_tried": 6,
+        "moves_done": 6,
+        "interact_success": 2,
+        "hooks": [
+          {
+            "title": "Strange Goods at the Stall",
+            "powers": "spawn_npc",
+            "status": "closed",
+            "ending": "The crate is lifted onto the stall counter, and Brann's examination of the seal reveals it to be a simple merchant's mix-up\u2014lost goods returned to their owner, and the stall's mystery is laid to rest."
+          },
+          {
+            "title": "The Empty Apple Basket",
+            "powers": "",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 1,
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Hearth",
+          "Old Marg": "Hearth",
+          "Tobin": "Market",
+          "Sela": "Hearth",
+          "Brann": "Hearth",
+          "Ivy": "Market",
+          "Mira": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "8 people spoke (pass \u2265 4); repeated questions 0% (pass \u2264 20%)"
+      }
+    }
+  }
+}
