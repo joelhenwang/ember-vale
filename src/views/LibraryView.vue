@@ -447,6 +447,18 @@ every future story." />
 .lib--list .lib__cards--packs {
   grid-template-columns: 1fr;
 }
+/* list mode: a character is one row, the portrait at the side */
+.lib--list :deep(.libcard) {
+  flex-direction: row;
+  min-height: 150px;
+}
+.lib--list :deep(.libcard__img) {
+  width: 120px;
+  min-width: 120px;
+  aspect-ratio: auto;
+  max-height: none;
+  border-radius: var(--radius-card) 0 0 var(--radius-card);
+}
 .lib__none {
   grid-column: 1 / -1;
   text-align: center;

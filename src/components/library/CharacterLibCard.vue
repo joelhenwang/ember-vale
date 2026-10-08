@@ -135,15 +135,5 @@ defineEmits<{ open: []; pick: [key: string] }>()
   padding-top: 10px;
 }
 
-/* list mode: one row, the portrait at the side */
-:global(.lib--list) .libcard {
-  flex-direction: row;
-}
-:global(.lib--list) .libcard__img {
-  width: 200px;
-  min-width: 200px;
-  aspect-ratio: auto;
-  max-height: none;
-  border-radius: var(--radius-card) 0 0 var(--radius-card);
-}
+/* list mode (a row, the portrait at the side) is styled by LibraryView */
 </style>

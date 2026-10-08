@@ -273,6 +273,7 @@ plays Adventure against the dev API.
   attribution reminder (currently `Co-Authored-By: Claude …`; follow whatever the reminder
   of your own session says). Commit evidence separately when it is large. Never skip hooks.
 - **Pictures that can change need a key.** `StoryImage` reads its slot once (`useGameImage`), so a reused one shows a stale picture when the slot changes; give it `:key` (the New Story banner bug, 7172899).
+- **No `:global(.x) .y` in scoped styles:** Vue compiles it to plain `.x`, so the rule hits the parent itself (it collapsed the Library's List mode to 240 px). Style a child from the parent with `.x :deep(.y)` instead.
 - **Reduced motion:** `src/style.css` stops every animation under `prefers-reduced-motion` (Windows with animation effects off reports it; the user's machine does). Progress indicators must still move: give them the class `ev-progress-spin` (7646ede).
 - **Run checks without pipes hiding failures:** `basedpyright | tail` reports tail's exit code; a type error shipped that way once (fixed 9e8bd8e). Check `$?` or read the "N errors" line.
 - **Player-facing copy is plain language.** Say "Turn", not "Beat". Leave out revision
