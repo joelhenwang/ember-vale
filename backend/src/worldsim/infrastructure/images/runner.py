@@ -148,7 +148,9 @@ class ImageJobRunner:
             _log.warning("image job %s failed: %s", job.id, exc)
             await self._jobs.note_attempt(job.id, str(exc)[:1000])
             return
-        image = shrink(image, job.kind)
+        # Decode, resize and WebP-encode off the event loop: 80-220 ms of CPU
+        # that otherwise stalled every request and beat in the process.
+        image = await asyncio.to_thread(shrink, image, job.kind)
         extension = "webp" if image.mime == "image/webp" else "png"
         ref = f"generated/{job.world_id or 'shared'}/{job.kind.value}-{job.id}.{extension}"
         await self._storage.write(ref, image.data, image.mime)

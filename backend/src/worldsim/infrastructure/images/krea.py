@@ -106,13 +106,15 @@ class KreaImageGenerator:
             )
             if known.status_code == 200:
                 return
+            # PNG re-encoding is CPU work: off the event loop the API shares.
+            png = await asyncio.to_thread(_png, card.image)
             created = await client.post(
                 f"{self._base_url}/v1/characters",
                 json={
                     "id": card.id,
                     "name": card.name,
                     "description": card.description,
-                    "images": [base64.b64encode(_png(card.image)).decode()],
+                    "images": [base64.b64encode(png).decode()],
                 },
                 timeout=self._timeout_s,
             )

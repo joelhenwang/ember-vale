@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -94,6 +95,7 @@ def load_reaction_prompt() -> str:
     return prompt_path().read_text(encoding="utf-8")
 
 
+@lru_cache(maxsize=8)  # the schema is constant: ~15 ms of CPU to regenerate per call
 def render_system_prompt(template: str) -> str:
     """Fill the response-schema placeholder (the only placeholder)."""
     schema_json = json.dumps(_ACTION_ADAPTER.json_schema(), indent=2, sort_keys=True)

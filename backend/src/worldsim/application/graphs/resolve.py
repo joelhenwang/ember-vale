@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, cast
 from uuid import UUID
@@ -109,6 +110,7 @@ def load_resolver_prompt() -> str:
     return prompt_path().read_text(encoding="utf-8")
 
 
+@lru_cache(maxsize=8)  # the schema is constant: ~15 ms of CPU to regenerate per call
 def render_system_prompt(template: str) -> str:
     """Fill the response-schema placeholder (the only placeholder)."""
     # Compact: the pretty-printed schema alone outgrew the 16k system limit
