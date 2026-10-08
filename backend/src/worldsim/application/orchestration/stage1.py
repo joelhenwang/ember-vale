@@ -1104,6 +1104,28 @@ _OUTCOME_WORDS = {
 _SILENT_REPLIES = frozenset({ActionFamily.WAIT, ActionFamily.OBSERVE, ActionFamily.REST})
 
 
+def choose_reactors(
+    attempt_id: UUID, eligible: list[UUID], target: UUID | None, bystanders: int | None
+) -> list[UUID]:
+    """Who answers an attempt: everyone present, or (with a bystander cap)
+    the person it is aimed at plus at most ``bystanders`` others.
+
+    Bystanders are picked by a hash of (attempt, person): deterministic for
+    a replayed beat, and spread across a crowd from one attempt to the next.
+    Kept in scene order either way.
+    """
+    if bystanders is None or len(eligible) <= bystanders + (1 if target in eligible else 0):
+        return eligible
+    others = [c for c in eligible if c != target]
+    picked = set(
+        sorted(
+            others,
+            key=lambda c: hashlib.blake2b(attempt_id.bytes + c.bytes, digest_size=8).digest(),
+        )[:bystanders]
+    )
+    return [c for c in eligible if c == target or c in picked]
+
+
 def _reply_summary(action: ActionIntent, names: Mapping[UUID, str], reactor: UUID) -> str:
     """One-line reply text: speech reads as a reply, other acts as attempts."""
     if isinstance(action, CommunicateAction):
@@ -1160,8 +1182,11 @@ class Stage1Orchestrator:
         paint_moments: bool = False,
         moment_writer: Writer | None = None,
         max_parallel_calls: int = 12,
+        reacting_bystanders: int | None = None,
     ) -> None:
         self._factory = uow_factory
+        #: Crowd cap on who answers an attempt (None: everyone present).
+        self._reacting_bystanders = reacting_bystanders
         #: Model-backed tasks (decisions, reactions, summaries) a beat runs at
         #: once, per event loop; see _bounded.
         self._max_parallel = max_parallel_calls
@@ -3511,9 +3536,12 @@ class Stage1Orchestrator:
             )
             for i in sorted(members, key=lambda x: str(x.id))
         ]
+        aimed_at = {
+            derive_attempt_id(i.id): getattr(i.action, "target_character_id", None) for i in members
+        }
         with _timed(stage_ms, "react"):
             reactions = await self._react_all(
-                world_id, run_id, sealed, scene, attempts, names, runtime
+                world_id, run_id, sealed, scene, attempts, names, runtime, aimed_at
             )
         with _timed(stage_ms, "resolve"):
             resolution, live_versions = await self._resolve_scene(
@@ -3836,6 +3864,7 @@ class Stage1Orchestrator:
         attempts: list[Attempt],
         names: Mapping[UUID, str],
         runtime: PhaseRuntime,
+        aimed_at: Mapping[UUID, UUID | None] | None = None,
     ) -> list[Reaction]:
         """One bounded reaction graph per eligible (attempt, reactor) pair.
 
@@ -3848,14 +3877,18 @@ class Stage1Orchestrator:
         participant_ids = [str(p.character_id) for p in scene.participants]
         pairs: dict[UUID, list[tuple[int, Attempt]]] = {}
         for index, attempt in enumerate(attempts):
-            for participant in scene.participants:
-                reactor_id = participant.character_id
-                if reactor_id == attempt.actor_character_id:
-                    continue
-                if reactor_id == runtime.controlled_character_id:
-                    # Player agency: the controlled character reacts only
-                    # through submitted player intents, never model prose.
-                    continue
+            eligible = [
+                p.character_id
+                for p in scene.participants
+                if p.character_id != attempt.actor_character_id
+                # Player agency: the controlled character reacts only
+                # through submitted player intents, never model prose.
+                and p.character_id != runtime.controlled_character_id
+            ]
+            target = (aimed_at or {}).get(attempt.id)
+            for reactor_id in choose_reactors(
+                attempt.id, eligible, target, self._reacting_bystanders
+            ):
                 pairs.setdefault(reactor_id, []).append((index, attempt))
         order = {p.character_id: rank for rank, p in enumerate(scene.participants)}
 

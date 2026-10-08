@@ -143,6 +143,14 @@ def _goal_meet_up(s: dict[str, Any]) -> tuple[bool, str]:
     return together, f"Wren at {places.get('Wren')}, Ash at {places.get('Ash')}"
 
 
+def _goal_crowd(s: dict[str, Any]) -> tuple[bool, str]:
+    rate = s["repetition_rate"]
+    speakers = s["speakers"]
+    return rate <= 0.2 and speakers >= 4, (
+        f"{speakers} people spoke (pass ≥ 4); repeated questions {rate:.0%} (pass ≤ 20%)"
+    )
+
+
 def _goal_named_place(s: dict[str, Any]) -> tuple[bool, str]:
     mills = [name for name in s["all_places"] if "mill" in name.lower()]
     there = [who for who, place in s["final_places"].items() if place in mills]
@@ -207,6 +215,46 @@ SCENARIOS: list[Scenario] = [
             Person("ash", "Ash", "Market", ASH, intention="wait for Wren at the Market"),
         ],
         goal=_goal_meet_up,
+    ),
+    Scenario(
+        key="crowd",
+        title="Market morning: seven people at the stalls",
+        people=[
+            Person("wren", "Wren", "Market", WREN),
+            Person("ash", "Ash", "Market", ASH),
+            Person(
+                "marg",
+                "Old Marg",
+                "Market",
+                "A stallholder, gruff but fair. Wants: to sell her last baskets of apples.",
+            ),
+            Person(
+                "tobin",
+                "Tobin",
+                "Market",
+                "A young courier, breathless and gossipy. Wants: news worth carrying.",
+            ),
+            Person(
+                "sela",
+                "Sela",
+                "Market",
+                "A healer passing through, calm and watchful. Wants: someone who needs help.",
+            ),
+            Person(
+                "brann",
+                "Brann",
+                "Market",
+                "A burly carter, loud and generous. Wants: a hand loading his cart.",
+            ),
+            Person(
+                "ivy",
+                "Ivy",
+                "Market",
+                "A shy apprentice scribe. Wants: to work up the courage to ask about "
+                "the vale's old tales.",
+            ),
+        ],
+        goal=_goal_crowd,
     ),
     Scenario(
         key="named_place",
@@ -484,8 +532,17 @@ def score(
             (world,),
         ).fetchall()
     }
+    summaries = conn.execute(
+        "select count(*), count(*) filter (where result->>'finish_reason' = 'length')"
+        " from model_call where world_id = %s and role = 'summary'",
+        (world,),
+    ).fetchone()
     stats: dict[str, Any] = {
         "calls": len(calls),
+        "calls_by_role": dict(Counter(role for role, *_rest in calls)),
+        "summaries": int(summaries[0]) if summaries else 0,
+        "summaries_cut_off": int(summaries[1]) if summaries else 0,
+        "speakers": sum(1 for said in topics.values() if said),
         "failed_calls": sum(1 for r in calls if r[1] != "succeeded"),
         "repairs": sum(repairs.values()),
         "repairs_by_role": dict(repairs),
@@ -654,6 +711,8 @@ async def main_async(args: argparse.Namespace) -> int:
         "provider": provider.active_profile,
         "model": model,
         "beats": args.beats,
+        #: WORLDSIM_APP__REACTING_BYSTANDERS (None: everyone present reacts).
+        "reacting_bystanders": settings.app.reacting_bystanders,
         "at": datetime.now(UTC).isoformat(timespec="seconds"),
         "wall_seconds": round(time.monotonic() - started),
         "est_usd_total": spent_so_far(),

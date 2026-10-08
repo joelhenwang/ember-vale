@@ -138,6 +138,7 @@ class AppState:
             paint_moments=self.images() is not None,
             moment_writer=self.writer() if self.images() is not None else None,
             max_parallel_calls=self.settings.app.parallel_model_calls,
+            reacting_bystanders=self.settings.app.reacting_bystanders,
         )
 
     def local_models(self) -> LocalModelsClient | None:
