@@ -35,6 +35,7 @@ from worldsim.interfaces.http.errors import (
     domain_error_handler,
     unhandled_error_handler,
 )
+from worldsim.interfaces.http.etag import JsonETagMiddleware
 from worldsim.interfaces.http.routes import (
     activities,
     assets,
@@ -173,6 +174,8 @@ def create_app(
     )
     app.state.app_state = state
     key = resolved.security.api_key
+    # Innermost: hashes the plain JSON, so an unchanged poll answers 304.
+    app.add_middleware(JsonETagMiddleware)
     app.add_middleware(ApiKeyMiddleware, expected_key=key.get_secret_value() if key else None)
     app.add_middleware(RequestIdMiddleware)
     # Outermost: JSON shrinks ~5-8x; pictures are already compressed.

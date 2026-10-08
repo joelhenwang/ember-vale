@@ -230,3 +230,20 @@ def test_presentation_snapshot_shape(client: ApiClient) -> None:
     assert set(cast) == {str(WREN), str(ASH)}
     assert cast[str(WREN)]["portrait_asset_id"] is not None
     assert body["revision"] >= 0
+
+
+def test_an_unchanged_poll_answers_304(client: ApiClient) -> None:
+    params = {"world_id": str(WORLD)}
+    first = client.get("/api/v1/world/presentation", params=params, headers=_watcher())
+    tag = first.headers["etag"]
+    assert first.headers["cache-control"] == "private, no-cache"
+    assert "X-Worldsim-Role" in first.headers["vary"]
+    again = client.get(
+        "/api/v1/world/presentation", params=params, headers={**_watcher(), "If-None-Match": tag}
+    )
+    assert again.status_code == 304 and again.content == b""
+    # another seat reads its own answer: a different body, a different tag
+    player = client.get(
+        "/api/v1/world/presentation", params=params, headers={**_player(WREN), "If-None-Match": tag}
+    )
+    assert player.status_code == 200 and player.headers["etag"] != tag
