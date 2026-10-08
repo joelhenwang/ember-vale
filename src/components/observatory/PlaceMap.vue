@@ -66,23 +66,24 @@ function initials(name: string): string {
     </header>
     <div class="pm__frame">
       <img class="pm__art" :src="art" :alt="`${placeName} up close`" draggable="false" />
+      <span class="pm__light" aria-hidden="true"></span>
       <div
-        v-for="spot in placeMap.spots ?? []"
+        v-for="(spot, i) in placeMap.spots ?? []"
         :key="spot.key"
         class="pm__spot"
         :class="{ 'pm__spot--busy': busy.has(spot.key) }"
-        :style="{ left: `${Number(spot.x) * 100}%`, top: `${Number(spot.y) * 100}%` }"
+        :style="{ left: `${Number(spot.x) * 100}%`, top: `${Number(spot.y) * 100}%`, '--i': i }"
         :title="spot.name">
         <span class="pm__dot" aria-hidden="true" />
         <span v-if="busy.has(spot.key)" class="pm__label">{{ spot.name }}</span>
       </div>
       <button
-        v-for="token in tokens"
+        v-for="(token, i) in tokens"
         :key="token.id"
         type="button"
         class="pm__token"
         :class="{ 'pm__token--focus': token.id === focusId }"
-        :style="{ left: `${token.x * 100}%`, top: `${token.y * 100}%` }"
+        :style="{ left: `${token.x * 100}%`, top: `${token.y * 100}%`, '--i': i }"
         :title="`${token.name} · ${token.spot}`"
         :aria-label="`${token.name}, at ${token.spot}`"
         @click="emit('select', token.id)">
@@ -124,6 +125,15 @@ function initials(name: string): string {
   cursor: pointer;
   padding: 0;
 }
+.pm__back svg {
+  transition: translate var(--dur) var(--ease-settle);
+}
+.pm__back:hover svg {
+  translate: -3px 0;
+}
+.pm__title {
+  animation: wm-title-in 0.5s var(--ease-settle) 0.1s both;
+}
 .pm__title {
   font-family: var(--font-display);
   font-size: 22px;
@@ -135,12 +145,24 @@ function initials(name: string): string {
 }
 .pm__frame {
   position: relative;
+  overflow: hidden;
   user-select: none;
 }
+/* stepping inside: the camera pushes in through a soft blur and settles */
 .pm__art {
   display: block;
   width: 100%;
   height: auto;
+  animation: ev-push-in 1.1s var(--ease-settle) both;
+}
+/* a slow pool of warm light moving across the place */
+.pm__light {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  background: radial-gradient(40% 50% at 30% 30%, rgba(255, 226, 170, 0.55), transparent 70%);
+  animation: pm-light 22s var(--ease-sine) infinite alternate;
 }
 .pm__spot {
   position: absolute;
@@ -149,10 +171,18 @@ function initials(name: string): string {
   flex-direction: column;
   align-items: center;
   opacity: 0.7;
+  animation: pm-spot-in 0.45s var(--ease-spring) calc(0.35s + min(var(--i, 0), 12) * 0.035s) both;
+  transition: opacity var(--dur) ease;
 }
 .pm__spot--busy {
   opacity: 1;
   z-index: 1;
+}
+.pm__spot:hover {
+  opacity: 1;
+}
+.pm__spot--busy .pm__dot {
+  animation: pm-glow 2.6s var(--ease-sine) 1s infinite;
 }
 .pm__dot {
   width: 10px;
@@ -187,9 +217,13 @@ function initials(name: string): string {
   box-shadow: 0 2px 6px rgba(46, 39, 24, 0.35);
   cursor: pointer;
   transition:
-    left 0.8s ease,
-    top 0.8s ease,
-    transform 0.15s ease;
+    left 1.1s var(--ease-io),
+    top 1.1s var(--ease-io),
+    transform 0.32s var(--ease-spring),
+    border-color var(--dur) ease;
+  animation:
+    pm-token-in 0.6s var(--ease-spring) calc(0.6s + min(var(--i, 0), 8) * 0.06s) both,
+    pm-idle 3.6s var(--ease-sine) calc(1.3s + var(--i, 0) * 0.41s) infinite;
 }
 .pm__token img,
 .pm__token .framed {
@@ -205,6 +239,54 @@ function initials(name: string): string {
   transform: translate(-50%, calc(-100% - 10px)) scale(1.12);
   border-color: var(--gold-soft);
   z-index: 2;
+}
+@keyframes wm-title-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+@keyframes pm-light {
+  from {
+    translate: -10% -6%;
+  }
+  to {
+    translate: 30% 24%;
+  }
+}
+@keyframes pm-spot-in {
+  from {
+    opacity: 0;
+    scale: 0.3;
+  }
+}
+@keyframes pm-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(46, 39, 24, 0.35),
+      0 0 0 0 rgba(240, 199, 159, 0.7);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(46, 39, 24, 0.35),
+      0 0 0 6px rgba(240, 199, 159, 0);
+  }
+}
+@keyframes pm-token-in {
+  from {
+    opacity: 0;
+    scale: 0.3;
+  }
+}
+@keyframes pm-idle {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -3px;
+  }
 }
 .pm__name {
   position: absolute;

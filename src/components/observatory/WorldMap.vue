@@ -80,6 +80,7 @@ function initials(name: string): string {
 <template>
   <div class="wm" :class="{ 'wm--schematic': !art }">
     <img v-if="art" class="wm__art" :src="art" alt="" draggable="false" />
+    <span class="wm__fog" aria-hidden="true"><i></i><i></i></span>
     <svg class="wm__routes" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
       <g v-for="d in drawn" :key="d.key">
         <polyline class="wm__road-under" :points="d.points" vector-effect="non-scaling-stroke" />
@@ -107,11 +108,11 @@ function initials(name: string): string {
       </g>
     </svg>
     <div
-      v-for="place in labels"
+      v-for="(place, i) in labels"
       :key="place.id"
       class="wm__place"
       :class="{ 'wm__place--active': place.id === activePlaceId }"
-      :style="{ left: `${place.x * 100}%`, top: `${place.y * 100}%` }">
+      :style="{ left: `${place.x * 100}%`, top: `${place.y * 100}%`, '--i': i }">
       <span class="wm__pin" aria-hidden="true" />
       <button
         v-if="enterable.has(place.id)"
@@ -124,12 +125,12 @@ function initials(name: string): string {
       <span v-else class="wm__label">{{ place.name }}</span>
     </div>
     <button
-      v-for="token in tokens"
+      v-for="(token, i) in tokens"
       :key="token.id"
       type="button"
       class="wm__token"
       :class="{ 'wm__token--focus': token.id === focusId, 'wm__token--road': token.travelling }"
-      :style="{ left: `${token.x * 100}%`, top: `${token.y * 100}%` }"
+      :style="{ left: `${token.x * 100}%`, top: `${token.y * 100}%`, '--i': i }"
       :title="token.name"
       :aria-label="`${token.name}`"
       @click="emit('select', token.id)">
@@ -173,6 +174,8 @@ function initials(name: string): string {
   width: 100%;
   height: 100%;
   pointer-events: none;
+  /* the roads spread out across the map from its heart when it opens */
+  animation: wm-roads-in 1.3s var(--ease-io) 0.1s both;
 }
 .wm__road-under {
   stroke: rgba(46, 39, 24, 0.45);
@@ -191,12 +194,47 @@ function initials(name: string): string {
 }
 .wm__road--sea {
   stroke: #d8ecf5;
+  /* water keeps flowing along sea lanes and rivers */
+  animation: wm-flow 2.8s linear infinite;
+}
+/* fog banks drifting slowly over the map: the world is never still */
+.wm__fog {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wm__fog i {
+  position: absolute;
+  inset: -20% -40%;
+  background:
+    radial-gradient(28% 22% at 22% 38%, rgba(255, 250, 236, 0.34), transparent 70%),
+    radial-gradient(22% 18% at 64% 70%, rgba(255, 250, 236, 0.26), transparent 70%),
+    radial-gradient(18% 14% at 82% 22%, rgba(255, 250, 236, 0.22), transparent 70%);
+  animation: wm-fog 48s var(--ease-sine) infinite alternate;
+  will-change: translate;
+}
+.wm__fog i:nth-child(2) {
+  opacity: 0.7;
+  scale: 1.3;
+  animation-duration: 66s;
+  animation-direction: alternate-reverse;
+}
+.wm--schematic .wm__fog {
+  display: none;
 }
 .wm__token--road {
   border-style: dashed;
-  transition:
-    left 0.8s ease,
-    top 0.8s ease;
+}
+/* a traveller walks: a quicker step and a ring turning like a wheel */
+.wm__token--road::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px dashed rgba(244, 236, 215, 0.85);
+  animation: wm-turn 6s linear infinite;
+  pointer-events: none;
 }
 .wm__place {
   position: absolute;
@@ -206,6 +244,7 @@ function initials(name: string): string {
   align-items: center;
   pointer-events: none;
 }
+/* pins drop onto the map one after another, then their names unfurl */
 .wm__pin {
   width: 14px;
   height: 14px;
@@ -213,10 +252,23 @@ function initials(name: string): string {
   background: var(--gold);
   border: 2px solid var(--cream-on-teal);
   box-shadow: 0 0 0 1px rgba(46, 39, 24, 0.35);
+  animation: wm-drop 0.55s var(--ease-spring) calc(0.1s + min(var(--i, 0), 10) * 0.045s) both;
+}
+.wm__place > .wm__label {
+  animation: wm-unfurl 0.45s var(--ease-settle) calc(0.3s + min(var(--i, 0), 10) * 0.045s) both;
 }
 .wm__place--active .wm__pin {
   background: var(--teal);
-  animation: wm-pulse 2.4s ease-out infinite;
+  animation:
+    wm-drop 0.55s var(--ease-spring) calc(0.1s + min(var(--i, 0), 10) * 0.045s) both,
+    wm-pulse 2.4s ease-out 0.7s infinite,
+    wm-bob 2.8s var(--ease-sine) 0.9s infinite;
+}
+/* where the latest scene happened: its pin bobs like a quest marker
+   (the label holds still, so it stays easy to click) */
+.wm__place--active > .wm__label {
+  border-color: var(--teal);
+  box-shadow: 0 4px 12px -6px rgba(20, 84, 90, 0.6);
 }
 .wm__label {
   margin-top: 4px;
@@ -234,11 +286,27 @@ function initials(name: string): string {
   pointer-events: auto;
   cursor: pointer;
   border-color: var(--teal);
+  transition:
+    background-color var(--dur) ease,
+    color var(--dur) ease,
+    box-shadow var(--dur) ease,
+    scale var(--dur-quick) var(--ease-out);
 }
 .wm__label--enter:hover,
 .wm__label--enter:focus-visible {
   background: var(--cream-on-teal);
   color: var(--teal-ink);
+  box-shadow: 0 6px 14px -8px rgba(20, 84, 90, 0.7);
+}
+.wm__label--enter:active {
+  scale: 0.96;
+}
+.wm__label--enter .wm__enter {
+  display: inline-block;
+  transition: translate var(--dur) var(--ease-settle);
+}
+.wm__label--enter:hover .wm__enter {
+  translate: 3px 0;
 }
 .wm__enter {
   margin-left: 5px;
@@ -266,10 +334,24 @@ function initials(name: string): string {
   font: 600 15px var(--font-body);
   box-shadow: 0 2px 6px rgba(46, 39, 24, 0.35);
   cursor: pointer;
+  /* tokens glide between places; they pop up from their pin on arrival */
   transition:
-    left 0.8s ease,
-    top 0.8s ease,
-    transform 0.15s ease;
+    left 1.1s var(--ease-io),
+    top 1.1s var(--ease-io),
+    transform 0.32s var(--ease-spring),
+    border-color var(--dur) ease;
+  animation:
+    wm-token-in 0.6s var(--ease-spring) calc(0.5s + min(var(--i, 0), 8) * 0.06s) both,
+    wm-idle 3.6s var(--ease-sine) calc(1.2s + var(--i, 0) * 0.37s) infinite;
+}
+.wm__token:hover,
+.wm__token:focus-visible {
+  animation-play-state: paused;
+}
+.wm__token.wm__token--road {
+  animation:
+    wm-token-in 0.6s var(--ease-spring) calc(0.5s + min(var(--i, 0), 8) * 0.06s) both,
+    wm-walk 0.9s var(--ease-sine) infinite;
 }
 .wm__token img,
 .wm__token .framed {
@@ -306,6 +388,79 @@ function initials(name: string): string {
   bottom: 10px;
   font-size: 13px;
   color: var(--ink-3);
+}
+@keyframes wm-roads-in {
+  from {
+    clip-path: circle(0% at 50% 50%);
+  }
+  to {
+    clip-path: circle(75% at 50% 50%);
+  }
+}
+@keyframes wm-flow {
+  to {
+    stroke-dashoffset: -36px;
+  }
+}
+@keyframes wm-fog {
+  from {
+    translate: -6% 1%;
+  }
+  to {
+    translate: 6% -2%;
+  }
+}
+@keyframes wm-turn {
+  to {
+    rotate: 360deg;
+  }
+}
+@keyframes wm-drop {
+  from {
+    opacity: 0;
+    translate: 0 -18px;
+    scale: 0.4;
+  }
+}
+@keyframes wm-unfurl {
+  from {
+    opacity: 0;
+    translate: 0 -4px;
+    scale: 0.85 1;
+  }
+}
+@keyframes wm-bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -3px;
+  }
+}
+@keyframes wm-token-in {
+  from {
+    opacity: 0;
+    scale: 0.3;
+  }
+}
+@keyframes wm-idle {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -3px;
+  }
+}
+@keyframes wm-walk {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -4px;
+  }
 }
 @keyframes wm-pulse {
   0% {

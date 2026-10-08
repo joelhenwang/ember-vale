@@ -8,7 +8,7 @@
   revision). Pure board logic: src/game/worldMap.ts.
 -->
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SaveBar from '../components/ui/SaveBar.vue'
 import PageIntro from '../components/ui/PageIntro.vue'
@@ -33,6 +33,7 @@ import {
   uploadMap
 } from '../api/worldsim'
 import { isVersionConflict } from '../api/http'
+import { burst, shake } from '../composables/useEffects'
 import type { PresetDetail } from '../../content/clients/worldsim'
 import { parchmentDataUrl } from '../game/parchment'
 import {
@@ -667,6 +668,45 @@ function onKeyChange(place: BoardPlace, value: string): void {
   if (match) place.name = match.name
 }
 
+/* ————— motion: what just arrived on the map announces itself ————— */
+const saveBtn = ref<HTMLElement | null>(null)
+const alertEl = ref<HTMLElement | null>(null)
+/** A fresh batch of pins (read or loaded) drops in one after another. */
+const freshPins = ref(false)
+/** Fresh roads spread out over the map; fresh terrain washes across it. */
+const freshRoads = ref(false)
+const freshTerrain = ref(false)
+const timers: ReturnType<typeof setTimeout>[] = []
+function fresh(flag: typeof freshPins, ms: number): void {
+  flag.value = false
+  requestAnimationFrame(() => {
+    flag.value = true
+    timers.push(setTimeout(() => (flag.value = false), ms))
+  })
+}
+watch(
+  () => board.value?.places,
+  (now, before) => {
+    if (now && now !== before && now.length > 1 && busy.value !== 'save') fresh(freshPins, 1600)
+  }
+)
+watch(
+  () => board.value?.roads,
+  (now, before) => {
+    if (now && now !== before && now.length && busy.value !== 'save') fresh(freshRoads, 1600)
+  }
+)
+watch(
+  () => board.value?.terrain,
+  (now, before) => {
+    if (now && now !== before && busy.value !== 'save') fresh(freshTerrain, 1400)
+  }
+)
+watch(error, (now) => {
+  if (now) requestAnimationFrame(() => shake(alertEl.value))
+})
+onBeforeUnmount(() => timers.forEach(clearTimeout))
+
 async function save(): Promise<void> {
   if (!board.value || !detail.value || problem.value || !dirty.value) return
   busy.value = 'save'
@@ -679,6 +719,7 @@ async function save(): Promise<void> {
     adopt(saved)
     notice.value = 'Saved. New stories in this world use these places and travel times.'
     savedFlash.value = true
+    burst(saveBtn.value, { count: 18, spread: 90 })
     setTimeout(() => (savedFlash.value = false), 1400)
   } catch (err) {
     error.value = isVersionConflict(err)
@@ -727,7 +768,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <main class="wmap">
+  <main class="wmap ev-rise">
     <header class="wmap__head">
       <RouterLink
         class="wmap__back"
@@ -739,8 +780,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         sub="Bring a map of this world. The map reader finds its places and roads; you fix what it got wrong and say how long travel takes." />
     </header>
 
-    <p v-if="error" class="wmap__alert" role="alert">{{ error }}</p>
-    <p v-if="loading" class="ev-info"><IconInfo :size="14" /> Loading…</p>
+    <Transition name="ev-rise">
+      <p v-if="error" ref="alertEl" class="wmap__alert" role="alert">{{ error }}</p>
+    </Transition>
+    <p v-if="loading" class="ev-info wmap__loading">
+      <span class="spin ev-progress-spin" aria-hidden="true" /> Loading…
+    </p>
 
     <template v-else-if="detail">
       <section v-if="readonly" class="card ev-card">
@@ -798,480 +843,527 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
               {{ busy === 'parchment' ? 'Laying it out…' : 'Blank parchment' }}
             </button>
           </div>
-          <div v-if="showPaint" class="paint">
-            <label class="field">
-              <span class="field__label">What to paint</span>
-              <textarea v-model="paintPrompt" class="ev-input words" rows="3" />
-            </label>
-            <div class="row">
-              <select v-model="paintRatio" class="ev-input ratio" aria-label="Shape">
-                <option value="16:9">Wide (16:9)</option>
-                <option value="3:2">Landscape (3:2)</option>
-                <option value="1:1">Square</option>
-              </select>
-              <button type="button" class="cta cta--sm" :disabled="busy !== ''" @click="paint">
-                {{ busy === 'paint' ? 'Painting… (up to a minute)' : 'Paint the map' }}
-              </button>
+          <Transition name="ev-rise">
+            <div v-if="showPaint" class="paint">
+              <label class="field">
+                <span class="field__label">What to paint</span>
+                <textarea v-model="paintPrompt" class="ev-input words" rows="3" />
+              </label>
+              <div class="row">
+                <select v-model="paintRatio" class="ev-input ratio" aria-label="Shape">
+                  <option value="16:9">Wide (16:9)</option>
+                  <option value="3:2">Landscape (3:2)</option>
+                  <option value="1:1">Square</option>
+                </select>
+                <button type="button" class="cta cta--sm" :disabled="busy !== ''" @click="paint">
+                  <span v-if="busy === 'paint'" class="spin ev-progress-spin" aria-hidden="true" />
+                  {{ busy === 'paint' ? 'Painting… (up to a minute)' : 'Paint the map' }}
+                </button>
+              </div>
             </div>
-          </div>
+          </Transition>
         </section>
 
         <!-- board -------------------------------------------------------------- -->
-        <section v-if="board" class="card ev-card">
-          <header class="card__head">
-            <span class="card__icon"><IconGlobe :size="20" /></span>
-            <div>
-              <h2 class="card__title">2 · Places and roads</h2>
-              <p class="card__sub">
-                Drag a pin to move it, click one to rename it. Draw a road by clicking a place, each
-                bend, then the place it reaches; click a road to move its bends.
-                <template v-if="board.places.length === 0">
-                  Start by finding the places, or add them by hand.
-                </template>
-              </p>
-            </div>
-          </header>
-          <div class="row">
-            <button type="button" class="cta cta--sm" :disabled="busy !== ''" @click="findPlaces">
-              {{
-                busy === 'places'
-                  ? 'Reading the map… (about 10 s)'
-                  : board.places.length
-                    ? 'Find the places again'
-                    : 'Find the places'
-              }}
-            </button>
-            <button
-              type="button"
-              class="cta cta--sm"
-              :disabled="busy !== '' || keptCount < 2"
-              @click="traceRoads">
-              {{
-                busy === 'roads'
-                  ? 'Tracing roads… (up to a minute)'
-                  : board.roads.length
-                    ? 'Trace the roads again'
-                    : 'Trace the roads'
-              }}
-            </button>
-            <button
-              type="button"
-              class="ghost"
-              :class="{ 'is-on': placing }"
-              :aria-pressed="placing"
-              :disabled="busy !== ''"
-              @click="setTool('place')">
-              <IconPlus :size="14" /> {{ placing ? 'Click the map to place it' : 'Add a place' }}
-            </button>
-            <button
-              type="button"
-              class="ghost"
-              :class="{ 'is-on': tool === 'road' }"
-              :aria-pressed="tool === 'road'"
-              :disabled="busy !== '' || keptCount < 2"
-              @click="setTool('road')">
-              <IconBranch :size="14" /> {{ tool === 'road' ? 'Done drawing' : 'Draw a road' }}
-            </button>
-            <select
-              v-if="tool === 'road'"
-              v-model="connectBy"
-              class="ev-input small"
-              aria-label="Kind of road to draw">
-              <option v-for="k in ROAD_KINDS" :key="k" :value="k">{{ k }}</option>
-            </select>
-            <button
-              type="button"
-              class="ghost"
-              :class="{ 'is-on': tool === 'terrain' }"
-              :aria-pressed="tool === 'terrain'"
-              :disabled="busy !== ''"
-              @click="board.terrain ? setTool('terrain') : blankTheTerrain()">
-              <IconGlobe :size="14" />
-              {{ tool === 'terrain' ? 'Done with the terrain' : 'Terrain' }}
-            </button>
-          </div>
-
-          <div v-if="tool === 'terrain'" class="terrainbar" role="group" aria-label="Terrain">
-            <p class="terrainbar__lead">
-              What covers the land makes roads slower: a road over mountains takes about two and a
-              half times as long as one over plains. Paint by dragging over the map.
-            </p>
-            <div class="terrainbar__row">
+        <Transition name="ev-rise">
+          <section v-if="board" class="card ev-card">
+            <header class="card__head">
+              <span class="card__icon"><IconGlobe :size="20" /></span>
+              <div>
+                <h2 class="card__title">2 · Places and roads</h2>
+                <p class="card__sub">
+                  Drag a pin to move it, click one to rename it. Draw a road by clicking a place,
+                  each bend, then the place it reaches; click a road to move its bends.
+                  <template v-if="board.places.length === 0">
+                    Start by finding the places, or add them by hand.
+                  </template>
+                </p>
+              </div>
+            </header>
+            <div class="row">
+              <button type="button" class="cta cta--sm" :disabled="busy !== ''" @click="findPlaces">
+                <span v-if="busy === 'places'" class="spin ev-progress-spin" aria-hidden="true" />
+                {{
+                  busy === 'places'
+                    ? 'Reading the map… (about 10 s)'
+                    : board.places.length
+                      ? 'Find the places again'
+                      : 'Find the places'
+                }}
+              </button>
               <button
                 type="button"
                 class="cta cta--sm"
+                :disabled="busy !== '' || keptCount < 2"
+                @click="traceRoads">
+                <span v-if="busy === 'roads'" class="spin ev-progress-spin" aria-hidden="true" />
+                {{
+                  busy === 'roads'
+                    ? 'Tracing roads… (up to a minute)'
+                    : board.roads.length
+                      ? 'Trace the roads again'
+                      : 'Trace the roads'
+                }}
+              </button>
+              <button
+                type="button"
+                class="ghost"
+                :class="{ 'is-on': placing }"
+                :aria-pressed="placing"
                 :disabled="busy !== ''"
-                @click="readTheTerrain">
-                {{ busy === 'terrain' ? 'Reading the terrain… (about 10 s)' : 'Read the terrain' }}
+                @click="setTool('place')">
+                <IconPlus :size="14" /> {{ placing ? 'Click the map to place it' : 'Add a place' }}
               </button>
               <button
                 type="button"
-                class="ghost ghost--sm"
+                class="ghost"
+                :class="{ 'is-on': tool === 'road' }"
+                :aria-pressed="tool === 'road'"
+                :disabled="busy !== '' || keptCount < 2"
+                @click="setTool('road')">
+                <IconBranch :size="14" /> {{ tool === 'road' ? 'Done drawing' : 'Draw a road' }}
+              </button>
+              <select
+                v-if="tool === 'road'"
+                v-model="connectBy"
+                class="ev-input small"
+                aria-label="Kind of road to draw">
+                <option v-for="k in ROAD_KINDS" :key="k" :value="k">{{ k }}</option>
+              </select>
+              <button
+                type="button"
+                class="ghost"
+                :class="{ 'is-on': tool === 'terrain' }"
+                :aria-pressed="tool === 'terrain'"
                 :disabled="busy !== ''"
-                @click="blankTheTerrain">
-                Start blank
-              </button>
-              <button
-                v-if="board.terrain"
-                type="button"
-                class="ghost ghost--sm"
-                :disabled="busy !== ''"
-                @click="clearTheTerrain">
-                No terrain
-              </button>
-            </div>
-            <div
-              v-if="board.terrain"
-              class="terrainbar__row"
-              role="radiogroup"
-              aria-label="Paint with">
-              <button
-                v-for="k in TERRAIN_KINDS"
-                :key="k.letter"
-                type="button"
-                role="radio"
-                class="swatch"
-                :class="{ 'swatch--on': brush === k.letter }"
-                :aria-checked="brush === k.letter"
-                :title="`${k.name}: roads ×${k.cost}`"
-                @click="brush = k.letter">
-                <span class="swatch__colour" :style="{ background: k.colour }"></span>
-                {{ k.name }}
-              </button>
-              <label class="terrainbar__size">
-                Brush
-                <select v-model.number="brushSize" class="ev-input small" aria-label="Brush size">
-                  <option :value="0">1 cell</option>
-                  <option :value="1">3 × 3</option>
-                  <option :value="2">5 × 5</option>
-                </select>
-              </label>
-            </div>
-          </div>
-          <label v-else-if="board.terrain" class="terrainbar__show">
-            <input v-model="showTerrain" type="checkbox" /> Show the terrain
-          </label>
-          <p v-if="notice" class="card__note"><IconInfo :size="14" /> {{ notice }}</p>
-          <p v-if="roadNote" class="card__note card__note--road" role="status">
-            <IconBranch :size="14" /> {{ roadNote }}
-            <span v-if="tool === 'road'" class="keys">Backspace undoes a bend · Esc stops</span>
-          </p>
-
-          <div class="boardwrap">
-            <div
-              ref="frameEl"
-              class="mapframe"
-              :class="{
-                'mapframe--placing': placing || tool === 'road',
-                'mapframe--painting': tool === 'terrain'
-              }"
-              :style="{ aspectRatio: aspect }"
-              @pointerdown="onFrameDown"
-              @pointermove="onFrameMove"
-              @pointerup="onFrameUp"
-              @pointerleave="cursor = null"
-              @click="onFrameClick($event as PointerEvent)">
-              <img :src="pictureUrl" :alt="`Map of ${worldName}`" draggable="false" />
-              <svg
-                v-if="terrainCells.length"
-                class="terrain"
-                viewBox="0 0 1000 1000"
-                preserveAspectRatio="none"
-                aria-hidden="true">
-                <rect
-                  v-for="(c, i) in terrainCells"
-                  :key="i"
-                  :x="c.x"
-                  :y="c.y"
-                  :width="c.w + 0.5"
-                  :height="c.h + 0.5"
-                  :fill="c.fill" />
-              </svg>
-              <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
-                <polyline
-                  v-if="selectedLine.length"
-                  :points="selectedLine.map(([x, y]) => `${x},${y}`).join(' ')"
-                  class="road-halo"
-                  fill="none"
-                  stroke-width="10"
-                  stroke-linejoin="round"
-                  vector-effect="non-scaling-stroke" />
-                <polyline
-                  v-for="(line, i) in linesFor"
-                  :key="i"
-                  :points="line.points"
-                  :stroke="colorOf(line.road.by)"
-                  :stroke-dasharray="line.road.by === 'sea' ? '6 5' : undefined"
-                  fill="none"
-                  stroke-width="4"
-                  stroke-linejoin="round"
-                  vector-effect="non-scaling-stroke" />
-                <!-- wide, invisible: what a click on a road lands on -->
-                <polyline
-                  v-for="(line, i) in linesFor"
-                  :key="`hit-${i}`"
-                  :points="line.points"
-                  class="road-hit"
-                  :class="{ 'road-hit--live': tool === 'select' }"
-                  fill="none"
-                  stroke="transparent"
-                  stroke-width="16"
-                  vector-effect="non-scaling-stroke"
-                  @click.stop="pickRoad(line.road)" />
-                <polyline
-                  v-if="drawnLine"
-                  :points="drawnLine"
-                  :stroke="colorOf(connectBy)"
-                  stroke-dasharray="8 6"
-                  fill="none"
-                  stroke-width="4"
-                  stroke-linejoin="round"
-                  vector-effect="non-scaling-stroke" />
-              </svg>
-              <span
-                v-for="(b, i) in drawing?.bends ?? []"
-                :key="`drawn-${i}`"
-                class="bend bend--drawn"
-                :style="{ left: `${b[0] / 10}%`, top: `${b[1] / 10}%` }" />
-              <template v-if="selectedRoad && tool === 'select'">
-                <button
-                  v-for="(m, i) in selectedMiddles"
-                  :key="`mid-${i}`"
-                  type="button"
-                  class="bend bend--middle"
-                  :style="{ left: `${m[0] / 10}%`, top: `${m[1] / 10}%` }"
-                  :aria-label="`Add a bend to this stretch`"
-                  title="Drag to add a bend"
-                  @click.stop
-                  @pointerdown.stop.prevent="grabMiddle($event, i)" />
-                <button
-                  v-for="(b, i) in selectedRoad.points"
-                  :key="`bend-${i}`"
-                  type="button"
-                  class="bend"
-                  :style="{ left: `${b[0] / 10}%`, top: `${b[1] / 10}%` }"
-                  :aria-label="`Bend ${i + 1}: drag to move, double-click or Delete to remove`"
-                  title="Drag to move · double-click to remove"
-                  @click.stop
-                  @dblclick.stop="removeBend(i)"
-                  @keydown.delete.prevent="removeBend(i)"
-                  @keydown.backspace.prevent="removeBend(i)"
-                  @pointerdown.stop.prevent="grabBend(i)" />
-              </template>
-              <button
-                v-for="p in board.places"
-                :key="p.id"
-                type="button"
-                class="pin"
-                :class="{
-                  'pin--off': !p.keep,
-                  'pin--on': p.id === selected || p.id === drawing?.from,
-                  'pin--new': p.keep && !p.key,
-                  'pin--target': p.id === snapTarget?.id
-                }"
-                :style="{ left: `${p.point[0] / 10}%`, top: `${p.point[1] / 10}%` }"
-                :title="p.name"
-                @click.stop="onPinClick(p)"
-                @pointerdown.stop="startDrag($event, p)"
-                @pointermove="onDrag($event, p)"
-                @pointerup="dragging = null">
-                <span class="pin__dot"></span>
-                <span class="pin__label">{{ p.name }}</span>
+                @click="board.terrain ? setTool('terrain') : blankTheTerrain()">
+                <IconGlobe :size="14" />
+                {{ tool === 'terrain' ? 'Done with the terrain' : 'Terrain' }}
               </button>
             </div>
 
-            <aside class="side">
-              <div v-if="selectedRoad" class="inspect">
-                <p class="field__label">
-                  {{ nameOf(selectedRoad.a) }} — {{ nameOf(selectedRoad.b) }}
+            <Transition name="ev-swap" mode="out-in">
+              <div v-if="tool === 'terrain'" class="terrainbar" role="group" aria-label="Terrain">
+                <p class="terrainbar__lead">
+                  What covers the land makes roads slower: a road over mountains takes about two and
+                  a half times as long as one over plains. Paint by dragging over the map.
                 </p>
-                <label class="field">
-                  <span class="field__label">By</span>
-                  <select v-model="selectedRoad.by" class="ev-input">
-                    <option v-for="k in ROAD_KINDS" :key="k" :value="k">{{ k }}</option>
-                  </select>
-                </label>
-                <p class="card__note">
-                  <IconInfo :size="14" />
-                  {{ selectedRoad.points.length }} of {{ MAX_BENDS }} bends. Drag a bend to move it,
-                  drag a hollow dot to add one, double-click a bend to remove it.
-                </p>
-                <div class="row">
+                <div class="terrainbar__row">
                   <button
                     type="button"
-                    class="ghost"
-                    :disabled="!selectedRoad.points.length"
-                    @click="selectedRoad.points = []">
-                    Straighten
+                    class="cta cta--sm"
+                    :disabled="busy !== ''"
+                    @click="readTheTerrain">
+                    <span
+                      v-if="busy === 'terrain'"
+                      class="spin ev-progress-spin"
+                      aria-hidden="true" />
+                    {{
+                      busy === 'terrain' ? 'Reading the terrain… (about 10 s)' : 'Read the terrain'
+                    }}
                   </button>
-                  <button type="button" class="ghost danger" @click="removeSelectedRoad">
-                    Remove this road
+                  <button
+                    type="button"
+                    class="ghost ghost--sm"
+                    :disabled="busy !== ''"
+                    @click="blankTheTerrain">
+                    Start blank
+                  </button>
+                  <button
+                    v-if="board.terrain"
+                    type="button"
+                    class="ghost ghost--sm"
+                    :disabled="busy !== ''"
+                    @click="clearTheTerrain">
+                    No terrain
                   </button>
                 </div>
-              </div>
-              <div v-else-if="selectedPlace" class="inspect">
-                <label class="field">
-                  <span class="field__label">Name</span>
-                  <input v-model="selectedPlace.name" class="ev-input" maxlength="128" />
-                </label>
-                <label class="field">
-                  <span class="field__label">This is</span>
-                  <select
-                    class="ev-input"
-                    :value="selectedPlace.key ?? ''"
-                    @change="
-                      onKeyChange(selectedPlace, ($event.target as HTMLSelectElement).value)
-                    ">
-                    <option value="">A new place</option>
-                    <option v-for="w in places" :key="w.key" :value="w.key">
-                      {{ w.name }} (already in the world)
-                    </option>
-                  </select>
-                </label>
-                <RouterLink
-                  v-if="selectedPlace.key && !dirty"
-                  class="inside"
-                  :to="{
-                    name: 'library-place-maps',
-                    params: { id: presetId, key: selectedPlace.key }
-                  }">
-                  Draw inside {{ selectedPlace.name }} →
-                </RouterLink>
-                <label class="check">
-                  <input v-model="selectedPlace.keep" type="checkbox" /> A place to go
-                  <small>({{ selectedPlace.kind || 'place' }})</small>
-                </label>
-                <div v-if="selectedPlace.keep && otherPlaces.length" class="connect">
-                  <span class="field__label">Connect to</span>
-                  <div class="row">
-                    <select v-model="connectTo" class="ev-input" aria-label="Place to connect">
-                      <option value="" disabled>Choose a place</option>
-                      <option v-for="o in otherPlaces" :key="o.id" :value="o.id">
-                        {{ o.name }}
-                      </option>
+                <div
+                  v-if="board.terrain"
+                  class="terrainbar__row"
+                  role="radiogroup"
+                  aria-label="Paint with">
+                  <button
+                    v-for="k in TERRAIN_KINDS"
+                    :key="k.letter"
+                    type="button"
+                    role="radio"
+                    class="swatch"
+                    :class="{ 'swatch--on': brush === k.letter }"
+                    :aria-checked="brush === k.letter"
+                    :title="`${k.name}: roads ×${k.cost}`"
+                    @click="brush = k.letter">
+                    <span class="swatch__colour" :style="{ background: k.colour }"></span>
+                    {{ k.name }}
+                  </button>
+                  <label class="terrainbar__size">
+                    Brush
+                    <select
+                      v-model.number="brushSize"
+                      class="ev-input small"
+                      aria-label="Brush size">
+                      <option :value="0">1 cell</option>
+                      <option :value="1">3 × 3</option>
+                      <option :value="2">5 × 5</option>
                     </select>
-                    <select v-model="connectBy" class="ev-input small" aria-label="Road kind">
-                      <option
-                        v-for="k in ['road', 'path', 'sea', 'river', 'bridge', 'pass']"
-                        :key="k"
-                        :value="k">
-                        {{ k }}
-                      </option>
-                    </select>
-                    <button type="button" class="ghost" :disabled="!connectTo" @click="addRoad">
-                      Add
-                    </button>
-                  </div>
+                  </label>
                 </div>
               </div>
-              <p v-else class="card__note">
-                <IconInfo :size="14" /> Click a pin or a road to edit it.
+              <label v-else-if="board.terrain" class="terrainbar__show">
+                <input v-model="showTerrain" type="checkbox" /> Show the terrain
+              </label>
+            </Transition>
+            <Transition name="ev-rise" mode="out-in">
+              <p v-if="notice" :key="notice" class="card__note">
+                <IconInfo :size="14" /> {{ notice }}
               </p>
+            </Transition>
+            <Transition name="ev-rise">
+              <p v-if="roadNote" class="card__note card__note--road" role="status">
+                <IconBranch :size="14" /> {{ roadNote }}
+                <span v-if="tool === 'road'" class="keys">Backspace undoes a bend · Esc stops</span>
+              </p>
+            </Transition>
 
-              <ul class="legend">
-                <li><span class="sw sw--new"></span> New place</li>
-                <li><span class="sw"></span> Already in the world</li>
-                <li><span class="sw sw--off"></span> Left off</li>
-              </ul>
-              <ul v-if="terrainLegend.length && (showTerrain || tool === 'terrain')" class="legend">
-                <li v-for="t in terrainLegend" :key="t.kind.letter">
-                  <span class="sw" :style="{ background: t.kind.colour }"></span>
-                  {{ t.kind.name }} · {{ Math.round(t.share * 100) }}%
-                </li>
-              </ul>
-            </aside>
-          </div>
-        </section>
+            <div class="boardwrap">
+              <div
+                ref="frameEl"
+                class="mapframe"
+                :class="{
+                  'mapframe--placing': placing || tool === 'road',
+                  'mapframe--painting': tool === 'terrain',
+                  'mapframe--fresh-pins': freshPins,
+                  'mapframe--fresh-roads': freshRoads,
+                  'mapframe--fresh-terrain': freshTerrain
+                }"
+                :style="{ aspectRatio: aspect }"
+                @pointerdown="onFrameDown"
+                @pointermove="onFrameMove"
+                @pointerup="onFrameUp"
+                @pointerleave="cursor = null"
+                @click="onFrameClick($event as PointerEvent)">
+                <img :src="pictureUrl" :alt="`Map of ${worldName}`" draggable="false" />
+                <svg
+                  v-if="terrainCells.length"
+                  class="terrain"
+                  viewBox="0 0 1000 1000"
+                  preserveAspectRatio="none"
+                  aria-hidden="true">
+                  <rect
+                    v-for="(c, i) in terrainCells"
+                    :key="i"
+                    :x="c.x"
+                    :y="c.y"
+                    :width="c.w + 0.5"
+                    :height="c.h + 0.5"
+                    :fill="c.fill" />
+                </svg>
+                <svg
+                  class="roads"
+                  viewBox="0 0 1000 1000"
+                  preserveAspectRatio="none"
+                  aria-hidden="true">
+                  <polyline
+                    v-if="selectedLine.length"
+                    :points="selectedLine.map(([x, y]) => `${x},${y}`).join(' ')"
+                    class="road-halo"
+                    fill="none"
+                    stroke-width="10"
+                    stroke-linejoin="round"
+                    vector-effect="non-scaling-stroke" />
+                  <polyline
+                    v-for="(line, i) in linesFor"
+                    :key="i"
+                    :points="line.points"
+                    :stroke="colorOf(line.road.by)"
+                    :stroke-dasharray="line.road.by === 'sea' ? '6 5' : undefined"
+                    fill="none"
+                    stroke-width="4"
+                    stroke-linejoin="round"
+                    vector-effect="non-scaling-stroke" />
+                  <!-- wide, invisible: what a click on a road lands on -->
+                  <polyline
+                    v-for="(line, i) in linesFor"
+                    :key="`hit-${i}`"
+                    :points="line.points"
+                    class="road-hit"
+                    :class="{ 'road-hit--live': tool === 'select' }"
+                    fill="none"
+                    stroke="transparent"
+                    stroke-width="16"
+                    vector-effect="non-scaling-stroke"
+                    @click.stop="pickRoad(line.road)" />
+                  <polyline
+                    v-if="drawnLine"
+                    class="road-drawing"
+                    :points="drawnLine"
+                    :stroke="colorOf(connectBy)"
+                    stroke-dasharray="8 6"
+                    fill="none"
+                    stroke-width="4"
+                    stroke-linejoin="round"
+                    vector-effect="non-scaling-stroke" />
+                </svg>
+                <span
+                  v-for="(b, i) in drawing?.bends ?? []"
+                  :key="`drawn-${i}`"
+                  class="bend bend--drawn"
+                  :style="{ left: `${b[0] / 10}%`, top: `${b[1] / 10}%` }" />
+                <template v-if="selectedRoad && tool === 'select'">
+                  <button
+                    v-for="(m, i) in selectedMiddles"
+                    :key="`mid-${i}`"
+                    type="button"
+                    class="bend bend--middle"
+                    :style="{ left: `${m[0] / 10}%`, top: `${m[1] / 10}%` }"
+                    :aria-label="`Add a bend to this stretch`"
+                    title="Drag to add a bend"
+                    @click.stop
+                    @pointerdown.stop.prevent="grabMiddle($event, i)" />
+                  <button
+                    v-for="(b, i) in selectedRoad.points"
+                    :key="`bend-${i}`"
+                    type="button"
+                    class="bend"
+                    :style="{ left: `${b[0] / 10}%`, top: `${b[1] / 10}%` }"
+                    :aria-label="`Bend ${i + 1}: drag to move, double-click or Delete to remove`"
+                    title="Drag to move · double-click to remove"
+                    @click.stop
+                    @dblclick.stop="removeBend(i)"
+                    @keydown.delete.prevent="removeBend(i)"
+                    @keydown.backspace.prevent="removeBend(i)"
+                    @pointerdown.stop.prevent="grabBend(i)" />
+                </template>
+                <button
+                  v-for="(p, i) in board.places"
+                  :key="p.id"
+                  type="button"
+                  class="pin"
+                  :class="{
+                    'pin--off': !p.keep,
+                    'pin--on': p.id === selected || p.id === drawing?.from,
+                    'pin--new': p.keep && !p.key,
+                    'pin--target': p.id === snapTarget?.id
+                  }"
+                  :style="{
+                    left: `${p.point[0] / 10}%`,
+                    top: `${p.point[1] / 10}%`,
+                    '--i': Math.min(i, 14)
+                  }"
+                  :title="p.name"
+                  @click.stop="onPinClick(p)"
+                  @pointerdown.stop="startDrag($event, p)"
+                  @pointermove="onDrag($event, p)"
+                  @pointerup="dragging = null">
+                  <span class="pin__dot"></span>
+                  <span class="pin__label">{{ p.name }}</span>
+                </button>
+              </div>
+
+              <aside class="side">
+                <Transition name="ev-swap" mode="out-in">
+                  <div
+                    v-if="selectedRoad"
+                    :key="`road-${selectedRoad.a}-${selectedRoad.b}`"
+                    class="inspect">
+                    <p class="field__label">
+                      {{ nameOf(selectedRoad.a) }} — {{ nameOf(selectedRoad.b) }}
+                    </p>
+                    <label class="field">
+                      <span class="field__label">By</span>
+                      <select v-model="selectedRoad.by" class="ev-input">
+                        <option v-for="k in ROAD_KINDS" :key="k" :value="k">{{ k }}</option>
+                      </select>
+                    </label>
+                    <p class="card__note">
+                      <IconInfo :size="14" />
+                      {{ selectedRoad.points.length }} of {{ MAX_BENDS }} bends. Drag a bend to move
+                      it, drag a hollow dot to add one, double-click a bend to remove it.
+                    </p>
+                    <div class="row">
+                      <button
+                        type="button"
+                        class="ghost"
+                        :disabled="!selectedRoad.points.length"
+                        @click="selectedRoad.points = []">
+                        Straighten
+                      </button>
+                      <button type="button" class="ghost danger" @click="removeSelectedRoad">
+                        Remove this road
+                      </button>
+                    </div>
+                  </div>
+                  <div v-else-if="selectedPlace" :key="`place-${selectedPlace.id}`" class="inspect">
+                    <label class="field">
+                      <span class="field__label">Name</span>
+                      <input v-model="selectedPlace.name" class="ev-input" maxlength="128" />
+                    </label>
+                    <label class="field">
+                      <span class="field__label">This is</span>
+                      <select
+                        class="ev-input"
+                        :value="selectedPlace.key ?? ''"
+                        @change="
+                          onKeyChange(selectedPlace, ($event.target as HTMLSelectElement).value)
+                        ">
+                        <option value="">A new place</option>
+                        <option v-for="w in places" :key="w.key" :value="w.key">
+                          {{ w.name }} (already in the world)
+                        </option>
+                      </select>
+                    </label>
+                    <RouterLink
+                      v-if="selectedPlace.key && !dirty"
+                      class="inside"
+                      :to="{
+                        name: 'library-place-maps',
+                        params: { id: presetId, key: selectedPlace.key }
+                      }">
+                      Draw inside {{ selectedPlace.name }} →
+                    </RouterLink>
+                    <label class="check">
+                      <input v-model="selectedPlace.keep" type="checkbox" /> A place to go
+                      <small>({{ selectedPlace.kind || 'place' }})</small>
+                    </label>
+                    <div v-if="selectedPlace.keep && otherPlaces.length" class="connect">
+                      <span class="field__label">Connect to</span>
+                      <div class="row">
+                        <select v-model="connectTo" class="ev-input" aria-label="Place to connect">
+                          <option value="" disabled>Choose a place</option>
+                          <option v-for="o in otherPlaces" :key="o.id" :value="o.id">
+                            {{ o.name }}
+                          </option>
+                        </select>
+                        <select v-model="connectBy" class="ev-input small" aria-label="Road kind">
+                          <option
+                            v-for="k in ['road', 'path', 'sea', 'river', 'bridge', 'pass']"
+                            :key="k"
+                            :value="k">
+                            {{ k }}
+                          </option>
+                        </select>
+                        <button type="button" class="ghost" :disabled="!connectTo" @click="addRoad">
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <p v-else key="none" class="card__note">
+                    <IconInfo :size="14" /> Click a pin or a road to edit it.
+                  </p>
+                </Transition>
+
+                <ul class="legend">
+                  <li><span class="sw sw--new"></span> New place</li>
+                  <li><span class="sw"></span> Already in the world</li>
+                  <li><span class="sw sw--off"></span> Left off</li>
+                </ul>
+                <ul
+                  v-if="terrainLegend.length && (showTerrain || tool === 'terrain')"
+                  class="legend">
+                  <li v-for="t in terrainLegend" :key="t.kind.letter">
+                    <span class="sw" :style="{ background: t.kind.colour }"></span>
+                    {{ t.kind.name }} · {{ Math.round(t.share * 100) }}%
+                  </li>
+                </ul>
+              </aside>
+            </div>
+          </section>
+        </Transition>
 
         <!-- travel -------------------------------------------------------------- -->
-        <section v-if="board && board.places.length" class="card ev-card">
-          <header class="card__head">
-            <span class="card__icon"><IconClock :size="20" /></span>
-            <div>
-              <h2 class="card__title">3 · Travel time</h2>
-              <p class="card__sub">
-                Say how long the shortest and the longest road take; every other road scales with
-                its length on the map{{
-                  board.terrain ? ', weighed by the terrain it crosses' : ''
-                }}. A day has {{ PHASES_PER_DAY }} phases, dawn to midnight.
+        <Transition name="ev-rise">
+          <section v-if="board && board.places.length" class="card ev-card">
+            <header class="card__head">
+              <span class="card__icon"><IconClock :size="20" /></span>
+              <div>
+                <h2 class="card__title">3 · Travel time</h2>
+                <p class="card__sub">
+                  Say how long the shortest and the longest road take; every other road scales with
+                  its length on the map{{
+                    board.terrain ? ', weighed by the terrain it crosses' : ''
+                  }}. A day has {{ PHASES_PER_DAY }} phases, dawn to midnight.
+                </p>
+              </div>
+            </header>
+            <div class="pair">
+              <label class="field">
+                <span class="field__label">The shortest road takes</span>
+                <span class="row">
+                  <input
+                    v-model.number="shortestAmount"
+                    class="ev-input amount"
+                    type="number"
+                    min="1"
+                    max="99" />
+                  <select v-model="shortestUnit" class="ev-input small" aria-label="Unit">
+                    <option value="phases">phases</option>
+                    <option value="days">days</option>
+                  </select>
+                </span>
+              </label>
+              <label class="field">
+                <span class="field__label">The longest road takes</span>
+                <span class="row">
+                  <input
+                    v-model.number="longestAmount"
+                    class="ev-input amount"
+                    type="number"
+                    min="1"
+                    max="99" />
+                  <select v-model="longestUnit" class="ev-input small" aria-label="Unit">
+                    <option value="phases">phases</option>
+                    <option value="days">days</option>
+                  </select>
+                </span>
+              </label>
+            </div>
+            <Transition name="ev-rise">
+              <p v-if="scaleProblem" class="over">{{ scaleProblem }}</p>
+            </Transition>
+            <div class="roads-scroll">
+              <table v-if="timed.length" class="roads">
+                <thead>
+                  <tr>
+                    <th>Road</th>
+                    <th>By</th>
+                    <th>Takes</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <TransitionGroup name="ev-list" tag="tbody">
+                  <tr v-for="(t, i) in timed" :key="`${t.road.a}-${t.road.b}`">
+                    <td>
+                      <button
+                        type="button"
+                        class="roadname"
+                        :class="{ 'is-on': t.road === selectedRoad }"
+                        @click="((tool = 'select'), pickRoad(t.road))">
+                        <IconBranch :size="13" /> {{ nameOf(t.road.a) }} — {{ nameOf(t.road.b) }}
+                      </button>
+                    </td>
+                    <td>
+                      <span class="by" :style="{ color: colorOf(t.road.by) }">{{ t.road.by }}</span>
+                    </td>
+                    <td class="num">{{ describePhases(t.phases) }}</td>
+                    <td>
+                      <button
+                        type="button"
+                        class="iconbtn"
+                        :aria-label="`Remove ${nameOf(t.road.a)} to ${nameOf(t.road.b)}`"
+                        @click="removeRoad(i)">
+                        <IconX :size="12" />
+                      </button>
+                    </td>
+                  </tr>
+                </TransitionGroup>
+              </table>
+              <p v-else class="card__note">
+                <IconInfo :size="14" /> No roads yet: trace them, or connect places by hand.
               </p>
             </div>
-          </header>
-          <div class="pair">
-            <label class="field">
-              <span class="field__label">The shortest road takes</span>
-              <span class="row">
-                <input
-                  v-model.number="shortestAmount"
-                  class="ev-input amount"
-                  type="number"
-                  min="1"
-                  max="99" />
-                <select v-model="shortestUnit" class="ev-input small" aria-label="Unit">
-                  <option value="phases">phases</option>
-                  <option value="days">days</option>
-                </select>
-              </span>
-            </label>
-            <label class="field">
-              <span class="field__label">The longest road takes</span>
-              <span class="row">
-                <input
-                  v-model.number="longestAmount"
-                  class="ev-input amount"
-                  type="number"
-                  min="1"
-                  max="99" />
-                <select v-model="longestUnit" class="ev-input small" aria-label="Unit">
-                  <option value="phases">phases</option>
-                  <option value="days">days</option>
-                </select>
-              </span>
-            </label>
-          </div>
-          <p v-if="scaleProblem" class="over">{{ scaleProblem }}</p>
-          <div class="roads-scroll">
-            <table v-if="timed.length" class="roads">
-              <thead>
-                <tr>
-                  <th>Road</th>
-                  <th>By</th>
-                  <th>Takes</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(t, i) in timed" :key="`${t.road.a}-${t.road.b}`">
-                  <td>
-                    <button
-                      type="button"
-                      class="roadname"
-                      :class="{ 'is-on': t.road === selectedRoad }"
-                      @click="((tool = 'select'), pickRoad(t.road))">
-                      <IconBranch :size="13" /> {{ nameOf(t.road.a) }} — {{ nameOf(t.road.b) }}
-                    </button>
-                  </td>
-                  <td>
-                    <span class="by" :style="{ color: colorOf(t.road.by) }">{{ t.road.by }}</span>
-                  </td>
-                  <td class="num">{{ describePhases(t.phases) }}</td>
-                  <td>
-                    <button
-                      type="button"
-                      class="iconbtn"
-                      :aria-label="`Remove ${nameOf(t.road.a)} to ${nameOf(t.road.b)}`"
-                      @click="removeRoad(i)">
-                      <IconX :size="12" />
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <p v-else class="card__note">
-              <IconInfo :size="14" /> No roads yet: trace them, or connect places by hand.
-            </p>
-          </div>
-        </section>
+          </section>
+        </Transition>
       </template>
     </template>
 
@@ -1284,10 +1376,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       <template #end>
         <span v-if="problem && dirty" class="problem">{{ problem }}</span>
         <button
+          ref="saveBtn"
           type="button"
           class="cta cta--foot"
           :disabled="!dirty || !!problem || busy !== ''"
           @click="save">
+          <span v-if="busy === 'save'" class="spin ev-progress-spin" aria-hidden="true" />
           {{ busy === 'save' ? 'Saving…' : 'Save the map to this world' }}
         </button>
       </template>
@@ -1456,8 +1550,22 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .mapframe svg {
   pointer-events: none;
 }
+/* fresh roads spread out from the middle of the map */
+.mapframe--fresh-roads svg.roads {
+  animation: wmap-roads-in 1.2s var(--ease-io) both;
+}
+/* fresh terrain washes across the map from west to east */
+.mapframe--fresh-terrain svg.terrain {
+  animation: wmap-wash 1.1s var(--ease-io) both;
+}
+/* the selected road glows, breathing */
 .road-halo {
   stroke: rgba(255, 252, 240, 0.9);
+  animation: wmap-halo 2s var(--ease-sine) infinite;
+}
+/* the road being drawn marches toward the pointer */
+.road-drawing {
+  animation: wmap-march 0.8s linear infinite;
 }
 .road-hit--live {
   pointer-events: stroke;
@@ -1474,6 +1582,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   cursor: move;
   touch-action: none;
   padding: 0;
+  animation: wmap-pop 0.4s var(--ease-spring) both;
+  transition: scale var(--dur-quick) var(--ease-out);
+}
+.bend:hover {
+  scale: 1.25;
 }
 .bend:focus-visible {
   outline: 3px solid var(--gold-soft);
@@ -1531,6 +1644,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .pin:active {
   cursor: grabbing;
 }
+/* a pin drops onto the parchment with a small bounce */
 .pin__dot {
   width: 14px;
   height: 14px;
@@ -1538,6 +1652,31 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   background: #f2c94c;
   border: 2px solid #2e2718;
   flex: none;
+  animation: wmap-drop 0.5s var(--ease-spring) both;
+  transition:
+    scale 0.28s var(--ease-spring),
+    box-shadow var(--dur) ease,
+    background-color var(--dur) ease;
+}
+.pin__label {
+  animation: ev-fade 0.4s var(--ease-out) 0.15s both;
+  transition: translate var(--dur) var(--ease-settle);
+}
+/* a batch read from the map lands one pin after another */
+.mapframe--fresh-pins .pin__dot {
+  animation-delay: calc(var(--i, 0) * 0.04s);
+}
+.mapframe--fresh-pins .pin__label {
+  animation-delay: calc(0.15s + var(--i, 0) * 0.04s);
+}
+.pin:hover .pin__dot {
+  scale: 1.3;
+}
+.pin:hover .pin__label {
+  translate: 2px 0;
+}
+.pin:active .pin__dot {
+  scale: 1.1;
 }
 .pin__label {
   font-size: 12.5px;
@@ -1571,6 +1710,91 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 }
 .pin--on .pin__dot {
   box-shadow: 0 0 0 4px rgba(31, 106, 94, 0.55);
+  animation:
+    wmap-drop 0.5s var(--ease-spring) both,
+    wmap-ring 1.8s var(--ease-sine) 0.5s infinite;
+}
+.pin--target .pin__dot {
+  scale: 1.3;
+}
+.spin {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  opacity: 0.85;
+  animation: wmap-spin 0.8s linear infinite;
+}
+.wmap__loading {
+  align-items: center;
+}
+.is-on {
+  animation: wmap-toggle 0.36s var(--ease-spring);
+}
+@keyframes wmap-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes wmap-toggle {
+  40% {
+    scale: 1.05;
+  }
+}
+@keyframes wmap-drop {
+  from {
+    opacity: 0;
+    translate: 0 -16px;
+    scale: 0.4;
+  }
+}
+@keyframes wmap-pop {
+  from {
+    opacity: 0;
+    scale: 0.3;
+  }
+}
+@keyframes wmap-ring {
+  0%,
+  100% {
+    box-shadow: 0 0 0 4px rgba(31, 106, 94, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(31, 106, 94, 0.25);
+  }
+}
+@keyframes wmap-halo {
+  0%,
+  100% {
+    stroke-opacity: 0.95;
+  }
+  50% {
+    stroke-opacity: 0.55;
+  }
+}
+@keyframes wmap-march {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+@keyframes wmap-roads-in {
+  from {
+    clip-path: circle(0% at 50% 50%);
+  }
+  to {
+    clip-path: circle(75% at 50% 50%);
+  }
+}
+@keyframes wmap-wash {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
 }
 .side {
   display: flex;

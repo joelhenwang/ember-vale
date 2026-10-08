@@ -16,6 +16,7 @@ import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
 import IconPlay from '../components/icons/IconPlay.vue'
 import IconArrowRight from '../components/icons/IconArrowRight.vue'
 import { useObservatory } from '../composables/useObservatory'
+import { vRipple } from '../composables/useEffects'
 import { BEAT_LIMITS, SPEEDS, autoplayStatus, beatTimeLabel, speedFor } from '../game/observatory'
 
 const route = useRoute()
@@ -54,6 +55,17 @@ const activePlaceId = computed(() => {
 })
 
 const placeMaps = computed(() => view.value?.place_maps ?? [])
+
+/* Going inside zooms the world map into the place; leaving pulls back out of it. */
+const lastInside = ref<string | null>(null)
+const zoomOrigin = computed(() => {
+  const anchor = view.value?.manifest.anchors?.find((a) => a.location_id === lastInside.value)
+  return anchor ? `${Number(anchor.x) * 100}% ${Number(anchor.y) * 100}%` : '50% 50%'
+})
+function goInside(placeId: string): void {
+  lastInside.value = placeId
+  insideId.value = placeId
+}
 const insideMap = computed(
   () => placeMaps.value.find((m) => m.location_id === insideId.value) ?? null
 )
@@ -99,27 +111,36 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <main class="obs">
+  <main class="obs ev-rise">
     <header class="obs__bar">
       <RouterLink class="obs__back" :to="{ name: 'story-play', params: { storyId } }">
         <IconArrowLeft :size="16" /> Story room
       </RouterLink>
       <div class="obs__title">
         <h1>{{ obs.title.value ?? 'World observatory' }}</h1>
-        <p>{{ timeLabel }}</p>
+        <Transition name="obs-tick" mode="out-in">
+          <p :key="timeLabel">{{ timeLabel }}</p>
+        </Transition>
       </div>
       <div class="obs__controls" role="group" aria-label="Autoplay">
         <button
+          v-ripple
           type="button"
           class="obs__btn"
           :disabled="stepDisabled"
           title="Run one beat"
           @click="obs.step()">
-          <IconArrowRight :size="16" /> Step
+          <span
+            v-if="obs.acting.value && !obs.playing.value"
+            class="obs__spin ev-progress-spin"
+            aria-hidden="true" />
+          <IconArrowRight v-else :size="16" class="obs__step-ico" /> Step
         </button>
         <button
+          v-ripple
           type="button"
           class="obs__btn obs__btn--primary"
+          :class="{ 'obs__btn--live': obs.playing.value }"
           :disabled="busy || !obs.canOperate.value"
           :aria-pressed="obs.playing.value"
           @click="togglePlay()">
@@ -141,16 +162,25 @@ onUnmounted(() => {
           </select>
         </label>
       </div>
-      <p class="obs__status" role="status" aria-live="polite">{{ status }}</p>
+      <p class="obs__status" role="status" aria-live="polite">
+        <Transition name="ev-pop">
+          <span v-if="obs.playing.value" class="obs__live" aria-hidden="true"><i></i></span>
+        </Transition>
+        {{ status }}
+      </p>
     </header>
 
-    <p v-if="obs.error.value" class="obs__notice obs__notice--error" role="alert">
-      {{ obs.error.value }}
-      <button type="button" class="obs__link" @click="obs.load()">Retry</button>
-    </p>
-    <p v-if="obs.actionError.value" class="obs__notice obs__notice--error" role="alert">
-      {{ obs.actionError.value }}
-    </p>
+    <Transition name="ev-rise">
+      <p v-if="obs.error.value" class="obs__notice obs__notice--error ev-nudge" role="alert">
+        {{ obs.error.value }}
+        <button type="button" class="obs__link" @click="obs.load()">Retry</button>
+      </p>
+    </Transition>
+    <Transition name="ev-rise">
+      <p v-if="obs.actionError.value" class="obs__notice obs__notice--error ev-nudge" role="alert">
+        {{ obs.actionError.value }}
+      </p>
+    </Transition>
     <p v-if="view && !obs.canOperate.value" class="obs__notice">
       You are watching a Player story: it moves on its player's attempts, from the story room.
     </p>
@@ -168,31 +198,36 @@ onUnmounted(() => {
 
     <div class="obs__grid" :data-panel="panel">
       <div class="obs__map">
-        <PlaceMap
-          v-if="view && insideMap"
-          :world-id="storyId"
-          :place-map="insideMap"
-          :place-name="placeOf(insideMap.location_id) ?? 'This place'"
-          :cast="view.cast ?? []"
-          :activities="view.activities ?? []"
-          :scenes="obs.entries.value"
-          :focus-id="focusId"
-          @select="openLatestFor"
-          @leave="insideId = null" />
-        <WorldMap
-          v-else-if="view"
-          :world-id="storyId"
-          :map-asset-id="view.manifest.asset_id ?? null"
-          :anchors="view.manifest.anchors ?? []"
-          :roads="view.manifest.roads ?? []"
-          :places="obs.places.value"
-          :tokens="obs.tokens.value"
-          :active-place-id="activePlaceId"
-          :focus-id="focusId"
-          :inside="placeMaps.map((m) => m.location_id)"
-          @select="openLatestFor"
-          @enter="insideId = $event" />
-        <p v-else class="obs__notice">Loading the map…</p>
+        <Transition :name="insideMap ? 'obs-dive' : 'obs-surface'" mode="out-in">
+          <PlaceMap
+            v-if="view && insideMap"
+            key="inside"
+            :world-id="storyId"
+            :place-map="insideMap"
+            :place-name="placeOf(insideMap.location_id) ?? 'This place'"
+            :cast="view.cast ?? []"
+            :activities="view.activities ?? []"
+            :scenes="obs.entries.value"
+            :focus-id="focusId"
+            @select="openLatestFor"
+            @leave="insideId = null" />
+          <WorldMap
+            v-else-if="view"
+            key="world"
+            :style="{ transformOrigin: zoomOrigin }"
+            :world-id="storyId"
+            :map-asset-id="view.manifest.asset_id ?? null"
+            :anchors="view.manifest.anchors ?? []"
+            :roads="view.manifest.roads ?? []"
+            :places="obs.places.value"
+            :tokens="obs.tokens.value"
+            :active-place-id="activePlaceId"
+            :focus-id="focusId"
+            :inside="placeMaps.map((m) => m.location_id)"
+            @select="openLatestFor"
+            @enter="goInside" />
+          <p v-else key="loading" class="obs__notice obs__loading">Loading the map…</p>
+        </Transition>
       </div>
       <EventFeed
         class="obs__feed"
@@ -280,6 +315,59 @@ onUnmounted(() => {
   background: var(--surface);
   color: var(--ink-2);
   cursor: pointer;
+  transition:
+    translate var(--dur) var(--ease-settle),
+    scale var(--dur-quick) var(--ease-out),
+    box-shadow var(--dur) ease,
+    filter var(--dur) ease;
+}
+.obs__btn:hover:not(:disabled) {
+  translate: 0 -1px;
+  box-shadow: 0 6px 14px -8px rgba(46, 39, 24, 0.5);
+}
+.obs__btn:active:not(:disabled) {
+  translate: 0 0;
+  scale: 0.96;
+}
+.obs__btn:hover:not(:disabled) .obs__step-ico {
+  translate: 2px 0;
+}
+.obs__step-ico {
+  transition: translate var(--dur) var(--ease-settle);
+}
+.obs__spin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(69, 59, 39, 0.25);
+  border-top-color: var(--teal);
+  animation: obs-spin 0.8s linear infinite;
+}
+@keyframes obs-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* while the world plays, Pause glows like a lit lantern */
+.obs__btn--live {
+  --ev-breathe-color: rgba(20, 84, 90, 0.45);
+  animation: ev-breathe 2.4s var(--ease-sine) infinite;
+}
+.obs__live {
+  display: inline-grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+.obs__live i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ember);
+  --ev-breathe-color: rgba(194, 97, 42, 0.55);
+  animation: ev-breathe 1.6s var(--ease-sine) infinite;
 }
 .obs__btn--primary {
   background: var(--teal);
@@ -353,6 +441,82 @@ onUnmounted(() => {
   min-height: 0;
   overflow: auto;
 }
+.obs__loading {
+  margin-top: 0;
+  min-height: 320px;
+  display: grid;
+  place-items: center;
+  color: var(--ink-3);
+  border-style: dashed;
+  animation: ev-shimmer 1.6s linear infinite;
+  background:
+    linear-gradient(
+        100deg,
+        rgba(255, 252, 240, 0) 30%,
+        rgba(255, 252, 240, 0.7) 50%,
+        rgba(255, 252, 240, 0) 70%
+      )
+      0 0 / 250% 100%,
+    var(--surface-2);
+}
+/* the turn label rolls over like a clock face when a beat passes */
+.obs-tick-enter-active {
+  transition:
+    opacity 0.3s var(--ease-out),
+    transform 0.4s var(--ease-settle);
+}
+.obs-tick-leave-active {
+  transition:
+    opacity 0.14s var(--ease-in),
+    transform 0.14s var(--ease-in);
+}
+.obs-tick-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.obs-tick-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+/* diving into a place: the world map zooms toward it and dissolves */
+.obs-dive-leave-active {
+  transition:
+    transform 0.34s var(--ease-in),
+    opacity 0.34s var(--ease-in),
+    filter 0.34s var(--ease-in);
+}
+.obs-dive-leave-to {
+  transform: scale(1.7);
+  opacity: 0;
+  filter: blur(4px);
+}
+.obs-dive-enter-active {
+  transition: opacity 0.3s var(--ease-out);
+}
+.obs-dive-enter-from {
+  opacity: 0;
+}
+/* coming back out: the place shrinks away, the world map pulls back from it */
+.obs-surface-leave-active {
+  transition:
+    transform 0.22s var(--ease-in),
+    opacity 0.22s var(--ease-in);
+}
+.obs-surface-leave-to {
+  transform: scale(0.92);
+  opacity: 0;
+}
+.obs-surface-enter-active {
+  transition:
+    transform 0.7s var(--ease-settle),
+    opacity 0.4s var(--ease-out),
+    filter 0.5s var(--ease-out);
+}
+.obs-surface-enter-from {
+  transform: scale(1.7);
+  opacity: 0;
+  filter: blur(4px);
+}
 /* a map without art fills the column beside the events */
 .obs__map :deep(.wm--schematic) {
   aspect-ratio: auto;
@@ -384,6 +548,19 @@ onUnmounted(() => {
     border: 1px solid var(--line);
     background: var(--surface);
     color: var(--ink-2);
+    transition:
+      background-color var(--dur) ease,
+      color var(--dur) ease,
+      border-color var(--dur) ease,
+      scale var(--dur-quick) var(--ease-out);
+  }
+  .obs__tabs button:active {
+    scale: 0.97;
+  }
+  /* the panel you switch to slides up into place */
+  .obs__grid[data-panel='map'] .obs__map,
+  .obs__grid[data-panel='events'] .obs__feed {
+    animation: obs-panel-in 0.4s var(--ease-settle) both;
   }
   .obs__tabs button[aria-pressed='true'] {
     background: var(--teal);
@@ -400,6 +577,12 @@ onUnmounted(() => {
   }
   .obs__feed {
     height: 70vh;
+  }
+}
+@keyframes obs-panel-in {
+  from {
+    opacity: 0;
+    translate: 0 10px;
   }
 }
 </style>

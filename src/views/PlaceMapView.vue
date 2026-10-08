@@ -6,7 +6,8 @@
   see who is where. Pure board logic: src/game/placeMap.ts.
 -->
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { burst, shake } from '../composables/useEffects'
 import { useRoute, useRouter } from 'vue-router'
 import SaveBar from '../components/ui/SaveBar.vue'
 import PageIntro from '../components/ui/PageIntro.vue'
@@ -310,10 +311,35 @@ function onDrag(event: PointerEvent, spot: BoardSpot): void {
   if (point) spot.point = point
 }
 
+/* ————— motion: what just arrived announces itself ————— */
+const saveBtn = ref<HTMLElement | null>(null)
+const alertEl = ref<HTMLElement | null>(null)
+/** A fresh batch of spots (read or loaded) drops in one after another. */
+const freshPins = ref(false)
+let freshTimer: ReturnType<typeof setTimeout> | undefined
+watch(
+  () => board.value?.spots,
+  (now, before) => {
+    if (!now || now === before || now.length < 2 || busy.value === 'save') return
+    freshPins.value = false
+    requestAnimationFrame(() => {
+      freshPins.value = true
+      clearTimeout(freshTimer)
+      freshTimer = setTimeout(() => (freshPins.value = false), 1600)
+    })
+  }
+)
+watch(error, (now) => {
+  if (now) requestAnimationFrame(() => shake(alertEl.value))
+})
+onBeforeUnmount(() => clearTimeout(freshTimer))
+const WORKING = new Set(['painting', 'reading', 'saving'])
+
 function adopt(saved: PresetDetail, said: string): void {
   detail.value = saved
   showPlace()
   notice.value = said
+  burst(saveBtn.value, { count: 18, spread: 90 })
   savedFlash.value = true
   setTimeout(() => (savedFlash.value = false), 1400)
 }
@@ -377,7 +403,7 @@ onMounted(load)
 </script>
 
 <template>
-  <main class="pmap">
+  <main class="pmap ev-rise">
     <header class="pmap__head">
       <RouterLink
         class="pmap__back"
@@ -389,8 +415,12 @@ onMounted(load)
         sub="Give a place its own closer map: the inn, the market, the smithy. While a story plays you can look inside and see who is where." />
     </header>
 
-    <p v-if="error" class="pmap__alert" role="alert">{{ error }}</p>
-    <p v-if="loading" class="ev-info"><IconInfo :size="14" /> Loading…</p>
+    <Transition name="ev-rise">
+      <p v-if="error" ref="alertEl" class="pmap__alert" role="alert">{{ error }}</p>
+    </Transition>
+    <p v-if="loading" class="ev-info pmap__loading">
+      <span class="spin ev-progress-spin" aria-hidden="true" /> Loading…
+    </p>
 
     <template v-else-if="detail">
       <section v-if="readonly" class="card ev-card">
@@ -418,7 +448,7 @@ onMounted(load)
               </p>
             </div>
           </header>
-          <div class="chips" role="group" aria-label="Places">
+          <div class="chips ev-pop-stagger" role="group" aria-label="Places">
             <button
               v-for="p in places"
               :key="p.key"
@@ -446,231 +476,285 @@ onMounted(load)
               </p>
             </div>
           </header>
-          <div v-if="!offered" class="row">
-            <button
-              type="button"
-              class="ghost"
-              :disabled="busy !== '' || dirty"
-              @click="offerBatch">
-              Choose places to paint
-            </button>
-          </div>
-          <template v-else>
-            <ul v-if="batch.length" class="batch">
-              <li v-for="row in batch" :key="row.key" :class="`batch__row batch__row--${row.step}`">
-                <label class="check">
-                  <input v-model="row.tick" type="checkbox" :disabled="batchRunning" />
-                  {{ row.name }} <small v-if="row.kind">({{ row.kind }})</small>
-                </label>
-                <span class="batch__step">
-                  {{ STEP_TEXT[row.step] }}<template v-if="row.note"> · {{ row.note }}</template>
-                </span>
-              </li>
-            </ul>
-            <p v-else class="card__note">Every place already has a map of its own.</p>
-            <div class="row">
+          <Transition name="ev-swap" mode="out-in">
+            <div v-if="!offered" class="row">
               <button
-                v-if="!batchRunning"
-                type="button"
-                class="cta cta--sm"
-                :disabled="ticked === 0 || busy !== '' || dirty"
-                @click="runBatch">
-                {{
-                  ticked === 0
-                    ? 'Tick the places to paint'
-                    : `Paint ${ticked} ${ticked === 1 ? 'place' : 'places'}`
-                }}
-              </button>
-              <button
-                v-else
                 type="button"
                 class="ghost"
-                :disabled="batchStop"
-                @click="batchStop = true">
-                {{ batchStop ? 'Stopping after this place…' : 'Stop' }}
+                :disabled="busy !== '' || dirty"
+                @click="offerBatch">
+                Choose places to paint
               </button>
-              <span v-if="batchCost > 0" class="card__note">
-                Reading cost so far ${{ batchCost.toFixed(4) }} (painting is free).
-              </span>
             </div>
-          </template>
+            <div v-else class="batchwrap">
+              <ul v-if="batch.length" class="batch ev-rise">
+                <li
+                  v-for="row in batch"
+                  :key="row.key"
+                  :class="`batch__row batch__row--${row.step}`">
+                  <label class="check">
+                    <input v-model="row.tick" type="checkbox" :disabled="batchRunning" />
+                    {{ row.name }} <small v-if="row.kind">({{ row.kind }})</small>
+                  </label>
+                  <Transition name="ev-swap" mode="out-in">
+                    <span :key="row.step" class="batch__step">
+                      <span
+                        v-if="WORKING.has(row.step)"
+                        class="spin spin--sm ev-progress-spin"
+                        aria-hidden="true" />
+                      {{ STEP_TEXT[row.step]
+                      }}<template v-if="row.note"> · {{ row.note }}</template>
+                    </span>
+                  </Transition>
+                </li>
+              </ul>
+              <p v-else class="card__note">Every place already has a map of its own.</p>
+              <div class="row">
+                <button
+                  v-if="!batchRunning"
+                  type="button"
+                  class="cta cta--sm"
+                  :disabled="ticked === 0 || busy !== '' || dirty"
+                  @click="runBatch">
+                  {{
+                    ticked === 0
+                      ? 'Tick the places to paint'
+                      : `Paint ${ticked} ${ticked === 1 ? 'place' : 'places'}`
+                  }}
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  class="ghost"
+                  :disabled="batchStop"
+                  @click="batchStop = true">
+                  {{ batchStop ? 'Stopping after this place…' : 'Stop' }}
+                </button>
+                <span v-if="batchCost > 0" class="card__note">
+                  Reading cost so far ${{ batchCost.toFixed(4) }} (painting is free).
+                </span>
+              </div>
+            </div>
+          </Transition>
         </section>
 
-        <template v-if="place">
-          <!-- picture ------------------------------------------------------------ -->
-          <section class="card ev-card">
-            <header class="card__head">
-              <span class="card__icon"><IconImage :size="20" /></span>
-              <div>
-                <h2 class="card__title">{{ place.name }}, up close</h2>
-                <p class="card__sub">
-                  Upload a picture of {{ place.name }} seen from above, or paint one. Labelled
-                  buildings and open spaces help the map reader.
-                </p>
-              </div>
-            </header>
-            <div class="row">
-              <label class="ghost filepick" :class="{ 'is-busy': busy === 'upload' }">
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  :disabled="busy !== ''"
-                  @change="onFile" />
-                {{
-                  busy === 'upload'
-                    ? 'Uploading…'
-                    : board
-                      ? 'Upload a different picture'
-                      : 'Upload a picture'
-                }}
-              </label>
-              <button
-                type="button"
-                class="ghost"
-                :disabled="busy !== ''"
-                @click="showPaint = !showPaint">
-                <IconSparkle :size="14" /> Paint one
-              </button>
-              <button
-                v-if="place.map"
-                type="button"
-                class="ghost danger"
-                :disabled="busy !== '' || dirty"
-                @click="removeMap">
-                Take this place's map away
-              </button>
-            </div>
-            <div v-if="showPaint" class="paint">
-              <label class="field">
-                <span class="field__label">What to paint</span>
-                <textarea v-model="paintPrompt" class="ev-input words" rows="3" />
-              </label>
-              <div class="row">
-                <select v-model="paintRatio" class="ev-input ratio" aria-label="Shape">
-                  <option value="16:9">Wide (16:9)</option>
-                  <option value="3:2">Landscape (3:2)</option>
-                  <option value="1:1">Square</option>
-                </select>
-                <button type="button" class="cta cta--sm" :disabled="busy !== ''" @click="paint">
-                  {{ busy === 'paint' ? 'Painting… (up to a minute)' : 'Paint the picture' }}
-                </button>
-              </div>
-            </div>
-          </section>
-
-          <!-- spots --------------------------------------------------------------- -->
-          <section v-if="board" class="card ev-card">
-            <header class="card__head">
-              <span class="card__icon"><IconGlobe :size="20" /></span>
-              <div>
-                <h2 class="card__title">Spots in {{ place.name }}</h2>
-                <p class="card__sub">
-                  Where people can be. Drag a pin to move it, click one to rename it. Characters
-                  rest at inns and houses, work at markets and workshops, train in yards and patrol
-                  gates and towers.
-                </p>
-              </div>
-            </header>
-            <div class="row">
-              <button type="button" class="cta cta--sm" :disabled="busy !== ''" @click="findSpots">
-                {{
-                  busy === 'spots'
-                    ? 'Reading the picture… (about 10 s)'
-                    : board.spots.length
-                      ? 'Find the spots again'
-                      : 'Find the spots'
-                }}
-              </button>
-              <button
-                type="button"
-                class="ghost"
-                :class="{ 'is-on': placing }"
-                :disabled="busy !== ''"
-                @click="placing = !placing">
-                <IconPlus :size="14" />
-                {{ placing ? 'Click the picture to place it' : 'Add a spot' }}
-              </button>
-            </div>
-            <p v-if="notice" class="card__note"><IconInfo :size="14" /> {{ notice }}</p>
-
-            <div class="boardwrap">
-              <div
-                class="mapframe"
-                :class="{ 'mapframe--placing': placing }"
-                :style="{ aspectRatio: aspect }"
-                @pointerup="dragging = null"
-                @click="onFrameClick($event as PointerEvent)">
-                <img :src="pictureUrl" :alt="`${place.name} up close`" draggable="false" />
-                <button
-                  v-for="s in board.spots"
-                  :key="s.id"
-                  type="button"
-                  class="pin"
-                  :class="{ 'pin--off': !s.keep, 'pin--on': s.id === selected }"
-                  :style="{ left: `${s.point[0] / 10}%`, top: `${s.point[1] / 10}%` }"
-                  :title="s.name"
-                  @click.stop="selected = s.id"
-                  @pointerdown.stop="startDrag($event, s)"
-                  @pointermove="onDrag($event, s)"
-                  @pointerup="dragging = null">
-                  <span class="pin__dot"></span>
-                  <span class="pin__label">{{ s.name }}</span>
-                </button>
-              </div>
-
-              <aside class="side">
-                <div v-if="selectedSpot" class="inspect">
-                  <label class="field">
-                    <span class="field__label">Name</span>
-                    <input v-model="selectedSpot.name" class="ev-input" maxlength="128" />
-                  </label>
-                  <label class="field">
-                    <span class="field__label">Kind</span>
-                    <input
-                      v-model="selectedSpot.kind"
-                      class="ev-input"
-                      maxlength="32"
-                      list="spot-kinds" />
-                  </label>
-                  <label class="check">
-                    <input v-model="selectedSpot.keep" type="checkbox" /> A spot people can be at
-                  </label>
+        <Transition name="ev-swap" mode="out-in">
+          <div v-if="place" :key="placeKey" class="pmap__place">
+            <!-- picture ------------------------------------------------------------ -->
+            <section class="card ev-card">
+              <header class="card__head">
+                <span class="card__icon"><IconImage :size="20" /></span>
+                <div>
+                  <h2 class="card__title">{{ place.name }}, up close</h2>
+                  <p class="card__sub">
+                    Upload a picture of {{ place.name }} seen from above, or paint one. Labelled
+                    buildings and open spaces help the map reader.
+                  </p>
                 </div>
-                <p v-else class="card__note"><IconInfo :size="14" /> Click a pin to edit it.</p>
-                <p class="card__note">{{ keptCount }} of {{ board.spots.length }} spots kept.</p>
-              </aside>
-            </div>
-            <datalist id="spot-kinds">
-              <option
-                v-for="k in [
-                  'inn',
-                  'tavern',
-                  'house',
-                  'hall',
-                  'market',
-                  'square',
-                  'smithy',
-                  'workshop',
-                  'mill',
-                  'farm',
-                  'chapel',
-                  'temple',
-                  'yard',
-                  'barracks',
-                  'gate',
-                  'tower',
-                  'dock',
-                  'well',
-                  'garden'
-                ]"
-                :key="k"
-                :value="k" />
-            </datalist>
-          </section>
-        </template>
-        <p v-else class="card__note">
-          <IconInfo :size="14" /> This world has no place called “{{ placeKey }}”.
-        </p>
+              </header>
+              <div class="row">
+                <label class="ghost filepick" :class="{ 'is-busy': busy === 'upload' }">
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    :disabled="busy !== ''"
+                    @change="onFile" />
+                  {{
+                    busy === 'upload'
+                      ? 'Uploading…'
+                      : board
+                        ? 'Upload a different picture'
+                        : 'Upload a picture'
+                  }}
+                </label>
+                <button
+                  type="button"
+                  class="ghost"
+                  :disabled="busy !== ''"
+                  @click="showPaint = !showPaint">
+                  <IconSparkle :size="14" /> Paint one
+                </button>
+                <button
+                  v-if="place.map"
+                  type="button"
+                  class="ghost danger"
+                  :disabled="busy !== '' || dirty"
+                  @click="removeMap">
+                  Take this place's map away
+                </button>
+              </div>
+              <Transition name="ev-rise">
+                <div v-if="showPaint" class="paint">
+                  <label class="field">
+                    <span class="field__label">What to paint</span>
+                    <textarea v-model="paintPrompt" class="ev-input words" rows="3" />
+                  </label>
+                  <div class="row">
+                    <select v-model="paintRatio" class="ev-input ratio" aria-label="Shape">
+                      <option value="16:9">Wide (16:9)</option>
+                      <option value="3:2">Landscape (3:2)</option>
+                      <option value="1:1">Square</option>
+                    </select>
+                    <button
+                      type="button"
+                      class="cta cta--sm"
+                      :disabled="busy !== ''"
+                      @click="paint">
+                      <span
+                        v-if="busy === 'paint'"
+                        class="spin ev-progress-spin"
+                        aria-hidden="true" />
+                      {{ busy === 'paint' ? 'Painting… (up to a minute)' : 'Paint the picture' }}
+                    </button>
+                  </div>
+                </div>
+              </Transition>
+            </section>
+
+            <!-- spots --------------------------------------------------------------- -->
+            <Transition name="ev-rise">
+              <section v-if="board" class="card ev-card">
+                <header class="card__head">
+                  <span class="card__icon"><IconGlobe :size="20" /></span>
+                  <div>
+                    <h2 class="card__title">Spots in {{ place.name }}</h2>
+                    <p class="card__sub">
+                      Where people can be. Drag a pin to move it, click one to rename it. Characters
+                      rest at inns and houses, work at markets and workshops, train in yards and
+                      patrol gates and towers.
+                    </p>
+                  </div>
+                </header>
+                <div class="row">
+                  <button
+                    type="button"
+                    class="cta cta--sm"
+                    :disabled="busy !== ''"
+                    @click="findSpots">
+                    <span
+                      v-if="busy === 'spots'"
+                      class="spin ev-progress-spin"
+                      aria-hidden="true" />
+                    {{
+                      busy === 'spots'
+                        ? 'Reading the picture… (about 10 s)'
+                        : board.spots.length
+                          ? 'Find the spots again'
+                          : 'Find the spots'
+                    }}
+                  </button>
+                  <button
+                    type="button"
+                    class="ghost"
+                    :class="{ 'is-on': placing }"
+                    :disabled="busy !== ''"
+                    @click="placing = !placing">
+                    <IconPlus :size="14" />
+                    {{ placing ? 'Click the picture to place it' : 'Add a spot' }}
+                  </button>
+                </div>
+                <Transition name="ev-rise" mode="out-in">
+                  <p v-if="notice" :key="notice" class="card__note">
+                    <IconInfo :size="14" /> {{ notice }}
+                  </p>
+                </Transition>
+
+                <div class="boardwrap">
+                  <div
+                    class="mapframe"
+                    :class="{ 'mapframe--placing': placing, 'mapframe--fresh-pins': freshPins }"
+                    :style="{ aspectRatio: aspect }"
+                    @pointerup="dragging = null"
+                    @click="onFrameClick($event as PointerEvent)">
+                    <img
+                      :key="pictureUrl"
+                      class="mapframe__pic"
+                      :src="pictureUrl"
+                      :alt="`${place.name} up close`"
+                      draggable="false" />
+                    <button
+                      v-for="(s, i) in board.spots"
+                      :key="s.id"
+                      type="button"
+                      class="pin"
+                      :class="{ 'pin--off': !s.keep, 'pin--on': s.id === selected }"
+                      :style="{
+                        left: `${s.point[0] / 10}%`,
+                        top: `${s.point[1] / 10}%`,
+                        '--i': Math.min(i, 16)
+                      }"
+                      :title="s.name"
+                      @click.stop="selected = s.id"
+                      @pointerdown.stop="startDrag($event, s)"
+                      @pointermove="onDrag($event, s)"
+                      @pointerup="dragging = null">
+                      <span class="pin__dot"></span>
+                      <span class="pin__label">{{ s.name }}</span>
+                    </button>
+                  </div>
+
+                  <aside class="side">
+                    <Transition name="ev-swap" mode="out-in">
+                      <div v-if="selectedSpot" :key="selectedSpot.id" class="inspect">
+                        <label class="field">
+                          <span class="field__label">Name</span>
+                          <input v-model="selectedSpot.name" class="ev-input" maxlength="128" />
+                        </label>
+                        <label class="field">
+                          <span class="field__label">Kind</span>
+                          <input
+                            v-model="selectedSpot.kind"
+                            class="ev-input"
+                            maxlength="32"
+                            list="spot-kinds" />
+                        </label>
+                        <label class="check">
+                          <input v-model="selectedSpot.keep" type="checkbox" /> A spot people can be
+                          at
+                        </label>
+                      </div>
+                      <p v-else key="none" class="card__note">
+                        <IconInfo :size="14" /> Click a pin to edit it.
+                      </p>
+                    </Transition>
+                    <p class="card__note">
+                      {{ keptCount }} of {{ board.spots.length }} spots kept.
+                    </p>
+                  </aside>
+                </div>
+                <datalist id="spot-kinds">
+                  <option
+                    v-for="k in [
+                      'inn',
+                      'tavern',
+                      'house',
+                      'hall',
+                      'market',
+                      'square',
+                      'smithy',
+                      'workshop',
+                      'mill',
+                      'farm',
+                      'chapel',
+                      'temple',
+                      'yard',
+                      'barracks',
+                      'gate',
+                      'tower',
+                      'dock',
+                      'well',
+                      'garden'
+                    ]"
+                    :key="k"
+                    :value="k" />
+                </datalist>
+              </section>
+            </Transition>
+          </div>
+          <p v-else key="missing" class="card__note">
+            <IconInfo :size="14" /> This world has no place called “{{ placeKey }}”.
+          </p>
+        </Transition>
       </template>
     </template>
 
@@ -683,10 +767,12 @@ onMounted(load)
       <template #end>
         <span v-if="problem && dirty" class="problem">{{ problem }}</span>
         <button
+          ref="saveBtn"
           type="button"
           class="cta cta--foot"
           :disabled="!dirty || !!problem || busy !== ''"
           @click="save">
+          <span v-if="busy === 'save'" class="spin ev-progress-spin" aria-hidden="true" />
           {{ busy === 'save' ? 'Saving…' : `Save ${place.name}'s map` }}
         </button>
       </template>
@@ -793,11 +879,63 @@ onMounted(load)
   color: var(--ink-2);
   font: 600 14.5px var(--font-body);
   cursor: pointer;
+  transition:
+    background-color var(--dur) ease,
+    border-color var(--dur) ease,
+    color var(--dur) ease,
+    translate var(--dur) var(--ease-settle),
+    scale var(--dur-quick) var(--ease-out),
+    box-shadow var(--dur) ease;
+}
+.chip:hover:not(:disabled) {
+  translate: 0 -2px;
+  box-shadow: 0 6px 12px -8px rgba(46, 39, 24, 0.5);
+}
+.chip:active:not(:disabled) {
+  translate: 0 0;
+  scale: 0.95;
 }
 .chip--on {
   background: var(--teal);
   border-color: var(--teal);
   color: var(--cream-on-teal);
+}
+.pmap__place {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pmap__loading {
+  align-items: center;
+}
+.batch__step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.batch__row--done .batch__step {
+  animation: ev-flash 1.4s var(--ease-out);
+  border-radius: 6px;
+}
+.spin {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  opacity: 0.85;
+  animation: pmap-spin 0.8s linear infinite;
+}
+.spin--sm {
+  width: 11px;
+  height: 11px;
+}
+@keyframes pmap-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 .batch {
   list-style: none;
@@ -844,6 +982,12 @@ onMounted(load)
 .is-on {
   border-color: var(--teal-ink);
   color: var(--teal-ink);
+  animation: pmap-toggle 0.36s var(--ease-spring);
+}
+@keyframes pmap-toggle {
+  40% {
+    scale: 1.05;
+  }
 }
 .danger {
   color: #b3542e;
@@ -900,6 +1044,10 @@ onMounted(load)
   width: 100%;
   height: 100%;
 }
+/* a new picture develops in place, like a print coming up */
+.mapframe__pic {
+  animation: ev-push-in 0.9s var(--ease-settle) both;
+}
 .pin {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -913,6 +1061,7 @@ onMounted(load)
 .pin:active {
   cursor: grabbing;
 }
+/* a spot drops onto the picture with a small bounce */
 .pin__dot {
   width: 14px;
   height: 14px;
@@ -920,6 +1069,42 @@ onMounted(load)
   background: #6fcf97;
   border: 2px solid #2e2718;
   flex: none;
+  animation: pmap-drop 0.5s var(--ease-spring) both;
+  transition:
+    scale 0.28s var(--ease-spring),
+    box-shadow var(--dur) ease;
+}
+.pin__label {
+  animation: ev-fade 0.4s var(--ease-out) 0.15s both;
+  transition: translate var(--dur) var(--ease-settle);
+}
+.mapframe--fresh-pins .pin__dot {
+  animation-delay: calc(var(--i, 0) * 0.04s);
+}
+.mapframe--fresh-pins .pin__label {
+  animation-delay: calc(0.15s + var(--i, 0) * 0.04s);
+}
+.pin:hover .pin__dot {
+  scale: 1.3;
+}
+.pin:hover .pin__label {
+  translate: 2px 0;
+}
+@keyframes pmap-drop {
+  from {
+    opacity: 0;
+    translate: 0 -16px;
+    scale: 0.4;
+  }
+}
+@keyframes pmap-ring {
+  0%,
+  100% {
+    box-shadow: 0 0 0 4px rgba(31, 106, 94, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(31, 106, 94, 0.25);
+  }
 }
 .pin__label {
   font-size: 12.5px;
@@ -950,6 +1135,9 @@ onMounted(load)
 }
 .pin--on .pin__dot {
   box-shadow: 0 0 0 4px rgba(31, 106, 94, 0.55);
+  animation:
+    pmap-drop 0.5s var(--ease-spring) both,
+    pmap-ring 1.8s var(--ease-sine) 0.5s infinite;
 }
 .side {
   display: flex;

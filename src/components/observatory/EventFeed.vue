@@ -58,40 +58,48 @@ function body(entry: ChronicleEntry): string {
   <section class="ef" aria-label="Events">
     <header class="ef__head">
       <h2>Events</h2>
-      <button v-if="unseen" type="button" class="ef__new" @click="toNewest()">
-        {{ unseen }} new beat{{ unseen === 1 ? '' : 's' }} above
-      </button>
+      <Transition name="ev-pop">
+        <button v-if="unseen" type="button" class="ef__new ev-press" @click="toNewest()">
+          {{ unseen }} new beat{{ unseen === 1 ? '' : 's' }} above
+        </button>
+      </Transition>
     </header>
     <div ref="list" class="ef__list" @scroll.passive="onScroll">
       <p v-if="!beats.length" class="ef__empty">
         Nothing has happened yet. Press Step or Play to let the world move.
       </p>
-      <article v-for="beat in beats" :key="beat.index" class="ef__beat">
-        <h3>{{ beat.label }}</h3>
-        <p v-if="beat.quiet" class="ef__quiet">
-          A quiet stretch: everyone waited or rested{{
-            beat.quiet.beats > 1 ? ` (${beat.quiet.beats} beats)` : ''
-          }}.
-        </p>
-        <button
-          v-for="entry in beat.entries"
-          :key="entry.event_id"
-          type="button"
-          class="ef__entry"
-          @click="emit('open', entry)"
-          @mouseenter="emit('focus', entry.participant_ids?.[0] ?? null)"
-          @mouseleave="emit('focus', null)">
-          <span class="ef__where">
-            <template v-if="entry.participant_ids?.length">
-              {{ entry.participant_ids.map((id) => nameOf(id)).join(' & ') }}
-            </template>
-            <template v-if="placeOf(entry.location_id)">
-              · {{ placeOf(entry.location_id) }}
-            </template>
-          </span>
-          <span class="ef__text">{{ body(entry) }}</span>
-        </button>
-      </article>
+      <TransitionGroup name="ef" tag="div" class="ef__beats">
+        <article
+          v-for="(beat, i) in beats"
+          :key="beat.index"
+          class="ef__beat"
+          :style="{ '--i': Math.min(i, 6) }">
+          <h3>{{ beat.label }}</h3>
+          <p v-if="beat.quiet" class="ef__quiet">
+            A quiet stretch: everyone waited or rested{{
+              beat.quiet.beats > 1 ? ` (${beat.quiet.beats} beats)` : ''
+            }}.
+          </p>
+          <button
+            v-for="entry in beat.entries"
+            :key="entry.event_id"
+            type="button"
+            class="ef__entry"
+            @click="emit('open', entry)"
+            @mouseenter="emit('focus', entry.participant_ids?.[0] ?? null)"
+            @mouseleave="emit('focus', null)">
+            <span class="ef__where">
+              <template v-if="entry.participant_ids?.length">
+                {{ entry.participant_ids.map((id) => nameOf(id)).join(' & ') }}
+              </template>
+              <template v-if="placeOf(entry.location_id)">
+                · {{ placeOf(entry.location_id) }}
+              </template>
+            </span>
+            <span class="ef__text">{{ body(entry) }}</span>
+          </button>
+        </article>
+      </TransitionGroup>
     </div>
   </section>
 </template>
@@ -121,6 +129,8 @@ function body(entry: ChronicleEntry): string {
 }
 .ef__new {
   margin-left: auto;
+  animation: ev-breathe 2.4s var(--ease-sine) infinite;
+  --ev-breathe-color: rgba(20, 84, 90, 0.4);
   font: inherit;
   font-size: 13px;
   padding: 2px 10px;
@@ -157,8 +167,46 @@ function body(entry: ChronicleEntry): string {
   font-style: italic;
   color: var(--ink-3);
 }
+/* a new beat slides in from the top of the chronicle; the rest make room */
+.ef-enter-active {
+  transition:
+    opacity 0.4s var(--ease-out) calc(var(--i, 0) * 0.05s),
+    transform 0.55s var(--ease-settle) calc(var(--i, 0) * 0.05s);
+}
+.ef-enter-from {
+  opacity: 0;
+  transform: translateY(-14px);
+}
+.ef-enter-active .ef__entry {
+  animation: ef-entry-in 0.5s var(--ease-settle) both;
+}
+.ef-enter-active .ef__entry:nth-of-type(2) {
+  animation-delay: 0.06s;
+}
+.ef-enter-active .ef__entry:nth-of-type(n + 3) {
+  animation-delay: 0.12s;
+}
+.ef-leave-active {
+  transition: opacity 0.18s var(--ease-in);
+}
+.ef-leave-to {
+  opacity: 0;
+}
+.ef-move {
+  transition: transform 0.5s var(--ease-settle);
+}
+@keyframes ef-entry-in {
+  from {
+    opacity: 0;
+    translate: 10px 0;
+  }
+}
 .ef__entry {
-  display: grid;
+  position: relative;
+  transition:
+    border-color var(--dur) ease,
+    background-color var(--dur) ease,
+    translate var(--dur) var(--ease-settle);
   gap: 2px;
   width: 100%;
   text-align: left;
@@ -175,6 +223,27 @@ function body(entry: ChronicleEntry): string {
 .ef__entry:focus-visible {
   border-color: var(--line);
   background: var(--panel);
+  translate: 3px 0;
+}
+/* an ember marker slides down beside the entry under the pointer */
+.ef__entry::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--ember);
+  scale: 1 0;
+  transition: scale 0.3s var(--ease-settle);
+}
+.ef__entry:hover::before,
+.ef__entry:focus-visible::before {
+  scale: 1 1;
+}
+.ef__entry:active {
+  scale: 0.99;
 }
 .ef__where {
   font-size: 13px;
