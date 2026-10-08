@@ -154,10 +154,10 @@ async def list_assets(
 @router.get("/assets/{asset_id}")
 async def read_asset_bytes(asset_id: UUID, request: Request, world_id: UUID) -> Response:
     """Serve stored bytes. Players read world art and their own portrait only."""
-    role, viewer = await effective_role(request, world_id)
-    parsed = parse_role(role)
     state = request.app.state.app_state
     async with state.uow_factory()() as uow:
+        role, viewer = await effective_role(request, world_id, uow)
+        parsed = parse_role(role)
         asset = await uow.assets.get_asset(asset_id)
         if asset.world_id is not None and asset.world_id != world_id:
             raise DomainError(ErrorCode.NOT_FOUND, "asset is not in this world")

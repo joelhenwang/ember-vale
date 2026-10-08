@@ -159,9 +159,9 @@ async def seed_world(request: Request) -> SeedResponse:
 @router.get("/world/presentation", response_model=api.PresentationResponse)
 async def get_presentation(world_id: UUID, request: Request) -> api.PresentationResponse:
     """One coherent snapshot for the new Adventure and World surfaces."""
-    role, viewer = await effective_role(request, world_id)
     state = request.app.state.app_state
     async with state.uow_factory()() as uow:
+        role, viewer = await effective_role(request, world_id, uow)
         root = state.seed_dir.parent.parent / "assets"
         return await presentation_query(
             uow, world_id, parse_role(role), viewer, root, state.journeys
@@ -176,9 +176,9 @@ async def get_chronicle(
     limit: int = Query(default=20, ge=1, le=100),
 ) -> api.ChronicleResponse:
     """Visible events with structured identity and an advancing cursor."""
-    role, viewer = await effective_role(request, world_id)
     state = request.app.state.app_state
     async with state.uow_factory()() as uow:
+        role, viewer = await effective_role(request, world_id, uow)
         return await chronicle_query(uow, world_id, parse_role(role), viewer, after, limit)
 
 

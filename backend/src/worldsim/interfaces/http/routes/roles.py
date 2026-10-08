@@ -9,6 +9,7 @@ from fastapi import APIRouter, Request
 from worldsim.application.commands.deity import apply_override
 from worldsim.application.commands.director import accept_decision
 from worldsim.application.stories.guards import require_unarchived
+from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.director import DirectorProposal, validate_proposal
 from worldsim.domain.enums import LifeStatus, UserRole
 from worldsim.domain.errors import DomainError, ErrorCode
@@ -20,11 +21,19 @@ from worldsim.interfaces.http import schemas as api
 router = APIRouter(tags=["roles"])
 
 
-async def effective_role(request: Request, world_id: UUID) -> tuple[str, UUID | None]:
-    """Grant-selected role wins; otherwise the request header decides."""
+async def effective_role(
+    request: Request, world_id: UUID, uow: UnitOfWork | None = None
+) -> tuple[str, UUID | None]:
+    """Grant-selected role wins; otherwise the request header decides.
+
+    Hot routes pass the unit of work they already hold, saving a pool
+    checkout (and its liveness ping) per request.
+    """
+    if uow is not None:
+        return role_from(request, await uow.roles.get_for_world(world_id))
     state = request.app.state.app_state
-    async with state.uow_factory()() as uow:
-        grant = await uow.roles.get_for_world(world_id)
+    async with state.uow_factory()() as own:
+        grant = await own.roles.get_for_world(world_id)
     return role_from(request, grant)
 
 
