@@ -1,0 +1,6 @@
+40 rows: 0.7 ms
+120 rows: 2.1 ms
+239 rows: 4.2 ms
+400 rows: 7.4 ms
+1000 rows: 18.3 ms
+3000 rows: 62.0 ms

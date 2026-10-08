@@ -105,17 +105,28 @@ class SqlAlchemyPerceptionRepository:
         limit: int = 20,
         since_phase_index: int = 0,
         min_salience: float = 0.0,
+        older_limit: int | None = None,
     ) -> list[Observation]:
+        mine = ObservationRow.observer_character_id == observer_id
+        recent = ObservationRow.created_phase_index >= since_phase_index
+        salient = ObservationRow.salience >= min_salience
+        if older_limit is None:
+            query = select(ObservationRow).where(mine, recent | salient)
+        else:
+            # Every recent row, plus only the newest ``older_limit`` salient
+            # rows from before the window (perf-reads-001).
+            older = (
+                select(ObservationRow.id)
+                .where(mine, ~recent, salient)
+                .order_by(ObservationRow.created_phase_index.desc())
+                .limit(older_limit)
+            )
+            query = select(ObservationRow).where(
+                mine, recent | ObservationRow.id.in_(older.scalar_subquery())
+            )
         rows = (
             await self._session.execute(
-                select(ObservationRow)
-                .where(
-                    ObservationRow.observer_character_id == observer_id,
-                    (ObservationRow.created_phase_index >= since_phase_index)
-                    | (ObservationRow.salience >= min_salience),
-                )
-                .order_by(ObservationRow.created_phase_index.desc())
-                .limit(limit)
+                query.order_by(ObservationRow.created_phase_index.desc()).limit(limit)
             )
         ).scalars()
         return [
@@ -150,18 +161,29 @@ class SqlAlchemyPerceptionRepository:
         )
 
     async def memories_for_owner(
-        self, owner_id: UUID, since_phase_index: int = 0, min_salience: float = 0.0
+        self,
+        owner_id: UUID,
+        since_phase_index: int = 0,
+        min_salience: float = 0.0,
+        older_limit: int | None = None,
     ) -> list[RecentMemory]:
-        rows = (
-            await self._session.execute(
-                select(RecentMemoryRow)
-                .where(
-                    RecentMemoryRow.owner_character_id == owner_id,
-                    (RecentMemoryRow.created_phase_index >= since_phase_index)
-                    | (RecentMemoryRow.salience >= min_salience),
-                )
-                .order_by(RecentMemoryRow.created_phase_index)
+        mine = RecentMemoryRow.owner_character_id == owner_id
+        recent = RecentMemoryRow.created_phase_index >= since_phase_index
+        salient = RecentMemoryRow.salience >= min_salience
+        if older_limit is None:
+            query = select(RecentMemoryRow).where(mine, recent | salient)
+        else:
+            older = (
+                select(RecentMemoryRow.id)
+                .where(mine, ~recent, salient)
+                .order_by(RecentMemoryRow.created_phase_index.desc())
+                .limit(older_limit)
             )
+            query = select(RecentMemoryRow).where(
+                mine, recent | RecentMemoryRow.id.in_(older.scalar_subquery())
+            )
+        rows = (
+            await self._session.execute(query.order_by(RecentMemoryRow.created_phase_index))
         ).scalars()
         return [
             RecentMemory(

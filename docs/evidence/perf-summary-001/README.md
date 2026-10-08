@@ -160,6 +160,8 @@ The levers, by commit:
 
 ## Open (ranked)
 
+**Update (2026-10-08, later):** items 1 and 4 were done (`crowd-reactions-001`, `summary-tags-001`), and items 2, 3 and 6 are in `perf-reads-001`. Items 2 and 3 were shipped, and item 6 (SSE) was studied and deferred with a design.
+
 1. **Reactions grow with the square of a crowd.** Everyone present reacts to every attempt:
    about 465 reaction calls in a 25-character beat, each a paid model call in live play.
    Capping reactors (the addressee plus N nearest bystanders) is a story-quality change. It

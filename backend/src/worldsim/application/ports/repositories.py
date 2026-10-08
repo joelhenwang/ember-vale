@@ -447,10 +447,15 @@ class PerceptionRepository(Protocol):
         limit: int = 20,
         since_phase_index: int = 0,
         min_salience: float = 0.0,
+        older_limit: int | None = None,
     ) -> list[Observation]: ...
     async def add_memory(self, memory: RecentMemory) -> None: ...
     async def memories_for_owner(
-        self, owner_id: UUID, since_phase_index: int = 0, min_salience: float = 0.0
+        self,
+        owner_id: UUID,
+        since_phase_index: int = 0,
+        min_salience: float = 0.0,
+        older_limit: int | None = None,
     ) -> list[RecentMemory]: ...
     async def bump_salience(
         self,

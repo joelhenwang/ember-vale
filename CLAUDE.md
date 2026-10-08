@@ -149,11 +149,14 @@ of these features.
   - one pooled HTTP client (`infrastructure/http_pool.py`) and graphs compiled once;
   - `WORLDSIM_APP__PARALLEL_MODEL_CALLS` (12), pool 10+20;
   - phase-shared world reads (`orchestration/phase_reads.py`, byte-identity verified in `tests/test_phase_reads.py`);
-  - a cancelled request cancels its director.
+  - a cancelled request cancels its director;
+  - a character's own observations, memories, relationships and digests are read once per phase, and perception rows insert in batches (−11–22% statements a turn; `perf-reads-001`);
+  - a context ranks every recent row plus only the newest 200 older salient ones (`OLDER_SALIENT_KEPT`): ranking costs ~0.02 ms a row on every call and the salient set has no time limit. Flat to 1,000 turns.
 - **Scaling:**
   - Image jobs are claimed with `FOR UPDATE SKIP LOCKED` plus a lease, and record created, started and finished times (migration 0057).
   - `WORLDSIM_APP__BACKGROUND_LOOPS=false` with `python -m worldsim.interfaces.worker` (compose profile `scale`) moves autoplay, painting and indexing out of the API; `WORLDSIM_APP__WORKERS=N` then serves from N processes.
 - **Frontend idle:** ambient loops rest after 60 s without input; new chronicle entries wake them (`wakeScene()`).
+- **Push vs poll:** polling stays. One process carries ~90 autoplay watchers or ~540 idle players. The design for when that is not enough (a per-story change stamp, then a cheap 304, then SSE) is in `perf-reads-001`.
 - **Benches:** `backend/scripts/api_bench.py` (`--inprocess` counts queries), `beat_bench.py` (`--verify-reads`), `scripts/page-bench.mjs` (`--rested`, `--memory`), `llm_usage_report.py`.
 
 ### 3.11 Stories, settings, providers
@@ -184,7 +187,7 @@ backend for it already exists.
 - **Party combat (D&D-style, hit points, monsters)** exists in the backend (`/stage1/party*`, `tests/test_dnd_combat.py`) with no UI. Mockups with gold, HP bars and skill checks ("Arcana DC 12") would need that wired, not invented.
 - Full-body renders and profile→body lineage, visible equipment and injuries, checkpoints/branches, and backup/restore (plan packets E7–E9) are **not built**. `src/game/images.ts` keeps placeholder slots only.
 - Creating or editing style packs and templates: "Coming soon" (cf28f06).
-- SSE streaming: polling only.
+- SSE streaming: polling only, by decision (capacity and design in `perf-reads-001`).
 - System One (kNN or GLiNER predicting decision families) was evaluated 2026-10-06 and **not adopted** (52–56% agreement against a 41% baseline; it would also fight the anti-idle note).
 - Reordering prompt sections for caching was **not adopted**: it gained only 2–4 points (b9e84e5, `scripts/prefix_eval.py`).
 - The narrator on mistral-nemo was evaluated (`latency-eval-001`, nemo-001…007) and is not the default. Per-role routing allows it.
@@ -210,6 +213,7 @@ backend for it already exists.
 | Background narration: server turns 3–9 s instead of 6.5–17 s | b3130e6 |
 | Crowds: an attempt is answered by the person it is aimed at plus 2 others (`WORLDSIM_APP__REACTING_BYSTANDERS`, default 2): −49% billed, −21% per beat, no scorecard loss over 3 runs each | `crowd-reactions-001`, scorecard-036…041 |
 | Day-end summaries and digests cite short source tags (`summary.v2`, `digest.v2`): −82% output, no fallbacks. The scorecard reports and guards on the billed cost (list price ran ~2.5x under the bill) | `summary-tags-001`, scorecard-034/035 |
+| Per-character reads shared per phase, batched perception inserts, older salient rows capped at 200, SSE deferred with a design | `perf-reads-001` |
 | Perf pass: pages 3–8x lighter, idle CPU ~0.4%, reads flat to 300x, beat overhead 2–3x lower. uvloop, prompt reordering and removing the DB pre-ping were rejected. Crowd reactions since capped (crowd-reactions-001) | `perf-summary-001` and the five `perf-*-001` folders |
 | UI review of 7 Oct (fonts, caching, studios, writing help) | `ui-review-001`, `docs/reviews/1/7_oct_2026-user-review.md` |
 | Play-session fixes (prose opening, carried items, ring layout) | `play-session-001` |

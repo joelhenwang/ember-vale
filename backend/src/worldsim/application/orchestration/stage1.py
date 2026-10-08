@@ -465,6 +465,12 @@ def scene_surroundings(
 #: default dropped 15-24 observations per call by beat 12 of a play
 #: session (manifests), losing what was said a few beats earlier;
 #: continuity sections get room, the rest keep the default.
+#: Salient observations and memories from before the recent window that a
+#: context still considers, newest first. Each row costs ~0.02 ms to rank
+#: on every call, and the salient set has no time limit; at the live
+#: salience rate (~7%) this binds only after ~2,800 turns (perf-reads-001).
+OLDER_SALIENT_KEPT = 200
+
 DECISION_SECTION_BUDGETS = {"observations": 6000, "memories": 3000, "lore": 3000, "goals": 2500}
 
 
@@ -2464,8 +2470,14 @@ class Stage1Orchestrator:
                 for digest in await uow.digests.list_for_owner(world_id, character.id)
                 for source in digest.source_ids
             }
-            observations = await uow.perception.observations_for_observer(character.id, 100000)
-            memories = await uow.perception.memories_for_owner(character.id)
+            # Only salient rows can be digested: let the database filter them
+            # (this read every observation the character ever made).
+            observations = await uow.perception.observations_for_observer(
+                character.id, 100000, since_phase_index=index + 1, min_salience=threshold
+            )
+            memories = await uow.perception.memories_for_owner(
+                character.id, since_phase_index=index + 1, min_salience=threshold
+            )
         entries: list[tuple[str, str]] = []
         source_ids: list[str] = []
         for obs in observations:
@@ -3156,10 +3168,17 @@ class Stage1Orchestrator:
         async def load_mind(uow: Any) -> _Mind:
             return _Mind(
                 observations=await uow.perception.observations_for_observer(
-                    character.id, 100000, since_phase_index=since, min_salience=floor
+                    character.id,
+                    100000,
+                    since_phase_index=since,
+                    min_salience=floor,
+                    older_limit=OLDER_SALIENT_KEPT,
                 ),
                 memories=await uow.perception.memories_for_owner(
-                    character.id, since_phase_index=since, min_salience=floor
+                    character.id,
+                    since_phase_index=since,
+                    min_salience=floor,
+                    older_limit=OLDER_SALIENT_KEPT,
                 ),
                 relationships=await uow.relationships.list_for_character(world_id, character.id),
                 digests=await uow.digests.list_for_owner(world_id, character.id),
