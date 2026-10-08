@@ -1,0 +1,14 @@
+infinite animations {"brand-glow-acde892b":{"n":1,"sample":"router-link-active router-link-exact-act"},"ev-drift":{"n":2,"sample":""},"ev-flicker":{"n":1,"sample":"hero__torch ev-flicker"},"ev-ember-rise":{"n":18,"sample":""},"ev-breathe":{"n":1,"sample":"hero__go"},"ev-sheen":{"n":1,"sample":"hero__shine"},"recent-twinkle-9720fdcb":{"n":1,"sample":"recent__spark"}}
+┌─────────┬──────────────────────────────────────┬────────┬───────┬────────┬─────────┐
+│ (index) │ label                                │ main   │ style │ layout │ cpu     │
+├─────────┼──────────────────────────────────────┼────────┼───────┼────────┼─────────┤
+│ 0       │ 'all running'                        │ '25.9' │ '123' │ '0'    │ '107.0' │
+│ 1       │ 'all infinite paused'                │ '0.1'  │ '0'   │ '0'    │ '-4.6'  │
+│ 2       │ 'without brand-glow-acde892b x1'     │ '32.2' │ '168' │ '0'    │ '117.3' │
+│ 3       │ 'without ev-drift x2'                │ '21.4' │ '80'  │ '0'    │ '100.8' │
+│ 4       │ 'without ev-flicker x1'              │ '23.8' │ '100' │ '0'    │ '109.0' │
+│ 5       │ 'without ev-ember-rise x18'          │ '19.4' │ '69'  │ '0'    │ '100.7' │
+│ 6       │ 'without ev-breathe x1'              │ '24.2' │ '107' │ '0'    │ '94.3'  │
+│ 7       │ 'without ev-sheen x1'                │ '24.7' │ '104' │ '0'    │ '110.9' │
+│ 8       │ 'without recent-twinkle-9720fdcb x1' │ '21.0' │ '87'  │ '0'    │ '95.3'  │
+└─────────┴──────────────────────────────────────┴────────┴───────┴────────┴─────────┘

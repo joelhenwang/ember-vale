@@ -19,6 +19,7 @@ watch(url, () => (loaded.value = false))
     :src="url"
     :alt="alt"
     loading="lazy"
+    decoding="async"
     class="ev-img-fade"
     :class="{ 'is-loaded': loaded }"
     @load="loaded = true"

@@ -68,9 +68,9 @@
   --ember-glow: rgba(214, 112, 48, 0.28);
 
   /* Type */
-  --font-display: 'Cormorant Garamond', 'EB Garamond', Georgia, serif;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
   /* Text meant to be read: stories, descriptions, form text. */
-  --font-body: 'Libron', 'EB Garamond', Georgia, 'Times New Roman', serif;
+  --font-body: 'Libron', Georgia, 'Times New Roman', serif;
   /* Short text: navigation, tabs, buttons, labels, chips. */
   --font-ui: 'Alegreya Sans', 'Segoe UI', system-ui, sans-serif;
 

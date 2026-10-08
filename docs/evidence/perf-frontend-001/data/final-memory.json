@@ -1,0 +1,57 @@
+{
+  "base": "http://localhost:5181",
+  "runs": 3,
+  "idle": 10,
+  "motion": "full",
+  "pages": [],
+  "memory": [
+    {
+      "lap": 0,
+      "heapMB": 2.2735824584960938,
+      "nodes": 284,
+      "listeners": 57
+    },
+    {
+      "lap": 1,
+      "heapMB": 5.376564025878906,
+      "nodes": 2775,
+      "listeners": 364
+    },
+    {
+      "lap": 5,
+      "heapMB": 6.184505462646484,
+      "nodes": 2775,
+      "listeners": 364
+    },
+    {
+      "lap": 10,
+      "heapMB": 6.752590179443359,
+      "nodes": 2775,
+      "listeners": 364
+    },
+    {
+      "lap": 15,
+      "heapMB": 6.832389831542969,
+      "nodes": 2775,
+      "listeners": 364
+    },
+    {
+      "lap": 20,
+      "heapMB": 6.978340148925781,
+      "nodes": 2775,
+      "listeners": 364
+    },
+    {
+      "lap": 25,
+      "heapMB": 7.016075134277344,
+      "nodes": 2775,
+      "listeners": 364
+    },
+    {
+      "lap": 30,
+      "heapMB": 7.147052764892578,
+      "nodes": 2764,
+      "listeners": 362
+    }
+  ]
+}

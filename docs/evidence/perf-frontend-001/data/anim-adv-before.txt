@@ -1,0 +1,14 @@
+infinite animations {"brand-glow-acde892b":{"n":1,"sample":"brand"},"ev-drift":{"n":1,"sample":"stage__cam ev-drift"},"ev-ember-rise":{"n":12,"sample":""},"ev-breathe":{"n":1,"sample":"framed"},"wm-pulse-c3e8fcd4":{"n":1,"sample":"wm__pin"},"wm-bob-c3e8fcd4":{"n":1,"sample":"wm__pin"},"wm-idle-c3e8fcd4":{"n":2,"sample":"wm__token wm__token--focus"}}
+┌─────────┬──────────────────────────────────┬────────┬───────┬────────┬─────────┐
+│ (index) │ label                            │ main   │ style │ layout │ cpu     │
+├─────────┼──────────────────────────────────┼────────┼───────┼────────┼─────────┤
+│ 0       │ 'all running'                    │ '26.4' │ '87'  │ '0'    │ '101.6' │
+│ 1       │ 'all infinite paused'            │ '0.7'  │ '0'   │ '0'    │ '-4.3'  │
+│ 2       │ 'without brand-glow-acde892b x1' │ '20.3' │ '63'  │ '0'    │ '89.7'  │
+│ 3       │ 'without ev-drift x1'            │ '29.4' │ '93'  │ '0'    │ '108.0' │
+│ 4       │ 'without ev-ember-rise x12'      │ '26.8' │ '65'  │ '0'    │ '102.1' │
+│ 5       │ 'without ev-breathe x1'          │ '30.9' │ '97'  │ '0'    │ '99.7'  │
+│ 6       │ 'without wm-pulse-c3e8fcd4 x1'   │ '33.2' │ '109' │ '0'    │ '111.0' │
+│ 7       │ 'without wm-bob-c3e8fcd4 x1'     │ '28.8' │ '92'  │ '0'    │ '105.0' │
+│ 8       │ 'without wm-idle-c3e8fcd4 x2'    │ '22.0' │ '69'  │ '0'    │ '90.8'  │
+└─────────┴──────────────────────────────────┴────────┴───────┴────────┴─────────┘

@@ -83,7 +83,12 @@ function menuArchive(): void {
         :src="story.cover.src"
         :frame="story.cover.frame"
         :alt="`${story.title}: ${story.world}`" />
-      <img v-else :src="artUrl" :alt="`${story.title} — scene from ${story.world}`" />
+      <img
+        v-else
+        :src="artUrl"
+        loading="lazy"
+        decoding="async"
+        :alt="`${story.title} — scene from ${story.world}`" />
     </div>
 
     <div class="scard__main">
@@ -136,7 +141,7 @@ function menuArchive(): void {
 
       <ul class="scard__cast">
         <li v-for="c in cast" :key="c.id">
-          <img :src="c.url" :alt="c.name" />
+          <img :src="c.url" :alt="c.name" loading="lazy" decoding="async" />
           <span>{{ c.name }}</span>
         </li>
       </ul>

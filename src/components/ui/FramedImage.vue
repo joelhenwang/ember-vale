@@ -8,7 +8,14 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { coverFrame, framedStyle, type Frame, type Size } from '../../game/framing'
 
-const props = defineProps<{ src: string; frame?: Frame | null; alt?: string }>()
+const props = defineProps<{
+  src: string
+  frame?: Frame | null
+  alt?: string
+  /** The page's main picture (its LCP): fetched first and never lazily.
+   *  Every other picture waits until it is near the screen. */
+  priority?: boolean
+}>()
 
 const box = ref<HTMLElement | null>(null)
 const boxRatio = ref<number | null>(null)
@@ -55,6 +62,9 @@ const style = computed(() => {
       :alt="alt ?? ''"
       :style="style"
       draggable="false"
+      decoding="async"
+      :loading="priority ? 'eager' : 'lazy'"
+      :fetchpriority="priority ? 'high' : undefined"
       @load="loaded"
       @error="shown = true" />
     <img
@@ -64,6 +74,9 @@ const style = computed(() => {
       :src="src"
       :alt="alt ?? ''"
       draggable="false"
+      decoding="async"
+      :loading="priority ? 'eager' : 'lazy'"
+      :fetchpriority="priority ? 'high' : undefined"
       @load="shown = true"
       @error="shown = true" />
   </span>

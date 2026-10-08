@@ -120,7 +120,13 @@ async function refresh(quiet = false): Promise<void> {
 // Kept alive between visits: the first opening reads with a loading line,
 // coming back refreshes behind what is already shown.
 let opened = false
-onMounted(() => void refresh())
+onMounted(() => {
+  void refresh()
+  // Continue is the likeliest next click: fetch the Adventure screen's code
+  // while the page is idle, so it opens without waiting on the network.
+  const idle = window.requestIdleCallback ?? ((fn: () => void) => window.setTimeout(fn, 1200))
+  idle(() => void import('./AdventureView.vue'))
+})
 onActivated(() => {
   if (opened) void refresh(true)
   opened = true
