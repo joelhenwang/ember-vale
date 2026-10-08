@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import re
+import time
 from pathlib import Path
 from urllib.parse import urlparse, urlunparse
 from uuid import uuid4
@@ -58,7 +60,42 @@ def scratch_name(base: str) -> str:
     share or drop each other's databases.
     """
     worker = os.environ.get("PYTEST_XDIST_WORKER", "main")
-    return f"{base}_{worker}_{uuid4().hex[:8]}"
+    # The creation time in the name lets a later run sweep leftovers safely.
+    return f"{base}_{worker}_t{int(time.time())}_{uuid4().hex[:8]}"
+
+
+#: Scratch databases of killed runs are swept once they are this old.
+STALE_AFTER_S = 6 * 3600
+_STAMP = re.compile(r"^worldsim_stage0_(?:template|test)_[A-Za-z0-9]+_t(\d{10})_[0-9a-f]{8}$")
+
+
+def sweep_stale_scratch(settings: Settings, now: float | None = None) -> list[str]:
+    """Drop scratch databases left by killed runs; returns the names dropped.
+
+    Only names carrying a creation stamp older than STALE_AFTER_S, and only
+    databases nobody is connected to: a concurrent run (another session,
+    another agent) is never touched.
+    """
+    cutoff = (now if now is not None else time.time()) - STALE_AFTER_S
+    dropped: list[str] = []
+    admin = connect(_maintenance_dsn(settings), autocommit=True)
+    try:
+        rows = admin.execute(
+            "SELECT d.datname FROM pg_database d WHERE d.datname LIKE 'worldsim_stage0_%' "
+            "AND NOT EXISTS (SELECT 1 FROM pg_stat_activity a WHERE a.datname = d.datname)"
+        ).fetchall()
+        for (name,) in rows:
+            match = _STAMP.match(name)
+            if match is None or int(match.group(1)) > cutoff:
+                continue
+            try:
+                admin.execute(sql.SQL("DROP DATABASE IF EXISTS {}").format(sql.Identifier(name)))
+            except Exception:  # someone connected meanwhile: leave it
+                continue
+            dropped.append(name)
+    finally:
+        admin.close()
+    return dropped
 
 
 def clone_database(settings: Settings, template: str, name: str) -> None:

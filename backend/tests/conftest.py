@@ -113,6 +113,18 @@ def migrated_db(monkeypatch: pytest.MonkeyPatch, _db_template: str) -> Iterator[
     drop_scratch_database(Settings(), name)
 
 
+def pytest_sessionstart(session: pytest.Session) -> None:
+    """Sweep scratch databases left by killed runs (controller only, best effort)."""
+    if hasattr(session.config, "workerinput"):
+        return
+    try:
+        from fixtures.postgres import sweep_stale_scratch
+
+        sweep_stale_scratch(Settings())
+    except Exception:  # no database configured or reachable: nothing to sweep
+        return
+
+
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     """Long simulations get a longer per-test timeout than the 120 s default."""
     for item in items:
