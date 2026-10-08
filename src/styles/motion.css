@@ -1,0 +1,659 @@
+/* ------------------------------------------------------------------ *
+ * Ember Vale — motion language
+ *
+ * One vocabulary for every screen, so the app moves like one thing:
+ *   - entrances settle on a long tail (--ease-settle ≈ expo.out),
+ *     exits leave quickly (--ease-in), symmetric moves use --ease-io;
+ *   - only transform and opacity move (no width/height/top/left);
+ *   - group staggers stay under ~0.4 s so an arrival reads as one beat;
+ *   - overshoot (--ease-spring) is rare: small playful confirmations only.
+ *
+ * The viewer chooses in Settings › Appearance (src/game/motion.ts):
+ * <html data-motion="full|reduced">, or nothing to follow the system.
+ * ------------------------------------------------------------------ */
+
+:root {
+  --ease-settle: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.5, 0, 0.75, 0);
+  --ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-sine: cubic-bezier(0.37, 0, 0.63, 1);
+  --dur-quick: 0.14s;
+  --dur: 0.26s;
+  --dur-slow: 0.42s;
+}
+
+/* ————— keyframes shared by every screen ————— */
+
+@keyframes ev-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes ev-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+@keyframes ev-drift {
+  from {
+    transform: scale(1.04) translate3d(-0.8%, 0.4%, 0);
+  }
+  to {
+    transform: scale(1.1) translate3d(0.8%, -0.6%, 0);
+  }
+}
+@keyframes ev-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--ev-breathe-color, var(--ember-glow));
+  }
+  50% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+@keyframes ev-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+@keyframes ev-flash {
+  0% {
+    background-color: var(--ev-flash-color, rgba(240, 199, 159, 0.55));
+  }
+}
+@keyframes ev-dots {
+  0%,
+  20% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.2;
+  }
+}
+@keyframes ev-focus-in {
+  from {
+    outline-offset: 6px;
+    outline-color: transparent;
+  }
+}
+@keyframes ev-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-5px);
+  }
+  40% {
+    transform: translateX(4px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+@keyframes ev-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* The keyboard focus ring draws itself in rather than snapping on. */
+:focus-visible {
+  animation: ev-focus-in 0.22s var(--ease-settle);
+}
+
+/* ————— utilities ————— */
+
+/* Anything you can press gives under the finger. */
+.ev-press {
+  transition: transform var(--dur-quick) var(--ease-out);
+}
+.ev-press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* A picture that fades in once it has loaded (add .is-loaded on @load). */
+.ev-img-fade {
+  opacity: 0;
+  transition: opacity 0.6s var(--ease-out);
+}
+.ev-img-fade.is-loaded {
+  opacity: 1;
+}
+
+/* A large picture breathing slowly: the camera drifting over a painting. */
+.ev-drift {
+  animation: ev-drift 26s var(--ease-sine) infinite alternate both;
+  will-change: transform;
+}
+
+/* A live thing (a running storyteller, the current place) breathes. */
+.ev-breathe {
+  animation: ev-breathe 2.4s var(--ease-sine) infinite;
+}
+
+/* Gentle hover float for small ornaments. */
+.ev-float {
+  animation: ev-float 4.5s var(--ease-sine) infinite;
+}
+
+/* Something that just changed glows warm, then settles. */
+.ev-flash {
+  animation: ev-flash 1.4s var(--ease-out);
+}
+
+/* A field that refused its input shakes its head. */
+.ev-nudge {
+  animation: ev-nudge 0.42s var(--ease-io);
+}
+
+/* Placeholder while something loads: a slow light across parchment. */
+.ev-skeleton {
+  border-radius: 8px;
+  background:
+    linear-gradient(
+        100deg,
+        rgba(255, 252, 240, 0) 30%,
+        rgba(255, 252, 240, 0.75) 50%,
+        rgba(255, 252, 240, 0) 70%
+      )
+      0 0 / 250% 100%,
+    rgba(214, 196, 158, 0.32);
+  animation: ev-shimmer 1.6s linear infinite;
+}
+
+/* "Writing…" dots that take turns. */
+.ev-dots > span {
+  display: inline-block;
+  animation: ev-dots 1.2s infinite both;
+}
+.ev-dots > span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.ev-dots > span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* Rises into view the first time it is scrolled to (v-reveal). */
+.ev-reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.6s var(--ease-out) var(--ev-reveal-delay, 0s),
+    transform 0.7s var(--ease-settle) var(--ev-reveal-delay, 0s);
+}
+.ev-reveal.ev-revealed {
+  opacity: 1;
+  transform: none;
+}
+
+/* Siblings that pop in one after another (chips, tags, small tiles). */
+.ev-pop-stagger > * {
+  animation: ev-pop-in 0.38s var(--ease-settle) both;
+}
+.ev-pop-stagger > :nth-child(2) {
+  animation-delay: 0.04s;
+}
+.ev-pop-stagger > :nth-child(3) {
+  animation-delay: 0.08s;
+}
+.ev-pop-stagger > :nth-child(4) {
+  animation-delay: 0.12s;
+}
+.ev-pop-stagger > :nth-child(5) {
+  animation-delay: 0.16s;
+}
+.ev-pop-stagger > :nth-child(6) {
+  animation-delay: 0.2s;
+}
+.ev-pop-stagger > :nth-child(n + 7) {
+  animation-delay: 0.24s;
+}
+
+/* ------------------------------------------------------------------ *
+ * <Transition> names, shared app-wide
+ * ------------------------------------------------------------------ */
+
+/* ev-fade: a plain crossfade. */
+.ev-fade-enter-active {
+  transition: opacity var(--dur) var(--ease-out);
+}
+.ev-fade-leave-active {
+  transition: opacity var(--dur-quick) var(--ease-in);
+}
+.ev-fade-enter-from,
+.ev-fade-leave-to {
+  opacity: 0;
+}
+
+/* ev-swap: one panel gives way to the next (tabs, modes; use mode="out-in"). */
+.ev-swap-enter-active {
+  transition:
+    opacity 0.24s var(--ease-out),
+    transform 0.34s var(--ease-settle);
+}
+.ev-swap-leave-active {
+  transition:
+    opacity 0.12s var(--ease-in),
+    transform 0.12s var(--ease-in);
+}
+.ev-swap-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.ev-swap-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+/* ev-step-next / ev-step-prev: a wizard step slides the way you are going. */
+.ev-step-next-enter-active,
+.ev-step-prev-enter-active {
+  transition:
+    opacity 0.26s var(--ease-out),
+    transform 0.42s var(--ease-settle);
+}
+.ev-step-next-leave-active,
+.ev-step-prev-leave-active {
+  transition:
+    opacity 0.14s var(--ease-in),
+    transform 0.14s var(--ease-in);
+}
+.ev-step-next-enter-from {
+  opacity: 0;
+  transform: translateX(28px);
+}
+.ev-step-next-leave-to {
+  opacity: 0;
+  transform: translateX(-14px);
+}
+.ev-step-prev-enter-from {
+  opacity: 0;
+  transform: translateX(-28px);
+}
+.ev-step-prev-leave-to {
+  opacity: 0;
+  transform: translateX(14px);
+}
+
+/* ev-modal: the root is the scrim, its first child the dialog panel. */
+.ev-modal-enter-active {
+  transition: opacity 0.28s var(--ease-out);
+}
+.ev-modal-leave-active {
+  transition: opacity 0.2s var(--ease-in) 0.04s;
+}
+.ev-modal-enter-active > :first-child {
+  transition:
+    transform 0.46s var(--ease-settle),
+    opacity 0.3s var(--ease-out);
+}
+.ev-modal-leave-active > :first-child {
+  transition:
+    transform 0.2s var(--ease-in),
+    opacity 0.18s var(--ease-in);
+}
+.ev-modal-enter-from,
+.ev-modal-leave-to {
+  opacity: 0;
+}
+.ev-modal-enter-from > :first-child {
+  opacity: 0;
+  transform: translateY(18px) scale(0.965);
+}
+.ev-modal-leave-to > :first-child {
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+}
+
+/* ev-drawer: the root is the scrim, its first child slides in from the right. */
+.ev-drawer-enter-active {
+  transition: opacity 0.3s var(--ease-out);
+}
+.ev-drawer-leave-active {
+  transition: opacity 0.22s var(--ease-in);
+}
+.ev-drawer-enter-active > :first-child {
+  transition: transform 0.48s var(--ease-settle);
+}
+.ev-drawer-leave-active > :first-child {
+  transition: transform 0.22s var(--ease-in);
+}
+.ev-drawer-enter-from,
+.ev-drawer-leave-to {
+  opacity: 0;
+}
+.ev-drawer-enter-from > :first-child,
+.ev-drawer-leave-to > :first-child {
+  transform: translateX(104%);
+}
+
+/* ev-sheet: a bar or sheet rising from the bottom edge. */
+.ev-sheet-enter-active {
+  transition:
+    transform 0.44s var(--ease-settle),
+    opacity 0.24s var(--ease-out);
+}
+.ev-sheet-leave-active {
+  transition:
+    transform 0.2s var(--ease-in),
+    opacity 0.18s var(--ease-in);
+}
+.ev-sheet-enter-from,
+.ev-sheet-leave-to {
+  opacity: 0;
+  transform: translateY(110%);
+}
+
+/* ev-pop: a menu or popover unfolding from where it was opened. */
+.ev-pop-enter-active {
+  transition:
+    opacity 0.18s var(--ease-out),
+    transform 0.3s var(--ease-settle);
+}
+.ev-pop-leave-active {
+  transition:
+    opacity 0.12s var(--ease-in),
+    transform 0.12s var(--ease-in);
+}
+.ev-pop-enter-from,
+.ev-pop-leave-to {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.96);
+}
+
+/* ev-rise: a single block rising into place (notes, errors, banners). */
+.ev-rise-enter-active {
+  transition:
+    opacity 0.3s var(--ease-out),
+    transform 0.42s var(--ease-settle);
+}
+.ev-rise-leave-active {
+  transition:
+    opacity 0.16s var(--ease-in),
+    transform 0.16s var(--ease-in);
+}
+.ev-rise-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.ev-rise-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+/* ev-list: <TransitionGroup> items rise in, fade out, and the rest glide. */
+.ev-list-enter-active {
+  transition:
+    opacity 0.32s var(--ease-out),
+    transform 0.46s var(--ease-settle);
+}
+.ev-list-leave-active {
+  transition:
+    opacity 0.18s var(--ease-in),
+    transform 0.18s var(--ease-in);
+}
+.ev-list-enter-from {
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+}
+.ev-list-leave-to {
+  opacity: 0;
+  transform: scale(0.96);
+}
+.ev-list-move {
+  transition: transform 0.46s var(--ease-settle);
+}
+
+/* ------------------------------------------------------------------ *
+ * Game-feel effects (src/composables/useEffects.ts)
+ * ------------------------------------------------------------------ */
+
+/* burst(): sparks thrown from a point, then gone. */
+.ev-burst {
+  position: fixed;
+  z-index: 9999;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.ev-burst > i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--s, 5px);
+  height: var(--s, 5px);
+  margin: calc(var(--s, 5px) / -2);
+  border-radius: 50%;
+  background: var(--c, #f0c79f);
+  box-shadow: 0 0 8px var(--c, #f0c79f);
+  animation: ev-spark 0.78s var(--ease-settle) both;
+}
+@keyframes ev-spark {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), calc(var(--dy) + 18px)) scale(0.3);
+  }
+}
+
+/* v-tilt: a game card leaning toward the pointer, with a soft glare. */
+.ev-tilt {
+  transform: perspective(900px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transition: transform 0.5s var(--ease-settle);
+  transform-style: preserve-3d;
+}
+.ev-tilt.ev-tilting {
+  transition: transform 0.12s linear;
+}
+.ev-tilt::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    60% 60% at var(--glare-x, 50%) var(--glare-y, 0%),
+    rgba(255, 250, 230, 0.35),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.ev-tilt.ev-tilting::before {
+  opacity: 1;
+}
+
+/* v-ripple: a ring spreading from the press. */
+.ev-ripple-host {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.ev-ripple {
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 246, 222, 0.45) 0%, rgba(255, 246, 222, 0) 60%);
+  transform: scale(0);
+  pointer-events: none;
+  animation: ev-ripple 0.62s var(--ease-settle) forwards;
+}
+@keyframes ev-ripple {
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* Embers drifting up (EmberField.vue): the world is never still. */
+@keyframes ev-ember-rise {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.6);
+  }
+  12% {
+    opacity: var(--o, 0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--sway, 20px), calc(-1 * var(--rise, 220px)), 0) scale(1);
+  }
+}
+
+/* Torchlight: a warm light that flickers very slightly. */
+@keyframes ev-flicker {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  23% {
+    opacity: 0.95;
+  }
+  41% {
+    opacity: 0.78;
+  }
+  67% {
+    opacity: 1;
+  }
+  83% {
+    opacity: 0.88;
+  }
+}
+.ev-flicker {
+  animation: ev-flicker 3.2s steps(24) infinite;
+}
+
+/* A gold sheen that sweeps across a call to action now and then. */
+.ev-sheen {
+  position: relative;
+  overflow: hidden;
+}
+.ev-sheen::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 244, 214, 0.38) 48%,
+    transparent 61%
+  );
+  transform: translateX(-120%);
+  animation: ev-sheen 5.5s var(--ease-io) 1.2s infinite;
+}
+@keyframes ev-sheen {
+  0% {
+    transform: translateX(-120%);
+  }
+  22%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+/* Zoom in on a picture as it opens (a camera pushing in). */
+@keyframes ev-push-in {
+  from {
+    transform: scale(1.12);
+    filter: blur(6px) brightness(1.1);
+  }
+}
+.ev-push-in {
+  animation: ev-push-in 1.1s var(--ease-settle) both;
+}
+
+/* A title stamping onto the page (a chapter card, a level-up). */
+@keyframes ev-stamp {
+  0% {
+    opacity: 0;
+    transform: scale(1.35);
+    letter-spacing: 0.2em;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.ev-stamp {
+  animation: ev-stamp 0.7s var(--ease-settle) both;
+}
+
+/* ------------------------------------------------------------------ *
+ * Reduced motion: nothing travels across the screen. Fades and colour
+ * changes stay (they do not cause motion sickness), and progress
+ * indicators (.ev-progress-spin) keep turning so waiting stays honest.
+ * Applies when the viewer chose "Reduced", or follows the system.
+ * ------------------------------------------------------------------ */
+
+:root[data-motion='reduced'] *:not(.ev-progress-spin),
+:root[data-motion='reduced'] *::before,
+:root[data-motion='reduced'] *::after {
+  transition-property:
+    opacity, color, background-color, border-color, box-shadow, filter, outline-color !important;
+  animation: none !important;
+  scroll-behavior: auto !important;
+}
+:root[data-motion='reduced'] .ev-rise > *,
+:root[data-motion='reduced'] .ev-pop-stagger > *,
+:root[data-motion='reduced'] .ev-fade-in {
+  animation: ev-fade 0.3s var(--ease-out) both !important;
+}
+:root[data-motion='reduced'] .ev-skeleton,
+:root[data-motion='reduced'] .ev-dots > span {
+  animation-name: ev-dots !important;
+  animation-duration: 1.6s !important;
+  animation-iteration-count: infinite !important;
+}
+:root[data-motion='reduced'] .ev-reveal {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion='full']) *:not(.ev-progress-spin),
+  :root:not([data-motion='full']) *::before,
+  :root:not([data-motion='full']) *::after {
+    transition-property:
+      opacity, color, background-color, border-color, box-shadow, filter, outline-color !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+  :root:not([data-motion='full']) .ev-rise > *,
+  :root:not([data-motion='full']) .ev-pop-stagger > *,
+  :root:not([data-motion='full']) .ev-fade-in {
+    animation: ev-fade 0.3s var(--ease-out) both !important;
+  }
+  :root:not([data-motion='full']) .ev-skeleton,
+  :root:not([data-motion='full']) .ev-dots > span {
+    animation-name: ev-dots !important;
+    animation-duration: 1.6s !important;
+    animation-iteration-count: infinite !important;
+  }
+  :root:not([data-motion='full']) .ev-reveal {
+    transform: none;
+  }
+}

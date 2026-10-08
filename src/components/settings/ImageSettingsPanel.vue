@@ -693,12 +693,4 @@ const progress = computed(() => Math.min(0.95, elapsed.value / Math.max(1, expec
     grid-template-columns: 1fr;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .spin {
-    animation: none;
-  }
-  .painting__bar span {
-    transition: none;
-  }
-}
 </style>

@@ -83,10 +83,4 @@ const model = defineModel<boolean>({ required: true })
   color: var(--muted);
   line-height: 1.4;
 }
-@media (prefers-reduced-motion: reduce) {
-  .tsw__track,
-  .tsw__thumb {
-    transition: none;
-  }
-}
 </style>

@@ -220,9 +220,4 @@ function initials(name: string): string {
   background: rgba(249, 242, 225, 0.9);
   white-space: nowrap;
 }
-@media (prefers-reduced-motion: reduce) {
-  .pm__token {
-    transition: none;
-  }
-}
 </style>

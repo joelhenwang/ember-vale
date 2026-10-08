@@ -95,11 +95,17 @@ router.beforeEach((to, from) => {
   opacity: 0.3;
 }
 
+:root[data-motion='reduced'] .slide-next-enter-from,
+:root[data-motion='reduced'] .slide-prev-leave-to,
+:root[data-motion='reduced'] .slide-next-leave-to,
+:root[data-motion='reduced'] .slide-prev-enter-from {
+  transform: none;
+}
 @media (prefers-reduced-motion: reduce) {
-  .slide-next-enter-from,
-  .slide-prev-leave-to,
-  .slide-next-leave-to,
-  .slide-prev-enter-from {
+  :root:not([data-motion='full']) .slide-next-enter-from,
+  :root:not([data-motion='full']) .slide-prev-leave-to,
+  :root:not([data-motion='full']) .slide-next-leave-to,
+  :root:not([data-motion='full']) .slide-prev-enter-from {
     transform: none;
   }
 }

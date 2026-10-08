@@ -319,12 +319,4 @@ function initials(name: string): string {
       0 0 0 18px rgba(20, 84, 90, 0);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .wm__place--active .wm__pin {
-    animation: none;
-  }
-  .wm__token {
-    transition: none;
-  }
-}
 </style>

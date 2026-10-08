@@ -359,9 +359,4 @@ textarea.ev-input {
   transform: translateY(-1px);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *:not(.ev-progress-spin) {
-    transition: none !important;
-    animation: none !important;
-  }
-}
+/* Reduced motion lives in styles/motion.css (it follows Settings › Appearance). */

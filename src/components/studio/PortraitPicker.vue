@@ -507,18 +507,31 @@ const initial = computed(() =>
 }
 /* Asked for less motion: the rings still turn (they say work is under
    way), only more slowly; the pulse and the shimmer stop. */
+:root[data-motion='reduced'] .pick__ring span {
+  animation-duration: 4s;
+}
+:root[data-motion='reduced'] .pick__ring span:nth-child(2) {
+  animation-duration: 5.5s;
+}
+:root[data-motion='reduced'] .pick__ring span:nth-child(3) {
+  animation-duration: 7s;
+}
+:root[data-motion='reduced'] .pick__spark,
+:root[data-motion='reduced'] .pick__painting {
+  animation: none;
+}
 @media (prefers-reduced-motion: reduce) {
-  .pick__ring span {
+  :root:not([data-motion='full']) .pick__ring span {
     animation-duration: 4s;
   }
-  .pick__ring span:nth-child(2) {
+  :root:not([data-motion='full']) .pick__ring span:nth-child(2) {
     animation-duration: 5.5s;
   }
-  .pick__ring span:nth-child(3) {
+  :root:not([data-motion='full']) .pick__ring span:nth-child(3) {
     animation-duration: 7s;
   }
-  .pick__spark,
-  .pick__painting {
+  :root:not([data-motion='full']) .pick__spark,
+  :root:not([data-motion='full']) .pick__painting {
     animation: none;
   }
 }

@@ -43,6 +43,7 @@ import type { Adapter } from '../game/providerSettings'
 import { NEW_CONNECTION, useProviderSettings } from '../composables/useProviderSettings'
 import { useImageSettings } from '../composables/useImageSettings'
 import ImageSettingsPanel from '../components/settings/ImageSettingsPanel.vue'
+import MotionSettings from '../components/settings/MotionSettings.vue'
 
 /* sections ------------------------------------------------------------- */
 const sections = [
@@ -60,8 +61,6 @@ const activeSection = computed(() => sections.find((s) => s.key === active.value
 const SECTION_BLURB: Record<string, string> = {
   generation:
     'Narrator temperature, beat pacing and choice counts get sensible house defaults here. This screen hasn’t been drawn yet — the mockup only covers AI connections.',
-  appearance:
-    'Text size, contrast, reduced motion and voice-over behaviour will live here. Screen pending.',
   storage: 'Save slots, autosave frequency and export/import for story archives. Screen pending.',
   advanced:
     'Prompt overrides, telemetry and offline models. Most players never visit. Screen pending.'
@@ -156,192 +155,207 @@ onBeforeUnmount(() => clearTimeout(flashTimer))
       <SettingsNav v-model="active" :sections="sections" />
 
       <div class="settings__main">
-        <template v-if="active === 'ai-connections'">
-          <div
-            id="settings-panel-ai-connections"
-            role="tabpanel"
-            aria-labelledby="settings-tab-ai-connections">
-            <h2 class="settings__section">AI connections</h2>
-            <p class="settings__section-sub">
-              Stories without a pinned connection use the server’s environment default.
-            </p>
+        <Transition name="ev-swap" mode="out-in">
+          <div v-if="active === 'ai-connections'" key="ai-connections">
+            <div
+              id="settings-panel-ai-connections"
+              role="tabpanel"
+              aria-labelledby="settings-tab-ai-connections">
+              <h2 class="settings__section">AI connections</h2>
+              <p class="settings__section-sub">
+                Stories without a pinned connection use the server’s environment default.
+              </p>
 
-            <p v-if="s.error.value" class="settings__alert" role="alert">{{ s.error.value }}</p>
-            <p v-if="s.loading.value" class="ev-info settings__card">
-              <IconInfo :size="14" /> Loading connections…
-            </p>
+              <p v-if="s.error.value" class="settings__alert" role="alert">{{ s.error.value }}</p>
+              <p v-if="s.loading.value" class="ev-info settings__card">
+                <IconInfo :size="14" /> Loading connections…
+              </p>
 
-            <ConnectionCard
-              v-else
-              class="settings__card"
-              :icon="IconDoc"
-              title="Story generation"
-              :status="s.status.value"
-              caption="Writes narration, dialogue and character decisions. A reachable endpoint only
+              <ConnectionCard
+                v-else
+                class="settings__card"
+                :icon="IconDoc"
+                title="Story generation"
+                :status="s.status.value"
+                caption="Writes narration, dialogue and character decisions. A reachable endpoint only
                 confirms the server can be contacted, not that generation works.">
-              <FieldRow label="Connection" :span="3">
-                <StudioSelect
-                  :model-value="s.selected.value"
-                  :options="connectionOptions"
-                  aria-label="Connection"
-                  @update:model-value="selectConnection" />
-              </FieldRow>
-              <FieldRow label="Name">
-                <input v-model="s.form.value.name" class="ev-input" aria-label="Name" />
-                <p v-if="s.errors.value.name" class="field-err">{{ s.errors.value.name }}</p>
-              </FieldRow>
-              <FieldRow label="Adapter">
-                <StudioSelect
-                  :model-value="s.form.value.adapter"
-                  :options="adapterOptions"
-                  aria-label="Adapter"
-                  @update:model-value="setAdapter" />
-              </FieldRow>
-              <FieldRow label="Endpoint" :span="3">
-                <input
-                  v-model="s.form.value.endpoint"
-                  class="ev-input"
-                  aria-label="Endpoint"
-                  placeholder="https://openrouter.ai/api/v1" />
-                <p v-if="s.errors.value.endpoint" class="field-err">
-                  {{ s.errors.value.endpoint }}
-                </p>
-                <label class="check">
-                  <input v-model="s.form.value.allowLocal" type="checkbox" />
-                  Allow a local or private-network endpoint
-                </label>
-              </FieldRow>
-              <FieldRow label="Key variable" :span="2">
-                <span class="cred">
-                  <span class="cred__lock"><IconLock :size="15" /></span>
+                <FieldRow label="Connection" :span="3">
+                  <StudioSelect
+                    :model-value="s.selected.value"
+                    :options="connectionOptions"
+                    aria-label="Connection"
+                    @update:model-value="selectConnection" />
+                </FieldRow>
+                <FieldRow label="Name">
+                  <input v-model="s.form.value.name" class="ev-input" aria-label="Name" />
+                  <p v-if="s.errors.value.name" class="field-err">{{ s.errors.value.name }}</p>
+                </FieldRow>
+                <FieldRow label="Adapter">
+                  <StudioSelect
+                    :model-value="s.form.value.adapter"
+                    :options="adapterOptions"
+                    aria-label="Adapter"
+                    @update:model-value="setAdapter" />
+                </FieldRow>
+                <FieldRow label="Endpoint" :span="3">
                   <input
-                    v-model="s.form.value.credentialEnv"
-                    class="cred__input"
-                    spellcheck="false"
-                    aria-label="Server environment variable holding the key"
-                    placeholder="WORLDSIM_PROVIDER__OPENROUTER_API_KEY" />
-                </span>
-                <p v-if="s.errors.value.credentialEnv" class="field-err">
-                  {{ s.errors.value.credentialEnv }}
-                </p>
-                <p class="testcol__note" :class="{ 'testcol__note--ok': credentialNote.ok }">
-                  <IconCheck v-if="credentialNote.ok" :size="10" />
-                  {{ credentialNote.text }} The key itself never leaves the server.
-                </p>
-                <template #after>
-                  <div class="testcol">
-                    <button
-                      type="button"
-                      class="testbtn"
-                      :disabled="!s.canTest.value"
-                      @click="s.test()">
-                      {{ s.testing.value ? 'Testing…' : 'Test connection' }}
-                    </button>
-                    <p v-if="s.dirty.value || !s.connection.value" class="testcol__note">
-                      Save first — tests use the saved connection.
-                    </p>
-                    <template v-else-if="s.lastTest.value">
-                      <p
-                        class="testcol__note"
-                        :class="{ 'testcol__note--ok': s.lastTest.value.reachable }">
-                        <IconCheck v-if="s.lastTest.value.reachable" :size="10" />
-                        {{ s.lastTest.value.detail }} · {{ testedAt(s.lastTest.value.tested_at) }}
+                    v-model="s.form.value.endpoint"
+                    class="ev-input"
+                    aria-label="Endpoint"
+                    placeholder="https://openrouter.ai/api/v1" />
+                  <p v-if="s.errors.value.endpoint" class="field-err">
+                    {{ s.errors.value.endpoint }}
+                  </p>
+                  <label class="check">
+                    <input v-model="s.form.value.allowLocal" type="checkbox" />
+                    Allow a local or private-network endpoint
+                  </label>
+                </FieldRow>
+                <FieldRow label="Key variable" :span="2">
+                  <span class="cred">
+                    <span class="cred__lock"><IconLock :size="15" /></span>
+                    <input
+                      v-model="s.form.value.credentialEnv"
+                      class="cred__input"
+                      spellcheck="false"
+                      aria-label="Server environment variable holding the key"
+                      placeholder="WORLDSIM_PROVIDER__OPENROUTER_API_KEY" />
+                  </span>
+                  <p v-if="s.errors.value.credentialEnv" class="field-err">
+                    {{ s.errors.value.credentialEnv }}
+                  </p>
+                  <p class="testcol__note" :class="{ 'testcol__note--ok': credentialNote.ok }">
+                    <IconCheck v-if="credentialNote.ok" :size="10" />
+                    {{ credentialNote.text }} The key itself never leaves the server.
+                  </p>
+                  <template #after>
+                    <div class="testcol">
+                      <button
+                        type="button"
+                        class="testbtn"
+                        :disabled="!s.canTest.value"
+                        @click="s.test()">
+                        {{ s.testing.value ? 'Testing…' : 'Test connection' }}
+                      </button>
+                      <p v-if="s.dirty.value || !s.connection.value" class="testcol__note">
+                        Save first — tests use the saved connection.
                       </p>
-                      <p class="testcol__note">
-                        Text generation: {{ s.lastTest.value.text_ready }}
-                      </p>
-                    </template>
-                    <p v-else class="testcol__note">Checks the endpoint; sends no key.</p>
-                  </div>
-                </template>
-              </FieldRow>
+                      <template v-else-if="s.lastTest.value">
+                        <p
+                          class="testcol__note"
+                          :class="{ 'testcol__note--ok': s.lastTest.value.reachable }">
+                          <IconCheck v-if="s.lastTest.value.reachable" :size="10" />
+                          {{ s.lastTest.value.detail }} · {{ testedAt(s.lastTest.value.tested_at) }}
+                        </p>
+                        <p class="testcol__note">
+                          Text generation: {{ s.lastTest.value.text_ready }}
+                        </p>
+                      </template>
+                      <p v-else class="testcol__note">Checks the endpoint; sends no key.</p>
+                    </div>
+                  </template>
+                </FieldRow>
 
-              <h4 class="settings__sub">Model</h4>
-              <FieldRow label="Model" :span="3">
-                <input
-                  v-model="s.form.value.modelId"
-                  class="ev-input"
-                  list="settings-model-suggestions"
-                  aria-label="Model"
-                  spellcheck="false" />
-                <datalist id="settings-model-suggestions">
-                  <option v-for="m in MODEL_SUGGESTIONS" :key="m" :value="m" />
-                </datalist>
-                <p v-if="s.errors.value.modelId" class="field-err">
-                  {{ s.errors.value.modelId }}
-                </p>
-                <p class="testcol__note">{{ revisionNote }}</p>
-              </FieldRow>
-              <FieldRow label="Temperature">
-                <input
-                  v-model="s.form.value.temperature"
-                  class="ev-input"
-                  inputmode="decimal"
-                  aria-label="Temperature"
-                  placeholder="Provider default" />
-                <p v-if="s.errors.value.temperature" class="field-err">
-                  {{ s.errors.value.temperature }}
-                </p>
-              </FieldRow>
-              <FieldRow label="Top P">
-                <input
-                  v-model="s.form.value.topP"
-                  class="ev-input"
-                  inputmode="decimal"
-                  aria-label="Top P"
-                  placeholder="Provider default" />
-                <p v-if="s.errors.value.topP" class="field-err">{{ s.errors.value.topP }}</p>
-              </FieldRow>
-              <FieldRow label="Top K">
-                <input
-                  v-model="s.form.value.topK"
-                  class="ev-input"
-                  inputmode="numeric"
-                  aria-label="Top K"
-                  placeholder="Provider default" />
-                <p v-if="s.errors.value.topK" class="field-err">{{ s.errors.value.topK }}</p>
-              </FieldRow>
-              <FieldRow label="Max tokens">
-                <input
-                  v-model="s.form.value.maxTokens"
-                  class="ev-input"
-                  inputmode="numeric"
-                  aria-label="Max tokens" />
-                <p v-if="s.errors.value.maxTokens" class="field-err">
-                  {{ s.errors.value.maxTokens }}
-                </p>
-              </FieldRow>
-            </ConnectionCard>
+                <h4 class="settings__sub">Model</h4>
+                <FieldRow label="Model" :span="3">
+                  <input
+                    v-model="s.form.value.modelId"
+                    class="ev-input"
+                    list="settings-model-suggestions"
+                    aria-label="Model"
+                    spellcheck="false" />
+                  <datalist id="settings-model-suggestions">
+                    <option v-for="m in MODEL_SUGGESTIONS" :key="m" :value="m" />
+                  </datalist>
+                  <p v-if="s.errors.value.modelId" class="field-err">
+                    {{ s.errors.value.modelId }}
+                  </p>
+                  <p class="testcol__note">{{ revisionNote }}</p>
+                </FieldRow>
+                <FieldRow label="Temperature">
+                  <input
+                    v-model="s.form.value.temperature"
+                    class="ev-input"
+                    inputmode="decimal"
+                    aria-label="Temperature"
+                    placeholder="Provider default" />
+                  <p v-if="s.errors.value.temperature" class="field-err">
+                    {{ s.errors.value.temperature }}
+                  </p>
+                </FieldRow>
+                <FieldRow label="Top P">
+                  <input
+                    v-model="s.form.value.topP"
+                    class="ev-input"
+                    inputmode="decimal"
+                    aria-label="Top P"
+                    placeholder="Provider default" />
+                  <p v-if="s.errors.value.topP" class="field-err">{{ s.errors.value.topP }}</p>
+                </FieldRow>
+                <FieldRow label="Top K">
+                  <input
+                    v-model="s.form.value.topK"
+                    class="ev-input"
+                    inputmode="numeric"
+                    aria-label="Top K"
+                    placeholder="Provider default" />
+                  <p v-if="s.errors.value.topK" class="field-err">{{ s.errors.value.topK }}</p>
+                </FieldRow>
+                <FieldRow label="Max tokens">
+                  <input
+                    v-model="s.form.value.maxTokens"
+                    class="ev-input"
+                    inputmode="numeric"
+                    aria-label="Max tokens" />
+                  <p v-if="s.errors.value.maxTokens" class="field-err">
+                    {{ s.errors.value.maxTokens }}
+                  </p>
+                </FieldRow>
+              </ConnectionCard>
+            </div>
           </div>
-        </template>
 
-        <div
-          v-else-if="active === 'images'"
-          id="settings-panel-images"
-          role="tabpanel"
-          aria-labelledby="settings-tab-images">
-          <h2 class="settings__section">Image generation</h2>
-          <p class="settings__section-sub">
-            How portraits and place art are painted. Changes apply to the next picture, no restart
-            needed.
-          </p>
-          <p v-if="img.loading.value" class="ev-info settings__card">
-            <IconInfo :size="14" /> Loading image settings…
-          </p>
-          <ImageSettingsPanel v-else :s="img" />
-        </div>
+          <div
+            v-else-if="active === 'images'"
+            id="settings-panel-images"
+            role="tabpanel"
+            aria-labelledby="settings-tab-images">
+            <h2 class="settings__section">Image generation</h2>
+            <p class="settings__section-sub">
+              How portraits and place art are painted. Changes apply to the next picture, no restart
+              needed.
+            </p>
+            <p v-if="img.loading.value" class="ev-info settings__card">
+              <IconInfo :size="14" /> Loading image settings…
+            </p>
+            <ImageSettingsPanel v-else :s="img" />
+          </div>
 
-        <!-- other sections: honest placeholders until their screens exist -->
-        <section
-          v-else
-          class="settings__soon ev-card"
-          role="tabpanel"
-          :id="`settings-panel-${active}`"
-          :aria-labelledby="`settings-tab-${active}`">
-          <h2 class="settings__section">{{ activeSection.label }}</h2>
-          <p class="settings__soon-copy">{{ sectionBlurb }}</p>
-          <p class="ev-info"><IconInfo :size="14" /> This panel is still being written.</p>
-        </section>
+          <div
+            v-else-if="active === 'appearance'"
+            id="settings-panel-appearance"
+            role="tabpanel"
+            aria-labelledby="settings-tab-appearance">
+            <h2 class="settings__section">Motion</h2>
+            <p class="settings__section-sub">
+              How much the game moves. Saved on this device and applied at once.
+            </p>
+            <MotionSettings />
+          </div>
+
+          <!-- other sections: honest placeholders until their screens exist -->
+          <section
+            v-else
+            :key="active"
+            class="settings__soon ev-card"
+            role="tabpanel"
+            :id="`settings-panel-${active}`"
+            :aria-labelledby="`settings-tab-${active}`">
+            <h2 class="settings__section">{{ activeSection.label }}</h2>
+            <p class="settings__soon-copy">{{ sectionBlurb }}</p>
+            <p class="ev-info"><IconInfo :size="14" /> This panel is still being written.</p>
+          </section>
+        </Transition>
       </div>
     </div>
 

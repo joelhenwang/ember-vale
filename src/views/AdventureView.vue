@@ -1681,11 +1681,6 @@ button.log__picture:hover {
     background-position: -150% 0;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .log__picture-wait {
-    animation: none;
-  }
-}
 .log__line--pending .log__prose {
   color: var(--muted);
   font-style: italic;

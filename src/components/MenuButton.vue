@@ -246,8 +246,11 @@ const arrowSize = computed(() => (props.arrow === 'circle' ? (props.size === 'sm
   margin-right: -8px;
 }
 
+:root[data-motion='reduced'] .mb:hover:not(:disabled) .mb__arrows {
+  transform: translateX(calc(-1 * (var(--i) + var(--g))));
+}
 @media (prefers-reduced-motion: reduce) {
-  .mb:hover:not(:disabled) .mb__arrows {
+  :root:not([data-motion='full']) .mb:hover:not(:disabled) .mb__arrows {
     transform: translateX(calc(-1 * (var(--i) + var(--g))));
   }
 }

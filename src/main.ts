@@ -18,5 +18,8 @@ import '@fontsource/alegreya-sans/700.css'
 
 import './style.css'
 import './styles/studio.css'
+import './styles/motion.css'
+import { installMotion } from './composables/useMotion'
 
+installMotion()
 createApp(App).use(router).mount('#app')
