@@ -89,7 +89,7 @@ function onBackdrop(event: MouseEvent): void {
     @click="onBackdrop">
     <div class="em__frame">
       <figure class="em__art">
-        <img v-if="mapAssetId" class="ev-drift" :src="assetUrl(worldId, mapAssetId)" alt="" />
+        <img v-if="mapAssetId" class="ev-drift" :src="assetUrl(worldId, mapAssetId, 1280)" alt="" />
         <figcaption>No illustration for this scene yet · showing the world map</figcaption>
       </figure>
       <div class="em__story">

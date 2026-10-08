@@ -54,7 +54,7 @@ async function addPlaying(worldId: string): Promise<void> {
     for (const c of view.cast ?? []) {
       speakers[c.character_id] = {
         name: c.name,
-        portraitUrl: c.portrait_asset_id ? assetUrl(worldId, c.portrait_asset_id) : null
+        portraitUrl: c.portrait_asset_id ? assetUrl(worldId, c.portrait_asset_id, 160) : null
       }
     }
     const places: Record<string, string> = {}
@@ -64,7 +64,7 @@ async function addPlaying(worldId: string): Promise<void> {
       playing: {
         characterId: me,
         name: self.name,
-        portraitUrl: self.portrait_asset_id ? assetUrl(worldId, self.portrait_asset_id) : null,
+        portraitUrl: self.portrait_asset_id ? assetUrl(worldId, self.portrait_asset_id, 320) : null,
         title: view.journey?.title ?? null,
         lastLine: told?.text ? firstSentence(told.text) : null,
         sceneUrl: art ? assetUrl(worldId, art.asset_id) : null,

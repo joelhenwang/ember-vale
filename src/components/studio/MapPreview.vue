@@ -53,7 +53,7 @@ const lines = computed(() =>
     :style="{ aspectRatio: `${board.width} / ${board.height}` }"
     role="img"
     :aria-label="`Map with ${board.places.length} places and ${lines.length} roads`">
-    <img :src="libraryAssetUrl(board.assetId)" alt="" draggable="false" />
+    <img :src="libraryAssetUrl(board.assetId, 640)" alt="" draggable="false" />
     <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
       <polyline
         v-for="(line, i) in lines"

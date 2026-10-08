@@ -402,7 +402,7 @@ const facts = computed(() => [
             v-if="placePicture"
             :key="placePicture"
             class="wpv__img wpv__art"
-            :src="libraryAssetUrl(placePicture)"
+            :src="libraryAssetUrl(placePicture, 640)"
             :alt="place.name" />
           <span v-else class="wpv__nopic">
             <IconImage :size="30" />

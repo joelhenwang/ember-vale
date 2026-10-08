@@ -21,7 +21,12 @@ from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.infrastructure.assets.fixture import FixtureImageGateway
 from worldsim.infrastructure.storage.local import LocalStorage
 from worldsim.interfaces.http import schemas as api
-from worldsim.interfaces.http.asset_cache import asset_response, not_modified
+from worldsim.interfaces.http.asset_cache import (
+    asset_response,
+    not_modified,
+    picture_bytes,
+    snap_width,
+)
 from worldsim.interfaces.http.routes.roles import effective_role
 
 router = APIRouter(tags=["assets"])
@@ -152,7 +157,9 @@ async def list_assets(
 
 
 @router.get("/assets/{asset_id}")
-async def read_asset_bytes(asset_id: UUID, request: Request, world_id: UUID) -> Response:
+async def read_asset_bytes(
+    asset_id: UUID, request: Request, world_id: UUID, w: int | None = None
+) -> Response:
     """Serve stored bytes. Players read world art and their own portrait only."""
     state = request.app.state.app_state
     async with state.uow_factory()() as uow:
@@ -174,12 +181,12 @@ async def read_asset_bytes(asset_id: UUID, request: Request, world_id: UUID) -> 
             )
             if not allowed:
                 raise DomainError(ErrorCode.FORBIDDEN, "asset is outside player perspective")
-    cached = not_modified(request, asset)
+    width = snap_width(asset, w)
+    cached = not_modified(request, asset, width)
     if cached is not None:
         return cached
-    storage = _assets_root(request)
     try:
-        data = await storage.read(asset.content_ref)
+        data, mime = await picture_bytes(_assets_root(request), asset, width)
     except (FileNotFoundError, OSError) as exc:
         raise DomainError(ErrorCode.NOT_FOUND, "stored bytes are missing") from exc
-    return asset_response(asset, data)
+    return asset_response(asset, data, mime, width)

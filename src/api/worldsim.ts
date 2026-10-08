@@ -424,9 +424,15 @@ export function getChronicle(
   )
 }
 
-/** Same-origin URL for stored art (map, portraits); the dev proxy adds auth. */
-export function assetUrl(worldId: string, assetId: string): string {
-  return `/api/v1/assets/${assetId}?world_id=${worldId}`
+/**
+ * Same-origin URL for stored art (map, portraits); the dev proxy adds auth.
+ * `width`: the widest it is drawn, in device pixels (about 2x its CSS size);
+ * the server sends a WebP that wide (snapped to a few sizes) instead of the
+ * whole painting. Leave it out where the full picture is needed.
+ */
+export function assetUrl(worldId: string, assetId: string, width?: number): string {
+  const w = width ? `&w=${width}` : ''
+  return `/api/v1/assets/${assetId}?world_id=${worldId}${w}`
 }
 
 export function getAutoplay(worldId: string, opts: CallOptions = {}): Promise<AutoplayView> {
@@ -792,8 +798,8 @@ export function cancelIntervention(
 /* World maps -------------------------------------------------------------- */
 
 /** Same-origin URL for an unscoped library picture (a world's map). */
-export function libraryAssetUrl(assetId: string): string {
-  return `/api/v1/library/assets/${assetId}/bytes`
+export function libraryAssetUrl(assetId: string, width?: number): string {
+  return `/api/v1/library/assets/${assetId}/bytes${width ? `?w=${width}` : ''}`
 }
 
 export function uploadMap(dataUrl: string, opts: CallOptions = {}): Promise<MapImageView> {

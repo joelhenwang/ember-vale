@@ -246,7 +246,10 @@ onBeforeUnmount(() => clearTimeout(flashTimer))
         <ul class="people">
           <li v-for="c in form.characters" :key="c.characterId" class="person">
             <span class="person__face">
-              <img v-if="c.portraitAssetId" :src="assetUrl(storyId, c.portraitAssetId)" alt="" />
+              <img
+                v-if="c.portraitAssetId"
+                :src="assetUrl(storyId, c.portraitAssetId, 96)"
+                alt="" />
               <span v-else>{{ c.name.slice(0, 1) }}</span>
             </span>
             <span class="person__name">{{ c.name }}</span>

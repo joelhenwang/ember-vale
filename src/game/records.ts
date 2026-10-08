@@ -22,7 +22,7 @@ export interface ResolvedWorld {
 export function storyCover(detail: StoryDetail): FramedCover | null {
   if (!detail.cover_asset_id) return null
   return {
-    src: assetUrl(detail.world_id, detail.cover_asset_id),
+    src: assetUrl(detail.world_id, detail.cover_asset_id, 1280),
     frame: frameFromList(detail.cover_frame as number[] | null | undefined)
   }
 }

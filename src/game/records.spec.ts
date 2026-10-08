@@ -37,7 +37,7 @@ describe('record mapping', () => {
     expect(toStoryRecord(DETAIL, { name: '', description: '' }).cover).toBeNull()
     const covered = { ...DETAIL, cover_asset_id: 'a9', cover_frame: [0, 0.1, 1, 0.5] }
     expect(toStoryRecord(covered, { name: '', description: '' }).cover).toEqual({
-      src: '/api/v1/assets/a9?world_id=w1',
+      src: '/api/v1/assets/a9?world_id=w1&w=1280',
       frame: { x: 0, y: 0.1, w: 1, h: 0.5 }
     })
   })

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from pathlib import Path
+from uuid import uuid4
 
 
 class LocalStorage:
@@ -26,8 +28,11 @@ class LocalStorage:
         path = self._resolve(content_ref)
 
         def _write() -> None:
+            # Write beside, then swap in: a reader never sees half a file.
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(data)
+            partial = path.with_name(f".{path.name}.{uuid4().hex[:8]}.part")
+            partial.write_bytes(data)
+            os.replace(partial, path)
 
         await asyncio.to_thread(_write)
 

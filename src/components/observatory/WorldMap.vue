@@ -172,7 +172,7 @@ function initials(name: string): string {
       @click="emit('select', token.id)">
       <FramedImage
         v-if="token.portraitAssetId"
-        :src="assetUrl(worldId, token.portraitAssetId)"
+        :src="assetUrl(worldId, token.portraitAssetId, 96)"
         :frame="token.faceFrame" />
       <span v-else>{{ initials(token.name) }}</span>
       <em class="wm__name">{{ token.name }}</em>

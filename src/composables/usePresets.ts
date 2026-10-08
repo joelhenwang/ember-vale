@@ -72,7 +72,7 @@ const WORLD_IMAGE_BY_NAME: Record<string, ImageSlot> = {
 export function worldCover(rev: Record<string, unknown>): FramedCover | null {
   const cover = rev['cover'] as { asset_id?: unknown; frame?: Frame } | null | undefined
   if (!cover || typeof cover.asset_id !== 'string' || !cover.frame) return null
-  return { src: libraryAssetUrl(cover.asset_id), frame: cover.frame }
+  return { src: libraryAssetUrl(cover.asset_id, 1280), frame: cover.frame }
 }
 
 /** A preset revision's imported picture with its frames, when it has both. */
@@ -80,7 +80,7 @@ export function framedPortrait(rev: Record<string, unknown>): FramedPortrait | n
   const id = rev['portrait_asset_id']
   const frames = rev['portrait_frames'] as { portrait?: Frame; face?: Frame } | null | undefined
   if (typeof id !== 'string' || !frames?.portrait || !frames.face) return null
-  return { src: libraryAssetUrl(id), portrait: frames.portrait, face: frames.face }
+  return { src: libraryAssetUrl(id, 640), portrait: frames.portrait, face: frames.face }
 }
 
 export function toLibraryCharacter(p: PresetCharacter): CharacterDef {

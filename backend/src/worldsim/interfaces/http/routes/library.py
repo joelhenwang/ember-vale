@@ -28,7 +28,12 @@ from worldsim.domain.presets import (
 from worldsim.domain.time import utcnow
 from worldsim.infrastructure.storage.local import LocalStorage
 from worldsim.interfaces.http import schemas as api
-from worldsim.interfaces.http.asset_cache import asset_response, not_modified
+from worldsim.interfaces.http.asset_cache import (
+    asset_response,
+    not_modified,
+    picture_bytes,
+    snap_width,
+)
 
 router = APIRouter(tags=["library"])
 
@@ -428,19 +433,22 @@ async def preset_assets(preset_id: UUID, request: Request) -> dict[str, Any]:
 
 
 @router.get("/library/assets/{asset_id}/bytes")
-async def read_library_asset_bytes(asset_id: UUID, request: Request) -> Response:
+async def read_library_asset_bytes(
+    asset_id: UUID, request: Request, w: int | None = None
+) -> Response:
     """Serve unscoped bytes only; world-bound assets 404 here by design."""
     state = request.app.state.app_state
     async with state.uow_factory()() as uow:
         asset = await uow.assets.get_asset(asset_id)
         if asset.world_id is not None:
             raise DomainError(ErrorCode.NOT_FOUND, "world-bound assets stay world-scoped")
-    cached = not_modified(request, asset)
+    width = snap_width(asset, w)
+    cached = not_modified(request, asset, width)
     if cached is not None:
         return cached
     storage = LocalStorage(state.seed_dir.parent.parent / "assets")
     try:
-        data = await storage.read(asset.content_ref)
+        data, mime = await picture_bytes(storage, asset, width)
     except (FileNotFoundError, OSError) as exc:
         raise DomainError(ErrorCode.NOT_FOUND, "stored bytes are missing") from exc
-    return asset_response(asset, data)
+    return asset_response(asset, data, mime, width)

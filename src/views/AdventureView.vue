@@ -109,7 +109,7 @@ const portraits = computed(
         .map((c) => [
           c.character_id,
           {
-            src: assetUrl(storyId.value, c.portrait_asset_id as string),
+            src: assetUrl(storyId.value, c.portrait_asset_id as string, 160),
             face: frameFromList(c.face_frame)
           }
         ])
@@ -263,7 +263,7 @@ const speakers = computed(() => {
   for (const c of adv.presentation.value?.cast ?? []) {
     out.set(c.character_id, {
       name: c.name,
-      portraitUrl: c.portrait_asset_id ? assetUrl(storyId.value, c.portrait_asset_id) : null
+      portraitUrl: c.portrait_asset_id ? assetUrl(storyId.value, c.portrait_asset_id, 160) : null
     })
   }
   return out
@@ -820,7 +820,7 @@ onMounted(() => {
                     @click="openPicture(line.picture.picture_id)">
                     <span class="log__thumb">
                       <img
-                        :src="assetUrl(storyId, line.picture.asset_id)"
+                        :src="assetUrl(storyId, line.picture.asset_id, 480)"
                         :alt="line.picture.caption"
                         loading="lazy" />
                     </span>

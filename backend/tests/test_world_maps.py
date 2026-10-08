@@ -509,3 +509,23 @@ def test_maps_are_kept_as_webp_no_larger_than_the_screen(
         assert (picture["width"], picture["height"]) == size
         stored = api.get(f"/api/v1/library/assets/{picture['asset_id']}/bytes")
         assert stored.headers["content-type"] == "image/webp"
+
+
+def test_a_picture_comes_at_the_width_asked_for(stack: tuple[ApiClient, _Reader]) -> None:
+    api, _ = stack
+    out = io.BytesIO()
+    Image.new("RGB", (1200, 600), (40, 90, 160)).save(out, format="PNG")
+    data_url = "data:image/png;base64," + base64.b64encode(out.getvalue()).decode()
+    asset_id = api.post("/api/v1/library/maps", json={"data_url": data_url}).json()["asset_id"]
+    url = f"/api/v1/library/assets/{asset_id}/bytes"
+    whole = api.get(url)
+    small = api.get(url, params={"w": 300})  # snaps up to 320
+    assert small.status_code == 200 and small.headers["content-type"] == "image/webp"
+    with Image.open(io.BytesIO(small.content)) as picture:
+        assert picture.size == (320, 160)
+    assert len(small.content) < len(whole.content)
+    assert small.headers["etag"] != whole.headers["etag"]
+    again = api.get(url, params={"w": 300}, headers={"If-None-Match": small.headers["etag"]})
+    assert again.status_code == 304
+    # wider than the picture itself: the original
+    assert api.get(url, params={"w": 4000}).headers["etag"] == whole.headers["etag"]
