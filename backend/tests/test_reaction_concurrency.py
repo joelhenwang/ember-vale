@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import uuid
+import weakref
 from types import SimpleNamespace
 from typing import Any
 
@@ -43,6 +44,8 @@ def test_reactors_run_concurrently_and_results_keep_attempt_order() -> None:
 
     orchestrator: Any = object.__new__(Stage1Orchestrator)
     orchestrator._react_one = fake_react_one
+    orchestrator._max_parallel = 12
+    orchestrator._slots = weakref.WeakKeyDictionary()
     result = asyncio.run(
         orchestrator._react_all(uuid.uuid4(), uuid.uuid4(), None, scene, attempts, {}, runtime)
     )
@@ -57,3 +60,32 @@ def test_reactors_run_concurrently_and_results_keep_attempt_order() -> None:
     assert peak >= 2
     # Each reactor still handles its attempts in order.
     assert per_reactor[ash] == [attempts[0].id, attempts[1].id]
+
+
+def test_reactions_stay_within_the_parallel_call_budget() -> None:
+    """A big cast's reactions run at most ``max_parallel_calls`` at a time."""
+    in_flight = 0
+    peak = 0
+
+    async def fake_react_one(*args: Any) -> Any:
+        nonlocal in_flight, peak
+        in_flight += 1
+        peak = max(peak, in_flight)
+        await asyncio.sleep(0.005)
+        in_flight -= 1
+        return None
+
+    orchestrator: Any = object.__new__(Stage1Orchestrator)
+    orchestrator._react_one = fake_react_one
+    orchestrator._max_parallel = 3
+    orchestrator._slots = weakref.WeakKeyDictionary()
+    people = [uuid.uuid4() for _ in range(8)]
+    scene = SimpleNamespace(
+        participants=[SimpleNamespace(character_id=c) for c in people],
+    )
+    attempts = [SimpleNamespace(id=uuid.uuid4(), actor_character_id=c) for c in people]
+    runtime = SimpleNamespace(controlled_character_id=None)
+    asyncio.run(
+        orchestrator._react_all(uuid.uuid4(), uuid.uuid4(), None, scene, attempts, {}, runtime)
+    )
+    assert peak == 3

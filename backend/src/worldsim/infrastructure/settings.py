@@ -43,13 +43,20 @@ class ApplicationSettings(BaseModel):
     #: scenes commit and narration (3.5-4.5 s) finishes behind it; the
     #: Adventure screen shows "still being written" until the words land.
     background_narration: bool = False
+    #: Decisions, reactions and day-end summaries a beat runs at once. Each
+    #: builds its context from the database before its model call; unbounded,
+    #: a 25-character cast queued hundreds of sessions on the pool and the
+    #: beat failed after 30 s (docs/evidence/perf-beat-001).
+    parallel_model_calls: int = Field(default=12, ge=1, le=64)
 
 
 class DatabaseSettings(BaseModel):
     """PostgreSQL connection contract (S0-DB-001 owns engine/session)."""
 
     url: str = "postgresql+asyncpg://worldsim:changeme-local-only@localhost:5432/worldsim"
-    pool_size: int = Field(default=5, ge=1, le=50)
+    pool_size: int = Field(default=10, ge=1, le=50)
+    #: Extra connections opened under a burst, closed again when idle.
+    max_overflow: int = Field(default=20, ge=0, le=100)
     #: Server-side cap on any one statement (lock waits included), set on
     #: every app connection. A backstop against runaway queries and stuck
     #: locks, generous enough never to cut real work: no app statement

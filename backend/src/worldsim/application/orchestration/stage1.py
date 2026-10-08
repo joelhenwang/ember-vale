@@ -27,8 +27,9 @@ import json
 import logging
 import random
 import time
+import weakref
 from collections import Counter
-from collections.abc import Callable, Generator, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Generator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from datetime import timedelta
@@ -517,11 +518,28 @@ def pronoun_line(characters: Sequence[Character], pronouns: Mapping[UUID, str]) 
     return "Pronouns — " + "; ".join(parts) + "."
 
 
-async def _pronouns_of(uow: Any, characters: Sequence[Character]) -> dict[UUID, str]:
+#: Card versions never change once written, so a beat reads each one once.
+CardCache = dict[tuple[UUID, int], CharacterCard]
+
+
+async def _card_of(uow: Any, character: Character, cards: CardCache | None) -> CharacterCard:
+    """The character's current card, read once per beat when given a cache."""
+    key = (character.id, character.card_version)
+    if cards is not None and key in cards:
+        return cards[key]
+    card = await uow.characters.get_card(character.id, character.card_version)
+    if cards is not None:
+        cards[key] = card
+    return card
+
+
+async def _pronouns_of(
+    uow: Any, characters: Sequence[Character], cards: CardCache | None = None
+) -> dict[UUID, str]:
     """Stated pronouns of these characters (unstated ones are left out)."""
     found: dict[UUID, str] = {}
     for character in characters:
-        card = await uow.characters.get_card(character.id, character.card_version)
+        card = await _card_of(uow, character, cards)
         if card.pronouns:
             found[character.id] = card.pronouns
     return found
@@ -1120,8 +1138,17 @@ class Stage1Orchestrator:
         narration: BackgroundNarration | None = None,
         paint_moments: bool = False,
         moment_writer: Writer | None = None,
+        max_parallel_calls: int = 12,
     ) -> None:
         self._factory = uow_factory
+        #: Model-backed tasks (decisions, reactions, summaries) a beat runs at
+        #: once, per event loop; see _bounded.
+        self._max_parallel = max_parallel_calls
+        #: Character cards read this beat (an orchestrator serves one beat).
+        self._cards: CardCache = {}
+        self._slots: weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Semaphore] = (
+            weakref.WeakKeyDictionary()
+        )
         #: When set, a beat returns once its scenes commit and narration
         #: finishes behind it (party scenes still narrate in line).
         self._narration = narration
@@ -1139,6 +1166,20 @@ class Stage1Orchestrator:
         self._pin_gateways = pin_gateway_factory
         self._hook = fault_hook
         self._dnd_data: DataTables | None = None
+
+    async def _bounded[T](self, work: Awaitable[T]) -> T:
+        """Run one model-backed task within the beat's parallel-call budget.
+
+        Each task reads its context from the database, so an unbounded burst
+        (every decision, every attempt-reactor pair) queues on the connection
+        pool; a large cast timed the pool out. Bounded tasks never nest.
+        """
+        loop = asyncio.get_running_loop()
+        slot = self._slots.get(loop)
+        if slot is None:
+            slot = self._slots[loop] = asyncio.Semaphore(self._max_parallel)
+        async with slot:
+            return await work
 
     def _fire(self, point: str) -> None:
         if self._hook is not None:
@@ -2146,7 +2187,9 @@ class Stage1Orchestrator:
                 return False
 
         # Owners are independent (own sources, own task): side by side.
-        done = await asyncio.gather(*(_one(c) for c in sorted(characters, key=lambda c: c.id.hex)))
+        done = await asyncio.gather(
+            *(self._bounded(_one(c)) for c in sorted(characters, key=lambda c: c.id.hex))
+        )
         return sum(done)
 
     async def _summarize_owner(
@@ -2695,18 +2738,20 @@ class Stage1Orchestrator:
         place_ids = [str(loc.id) for loc in locations]
         proposals = await asyncio.gather(
             *(
-                self._decide_one(
-                    world_id,
-                    run_id,
-                    sealed,
-                    character,
-                    known,
-                    place_ids,
-                    player_intents,
-                    directed or {},
-                    runtime,
-                    submitter_id,
-                    grant_role,
+                self._bounded(
+                    self._decide_one(
+                        world_id,
+                        run_id,
+                        sealed,
+                        character,
+                        known,
+                        place_ids,
+                        player_intents,
+                        directed or {},
+                        runtime,
+                        submitter_id,
+                        grant_role,
+                    )
                 )
                 for character in sorted(characters, key=lambda c: c.id.hex)
             )
@@ -3004,7 +3049,7 @@ class Stage1Orchestrator:
         own last turns were all talk or all idling.
         """
         async with self._factory() as uow:
-            card = await uow.characters.get_card(character.id, character.card_version)
+            card = await _card_of(uow, character, self._cards)
             place = await uow.locations.get(character.location_id)
             config = await uow.worlds.get_config(world_id)
             _day, _phase, now_index = await uow.worlds.get_clock(world_id)
@@ -3035,6 +3080,7 @@ class Stage1Orchestrator:
             pronouns = await _pronouns_of(
                 uow,
                 [c for c in present if c.location_id == place.id and c.id != character.id],
+                self._cards,
             )
         names = {c.id: c.name for c in everyone}
         candidates = [
@@ -3721,16 +3767,18 @@ class Stage1Orchestrator:
         async def _pair(
             reactor_id: UUID, index: int, attempt: Attempt
         ) -> tuple[int, int, Reaction] | None:
-            reaction = await self._react_one(
-                world_id,
-                run_id,
-                sealed,
-                scene,
-                attempt,
-                reactor_id,
-                participant_ids,
-                names,
-                runtime,
+            reaction = await self._bounded(
+                self._react_one(
+                    world_id,
+                    run_id,
+                    sealed,
+                    scene,
+                    attempt,
+                    reactor_id,
+                    participant_ids,
+                    names,
+                    runtime,
+                )
             )
             return None if reaction is None else (index, order[reactor_id], reaction)
 
@@ -4129,7 +4177,7 @@ class Stage1Orchestrator:
         facts.extend(move_note_facts(scene_intents, names))
         facts.extend(communication_facts(scene_reactions, names, participants))
         async with self._factory() as uow:
-            speaker_pronouns = await _pronouns_of(uow, characters)
+            speaker_pronouns = await _pronouns_of(uow, characters, self._cards)
         for fact in facts:
             speaker = fact.get("speaker")
             if speaker and UUID(str(speaker)) in speaker_pronouns:
