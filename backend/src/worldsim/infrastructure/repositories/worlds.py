@@ -186,7 +186,6 @@ _FINGERPRINT = text(
                   || coalesce(caption, ''), ',' order by id), ''))
          from scene_picture where world_id = :w),
       (select count(*) || ':' || coalesce(sum(version), 0)
-              || ':' || md5(coalesce(string_agg(status, '' order by id), ''))
          from image_job where world_id = :w)
     )
     """
