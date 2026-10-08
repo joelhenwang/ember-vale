@@ -456,6 +456,20 @@ def longest_streak(flags: list[bool]) -> int:
     return best
 
 
+def billed_usd(
+    conn: Any, world: str, prompt_tokens: int, completion_tokens: int, prices: tuple[float, float]
+) -> float:
+    """The provider's bill for a world when recorded (model_cost), else list price."""
+    row = conn.execute(
+        "select count(*), coalesce(sum(prompt_cost_usd + completion_cost_usd), 0)"
+        " from model_cost where world_id = %s",
+        (world,),
+    ).fetchone()
+    if row and int(row[0]) > 0:
+        return float(row[1])
+    return prompt_tokens * prices[0] + completion_tokens * prices[1]
+
+
 def score(
     conn: Any, scenario: Scenario, ids: dict[str, UUID], prices: tuple[float, float]
 ) -> dict[str, Any]:
@@ -547,7 +561,7 @@ def score(
         "repairs": sum(repairs.values()),
         "repairs_by_role": dict(repairs),
         "repair_rate": sum(repairs.values()) / len(calls) if calls else 0.0,
-        "est_usd": prompt_tokens * prices[0] + completion_tokens * prices[1],
+        "est_usd": billed_usd(conn, world, prompt_tokens, completion_tokens, prices),
         "action_mix": dict(mix),
         "repetition_rate": repetition_rate(topics),
         "longest_idle_streak": longest_streak(idle_flags),
@@ -669,13 +683,21 @@ async def main_async(args: argparse.Namespace) -> int:
     spend = Spend(args.max_usd)
 
     def spent_so_far() -> float:
+        """What the provider billed (model_cost), list price only where it did not say.
+
+        List-price estimates ran ~3x under OpenRouter's bill with throughput
+        routing (crowd runs 2026-10-08: est $0.40, billed $1.01), so the
+        --max-usd guard must count the bill.
+        """
         with connect(dsn) as conn:
             row = conn.execute(
-                "select coalesce(sum(prompt_tokens),0), coalesce(sum(completion_tokens),0)"
-                " from model_call"
+                "select coalesce(sum(mc.prompt_cost_usd + mc.completion_cost_usd), 0),"
+                " coalesce(sum(c.prompt_tokens) filter (where mc.call_id is null), 0),"
+                " coalesce(sum(c.completion_tokens) filter (where mc.call_id is null), 0)"
+                " from model_call c left join model_cost mc on mc.call_id = c.id"
             ).fetchone()
-        prompt, completion = (int(row[0]), int(row[1])) if row else (0, 0)
-        return prompt * prices[0] + completion * prices[1]
+        billed, prompt, completion = (float(row[0]), int(row[1]), int(row[2])) if row else (0, 0, 0)
+        return billed + prompt * prices[0] + completion * prices[1]
 
     async def refresh_spend() -> None:
         spend.spent = await asyncio.to_thread(spent_so_far)

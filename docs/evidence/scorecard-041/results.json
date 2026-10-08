@@ -1,0 +1,113 @@
+{
+  "meta": {
+    "commit": "dba0198",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 6,
+    "reacting_bystanders": 2,
+    "at": "2026-10-08T08:37:12+00:00",
+    "wall_seconds": 97,
+    "est_usd_total": 0.0461978844,
+    "scenarios": [
+      "crowd"
+    ]
+  },
+  "results": {
+    "crowd": {
+      "ids": {
+        "world": "08fa49b9-55c1-4703-8c0b-0c0b32be6c47",
+        "place:Hearth": "5aa7595e-2dba-45ee-9161-951e76f4759a",
+        "place:Market": "cf2305fa-ef97-46c0-ad8f-0d01a71d7f2f",
+        "wren": "eceaf5f8-439b-4710-8e2b-06b7f9a2f4c2",
+        "ash": "fb3200d2-a3b5-4df4-b13c-b7c864ae94e7",
+        "marg": "14645a1c-d4e8-439e-a4fd-454a4bf6a754",
+        "tobin": "6675f038-e49f-4a23-b3cb-8bca6d9c287c",
+        "sela": "f3b5f2d4-26ab-419d-9611-95e71661149a",
+        "brann": "85fc6344-3795-4956-84c0-85f1efbb8e4a",
+        "ivy": "392c081b-2d64-436b-9615-8f1c4118160e"
+      },
+      "beat_seconds": [
+        17.01500000001397,
+        15.655999999959022,
+        10.641000000061467,
+        21.32799999997951,
+        12.90700000000652,
+        18.75
+      ],
+      "error": null,
+      "score": {
+        "calls": 190,
+        "calls_by_role": {
+          "character_decision": 51,
+          "director": 2,
+          "reaction": 117,
+          "narrator": 9,
+          "resolver": 11
+        },
+        "summaries": 0,
+        "summaries_cut_off": 0,
+        "speakers": 8,
+        "failed_calls": 0,
+        "repairs": 5,
+        "repairs_by_role": {
+          "resolver": 3,
+          "character_decision": 1,
+          "narrator": 1
+        },
+        "repair_rate": 0.02631578947368421,
+        "est_usd": 0.0461978844,
+        "action_mix": {
+          "observe": 9,
+          "communicate": 26,
+          "move": 3,
+          "interact": 4,
+          "wait": 4,
+          "take": 1
+        },
+        "repetition_rate": 0.038461538461538464,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 2,
+        "moves_tried": 3,
+        "moves_done": 3,
+        "interact_success": 4,
+        "hooks": [
+          {
+            "title": "The cart that lost its wheel",
+            "powers": "spawn_npc",
+            "status": "closed",
+            "ending": "The cart's axle was hefted true, the spokes set right, and every spilled apple back in the basket before the morning trade began."
+          },
+          {
+            "title": "A lost coin purse under the apple crates",
+            "powers": "place_item",
+            "status": "closed",
+            "ending": "Brann found the little leather purse nestled in the straw by the cart and handed it to Old Marg, who thanked him with a warm smile."
+          }
+        ],
+        "settled": 2,
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Hearth",
+          "Old Marg": "Market",
+          "Tobin": "Hearth",
+          "Sela": "Hearth",
+          "Brann": "Market",
+          "Ivy": "Market",
+          "Farmer Oda": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {
+          "Old Marg's coin purse": {
+            "holder": "Old Marg",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "8 people spoke (pass \u2265 4); repeated questions 4% (pass \u2264 20%)"
+      }
+    }
+  }
+}

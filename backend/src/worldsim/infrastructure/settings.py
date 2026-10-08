@@ -52,11 +52,14 @@ class ApplicationSettings(BaseModel):
     #: process. Set false when they run in their own process instead
     #: (`python -m worldsim.interfaces.worker`), e.g. with several API workers.
     background_loops: bool = True
-    #: In a crowded scene every person present answered every attempt: the
-    #: reaction calls grow with the square of the crowd (~465 a beat at 25
-    #: people, perf-beat-001). When set, an attempt is answered by the person
-    #: it is aimed at plus at most this many others present. Unset: everyone.
-    reacting_bystanders: int | None = Field(default=None, ge=0, le=24)
+    #: Who answers an attempt in a crowd: the person it is aimed at plus at
+    #: most this many others present (scenes this small are untouched).
+    #: Everyone answering grew with the square of the crowd (~465 reaction
+    #: calls a beat at 25 people). With 2, a seven-person scene cost 49% less
+    #: billed and ran 21% faster a beat with no loss on the scorecard, over 3
+    #: runs each (docs/evidence/crowd-reactions-001). Set
+    #: WORLDSIM_APP__REACTING_BYSTANDERS to a large number to let everyone react.
+    reacting_bystanders: int | None = Field(default=2, ge=0, le=24)
     #: API processes (`serve`). More than one needs background_loops=false
     #: and a separate worker: each process would otherwise run every loop.
     workers: int = Field(default=1, ge=1, le=32)

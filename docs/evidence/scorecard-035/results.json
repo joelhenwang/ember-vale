@@ -1,0 +1,92 @@
+{
+  "meta": {
+    "commit": "dba0198",
+    "provider": "venice",
+    "model": "venice-uncensored-1-2",
+    "beats": 11,
+    "reacting_bystanders": null,
+    "at": "2026-10-08T08:25:04+00:00",
+    "wall_seconds": 104,
+    "est_usd_total": 0.0581136,
+    "scenarios": [
+      "strangers"
+    ]
+  },
+  "results": {
+    "strangers": {
+      "ids": {
+        "world": "c99dba94-e56d-4db8-a6b0-f273ae9de992",
+        "place:Hearth": "f2b18549-3aea-42b8-8fed-d1a247035fd4",
+        "place:Market": "61498ee6-5745-4f6f-b570-95edfb8a6440",
+        "wren": "de4efdd3-8740-46df-8557-17e557d8a0c4",
+        "ash": "470d942d-cb70-44db-9c4d-2c574d9bd78d"
+      },
+      "beat_seconds": [
+        12.780999999959022,
+        5.125,
+        20.70400000002701,
+        9.594000000040978,
+        8.859000000054948,
+        7.030999999959022,
+        7.172000000020489,
+        6.25,
+        12.625,
+        6.280999999959022,
+        7.188000000081956
+      ],
+      "error": null,
+      "score": {
+        "calls": 64,
+        "calls_by_role": {
+          "character_decision": 22,
+          "director": 4,
+          "reaction": 22,
+          "resolver": 2,
+          "narrator": 12,
+          "daily_summary": 2
+        },
+        "summaries": 2,
+        "summaries_cut_off": 0,
+        "speakers": 1,
+        "failed_calls": 0,
+        "repairs": 1,
+        "repairs_by_role": {
+          "narrator": 1
+        },
+        "repair_rate": 0.015625,
+        "est_usd": 0.0581136,
+        "action_mix": {
+          "move": 13,
+          "communicate": 2,
+          "observe": 7
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 0,
+        "moves_tried": 13,
+        "moves_done": 5,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "Market Stalls Await",
+            "powers": "",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 0,
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Hearth"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "repeated questions 0% (pass \u2264 20%)"
+      }
+    }
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "meta": {
+    "commit": "dba0198",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 6,
+    "reacting_bystanders": null,
+    "at": "2026-10-08T08:27:36+00:00",
+    "wall_seconds": 126,
+    "est_usd_total": 0.07670360000000001,
+    "scenarios": [
+      "crowd"
+    ]
+  },
+  "results": {
+    "crowd": {
+      "ids": {
+        "world": "c96e9807-6df9-4c13-b8eb-b15c8dbd90bb",
+        "place:Hearth": "d4b382ee-1537-4f6f-8231-54c344f7f26c",
+        "place:Market": "60b42da4-cc40-4ef8-9f77-c625f087ce5c",
+        "wren": "174fb729-20d1-4bbc-a6f5-c4a3940a3a03",
+        "ash": "94109067-0855-4ed5-b207-a429e7d93c07",
+        "marg": "52596132-85bd-4eff-92d3-93473d062f02",
+        "tobin": "f7fed033-5fc5-48f5-bbf5-229b3343eab6",
+        "sela": "64ec2ca3-604d-4908-98b7-4736aa8ebe98",
+        "brann": "e6d731da-9b09-4a79-8489-f3f1a6c3eff8",
+        "ivy": "9d7bb55f-6795-4c95-a401-c9d4ad8accb3"
+      },
+      "beat_seconds": [
+        16.765999999945052,
+        25.07799999997951,
+        21.156000000075437,
+        24.56200000003446,
+        21.75,
+        16.063000000081956
+      ],
+      "error": null,
+      "score": {
+        "calls": 336,
+        "calls_by_role": {
+          "character_decision": 48,
+          "reaction": 262,
+          "director": 2,
+          "resolver": 13,
+          "narrator": 11
+        },
+        "summaries": 0,
+        "summaries_cut_off": 0,
+        "speakers": 7,
+        "failed_calls": 0,
+        "repairs": 8,
+        "repairs_by_role": {
+          "resolver": 4,
+          "narrator": 2,
+          "reaction": 2
+        },
+        "repair_rate": 0.023809523809523808,
+        "est_usd": 0.07670360000000001,
+        "action_mix": {
+          "observe": 6,
+          "communicate": 26,
+          "interact": 8,
+          "move": 5,
+          "wait": 2
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 5,
+        "moves_done": 5,
+        "interact_success": 8,
+        "hooks": [
+          {
+            "title": "The Cart Stuck at the Ford",
+            "powers": "new_location,spawn_npc",
+            "status": "closed",
+            "ending": "With four pairs of hands hauling on the ropes and a stone block bracing the axle, the cracked wheel is seated back on its hub and the cart rolls free of the ford before the morning traffic arrives."
+          }
+        ],
+        "settled": 1,
+        "final_places": {
+          "Wren": "River Ford",
+          "Ash": "River Ford",
+          "Old Marg": "Market",
+          "Tobin": "River Ford",
+          "Sela": "River Ford",
+          "Brann": "River Ford",
+          "Ivy": "Market",
+          "Corin the Carter": "River Ford"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "River Ford"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "7 people spoke (pass \u2265 4); repeated questions 0% (pass \u2264 20%)"
+      }
+    }
+  }
+}

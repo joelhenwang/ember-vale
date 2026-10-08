@@ -1,0 +1,111 @@
+{
+  "meta": {
+    "commit": "dba0198",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 6,
+    "reacting_bystanders": null,
+    "at": "2026-10-08T08:35:31+00:00",
+    "wall_seconds": 127,
+    "est_usd_total": 0.0817895294,
+    "scenarios": [
+      "crowd"
+    ]
+  },
+  "results": {
+    "crowd": {
+      "ids": {
+        "world": "7c5b3aef-dee1-4180-ae19-46a5b67d599b",
+        "place:Hearth": "c2aefe90-e7e5-45c0-9dd2-5cafd73607a8",
+        "place:Market": "6a8927d6-dc71-4b23-81cf-e28045b1d6c0",
+        "wren": "0a2c7ba8-90d9-4eff-8506-2ceb24cbd552",
+        "ash": "03e9959d-f99d-41a0-bee7-12659acfb1d3",
+        "marg": "1bfcaa52-6695-40f2-addb-fa83ebb7d865",
+        "tobin": "3e6477f3-3214-44d4-8d57-a3e0c3966ec2",
+        "sela": "6378dae8-06ac-4246-b485-60d1369a6121",
+        "brann": "aadfc06d-594f-417d-9f7c-78f595c2e45d",
+        "ivy": "7c8d422c-f003-4de4-a74f-c8618e856685"
+      },
+      "beat_seconds": [
+        15.202999999979511,
+        14.858999999938533,
+        28.79700000002049,
+        33.39000000001397,
+        17.734000000054948,
+        16.67200000002049
+      ],
+      "error": null,
+      "score": {
+        "calls": 388,
+        "calls_by_role": {
+          "character_decision": 50,
+          "narrator": 10,
+          "reaction": 316,
+          "director": 3,
+          "resolver": 9
+        },
+        "summaries": 0,
+        "summaries_cut_off": 0,
+        "speakers": 9,
+        "failed_calls": 0,
+        "repairs": 7,
+        "repairs_by_role": {
+          "narrator": 3,
+          "reaction": 2,
+          "resolver": 2
+        },
+        "repair_rate": 0.01804123711340206,
+        "est_usd": 0.0817895294,
+        "action_mix": {
+          "wait": 6,
+          "communicate": 28,
+          "move": 8,
+          "observe": 3,
+          "interact": 4
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 8,
+        "moves_done": 8,
+        "interact_success": 4,
+        "hooks": [
+          {
+            "title": "The Cart Stuck at the Ford",
+            "powers": "spawn_npc",
+            "status": "closed",
+            "ending": "With a final, muddy heave, the cart lurches free and rolls clear of the ford as the water laps at the wheels' old tracks; the driver presses coins into Brann's hand and offers a share of his load."
+          },
+          {
+            "title": "Wounded Rider at the Keep",
+            "powers": "new_location,spawn_npc",
+            "status": "closed",
+            "ending": "The cart rolled clear of the ford, its wheels turning free as the water lapped at the stones where it had been stuck."
+          }
+        ],
+        "settled": 2,
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Old Marg": "Market",
+          "Tobin": "Ford",
+          "Sela": "Ford",
+          "Brann": "Ford",
+          "Ivy": "Market",
+          "Pello": "Ford",
+          "Rider Corin": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Ford",
+          "Hollow",
+          "Keep"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "9 people spoke (pass \u2265 4); repeated questions 0% (pass \u2264 20%)"
+      }
+    }
+  }
+}

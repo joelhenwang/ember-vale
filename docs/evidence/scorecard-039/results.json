@@ -1,0 +1,97 @@
+{
+  "meta": {
+    "commit": "dba0198",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 6,
+    "reacting_bystanders": 2,
+    "at": "2026-10-08T08:33:19+00:00",
+    "wall_seconds": 88,
+    "est_usd_total": 0.04214966,
+    "scenarios": [
+      "crowd"
+    ]
+  },
+  "results": {
+    "crowd": {
+      "ids": {
+        "world": "8ebd77aa-e2f5-4c31-8cf6-16db17d6d534",
+        "place:Hearth": "cfd6160d-74de-43e9-b5c7-44ea024e91bd",
+        "place:Market": "c809c1a2-32b0-44b1-b33f-2927883fec4b",
+        "wren": "b90e6e56-945a-4d2e-8626-627f211290a6",
+        "ash": "708970cf-1aef-4323-a267-bfe77bf1996e",
+        "marg": "f6e6e349-4b19-43fc-a785-8c1278a9e2a7",
+        "tobin": "7d826b11-f6a6-4d34-a065-696ff949e570",
+        "sela": "5c98b9a2-6943-4a89-8ffd-c8a6fff58b2a",
+        "brann": "ab986f29-3c38-481f-82a8-4c5c3a947bf1",
+        "ivy": "955e964b-2339-4653-a2b4-4892ec930201"
+      },
+      "beat_seconds": [
+        15.797000000020489,
+        15.655999999959022,
+        15.468999999924563,
+        11.797000000020489,
+        13.25,
+        15.73499999998603
+      ],
+      "error": null,
+      "score": {
+        "calls": 172,
+        "calls_by_role": {
+          "character_decision": 43,
+          "director": 2,
+          "reaction": 111,
+          "resolver": 10,
+          "narrator": 6
+        },
+        "summaries": 0,
+        "summaries_cut_off": 0,
+        "speakers": 7,
+        "failed_calls": 0,
+        "repairs": 4,
+        "repairs_by_role": {
+          "resolver": 4
+        },
+        "repair_rate": 0.023255813953488372,
+        "est_usd": 0.04214966,
+        "action_mix": {
+          "observe": 9,
+          "communicate": 23,
+          "interact": 8,
+          "wait": 2
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 0,
+        "moves_done": 0,
+        "interact_success": 8,
+        "hooks": [
+          {
+            "title": "Stray cart blocks the market lane",
+            "powers": "",
+            "status": "closed",
+            "ending": "The wheel was levered back onto the rim and the cart rolled clear of the lane, its owner still unknown but the way open for the morning crowd."
+          }
+        ],
+        "settled": 1,
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Old Marg": "Market",
+          "Tobin": "Market",
+          "Sela": "Market",
+          "Brann": "Market",
+          "Ivy": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "7 people spoke (pass \u2265 4); repeated questions 0% (pass \u2264 20%)"
+      }
+    }
+  }
+}

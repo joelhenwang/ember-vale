@@ -1,0 +1,106 @@
+{
+  "meta": {
+    "commit": "dba0198",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 6,
+    "reacting_bystanders": null,
+    "at": "2026-10-08T08:31:45+00:00",
+    "wall_seconds": 98,
+    "est_usd_total": 0.071622632,
+    "scenarios": [
+      "crowd"
+    ]
+  },
+  "results": {
+    "crowd": {
+      "ids": {
+        "world": "4ee64717-6614-4ac6-bbf6-390c87bfefc0",
+        "place:Hearth": "cff48819-db8a-4761-a34c-9c10fe6ce8d2",
+        "place:Market": "4a831184-df9a-499c-afc8-53dee59fa359",
+        "wren": "5b664347-0572-4431-b583-803bcebafc32",
+        "ash": "ccde6973-1e9c-4bb2-ba3d-288bd2c5f68b",
+        "marg": "eaff36c4-6e26-4f44-8724-884b4dcb03e0",
+        "tobin": "4d260321-dc19-427c-833e-02e223ab360a",
+        "sela": "78c1e75a-6a79-4eac-b959-d3cc22d57a31",
+        "brann": "1e6adfaa-c484-4a1d-95ba-3ad139f3a90e",
+        "ivy": "6c49980e-e67b-4396-ab02-181f16673ef8"
+      },
+      "beat_seconds": [
+        22.516000000061467,
+        13.327999999979511,
+        13.25,
+        16.84299999999348,
+        17.17200000002049,
+        14.672000000020489
+      ],
+      "error": null,
+      "score": {
+        "calls": 313,
+        "calls_by_role": {
+          "character_decision": 44,
+          "director": 2,
+          "reaction": 253,
+          "narrator": 7,
+          "resolver": 7
+        },
+        "summaries": 0,
+        "summaries_cut_off": 0,
+        "speakers": 7,
+        "failed_calls": 0,
+        "repairs": 3,
+        "repairs_by_role": {
+          "narrator": 1,
+          "reaction": 1,
+          "resolver": 1
+        },
+        "repair_rate": 0.009584664536741214,
+        "est_usd": 0.071622632,
+        "action_mix": {
+          "observe": 4,
+          "communicate": 23,
+          "wait": 2,
+          "move": 2,
+          "interact": 11
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 2,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 11,
+        "hooks": [
+          {
+            "title": "The locked granary at Hearth",
+            "powers": "",
+            "status": "closed",
+            "ending": "The remaining crates are heaved onto Brann's cart, settling the crates matter at the Market."
+          },
+          {
+            "title": "The miller's wife has the granary key",
+            "powers": "",
+            "status": "closed",
+            "ending": "Wren fetches the granary key from the miller's wife and brings it back, unlocking Old Marg's bread stores in time for the afternoon baking."
+          }
+        ],
+        "settled": 2,
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Old Marg": "Market",
+          "Tobin": "Market",
+          "Sela": "Market",
+          "Brann": "Market",
+          "Ivy": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "7 people spoke (pass \u2265 4); repeated questions 0% (pass \u2264 20%)"
+      }
+    }
+  }
+}

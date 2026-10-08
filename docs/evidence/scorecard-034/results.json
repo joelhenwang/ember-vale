@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "commit": "7c78e58",
+    "provider": "venice",
+    "model": "venice-uncensored-1-2",
+    "beats": 11,
+    "reacting_bystanders": null,
+    "at": "2026-10-08T08:15:52+00:00",
+    "wall_seconds": 123,
+    "est_usd_total": 0.07098120000000001,
+    "scenarios": [
+      "strangers"
+    ]
+  },
+  "results": {
+    "strangers": {
+      "ids": {
+        "world": "5011be91-67ff-47e4-82ae-52cbe82a5ea8",
+        "place:Hearth": "12ee6c4f-1d3e-4146-adec-354b92d6b006",
+        "place:Market": "6d93efce-b491-4c95-9c48-196fc412ace1",
+        "wren": "674d34dc-ad05-4559-a871-ce69ba313ea5",
+        "ash": "91c8e8bf-1a62-4ba1-b9a9-36a77d827f29"
+      },
+      "beat_seconds": [
+        10.46799999999348,
+        11.922000000020489,
+        19.25,
+        5.797000000020489,
+        7.39000000001397,
+        8.812000000034459,
+        6.311999999918044,
+        12.858999999938533,
+        15.202999999979511,
+        11.672000000020489,
+        13.202999999979511
+      ],
+      "error": null,
+      "score": {
+        "calls": 74,
+        "calls_by_role": {
+          "character_decision": 28,
+          "reaction": 22,
+          "resolver": 7,
+          "narrator": 11,
+          "director": 4,
+          "daily_summary": 2
+        },
+        "summaries": 0,
+        "summaries_cut_off": 0,
+        "speakers": 2,
+        "failed_calls": 0,
+        "repairs": 0,
+        "repairs_by_role": {},
+        "repair_rate": 0.0,
+        "est_usd": 0.07098120000000001,
+        "action_mix": {
+          "communicate": 11,
+          "move": 5,
+          "wait": 5,
+          "observe": 1
+        },
+        "repetition_rate": 0.18181818181818182,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 4,
+        "moves_tried": 5,
+        "moves_done": 2,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "Market Day",
+            "powers": "",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 0,
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "repeated questions 18% (pass \u2264 20%)"
+      }
+    }
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "meta": {
+    "commit": "dba0198",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 6,
+    "reacting_bystanders": 2,
+    "at": "2026-10-08T08:29:24+00:00",
+    "wall_seconds": 91,
+    "est_usd_total": 0.047803364,
+    "scenarios": [
+      "crowd"
+    ]
+  },
+  "results": {
+    "crowd": {
+      "ids": {
+        "world": "fbaa754c-d759-49aa-a34f-25863121101e",
+        "place:Hearth": "7fcce048-cf4b-4763-a4d2-362cd4627a6f",
+        "place:Market": "19713410-f9b9-4249-a77d-3898e33a2bb9",
+        "wren": "d26a3807-928f-468a-8e52-44e964f68c69",
+        "ash": "e38f7653-9098-46d5-b5af-e058e2dbd346",
+        "marg": "255746f1-4f8a-4cc6-9d19-93c9c40d9fe5",
+        "tobin": "1fc4d445-0ec2-457b-9f61-dc668f279436",
+        "sela": "601040e9-e0ff-496b-9181-7b343a772f33",
+        "brann": "74a2557f-47ee-4f43-9ee8-316f28ecadb8",
+        "ivy": "db016b1a-4cf8-48e0-b57d-7fe7e20e3cf1"
+      },
+      "beat_seconds": [
+        12.655999999959022,
+        9.952999999979511,
+        17.266000000061467,
+        17.59299999999348,
+        14.983999999938533,
+        18.45299999997951
+      ],
+      "error": null,
+      "score": {
+        "calls": 192,
+        "calls_by_role": {
+          "character_decision": 48,
+          "reaction": 125,
+          "director": 2,
+          "narrator": 7,
+          "resolver": 10
+        },
+        "summaries": 0,
+        "summaries_cut_off": 0,
+        "speakers": 8,
+        "failed_calls": 0,
+        "repairs": 5,
+        "repairs_by_role": {
+          "resolver": 4,
+          "narrator": 1
+        },
+        "repair_rate": 0.026041666666666668,
+        "est_usd": 0.047803364,
+        "action_mix": {
+          "communicate": 27,
+          "observe": 7,
+          "interact": 7,
+          "wait": 4,
+          "move": 2
+        },
+        "repetition_rate": 0.0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 2,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 7,
+        "hooks": [
+          {
+            "title": "Strange Goods at the Market Stall",
+            "powers": "spawn_npc",
+            "status": "closed",
+            "ending": "With a careful twist of the latch, the chest's secrets spilled into the light, and the merchant, true to his word, shared the reward with Wren and Ash."
+          },
+          {
+            "title": "The Miller's Missing Cart",
+            "powers": "",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 1,
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Old Marg": "Market",
+          "Tobin": "Market",
+          "Sela": "Market",
+          "Brann": "Market",
+          "Ivy": "Market",
+          "Marek": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "8 people spoke (pass \u2265 4); repeated questions 0% (pass \u2264 20%)"
+      }
+    }
+  }
+}

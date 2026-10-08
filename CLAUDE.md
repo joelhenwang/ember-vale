@@ -208,7 +208,9 @@ backend for it already exists.
 | Images: Krea checkpoint `krea2Anime_v15_bf16`, ~14 s per image. Never switch the checkpoint silently | b41ee72, `providers-images` notes |
 | Face frames for painted portraits from Luna, 29/29 | `painted-faces-001` |
 | Background narration: server turns 3–9 s instead of 6.5–17 s | b3130e6 |
-| Perf pass: pages 3–8x lighter, idle CPU ~0.4%, reads flat to 300x, beat overhead 2–3x lower. uvloop, prompt reordering and removing the DB pre-ping were rejected. Open: crowd reactions grow with the square of the cast (a product decision) | `perf-summary-001` and the five `perf-*-001` folders |
+| Crowds: an attempt is answered by the person it is aimed at plus 2 others (`WORLDSIM_APP__REACTING_BYSTANDERS`, default 2): −49% billed, −21% per beat, no scorecard loss over 3 runs each | `crowd-reactions-001`, scorecard-036…041 |
+| Day-end summaries and digests cite short source tags (`summary.v2`, `digest.v2`): −82% output, no fallbacks. The scorecard reports and guards on the billed cost (list price ran ~2.5x under the bill) | `summary-tags-001`, scorecard-034/035 |
+| Perf pass: pages 3–8x lighter, idle CPU ~0.4%, reads flat to 300x, beat overhead 2–3x lower. uvloop, prompt reordering and removing the DB pre-ping were rejected. Crowd reactions since capped (crowd-reactions-001) | `perf-summary-001` and the five `perf-*-001` folders |
 | UI review of 7 Oct (fonts, caching, studios, writing help) | `ui-review-001`, `docs/reviews/1/7_oct_2026-user-review.md` |
 | Play-session fixes (prose opening, carried items, ring layout) | `play-session-001` |
 
