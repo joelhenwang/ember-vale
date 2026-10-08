@@ -52,6 +52,9 @@ _MIMES = {
 }
 #: A map wider or taller than this is kept but never needed.
 MAX_PIXELS = 64_000_000
+#: Maps (world and place) fill the screen at most; the map reader shrinks
+#: its own copy. Kept as WebP: a 2048 px PNG map was up to 4.3 MB.
+MAP_MAX_SIDE = 2560
 STYLE = "world-map"
 
 
@@ -66,11 +69,13 @@ async def keep_picture(
     folder: str = "maps",
     style: str = STYLE,
     max_side: int | None = None,
+    always_webp: bool = False,
 ) -> api.MapImageView:
     """Store a picture as an unscoped asset (a world map, an imported portrait).
 
     With max_side, a larger picture is kept as a WebP no larger than that:
-    it is shown, never printed.
+    it is shown, never printed. With always_webp, a smaller PNG or JPEG is
+    re-encoded as WebP too (maps: same look, a fraction of the bytes).
     """
     try:
         with Image.open(io.BytesIO(data)) as picture:
@@ -83,10 +88,12 @@ async def keep_picture(
     if width * height > MAX_PIXELS:
         raise DomainError(ErrorCode.VALIDATION_FAILED, "that picture is too large")
     mime, ext = _MIMES[fmt]
-    if max_side is not None and max(width, height) > max_side:
+    too_big = max_side is not None and max(width, height) > max_side
+    if too_big or (always_webp and fmt != "WEBP"):
         with Image.open(io.BytesIO(data)) as source:
             smaller = source.convert("RGB")
-        smaller.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+        if max_side is not None:
+            smaller.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
         out = io.BytesIO()
         smaller.save(out, format="WEBP", quality=90, method=5)
         data, (width, height), (mime, ext) = out.getvalue(), smaller.size, _MIMES["WEBP"]
@@ -147,7 +154,9 @@ def map_reader(request: Request) -> MapReader:
 
 @router.post("/library/maps", response_model=api.MapImageView)
 async def upload_map(body: api.MapUploadRequest, request: Request) -> api.MapImageView:
-    return await keep_picture(request, picture_bytes(body.data_url))
+    return await keep_picture(
+        request, picture_bytes(body.data_url), max_side=MAP_MAX_SIDE, always_webp=True
+    )
 
 
 @router.post("/library/maps/paint", response_model=api.MapImageView)
@@ -169,7 +178,7 @@ async def paint_map(body: api.MapPaintRequest, request: Request) -> api.MapImage
         )
     except ImageGenerationError as exc:
         raise DomainError(ErrorCode.PRECONDITION_FAILED, f"image service: {exc}") from exc
-    return await keep_picture(request, made.data)
+    return await keep_picture(request, made.data, max_side=MAP_MAX_SIDE, always_webp=True)
 
 
 @router.post("/library/maps/{asset_id}/places", response_model=api.MapPlacesView)

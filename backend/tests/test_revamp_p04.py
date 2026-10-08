@@ -93,8 +93,8 @@ def test_job_request_is_idempotent_and_completes(client: ApiClient) -> None:
             asset = await gateway.complete(
                 UUID(first.json()["id"]),
                 storage,
-                "revamp/wren-portrait-v1.png",
-                "image/png",
+                "revamp/wren-portrait-v1.webp",
+                "image/webp",
                 768,
                 768,
             )
@@ -105,8 +105,8 @@ def test_job_request_is_idempotent_and_completes(client: ApiClient) -> None:
             again = await gateway.complete(
                 second_job.id,
                 storage,
-                "revamp/ash-portrait-v1.png",
-                "image/png",
+                "revamp/ash-portrait-v1.webp",
+                "image/webp",
                 768,
                 768,
             )
@@ -158,8 +158,8 @@ def test_bytes_served_with_perspective(client: ApiClient) -> None:
         headers=_player(WREN),
     )
     assert got.status_code == 200, got.text
-    assert got.headers["content-type"] == "image/png"
-    assert len(got.content) > 100_000
+    assert got.headers["content-type"] == "image/webp"
+    assert len(got.content) > 20_000
     # Bytes never change under an id: cached for a year, revalidated by ETag,
     # and never gzipped (pictures are already compressed).
     assert "immutable" in got.headers["cache-control"]

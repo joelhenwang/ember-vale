@@ -257,7 +257,7 @@ class _Reader:
     async def places(
         self, image: bytes, mime: str, known: tuple[str, ...] = ()
     ) -> Reading[ReadPlace]:
-        assert image and mime == "image/png"
+        assert image and mime == "image/webp"  # maps are kept as WebP
         self.known = known
         found = (
             ReadPlace("Hearth", "inn", (100, 100)),
@@ -473,7 +473,7 @@ def test_read_a_map_and_time_the_new_story(stack: tuple[ApiClient, _Reader]) -> 
             params={"world_id": story},
             headers={"X-Worldsim-Role": "watcher"},
         )
-        assert art.status_code == 200 and art.content[:4] == b"\x89PNG"
+        assert art.status_code == 200 and art.content[:4] == b"RIFF"  # kept as WebP
     finally:
         for stored in (ASSETS / "generated" / "maps").glob(f"{asset_id}.*"):
             stored.unlink()
@@ -493,3 +493,19 @@ def test_the_places_question_names_the_worlds_own_places() -> None:
     asked = places_prompt(("Mirewake", "Oarfall Harbor"))
     assert "already has these places: Mirewake, Oarfall Harbor." in asked
     assert asked.endswith(PLACES_PROMPT[PLACES_PROMPT.rindex("Answer with JSON only") :])
+
+
+def test_maps_are_kept_as_webp_no_larger_than_the_screen(
+    stack: tuple[ApiClient, _Reader],
+) -> None:
+    api, _ = stack
+    out = io.BytesIO()
+    Image.new("RGB", (3200, 1600), (40, 90, 160)).save(out, format="PNG")
+    big = "data:image/png;base64," + base64.b64encode(out.getvalue()).decode()
+    for data_url, size in ((_png(), (64, 32)), (big, (2560, 1280))):
+        uploaded = api.post("/api/v1/library/maps", json={"data_url": data_url})
+        assert uploaded.status_code == 200, uploaded.text
+        picture = uploaded.json()
+        assert (picture["width"], picture["height"]) == size
+        stored = api.get(f"/api/v1/library/assets/{picture['asset_id']}/bytes")
+        assert stored.headers["content-type"] == "image/webp"

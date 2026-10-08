@@ -54,8 +54,8 @@ def _add_asset(world_id: UUID | None) -> UUID:
                         world_id=world_id,
                         kind=AssetKind.PORTRAIT,
                         subject_id=None,
-                        content_ref="revamp/wren-portrait-v1.png",
-                        mime="image/png",
+                        content_ref="revamp/wren-portrait-v1.webp",
+                        mime="image/webp",
                         width=256,
                         height=256,
                         style_pack_version="anime-saga-v1",
@@ -121,7 +121,7 @@ def test_library_bytes_scope_and_archive_preserves_art(client: ApiClient) -> Non
 
     served = client.get(f"/api/v1/library/assets/{unscoped}/bytes", headers={})
     assert served.status_code == 200, served.text
-    assert served.headers["content-type"] == "image/png"
+    assert served.headers["content-type"] == "image/webp"
 
     refused = client.get(f"/api/v1/library/assets/{bound}/bytes", headers={})
     assert refused.status_code == 404, refused.text
