@@ -369,7 +369,9 @@ function loadBeatDetails(eventIds: string[]): void {
         <span class="play__badge">{{ seatLabel }}</span>
         <span v-if="controlledName">Playing as {{ controlledName }}</span>
         <span v-else-if="story.effectiveRole.value === 'player' && !story.grantLoaded.value">
-          Resolving player…
+          Resolving player<span class="ev-dots" aria-hidden="true"
+            ><span>.</span><span>.</span><span>.</span></span
+          >
         </span>
         <span>Turn {{ detail.absolute_index }}</span>
         <button type="button" class="play__link" @click="showSetup = true">How it began</button>
@@ -575,7 +577,7 @@ function loadBeatDetails(eventIds: string[]): void {
         </section>
         <section class="play__card play__card--story" aria-label="Story so far">
           <h2>Story so far</h2>
-          <p v-if="!story.entries.value.length" class="play__empty">
+          <p v-if="!story.entries.value.length" class="play__empty ev-empty">
             Nothing has happened yet — commit the first beat.
           </p>
           <TransitionGroup v-else name="ev-list" tag="ol" class="play__feed">
@@ -630,104 +632,108 @@ function loadBeatDetails(eventIds: string[]): void {
           </p>
         </template>
       </section>
-      <section v-if="seat" class="play__card" aria-label="Direct the story">
-        <h2>Direct the story</h2>
-        <p class="play__empty">
-          Directions can be submitted, edited, and cancelled. Queued directions apply when beats
-          commit: starting travel begins a journey — arrival follows when it completes.
-        </p>
-        <p class="play__empty">
-          {{
-            seat === 'deity'
-              ? 'God mode forces effects: travel, bouts, overrides and persistent conditions.'
-              : 'Direct mode proposes hooks and arcs; forcing effects needs the God seat.'
-          }}
-        </p>
-        <label class="play__field">
-          Direction
-          <textarea
-            v-model="directionText"
-            rows="3"
-            maxlength="2000"
-            :disabled="queueCtl.busy.value"
-            placeholder="Name characters and places explicitly." />
-        </label>
-        <div class="play__row">
-          <MenuButton
-            :disabled="!directionText.trim() || queueCtl.busy.value"
-            @click="fileDirection()">
-            {{ queueCtl.busy.value ? 'Filing…' : `File direction (${directMode})` }}
-          </MenuButton>
-          <MenuButton
-            v-if="queueCtl.pending.value"
-            variant="outline"
-            :disabled="queueCtl.busy.value"
-            @click="queueCtl.retry()">
-            Retry filing
-          </MenuButton>
-          <MenuButton
-            v-if="queueCtl.pending.value"
-            variant="outline"
-            :disabled="queueCtl.busy.value"
-            @click="queueCtl.discardPending()">
-            Discard
-          </MenuButton>
-        </div>
-        <p
-          v-if="queueCtl.notice.value"
-          class="play__notice"
-          :class="queueCtl.notice.value.kind === 'error' ? 'play__notice--error' : ''"
-          role="status">
-          {{ queueCtl.notice.value.text }}
-        </p>
-        <h3>Queue</h3>
-        <p v-if="!queueCtl.queue.value.length" class="play__empty">Nothing filed yet.</p>
-        <TransitionGroup v-else name="ev-list" tag="ol" class="play__queue">
-          <li v-for="entry in queueCtl.queue.value" :key="entry.id">
-            <button type="button" class="play__link" @click="pickDirection(entry.id)">
-              {{ entry.text }}
-            </button>
-            <span class="play__sub"
-              >{{ entry.status.replace(/_/g, ' ') }} · {{ entry.mode }} · v{{ entry.version }}</span
-            >
-            <ul v-if="entry.steps?.length">
-              <li v-for="step in entry.steps" :key="step.id">
-                {{ step.kind.replace(/_/g, ' ') }} — {{ step.status.replace(/_/g, ' ')
-                }}<span v-if="step.failure_reason">: {{ step.failure_reason }}</span>
-              </li>
-            </ul>
-            <p v-if="entry.failure_reason" class="play__sub">{{ entry.failure_reason }}</p>
-          </li>
-        </TransitionGroup>
-        <template v-if="queueCtl.active.value">
-          <h3>Selected direction</h3>
-          <label
-            v-if="['needs_clarification', 'queued'].includes(queueCtl.active.value.status)"
-            class="play__field">
-            Revised text
+      <Transition name="ev-rise">
+        <section v-if="seat" class="play__card" aria-label="Direct the story">
+          <h2>Direct the story</h2>
+          <p class="play__empty">
+            Directions can be submitted, edited, and cancelled. Queued directions apply when beats
+            commit: starting travel begins a journey — arrival follows when it completes.
+          </p>
+          <p class="play__empty">
+            {{
+              seat === 'deity'
+                ? 'God mode forces effects: travel, bouts, overrides and persistent conditions.'
+                : 'Direct mode proposes hooks and arcs; forcing effects needs the God seat.'
+            }}
+          </p>
+          <label class="play__field">
+            Direction
             <textarea
-              v-model="editText"
-              rows="2"
+              v-model="directionText"
+              rows="3"
               maxlength="2000"
-              :disabled="queueCtl.busy.value" />
+              :disabled="queueCtl.busy.value"
+              placeholder="Name characters and places explicitly." />
           </label>
           <div class="play__row">
             <MenuButton
-              v-if="['needs_clarification', 'queued'].includes(queueCtl.active.value.status)"
-              :disabled="!editText.trim() || queueCtl.busy.value"
-              @click="resubmitEdit()">
-              Resubmit text
+              :disabled="!directionText.trim() || queueCtl.busy.value"
+              @click="fileDirection()">
+              {{ queueCtl.busy.value ? 'Filing…' : `File direction (${directMode})` }}
             </MenuButton>
             <MenuButton
-              v-if="!['completed', 'cancelled', 'failed'].includes(queueCtl.active.value.status)"
+              v-if="queueCtl.pending.value"
               variant="outline"
               :disabled="queueCtl.busy.value"
-              @click="queueCtl.cancelActive()">
-              Cancel direction
+              @click="queueCtl.retry()">
+              Retry filing
+            </MenuButton>
+            <MenuButton
+              v-if="queueCtl.pending.value"
+              variant="outline"
+              :disabled="queueCtl.busy.value"
+              @click="queueCtl.discardPending()">
+              Discard
             </MenuButton>
           </div>
-        </template>
-      </section>
+          <p
+            v-if="queueCtl.notice.value"
+            class="play__notice"
+            :class="queueCtl.notice.value.kind === 'error' ? 'play__notice--error' : ''"
+            role="status">
+            {{ queueCtl.notice.value.text }}
+          </p>
+          <h3>Queue</h3>
+          <p v-if="!queueCtl.queue.value.length" class="play__empty ev-empty">Nothing filed yet.</p>
+          <TransitionGroup v-else name="ev-list" tag="ol" class="play__queue">
+            <li v-for="entry in queueCtl.queue.value" :key="entry.id">
+              <button type="button" class="play__link" @click="pickDirection(entry.id)">
+                {{ entry.text }}
+              </button>
+              <span class="play__sub"
+                >{{ entry.status.replace(/_/g, ' ') }} · {{ entry.mode }} · v{{
+                  entry.version
+                }}</span
+              >
+              <ul v-if="entry.steps?.length">
+                <li v-for="step in entry.steps" :key="step.id">
+                  {{ step.kind.replace(/_/g, ' ') }} — {{ step.status.replace(/_/g, ' ')
+                  }}<span v-if="step.failure_reason">: {{ step.failure_reason }}</span>
+                </li>
+              </ul>
+              <p v-if="entry.failure_reason" class="play__sub">{{ entry.failure_reason }}</p>
+            </li>
+          </TransitionGroup>
+          <template v-if="queueCtl.active.value">
+            <h3>Selected direction</h3>
+            <label
+              v-if="['needs_clarification', 'queued'].includes(queueCtl.active.value.status)"
+              class="play__field">
+              Revised text
+              <textarea
+                v-model="editText"
+                rows="2"
+                maxlength="2000"
+                :disabled="queueCtl.busy.value" />
+            </label>
+            <div class="play__row">
+              <MenuButton
+                v-if="['needs_clarification', 'queued'].includes(queueCtl.active.value.status)"
+                :disabled="!editText.trim() || queueCtl.busy.value"
+                @click="resubmitEdit()">
+                Resubmit text
+              </MenuButton>
+              <MenuButton
+                v-if="!['completed', 'cancelled', 'failed'].includes(queueCtl.active.value.status)"
+                variant="outline"
+                :disabled="queueCtl.busy.value"
+                @click="queueCtl.cancelActive()">
+                Cancel direction
+              </MenuButton>
+            </div>
+          </template>
+        </section>
+      </Transition>
       <footer class="play__foot">
         <MenuButton
           variant="outline"

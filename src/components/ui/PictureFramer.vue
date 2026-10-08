@@ -191,7 +191,11 @@ function finish(): void {
 
       <template v-if="!previewing && step">
         <p :key="step.key" class="framer__hint framer__swap">{{ step.hint }}</p>
-        <p v-if="suggesting" class="framer__note" role="status">Looking for the face…</p>
+        <p v-if="suggesting" class="framer__note" role="status">
+          Looking for the face<span class="ev-dots" aria-hidden="true"
+            ><span>.</span><span>.</span><span>.</span></span
+          >
+        </p>
         <p v-else-if="suggestNote" class="framer__note" role="status">{{ suggestNote }}</p>
         <div
           ref="stage"

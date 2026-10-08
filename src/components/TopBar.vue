@@ -135,16 +135,33 @@ onBeforeUnmount(() => resizer?.disconnect())
 
 /* brand */
 .brand {
+  position: relative;
+  isolation: isolate;
   display: inline-flex;
   align-items: center;
   gap: 10px;
   color: var(--ink);
   margin-right: 46px;
 }
+/* the emblem holds a small ember that glows and dims, like a hearth
+   (a soft light behind it, faded by opacity so the loop stays cheap) */
+.brand::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: -7px;
+  top: 50%;
+  width: 41px;
+  height: 41px;
+  margin-top: -20.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(220, 122, 60, 0.42), rgba(220, 122, 60, 0) 66%);
+  pointer-events: none;
+  opacity: 0;
+  animation: brand-glow 4.8s var(--ease-sine) infinite;
+}
 .brand__mark {
   color: #3a3122;
-  /* the emblem holds a small ember that glows and dims, like a hearth */
-  animation: brand-glow 4.8s var(--ease-sine) infinite;
   transition: transform 0.5s var(--ease-spring);
 }
 .brand:hover .brand__mark {
@@ -153,10 +170,10 @@ onBeforeUnmount(() => resizer?.disconnect())
 @keyframes brand-glow {
   0%,
   100% {
-    filter: drop-shadow(0 0 0 rgba(220, 122, 60, 0));
+    opacity: 0;
   }
   50% {
-    filter: drop-shadow(0 0 5px rgba(220, 122, 60, 0.55));
+    opacity: 1;
   }
 }
 .brand__name {

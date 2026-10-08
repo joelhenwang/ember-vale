@@ -1337,58 +1337,68 @@ onMounted(() => {
                     >
                   </button>
                 </div>
-                <div v-if="customTeller" class="grp nsx__pick">
-                  <p
-                    v-if="pinCtl.loading.value && !pinCtl.providers.value.length"
-                    class="nsv__notice"
-                    role="status">
-                    Loading providers…
-                  </p>
-                  <p v-if="pinCtl.error.value" class="nsv__notice" role="alert">
-                    {{ pinCtl.error.value }} —
-                    <button type="button" class="nsv__link" @click="pinCtl.retry()">retry</button>
-                  </p>
-                  <p
-                    v-if="
-                      !pinCtl.loading.value && !pinCtl.error.value && !pinCtl.providers.value.length
-                    "
-                    class="nsx__lead">
-                    No provider profiles yet. Add one in Settings, or use the app's storyteller.
-                  </p>
-                  <div class="grid2">
-                    <label v-if="pinCtl.providers.value.length" class="nsv__field">
-                      Provider
-                      <select
-                        :value="pinCtl.providerId.value"
-                        @change="pinCtl.selectProvider(($event.target as HTMLSelectElement).value)">
-                        <option value="">Choose a provider…</option>
-                        <option
-                          v-for="connection in pinCtl.providers.value"
-                          :key="connection.id"
-                          :value="connection.id">
-                          {{ connection.name }} ({{ connection.adapter }})
-                        </option>
-                      </select>
-                    </label>
-                    <label v-if="pinCtl.providerId.value" class="nsv__field">
-                      Profile
-                      <select
-                        :value="pinCtl.profileId.value"
-                        :disabled="!pinCtl.profiles.value.length"
-                        @change="pinCtl.selectProfile(($event.target as HTMLSelectElement).value)">
-                        <option v-if="!pinCtl.profiles.value.length" value="">
-                          No profiles yet
-                        </option>
-                        <option
-                          v-for="profile in pinCtl.profiles.value"
-                          :key="profile.id"
-                          :value="profile.id">
-                          {{ profile.model_id }} · version {{ profile.revision }}
-                        </option>
-                      </select>
-                    </label>
+                <Transition name="ev-rise">
+                  <div v-if="customTeller" class="grp nsx__pick">
+                    <p
+                      v-if="pinCtl.loading.value && !pinCtl.providers.value.length"
+                      class="nsv__notice"
+                      role="status">
+                      Loading providers<span class="ev-dots" aria-hidden="true"
+                        ><span>.</span><span>.</span><span>.</span></span
+                      >
+                    </p>
+                    <p v-if="pinCtl.error.value" class="nsv__notice" role="alert">
+                      {{ pinCtl.error.value }} —
+                      <button type="button" class="nsv__link" @click="pinCtl.retry()">retry</button>
+                    </p>
+                    <p
+                      v-if="
+                        !pinCtl.loading.value &&
+                        !pinCtl.error.value &&
+                        !pinCtl.providers.value.length
+                      "
+                      class="nsx__lead">
+                      No provider profiles yet. Add one in Settings, or use the app's storyteller.
+                    </p>
+                    <div class="grid2">
+                      <label v-if="pinCtl.providers.value.length" class="nsv__field">
+                        Provider
+                        <select
+                          :value="pinCtl.providerId.value"
+                          @change="
+                            pinCtl.selectProvider(($event.target as HTMLSelectElement).value)
+                          ">
+                          <option value="">Choose a provider…</option>
+                          <option
+                            v-for="connection in pinCtl.providers.value"
+                            :key="connection.id"
+                            :value="connection.id">
+                            {{ connection.name }} ({{ connection.adapter }})
+                          </option>
+                        </select>
+                      </label>
+                      <label v-if="pinCtl.providerId.value" class="nsv__field">
+                        Profile
+                        <select
+                          :value="pinCtl.profileId.value"
+                          :disabled="!pinCtl.profiles.value.length"
+                          @change="
+                            pinCtl.selectProfile(($event.target as HTMLSelectElement).value)
+                          ">
+                          <option v-if="!pinCtl.profiles.value.length" value="">
+                            No profiles yet
+                          </option>
+                          <option
+                            v-for="profile in pinCtl.profiles.value"
+                            :key="profile.id"
+                            :value="profile.id">
+                            {{ profile.model_id }} · version {{ profile.revision }}
+                          </option>
+                        </select>
+                      </label>
+                    </div>
                   </div>
-                </div>
+                </Transition>
                 <CollapseBox class="nsx__more" title="Advanced details">
                   <p class="nsx__lead">
                     Choosing a profile saves its exact version with this story, so later changes in
@@ -1860,7 +1870,11 @@ onMounted(() => {
       </Transition>
     </template>
     <div v-else class="nsv__state" role="status">
-      <p class="nsv__state-title">Opening the library…</p>
+      <p class="nsv__state-title">
+        Opening the library<span class="ev-dots" aria-hidden="true"
+          ><span>.</span><span>.</span><span>.</span></span
+        >
+      </p>
     </div>
   </main>
 </template>

@@ -226,7 +226,11 @@ onUnmounted(() => {
             :inside="placeMaps.map((m) => m.location_id)"
             @select="openLatestFor"
             @enter="goInside" />
-          <p v-else key="loading" class="obs__notice obs__loading">Loading the map…</p>
+          <p v-else key="loading" class="obs__notice obs__loading">
+            Loading the map<span class="ev-dots" aria-hidden="true"
+              ><span>.</span><span>.</span><span>.</span></span
+            >
+          </p>
         </Transition>
       </div>
       <EventFeed

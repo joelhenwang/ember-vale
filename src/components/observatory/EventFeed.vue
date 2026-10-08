@@ -65,7 +65,7 @@ function body(entry: ChronicleEntry): string {
       </Transition>
     </header>
     <div ref="list" class="ef__list" @scroll.passive="onScroll">
-      <p v-if="!beats.length" class="ef__empty">
+      <p v-if="!beats.length" class="ef__empty ev-empty">
         Nothing has happened yet. Press Step or Play to let the world move.
       </p>
       <TransitionGroup name="ef" tag="div" class="ef__beats">

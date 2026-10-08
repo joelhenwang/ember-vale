@@ -8,7 +8,14 @@ import {
 } from '../game/motion'
 
 /* One shared choice for the whole app. */
-const store = typeof window !== 'undefined' ? window.localStorage : undefined
+function localStore(): Storage | undefined {
+  try {
+    return typeof window !== 'undefined' ? window.localStorage : undefined
+  } catch {
+    return undefined // blocked site data: the getter itself throws
+  }
+}
+const store = localStore()
 const choice = ref<MotionChoice>(readMotion(store))
 const query =
   typeof window !== 'undefined' && window.matchMedia
@@ -17,9 +24,29 @@ const query =
 const systemReduces = ref(query?.matches ?? false)
 query?.addEventListener?.('change', (e) => (systemReduces.value = e.matches))
 
-/** Call once at start-up: puts the saved choice on <html>. */
+/** Call once at start-up: puts the saved choice on <html>, and fades in
+ *  pictures as they arrive. */
 export function installMotion(): void {
   applyMotion(document.documentElement, choice.value)
+  // A picture that finishes loading after the page is drawn fades in
+  // instead of popping. Nothing starts hidden, so a picture can never be
+  // stuck invisible; pictures with their own fade (.ev-img-fade) or that
+  // opt out (data-no-fade) are left alone. Fades are fine under reduced
+  // motion: nothing moves.
+  document.addEventListener(
+    'load',
+    (event) => {
+      const img = event.target
+      if (!(img instanceof HTMLImageElement) || typeof img.animate !== 'function') return
+      if (img.classList.contains('ev-img-fade') || 'noFade' in img.dataset) return
+      // one keyframe: it fades up to whatever opacity the picture rests at
+      img.animate([{ opacity: 0, offset: 0 }], {
+        duration: 450,
+        easing: 'cubic-bezier(0.22, 0.8, 0.24, 1)'
+      })
+    },
+    true
+  )
 }
 
 export function useMotion() {

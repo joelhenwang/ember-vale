@@ -269,7 +269,9 @@ function openWorld(id: string): void {
             class="lib__cards lib__cards--people"
             @before-leave="pinLeaving">
             <p v-if="presets.loading.value" key="loading" class="lib__none" role="status">
-              Reading the archive…
+              Reading the archive<span class="ev-dots" aria-hidden="true"
+                ><span>.</span><span>.</span><span>.</span></span
+              >
             </p>
             <p v-else-if="presets.error.value" key="error" class="lib__none" role="alert">
               The archive did not answer ({{ presets.error.value }}) —
@@ -285,7 +287,7 @@ function openWorld(id: string): void {
                 :menu="menuFor('character', c.id)"
                 @open="openCharacter(c.id)"
                 @pick="onPick('character', c.id, $event)" />
-              <p v-if="!characters.length" key="none" class="lib__none">
+              <p v-if="!characters.length" key="none" class="lib__none ev-empty">
                 Nothing in the archive matches — try another word.
               </p>
             </template>
@@ -308,7 +310,9 @@ New possibilities."
             class="lib__cards lib__cards--worlds"
             @before-leave="pinLeaving">
             <p v-if="presets.loading.value" key="loading" class="lib__none" role="status">
-              Reading the archive…
+              Reading the archive<span class="ev-dots" aria-hidden="true"
+                ><span>.</span><span>.</span><span>.</span></span
+              >
             </p>
             <p v-else-if="presets.error.value" key="error" class="lib__none" role="alert">
               The archive did not answer ({{ presets.error.value }}) —
@@ -324,7 +328,7 @@ New possibilities."
                 :menu="menuFor('world', w.id)"
                 @open="openWorld(w.id)"
                 @pick="onPick('world', w.id, $event)" />
-              <p v-if="!worlds.length" key="none" class="lib__none">
+              <p v-if="!worlds.length" key="none" class="lib__none ev-empty">
                 No worlds match — the map is blank.
               </p>
             </template>

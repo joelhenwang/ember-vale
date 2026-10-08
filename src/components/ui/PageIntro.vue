@@ -25,18 +25,33 @@ defineProps<{ title: string; sub?: string }>()
 
 <style scoped>
 .intro {
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: flex-start;
   gap: 14px;
+}
+/* a soft light behind the seal, faded by opacity so the loop stays cheap */
+.intro::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: -10px;
+  top: -8px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(220, 122, 60, 0.32), rgba(220, 122, 60, 0) 66%);
+  pointer-events: none;
+  opacity: 0;
+  animation: intro-glow 5s var(--ease-sine) 0.9s infinite;
 }
 .intro__emblem {
   color: var(--gold);
   flex: none;
   margin-top: 2px;
   /* the seal turns into place, then glows softly like the brand mark */
-  animation:
-    intro-seal 0.9s var(--ease-settle) both,
-    intro-glow 5s var(--ease-sine) 0.9s infinite;
+  animation: intro-seal 0.9s var(--ease-settle) both;
 }
 @keyframes intro-seal {
   from {
@@ -47,10 +62,10 @@ defineProps<{ title: string; sub?: string }>()
 @keyframes intro-glow {
   0%,
   100% {
-    filter: drop-shadow(0 0 0 rgba(220, 122, 60, 0));
+    opacity: 0;
   }
   50% {
-    filter: drop-shadow(0 0 6px rgba(220, 122, 60, 0.45));
+    opacity: 1;
   }
 }
 .intro__text {

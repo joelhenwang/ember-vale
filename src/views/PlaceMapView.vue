@@ -419,7 +419,11 @@ onMounted(load)
       <p v-if="error" ref="alertEl" class="pmap__alert" role="alert">{{ error }}</p>
     </Transition>
     <p v-if="loading" class="ev-info pmap__loading">
-      <span class="spin ev-progress-spin" aria-hidden="true" /> Loading…
+      <span class="spin ev-progress-spin" aria-hidden="true" /> Loading<span
+        class="ev-dots"
+        aria-hidden="true"
+        ><span>.</span><span>.</span><span>.</span></span
+      >
     </p>
 
     <template v-else-if="detail">

@@ -767,7 +767,13 @@ onMounted(() => {
                   </button>
                   <div v-else class="log__picture log__picture--wait" role="status">
                     <span class="log__picture-wait"><IconImage :size="20" /></span>
-                    <span class="log__picture-text"><i>Painting this moment…</i></span>
+                    <span class="log__picture-text"
+                      ><i
+                        >Painting this moment<span class="ev-dots" aria-hidden="true"
+                          ><span>.</span><span>.</span><span>.</span></span
+                        ></i
+                      ></span
+                    >
                   </div>
                 </template>
                 <template v-else-if="line.kind === 'elsewhere'">

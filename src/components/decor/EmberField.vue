@@ -2,15 +2,28 @@
   EmberField — embers drifting up through a scene, so the world is never
   quite still. Pure CSS, positions derived from the index (no randomness,
   the same field every time). Sits absolutely inside its parent and never
-  catches the pointer. Under reduced motion it is not drawn at all.
+  catches the pointer. Under reduced motion it is not drawn at all, and
+  it pauses while scrolled out of sight (or kept alive off-screen by
+  KeepAlive), so idle pages cost nothing.
 -->
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 const props = withDefaults(
   defineProps<{ count?: number; rise?: number; tone?: 'ember' | 'dust' | 'snow' }>(),
   { count: 14, rise: 240, tone: 'ember' }
 )
+
+/* Pause while out of sight. */
+const root = ref<HTMLElement | null>(null)
+const seen = ref(true)
+let watcher: IntersectionObserver | undefined
+onMounted(() => {
+  if (!root.value || typeof IntersectionObserver === 'undefined') return
+  watcher = new IntersectionObserver(([entry]) => (seen.value = entry?.isIntersecting ?? true))
+  watcher.observe(root.value)
+})
+onBeforeUnmount(() => watcher?.disconnect())
 
 const sparks = computed(() =>
   Array.from({ length: props.count }, (_, i) => {
@@ -35,7 +48,11 @@ const sparks = computed(() =>
 </script>
 
 <template>
-  <span class="embers" :class="`embers--${tone}`" aria-hidden="true">
+  <span
+    ref="root"
+    class="embers"
+    :class="[`embers--${tone}`, { 'embers--paused': !seen }]"
+    aria-hidden="true">
     <i v-for="(s, i) in sparks" :key="i" :style="s"></i>
   </span>
 </template>
@@ -61,6 +78,9 @@ const sparks = computed(() =>
   animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
   animation-iteration-count: infinite;
   will-change: transform, opacity;
+}
+.embers--paused i {
+  animation-play-state: paused;
 }
 .embers--dust i {
   background: rgba(255, 246, 220, 0.9);

@@ -172,7 +172,9 @@ onBeforeUnmount(() => clearTimeout(flashTimer))
 
               <p v-if="s.error.value" class="settings__alert" role="alert">{{ s.error.value }}</p>
               <p v-if="s.loading.value" class="ev-info settings__card">
-                <IconInfo :size="14" /> Loading connections…
+                <IconInfo :size="14" /> Loading connections<span class="ev-dots" aria-hidden="true"
+                  ><span>.</span><span>.</span><span>.</span></span
+                >
               </p>
 
               <ConnectionCard
@@ -336,7 +338,9 @@ onBeforeUnmount(() => clearTimeout(flashTimer))
               needed.
             </p>
             <p v-if="img.loading.value" class="ev-info settings__card">
-              <IconInfo :size="14" /> Loading image settings…
+              <IconInfo :size="14" /> Loading image settings<span class="ev-dots" aria-hidden="true"
+                ><span>.</span><span>.</span><span>.</span></span
+              >
             </p>
             <ImageSettingsPanel v-else :s="img" />
           </div>

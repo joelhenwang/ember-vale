@@ -610,9 +610,15 @@ const summaries = computed(() => stepSummaries(draft.value))
           {{ isNew ? draft.presetName.trim() || 'New character' : displayName }}
         </h1>
         <span v-if="!isNew" class="cstudio__mode">Editing character</span>
-        <span v-if="dirty" class="draft-badge"><span class="draft-badge__dot"></span>Unsaved</span>
+        <span v-if="dirty" class="draft-badge ev-pop-once"
+          ><span class="draft-badge__dot"></span>Unsaved</span
+        >
       </div>
-      <p v-if="recordLoading" class="studio__state" role="status">Reading the archive…</p>
+      <p v-if="recordLoading" class="studio__state" role="status">
+        Reading the archive<span class="ev-dots" aria-hidden="true"
+          ><span>.</span><span>.</span><span>.</span></span
+        >
+      </p>
       <p v-else-if="recordFailed" class="studio__state" role="alert">
         The archive did not answer ({{ presets.error.value }}) —
         <button type="button" class="studio__link" @click="retryPresets()">retry</button>

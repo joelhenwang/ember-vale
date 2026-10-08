@@ -202,7 +202,7 @@ onActivated(() => {
           </TransitionGroup>
         </Transition>
 
-        <p v-if="!list.length" class="stories__none ev-fade-in">
+        <p v-if="!list.length" class="stories__none ev-empty">
           {{
             storyShelf.length
               ? 'No stories in this drawer — try another word.'

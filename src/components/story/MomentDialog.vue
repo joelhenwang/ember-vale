@@ -294,7 +294,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
               <p v-if="moment.title && moment.caption" class="moment-dlg__caption">
                 {{ moment.caption }}
               </p>
-              <p v-if="loading" class="moment-dlg__quiet">Finding the page…</p>
+              <p v-if="loading" class="moment-dlg__quiet">
+                Finding the page<span class="ev-dots" aria-hidden="true"
+                  ><span>.</span><span>.</span><span>.</span></span
+                >
+              </p>
               <p v-else-if="problem" class="moment-dlg__quiet">
                 This page could not be read just now.
               </p>

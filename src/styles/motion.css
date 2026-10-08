@@ -118,6 +118,14 @@
 
 /* ————— utilities ————— */
 
+/* Every button gives a little when pressed, so no click feels dead. The
+   standalone `scale` property composes with any transform a component
+   already uses, and :where() keeps it at zero specificity, so a
+   component's own press style always wins. */
+:where(button, [role='button'], [role='tab'], summary):active:not(:disabled) {
+  scale: 0.97;
+}
+
 /* Anything you can press gives under the finger. */
 .ev-press {
   transition: transform var(--dur-quick) var(--ease-out);
@@ -199,6 +207,35 @@
 .ev-reveal.ev-revealed {
   opacity: 1;
   transform: none;
+}
+
+/* Any message that appears (alerts, statuses, field errors) fades in rather
+   than snapping on. :where() keeps this at zero specificity, so a
+   component's own animation or transition always wins. Opacity only: some
+   of these are positioned with transforms. */
+:where([role='alert'], [role='status'], .field-err, .field__err, .problem) {
+  animation: ev-fade 0.32s var(--ease-out) both;
+}
+
+/* A small badge or mark that pops in when it appears (v-if inserts it). */
+.ev-pop-once {
+  animation: ev-pop-in 0.38s var(--ease-settle) both;
+}
+
+/* An empty shelf or feed still has a little life: a sparkle floats above
+   the message, which fades in. Decoration only (aria-hidden by nature). */
+.ev-empty {
+  animation: ev-fade 0.5s var(--ease-out) both;
+}
+.ev-empty::before {
+  content: 'º6';
+  display: block;
+  margin-bottom: 6px;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--gold-soft);
+  opacity: 0.85;
+  animation: ev-float 4.5s var(--ease-sine) infinite;
 }
 
 /* Siblings that pop in one after another (chips, tags, small tiles). */
@@ -621,6 +658,8 @@
 }
 :root[data-motion='reduced'] .ev-rise > *,
 :root[data-motion='reduced'] .ev-pop-stagger > *,
+:root[data-motion='reduced'] .ev-pop-once,
+:root[data-motion='reduced'] .ev-empty,
 :root[data-motion='reduced'] .ev-fade-in {
   animation: ev-fade 0.3s var(--ease-out) both !important;
 }
@@ -632,6 +671,9 @@
 }
 :root[data-motion='reduced'] .ev-reveal {
   transform: none;
+}
+:root[data-motion='reduced'] :where(button, [role='button'], [role='tab'], summary):active {
+  scale: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -645,6 +687,8 @@
   }
   :root:not([data-motion='full']) .ev-rise > *,
   :root:not([data-motion='full']) .ev-pop-stagger > *,
+  :root:not([data-motion='full']) .ev-pop-once,
+  :root:not([data-motion='full']) .ev-empty,
   :root:not([data-motion='full']) .ev-fade-in {
     animation: ev-fade 0.3s var(--ease-out) both !important;
   }
@@ -656,5 +700,8 @@
   }
   :root:not([data-motion='full']) .ev-reveal {
     transform: none;
+  }
+  :root:not([data-motion='full']) :where(button, [role='button'], [role='tab'], summary):active {
+    scale: none;
   }
 }
