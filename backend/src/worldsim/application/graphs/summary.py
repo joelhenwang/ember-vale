@@ -32,10 +32,10 @@ from worldsim.application.ports.model_gateway import (
 )
 
 #: Versioned summary prompt file.
-SUMMARY_PROMPT_VERSION = "summary.v1"
+SUMMARY_PROMPT_VERSION = "summary.v2"
 
 #: Versioned digest prompt file; same graph, different task.
-DIGEST_PROMPT_VERSION = "digest.v1"
+DIGEST_PROMPT_VERSION = "digest.v2"
 
 #: Model output budget for one day's retelling.
 SUMMARY_MAX_CHARS = 4000
@@ -95,6 +95,50 @@ def load_digest_prompt() -> str:
     """Read the versioned digest prompt (fails loudly when missing)."""
     path = Path(__file__).resolve().parents[4] / "prompts" / f"{DIGEST_PROMPT_VERSION}.md"
     return path.read_text(encoding="utf-8")
+
+
+def tag_sources(entries: list[tuple[str, str]]) -> tuple[str, dict[str, str]]:
+    """Source lines tagged [o1], [m1]… for the model, and tag -> full source id.
+
+    Full ids (``obs:<uuid>``) cost ~25 tokens each to echo back; a summary
+    cited ~30 of them, about 70% of its output, and the model sometimes
+    dropped the prefix so the citation failed (scorecard-034). Tags are two
+    or three characters and are mapped back here.
+    """
+    tags: dict[str, str] = {}
+    by_full: dict[str, str] = {}
+    counts = {"o": 0, "m": 0}
+    lines: list[str] = []
+    for full, body in entries:
+        if full not in by_full:
+            kind = "m" if full.startswith("mem:") else "o"
+            counts[kind] += 1
+            by_full[full] = f"{kind}{counts[kind]}"
+            tags[by_full[full]] = full
+        lines.append(f"[{by_full[full]}] {body}")
+    return "\n".join(lines), tags
+
+
+def _bare(source: str) -> str:
+    return source.strip().strip("[]").strip()
+
+
+def accepted_ids(tags: dict[str, str]) -> list[str]:
+    """What a citation may say: a tag, or (copied anyway) a full or bare id."""
+    full = list(tags.values())
+    return sorted({*tags, *full, *(f.split(":", 1)[-1] for f in full)})
+
+
+def untag(cited: list[str], tags: dict[str, str]) -> list[str]:
+    """Full source ids for what the model cited (tags, full ids or bare uuids)."""
+    by_bare = {f.split(":", 1)[-1]: f for f in tags.values()}
+    out: list[str] = []
+    for raw in cited:
+        source = _bare(raw)
+        full = tags.get(source) or (source if source in tags.values() else by_bare.get(source))
+        if full is not None and full not in out:
+            out.append(full)
+    return out
 
 
 def render_user_prompt(owner_name: str, day: int, sources_text: str) -> str:
@@ -206,7 +250,7 @@ def build_summary_graph(deps: SummaryGraphDeps) -> Any:
                     )
                 raw = repaired.text
                 continue
-            unknown = [s for s in proposal.source_ids if s not in allowed]
+            unknown = [s for s in proposal.source_ids if _bare(s) not in allowed]
             if unknown:
                 return _fallback(
                     f"cited unknown sources: {','.join(sorted(unknown))}",

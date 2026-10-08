@@ -80,15 +80,14 @@ def _action_json(family: str, actor: UUID, **fields: object) -> str:
 
 
 def _cited_ids(prompt: str) -> list[str]:
-    return sorted(
-        set(f"{kind}:{raw}" for kind, raw in re.findall(r"(obs|mem):([0-9a-f-]{36})", prompt))
-    )
+    """Source tags ([o1], [m2]) in a summary or digest prompt (summary.v2)."""
+    return sorted(set(re.findall(r"\[([om]\d+)\]", prompt)))
 
 
 def _mem_line(prompt: str, source_id: str) -> str:
     """Full prompt line for a memory source, for content-keyed citation."""
     for line in prompt.splitlines():
-        if source_id in line:
+        if f"[{source_id}]" in line:
             return line
     return ""
 
@@ -96,8 +95,7 @@ def _mem_line(prompt: str, source_id: str) -> str:
 def _ordered_mem_ids(prompt: str) -> list[str]:
     """Memory ids in prompt order; the summary cites the oldest first."""
     seen: list[str] = []
-    for raw in re.findall(r"mem:([0-9a-f-]{36})", prompt):
-        candidate = f"mem:{raw}"
+    for candidate in re.findall(r"\[(m\d+)\]", prompt):
         if candidate not in seen:
             seen.append(candidate)
     return seen

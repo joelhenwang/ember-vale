@@ -292,3 +292,17 @@ def test_summary_outage_records_fallback(migrated_db: None) -> None:
             await engine.dispose()
 
     _run(_inner())
+
+
+def test_sources_go_to_the_model_as_short_tags_and_come_back_whole() -> None:
+    from worldsim.application.graphs.summary import accepted_ids, tag_sources, untag
+
+    obs = "obs:6a7aefc9-f756-4d71-a5b0-da12215a4c4a"
+    mem = "mem:fe2e0e2f-27c2-4afd-bbda-77cefee567b2"
+    text, tags = tag_sources([(obs, "road: quiet"), (obs, "weather: rain"), (mem, "Met Ash")])
+    assert text.splitlines() == ["[o1] road: quiet", "[o1] weather: rain", "[m1] Met Ash"]
+    assert tags == {"o1": obs, "m1": mem}
+    # tags, bracketed tags, full ids and bare uuids all map back; unknowns drop
+    cited = ["m1", "[o1]", obs, mem.split(":")[1], "o9"]
+    assert untag(cited, tags) == [mem, obs]
+    assert {"o1", "m1", obs, mem}.issubset(accepted_ids(tags))

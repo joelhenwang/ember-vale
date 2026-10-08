@@ -534,7 +534,7 @@ def score(
     }
     summaries = conn.execute(
         "select count(*), count(*) filter (where result->>'finish_reason' = 'length')"
-        " from model_call where world_id = %s and role = 'summary'",
+        " from model_call where world_id = %s and role = 'daily_summary'",
         (world,),
     ).fetchone()
     stats: dict[str, Any] = {

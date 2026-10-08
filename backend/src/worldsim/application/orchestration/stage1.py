@@ -92,9 +92,12 @@ from worldsim.application.graphs.summary import (
     DIGEST_PROMPT_VERSION,
     SUMMARY_PROMPT_VERSION,
     SummaryGraphDeps,
+    accepted_ids,
     build_summary_graph,
     load_digest_prompt,
     load_summary_prompt,
+    tag_sources,
+    untag,
 )
 from worldsim.application.images import world_style_pack
 from worldsim.application.interventions import (
@@ -2277,15 +2280,18 @@ class Stage1Orchestrator:
             ]
         if not observations and not memories:
             return False
-        lines: list[str] = []
+        entries: list[tuple[str, str]] = []
         source_ids: list[str] = []
         for obs in observations:
             for fact in obs.facts:
-                lines.append(f"obs:{obs.id} {fact.key}: {fact.value}")
+                entries.append((f"obs:{obs.id}", f"{fact.key}: {fact.value}"))
                 source_ids.append(f"obs:{obs.id}")
         for mem in memories:
-            lines.append(f"mem:{mem.id} {mem.text}")
+            entries.append((f"mem:{mem.id}", mem.text))
             source_ids.append(f"mem:{mem.id}")
+        # Short tags ([o1], [m2]) instead of full ids: the model echoed ~30
+        # uuids per summary (~70% of its output) and dropped their prefixes.
+        sources_text, tags = tag_sources(entries)
         task_run_id = derive_task_id(run_id, "summary", character.id)
         owner = f"s1sum:{run_id.hex[:8]}"
         await self._track_task(world_id, task_run_id, owner)
@@ -2319,8 +2325,8 @@ class Stage1Orchestrator:
             input={
                 "owner_name": character.name,
                 "day": day,
-                "sources_text": "\n".join(lines),
-                "source_ids": sorted(set(source_ids)),
+                "sources_text": sources_text,
+                "source_ids": accepted_ids(tags),
             },
         )
         sampling = runtime.sampling
@@ -2344,7 +2350,7 @@ class Stage1Orchestrator:
         proposal: dict[str, Any] = result.get("proposal") or {}
         is_fallback = result.get("fallback", True) is True
         text = str(proposal.get("text", "")) or fallback_text(len(observations), len(memories))
-        raw_cited: list[Any] = proposal.get("source_ids", [])
+        raw_cited: list[Any] = untag([str(s) for s in proposal.get("source_ids", [])], tags)
         cited = [str(s) for s in raw_cited] or sorted(set(source_ids))
         async with self._factory() as uow:
             taken = await uow.summaries.count_versions(world_id, character.id, day)
@@ -2447,7 +2453,7 @@ class Stage1Orchestrator:
             }
             observations = await uow.perception.observations_for_observer(character.id, 100000)
             memories = await uow.perception.memories_for_owner(character.id)
-        lines: list[str] = []
+        entries: list[tuple[str, str]] = []
         source_ids: list[str] = []
         for obs in observations:
             if obs.salience < threshold or index - obs.created_phase_index < min_age:
@@ -2455,17 +2461,20 @@ class Stage1Orchestrator:
             if f"obs:{obs.id}" in digested:
                 continue
             for fact in obs.facts:
-                lines.append(f"obs:{obs.id} {fact.key}: {fact.value}")
+                entries.append((f"obs:{obs.id}", f"{fact.key}: {fact.value}"))
                 source_ids.append(f"obs:{obs.id}")
         for mem in memories:
             if mem.salience < threshold or index - mem.created_phase_index < min_age:
                 continue
             if f"mem:{mem.id}" in digested:
                 continue
-            lines.append(f"mem:{mem.id} {mem.text}")
+            entries.append((f"mem:{mem.id}", mem.text))
             source_ids.append(f"mem:{mem.id}")
-        if not lines:
+        if not entries:
             return False
+        # Short tags ([o1], [m2]) instead of full ids: the model echoed ~30
+        # uuids per summary (~70% of its output) and dropped their prefixes.
+        sources_text, tags = tag_sources(entries)
         task_run_id = derive_task_id(run_id, "digest", character.id)
         owner = f"s1digest:{run_id.hex[:8]}"
         await self._track_task(world_id, task_run_id, owner)
@@ -2499,8 +2508,8 @@ class Stage1Orchestrator:
             input={
                 "owner_name": character.name,
                 "day": day,
-                "sources_text": "\n".join(lines),
-                "source_ids": sorted(set(source_ids)),
+                "sources_text": sources_text,
+                "source_ids": accepted_ids(tags),
             },
         )
         sampling = runtime.sampling
@@ -2523,7 +2532,7 @@ class Stage1Orchestrator:
         await self._finish_task(task_run_id, owner, True)
         proposal: dict[str, Any] = result.get("proposal") or {}
         text = str(proposal.get("text", "")) or f"Enduring traces: {len(source_ids)} older sources."
-        raw_cited: list[Any] = proposal.get("source_ids", [])
+        raw_cited: list[Any] = untag([str(s) for s in proposal.get("source_ids", [])], tags)
         cited = [str(s) for s in raw_cited] or sorted(set(source_ids))
         async with self._factory() as uow:
             taken = await uow.digests.count_versions(world_id, character.id, day)

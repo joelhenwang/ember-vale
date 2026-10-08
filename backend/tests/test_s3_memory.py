@@ -66,9 +66,8 @@ def _wait_json(actor: UUID) -> str:
 
 
 def _cited_ids(prompt: str) -> list[str]:
-    return sorted(
-        set(f"{kind}:{raw}" for kind, raw in re.findall(r"(obs|mem):([0-9a-f-]{36})", prompt))
-    )
+    """Source tags ([o1], [m2]) in a summary or digest prompt (summary.v2)."""
+    return sorted(set(re.findall(r"\[([om]\d+)\]", prompt)))
 
 
 def _route_for(probe_on_first: bool = False) -> Any:
@@ -103,7 +102,7 @@ def _route_for(probe_on_first: bool = False) -> Any:
         if "You direct" in system:
             return json.dumps({"action": "noop", "reason": "calm stretch"})
         if "You summar" in system:
-            mem_ids = [i for i in _cited_ids(prompt) if i.startswith("mem:")]
+            mem_ids = [i for i in _cited_ids(prompt) if i.startswith("m")]
             cited = mem_ids[:1]
             return json.dumps({"text": "A quiet day.", "source_ids": cited})
         return None
