@@ -108,6 +108,19 @@ function installRest(): void {
   }
   for (const type of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart', 'scroll'])
     window.addEventListener(type, wake, { passive: true, capture: true })
+  // The story moving on wakes the scene too: someone watching autoplay or
+  // waiting for a turn sits still, but new lines and events keep arriving.
+  // Only added elements count, not text changes (the 1 s clocks).
+  if (typeof MutationObserver === 'function') {
+    new MutationObserver((records) => {
+      for (const r of records)
+        for (const node of r.addedNodes)
+          if (node.nodeType === 1) {
+            wake()
+            return
+          }
+    }).observe(document.body, { childList: true, subtree: true })
+  }
   const connected = (a: Animation): boolean => {
     const target = (a.effect as KeyframeEffect | null)?.target
     return !!target && target.isConnected
