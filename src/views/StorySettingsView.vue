@@ -5,7 +5,7 @@
   next turn / the next picture. Pure form logic: src/game/storyPrompts.ts.
 -->
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import SaveBar from '../components/ui/SaveBar.vue'
 import PageIntro from '../components/ui/PageIntro.vue'
@@ -14,6 +14,8 @@ import IconFeather from '../components/icons/IconFeather.vue'
 import IconImage from '../components/icons/IconImage.vue'
 import IconUsers from '../components/icons/IconUsers.vue'
 import IconInfo from '../components/icons/IconInfo.vue'
+import { vReveal } from '../composables/useMotion'
+import { burst, flash } from '../composables/useEffects'
 import { assetUrl, getStory, getStoryPrompts, saveStoryPrompts } from '../api/worldsim'
 import { isVersionConflict } from '../api/http'
 import {
@@ -38,6 +40,7 @@ const loading = ref(true)
 const saving = ref(false)
 const error = ref<string | null>(null)
 const savedFlash = ref(false)
+const saveEl = ref<HTMLElement | null>(null)
 let flashTimer: ReturnType<typeof setTimeout> | undefined
 
 const errors = computed(() => validateStoryWords(form.value))
@@ -76,6 +79,7 @@ async function save(): Promise<void> {
     baseline.value = storyWordsFrom(saved)
     form.value = storyWordsFrom(saved)
     savedFlash.value = true
+    burst(saveEl.value, { count: 14, spread: 60 })
     clearTimeout(flashTimer)
     flashTimer = setTimeout(() => (savedFlash.value = false), 1400)
   } catch (err) {
@@ -95,8 +99,10 @@ function discard(): void {
 }
 
 type StoryField = 'llmPrefix' | 'llmSuffix' | 'imagePrefix' | 'imageSuffix'
-function useExample(field: StoryField): void {
+function useExample(field: StoryField, event?: Event): void {
   form.value[field] = EXAMPLES[field]
+  const box = (event?.target as HTMLElement | null)?.closest('.field')?.querySelector('textarea')
+  void nextTick(() => flash(box))
 }
 
 onMounted(load)
@@ -114,12 +120,18 @@ onBeforeUnmount(() => clearTimeout(flashTimer))
         sub="Your own words, added to everything the AI writes and paints in this story. Changes apply from the next turn or the next picture." />
     </header>
 
-    <p v-if="error" class="ssettings__alert" role="alert">{{ error }}</p>
-    <p v-if="loading" class="ev-info"><IconInfo :size="14" /> Loading…</p>
+    <Transition name="ev-rise">
+      <p v-if="error" class="ssettings__alert" role="alert">{{ error }}</p>
+    </Transition>
+    <p v-if="loading" class="ev-info">
+      <IconInfo :size="14" /> Loading<span class="ev-dots" aria-hidden="true"
+        ><span>.</span><span>.</span><span>.</span></span
+      >
+    </p>
 
     <template v-else>
       <!-- storyteller ------------------------------------------------------- -->
-      <section class="card ev-card">
+      <section v-reveal="0" class="card ev-card">
         <header class="card__head">
           <span class="card__icon"><IconFeather :size="20" /></span>
           <div>
@@ -143,7 +155,7 @@ onBeforeUnmount(() => clearTimeout(flashTimer))
                 v-if="!form.llmPrefix"
                 type="button"
                 class="linkbtn"
-                @click="useExample('llmPrefix')">
+                @click="useExample('llmPrefix', $event)">
                 Use the example
               </button>
               <span v-else :class="{ over: errors.llmPrefix }"
@@ -163,7 +175,7 @@ onBeforeUnmount(() => clearTimeout(flashTimer))
                 v-if="!form.llmSuffix"
                 type="button"
                 class="linkbtn"
-                @click="useExample('llmSuffix')">
+                @click="useExample('llmSuffix', $event)">
                 Use the example
               </button>
               <span v-else :class="{ over: errors.llmSuffix }"
@@ -179,7 +191,7 @@ onBeforeUnmount(() => clearTimeout(flashTimer))
       </section>
 
       <!-- pictures ----------------------------------------------------------- -->
-      <section class="card ev-card">
+      <section v-reveal="1" class="card ev-card">
         <header class="card__head">
           <span class="card__icon"><IconImage :size="20" /></span>
           <div>
@@ -219,7 +231,7 @@ onBeforeUnmount(() => clearTimeout(flashTimer))
       </section>
 
       <!-- characters --------------------------------------------------------- -->
-      <section class="card ev-card">
+      <section v-reveal="2" class="card ev-card">
         <header class="card__head">
           <span class="card__icon"><IconUsers :size="20" /></span>
           <div>
@@ -265,6 +277,7 @@ onBeforeUnmount(() => clearTimeout(flashTimer))
     <SaveBar :dirty="dirty" :saved="savedFlash" secondary-label="Discard" @secondary="discard">
       <template #end>
         <button
+          ref="saveEl"
           type="button"
           class="cta cta--foot"
           :disabled="!dirty || !valid || saving"
@@ -377,8 +390,50 @@ onBeforeUnmount(() => clearTimeout(flashTimer))
   font-variant-numeric: tabular-nums;
 }
 .over {
+  display: inline-block;
   color: #b3542e;
   font-weight: 600;
+  animation: ev-nudge 0.42s var(--ease-io);
+}
+.ssettings__alert {
+  animation: ev-nudge 0.42s var(--ease-io) 0.15s;
+}
+.card__icon {
+  transition:
+    transform 0.4s var(--ease-settle),
+    border-color 0.25s ease,
+    color 0.25s ease;
+}
+.card:hover .card__icon {
+  transform: rotate(-6deg) scale(1.06);
+  border-color: var(--gold-soft);
+  color: var(--ember);
+}
+.linkbtn {
+  transition:
+    color 0.2s ease,
+    text-underline-offset 0.2s ease;
+}
+.linkbtn:hover {
+  color: var(--teal);
+  text-underline-offset: 5px;
+}
+.person {
+  padding: 4px 6px;
+  margin: -4px -6px;
+  border-radius: 10px;
+  transition: background 0.25s ease;
+}
+.person:hover,
+.person:focus-within {
+  background: rgba(214, 196, 158, 0.18);
+}
+.person__face {
+  transition: transform 0.35s var(--ease-settle);
+}
+.person:hover .person__face,
+.person:focus-within .person__face {
+  transform: scale(1.08);
 }
 .words {
   height: auto;

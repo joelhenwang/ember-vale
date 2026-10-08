@@ -106,7 +106,11 @@ function eventSnippets(eventId: string): TimelineEntry[] {
         v-else-if="
           !loadedMap[segment.pointer.eventId] || loadedMap[segment.pointer.eventId]?.pending
         ">
-        <p class="beat__empty" role="status">Gathering structured beat…</p>
+        <p class="beat__empty" role="status">
+          Gathering structured beat<span class="ev-dots" aria-hidden="true"
+            ><span>.</span><span>.</span><span>.</span></span
+          >
+        </p>
       </template>
       <template v-else-if="loadedMap[segment.pointer.eventId]?.failed">
         <template
@@ -209,6 +213,30 @@ function eventSnippets(eventId: string): TimelineEntry[] {
   padding-top: 8px;
   display: grid;
   gap: 8px;
+  animation: beat-in 0.6s var(--ease-settle) backwards;
+}
+@keyframes beat-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+/* a beat's words fade in as they arrive from the storyteller */
+.beat__say,
+.beat__text {
+  animation: ev-fade 0.5s var(--ease-out) backwards;
+}
+.beat__say .beat__avatar {
+  animation: ev-pop-in 0.45s var(--ease-spring) backwards;
+}
+.beat__details[open] > :not(summary) {
+  animation: details-open 0.35s var(--ease-settle) backwards;
+}
+@keyframes details-open {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }
 .beat__head {
   margin: 0;
@@ -267,6 +295,14 @@ function eventSnippets(eventId: string): TimelineEntry[] {
   cursor: pointer;
   color: #1f4d3f;
   text-decoration: underline;
+  text-underline-offset: 2px;
+  transition:
+    color 0.2s ease,
+    text-underline-offset 0.2s ease;
+}
+.beat__details summary:hover {
+  color: var(--teal);
+  text-underline-offset: 4px;
 }
 .beat__details ul {
   margin: 6px 0;

@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import BeatEntry from '../components/story/BeatEntry.vue'
 import SetupDialog from '../components/story/SetupDialog.vue'
 import MountainRidge from '../components/decor/MountainRidge.vue'
+import EmberField from '../components/decor/EmberField.vue'
 import PageIntro from '../components/ui/PageIntro.vue'
 import MenuButton from '../components/MenuButton.vue'
 import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
@@ -350,6 +351,7 @@ function loadBeatDetails(eventIds: string[]): void {
   <main class="play">
     <section class="play__band ev-card">
       <MountainRidge class="play__ridge" />
+      <EmberField tone="dust" :count="10" :rise="140" />
       <PageIntro
         :title="detail?.title ?? 'Opening the story…'"
         :sub="
@@ -398,7 +400,7 @@ function loadBeatDetails(eventIds: string[]): void {
         role="status">
         {{ story.notice.value.text }}
       </p>
-      <p v-if="story.advancing.value" class="play__notice" role="status">
+      <p v-if="story.advancing.value" class="play__notice play__notice--running" role="status">
         Beat {{ waitingIndex }} is still running — {{ elapsedS }}s so far. The beat runs on the
         server: leaving the page does not stop it. If the connection drops, reload and use check
         again or resume below.
@@ -464,7 +466,7 @@ function loadBeatDetails(eventIds: string[]): void {
       <div class="play__grid">
         <section class="play__card" aria-label="Cast and places">
           <h2>Cast &amp; places</h2>
-          <ul class="play__cast">
+          <ul class="play__cast ev-rise">
             <li v-for="member in cast" :key="member.id">
               <strong>{{ member.name }}</strong>
               <span>{{ member.places.join(', ') }}</span>
@@ -576,7 +578,7 @@ function loadBeatDetails(eventIds: string[]): void {
           <p v-if="!story.entries.value.length" class="play__empty">
             Nothing has happened yet — commit the first beat.
           </p>
-          <ol v-else class="play__feed">
+          <TransitionGroup v-else name="ev-list" tag="ol" class="play__feed">
             <li v-for="beat in feedBeats" :key="beat.index">
               <BeatEntry
                 :index="beat.index"
@@ -587,7 +589,7 @@ function loadBeatDetails(eventIds: string[]): void {
                 :you-id="controlledId"
                 @request-details="loadBeatDetails($event)" />
             </li>
-          </ol>
+          </TransitionGroup>
           <p class="play__empty" role="status">
             Showing {{ story.entries.value.length }} loaded events.
             <template v-if="story.hasMore.value"> Older history remains on the server. </template>
@@ -680,7 +682,7 @@ function loadBeatDetails(eventIds: string[]): void {
         </p>
         <h3>Queue</h3>
         <p v-if="!queueCtl.queue.value.length" class="play__empty">Nothing filed yet.</p>
-        <ol v-else class="play__queue">
+        <TransitionGroup v-else name="ev-list" tag="ol" class="play__queue">
           <li v-for="entry in queueCtl.queue.value" :key="entry.id">
             <button type="button" class="play__link" @click="pickDirection(entry.id)">
               {{ entry.text }}
@@ -696,7 +698,7 @@ function loadBeatDetails(eventIds: string[]): void {
             </ul>
             <p v-if="entry.failure_reason" class="play__sub">{{ entry.failure_reason }}</p>
           </li>
-        </ol>
+        </TransitionGroup>
         <template v-if="queueCtl.active.value">
           <h3>Selected direction</h3>
           <label
@@ -736,7 +738,11 @@ function loadBeatDetails(eventIds: string[]): void {
         >
       </footer>
     </template>
-    <p v-else class="play__state" role="status">Loading…</p>
+    <p v-else class="play__state" role="status">
+      Loading<span class="ev-dots" aria-hidden="true"
+        ><span>.</span><span>.</span><span>.</span></span
+      >
+    </p>
     <SetupDialog :setup="story.setup.value" :open="showSetup" @close="showSetup = false" />
   </main>
 </template>
@@ -794,6 +800,42 @@ function loadBeatDetails(eventIds: string[]): void {
   border-radius: 10px;
   border: 1px solid var(--line);
   background: #fbf6e9;
+  animation: notice-in 0.45s var(--ease-settle) backwards;
+}
+@keyframes notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+/* a beat in flight: a thin light runs along the notice's foot */
+.play__notice--running {
+  position: relative;
+  overflow: hidden;
+}
+.play__notice--running::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--teal-ink), transparent) 0 0 / 35% 100%
+    no-repeat;
+  animation: play-running 1.5s var(--ease-io) infinite;
+}
+@keyframes play-running {
+  from {
+    background-position: -50% 0;
+  }
+  to {
+    background-position: 150% 0;
+  }
+}
+.play__notice--error {
+  animation:
+    notice-in 0.45s var(--ease-settle) backwards,
+    ev-nudge 0.42s var(--ease-io) 0.1s;
 }
 .play__notice--error {
   border-color: #b3543f;
@@ -823,6 +865,42 @@ function loadBeatDetails(eventIds: string[]): void {
   background: linear-gradient(180deg, var(--surface-2), var(--surface));
   box-shadow: var(--card-shadow);
   padding: 18px 20px;
+  animation: card-in 0.6s var(--ease-settle) backwards;
+}
+.play__grid > .play__card:nth-child(2) {
+  animation-delay: 0.07s;
+}
+.play__grid > .play__card:nth-child(3) {
+  animation-delay: 0.14s;
+}
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+.play__field textarea,
+.play__travel select,
+.play__travel input {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.25s ease;
+}
+.play__field textarea:focus,
+.play__travel select:focus,
+.play__travel input:focus {
+  border-color: var(--teal-ink);
+  box-shadow: 0 0 0 3px rgba(46, 122, 108, 0.14);
+}
+.play__link {
+  transition:
+    color 0.2s ease,
+    text-underline-offset 0.2s ease;
+  text-underline-offset: 2px;
+}
+.play__link:hover {
+  color: var(--teal);
+  text-underline-offset: 4px;
 }
 .play__card h2 {
   margin: 0 0 10px;
@@ -884,6 +962,13 @@ function loadBeatDetails(eventIds: string[]): void {
   display: flex;
   gap: 8px;
   align-items: baseline;
+  padding: 2px 6px;
+  margin: 0 -6px;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+.play__cast li:hover {
+  background: rgba(214, 196, 158, 0.22);
 }
 .play__cast span {
   color: #6b5d43;

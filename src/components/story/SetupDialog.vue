@@ -10,35 +10,42 @@ function pretty(value: unknown): string {
 </script>
 
 <template>
-  <div v-if="open" class="setup" role="dialog" aria-modal="true" aria-label="Initial configuration">
-    <div class="setup__card">
-      <header class="setup__head">
-        <h2 class="setup__title">Initial configuration</h2>
-        <button type="button" class="setup__close" @click="$emit('close')">Close</button>
-      </header>
-      <p class="setup__note">
-        Frozen when the story was created — it never changes, even as the story moves on.
-      </p>
-      <dl v-if="setup" class="setup__meta">
-        <div>
-          <dt>Provenance</dt>
-          <dd>{{ setup.provenance }}</dd>
-        </div>
-        <div>
-          <dt>Captured</dt>
-          <dd>{{ setup.created_at }}</dd>
-        </div>
-        <div>
-          <dt>Content hash</dt>
-          <dd>
-            <code>{{ setup.content_hash }}</code>
-          </dd>
-        </div>
-      </dl>
-      <pre v-if="setup" class="setup__json">{{ pretty(setup.payload) }}</pre>
-      <p v-else class="setup__note">No setup recorded.</p>
+  <Transition name="ev-modal">
+    <div
+      v-if="open"
+      class="setup"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Initial configuration">
+      <div class="setup__card">
+        <header class="setup__head">
+          <h2 class="setup__title">Initial configuration</h2>
+          <button type="button" class="setup__close ev-press" @click="$emit('close')">Close</button>
+        </header>
+        <p class="setup__note">
+          Frozen when the story was created — it never changes, even as the story moves on.
+        </p>
+        <dl v-if="setup" class="setup__meta ev-rise">
+          <div>
+            <dt>Provenance</dt>
+            <dd>{{ setup.provenance }}</dd>
+          </div>
+          <div>
+            <dt>Captured</dt>
+            <dd>{{ setup.created_at }}</dd>
+          </div>
+          <div>
+            <dt>Content hash</dt>
+            <dd>
+              <code>{{ setup.content_hash }}</code>
+            </dd>
+          </div>
+        </dl>
+        <pre v-if="setup" class="setup__json">{{ pretty(setup.payload) }}</pre>
+        <p v-else class="setup__note">No setup recorded.</p>
+      </div>
     </div>
-  </div>
+  </Transition>
 </template>
 
 <style scoped>
@@ -78,6 +85,14 @@ function pretty(value: unknown): string {
   border-radius: 8px;
   padding: 6px 12px;
   cursor: pointer;
+  transition:
+    transform var(--dur-quick) var(--ease-out),
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+.setup__close:hover {
+  background: var(--panel-2);
+  border-color: var(--line-strong);
 }
 .setup__note {
   color: #6b5d43;

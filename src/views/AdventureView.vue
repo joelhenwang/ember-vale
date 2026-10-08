@@ -27,6 +27,9 @@ import { momentTitle, readyMoments, type Speaker } from '../game/moments'
 import PaintSceneDialog from '../components/story/PaintSceneDialog.vue'
 import { assetUrl } from '../api/worldsim'
 import FramedImage from '../components/ui/FramedImage.vue'
+import EmberField from '../components/decor/EmberField.vue'
+import { moves, useTweened } from '../composables/useMotion'
+import { burst, flash, shake, vRipple } from '../composables/useEffects'
 import { frameFromList } from '../game/framing'
 import { useAdventure } from '../composables/useAdventure'
 import {
@@ -170,6 +173,72 @@ const leads = computed(() =>
 )
 const nowIndex = computed(() => adv.presentation.value?.absolute_index ?? 0)
 
+/* ————— motion: numbers that glide, a level that stamps, a scene that breathes ————— */
+function statOf(key: string): number | null {
+  const v = stats.value?.[key]
+  return typeof v === 'number' && Number.isFinite(v) ? v : null
+}
+const stamina = computed(() => statOf('stamina'))
+const mana = computed(() => statOf('mana'))
+const staminaShown = useTweened(computed(() => stamina.value ?? 0))
+const manaShown = useTweened(computed(() => mana.value ?? 0))
+const levelShown = useTweened(
+  computed(() => levelFill.value),
+  900
+)
+const staminaEl = ref<HTMLElement | null>(null)
+const manaEl = ref<HTMLElement | null>(null)
+const levelEl = ref<HTMLElement | null>(null)
+const composerEl = ref<HTMLElement | null>(null)
+/** Bumped when the level rises, so the level label stamps in again. */
+const levelBump = ref(0)
+watch(stamina, (to, from) => {
+  if (from !== null && to !== null && to !== from) flash(staminaEl.value)
+})
+watch(mana, (to, from) => {
+  if (from !== null && to !== null && to !== from) flash(manaEl.value)
+})
+watch(
+  () => journey.value?.level,
+  (to, from) => {
+    if (to === undefined || from === undefined || to <= from) return
+    levelBump.value += 1
+    void nextTick(() => {
+      burst(levelEl.value, { count: 18, spread: 80 })
+      burst(document.querySelector('.adv .badge--level'), { count: 12, spread: 60 })
+    })
+  }
+)
+watch(
+  () => adv.actionError.value,
+  (err) => {
+    if (err) shake(composerEl.value)
+  }
+)
+/** The scene's ambient air: embers after dark, dust motes in daylight. */
+const air = computed(() =>
+  ['sunset', 'dusk', 'evening', 'night', 'midnight'].includes(
+    (adv.presentation.value?.phase ?? '').toLowerCase()
+  )
+    ? 'ember'
+    : 'dust'
+)
+const flickers = computed(() =>
+  ['evening', 'night', 'midnight'].includes((adv.presentation.value?.phase ?? '').toLowerCase())
+)
+/** A picture that has finished loading (it fades in, then the camera drifts). */
+const loadedSrc = ref<string | null>(null)
+/** The Act button gives a small kick when a turn is sent. */
+const sent = ref(false)
+function kick(): void {
+  if (!moves()) return
+  sent.value = false
+  void nextTick(() => {
+    sent.value = true
+    setTimeout(() => (sent.value = false), 420)
+  })
+}
+
 /* ————— the picture: the latest painted moment, else the place ————— */
 const moments = computed(() => readyMoments(adv.presentation.value?.scene_art))
 const latest = computed(() => moments.value[moments.value.length - 1] ?? null)
@@ -269,6 +338,7 @@ async function submit(): Promise<void> {
     mode.value === 'say' && sayTarget.value
       ? { kind: 'say', text: `"${words.replace(/^["“]|["”]$/g, '')}"` }
       : { kind: 'do', text: `You ${words.charAt(0).toLowerCase()}${words.slice(1)}` }
+  kick()
   const ok = await turn(() => adv.act(intent))
   echo.value = null
   if (!ok) text.value = words
@@ -276,6 +346,7 @@ async function submit(): Promise<void> {
 
 async function pass(): Promise<void> {
   echo.value = { kind: 'do', text: 'You let a moment pass.' }
+  kick()
   await turn(() => adv.wait())
   echo.value = null
 }
@@ -398,7 +469,14 @@ onMounted(() => {
       </nav>
     </header>
 
-    <p v-if="adv.loading.value" class="adv__note">Opening the story…</p>
+    <div v-if="adv.loading.value" class="adv__loading" role="status">
+      <span class="adv__loading-ring" aria-hidden="true">
+        <span class="ev-progress-spin"></span><span class="ev-progress-spin"></span>
+      </span>
+      <p>
+        Opening the story<span class="ev-dots"><span>.</span><span>.</span><span>.</span></span>
+      </p>
+    </div>
     <section v-else-if="!adv.me.value" class="adv__note ev-card">
       <h2>This story is watched, not played.</h2>
       <p>
@@ -414,17 +492,31 @@ onMounted(() => {
         <!-- left: what you see, the land around you, and the thread to pull -->
         <section class="adv__visual">
           <div class="stage">
-            <img
-              v-if="latest && latestUrl"
-              class="stage__img"
-              :src="latestUrl"
-              :alt="latest.caption" />
-            <div v-else class="stage__img" :style="sceneStyle" />
+            <div class="stage__cam ev-drift">
+              <Transition name="stage-cut">
+                <img
+                  v-if="latest && latestUrl"
+                  :key="latestUrl"
+                  class="stage__img stage__img--moment ev-img-fade"
+                  :class="{ 'is-loaded': loadedSrc === latestUrl }"
+                  :src="latestUrl"
+                  :alt="latest.caption"
+                  @load="loadedSrc = latestUrl"
+                  @error="loadedSrc = latestUrl" />
+                <div
+                  v-else
+                  :key="`place:${adv.hereId.value}`"
+                  class="stage__img"
+                  :style="sceneStyle" />
+              </Transition>
+            </div>
             <div
               v-if="light"
               class="scene__light"
+              :class="{ 'ev-flicker': flickers }"
               :style="{ background: light }"
               aria-hidden="true" />
+            <EmberField :tone="air" :count="air === 'ember' ? 16 : 12" :rise="320" />
             <div class="stage__shade" aria-hidden="true" />
             <span v-if="latest" class="stage__badge">
               Latest illustrated moment<template v-if="latestElsewhere">
@@ -434,7 +526,7 @@ onMounted(() => {
             <button
               v-if="latest"
               type="button"
-              class="stage__expand"
+              class="stage__expand ev-press"
               :title="`Open “${momentTitle(latest)}”`"
               aria-label="Open this moment"
               @click="openMoment()">
@@ -442,7 +534,11 @@ onMounted(() => {
             </button>
             <div class="stage__foot">
               <div class="stage__where">
-                <h2 class="scene__place">{{ adv.here.value?.name ?? 'On the road' }}</h2>
+                <Transition name="arrive" mode="out-in">
+                  <h2 :key="adv.hereId.value ?? 'road'" class="scene__place">
+                    {{ adv.here.value?.name ?? 'On the road' }}
+                  </h2>
+                </Transition>
                 <p class="stage__when">
                   {{ timeLabel
                   }}<template v-if="adv.present.value.length === 0">
@@ -450,8 +546,16 @@ onMounted(() => {
                   >
                 </p>
               </div>
-              <ul class="scene__people" aria-label="Here with you">
-                <li v-for="c in adv.present.value" :key="c.character_id">
+              <TransitionGroup
+                name="who"
+                tag="ul"
+                class="scene__people"
+                aria-label="Here with you"
+                appear>
+                <li
+                  v-for="(c, i) in adv.present.value"
+                  :key="c.character_id"
+                  :style="{ '--who-delay': `${Math.min(i, 6) * 60}ms` }">
                   <button
                     type="button"
                     class="who"
@@ -465,7 +569,11 @@ onMounted(() => {
                     <small>{{ c.name }}</small>
                   </button>
                 </li>
-                <li class="who who--me" :title="`${myName} (you)`">
+                <li
+                  key="me"
+                  class="who who--me"
+                  :title="`${myName} (you)`"
+                  :style="{ '--who-delay': `${Math.min(adv.present.value.length, 6) * 60}ms` }">
                   <FramedImage
                     v-if="portraits.get(adv.me.value)"
                     :src="portraits.get(adv.me.value)!.src"
@@ -473,13 +581,18 @@ onMounted(() => {
                   <span v-else>{{ initials(myName) }}</span>
                   <small>You</small>
                 </li>
-              </ul>
+              </TransitionGroup>
             </div>
           </div>
           <div class="adv__under">
             <section v-if="adv.presentation.value" class="minimap">
               <header class="minimap__head">
-                <div class="maptabs" role="tablist" aria-label="Which map">
+                <div
+                  class="maptabs"
+                  :class="{ 'maptabs--local': mapTab === 'local' }"
+                  role="tablist"
+                  aria-label="Which map">
+                  <span class="maptabs__thumb" aria-hidden="true"></span>
                   <button
                     type="button"
                     role="tab"
@@ -497,7 +610,7 @@ onMounted(() => {
                 </div>
                 <button
                   type="button"
-                  class="minimap__expand"
+                  class="minimap__expand ev-press"
                   :aria-label="`Open the ${mapTab === 'world' ? 'world' : 'local'} map full screen`"
                   :title="`Open the ${mapTab === 'world' ? 'world' : 'local'} map full screen`"
                   @click="mapOpen = true">
@@ -505,51 +618,55 @@ onMounted(() => {
                 </button>
               </header>
               <div class="minimap__map">
-                <WorldMap
-                  v-if="mapTab === 'world'"
-                  :world-id="storyId"
-                  :map-asset-id="adv.mapAssetId.value"
-                  :anchors="adv.presentation.value.manifest.anchors ?? []"
-                  :places="adv.places.value"
-                  :roads="adv.presentation.value.manifest.roads ?? []"
-                  :tokens="tokens"
-                  :active-place-id="adv.hereId.value"
-                  :focus-id="adv.me.value"
-                  compact />
-                <PlaceMap
-                  v-else-if="localMap"
-                  bare
-                  :world-id="storyId"
-                  :place-map="localMap"
-                  :place-name="adv.here.value?.name ?? 'Here'"
-                  :cast="adv.presentation.value.cast ?? []"
-                  :activities="adv.presentation.value.activities ?? []"
-                  :scenes="adv.entries.value"
-                  :focus-id="adv.me.value"
-                  @select="talkTo" />
-                <p v-else class="minimap__none">
-                  {{
-                    adv.here.value
-                      ? `${adv.here.value.name} has no map of its own yet.`
-                      : 'You are on the road.'
-                  }}
-                </p>
+                <Transition name="ev-swap" mode="out-in">
+                  <WorldMap
+                    v-if="mapTab === 'world'"
+                    :world-id="storyId"
+                    :map-asset-id="adv.mapAssetId.value"
+                    :anchors="adv.presentation.value.manifest.anchors ?? []"
+                    :places="adv.places.value"
+                    :roads="adv.presentation.value.manifest.roads ?? []"
+                    :tokens="tokens"
+                    :active-place-id="adv.hereId.value"
+                    :focus-id="adv.me.value"
+                    compact />
+                  <PlaceMap
+                    v-else-if="localMap"
+                    bare
+                    :world-id="storyId"
+                    :place-map="localMap"
+                    :place-name="adv.here.value?.name ?? 'Here'"
+                    :cast="adv.presentation.value.cast ?? []"
+                    :activities="adv.presentation.value.activities ?? []"
+                    :scenes="adv.entries.value"
+                    :focus-id="adv.me.value"
+                    @select="talkTo" />
+                  <p v-else class="minimap__none">
+                    {{
+                      adv.here.value
+                        ? `${adv.here.value.name} has no map of its own yet.`
+                        : 'You are on the road.'
+                    }}
+                  </p>
+                </Transition>
               </div>
             </section>
             <section class="lead">
               <h3 class="panel__title"><IconDoc :size="16" /> Current story lead</h3>
-              <template v-if="mainLead">
-                <p class="lead__title">
-                  {{ mainLead.title }}
-                  <span v-if="isFresh(mainLead.since_index, nowIndex)" class="rumours__new"
-                    >new</span
-                  >
+              <Transition name="ev-swap" mode="out-in">
+                <div v-if="mainLead" :key="mainLead.hook_id">
+                  <p class="lead__title">
+                    {{ mainLead.title }}
+                    <span v-if="isFresh(mainLead.since_index, nowIndex)" class="rumours__new"
+                      >new</span
+                    >
+                  </p>
+                  <p v-if="mainLead.purpose" class="lead__text">{{ mainLead.purpose }}</p>
+                </div>
+                <p v-else class="lead__text lead__quiet">
+                  No word yet. Look around, or talk to someone.
                 </p>
-                <p v-if="mainLead.purpose" class="lead__text">{{ mainLead.purpose }}</p>
-              </template>
-              <p v-else class="lead__text lead__quiet">
-                No word yet. Look around, or talk to someone.
-              </p>
+              </Transition>
               <button
                 v-if="otherLeads.length || settled.length"
                 type="button"
@@ -567,25 +684,27 @@ onMounted(() => {
                         .join(' · ')
                 }}
               </button>
-              <div v-if="leadsOpen" class="rumours">
-                <ul>
-                  <li v-for="r in otherLeads" :key="r.hook_id">
-                    <b>{{ r.title }}</b>
-                    <p v-if="r.purpose">{{ r.purpose }}</p>
-                  </li>
-                </ul>
-                <ul v-if="settled.length" class="rumours__done">
-                  <li v-for="r in settled" :key="r.hook_id">
-                    <b>✓ {{ r.title }}</b>
-                  </li>
-                </ul>
-              </div>
+              <Transition name="ev-rise">
+                <div v-if="leadsOpen" class="rumours">
+                  <ul class="ev-rise">
+                    <li v-for="r in otherLeads" :key="r.hook_id">
+                      <b>{{ r.title }}</b>
+                      <p v-if="r.purpose">{{ r.purpose }}</p>
+                    </li>
+                  </ul>
+                  <ul v-if="settled.length" class="rumours__done">
+                    <li v-for="r in settled" :key="r.hook_id">
+                      <b>✓ {{ r.title }}</b>
+                    </li>
+                  </ul>
+                </div>
+              </Transition>
             </section>
           </div>
         </section>
 
         <!-- right: the story, and what you do next -->
-        <section class="adv__stage">
+        <section class="adv__stage" :class="{ 'adv__stage--turning': adv.acting.value }">
           <div ref="logEl" class="log" aria-live="polite">
             <div v-if="intro.length" class="log__intro">
               <p>{{ intro[0] }}</p>
@@ -635,10 +754,12 @@ onMounted(() => {
                     class="log__picture"
                     :title="`Open “${momentTitle(line.picture)}”`"
                     @click="openPicture(line.picture.picture_id)">
-                    <img
-                      :src="assetUrl(storyId, line.picture.asset_id)"
-                      :alt="line.picture.caption"
-                      loading="lazy" />
+                    <span class="log__thumb">
+                      <img
+                        :src="assetUrl(storyId, line.picture.asset_id)"
+                        :alt="line.picture.caption"
+                        loading="lazy" />
+                    </span>
                     <span class="log__picture-text">
                       <b>{{ momentTitle(line.picture) }}</b>
                       <i>{{ line.picture.caption }}</i>
@@ -662,30 +783,40 @@ onMounted(() => {
                     }}
                   </span>
                 </template>
+                <template v-else-if="line.kind === 'pending'">
+                  <p class="log__prose">
+                    {{ line.text.replace(/…$/, '')
+                    }}<span class="ev-dots" aria-hidden="true"
+                      ><span>.</span><span>.</span><span>.</span></span
+                    >
+                  </p>
+                </template>
                 <template v-else>
                   <p class="log__prose">{{ line.text }}</p>
                 </template>
               </div>
             </TransitionGroup>
-            <div
-              v-if="adv.acting.value && echo"
-              class="log__echo"
-              :class="echo.kind === 'say' ? 'log__line--dialogue log__line--mine' : ''">
-              <template v-if="echo.kind === 'say'">
-                <span class="log__face">
-                  <FramedImage
-                    v-if="portraits.get(adv.me.value)"
-                    :src="portraits.get(adv.me.value)!.src"
-                    :frame="portraits.get(adv.me.value)!.face" />
-                  <span v-else>{{ initials(myName) }}</span>
-                </span>
-                <div class="log__bubble">
-                  <b>You</b>
-                  <span>{{ echo.text }}</span>
-                </div>
-              </template>
-              <p v-else class="log__prose log__mine">{{ echo.text }}</p>
-            </div>
+            <Transition name="echo">
+              <div
+                v-if="adv.acting.value && echo"
+                class="log__echo"
+                :class="echo.kind === 'say' ? 'log__line--dialogue log__line--mine' : ''">
+                <template v-if="echo.kind === 'say'">
+                  <span class="log__face">
+                    <FramedImage
+                      v-if="portraits.get(adv.me.value)"
+                      :src="portraits.get(adv.me.value)!.src"
+                      :frame="portraits.get(adv.me.value)!.face" />
+                    <span v-else>{{ initials(myName) }}</span>
+                  </span>
+                  <div class="log__bubble">
+                    <b>You</b>
+                    <span>{{ echo.text }}</span>
+                  </div>
+                </template>
+                <p v-else class="log__prose log__mine">{{ echo.text }}</p>
+              </div>
+            </Transition>
             <TransitionGroup
               v-if="changes.length && !adv.acting.value"
               name="badge"
@@ -700,13 +831,16 @@ onMounted(() => {
                 {{ c.text }}
               </li>
             </TransitionGroup>
-            <div v-if="adv.acting.value" class="log__thinking">
-              <IconFeather :size="18" class="log__quill" />
-              <span>{{ adv.stage.value }}… {{ elapsed }} s</span>
-            </div>
+            <Transition name="ev-rise">
+              <div v-if="adv.acting.value" class="log__thinking">
+                <IconFeather :size="18" class="log__quill ev-progress-spin" />
+                <span>{{ adv.stage.value }}… {{ elapsed }} s</span>
+                <span class="log__turning" aria-hidden="true"></span>
+              </div>
+            </Transition>
           </div>
 
-          <form class="composer" @submit.prevent="submit">
+          <form ref="composerEl" class="composer" @submit.prevent="submit">
             <div class="composer__row">
               <!-- Do or Say: one sliding switch beside the words -->
               <div class="composer__side">
@@ -755,12 +889,18 @@ onMounted(() => {
                 :disabled="adv.acting.value || !adv.alive.value"
                 @keydown="onKey" />
               <div class="composer__buttons">
-                <button type="submit" class="composer__act" :disabled="!ready">
+                <button
+                  v-ripple
+                  type="submit"
+                  class="composer__act ev-press"
+                  :class="{ 'ev-sheen': ready, 'composer__act--sent': sent }"
+                  :disabled="!ready">
                   Act <IconArrowRight :size="16" />
                 </button>
                 <button
+                  v-ripple
                   type="button"
-                  class="composer__wait"
+                  class="composer__wait ev-press"
                   :disabled="adv.acting.value || !adv.alive.value"
                   title="Let a moment pass"
                   @click="pass()">
@@ -768,9 +908,11 @@ onMounted(() => {
                 </button>
               </div>
             </div>
-            <p v-if="adv.actionError.value" class="composer__error" role="alert">
-              {{ adv.actionError.value }}
-            </p>
+            <Transition name="ev-rise">
+              <p v-if="adv.actionError.value" class="composer__error" role="alert">
+                {{ adv.actionError.value }}
+              </p>
+            </Transition>
           </form>
         </section>
       </div>
@@ -785,174 +927,196 @@ onMounted(() => {
           <span v-else>{{ initials(myName) }}</span>
         </span>
         <b class="status__name">{{ myName }}</b>
-        <span v-if="journey" class="status__level" :title="`${journey.renown} renown`"
+        <span
+          v-if="journey"
+          ref="levelEl"
+          :key="levelBump"
+          class="status__level"
+          :class="{ 'ev-stamp': levelBump > 0 }"
+          :title="`${journey.renown} renown`"
           >Level {{ journey.level }} · {{ journey.title }}</span
         >
-        <div class="bar bar--stamina status__bar">
+        <div ref="staminaEl" class="bar bar--stamina status__bar">
           <span>Stamina</span>
-          <div><i :style="{ width: `${barFraction(stats?.stamina) * 100}%` }" /></div>
-          <b>{{ stats?.stamina ?? '–' }}</b>
+          <div><i :style="{ transform: `scaleX(${barFraction(staminaShown)})` }" /></div>
+          <b>{{ stamina === null ? '–' : Math.round(staminaShown) }}</b>
         </div>
-        <div class="bar bar--mana status__bar">
+        <div ref="manaEl" class="bar bar--mana status__bar">
           <span>Mana</span>
-          <div><i :style="{ width: `${barFraction(stats?.mana) * 100}%` }" /></div>
-          <b>{{ stats?.mana ?? '–' }}</b>
+          <div><i :style="{ transform: `scaleX(${barFraction(manaShown)})` }" /></div>
+          <b>{{ mana === null ? '–' : Math.round(manaShown) }}</b>
         </div>
         <span v-if="!adv.alive.value" class="sheet__fallen">Fallen</span>
-        <button type="button" class="status__details" @click="detailsOpen = true">
+        <button type="button" class="status__details ev-press" @click="detailsOpen = true">
           <IconUser :size="16" /> Character details <IconChevronRight :size="14" />
         </button>
       </footer>
     </div>
 
     <!-- the full sheet: renown, drives, what you carry -->
-    <div
-      v-if="detailsOpen && adv.me.value"
-      class="drawer"
-      role="dialog"
-      aria-modal="true"
-      :aria-label="`${myName}: character details`"
-      @click.self="detailsOpen = false"
-      @keydown.esc="detailsOpen = false">
-      <div class="drawer__panel">
-        <button type="button" class="drawer__close" aria-label="Close" @click="detailsOpen = false">
-          <IconX :size="18" />
-        </button>
-        <section class="sheet ev-card">
-          <div class="sheet__head">
-            <div class="sheet__portrait">
-              <FramedImage
-                v-if="portraits.get(adv.me.value)"
-                :src="portraits.get(adv.me.value)!.src"
-                :frame="portraits.get(adv.me.value)!.face" />
-              <span v-else>{{ initials(myName) }}</span>
+    <Transition name="ev-drawer">
+      <div
+        v-if="detailsOpen && adv.me.value"
+        class="drawer"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="`${myName}: character details`"
+        @click.self="detailsOpen = false"
+        @keydown.esc="detailsOpen = false">
+        <div class="drawer__panel">
+          <button
+            type="button"
+            class="drawer__close"
+            aria-label="Close"
+            @click="detailsOpen = false">
+            <IconX :size="18" />
+          </button>
+          <section class="sheet ev-card ev-rise">
+            <div class="sheet__head">
+              <div class="sheet__portrait">
+                <FramedImage
+                  v-if="portraits.get(adv.me.value)"
+                  :src="portraits.get(adv.me.value)!.src"
+                  :frame="portraits.get(adv.me.value)!.face" />
+                <span v-else>{{ initials(myName) }}</span>
+              </div>
+              <div>
+                <h2>{{ myName }}</h2>
+                <p v-if="card?.pronouns">{{ card.pronouns }}</p>
+                <p>{{ adv.here.value?.name ?? 'On the road' }}</p>
+              </div>
             </div>
-            <div>
-              <h2>{{ myName }}</h2>
-              <p v-if="card?.pronouns">{{ card.pronouns }}</p>
-              <p>{{ adv.here.value?.name ?? 'On the road' }}</p>
+            <div v-if="journey" class="renown" :title="`${journey.renown} renown`">
+              <div class="renown__head">
+                <b>{{ journey.title }}</b>
+                <span>Level {{ journey.level }}</span>
+              </div>
+              <div class="renown__bar">
+                <i :style="{ transform: `scaleX(${levelShown})` }" />
+              </div>
+              <p class="renown__counts">
+                {{ journey.places }} place{{ journey.places === 1 ? '' : 's' }} ·
+                {{ journey.people }} {{ journey.people === 1 ? 'person' : 'people' }} met ·
+                {{ journey.deeds }} deed{{ journey.deeds === 1 ? '' : 's' }} ·
+                {{ journey.settled }} settled
+              </p>
             </div>
-          </div>
-          <div v-if="journey" class="renown" :title="`${journey.renown} renown`">
-            <div class="renown__head">
-              <b>{{ journey.title }}</b>
-              <span>Level {{ journey.level }}</span>
+            <div class="bars">
+              <div class="bar bar--stamina">
+                <span>Stamina</span>
+                <div><i :style="{ transform: `scaleX(${barFraction(staminaShown)})` }" /></div>
+                <b>{{ stamina === null ? '–' : Math.round(staminaShown) }}</b>
+              </div>
+              <div class="bar bar--mana">
+                <span>Mana</span>
+                <div><i :style="{ transform: `scaleX(${barFraction(manaShown)})` }" /></div>
+                <b>{{ mana === null ? '–' : Math.round(manaShown) }}</b>
+              </div>
             </div>
-            <div class="renown__bar"><i :style="{ width: `${levelFill * 100}%` }" /></div>
-            <p class="renown__counts">
-              {{ journey.places }} place{{ journey.places === 1 ? '' : 's' }} · {{ journey.people }}
-              {{ journey.people === 1 ? 'person' : 'people' }} met · {{ journey.deeds }} deed{{
-                journey.deeds === 1 ? '' : 's'
-              }}
-              · {{ journey.settled }} settled
+            <p v-if="conditions.length" class="sheet__conditions">{{ conditions.join(' · ') }}</p>
+            <p v-if="!adv.alive.value" class="sheet__fallen">
+              {{ myName }} has fallen. The story goes on without you.
             </p>
-          </div>
-          <div class="bars">
-            <div class="bar bar--stamina">
-              <span>Stamina</span>
-              <div><i :style="{ width: `${barFraction(stats?.stamina) * 100}%` }" /></div>
-              <b>{{ stats?.stamina ?? '–' }}</b>
-            </div>
-            <div class="bar bar--mana">
-              <span>Mana</span>
-              <div><i :style="{ width: `${barFraction(stats?.mana) * 100}%` }" /></div>
-              <b>{{ stats?.mana ?? '–' }}</b>
-            </div>
-          </div>
-          <p v-if="conditions.length" class="sheet__conditions">{{ conditions.join(' · ') }}</p>
-          <p v-if="!adv.alive.value" class="sheet__fallen">
-            {{ myName }} has fallen. The story goes on without you.
-          </p>
-          <template v-if="drives.length">
-            <h3>What drives you</h3>
-            <ul class="sheet__drives">
-              <li v-for="d in drives" :key="d">
-                <b>{{ d.slice(0, d.indexOf(':') + 1) }}</b
-                >{{ d.slice(d.indexOf(':') + 1) }}
+            <template v-if="drives.length">
+              <h3>What drives you</h3>
+              <ul class="sheet__drives">
+                <li v-for="d in drives" :key="d">
+                  <b>{{ d.slice(0, d.indexOf(':') + 1) }}</b
+                  >{{ d.slice(d.indexOf(':') + 1) }}
+                </li>
+              </ul>
+            </template>
+            <h3><IconSatchel :size="16" /> Carrying</h3>
+            <ul v-if="adv.items.value.length" class="sheet__items ev-pop-stagger">
+              <li v-for="item in adv.items.value" :key="item.id" :title="item.description">
+                {{ item.name || item.item_key
+                }}<span v-if="item.quantity > 1"> ×{{ item.quantity }}</span>
               </li>
             </ul>
-          </template>
-          <h3><IconSatchel :size="16" /> Carrying</h3>
-          <ul v-if="adv.items.value.length" class="sheet__items">
-            <li v-for="item in adv.items.value" :key="item.id" :title="item.description">
-              {{ item.name || item.item_key
-              }}<span v-if="item.quantity > 1"> ×{{ item.quantity }}</span>
-            </li>
-          </ul>
-          <p v-else class="sheet__empty">Empty pockets.</p>
-        </section>
-      </div>
-    </div>
-
-    <div
-      v-if="mapOpen && adv.presentation.value"
-      class="mapdlg"
-      role="dialog"
-      aria-modal="true"
-      :aria-label="mapTab === 'world' ? 'World map' : 'Local map'"
-      @click.self="mapOpen = false"
-      @keydown.esc="mapOpen = false">
-      <div class="mapdlg__card">
-        <header class="mapdlg__head">
-          <div class="maptabs" role="tablist" aria-label="Which map">
-            <button
-              type="button"
-              role="tab"
-              :aria-selected="mapTab === 'world'"
-              @click="mapTab = 'world'">
-              World map
-            </button>
-            <button
-              type="button"
-              role="tab"
-              :aria-selected="mapTab === 'local'"
-              @click="mapTab = 'local'">
-              Local map
-            </button>
-          </div>
-          <h2 class="mapdlg__title">
-            {{
-              mapTab === 'world'
-                ? (adv.title.value ?? 'The world')
-                : (adv.here.value?.name ?? 'Here')
-            }}
-          </h2>
-          <button type="button" class="mapdlg__close" aria-label="Close" @click="mapOpen = false">
-            <IconX :size="20" />
-          </button>
-        </header>
-        <div class="mapdlg__body">
-          <WorldMap
-            v-if="mapTab === 'world'"
-            :world-id="storyId"
-            :map-asset-id="adv.mapAssetId.value"
-            :anchors="adv.presentation.value.manifest.anchors ?? []"
-            :places="adv.places.value"
-            :roads="adv.presentation.value.manifest.roads ?? []"
-            :tokens="tokens"
-            :active-place-id="adv.hereId.value"
-            :focus-id="adv.me.value" />
-          <PlaceMap
-            v-else-if="localMap"
-            bare
-            :world-id="storyId"
-            :place-map="localMap"
-            :place-name="adv.here.value?.name ?? 'Here'"
-            :cast="adv.presentation.value.cast ?? []"
-            :activities="adv.presentation.value.activities ?? []"
-            :scenes="adv.entries.value"
-            :focus-id="adv.me.value"
-            @select="talkTo" />
-          <p v-else class="minimap__none">
-            {{
-              adv.here.value
-                ? `${adv.here.value.name} has no map of its own yet.`
-                : 'You are on the road.'
-            }}
-          </p>
+            <p v-else class="sheet__empty">Empty pockets.</p>
+          </section>
         </div>
       </div>
-    </div>
+    </Transition>
+
+    <Transition name="mapzoom">
+      <div
+        v-if="mapOpen && adv.presentation.value"
+        class="mapdlg"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="mapTab === 'world' ? 'World map' : 'Local map'"
+        @click.self="mapOpen = false"
+        @keydown.esc="mapOpen = false">
+        <div class="mapdlg__card">
+          <header class="mapdlg__head">
+            <div
+              class="maptabs"
+              :class="{ 'maptabs--local': mapTab === 'local' }"
+              role="tablist"
+              aria-label="Which map">
+              <span class="maptabs__thumb" aria-hidden="true"></span>
+              <button
+                type="button"
+                role="tab"
+                :aria-selected="mapTab === 'world'"
+                @click="mapTab = 'world'">
+                World map
+              </button>
+              <button
+                type="button"
+                role="tab"
+                :aria-selected="mapTab === 'local'"
+                @click="mapTab = 'local'">
+                Local map
+              </button>
+            </div>
+            <h2 class="mapdlg__title">
+              {{
+                mapTab === 'world'
+                  ? (adv.title.value ?? 'The world')
+                  : (adv.here.value?.name ?? 'Here')
+              }}
+            </h2>
+            <button type="button" class="mapdlg__close" aria-label="Close" @click="mapOpen = false">
+              <IconX :size="20" />
+            </button>
+          </header>
+          <div class="mapdlg__body">
+            <Transition name="ev-swap" mode="out-in">
+              <WorldMap
+                v-if="mapTab === 'world'"
+                :world-id="storyId"
+                :map-asset-id="adv.mapAssetId.value"
+                :anchors="adv.presentation.value.manifest.anchors ?? []"
+                :places="adv.places.value"
+                :roads="adv.presentation.value.manifest.roads ?? []"
+                :tokens="tokens"
+                :active-place-id="adv.hereId.value"
+                :focus-id="adv.me.value" />
+              <PlaceMap
+                v-else-if="localMap"
+                bare
+                :world-id="storyId"
+                :place-map="localMap"
+                :place-name="adv.here.value?.name ?? 'Here'"
+                :cast="adv.presentation.value.cast ?? []"
+                :activities="adv.presentation.value.activities ?? []"
+                :scenes="adv.entries.value"
+                :focus-id="adv.me.value"
+                @select="talkTo" />
+              <p v-else class="minimap__none">
+                {{
+                  adv.here.value
+                    ? `${adv.here.value.name} has no map of its own yet.`
+                    : 'You are on the road.'
+                }}
+              </p>
+            </Transition>
+          </div>
+        </div>
+      </div>
+    </Transition>
 
     <MomentDialog
       v-if="adv.me.value"
@@ -1067,6 +1231,81 @@ onMounted(() => {
   overflow: hidden;
 }
 
+/* Opening the story: a turning ring while it loads, then the screen assembles. */
+.adv__loading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--ink-3);
+}
+.adv__loading-ring {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+.adv__loading-ring span {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: var(--ember);
+  border-right-color: rgba(194, 97, 42, 0.25);
+  animation: loading-turn 1.3s linear infinite;
+}
+.adv__loading-ring span:nth-child(2) {
+  inset: 11px;
+  border-top-color: var(--teal);
+  border-right-color: rgba(20, 84, 90, 0.25);
+  animation-duration: 1.9s;
+  animation-direction: reverse;
+}
+@keyframes loading-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.adv__frame {
+  animation: frame-in 0.6s var(--ease-settle) backwards;
+}
+.adv__visual {
+  animation: from-left 0.8s var(--ease-settle) 0.08s backwards;
+}
+.adv__stage {
+  animation: from-right 0.8s var(--ease-settle) 0.16s backwards;
+}
+.status {
+  animation: from-below 0.7s var(--ease-settle) 0.28s backwards;
+}
+@keyframes frame-in {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+@keyframes from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+@keyframes from-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+@keyframes from-below {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
 /* The picture --------------------------------------------------------------- */
 .stage {
   position: relative;
@@ -1074,6 +1313,10 @@ onMounted(() => {
   padding: 0;
   border-radius: 0;
   background: #3a3220;
+}
+.stage__cam {
+  position: absolute;
+  inset: 0;
 }
 .stage__img {
   position: absolute;
@@ -1083,6 +1326,66 @@ onMounted(() => {
   object-fit: cover;
   background-color: #6b7f55;
   background-repeat: no-repeat;
+}
+.stage__img--moment.is-loaded {
+  animation: ev-push-in 1.4s var(--ease-settle) both;
+}
+.stage-cut-enter-active {
+  transition: opacity 0.9s var(--ease-out);
+}
+.stage-cut-leave-active {
+  transition: opacity 0.9s var(--ease-in);
+}
+.stage-cut-enter-from,
+.stage-cut-leave-to {
+  opacity: 0;
+}
+.stage .scene__light {
+  z-index: 1;
+  pointer-events: none;
+}
+/* arriving somewhere new: the place name settles in like a title card */
+.arrive-enter-active {
+  transition:
+    opacity 0.5s var(--ease-out),
+    transform 0.7s var(--ease-settle);
+}
+.arrive-leave-active {
+  transition:
+    opacity 0.2s var(--ease-in),
+    transform 0.2s var(--ease-in);
+}
+.arrive-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+.arrive-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+/* the people here step into the picture one by one */
+.who-enter-active,
+.who-appear-active {
+  transition:
+    opacity 0.4s var(--ease-out) var(--who-delay, 0ms),
+    transform 0.55s var(--ease-spring) var(--who-delay, 0ms);
+}
+.who-leave-active {
+  transition:
+    opacity 0.2s var(--ease-in),
+    transform 0.2s var(--ease-in);
+}
+.who-enter-from,
+.who-appear-from {
+  opacity: 0;
+  transform: translateY(10px) scale(0.8);
+}
+.who-leave-to {
+  opacity: 0;
+  transform: scale(0.8);
+}
+.who-move {
+  transition: transform 0.45s var(--ease-settle);
 }
 .stage__shade {
   position: absolute;
@@ -1119,8 +1422,22 @@ onMounted(() => {
   background: rgba(24, 19, 9, 0.55);
   color: #f7efd9;
 }
+.stage__expand {
+  z-index: 2;
+  transition:
+    background 0.2s ease,
+    transform 0.3s var(--ease-settle);
+}
 .stage__expand:hover {
   background: rgba(24, 19, 9, 0.8);
+  transform: scale(1.08);
+}
+.stage__badge {
+  z-index: 2;
+  animation: ev-fade 0.6s var(--ease-out) 0.3s both;
+}
+.stage__foot {
+  z-index: 2;
 }
 .stage__foot {
   position: absolute;
@@ -1173,22 +1490,44 @@ onMounted(() => {
   margin-bottom: 8px;
 }
 .maptabs {
-  display: inline-flex;
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
   padding: 3px;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: var(--surface-2);
 }
+.maptabs__thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--teal-hi), var(--teal));
+  box-shadow: 0 1px 3px rgba(16, 46, 46, 0.3);
+  transition: transform 0.38s var(--ease-settle);
+}
+.maptabs--local .maptabs__thumb {
+  transform: translateX(100%);
+}
 .maptabs [role='tab'] {
+  position: relative;
+  z-index: 1;
   padding: 4px 13px;
   border-radius: 999px;
   font-family: var(--font-ui);
   font-size: 14px;
   font-weight: 600;
   color: var(--ink-3);
+  white-space: nowrap;
+  transition: color 0.25s ease;
+}
+.maptabs [role='tab']:hover:not([aria-selected='true']) {
+  color: var(--teal-ink);
 }
 .maptabs [role='tab'][aria-selected='true'] {
-  background: var(--teal);
   color: var(--cream-on-teal);
 }
 .minimap__expand {
@@ -1200,9 +1539,16 @@ onMounted(() => {
   border: 1px solid var(--line);
   color: var(--ink-3);
 }
+.minimap__expand {
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.3s var(--ease-settle);
+}
 .minimap__expand:hover {
   color: var(--teal-ink);
   border-color: var(--gold-soft);
+  transform: scale(1.08);
 }
 .minimap__none {
   padding: 12px;
@@ -1271,6 +1617,34 @@ onMounted(() => {
 }
 .mapdlg__close:hover {
   background: var(--panel-2);
+}
+.mapzoom-enter-active {
+  transition: opacity 0.3s var(--ease-out);
+}
+.mapzoom-leave-active {
+  transition: opacity 0.22s var(--ease-in);
+}
+.mapzoom-enter-active .mapdlg__card {
+  transition:
+    transform 0.55s var(--ease-settle),
+    opacity 0.3s var(--ease-out);
+}
+.mapzoom-leave-active .mapdlg__card {
+  transition:
+    transform 0.22s var(--ease-in),
+    opacity 0.2s var(--ease-in);
+}
+.mapzoom-enter-from,
+.mapzoom-leave-to {
+  opacity: 0;
+}
+.mapzoom-enter-from .mapdlg__card,
+.mapzoom-leave-to .mapdlg__card {
+  opacity: 0;
+  transform: scale(0.6);
+}
+.mapdlg__card {
+  transform-origin: 20% 85%;
 }
 .mapdlg__body {
   flex: 1;
@@ -1419,7 +1793,6 @@ onMounted(() => {
   padding: 16px;
   background: var(--bg);
   box-shadow: -10px 0 30px rgba(30, 22, 8, 0.3);
-  animation: drawer-in 0.25s var(--ease-out);
 }
 .drawer__close {
   position: absolute;
@@ -1433,12 +1806,6 @@ onMounted(() => {
 }
 .drawer__close:hover {
   background: var(--panel-2);
-}
-@keyframes drawer-in {
-  from {
-    transform: translateX(30px);
-    opacity: 0;
-  }
 }
 
 /* Scene banner ---------------------------------------------------------- */
@@ -1521,9 +1888,29 @@ onMounted(() => {
   font-size: 15px;
   transition: transform 0.15s ease;
 }
+button.who img,
+button.who > span {
+  transition:
+    transform 0.3s var(--ease-settle),
+    box-shadow 0.3s ease,
+    border-color 0.2s ease;
+}
 button.who:hover img,
 button.who:hover > span {
-  transform: translateY(-2px) scale(1.05);
+  transform: translateY(-3px) scale(1.07);
+  border-color: #fff4d6;
+  box-shadow:
+    0 6px 14px rgba(0, 0, 0, 0.45),
+    0 0 0 3px rgba(240, 199, 159, 0.35);
+}
+button.who:active img,
+button.who:active > span {
+  transform: scale(0.96);
+}
+.who--me img,
+.who--me > span {
+  --ev-breathe-color: rgba(232, 198, 111, 0.55);
+  animation: ev-breathe 3s var(--ease-sine) infinite;
 }
 .who small {
   font-size: 12px;
@@ -1636,10 +2023,36 @@ button.who:hover > span {
   background: #fbf6e9;
   text-align: left;
 }
+button.log__picture {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.3s var(--ease-out),
+    transform 0.3s var(--ease-settle);
+}
 button.log__picture:hover {
   border-color: var(--gold-soft);
+  box-shadow: var(--card-shadow);
+  transform: translateY(-2px);
 }
-.log__picture img,
+button.log__picture:active {
+  transform: translateY(0) scale(0.99);
+}
+.log__thumb {
+  flex: none;
+  width: 150px;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.log__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s var(--ease-settle);
+}
+button.log__picture:hover .log__thumb img {
+  transform: scale(1.08);
+}
 .log__picture-wait {
   flex: none;
   width: 150px;
@@ -1684,7 +2097,6 @@ button.log__picture:hover {
 .log__line--pending .log__prose {
   color: var(--muted);
   font-style: italic;
-  animation: breathe 1.6s ease-in-out infinite;
 }
 .log__line--dialogue {
   display: flex;
@@ -1787,7 +2199,9 @@ button.log__picture:hover {
   background: linear-gradient(90deg, #a07a2f, #d0a64e);
   font-weight: 600;
   box-shadow: 0 0 0 0 rgba(208, 166, 78, 0.6);
-  animation: levelup 1.6s ease-out 2;
+  animation:
+    ev-stamp 0.7s var(--ease-settle) both,
+    levelup 1.6s ease-out 0.5s 2;
 }
 @keyframes levelup {
   70% {
@@ -1800,12 +2214,12 @@ button.log__picture:hover {
 }
 .badge-enter-active {
   transition:
-    opacity 0.4s ease,
-    transform 0.4s ease;
+    opacity 0.3s var(--ease-out),
+    transform 0.5s var(--ease-spring);
 }
 .badge-enter-from {
   opacity: 0;
-  transform: scale(0.85);
+  transform: translateY(6px) scale(0.7);
 }
 .log__thinking {
   display: flex;
@@ -1820,12 +2234,86 @@ button.log__picture:hover {
 }
 .line-enter-active {
   transition:
-    opacity 0.5s ease,
-    transform 0.5s ease;
+    opacity 0.55s var(--ease-out),
+    transform 0.7s var(--ease-settle);
 }
 .line-enter-from {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(14px);
+}
+.line-enter-active .log__bubble {
+  transition: transform 0.6s var(--ease-spring);
+  transition-delay: inherit;
+}
+.line-enter-from .log__bubble {
+  transform: scale(0.85);
+}
+.log__bubble {
+  transform-origin: bottom left;
+}
+.log__line--mine .log__bubble {
+  transform-origin: bottom right;
+}
+.line-enter-from.log__line--time {
+  transform: none;
+}
+.line-enter-active.log__line--time::before,
+.line-enter-active.log__line--time::after {
+  transition: transform 0.8s var(--ease-settle);
+  transition-delay: inherit;
+}
+.line-enter-from.log__line--time::before {
+  transform: scaleX(0);
+  transform-origin: right center;
+}
+.line-enter-from.log__line--time::after {
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+.line-enter-from.log__line--picture {
+  transform: translateY(14px) scale(0.96);
+}
+/* While the world turns, what was already told steps back a little. */
+.log__lines {
+  transition: opacity 0.5s var(--ease-out);
+}
+.adv__stage--turning .log__lines {
+  opacity: 0.62;
+}
+/* your own words fly up from the composer into the story */
+.echo-enter-active {
+  transition:
+    opacity 0.3s var(--ease-out),
+    transform 0.55s var(--ease-settle);
+}
+.echo-leave-active {
+  transition: opacity 0.15s var(--ease-in);
+}
+.echo-enter-from {
+  opacity: 0;
+  transform: translateY(46px) scale(0.96);
+}
+.echo-leave-to {
+  opacity: 0;
+}
+/* a thin light running under the storyteller while the turn is worked out */
+.log__turning {
+  flex: 1;
+  max-width: 180px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--teal-ink), transparent) 0 0 / 40% 100%
+    no-repeat;
+  animation: turning 1.4s var(--ease-io) infinite;
+  opacity: 0.6;
+}
+@keyframes turning {
+  from {
+    background-position: -60% 0;
+  }
+  to {
+    background-position: 160% 0;
+  }
 }
 @keyframes breathe {
   50% {
@@ -1961,10 +2449,48 @@ button.log__picture:hover {
   font-size: 14px;
   color: var(--ink-3);
 }
+.composer__act,
+.composer__wait {
+  transition:
+    transform var(--dur-quick) var(--ease-out),
+    filter 0.15s ease,
+    opacity 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.composer__act:hover:not(:disabled) {
+  filter: brightness(1.08);
+  box-shadow: var(--card-shadow-hover);
+}
+.composer__wait:hover:not(:disabled) {
+  border-color: var(--gold-soft);
+  color: var(--teal-ink);
+}
+.composer__act--sent {
+  animation: sent 0.42s var(--ease-settle);
+}
+@keyframes sent {
+  30% {
+    transform: translateX(5px) scale(0.96);
+  }
+}
 .composer__act:disabled,
 .composer__wait:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+.composer__input {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.25s ease,
+    opacity 0.3s ease;
+}
+.composer__input:focus-visible {
+  outline: none;
+  border-color: var(--teal-ink);
+  box-shadow: 0 0 0 3px rgba(46, 122, 108, 0.18);
+}
+.composer__input:disabled {
+  opacity: 0.7;
 }
 .composer__error {
   margin-top: 6px;
@@ -2049,7 +2575,7 @@ button.log__picture:hover {
   display: block;
   height: 100%;
   background: linear-gradient(90deg, #b8913f, #e4bf68);
-  transition: width 1s ease;
+  transform-origin: left center;
 }
 .renown__counts {
   font-size: 12.5px;
@@ -2079,7 +2605,10 @@ button.log__picture:hover {
   display: block;
   height: 100%;
   border-radius: 99px;
-  transition: width 0.8s ease;
+  transform-origin: left center;
+}
+.bar {
+  border-radius: 8px;
 }
 .bar--stamina i {
   background: linear-gradient(90deg, #b5803a, #d6a14d);

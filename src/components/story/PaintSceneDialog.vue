@@ -9,6 +9,7 @@
 import { computed, ref, watch } from 'vue'
 import { getPictureSuggestion, paintScene, type CallOptions } from '../../api/worldsim'
 import type { PictureSuggestion } from '../../../content/clients/worldsim'
+import { burst, shake, vRipple } from '../../composables/useEffects'
 
 const props = defineProps<{
   worldId: string
@@ -22,6 +23,8 @@ const prompt = ref('')
 const loading = ref(false)
 const busy = ref(false)
 const problem = ref<string | null>(null)
+const cardEl = ref<HTMLElement | null>(null)
+const goEl = ref<HTMLElement | null>(null)
 
 const PROMPT_MAX = 2000
 const canPaint = computed(
@@ -67,10 +70,12 @@ async function paint(): Promise<void> {
       { world_id: props.worldId, prompt: prompt.value.trim() },
       props.opts
     )
+    burst(goEl.value, { count: 16, spread: 70 })
     emit('painted')
     emit('close')
   } catch (err) {
     problem.value = err instanceof Error ? err.message : 'The picture could not be started.'
+    shake(cardEl.value)
   } finally {
     busy.value = false
   }
@@ -78,82 +83,112 @@ async function paint(): Promise<void> {
 </script>
 
 <template>
-  <div
-    v-if="sceneId"
-    class="paint-dlg"
-    role="dialog"
-    aria-modal="true"
-    aria-label="Paint this scene"
-    @click.self="!busy && emit('close')"
-    @keydown.esc="!busy && emit('close')">
-    <form class="paint-dlg__card" @submit.prevent="paint">
-      <h2>Paint this scene</h2>
-      <p class="paint-dlg__lead">
-        Here is what the painter will be told. Change anything you like: add a mood, a detail, the
-        time of day.
-      </p>
+  <Transition name="ev-modal">
+    <div
+      v-if="sceneId"
+      class="paint-dlg"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Paint this scene"
+      @click.self="!busy && emit('close')"
+      @keydown.esc="!busy && emit('close')">
+      <form ref="cardEl" class="paint-dlg__card" @submit.prevent="paint">
+        <h2>Paint this scene</h2>
+        <p class="paint-dlg__lead">
+          Here is what the painter will be told. Change anything you like: add a mood, a detail, the
+          time of day.
+        </p>
 
-      <p v-if="loading" class="paint-dlg__step" role="status">Reading the scene…</p>
-      <template v-else-if="offer">
-        <div class="paint-dlg__who">
-          <span
-            v-for="c in offer.characters"
-            :key="c.character_id"
-            class="who"
-            :class="{ 'who--face': c.has_face }">
-            {{ c.name }}
-            <small>{{ c.has_face ? 'keeps their face' : 'no portrait yet' }}</small>
-          </span>
-          <span v-if="offer.place" class="who who--place">
-            {{ offer.place }} <small>its art as a guide</small>
-          </span>
+        <div v-if="loading" class="paint-dlg__loading" role="status">
+          <p class="paint-dlg__step">
+            Reading the scene<span class="ev-dots" aria-hidden="true"
+              ><span>.</span><span>.</span><span>.</span></span
+            >
+          </p>
+          <span class="ev-skeleton paint-dlg__sk"></span>
+          <span class="ev-skeleton paint-dlg__sk paint-dlg__sk--long"></span>
+          <span class="ev-skeleton paint-dlg__sk paint-dlg__sk--short"></span>
         </div>
+        <template v-else-if="offer">
+          <div class="paint-dlg__who ev-pop-stagger">
+            <span
+              v-for="c in offer.characters"
+              :key="c.character_id"
+              class="who"
+              :class="{ 'who--face': c.has_face }">
+              {{ c.name }}
+              <small>{{ c.has_face ? 'keeps their face' : 'no portrait yet' }}</small>
+            </span>
+            <span v-if="offer.place" class="who who--place">
+              {{ offer.place }} <small>its art as a guide</small>
+            </span>
+          </div>
 
-        <label class="ev-field-label" for="paint-prompt">Prompt</label>
-        <textarea
-          id="paint-prompt"
-          v-model="prompt"
-          class="ev-input paint-dlg__prompt"
-          rows="6"
-          :maxlength="PROMPT_MAX"
-          :disabled="busy"
-          autofocus />
-        <p v-if="offer.added_before || offer.added_after" class="paint-dlg__added">
-          From Story settings, also added:
-          <template v-if="offer.added_before">
-            before “<b>{{ offer.added_before }}</b
-            >”</template
-          ><template v-if="offer.added_before && offer.added_after">, </template>
-          <template v-if="offer.added_after"
-            >after “<b>{{ offer.added_after }}</b
-            >”</template
-          >.
-        </p>
-        <p class="paint-dlg__meta">
-          <span>{{ prompt.length }} / {{ PROMPT_MAX }}</span>
-          <button v-if="edited" type="button" class="paint-dlg__reset" @click="reset">
-            Back to the suggestion
+          <label class="ev-field-label" for="paint-prompt">Prompt</label>
+          <textarea
+            id="paint-prompt"
+            v-model="prompt"
+            class="ev-input paint-dlg__prompt"
+            rows="6"
+            :maxlength="PROMPT_MAX"
+            :disabled="busy"
+            autofocus />
+          <p v-if="offer.added_before || offer.added_after" class="paint-dlg__added">
+            From Story settings, also added:
+            <template v-if="offer.added_before">
+              before “<b>{{ offer.added_before }}</b
+              >”</template
+            ><template v-if="offer.added_before && offer.added_after">, </template>
+            <template v-if="offer.added_after"
+              >after “<b>{{ offer.added_after }}</b
+              >”</template
+            >.
+          </p>
+          <p class="paint-dlg__meta">
+            <span>{{ prompt.length }} / {{ PROMPT_MAX }}</span>
+            <button v-if="edited" type="button" class="paint-dlg__reset" @click="reset">
+              Back to the suggestion
+            </button>
+          </p>
+          <p v-if="!offer.available" class="paint-dlg__problem" role="alert">
+            No image machine is set up, so nothing can be painted yet (Settings › Image generation).
+          </p>
+        </template>
+
+        <Transition name="ev-swap" mode="out-in">
+          <p v-if="problem" key="problem" class="paint-dlg__problem" role="alert">{{ problem }}</p>
+          <p v-else-if="busy" key="busy" class="paint-dlg__step" role="status">
+            Handing it to the painter<span class="ev-dots" aria-hidden="true"
+              ><span>.</span><span>.</span><span>.</span></span
+            >
+          </p>
+          <p v-else key="hint" class="paint-dlg__hint">
+            It appears under the scene in about 15 seconds; keep playing meanwhile.
+          </p>
+        </Transition>
+
+        <div class="paint-dlg__buttons">
+          <button
+            type="button"
+            class="paint-dlg__cancel ev-press"
+            :disabled="busy"
+            @click="emit('close')">
+            Cancel
           </button>
-        </p>
-        <p v-if="!offer.available" class="paint-dlg__problem" role="alert">
-          No image machine is set up, so nothing can be painted yet (Settings › Image generation).
-        </p>
-      </template>
-
-      <p v-if="problem" class="paint-dlg__problem" role="alert">{{ problem }}</p>
-      <p v-else-if="busy" class="paint-dlg__step" role="status">Handing it to the painter…</p>
-      <p v-else class="paint-dlg__hint">
-        It appears under the scene in about 15 seconds; keep playing meanwhile.
-      </p>
-
-      <div class="paint-dlg__buttons">
-        <button type="button" class="paint-dlg__cancel" :disabled="busy" @click="emit('close')">
-          Cancel
-        </button>
-        <button type="submit" class="paint-dlg__go" :disabled="!canPaint">Paint</button>
-      </div>
-    </form>
-  </div>
+          <button
+            ref="goEl"
+            v-ripple
+            type="submit"
+            class="paint-dlg__go ev-press"
+            :class="{ 'ev-sheen': canPaint && !busy }"
+            :disabled="!canPaint">
+            <span v-if="busy" class="paint-dlg__spin ev-progress-spin" aria-hidden="true"></span>
+            Paint
+          </button>
+        </div>
+      </form>
+    </div>
+  </Transition>
 </template>
 
 <style scoped>
@@ -274,6 +309,69 @@ async function paint(): Promise<void> {
   border-radius: 10px;
   padding: 8px 26px;
   font-size: 17px;
+}
+.paint-dlg__go {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition:
+    transform var(--dur-quick) var(--ease-out),
+    filter 0.15s ease,
+    box-shadow 0.25s ease,
+    opacity 0.25s ease;
+}
+.paint-dlg__go:hover:not(:disabled) {
+  filter: brightness(1.08);
+  box-shadow: var(--card-shadow);
+}
+.paint-dlg__cancel {
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+.paint-dlg__cancel:hover:not(:disabled) {
+  background: var(--panel-2);
+  color: var(--ink);
+}
+.paint-dlg__spin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(244, 236, 215, 0.35);
+  border-top-color: var(--cream-on-teal);
+  animation: paint-dlg-turn 0.8s linear infinite;
+}
+@keyframes paint-dlg-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.paint-dlg__loading {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.paint-dlg__sk {
+  display: block;
+  height: 12px;
+  width: 70%;
+}
+.paint-dlg__sk--long {
+  width: 92%;
+}
+.paint-dlg__sk--short {
+  width: 45%;
+}
+.who {
+  transition:
+    transform 0.25s var(--ease-settle),
+    box-shadow 0.25s ease;
+}
+.who:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--card-shadow);
 }
 .paint-dlg__go:disabled {
   opacity: 0.5;
