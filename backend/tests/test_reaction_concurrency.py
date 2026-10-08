@@ -46,6 +46,7 @@ def test_reactors_run_concurrently_and_results_keep_attempt_order() -> None:
     orchestrator._react_one = fake_react_one
     orchestrator._max_parallel = 12
     orchestrator._slots = weakref.WeakKeyDictionary()
+    orchestrator._reacting_bystanders = None
     result = asyncio.run(
         orchestrator._react_all(uuid.uuid4(), uuid.uuid4(), None, scene, attempts, {}, runtime)
     )
@@ -79,6 +80,7 @@ def test_reactions_stay_within_the_parallel_call_budget() -> None:
     orchestrator._react_one = fake_react_one
     orchestrator._max_parallel = 3
     orchestrator._slots = weakref.WeakKeyDictionary()
+    orchestrator._reacting_bystanders = None
     people = [uuid.uuid4() for _ in range(8)]
     scene = SimpleNamespace(
         participants=[SimpleNamespace(character_id=c) for c in people],
