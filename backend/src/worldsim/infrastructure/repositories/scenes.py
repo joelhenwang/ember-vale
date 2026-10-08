@@ -141,18 +141,6 @@ class SqlAlchemySceneRepository:
             raise DomainError(ErrorCode.NOT_FOUND, f"unknown scene: {scene_id}")
         return await self._scene_with_participants(row)
 
-    async def _intent_ids_for_scene(self, scene_id: UUID) -> list[UUID]:
-        rows = (
-            (
-                await self._session.execute(
-                    select(AttemptRow.intent_id).where(AttemptRow.scene_id == scene_id)
-                )
-            )
-            .scalars()
-            .all()
-        )
-        return list(rows)
-
     async def journey_counts(self, world_id: UUID, character_id: UUID) -> tuple[int, int, int]:
         """(places, people, deeds) from the scenes this character took part in.
 
@@ -250,32 +238,63 @@ class SqlAlchemySceneRepository:
         )
 
     async def narrations_for_event(self, event_id: UUID) -> list[NarrationBeat]:
+        return (await self.narrations_for_events([event_id])).get(event_id, [])
+
+    async def narrations_for_events(self, event_ids: list[UUID]) -> dict[UUID, list[NarrationBeat]]:
+        """Narration beats for many events in one query, in written order."""
+        if not event_ids:
+            return {}
         rows = (
             (
                 await self._session.execute(
                     select(NarrationRow)
-                    .where(NarrationRow.event_id == event_id)
+                    .where(NarrationRow.event_id.in_(event_ids))
                     .order_by(NarrationRow.created_at)
                 )
             )
             .scalars()
             .all()
         )
-        return [
-            NarrationBeat(
-                id=row.id,
-                world_id=row.world_id,
-                scene_id=row.scene_id,
-                source_event_id=row.event_id,
-                source_effect_ids=list(row.source_effect_ids),
-                cited_fact_keys=list(row.cited_fact_keys),
-                speaker_id=row.speaker_character_id,
-                kind=NarrationKind(row.kind),
-                text=row.text,
-                emotion_hint=row.emotion_hint,
+        out: dict[UUID, list[NarrationBeat]] = {}
+        for row in rows:
+            out.setdefault(row.event_id, []).append(
+                NarrationBeat(
+                    id=row.id,
+                    world_id=row.world_id,
+                    scene_id=row.scene_id,
+                    source_event_id=row.event_id,
+                    source_effect_ids=list(row.source_effect_ids),
+                    cited_fact_keys=list(row.cited_fact_keys),
+                    speaker_id=row.speaker_character_id,
+                    kind=NarrationKind(row.kind),
+                    text=row.text,
+                    emotion_hint=row.emotion_hint,
+                )
             )
-            for row in rows
-        ]
+        return out
+
+    async def scene_ids_for_events(self, event_ids: list[UUID]) -> dict[UUID, UUID]:
+        """The scene told by each event (an event has at most one scene)."""
+        if not event_ids:
+            return {}
+        rows = await self._session.execute(
+            select(SceneRow.event_id, SceneRow.id).where(SceneRow.event_id.in_(event_ids))
+        )
+        return {event_id: scene_id for event_id, scene_id in rows.all() if event_id is not None}
+
+    async def participants_for_scenes(self, scene_ids: list[UUID]) -> dict[UUID, set[UUID]]:
+        """Who took part in each scene, for many scenes in one query."""
+        if not scene_ids:
+            return {}
+        rows = await self._session.execute(
+            select(SceneParticipantRow.scene_id, SceneParticipantRow.character_id).where(
+                SceneParticipantRow.scene_id.in_(scene_ids)
+            )
+        )
+        out: dict[UUID, set[UUID]] = {scene_id: set() for scene_id in scene_ids}
+        for scene_id, character_id in rows.all():
+            out[scene_id].add(character_id)
+        return out
 
     async def list_for_run(self, phase_run_id: UUID, limit: int = 50) -> list[Scene]:
         rows = (
@@ -290,34 +309,54 @@ class SqlAlchemySceneRepository:
             .scalars()
             .all()
         )
-        return [await self._scene_with_participants(row) for row in rows]
+        return await self._scenes_with_participants(list(rows))
 
-    async def _scene_with_participants(self, row: SceneRow) -> Scene:
-        participants = (
+    async def _scenes_with_participants(self, rows: list[SceneRow]) -> list[Scene]:
+        """Scenes with their participants and intents: two queries for all."""
+        if not rows:
+            return []
+        ids = [row.id for row in rows]
+        people: dict[UUID, list[SceneParticipant]] = {i: [] for i in ids}
+        for p in (
             (
                 await self._session.execute(
-                    select(SceneParticipantRow).where(SceneParticipantRow.scene_id == row.id)
+                    select(SceneParticipantRow).where(SceneParticipantRow.scene_id.in_(ids))
                 )
             )
             .scalars()
             .all()
-        )
-        return Scene(
-            id=row.id,
-            world_id=row.world_id,
-            phase_run_id=row.phase_run_id,
-            snapshot_id=row.snapshot_id,
-            status=SceneStatus(row.status),
-            participants=[
+        ):
+            people[p.scene_id].append(
                 SceneParticipant(character_id=p.character_id, role=ParticipantRole(p.role))
-                for p in participants
-            ],
-            intent_ids=await self._intent_ids_for_scene(row.id),
-            beat_budget=row.beat_budget,
-            narration_status=row.narration_status,
-            resolution_id=None,
-            event_id=row.event_id,
-        )
+            )
+        intents: dict[UUID, list[UUID]] = {i: [] for i in ids}
+        for scene_id, intent_id in (
+            await self._session.execute(
+                select(AttemptRow.scene_id, AttemptRow.intent_id).where(
+                    AttemptRow.scene_id.in_(ids)
+                )
+            )
+        ).all():
+            intents[scene_id].append(intent_id)
+        return [
+            Scene(
+                id=row.id,
+                world_id=row.world_id,
+                phase_run_id=row.phase_run_id,
+                snapshot_id=row.snapshot_id,
+                status=SceneStatus(row.status),
+                participants=people[row.id],
+                intent_ids=intents[row.id],
+                beat_budget=row.beat_budget,
+                narration_status=row.narration_status,
+                resolution_id=None,
+                event_id=row.event_id,
+            )
+            for row in rows
+        ]
+
+    async def _scene_with_participants(self, row: SceneRow) -> Scene:
+        return (await self._scenes_with_participants([row]))[0]
 
     async def reactions_for_scene(self, scene_id: UUID) -> list[Reaction]:
         rows = (

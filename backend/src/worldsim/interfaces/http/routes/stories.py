@@ -17,6 +17,7 @@ from worldsim.application.stories.validation import validate_draft as validate_d
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.framing import as_list
 from worldsim.domain.ids import new_story_draft_id
+from worldsim.domain.roles import RoleGrant
 from worldsim.domain.stories import (
     DraftPayload,
     DraftStep,
@@ -24,8 +25,9 @@ from worldsim.domain.stories import (
     StoryDraft,
 )
 from worldsim.domain.time import absolute_index, utcnow
+from worldsim.domain.world import World
 from worldsim.interfaces.http import schemas as api
-from worldsim.interfaces.http.routes.roles import effective_role
+from worldsim.interfaces.http.routes.roles import role_from
 
 router = APIRouter(tags=["stories"])
 
@@ -37,7 +39,15 @@ async def _summary(request: Request, world_id: UUID) -> api.StorySummary:
     async with state.uow_factory()() as uow:
         entry = await uow.stories.get_catalog(world_id)
         world = await uow.worlds.get(world_id)
-        role, viewer = await effective_role(request, world_id)
+        grant = await uow.roles.get_for_world(world_id)
+    return _summary_of(request, entry, world, grant)
+
+
+def _summary_of(
+    request: Request, entry: StoryCatalogEntry, world: World, grant: RoleGrant | None
+) -> api.StorySummary:
+    world_id = entry.world_id
+    role, viewer = role_from(request, grant)
     if role == "player" and viewer is not None:
         mode = "player"
     else:
@@ -86,9 +96,16 @@ async def list_stories(
             entries = await uow.stories.list_catalog(
                 archived=archived, limit=max(1, min(limit, 100)), cursor=cursor
             )
+        # Every story on the page in three queries, not three per story.
+        ids = [entry.world_id for entry in entries]
+        worlds = await uow.worlds.get_many(ids)
+        grants = await uow.roles.get_for_worlds(ids)
     items: list[api.StorySummary] = []
     for entry in entries:
-        summary = await _summary(request, entry.world_id)
+        world = worlds.get(entry.world_id)
+        if world is None:
+            raise DomainError(ErrorCode.NOT_FOUND, f"unknown world: {entry.world_id}")
+        summary = _summary_of(request, entry, world, grants.get(entry.world_id))
         if status == "in_progress" and summary.status != "active":
             continue
         if status == "completed" and (summary.status == "active" or summary.archived):

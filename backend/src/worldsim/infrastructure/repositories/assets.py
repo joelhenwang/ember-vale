@@ -154,6 +154,17 @@ class SqlAlchemyAssetRepository:
             raise missing("image job", job_id)
         return self._to_job(row)
 
+    async def get_jobs(self, job_ids: list[UUID]) -> dict[UUID, ImageJob]:
+        """Many image jobs in one query (missing ids are left out)."""
+        if not job_ids:
+            return {}
+        rows = (
+            (await self._session.execute(select(ImageJobRow).where(ImageJobRow.id.in_(job_ids))))
+            .scalars()
+            .all()
+        )
+        return {row.id: self._to_job(row) for row in rows}
+
     async def find_job_by_key(self, world_id: UUID | None, key: str) -> ImageJob | None:
         row = (
             await self._session.execute(

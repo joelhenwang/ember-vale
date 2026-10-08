@@ -40,6 +40,17 @@ class SqlAlchemyWorldRepository:
             raise missing("world clock", world_id)
         return _to_domain(row, clock)
 
+    async def get_many(self, world_ids: list[UUID]) -> dict[UUID, World]:
+        """Many worlds with their clocks in one query (missing ids left out)."""
+        if not world_ids:
+            return {}
+        rows = await self._session.execute(
+            select(WorldRow, WorldClockRow)
+            .join(WorldClockRow, WorldClockRow.world_id == WorldRow.id)
+            .where(WorldRow.id.in_(world_ids))
+        )
+        return {row.id: _to_domain(row, clock) for row, clock in rows.all()}
+
     async def lock(self, world_id: UUID) -> World:
         """Load the world locked for update within this transaction.
 

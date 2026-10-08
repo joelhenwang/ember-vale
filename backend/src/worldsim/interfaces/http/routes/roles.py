@@ -25,6 +25,11 @@ async def effective_role(request: Request, world_id: UUID) -> tuple[str, UUID | 
     state = request.app.state.app_state
     async with state.uow_factory()() as uow:
         grant = await uow.roles.get_for_world(world_id)
+    return role_from(request, grant)
+
+
+def role_from(request: Request, grant: RoleGrant | None) -> tuple[str, UUID | None]:
+    """The effective role given the world's grant (already loaded)."""
     header_role = request.headers.get("x-worldsim-role", "watcher").lower()
     header_character = request.headers.get("x-worldsim-character")
     if grant is not None:

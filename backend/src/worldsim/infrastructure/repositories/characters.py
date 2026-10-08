@@ -19,6 +19,21 @@ from worldsim.infrastructure.models.world import EntityRow
 from worldsim.infrastructure.repositories._common import missing, version_conflict
 
 
+def _to_character(identity: CharacterRow, state: CharacterStateRow) -> Character:
+    return Character(
+        id=identity.id,
+        world_id=identity.world_id,
+        name=identity.name,
+        card_version=state.card_version,
+        life_status=LifeStatus(state.life_status),
+        location_id=state.location_id,
+        stamina=state.stamina,
+        mana=state.mana,
+        conditions=list(state.conditions),
+        version=state.version,
+    )
+
+
 class SqlAlchemyCharacterRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
@@ -30,28 +45,24 @@ class SqlAlchemyCharacterRepository:
         state = await self._session.get(CharacterStateRow, character_id)
         if state is None:
             raise missing("character state", character_id)
-        return Character(
-            id=identity.id,
-            world_id=identity.world_id,
-            name=identity.name,
-            card_version=state.card_version,
-            life_status=LifeStatus(state.life_status),
-            location_id=state.location_id,
-            stamina=state.stamina,
-            mana=state.mana,
-            conditions=list(state.conditions),
-            version=state.version,
-        )
+        return _to_character(identity, state)
 
     async def list_for_world(self, world_id: UUID) -> list[Character]:
-        identities = (
+        """The whole cast in one query (identity joined with state)."""
+        rows = (
             await self._session.execute(
-                select(CharacterRow)
+                select(CharacterRow, CharacterStateRow)
+                .outerjoin(CharacterStateRow, CharacterStateRow.character_id == CharacterRow.id)
                 .where(CharacterRow.world_id == world_id)
                 .order_by(CharacterRow.name)
             )
-        ).scalars()
-        return [await self.get(identity.id) for identity in identities]
+        ).all()
+        out: list[Character] = []
+        for identity, state in rows:
+            if state is None:
+                raise missing("character state", identity.id)
+            out.append(_to_character(identity, state))
+        return out
 
     async def add_identity(self, character_id: CharacterId, world_id: UUID, name: str) -> None:
         self._session.add(

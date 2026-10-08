@@ -34,6 +34,21 @@ class SqlAlchemyRoleRepository:
         ).scalar_one_or_none()
         return self._to_domain(row) if row is not None else None
 
+    async def get_for_worlds(self, world_ids: list[UUID]) -> dict[UUID, RoleGrant]:
+        """Each world's grant, for many worlds in one query."""
+        if not world_ids:
+            return {}
+        rows = (
+            (
+                await self._session.execute(
+                    select(RoleGrantRow).where(RoleGrantRow.world_id.in_(world_ids))
+                )
+            )
+            .scalars()
+            .all()
+        )
+        return {row.world_id: self._to_domain(row) for row in rows}
+
     async def set_grant(self, grant: RoleGrant) -> RoleGrant:
         existing = (
             await self._session.execute(

@@ -194,16 +194,20 @@ async def _scene_art(
 ) -> list[api.SceneArtView]:
     """Scene pictures the viewer was in (all, for watchers), oldest first."""
     shown: list[api.SceneArtView] = []
-    for picture in (await uow.pictures.list_for_world(world_id))[-SCENE_ART_SHOWN:]:
-        if not omniscient:
-            scene = await uow.scenes.get_scene(picture.scene_id)
-            if viewer not in {p.character_id for p in scene.participants}:
-                continue
-        job = await uow.assets.get_job(picture.job_id)
-        repainting = False
-        if picture.repaint_job_id is not None:
-            again = await uow.assets.get_job(picture.repaint_job_id)
-            repainting = again.status.value in ("pending", "running")
+    pictures = (await uow.pictures.list_for_world(world_id))[-SCENE_ART_SHOWN:]
+    if not omniscient:
+        present = await uow.scenes.participants_for_scenes(
+            list({picture.scene_id for picture in pictures})
+        )
+        pictures = [p for p in pictures if viewer in present.get(p.scene_id, set())]
+    jobs = await uow.assets.get_jobs(
+        [p.job_id for p in pictures]
+        + [p.repaint_job_id for p in pictures if p.repaint_job_id is not None]
+    )
+    for picture in pictures:
+        job = jobs.get(picture.job_id) or await uow.assets.get_job(picture.job_id)
+        again = jobs.get(picture.repaint_job_id) if picture.repaint_job_id else None
+        repainting = again is not None and again.status.value in ("pending", "running")
         shown.append(
             api.SceneArtView(
                 picture_id=picture.id,
@@ -276,14 +280,20 @@ async def chronicle(
     who = {c.id: c.name for c in await uow.characters.list_for_world(world_id)}
     where = {loc.id: loc.name for loc in await uow.locations.list_for_world(world_id)}
     entries: list[api.ChronicleEntry] = []
-    for event in events:
-        if (
-            not omniscient
-            and event.visibility != Visibility.PUBLIC
-            and (viewer is None or viewer not in event.participant_ids)
-        ):
-            continue
-        beats = await uow.scenes.narrations_for_event(event.id)
+    visible = [
+        event
+        for event in events
+        if omniscient
+        or event.visibility == Visibility.PUBLIC
+        or (viewer is not None and viewer in event.participant_ids)
+    ]
+    # Two queries for the whole page, not two per event.
+    told = await uow.scenes.narrations_for_events([e.id for e in visible])
+    scenes = await uow.scenes.scene_ids_for_events(
+        [e.id for e in visible if e.phase_run_id is not None]
+    )
+    for event in visible:
+        beats = told.get(event.id, [])
         text = " ".join(b.text for b in beats) or None
         title = (beats[0].text if beats else _untold_title(event.event_type.value))[:120]
         if not beats and event.summary.get("arrival") == "1":
@@ -292,12 +302,7 @@ async def chronicle(
             reached = _as_uuid(event.summary.get("location_id"))
             place = where.get(reached, "their destination") if reached else "their destination"
             title = text = f"{people[0]} arrives at {place}."
-        scene_id: UUID | None = None
-        if event.phase_run_id is not None:
-            for scene in await uow.scenes.list_for_run(event.phase_run_id):
-                if scene.event_id == event.id:
-                    scene_id = scene.id
-                    break
+        scene_id = scenes.get(event.id)
         location_id = _as_uuid(event.summary.get("location_id"))
         inside = place_maps.get(location_id) if location_id is not None else None
         spot_key = (
