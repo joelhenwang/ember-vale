@@ -738,49 +738,52 @@ const placesUndescribed = computed(
 
 <template>
   <main class="studio wstudio">
+    <!-- the title and the step bar run across the page, above both columns -->
+    <div class="wstudio__top">
+      <div class="studio__head">
+        <h1 class="studio__title">
+          <span class="wstudio__eyebrow">World studio</span>
+          {{ isNew ? draft.presetName.trim() || 'New world' : worldName }}
+        </h1>
+        <span v-if="!isNew" class="wstudio__mode">Editing world</span>
+        <span v-if="dirty" class="draft-badge"><span class="draft-badge__dot"></span>Unsaved</span>
+      </div>
+      <p v-if="recordLoading" class="studio__state" role="status">Reading the archive…</p>
+      <p v-else-if="recordFailed" class="studio__state" role="alert">
+        The archive did not answer ({{ presets.error.value }}) —
+        <button type="button" class="studio__link" @click="retryPresets()">retry</button>
+      </p>
+      <p v-else-if="recordMissing" class="studio__state" role="alert">
+        No world answers to that id.
+      </p>
+      <p v-if="!isNew && editor.status.value === 'failed'" class="studio__state" role="alert">
+        {{ editor.error.value ?? 'Something went wrong.' }} —
+        <button type="button" class="studio__link" @click="retryLast()">
+          retry {{ editor.lastFailedOp.value ?? 'operation' }}
+        </button>
+        <button
+          v-if="editor.openConflict.value"
+          type="button"
+          class="studio__link"
+          @click="resumeSavedDraft()">
+          Resume saved draft
+        </button>
+      </p>
+
+      <InlineStepper
+        class="studio__stepper"
+        stretch
+        :steps="WORLD_STEPS.map((s) => s.title)"
+        :current="step"
+        @go="goStep" />
+      <p class="wstudio__sub">{{ stepInfo.sub }}</p>
+    </div>
+
     <div class="studio__body">
       <!-- ————————————————— form column ————————————————— -->
       <div class="studio__left">
-        <div class="studio__head">
-          <h1 class="studio__title">
-            {{ isNew ? draft.presetName.trim() || 'New world' : worldName }}
-          </h1>
-          <span v-if="dirty" class="draft-badge"
-            ><span class="draft-badge__dot"></span>Unsaved</span
-          >
-        </div>
-        <p v-if="recordLoading" class="studio__state" role="status">Reading the archive…</p>
-        <p v-else-if="recordFailed" class="studio__state" role="alert">
-          The archive did not answer ({{ presets.error.value }}) —
-          <button type="button" class="studio__link" @click="retryPresets()">retry</button>
-        </p>
-        <p v-else-if="recordMissing" class="studio__state" role="alert">
-          No world answers to that id.
-        </p>
-        <p v-if="!isNew && editor.status.value === 'failed'" class="studio__state" role="alert">
-          {{ editor.error.value ?? 'Something went wrong.' }} —
-          <button type="button" class="studio__link" @click="retryLast()">
-            retry {{ editor.lastFailedOp.value ?? 'operation' }}
-          </button>
-          <button
-            v-if="editor.openConflict.value"
-            type="button"
-            class="studio__link"
-            @click="resumeSavedDraft()">
-            Resume saved draft
-          </button>
-        </p>
-
-        <InlineStepper
-          class="studio__stepper"
-          :steps="WORLD_STEPS.map((s) => s.title)"
-          :current="step"
-          @go="goStep" />
-
         <Transition name="wstep" mode="out-in">
           <div :key="step" class="wstudio__step">
-            <p class="wstudio__sub">{{ stepInfo.sub }}</p>
-
             <!-- 1 · overview -->
             <template v-if="step === 1">
               <section class="card ev-card">
@@ -1118,6 +1121,43 @@ const placesUndescribed = computed(
 </template>
 
 <style scoped>
+/* both columns start on one line and end on one line: no gap under either */
+.wstudio__top {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.wstudio .studio__body {
+  align-items: stretch;
+}
+.wstudio .studio__left {
+  container-type: normal;
+}
+.wstudio__step {
+  flex: 1;
+}
+.wstudio__step > .card:last-child,
+.wstudio__step > :last-child {
+  flex: 1;
+}
+.wstudio__mode {
+  align-self: flex-end;
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+  font-family: var(--font-ui);
+  font-size: 15.5px;
+  color: var(--ink-3);
+}
+.wstudio__eyebrow {
+  display: block;
+  margin-bottom: 4px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-3);
+}
 .wstudio__sub {
   margin: 2px 0 12px;
   font-size: 17px;

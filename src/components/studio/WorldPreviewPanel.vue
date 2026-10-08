@@ -465,8 +465,7 @@ const facts = computed(() => [
 
 <style scoped>
 .wpv {
-  position: sticky;
-  top: 76px;
+  position: static;
   display: flex;
   flex-direction: column;
   gap: 14px;
