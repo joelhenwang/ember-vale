@@ -43,13 +43,17 @@
     transform: scale(1.1) translate3d(0.8%, -0.6%, 0);
   }
 }
-@keyframes ev-breathe {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 var(--ev-breathe-color, var(--ember-glow));
+/* A soft ring that swells out and fades, like breath on cold air. Only
+   transform and opacity move, so the compositor runs it: an animated
+   box-shadow repaints on the main thread every frame (perf-frontend-001). */
+@keyframes ev-ring {
+  0% {
+    opacity: 0.9;
+    transform: scale(1);
   }
-  50% {
-    box-shadow: 0 0 0 6px transparent;
+  100% {
+    opacity: 0;
+    transform: scale(var(--ev-ring-scale, 1.6));
   }
 }
 @keyframes ev-shimmer {
@@ -151,7 +155,17 @@
 
 /* A live thing (a running storyteller, the current place) breathes. */
 .ev-breathe {
-  animation: ev-breathe 2.4s var(--ease-sine) infinite;
+  position: relative;
+}
+.ev-breathe::after {
+  inset: 0;
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: 0 0 0 3px var(--ev-breathe-color, var(--ember-glow));
+  opacity: 0;
+  animation: ev-ring 2.4s var(--ease-out) infinite;
 }
 
 /* Gentle hover float for small ornaments. */

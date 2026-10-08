@@ -20,7 +20,16 @@ const seen = ref(true)
 let watcher: IntersectionObserver | undefined
 onMounted(() => {
   if (!root.value || typeof IntersectionObserver === 'undefined') return
-  watcher = new IntersectionObserver(([entry]) => (seen.value = entry?.isIntersecting ?? true))
+  watcher = new IntersectionObserver(([entry]) => {
+    seen.value = entry?.isIntersecting ?? true
+    // The app may have paused or played these by script (useMotion), which
+    // detaches them from animation-play-state, so the class alone is not
+    // enough: steer them directly too.
+    for (const a of root.value?.getAnimations?.({ subtree: true }) ?? []) {
+      if (seen.value && a.playState === 'paused') a.play()
+      else if (!seen.value && a.playState === 'running') a.pause()
+    }
+  })
   watcher.observe(root.value)
 })
 onBeforeUnmount(() => watcher?.disconnect())

@@ -182,7 +182,18 @@ function initials(name: string): string {
   opacity: 1;
 }
 .pm__spot--busy .pm__dot {
-  animation: pm-glow 2.6s var(--ease-sine) 1s infinite;
+  position: relative;
+}
+.pm__spot--busy .pm__dot::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 0 3px rgba(240, 199, 159, 0.7);
+  opacity: 0;
+  --ev-ring-scale: 1.8;
+  animation: ev-ring 2.6s var(--ease-out) 1s infinite;
 }
 .pm__dot {
   width: 10px;
@@ -258,19 +269,6 @@ function initials(name: string): string {
   from {
     opacity: 0;
     scale: 0.3;
-  }
-}
-@keyframes pm-glow {
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 1px rgba(46, 39, 24, 0.35),
-      0 0 0 0 rgba(240, 199, 159, 0.7);
-  }
-  50% {
-    box-shadow:
-      0 0 0 1px rgba(46, 39, 24, 0.35),
-      0 0 0 6px rgba(240, 199, 159, 0);
   }
 }
 @keyframes pm-token-in {

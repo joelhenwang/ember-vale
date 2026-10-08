@@ -1,6 +1,8 @@
 import { onBeforeUnmount, ref, watch, type Directive, type Ref } from 'vue'
 import {
+  REST_AFTER_MS,
   applyMotion,
+  isAmbient,
   motionAllowed,
   readMotion,
   writeMotion,
@@ -47,6 +49,87 @@ export function installMotion(): void {
     },
     true
   )
+  installRest()
+  installRecomposite()
+}
+
+/**
+ * A loop that starts while its page or list is still fading in (opacity 0)
+ * is judged by Chromium to have "no visible change" and runs on the main
+ * thread for good: style recalculated every frame, 13-19 % of the main
+ * thread on Adventure and Watch (perf-frontend-001). When an entrance
+ * animation or transition ends, the running infinite loops inside it are
+ * paused and played again in place (no visible jump), which lets the
+ * browser hand them to the compositor.
+ */
+function installRecomposite(): void {
+  if (typeof Element === 'undefined' || typeof Element.prototype.getAnimations !== 'function')
+    return
+  const ended = new Set<Element>()
+  let timer = 0
+  const flush = (): void => {
+    timer = 0
+    for (const el of ended) {
+      if (!el.isConnected) continue
+      for (const a of el.getAnimations({ subtree: true })) {
+        if (a.playState === 'running' && a.effect?.getTiming().iterations === Infinity) {
+          a.pause()
+          a.play()
+        }
+      }
+    }
+    ended.clear()
+  }
+  const note = (event: Event): void => {
+    if (!(event.target instanceof Element)) return
+    ended.add(event.target)
+    if (!timer) timer = window.setTimeout(flush, 120)
+  }
+  document.addEventListener('animationend', note, true)
+  document.addEventListener('transitionend', note, true)
+}
+
+/**
+ * Ambient loops rest after REST_AFTER_MS without input and wake on the
+ * next one. Any running infinite animation keeps the compositor drawing
+ * every frame: measured at 30-100 % of a CPU core while a page sat idle
+ * (perf-frontend-001), which drains a laptop left on the game. Progress
+ * indicators never rest (see isAmbient).
+ */
+function installRest(): void {
+  if (typeof document.getAnimations !== 'function') return
+  let last = performance.now()
+  let resting: Animation[] = []
+  const wake = (): void => {
+    last = performance.now()
+    if (!resting.length) return
+    for (const a of resting) if (a.playState === 'paused') a.play()
+    resting = []
+  }
+  for (const type of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart', 'scroll'])
+    window.addEventListener(type, wake, { passive: true, capture: true })
+  const connected = (a: Animation): boolean => {
+    const target = (a.effect as KeyframeEffect | null)?.target
+    return !!target && target.isConnected
+  }
+  window.setInterval(() => {
+    // pages left while resting take their animations with them: never hold
+    // on to those (and through them, detached elements)
+    resting = resting.filter(connected)
+    if (performance.now() - last < REST_AFTER_MS) return
+    for (const a of document.getAnimations()) {
+      if (
+        a.playState === 'running' &&
+        'animationName' in a &&
+        connected(a) &&
+        a.effect?.getTiming().iterations === Infinity &&
+        isAmbient(String(a.animationName))
+      ) {
+        a.pause()
+        resting.push(a)
+      }
+    }
+  }, 5000)
 }
 
 export function useMotion() {

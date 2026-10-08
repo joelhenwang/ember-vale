@@ -116,8 +116,11 @@ const emit = defineEmits<{ go: [index: number] }>()
   position: absolute;
   inset: -1px;
   border-radius: 50%;
-  --ev-breathe-color: rgba(31, 106, 94, 0.32);
-  animation: ev-breathe 2.6s var(--ease-sine) infinite;
+  pointer-events: none;
+  box-shadow: 0 0 0 3px rgba(31, 106, 94, 0.32);
+  opacity: 0;
+  --ev-ring-scale: 1.35;
+  animation: ev-ring 2.6s var(--ease-out) infinite;
 }
 @keyframes istep-arrive {
   from {

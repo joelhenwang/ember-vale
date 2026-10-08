@@ -1713,10 +1713,20 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   font-weight: 400;
 }
 .pin--on .pin__dot {
+  position: relative;
   box-shadow: 0 0 0 4px rgba(31, 106, 94, 0.55);
-  animation:
-    wmap-drop 0.5s var(--ease-spring) both,
-    wmap-ring 1.8s var(--ease-sine) 0.5s infinite;
+  animation: wmap-drop 0.5s var(--ease-spring) both;
+}
+.pin--on .pin__dot::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 0 4px rgba(31, 106, 94, 0.4);
+  opacity: 0;
+  --ev-ring-scale: 1.5;
+  animation: ev-ring 1.8s var(--ease-out) 0.5s infinite;
 }
 .pin--target .pin__dot {
   scale: 1.3;
@@ -1759,15 +1769,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   from {
     opacity: 0;
     scale: 0.3;
-  }
-}
-@keyframes wmap-ring {
-  0%,
-  100% {
-    box-shadow: 0 0 0 4px rgba(31, 106, 94, 0.55);
-  }
-  50% {
-    box-shadow: 0 0 0 7px rgba(31, 106, 94, 0.25);
   }
 }
 @keyframes wmap-halo {

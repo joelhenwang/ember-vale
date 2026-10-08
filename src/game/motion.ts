@@ -67,3 +67,22 @@ export function motionAllowed(choice: MotionChoice, systemReduces: boolean): boo
   if (choice === 'reduced') return false
   return !systemReduces
 }
+
+/* ————— resting: ambient loops pause when nobody is there ————— */
+
+/** Quiet time after which the ambient loops rest (any input wakes them). */
+export const REST_AFTER_MS = 60_000
+
+/*
+ * Decorative loops that may rest: drifting pictures, embers, breathing
+ * rings, idle bobs, birds, ivy, fog. Progress indicators (spinners,
+ * shimmers, writing dots, "turning" bars) are NOT listed: they report real
+ * waiting and must keep moving. A new ambient loop joins by name here.
+ * Scoped styles add an 8-hex suffix in builds; it is ignored.
+ */
+const AMBIENT =
+  /^(ev-(ring|float|sheen|drift|flicker|ember-rise)|brand-glow|intro-glow|recent-twinkle|ridge-|rose-swing|ivy-|ctile-sway|desk-write|wm-(fog|flow|idle|bob|walk|turn)|pm-light|lib-art-pan|wmap-(halo|march))/
+
+export function isAmbient(animationName: string): boolean {
+  return AMBIENT.test(animationName.replace(/-[0-9a-f]{8}$/, ''))
+}

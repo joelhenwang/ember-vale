@@ -2194,18 +2194,24 @@ onMounted(() => {
 .nsv__draftstate--warn .nsv__draftdot {
   background: var(--ember-hi);
   box-shadow: 0 0 0 3px var(--ember-glow);
-  animation: nsv-pulse 1.6s ease-in-out infinite;
+  position: relative;
+}
+.nsv__draftstate--warn .nsv__draftdot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 0 3px rgba(214, 112, 48, 0.35);
+  opacity: 0;
+  --ev-ring-scale: 1.7;
+  animation: ev-ring 1.6s var(--ease-out) infinite;
 }
 .nsv__draftstate--bad {
   color: #7c3226;
 }
 .nsv__draftstate--bad .nsv__draftdot {
   background: #b3543f;
-}
-@keyframes nsv-pulse {
-  50% {
-    box-shadow: 0 0 0 6px rgba(214, 112, 48, 0.05);
-  }
 }
 .sel__row {
   display: grid;

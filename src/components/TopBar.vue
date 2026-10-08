@@ -64,6 +64,7 @@ onBeforeUnmount(() => resizer?.disconnect())
   <header class="topbar">
     <div class="topbar__inner">
       <router-link class="brand" to="/">
+        <span :key="route.path" class="brand__glow" aria-hidden="true"></span>
         <IconEmblem :size="27" class="brand__mark" />
         <span class="brand__name">Ember Vale</span>
       </router-link>
@@ -143,9 +144,12 @@ onBeforeUnmount(() => resizer?.disconnect())
   color: var(--ink);
   margin-right: 46px;
 }
-/* the emblem holds a small ember that glows and dims, like a hearth
-   (a soft light behind it, faded by opacity so the loop stays cheap) */
-.brand::before {
+/* the emblem holds a small ember that glows and dims, like a hearth (a
+   soft light behind it, faded by opacity). It breathes three times when a
+   page opens (the span is re-keyed per route) and while hovered, then
+   rests: a loop that never ends keeps the compositor drawing every frame
+   on every page, ~30 % of a CPU core on its own (perf-frontend-001). */
+.brand__glow {
   content: '';
   position: absolute;
   z-index: -1;
@@ -158,7 +162,10 @@ onBeforeUnmount(() => resizer?.disconnect())
   background: radial-gradient(circle, rgba(220, 122, 60, 0.42), rgba(220, 122, 60, 0) 66%);
   pointer-events: none;
   opacity: 0;
-  animation: brand-glow 4.8s var(--ease-sine) infinite;
+  animation: brand-glow 4.8s var(--ease-sine) 3;
+}
+.brand:hover .brand__glow {
+  animation-iteration-count: infinite;
 }
 .brand__mark {
   color: #3a3122;

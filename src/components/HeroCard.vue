@@ -54,10 +54,12 @@ function openLatest(): void {
           class="hero__world"
           :src="worldCover.src"
           :frame="worldCover.frame"
+          priority
           :alt="`${story?.title ?? 'Ember Vale'}: its world`" />
         <img
           v-else
           class="hero__world"
+          fetchpriority="high"
           :src="plainCover"
           :alt="`${story?.title ?? 'Ember Vale'}: a scene`" />
       </div>
@@ -113,7 +115,7 @@ function openLatest(): void {
           <span class="hero__event-title">{{ momentTitle(latest) }}</span>
           <span class="hero__event-line">{{ latest.caption }}</span>
         </button>
-        <span class="hero__go">
+        <span class="hero__go ev-breathe">
           <MenuButton
             class="hero__continue"
             size="md"
@@ -137,7 +139,7 @@ function openLatest(): void {
           Choose a world and someone to be, and the vale will remember your story here.
         </p>
       </div>
-      <span class="hero__go">
+      <span class="hero__go ev-breathe">
         <MenuButton
           class="hero__continue"
           size="md"
@@ -321,7 +323,11 @@ function openLatest(): void {
   display: inline-flex;
   border-radius: 10px;
   --ev-breathe-color: rgba(214, 112, 48, 0.32);
-  animation: ev-breathe 2.8s var(--ease-sine) 1.4s infinite;
+  --ev-ring-scale: 1.08;
+}
+.hero__go::after {
+  animation-duration: 2.8s;
+  animation-delay: 1.4s;
 }
 .hero__shine {
   position: absolute;

@@ -44,7 +44,9 @@ defineProps<{ title: string; sub?: string }>()
   background: radial-gradient(circle, rgba(220, 122, 60, 0.32), rgba(220, 122, 60, 0) 66%);
   pointer-events: none;
   opacity: 0;
-  animation: intro-glow 5s var(--ease-sine) 0.9s infinite;
+  /* three breaths as the page opens, then rest (an endless loop keeps the
+     compositor drawing every frame; perf-frontend-001) */
+  animation: intro-glow 5s var(--ease-sine) 0.9s 3;
 }
 .intro__emblem {
   color: var(--gold);

@@ -354,8 +354,19 @@ onUnmounted(() => {
 }
 /* while the world plays, Pause glows like a lit lantern */
 .obs__btn--live {
+  position: relative;
   --ev-breathe-color: rgba(20, 84, 90, 0.45);
-  animation: ev-breathe 2.4s var(--ease-sine) infinite;
+  --ev-ring-scale: 1.15;
+}
+.obs__btn--live::after {
+  inset: 0;
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: 0 0 0 3px var(--ev-breathe-color, var(--ember-glow));
+  opacity: 0;
+  animation: ev-ring 2.4s var(--ease-out) infinite;
 }
 .obs__live {
   display: inline-grid;
@@ -366,12 +377,23 @@ onUnmounted(() => {
   vertical-align: -1px;
 }
 .obs__live i {
+  position: relative;
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--ember);
   --ev-breathe-color: rgba(194, 97, 42, 0.55);
-  animation: ev-breathe 1.6s var(--ease-sine) infinite;
+  --ev-ring-scale: 2.2;
+}
+.obs__live i::after {
+  inset: 0;
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: 0 0 0 3px var(--ev-breathe-color, var(--ember-glow));
+  opacity: 0;
+  animation: ev-ring 1.6s var(--ease-out) infinite;
 }
 .obs__btn--primary {
   background: var(--teal);

@@ -421,13 +421,16 @@ every future story." />
   /* the picture slides in from the right, then pans slowly */
   transform-origin: right center;
   animation:
-    lib-art-in 1.3s var(--ease-settle) both,
+    lib-art-in 1.3s var(--ease-settle) backwards,
     lib-art-pan 28s var(--ease-sine) 1.3s infinite alternate;
 }
+/* the entrance moves translate/scale and the pan moves transform: two
+   animations on one property cannot both run on the compositor */
 @keyframes lib-art-in {
   from {
     opacity: 0;
-    transform: translateX(6%) scale(1.04);
+    translate: 6% 0;
+    scale: 1.04;
   }
 }
 @keyframes lib-art-pan {

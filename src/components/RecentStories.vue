@@ -136,7 +136,8 @@ function resume(story: StorySummary): void {
   }
   80% {
     transform: translateY(-1px) scale(1.25) rotate(20deg);
-    color: var(--ember-hi);
+    /* gold warms toward ember; a colour change would repaint each frame */
+    filter: hue-rotate(-14deg) saturate(1.5) brightness(1.08);
   }
 }
 

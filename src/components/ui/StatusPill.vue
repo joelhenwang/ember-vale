@@ -33,11 +33,21 @@ defineProps<{ tone: 'ok' | 'warn' | 'info' | 'fail'; label: string }>()
   color: #2e7d43;
 }
 .spill--ok .spill__dot {
+  position: relative;
   background: #2e7d43;
   --ev-breathe-color: rgba(46, 125, 67, 0.4);
-  animation:
-    ev-pop-in 0.4s var(--ease-spring) both,
-    ev-breathe 2.6s var(--ease-sine) 0.4s infinite;
+  --ev-ring-scale: 2;
+  animation: ev-pop-in 0.4s var(--ease-spring) both;
+}
+.spill--ok .spill__dot::after {
+  inset: 0;
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: 0 0 0 3px var(--ev-breathe-color, var(--ember-glow));
+  opacity: 0;
+  animation: ev-ring 2.6s var(--ease-out) 0.4s infinite;
 }
 .spill--warn {
   color: #a8762a;

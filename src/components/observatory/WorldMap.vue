@@ -4,7 +4,7 @@
  * character tokens. Every position comes from the map manifest anchors
  * and the cast's current places, never from model output.
  */
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { MapAnchorView, MapPlace, MapRoadLineView } from '../../../content/clients/worldsim'
 import type { Token } from '../../game/observatory'
 import { assetUrl } from '../../api/worldsim'
@@ -67,6 +67,39 @@ const routes = computed(() => {
 })
 const art = computed(() => (props.mapAssetId ? assetUrl(props.worldId, props.mapAssetId) : null))
 
+/* The map's box takes its picture's shape before the picture arrives, so
+   pins and tokens do not jump when it loads (it was the Watch page's layout
+   shift). Asset ids are immutable versions, so a shape learned once holds. */
+const RATIOS = 'ev.mapRatio'
+function knownRatio(id: string | null | undefined): number | null {
+  if (!id) return null
+  try {
+    const all = JSON.parse(localStorage.getItem(RATIOS) ?? '{}') as Record<string, number>
+    return all[id] ?? null
+  } catch {
+    return null
+  }
+}
+const ratio = ref<number | null>(knownRatio(props.mapAssetId))
+watch(
+  () => props.mapAssetId,
+  (id) => (ratio.value = knownRatio(id))
+)
+function artLoaded(event: Event): void {
+  const img = event.target as HTMLImageElement
+  if (!props.mapAssetId || !img.naturalWidth || !img.naturalHeight) return
+  ratio.value = img.naturalWidth / img.naturalHeight
+  try {
+    const all = JSON.parse(localStorage.getItem(RATIOS) ?? '{}') as Record<string, number>
+    all[props.mapAssetId] = ratio.value
+    const keys = Object.keys(all)
+    for (const old of keys.slice(0, Math.max(0, keys.length - 50))) delete all[old]
+    localStorage.setItem(RATIOS, JSON.stringify(all))
+  } catch {
+    // blocked storage: the shape is still used for this visit
+  }
+}
+
 function initials(name: string): string {
   return name
     .split(/\s+/)
@@ -78,8 +111,11 @@ function initials(name: string): string {
 </script>
 
 <template>
-  <div class="wm" :class="{ 'wm--schematic': !art }">
-    <img v-if="art" class="wm__art" :src="art" alt="" draggable="false" />
+  <div
+    class="wm"
+    :class="{ 'wm--schematic': !art }"
+    :style="art && ratio ? { aspectRatio: String(ratio) } : undefined">
+    <img v-if="art" class="wm__art" :src="art" alt="" draggable="false" @load="artLoaded" />
     <span class="wm__fog" aria-hidden="true"><i></i><i></i></span>
     <svg class="wm__routes" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
       <g v-for="d in drawn" :key="d.key">
@@ -113,7 +149,7 @@ function initials(name: string): string {
       class="wm__place"
       :class="{ 'wm__place--active': place.id === activePlaceId }"
       :style="{ left: `${place.x * 100}%`, top: `${place.y * 100}%`, '--i': i }">
-      <span class="wm__pin" aria-hidden="true" />
+      <span class="wm__pinwrap" aria-hidden="true"><span class="wm__pin" /></span>
       <button
         v-if="enterable.has(place.id)"
         type="button"
@@ -246,6 +282,7 @@ function initials(name: string): string {
 }
 /* pins drop onto the map one after another, then their names unfurl */
 .wm__pin {
+  display: block;
   width: 14px;
   height: 14px;
   border-radius: 50%;
@@ -259,10 +296,30 @@ function initials(name: string): string {
 }
 .wm__place--active .wm__pin {
   background: var(--teal);
-  animation:
-    wm-drop 0.55s var(--ease-spring) calc(0.1s + min(var(--i, 0), 10) * 0.045s) both,
-    wm-pulse 2.4s ease-out 0.7s infinite,
-    wm-bob 2.8s var(--ease-sine) 0.9s infinite;
+}
+/* The bob lives on a wrapper: two transform animations on one element (the
+   drop and the bob) keep both off the compositor for good. */
+.wm__pinwrap {
+  display: block;
+  line-height: 0;
+}
+.wm__place--active .wm__pinwrap {
+  animation: wm-bob 2.8s var(--ease-sine) 0.9s infinite;
+}
+/* its pulse is a ring on a pseudo-element: transform and opacity only */
+.wm__place--active .wm__pin {
+  position: relative;
+}
+.wm__place--active .wm__pin::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 0 3px rgba(20, 84, 90, 0.45);
+  opacity: 0;
+  --ev-ring-scale: 2.6;
+  animation: ev-ring 2.4s ease-out 0.7s infinite;
 }
 /* where the latest scene happened: its pin bobs like a quest marker
    (the label holds still, so it stays easy to click) */
@@ -460,18 +517,6 @@ function initials(name: string): string {
   }
   50% {
     translate: 0 -4px;
-  }
-}
-@keyframes wm-pulse {
-  0% {
-    box-shadow:
-      0 0 0 1px rgba(46, 39, 24, 0.35),
-      0 0 0 0 rgba(20, 84, 90, 0.45);
-  }
-  100% {
-    box-shadow:
-      0 0 0 1px rgba(46, 39, 24, 0.35),
-      0 0 0 18px rgba(20, 84, 90, 0);
   }
 }
 </style>
