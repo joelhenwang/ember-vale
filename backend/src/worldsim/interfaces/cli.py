@@ -208,7 +208,25 @@ def _serve(args: argparse.Namespace) -> int:
     settings = Settings()
     host = args.host or settings.app.host
     port = args.port or settings.app.port
-    uvicorn.run(create_app(settings), host=host, port=port)
+    workers = settings.app.workers
+    if workers == 1:
+        uvicorn.run(create_app(settings), host=host, port=port)
+        return 0
+    if settings.app.background_loops:
+        print(
+            "WORLDSIM_APP__WORKERS > 1 needs WORLDSIM_APP__BACKGROUND_LOOPS=false and a "
+            "separate `python -m worldsim.interfaces.worker`; otherwise every process "
+            "would run autoplay and painting."
+        )
+        return 2
+    # Each process builds its own app (its own pool) from the environment.
+    uvicorn.run(
+        "worldsim.interfaces.http.app:create_app",
+        factory=True,
+        host=host,
+        port=port,
+        workers=workers,
+    )
     return 0
 
 

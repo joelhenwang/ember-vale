@@ -99,6 +99,11 @@ async def frame_face(
     return frames.face
 
 
+#: How long a claimed job is this runner's (a paint takes ~14 s; a runner
+#: that dies mid-paint frees it after this).
+CLAIM_LEASE_S = 600
+
+
 class ImageJobRunner:
     def __init__(
         self,
@@ -132,10 +137,15 @@ class ImageJobRunner:
         """Work one pending job; False when there was none (or images are off)."""
         async with self._factory() as uow:
             prefs = (await uow.settings.get_preferences(self._operator)).images
-            pending = await uow.assets.list_pending_jobs(1, self._world_id) if prefs.enabled else []
-        if not pending:
+            job = (
+                await uow.assets.claim_next_job(CLAIM_LEASE_S, self._world_id)
+                if prefs.enabled
+                else None
+            )
+            await uow.commit()
+        if job is None:
             return False
-        await self._work(pending[0], prefs)
+        await self._work(job, prefs)
         return True
 
     async def _work(self, job: ImageJob, prefs: ImagePrefs) -> None:

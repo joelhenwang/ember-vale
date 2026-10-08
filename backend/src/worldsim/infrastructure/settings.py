@@ -48,6 +48,13 @@ class ApplicationSettings(BaseModel):
     #: a 25-character cast queued hundreds of sessions on the pool and the
     #: beat failed after 30 s (docs/evidence/perf-beat-001).
     parallel_model_calls: int = Field(default=12, ge=1, le=64)
+    #: Autoplay, image painting and local-model indexing run inside the API
+    #: process. Set false when they run in their own process instead
+    #: (`python -m worldsim.interfaces.worker`), e.g. with several API workers.
+    background_loops: bool = True
+    #: API processes (`serve`). More than one needs background_loops=false
+    #: and a separate worker: each process would otherwise run every loop.
+    workers: int = Field(default=1, ge=1, le=32)
 
 
 class DatabaseSettings(BaseModel):

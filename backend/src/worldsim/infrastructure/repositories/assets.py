@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from worldsim.domain.assets import AssetKind, AssetRecord, AssetStatus, ImageJob, JobStatus
@@ -188,6 +188,35 @@ class SqlAlchemyAssetRepository:
         ).scalars()
         return [self._to_job(row) for row in rows]
 
+    async def claim_next_job(
+        self, lease_seconds: int, world_id: UUID | None = None
+    ) -> ImageJob | None:
+        """Claim one pending job for this runner, or None.
+
+        One statement: the row is locked with SKIP LOCKED and its lease
+        pushed forward, so concurrent runners (processes) never take the
+        same job. An expired lease (a runner died mid-paint) is claimable
+        again. Commit to make the claim visible to others.
+        """
+        where_world = "AND world_id = :world" if world_id is not None else ""
+        claimed = (
+            await self._session.execute(
+                text(
+                    "UPDATE image_job SET claimed_until = now() + make_interval(secs => :lease), "
+                    "started_at = coalesce(started_at, now()) "
+                    "WHERE id = (SELECT id FROM image_job WHERE status = 'pending' "
+                    "AND (claimed_until IS NULL OR claimed_until < now()) "
+                    f"{where_world} ORDER BY attempt_count, id "
+                    "FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING id"
+                ),
+                {"lease": lease_seconds, "world": world_id},
+            )
+        ).scalar_one_or_none()
+        if claimed is None:
+            return None
+        row = await self._session.get(ImageJobRow, claimed, populate_existing=True)
+        return self._to_job(row) if row is not None else None
+
     async def style_pack_for_world(self, world_id: UUID) -> str | None:
         return (
             await self._session.execute(
@@ -209,4 +238,12 @@ class SqlAlchemyAssetRepository:
         row.error = job.error
         row.version = expected_version + 1
         await self._session.flush()
+        # The lease ends with any outcome; a finished job keeps its time.
+        await self._session.execute(
+            text(
+                "UPDATE image_job SET claimed_until = NULL, finished_at = CASE "
+                "WHEN status = 'pending' THEN NULL ELSE now() END WHERE id = :id"
+            ),
+            {"id": job.id},
+        )
         return self._to_job(row)

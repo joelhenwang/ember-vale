@@ -139,6 +139,9 @@ class AssetRepository(Protocol):
     async def list_pending_jobs(
         self, limit: int, world_id: UUID | None = None
     ) -> list[ImageJob]: ...
+    async def claim_next_job(
+        self, lease_seconds: int, world_id: UUID | None = None
+    ) -> ImageJob | None: ...
     async def style_pack_for_world(self, world_id: UUID) -> str | None: ...
 
 

@@ -10,7 +10,9 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncGenerator, Callable
 from contextlib import asynccontextmanager
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 from uuid import UUID
 
 from fastapi import FastAPI
@@ -82,34 +84,48 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         "tasks_requeued": report.tasks_requeued,
         "outbox_requeued": report.outbox_requeued,
     }
-    runner: AutoplayRunner | None = None
-    loop: asyncio.Task[None] | None = None
+    loops = start_loops(state) if state.settings.app.background_loops else BackgroundLoops()
+    app.state.autoplay_runner = loops.autoplay
+    app.state.image_runner = loops.images
+    yield
+    if state.narration is not None:
+        await state.narration.drain()
+    await loops.stop()
+    await aclose_pooled()
+    await state.engine.dispose()
+
+
+@dataclass
+class BackgroundLoops:
+    """The long-running jobs beside the HTTP boundary (or in a worker)."""
+
+    autoplay: AutoplayRunner | None = None
+    images: ImageJobRunner | None = None
+    tasks: list[tuple[Any, asyncio.Task[None]]] = field(default_factory=list)
+
+    async def stop(self) -> None:
+        for job, task in self.tasks:
+            await job.stop()
+            await task
+
+
+def start_loops(state: AppState) -> BackgroundLoops:
+    """Start autoplay, the image runner and local-model jobs.
+
+    Every one is safe beside another copy in a second process: autoplay
+    claims a story with a lease, image jobs are claimed with SKIP LOCKED.
+    """
+    loops = BackgroundLoops()
     if state.settings.autoplay.enabled:
-        runner = AutoplayRunner(
-            factory,
+        loops.autoplay = AutoplayRunner(
+            state.uow_factory(),
             lambda world_id, index: _autoplay_beat(state, world_id, index),
             poll_seconds=state.settings.autoplay.poll_seconds,
         )
-        loop = asyncio.create_task(runner.run_forever())
-    app.state.autoplay_runner = runner
-    images = _image_runner(state)
-    images_loop = asyncio.create_task(images.run_forever()) if images is not None else None
-    app.state.image_runner = images
-    local_loops = [(job, asyncio.create_task(job.run_forever())) for job in _local_jobs(state)]
-    yield
-    for job, task in local_loops:
-        await job.stop()
-        await task
-    if state.narration is not None:
-        await state.narration.drain()
-    if runner is not None and loop is not None:
-        await runner.stop()
-        await loop
-    if images is not None and images_loop is not None:
-        await images.stop()
-        await images_loop
-    await aclose_pooled()
-    await state.engine.dispose()
+    loops.images = _image_runner(state)
+    jobs: list[Any] = [loops.autoplay, loops.images, *_local_jobs(state)]
+    loops.tasks = [(job, asyncio.create_task(job.run_forever())) for job in jobs if job]
+    return loops
 
 
 def _image_runner(state: AppState) -> ImageJobRunner | None:

@@ -64,6 +64,28 @@ services:
       retries: 12
       start_period: 30s
 
+  # Opt-in (`docker compose --profile scale up -d`): autoplay, painting and
+  # local-model indexing in their own process. Pair it with
+  # WORLDSIM_APP__BACKGROUND_LOOPS=false and WORLDSIM_APP__WORKERS=N on the
+  # api service to serve HTTP from several processes.
+  worker:
+    profiles: ["scale"]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      WORLDSIM_DATABASE__URL: "postgresql+asyncpg://${POSTGRES_USER:-embervale}:${POSTGRES_PASSWORD:-changeme-local-only}@db:5432/${POSTGRES_DB:-embervale}"
+    entrypoint: ["python", "-m", "worldsim.interfaces.worker"]
+    volumes:
+      - generated-embervale:/app/content/assets/generated
+
 volumes:
   pgdata-embervale:
   generated-embervale:
