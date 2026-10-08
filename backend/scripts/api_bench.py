@@ -75,7 +75,12 @@ async def build_plan(client: httpx.AsyncClient, world: str) -> Plan:
         ("library presets", "/library/presets", {}, {}),
         ("story detail", f"/stories/{world}", {}, {}),
         ("presentation", "/world/presentation", {"world_id": world}, role),
-        ("chronicle (100)", "/world/chronicle", {"world_id": world, "after": 0, "limit": 100}, role),
+        (
+            "chronicle (100)",
+            "/world/chronicle",
+            {"world_id": world, "after": 0, "limit": 100},
+            role,
+        ),
         ("map", "/stage2/map", {"world_id": world}, role),
         ("items", "/stage2/items", {"world_id": world}, role),
         ("autoplay", f"/stories/{world}/autoplay", {}, role),

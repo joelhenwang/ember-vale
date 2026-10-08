@@ -96,6 +96,17 @@ class SqlAlchemyPictureRepository:
         )
         return [_picture(row) for row in rows]
 
+    async def list_recent_for_world(self, world_id: UUID, limit: int) -> list[ScenePicture]:
+        """The newest `limit` pictures, oldest first (an index walk, not a scan)."""
+        rows = await self._session.execute(
+            text(
+                f"SELECT {_COLUMNS} FROM scene_picture WHERE world_id = :w "
+                "ORDER BY created_phase_index DESC, created_at DESC LIMIT :n"
+            ),
+            {"w": world_id, "n": limit},
+        )
+        return [_picture(row) for row in reversed(list(rows))]
+
     async def latest_moment_index(self, world_id: UUID) -> int | None:
         """The beat of the newest automatic picture, for the cooldown."""
         return (

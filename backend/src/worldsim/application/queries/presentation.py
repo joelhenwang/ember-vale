@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+from collections import OrderedDict
 from pathlib import Path
 from uuid import UUID
 
@@ -58,12 +59,41 @@ def schematic_anchors(ids: list[UUID]) -> dict[UUID, tuple[float, float]]:
     return out
 
 
+class JourneyCache:
+    """Renown counts per (world, viewer, newest event sequence).
+
+    Counting a player's journey aggregates their whole history (tens of ms
+    on a long story) while the screen polls the presentation every couple
+    of seconds. The counts only change when a scene commits, and every
+    scene commit appends an event, so the newest sequence is a safe key.
+    """
+
+    def __init__(self, size: int = 256) -> None:
+        self._size = size
+        self._seen: OrderedDict[tuple[UUID, UUID, int], tuple[int, int, int]] = OrderedDict()
+
+    async def counts(
+        self, uow: UnitOfWork, world_id: UUID, viewer: UUID, high: int
+    ) -> tuple[int, int, int]:
+        key = (world_id, viewer, high)
+        found = self._seen.get(key)
+        if found is not None:
+            self._seen.move_to_end(key)
+            return found
+        found = await uow.scenes.journey_counts(world_id, viewer)
+        self._seen[key] = found
+        while len(self._seen) > self._size:
+            self._seen.popitem(last=False)
+        return found
+
+
 async def presentation(
     uow: UnitOfWork,
     world_id: UUID,
     role: UserRole,
     viewer: UUID | None,
     assets_root: Path | None = None,
+    journeys: JourneyCache | None = None,
 ) -> api.PresentationResponse:
     """Assemble the world presentation snapshot for one effective role."""
     world = await uow.worlds.get(world_id)
@@ -124,7 +154,7 @@ async def presentation(
                 manifest = manifest.model_copy(update={"asset_id": maps[0].id})
     recent = await uow.events.list_range(world_id, max(0, high - 1), 1)
     journey = (
-        await _journey(uow, world_id, viewer, hooks)
+        await _journey(uow, world_id, viewer, hooks, high, journeys)
         if viewer is not None and not omniscient
         else None
     )
@@ -194,7 +224,7 @@ async def _scene_art(
 ) -> list[api.SceneArtView]:
     """Scene pictures the viewer was in (all, for watchers), oldest first."""
     shown: list[api.SceneArtView] = []
-    pictures = (await uow.pictures.list_for_world(world_id))[-SCENE_ART_SHOWN:]
+    pictures = await uow.pictures.list_recent_for_world(world_id, SCENE_ART_SHOWN)
     if not omniscient:
         present = await uow.scenes.participants_for_scenes(
             list({picture.scene_id for picture in pictures})
@@ -226,10 +256,19 @@ async def _scene_art(
 
 
 async def _journey(
-    uow: UnitOfWork, world_id: UUID, viewer: UUID, hooks: list[NarrativeHook]
+    uow: UnitOfWork,
+    world_id: UUID,
+    viewer: UUID,
+    hooks: list[NarrativeHook],
+    high: int,
+    journeys: JourneyCache | None,
 ) -> api.JourneyView:
     """The player's journey from the record, with renown and level."""
-    places, people, deeds = await uow.scenes.journey_counts(world_id, viewer)
+    places, people, deeds = (
+        await journeys.counts(uow, world_id, viewer, high)
+        if journeys is not None
+        else await uow.scenes.journey_counts(world_id, viewer)
+    )
     settled = sum(
         1
         for hook in hooks

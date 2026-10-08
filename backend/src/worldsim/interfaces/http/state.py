@@ -8,7 +8,7 @@ stay thin; services own rules.
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -20,6 +20,7 @@ from worldsim.application.ports.map_reader import MapReader
 from worldsim.application.ports.model_gateway import ModelGateway
 from worldsim.application.ports.traces import TraceExporter
 from worldsim.application.ports.writer import Writer
+from worldsim.application.queries.presentation import JourneyCache
 from worldsim.application.settings.resolution import PinnedRuntime
 from worldsim.application.tasks.service import TaskService
 from worldsim.application.tracing.service import TraceService
@@ -78,6 +79,8 @@ class AppState:
     _images: KreaImageGenerator | None = None
     _map_reader: MapReader | None = None
     _writer: Writer | None = None
+    #: Renown counts per (story, player, newest event), shared by requests.
+    journeys: JourneyCache = field(default_factory=JourneyCache)
 
     def uow_factory(self) -> Callable[[], SqlAlchemyUnitOfWork]:
         engine = self.engine
