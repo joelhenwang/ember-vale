@@ -14,6 +14,10 @@ Optionally profiles a window of beats with cProfile.
 
     python scripts/beat_bench.py --cast 3 --beats 100 [--places 6]
         [--checkpoints 10,100] [--profile 90:100] [--json out.json]
+        [--verify-reads]
+
+``--verify-reads`` builds every decision and reaction context a second time
+from fresh reads and stops on any byte of difference (phase_reads.VERIFY).
 
 Reads WORLDSIM_DATABASE__URL (export that single variable; never source .env).
 """
@@ -432,7 +436,14 @@ def main() -> int:
         "--sql-top", type=int, default=0, help="print top statements at checkpoints"
     )
     parser.add_argument("--no-reset", action="store_true", help="reuse the bench database")
+    parser.add_argument(
+        "--verify-reads", action="store_true", help="check shared reads against fresh ones"
+    )
     args = parser.parse_args()
+    if args.verify_reads:
+        from worldsim.application.orchestration import phase_reads
+
+        phase_reads.VERIFY = True
     os.environ["WORLDSIM_PROVIDER__ACTIVE_PROFILE"] = "fake"
     os.environ.setdefault("WORLDSIM_AUTOPLAY__ENABLED", "false")
     os.environ.pop("WORLDSIM_LOCAL_MODELS__URL", None)

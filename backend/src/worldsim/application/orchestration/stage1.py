@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import difflib
 import hashlib
 import json
 import logging
@@ -102,6 +103,7 @@ from worldsim.application.interventions import (
     plan_attempts,
     record_attempts,
 )
+from worldsim.application.orchestration import phase_reads
 from worldsim.application.orchestration.background import BackgroundNarration
 from worldsim.application.orchestration.framing import frame_gateways
 from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
@@ -226,6 +228,7 @@ from worldsim.domain.memory import (
     score_salience,
 )
 from worldsim.domain.narration import NarrationBeat
+from worldsim.domain.narrative import NarrativeHook
 from worldsim.domain.party import Monster, party_name_key
 from worldsim.domain.perception import (
     Disclosure,
@@ -520,6 +523,24 @@ def pronoun_line(characters: Sequence[Character], pronouns: Mapping[UUID, str]) 
 
 #: Card versions never change once written, so a beat reads each one once.
 CardCache = dict[tuple[UUID, int], CharacterCard]
+
+
+@dataclass(frozen=True)
+class _WorldView:
+    """What every context builder of a phase reads alike (phase_reads)."""
+
+    config: dict[str, object]
+    now_index: int
+    hooks: list[NarrativeHook]
+    everyone: list[Character]
+    away: set[UUID]
+    locations: list[Location]
+
+    def place(self, location_id: UUID | None) -> Location | None:
+        return next((loc for loc in self.locations if loc.id == location_id), None)
+
+    def person(self, character_id: UUID) -> Character | None:
+        return next((c for c in self.everyone if c.id == character_id), None)
 
 
 async def _card_of(uow: Any, character: Character, cards: CardCache | None) -> CharacterCard:
@@ -1356,9 +1377,16 @@ class Stage1Orchestrator:
         await self._tick(world_id, run_id, index)
         sealed = await self._seal(world_id, run_id, index)
 
+        # Decisions share one read of the world (phase_reads) until the
+        # director, running beside them, finishes and may have changed it.
+        decide_reads = phase_reads.PhaseReads()
+
         async def _directing() -> None:
-            with _timed(timings, "director"):
-                await self._director_phase(world_id, run_id, index, sealed, runtime)
+            try:
+                with _timed(timings, "director"):
+                    await self._director_phase(world_id, run_id, index, sealed, runtime)
+            finally:
+                decide_reads.drop()
 
         # The director (every third beat, 1-7 s) runs beside the decisions:
         # characters decide from the sealed snapshot either way, and what
@@ -1366,18 +1394,19 @@ class Stage1Orchestrator:
         # and for the next beat. It finishes before intents are recorded.
         director = asyncio.ensure_future(_directing())
         try:
-            intents = await self._drain_and_decide(
-                world_id,
-                run_id,
-                index,
-                sealed,
-                player_intents,
-                drain_queue=drain_queue,
-                runtime=runtime,
-                submitter_id=submitter_id,
-                grant_role=admitted_role,
-                timings=timings,
-            )
+            with phase_reads.sharing(decide_reads):
+                intents = await self._drain_and_decide(
+                    world_id,
+                    run_id,
+                    index,
+                    sealed,
+                    player_intents,
+                    drain_queue=drain_queue,
+                    runtime=runtime,
+                    submitter_id=submitter_id,
+                    grant_role=admitted_role,
+                    timings=timings,
+                )
         except BaseException as exc:
             # Cancelled (the caller went away): stop the director too, or
             # this await waits on a model call nobody is listening for.
@@ -1462,21 +1491,23 @@ class Stage1Orchestrator:
                 # A beat's scenes hold different people at different places:
                 # their model work (reactions, resolution) runs side by side;
                 # the commits stay in order (event sequence, version checks).
-                prepared = await asyncio.gather(
-                    *(
-                        self._prepare_scene(
-                            world_id,
-                            run_id,
-                            sealed,
-                            scene,
-                            intents,
-                            names,
-                            runtime=runtime,
-                            timings=timings,
+                # Preparing only reads, so all of it shares one world read.
+                with phase_reads.sharing(phase_reads.PhaseReads()):
+                    prepared = await asyncio.gather(
+                        *(
+                            self._prepare_scene(
+                                world_id,
+                                run_id,
+                                sealed,
+                                scene,
+                                intents,
+                                names,
+                                runtime=runtime,
+                                timings=timings,
+                            )
+                            for scene in scenes
                         )
-                        for scene in scenes
                     )
-                )
                 for scene, ready in zip(scenes, prepared, strict=True):
                     try:
                         outcomes.append(
@@ -3053,11 +3084,21 @@ class Stage1Orchestrator:
         ``deciding`` (a turn, not a reply) adds a note when the character's
         own last turns were all talk or all idling.
         """
+        world = await self._world_view(world_id)
+        config, now_index = world.config, world.now_index
+        items_here = await self._shared(
+            ("items_at", world_id, character.location_id),
+            lambda uow: uow.inventory.list_at_location(world_id, character.location_id),
+        )
+        carried = await self._shared(
+            ("carried", world_id, character.id),
+            lambda uow: uow.inventory.list_for_owner(world_id, character.id),
+        )
         async with self._factory() as uow:
             card = await _card_of(uow, character, self._cards)
-            place = await uow.locations.get(character.location_id)
-            config = await uow.worlds.get_config(world_id)
-            _day, _phase, now_index = await uow.worlds.get_clock(world_id)
+            place = world.place(character.location_id) or await uow.locations.get(
+                character.location_id
+            )
             half_life = _config_int(config, HALF_LIFE_PHASES_KEY, DEFAULT_HALF_LIFE_PHASES)
             recent_phases = _config_int(config, RECENT_PHASES_KEY, DEFAULT_RECENT_PHASES)
             floor = _config_float(config, SALIENCE_FLOOR_KEY, DEFAULT_SALIENCE_FLOOR)
@@ -3075,13 +3116,10 @@ class Stage1Orchestrator:
             families = (
                 await uow.scenes.recent_families(character.id, STREAK_TURNS) if deciding else []
             )
-            hooks = await uow.narrative.list_hooks_for_world(world_id)
-            items_here = await uow.inventory.list_at_location(world_id, character.location_id)
-            carried = await uow.inventory.list_for_owner(world_id, character.id)
-            everyone = await uow.characters.list_for_world(world_id)
-            away = await on_the_road(uow, world_id)
-            present = [c for c in everyone if c.id not in away]
-            place_names = {loc.id: loc.name for loc in await uow.locations.list_for_world(world_id)}
+            hooks = world.hooks
+            everyone = world.everyone
+            present = [c for c in everyone if c.id not in world.away]
+            place_names = {loc.id: loc.name for loc in world.locations}
             pronouns = await _pronouns_of(
                 uow,
                 [c for c in present if c.location_id == place.id and c.id != character.id],
@@ -3298,7 +3336,56 @@ class Stage1Orchestrator:
             section_budgets=DECISION_SECTION_BUDGETS,
         )
         envelope, included, excluded = assemble(request, candidates)
+        if phase_reads.VERIFY and phase_reads.active() is not None:
+            with phase_reads.sharing(None):
+                fresh, *_rest = await self._context_for(
+                    world_id,
+                    run_id,
+                    snapshot_id,
+                    character,
+                    deciding=deciding,
+                    answered=answered,
+                    extra_goal=extra_goal,
+                )
+            if fresh.rendered != envelope.rendered:
+                diff = difflib.unified_diff(
+                    fresh.rendered.splitlines(),
+                    envelope.rendered.splitlines(),
+                    "fresh",
+                    "shared",
+                    lineterm="",
+                )
+                raise AssertionError(
+                    f"shared reads changed {character.name}'s context: " + " | ".join(diff)
+                )
         return envelope, included, excluded
+
+    async def _shared[T](self, key: object, load: Callable[[Any], Awaitable[T]]) -> T:
+        """One read per phase while a phase view is shared, else a fresh one."""
+
+        async def fresh() -> T:
+            async with self._factory() as uow:
+                return await load(uow)
+
+        reads = phase_reads.active()
+        return await (reads.get(key, fresh) if reads is not None else fresh())
+
+    async def _world_view(self, world_id: UUID) -> _WorldView:
+        """Config, clock, rumours, people, travellers and places (see phase_reads)."""
+
+        async def load(uow: Any) -> _WorldView:
+            config = await uow.worlds.get_config(world_id)
+            _day, _phase, now_index = await uow.worlds.get_clock(world_id)
+            return _WorldView(
+                config=config,
+                now_index=now_index,
+                hooks=await uow.narrative.list_hooks_for_world(world_id),
+                everyone=await uow.characters.list_for_world(world_id),
+                away=await on_the_road(uow, world_id),
+                locations=await uow.locations.list_for_world(world_id),
+            )
+
+        return await self._shared(("world", world_id), load)
 
     async def _recall_by_relevance(
         self,
@@ -3379,9 +3466,12 @@ class Stage1Orchestrator:
         With ``narrate=False`` the scene is committed and settled only; the
         caller narrates it later (see _narrate_outcome), alongside others.
         """
-        prepared = await self._prepare_scene(
-            world_id, run_id, sealed, scene, intents, names, runtime=runtime, timings=timings
-        )
+        # One world read for this scene's reactions, taken now (a redone
+        # scene reads the world as the earlier commits left it).
+        with phase_reads.sharing(phase_reads.PhaseReads()):
+            prepared = await self._prepare_scene(
+                world_id, run_id, sealed, scene, intents, names, runtime=runtime, timings=timings
+            )
         outcome = await self._commit_prepared(world_id, run_id, index, sealed, scene, prepared)
         if not narrate:
             return outcome
@@ -3805,9 +3895,18 @@ class Stage1Orchestrator:
         names: Mapping[UUID, str],
         runtime: PhaseRuntime,
     ) -> Reaction | None:
-        async with self._factory() as uow:
-            reactor = await uow.characters.get(reactor_id)
-            locations = await uow.locations.list_for_world(world_id)
+        world = await self._world_view(world_id)
+        reactor = world.person(reactor_id)
+        if reactor is None:
+            async with self._factory() as uow:
+                reactor = await uow.characters.get(reactor_id)
+        locations = world.locations
+        if phase_reads.VERIFY and phase_reads.active() is not None:
+            async with self._factory() as uow:
+                fresh_reactor = await uow.characters.get(reactor_id)
+                fresh_places = await uow.locations.list_for_world(world_id)
+            if (fresh_reactor, fresh_places) != (reactor, locations):
+                raise AssertionError(f"shared reads changed {reactor.name}'s reaction input")
         envelope, included, excluded = await self._context_for(
             world_id, run_id, sealed.snapshot_id, reactor
         )
@@ -3878,8 +3977,7 @@ class Stage1Orchestrator:
         if not result["proposal"]["reacted"]:
             return None
         reaction = Reaction.model_validate(result["proposal"]["reaction"])
-        async with self._factory() as uow:
-            places = {loc.id: loc for loc in await uow.locations.list_for_world(world_id)}
+        places = {loc.id: loc for loc in (await self._world_view(world_id)).locations}
         return reaction.model_copy(
             update={"action": with_route(reaction.action, sealed.locations.get(reactor_id), places)}
         )
