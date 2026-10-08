@@ -28,6 +28,7 @@ from worldsim.application.ports.model_gateway import (
     unfence_json,
 )
 from worldsim.domain.jsonvalues import json_list, json_object
+from worldsim.infrastructure.http_pool import pooled_client
 
 DIAG_BODY_MAX = 4096
 
@@ -88,19 +89,14 @@ class OpenRouterGateway:
         self._base_url = base_url.rstrip("/")
         self._timeout_s = timeout_s
         self._client = client
-        self._owned_client = client is None
 
     def _auth_headers(self) -> dict[str, str]:
         return {"Authorization": f"Bearer {self._api_key.get_secret_value()}"}
 
     def _client_or_create(self) -> httpx.AsyncClient:
-        if self._client is not None:
-            return self._client
-        return httpx.AsyncClient(timeout=self._timeout_s)
-
-    async def _close_owned(self, client: httpx.AsyncClient) -> None:
-        if self._owned_client:
-            await client.aclose()
+        # The process's pooled client (kept-alive connections, one SSL
+        # context) unless a test injected its own transport.
+        return self._client if self._client is not None else pooled_client()
 
     def _body(self, request: CompletionRequest) -> dict[str, Any]:
         messages: list[dict[str, str]] = []
@@ -134,25 +130,23 @@ class OpenRouterGateway:
         client = self._client_or_create()
         started = time.monotonic()
         try:
-            try:
-                response = await client.post(
-                    f"{self._base_url}/chat/completions",
-                    json=self._body(request),
-                    headers=self._auth_headers(),
-                )
-            except httpx.TimeoutException as exc:
-                raise ModelTimeoutError("openrouter request timed out") from exc
-            except httpx.HTTPError as exc:
-                raise ModelUnavailableError(f"openrouter transport failed: {exc}") from exc
-            latency_ms = max(0, int((time.monotonic() - started) * 1000))
-            result = self._read_completion(response, latency_ms)
-            if request.json_mode:
-                # Some providers behind OpenRouter fence JSON (```json ... ```)
-                # even in JSON mode; every caller would otherwise repair it.
-                result = result.model_copy(update={"text": unfence_json(result.text)})
-            return result
-        finally:
-            await self._close_owned(client)
+            response = await client.post(
+                f"{self._base_url}/chat/completions",
+                json=self._body(request),
+                headers=self._auth_headers(),
+                timeout=self._timeout_s,
+            )
+        except httpx.TimeoutException as exc:
+            raise ModelTimeoutError("openrouter request timed out") from exc
+        except httpx.HTTPError as exc:
+            raise ModelUnavailableError(f"openrouter transport failed: {exc}") from exc
+        latency_ms = max(0, int((time.monotonic() - started) * 1000))
+        result = self._read_completion(response, latency_ms)
+        if request.json_mode:
+            # Some providers behind OpenRouter fence JSON (```json ... ```)
+            # even in JSON mode; every caller would otherwise repair it.
+            result = result.model_copy(update={"text": unfence_json(result.text)})
+        return result
 
     @staticmethod
     def _cost_of(payload: dict[str, Any]) -> float | None:
@@ -332,19 +326,17 @@ class OpenRouterGateway:
     async def embed(self, request: EmbeddingRequest) -> EmbeddingResult:
         client = self._client_or_create()
         try:
-            try:
-                response = await client.post(
-                    f"{self._base_url}/embeddings",
-                    json={"model": self.profile.model_id, "input": request.texts},
-                    headers=self._auth_headers(),
-                )
-            except httpx.TimeoutException as exc:
-                raise ModelTimeoutError("openrouter request timed out") from exc
-            except httpx.HTTPError as exc:
-                raise ModelUnavailableError(f"openrouter transport failed: {exc}") from exc
-            return self._read_embeddings(response)
-        finally:
-            await self._close_owned(client)
+            response = await client.post(
+                f"{self._base_url}/embeddings",
+                json={"model": self.profile.model_id, "input": request.texts},
+                headers=self._auth_headers(),
+                timeout=self._timeout_s,
+            )
+        except httpx.TimeoutException as exc:
+            raise ModelTimeoutError("openrouter request timed out") from exc
+        except httpx.HTTPError as exc:
+            raise ModelUnavailableError(f"openrouter transport failed: {exc}") from exc
+        return self._read_embeddings(response)
 
     def _read_embeddings(self, response: httpx.Response) -> EmbeddingResult:
         if response.status_code == 429:
@@ -394,34 +386,33 @@ class OpenRouterGateway:
         client = self._client_or_create()
         started = time.monotonic()
         try:
-            try:
-                response = await client.get(
-                    f"{self._base_url}/models", headers=self._auth_headers()
-                )
-            except httpx.HTTPError as exc:
-                return ProbeResult(
-                    ok=False,
-                    profile=f"{self.profile.name}@{self.profile.version}",
-                    latency_ms=0,
-                    detail=f"probe transport failed: {exc}",
-                )
-            latency_ms = max(0, int((time.monotonic() - started) * 1000))
-            if response.status_code != 200:
-                return ProbeResult(
-                    ok=False,
-                    profile=f"{self.profile.name}@{self.profile.version}",
-                    latency_ms=latency_ms,
-                    detail=f"probe HTTP {response.status_code}",
-                )
-            try:
-                count = len(response.json().get("data", []))
-            except ValueError:
-                count = 0
+            response = await client.get(
+                f"{self._base_url}/models",
+                headers=self._auth_headers(),
+                timeout=self._timeout_s,
+            )
+        except httpx.HTTPError as exc:
             return ProbeResult(
-                ok=True,
+                ok=False,
+                profile=f"{self.profile.name}@{self.profile.version}",
+                latency_ms=0,
+                detail=f"probe transport failed: {exc}",
+            )
+        latency_ms = max(0, int((time.monotonic() - started) * 1000))
+        if response.status_code != 200:
+            return ProbeResult(
+                ok=False,
                 profile=f"{self.profile.name}@{self.profile.version}",
                 latency_ms=latency_ms,
-                detail=f"{count} models listed",
+                detail=f"probe HTTP {response.status_code}",
             )
-        finally:
-            await self._close_owned(client)
+        try:
+            count = len(response.json().get("data", []))
+        except ValueError:
+            count = 0
+        return ProbeResult(
+            ok=True,
+            profile=f"{self.profile.name}@{self.profile.version}",
+            latency_ms=latency_ms,
+            detail=f"{count} models listed",
+        )

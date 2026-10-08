@@ -25,6 +25,7 @@ from worldsim.application.ports.images import (
     ImageRequest,
 )
 from worldsim.domain.jsonvalues import json_list, json_object
+from worldsim.infrastructure.http_pool import pooled_client
 
 #: Catalog reads are quick; a service this slow to list is not usable.
 CATALOG_TIMEOUT_S = 5.0
@@ -98,26 +99,25 @@ class KreaImageGenerator:
         Ids carry the portrait's version, so a redrawn portrait registers
         anew instead of reusing an old face.
         """
-        client = self._client or httpx.AsyncClient(timeout=self._timeout_s)
+        client = self._client or pooled_client()
         try:
-            try:
-                known = await client.get(f"{self._base_url}/v1/characters/{card.id}")
-                if known.status_code == 200:
-                    return
-                created = await client.post(
-                    f"{self._base_url}/v1/characters",
-                    json={
-                        "id": card.id,
-                        "name": card.name,
-                        "description": card.description,
-                        "images": [base64.b64encode(_png(card.image)).decode()],
-                    },
-                )
-            except httpx.HTTPError as exc:
-                raise ImageGenerationError(f"krea unreachable: {exc}") from exc
-        finally:
-            if self._client is None:
-                await client.aclose()
+            known = await client.get(
+                f"{self._base_url}/v1/characters/{card.id}", timeout=self._timeout_s
+            )
+            if known.status_code == 200:
+                return
+            created = await client.post(
+                f"{self._base_url}/v1/characters",
+                json={
+                    "id": card.id,
+                    "name": card.name,
+                    "description": card.description,
+                    "images": [base64.b64encode(_png(card.image)).decode()],
+                },
+                timeout=self._timeout_s,
+            )
+        except httpx.HTTPError as exc:
+            raise ImageGenerationError(f"krea unreachable: {exc}") from exc
         if created.status_code == 400 and "already exists" in created.text:
             return  # registered by a concurrent job
         if created.status_code != 200:
@@ -126,17 +126,15 @@ class KreaImageGenerator:
             )
 
     async def generate(self, request: ImageRequest) -> GeneratedImage:
-        client = self._client or httpx.AsyncClient(timeout=self._timeout_s)
+        client = self._client or pooled_client()
         try:
-            try:
-                response = await client.post(f"{self._base_url}/generate", json=self.body(request))
-            except httpx.TimeoutException as exc:
-                raise ImageGenerationError("krea request timed out") from exc
-            except httpx.HTTPError as exc:
-                raise ImageGenerationError(f"krea unreachable: {exc}") from exc
-        finally:
-            if self._client is None:
-                await client.aclose()
+            response = await client.post(
+                f"{self._base_url}/generate", json=self.body(request), timeout=self._timeout_s
+            )
+        except httpx.TimeoutException as exc:
+            raise ImageGenerationError("krea request timed out") from exc
+        except httpx.HTTPError as exc:
+            raise ImageGenerationError(f"krea unreachable: {exc}") from exc
         if response.status_code != 200:
             raise ImageGenerationError(f"krea HTTP {response.status_code}: {response.text[:300]}")
         width, height = _size(response.headers.get("x-size", ""))
@@ -152,18 +150,14 @@ class KreaImageGenerator:
 
     async def catalog(self) -> KreaCatalog:
         """Health, checkpoints and styles, read concurrently with a short timeout."""
-        client = self._client or httpx.AsyncClient(timeout=CATALOG_TIMEOUT_S)
-        try:
-            replies = await asyncio.gather(
-                *(
-                    client.get(f"{self._base_url}{path}", timeout=CATALOG_TIMEOUT_S)
-                    for path in ("/health", "/v1/checkpoints", "/v1/styles")
-                ),
-                return_exceptions=True,
-            )
-        finally:
-            if self._client is None:
-                await client.aclose()
+        client = self._client or pooled_client()
+        replies = await asyncio.gather(
+            *(
+                client.get(f"{self._base_url}{path}", timeout=CATALOG_TIMEOUT_S)
+                for path in ("/health", "/v1/checkpoints", "/v1/styles")
+            ),
+            return_exceptions=True,
+        )
         health, checkpoints, styles = (_json_of(reply) for reply in replies)
         if health is None:
             first = replies[0]

@@ -12,6 +12,7 @@ from typing import Any
 import httpx
 
 from worldsim.application.ports.writer import WritingError, Written
+from worldsim.infrastructure.http_pool import pooled_client
 
 
 class OpenRouterWriter:
@@ -43,10 +44,12 @@ class OpenRouterWriter:
             body["reasoning"] = {"effort": self._reasoning}
         started = time.monotonic()
         try:
-            async with httpx.AsyncClient(timeout=self._timeout) as client:
-                reply = await client.post(
-                    self._url, json=body, headers={"Authorization": f"Bearer {self._key}"}
-                )
+            reply = await pooled_client().post(
+                self._url,
+                json=body,
+                headers={"Authorization": f"Bearer {self._key}"},
+                timeout=self._timeout,
+            )
         except httpx.HTTPError as exc:
             raise WritingError(f"writer unreachable: {type(exc).__name__}") from exc
         seconds = round(time.monotonic() - started, 1)

@@ -15,6 +15,7 @@ from worldsim.application.ports.local_models import (
     LocalModelsUnavailable,
     Span,
 )
+from worldsim.infrastructure.http_pool import pooled_client
 
 #: After a failure, calls fail fast for this long instead of each one
 #: waiting out a timeout against a service that is off.
@@ -64,8 +65,13 @@ class LocalModelsClient:
 
     async def _send(self, path: str, body: dict[str, Any], limit_s: float) -> bytes:
         try:
-            async with httpx.AsyncClient(timeout=limit_s, transport=self._transport) as client:
-                response = await client.post(f"{self._base_url}{path}", json=body)
+            if self._transport is None:
+                response = await pooled_client().post(
+                    f"{self._base_url}{path}", json=body, timeout=limit_s
+                )
+            else:  # tests stand in a transport
+                async with httpx.AsyncClient(timeout=limit_s, transport=self._transport) as client:
+                    response = await client.post(f"{self._base_url}{path}", json=body)
         except httpx.HTTPError as exc:
             raise LocalModelsUnavailable(f"{path}: {type(exc).__name__}") from exc
         if response.status_code != 200:

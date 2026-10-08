@@ -20,6 +20,7 @@ from worldsim.application.autoplay import AutoplayRunner
 from worldsim.application.orchestration.stage1 import Stage1PhaseReport
 from worldsim.application.tasks.service import TaskService
 from worldsim.domain.errors import DomainError
+from worldsim.infrastructure.http_pool import aclose_pooled
 from worldsim.infrastructure.images.runner import ImageJobRunner
 from worldsim.infrastructure.local_models.indexer import MentionReader, RecallIndexer
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
@@ -105,6 +106,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     if images is not None and images_loop is not None:
         await images.stop()
         await images_loop
+    await aclose_pooled()
     await state.engine.dispose()
 
 

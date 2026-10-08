@@ -17,6 +17,7 @@ import httpx
 
 from worldsim.application.ports.traces import ExportResult, StoredCompletion
 from worldsim.domain.tracing import ContextManifest, ModelCall
+from worldsim.infrastructure.http_pool import pooled_client
 from worldsim.infrastructure.settings import TracingSettings
 
 
@@ -96,21 +97,19 @@ class LangSmithExporter:
         self, call: ModelCall, manifest: ContextManifest, completion: StoredCompletion | None
     ) -> ExportResult:
         body = {"post": [self._run_body(call, manifest, completion)], "patch": []}
-        client = self._client if self._client is not None else httpx.AsyncClient(timeout=5.0)
+        client = self._client if self._client is not None else pooled_client()
         try:
             response = await client.post(
                 f"{self._endpoint}/api/v1/runs/batch",
                 json=body,
                 headers={"x-api-key": self._api_key, "Content-Type": "application/json"},
+                timeout=5.0,
             )
             if 200 <= response.status_code < 300:
                 return ExportResult(status="ok", detail=f"accepted:{response.status_code}")
             return ExportResult(status="failed", detail=f"server:{response.status_code}")
         except Exception as exc:
             return ExportResult(status="failed", detail=f"transport:{type(exc).__name__}")
-        finally:
-            if self._owns_client:
-                await client.aclose()
 
     async def aclose(self) -> None:
         if self._client is not None and not self._owns_client:
