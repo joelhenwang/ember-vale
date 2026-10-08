@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -140,6 +140,11 @@ class SqlAlchemyWorldRepository:
         ).scalars()
         return {row.key: row.value for row in rows}
 
+    async def presentation_fingerprint(self, world_id: UUID) -> str:
+        """One statement that changes whenever anything the presentation shows does."""
+        row = (await self._session.execute(_FINGERPRINT, {"w": world_id})).scalar_one()
+        return str(row)
+
     async def put_config(self, world_id: UUID, key: str, value: object) -> None:
         await self._session.execute(
             pg_insert(WorldConfigRow)
@@ -147,3 +152,42 @@ class SqlAlchemyWorldRepository:
             .on_conflict_do_update(index_elements=["world_id", "key"], set_={"value": value})
         )
         await self._session.flush()
+
+
+#: Every input of ``queries.presentation.presentation`` in one round trip:
+#: versions only grow, so count + sum(version) moves on any insert, update
+#: or delete; small or unversioned tables are hashed whole (perf-reads-001).
+#: A new input of the presentation MUST be added here and to
+#: tests/test_presentation_fingerprint.py, or fingerprint mode shows it stale.
+_FINGERPRINT = text(
+    """
+    select concat_ws('|',
+      (select version || ':' || status || ':' || coalesce(updated_at::text, '')
+         from world where id = :w),
+      (select absolute_index from world_clock where world_id = :w),
+      (select count(*) || ':' || coalesce(max(updated_at)::text, '')
+              || ':' || coalesce(string_agg(state, '' order by created_at desc), '')
+         from phase_run where world_id = :w),
+      (select count(*) || ':' || coalesce(sum(version), 0) from location where world_id = :w),
+      (select md5(coalesce(string_agg(id::text || name, ',' order by id), ''))
+         from character where world_id = :w),
+      (select count(*) || ':' || coalesce(sum(version), 0)
+         from character_state where world_id = :w),
+      (select count(*) || ':' || coalesce(sum(version), 0) from activity where world_id = :w),
+      (select count(*) || ':' || coalesce(sum(version), 0)
+         from narrative_hook where world_id = :w),
+      (select coalesce(max(sequence), 0) from world_event where world_id = :w),
+      (select count(*) || ':' || coalesce(sum(version), 0)
+         from asset_record where world_id = :w),
+      (select md5(coalesce(string_agg(key || value::text, ',' order by key), ''))
+         from world_config where world_id = :w),
+      (select md5(coalesce(string_agg(id::text || job_id::text
+                  || coalesce(repaint_job_id::text, '') || coalesce(title, '')
+                  || coalesce(caption, ''), ',' order by id), ''))
+         from scene_picture where world_id = :w),
+      (select count(*) || ':' || coalesce(sum(version), 0)
+              || ':' || md5(coalesce(string_agg(status, '' order by id), ''))
+         from image_job where world_id = :w)
+    )
+    """
+)

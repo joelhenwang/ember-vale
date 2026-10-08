@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import hashlib
+from pathlib import Path
 from uuid import UUID
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Query, Request, Response
 
 from worldsim.application.capabilities import is_omniscient, parse_role
 from worldsim.application.commands.seed_world import SeedService
 from worldsim.application.library.builtins import ensure_builtin_presets
+from worldsim.application.queries import presentation as presentation_module
 from worldsim.application.queries.presentation import (
     chronicle as chronicle_query,
 )
@@ -20,6 +23,7 @@ from worldsim.domain.stories import SetupProvenance, StoryCatalogEntry, StoryIni
 from worldsim.domain.time import absolute_index, utcnow
 from worldsim.domain.world import World
 from worldsim.interfaces.http import schemas as api
+from worldsim.interfaces.http.etag import VARY
 from worldsim.interfaces.http.routes.roles import effective_role
 from worldsim.interfaces.http.schemas import (
     ClockResponse,
@@ -156,16 +160,43 @@ async def seed_world(request: Request) -> SeedResponse:
     )
 
 
+#: The presentation's code, so a deploy that changes what it shows never
+#: matches a tag from before (fingerprint mode).
+_CODE_TAG = hashlib.blake2b(
+    b"".join(Path(m.__file__ or "").read_bytes() for m in (presentation_module, api)),
+    digest_size=8,
+).hexdigest()
+
+
 @router.get("/world/presentation", response_model=api.PresentationResponse)
-async def get_presentation(world_id: UUID, request: Request) -> api.PresentationResponse:
+async def get_presentation(world_id: UUID, request: Request) -> api.PresentationResponse | Response:
     """One coherent snapshot for the new Adventure and World surfaces."""
     state = request.app.state.app_state
     async with state.uow_factory()() as uow:
         role, viewer = await effective_role(request, world_id, uow)
+        tag: str | None = None
+        if state.settings.app.presentation_fingerprint:
+            # An unchanged poll is a 304 from one query, not 16 (perf-reads-001).
+            seen = await uow.worlds.presentation_fingerprint(world_id)
+            digest = hashlib.blake2b(
+                f"{seen}|{role}|{viewer}|{_CODE_TAG}".encode(), digest_size=12
+            ).hexdigest()
+            tag = f'W/"fp-{digest}"'
+            headers = {"ETag": tag, "Cache-Control": "private, no-cache", "Vary": VARY}
+            sent = request.headers.get("if-none-match", "")
+            if tag in {t.strip() for t in sent.split(",")}:
+                return Response(status_code=304, headers=headers)
         root = state.seed_dir.parent.parent / "assets"
-        return await presentation_query(
+        built = await presentation_query(
             uow, world_id, parse_role(role), viewer, root, state.journeys
         )
+    if tag is None:
+        return built
+    return Response(
+        content=built.model_dump_json(),
+        media_type="application/json",
+        headers={"ETag": tag, "Cache-Control": "private, no-cache", "Vary": VARY},
+    )
 
 
 @router.get("/world/chronicle", response_model=api.ChronicleResponse)

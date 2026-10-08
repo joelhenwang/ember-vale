@@ -193,3 +193,31 @@ Three ways to keep the stamp, and what goes wrong with each:
 | A fingerprint query (max sequence, versions and counts over the 11 inputs) | No lock, but it is about 11 lookups a poll. A quiet tick is already 3 + 16 + 3 queries, so it saves about half and still needs every input listed. |
 
 **Decision:** not now. One player uses a fraction of one process, and `WORKERS=N` adds about 60 viewers per process, which is cheaper and carries no staleness risk. If it is ever needed, the fingerprint query is the safe first step. It should come with a test that runs a scripted story (turns, background narration, a painted picture, a director rumour, autoplay) and checks after every step that the fingerprint changed whenever the presentation body did.
+
+## 9. The fingerprint, built and measured (opt-in)
+
+Section 8 rejected the fingerprint on an assumption: about 11 lookups a poll. Written as one SQL statement with sub-selects, it is a single round trip. So I built it, behind `WORLDSIM_APP__PRESENTATION_FINGERPRINT` (default **off**).
+
+- **The fingerprint** (`WorldRepository.presentation_fingerprint`) covers every input of the presentation:
+  - the world row and clock, phase runs, places, people and their state, activities, rumours, the newest event, picture assets, the world config, scene pictures and image jobs;
+  - versioned tables count as row count plus sum of versions, since versions only grow;
+  - small and unversioned tables are hashed whole.
+- **The tag** mixes in the role, the viewer, and a hash of the presentation code and schemas, so a deploy never matches an old tag.
+- **On a matching `If-None-Match`** the route answers 304 straight after role resolution and the fingerprint, without building anything.
+- **The staleness test** (`tests/test_presentation_fingerprint.py`) plays a scripted story: 12 turns across a day's end, a rumour opened and settled, and a config change. After every step it checks, for a watcher and a player, that a changed presentation came with a changed fingerprint. Checked against a mutant: with rumours left out of the fingerprint, it fails on "rumour opened".
+
+**One process, the same poll load test** (`data/poll_load_fingerprint*.json`, `data/poll_load_after_knee.json`):
+
+| Viewers | p95, without | p95, fingerprint | p50, without | p50, fingerprint |
+|---|---|---|---|---|
+| 10 | 27 ms | 16 ms | 9 ms | 10 ms |
+| 25 | 70 ms | 20 ms | 18 ms | 10 ms |
+| 50 | 159 ms | **39 ms** | 26 ms | 13 ms |
+| 75 | 458 ms | **73 ms** | 68 ms | 21 ms |
+| 90 | 1.7 s (saturated) | 2.3 s (saturated) | 411 ms | 519 ms |
+
+A revalidated presentation takes 7–11 ms instead of 17. Under load the tail is 4–6x shorter, and the point where one process tips moves from about 60 viewers to about 80. Past that, the remaining per-request work saturates the process near 110 requests/s: auth and role resolution, the autoplay and chronicle reads, and the framework. The fingerprint does not touch any of those.
+
+(The without-fingerprint 60-viewer step in `poll_load_after_knee.json` shows 357 errors. Those were connection refusals while the restarted API came up, because the load started too early. They are not failures under load.)
+
+**Decision: built, tested, off by default.** For one player it changes nothing measurable (about 10 ms either way). Turn it on when a process serves dozens of viewers. Every new feature that writes something the presentation shows must extend `_FINGERPRINT` and the scripted test; the comment on the query says so. Section 8's analysis of app-side bumps and triggers stands. The fingerprint avoids both problems: it needs no bumps and takes no locks.

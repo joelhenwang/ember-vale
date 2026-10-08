@@ -1,0 +1,46 @@
+[
+ {
+  "viewers": 10,
+  "requests": 447,
+  "req_per_s": 14.9,
+  "expected_req_per_s": 15.0,
+  "p50_ms": 9.5,
+  "p95_ms": 16.1,
+  "max_ms": 123.1,
+  "not_modified": 407,
+  "errors": 0
+ },
+ {
+  "viewers": 25,
+  "requests": 1122,
+  "req_per_s": 37.4,
+  "expected_req_per_s": 37.5,
+  "p50_ms": 10.1,
+  "p95_ms": 19.5,
+  "max_ms": 99.4,
+  "not_modified": 1022,
+  "errors": 0
+ },
+ {
+  "viewers": 50,
+  "requests": 2250,
+  "req_per_s": 75.0,
+  "expected_req_per_s": 75.0,
+  "p50_ms": 13.2,
+  "p95_ms": 39.1,
+  "max_ms": 164.8,
+  "not_modified": 2050,
+  "errors": 0
+ },
+ {
+  "viewers": 100,
+  "requests": 2946,
+  "req_per_s": 98.2,
+  "expected_req_per_s": 150.0,
+  "p50_ms": 601.1,
+  "p95_ms": 3075.9,
+  "max_ms": 6438.8,
+  "not_modified": 2546,
+  "errors": 0
+ }
+]

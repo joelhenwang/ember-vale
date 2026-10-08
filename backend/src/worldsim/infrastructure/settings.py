@@ -63,6 +63,10 @@ class ApplicationSettings(BaseModel):
     #: API processes (`serve`). More than one needs background_loops=false
     #: and a separate worker: each process would otherwise run every loop.
     workers: int = Field(default=1, ge=1, le=32)
+    #: Answer an unchanged presentation poll with a 304 from one fingerprint
+    #: query instead of building it (perf-reads-001 section 9). Off until
+    #: proven: a write the fingerprint does not cover would leave a stale screen.
+    presentation_fingerprint: bool = False
 
 
 class DatabaseSettings(BaseModel):
