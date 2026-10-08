@@ -11,6 +11,10 @@ import IconFeather from './icons/IconFeather.vue'
 import IconArrowInCircle from './icons/IconArrowInCircle.vue'
 import IconArrowRight from './icons/IconArrowRight.vue'
 import IconPlus from './icons/IconPlus.vue'
+import QuickHeroDialog from './QuickHeroDialog.vue'
+import { ref } from 'vue'
+
+const heroOpen = ref(false)
 import { storyLocation } from '../game/storyRoute'
 
 function resume(story: StorySummary): void {
@@ -71,17 +75,28 @@ function resume(story: StorySummary): void {
           <IconArrowInCircle :size="24" />
         </span>
       </article>
-      <router-link class="recent__card recent__new ev-card" :to="{ name: 'new-story' }">
-        <span class="recent__plus" aria-hidden="true"><IconPlus :size="28" /></span>
+      <div class="recent__card recent__new ev-card">
+        <router-link
+          class="recent__plus"
+          :to="{ name: 'new-story' }"
+          aria-label="Start a new story">
+          <IconPlus :size="28" />
+        </router-link>
         <span class="recent__body">
-          <span class="recent__title">Start a new story</span>
+          <router-link class="recent__title recent__newlink" :to="{ name: 'new-story' }"
+            >Start a new story</router-link
+          >
           <span class="recent__logline">Choose a world and someone to be.</span>
+          <span class="recent__quick">
+            <router-link :to="{ name: 'new-story', query: { quickstart: '1' } }"
+              >Quick start in {{ menuState.quickStartWorld }}</router-link
+            >
+            <button type="button" @click="heroOpen = true">Play as a new hero</button>
+          </span>
         </span>
-        <span class="recent__go" aria-hidden="true">
-          <IconArrowInCircle :size="24" />
-        </span>
-      </router-link>
+      </div>
     </div>
+    <QuickHeroDialog :open="heroOpen" @close="heroOpen = false" />
   </section>
 </template>
 
@@ -205,7 +220,29 @@ function resume(story: StorySummary): void {
 
 .recent__new {
   color: inherit;
+  cursor: default;
+}
+.recent__newlink {
+  color: inherit;
   text-decoration: none;
+}
+.recent__newlink:hover {
+  color: var(--teal-ink);
+}
+/* the two quick ways in, kept from the old "Begin a new tale" card */
+.recent__quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 6px;
+  font-family: var(--font-ui);
+  font-size: 14.5px;
+}
+.recent__quick a,
+.recent__quick button {
+  color: var(--teal-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .recent__new .recent__body {
   display: flex;
