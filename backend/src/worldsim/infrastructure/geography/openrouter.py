@@ -25,6 +25,7 @@ from worldsim.application.ports.map_reader import (
     ReadRoad,
 )
 from worldsim.domain.geography import MAP_SPAN, ROAD_KINDS, TERRAIN_KINDS, TerrainGrid
+from worldsim.infrastructure.http_pool import pooled_client
 
 PLACES_PROMPT = """This is a fantasy world map. List every place a traveller could go to or through:
 - settlements: city, town, village, port, camp, tribe
@@ -290,10 +291,13 @@ class OpenRouterMapReader:
             body["reasoning"] = {"effort": self._reasoning}
         started = time.monotonic()
         try:
-            async with httpx.AsyncClient(timeout=self._timeout) as client:
-                reply = await client.post(
-                    self._url, json=body, headers={"Authorization": f"Bearer {self._key}"}
-                )
+            # The process's pooled client: kept-alive connections, one SSL context.
+            reply = await pooled_client().post(
+                self._url,
+                json=body,
+                headers={"Authorization": f"Bearer {self._key}"},
+                timeout=self._timeout,
+            )
         except httpx.HTTPError as exc:
             raise MapReadingError(f"map reader unreachable: {type(exc).__name__}") from exc
         seconds = round(time.monotonic() - started, 1)
