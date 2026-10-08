@@ -1865,10 +1865,10 @@ button.log__picture:hover {
 .composer__modes {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  width: 116px;
+  grid-template-rows: 1fr 1fr;
+  width: 64px;
   padding: 3px;
-  border-radius: 999px;
+  border-radius: 18px;
   border: 1px solid var(--line);
   background: var(--surface-2);
   box-shadow: inset 0 1px 2px rgba(96, 74, 40, 0.12);
@@ -1876,22 +1876,22 @@ button.log__picture:hover {
 .composer__thumb {
   position: absolute;
   top: 3px;
-  bottom: 3px;
   left: 3px;
-  width: calc(50% - 3px);
-  border-radius: 999px;
+  right: 3px;
+  height: calc(50% - 3px);
+  border-radius: 15px;
   background: linear-gradient(180deg, var(--teal-hi), var(--teal));
   box-shadow: 0 1px 3px rgba(16, 46, 46, 0.35);
   transition: transform 0.25s var(--ease-out);
 }
 .composer__modes--say .composer__thumb {
-  transform: translateX(100%);
+  transform: translateY(100%);
 }
 .composer__modes [role='radio'] {
   position: relative;
   z-index: 1;
-  padding: 6px 0;
-  border-radius: 999px;
+  padding: 7px 0;
+  border-radius: 15px;
   font-family: var(--font-ui);
   font-size: 15px;
   font-weight: 600;
@@ -2233,17 +2233,6 @@ button.log__picture:hover {
   }
   .status__bar {
     flex: 1 1 140px;
-  }
-}
-@media (max-width: 640px) {
-  /* the switch on its own line, so the words keep the width */
-  .composer__row {
-    flex-wrap: wrap;
-  }
-  .composer__side {
-    flex-basis: 100%;
-    flex-direction: row;
-    justify-content: flex-start;
   }
 }
 @media (max-width: 960px) {
