@@ -171,8 +171,7 @@ The levers, by commit:
    window; re-check past 1,000 beats.
 4. **Live-check the summary cap.** One paid playtest to the first day-end, about $0.04–0.05,
    confirms the new 1,536 cap.
-5. **Watch idle polling.** Three reads every 15 s, now mostly 304s. A presentation-stamp skip
-   like Adventure's (`b9e3e92`) would make it one.
+5. ~~**Watch idle polling.**~~ Done after this write-up: a quiet, unchanged story now reads only presentation and autoplay on an idle tick; while a turn runs or autoplay plays, the feed still reads every tick.
 6. **Push instead of poll (SSE).** Only worth it with many viewers; the ETag revalidation
    covers one player.
 

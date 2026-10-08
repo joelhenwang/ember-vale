@@ -144,7 +144,10 @@ export function useObservatory(worldId: Ref<string>, options: ObservatoryOptions
   )
   const readChronicle = (): Promise<void> => chronicle.read()
 
-  async function refresh(): Promise<void> {
+  /** An idle tick on an unchanged, quiet story skips the chronicle read. */
+  let lastStamp = ''
+
+  async function refresh(idle = false): Promise<void> {
     try {
       const [view, state] = await Promise.all([
         api.getPresentation(worldId.value, opts.value),
@@ -153,6 +156,22 @@ export function useObservatory(worldId: Ref<string>, options: ObservatoryOptions
       presentation.value = view
       autoplay.value = state
       trackOpenBeat(view)
+      const stamp = [
+        view.absolute_index,
+        view.latest_run_id,
+        view.open_run_id,
+        view.run_state,
+        view.revision
+      ].join('|')
+      const writing = entries.value.some((e) => e.scene_id && !e.text)
+      // Only a quiet story skips: while a turn runs, scenes land one by one
+      // without the stamp moving, and the feed should show each as it lands.
+      const quiet = !view.open_run_id && !playing.value
+      if (idle && quiet && stamp === lastStamp && !writing) {
+        error.value = null
+        return
+      }
+      lastStamp = stamp
       await refreshPlacesIfNew(view)
       await readChronicle()
       error.value = null
@@ -190,7 +209,7 @@ export function useObservatory(worldId: Ref<string>, options: ObservatoryOptions
     if (disposed) return
     const ms = playing.value || beatOpen.value ? ACTIVE_POLL_MS : IDLE_POLL_MS
     cancelPoll = schedule(() => {
-      void refresh().then(planPoll)
+      void refresh(true).then(planPoll)
     }, ms)
   }
 

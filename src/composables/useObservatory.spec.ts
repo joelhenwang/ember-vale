@@ -168,6 +168,25 @@ describe('useObservatory', () => {
     expect(timers.live().map((t) => t.ms)).not.toContain(IDLE_POLL_MS)
   })
 
+  it('an idle tick on a quiet, unchanged story skips the chronicle', async () => {
+    const { api, calls, setView } = fakeApi()
+    const timers = fakeTimers()
+    const obs = useObservatory(ref('w'), { api, schedule: timers.schedule, visible: () => true })
+    await obs.load()
+    // the first idle tick learns the stamp; later unchanged ones skip
+    timers.run(IDLE_POLL_MS)
+    await flush()
+    const before = calls.filter((c) => c.startsWith('chronicle')).length
+    timers.run(IDLE_POLL_MS)
+    await flush()
+    expect(calls.filter((c) => c.startsWith('chronicle')).length).toBe(before)
+    // a beat runs: the story is no longer quiet, so it reads again
+    setView(presentation({ open_run_id: 'r4', run_state: 'committing' }))
+    timers.run(IDLE_POLL_MS)
+    await flush()
+    expect(calls.filter((c) => c.startsWith('chronicle')).length).toBeGreaterThan(before)
+  })
+
   it('step asks the server for exactly one beat', async () => {
     const { api, calls } = fakeApi()
     const obs = useObservatory(ref('w'), { api, schedule: fakeTimers().schedule })
