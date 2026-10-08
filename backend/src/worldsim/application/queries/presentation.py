@@ -321,6 +321,13 @@ async def chronicle(
     """
     omniscient = is_omniscient(role)
     events = await uow.events.list_range(world_id, after, limit)
+    if not events:
+        # Nothing new: the usual poll. Skip the reads that only dress
+        # entries (5 of 8 queries per quiet tick, perf-reads-001).
+        high = await uow.events.max_sequence(world_id)
+        return api.ChronicleResponse(
+            world_id=world_id, entries=[], next_after=after, has_more=high > after, watermark=high
+        )
     place_maps = story_place_maps((await uow.worlds.get_config(world_id)).get(PLACE_MAPS))
     who = {c.id: c.name for c in await uow.characters.list_for_world(world_id)}
     where = {loc.id: loc.name for loc in await uow.locations.list_for_world(world_id)}

@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -200,6 +201,13 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
+def pool_share(pool_size: int, max_overflow: int, budget: int, workers: int) -> tuple[int, int]:
+    """(pool, overflow) for one of ``workers`` processes sharing ``budget`` connections."""
+    share = max(2, budget // workers)
+    pool = min(pool_size, share)
+    return pool, max(0, min(max_overflow, share - pool))
+
+
 def _serve(args: argparse.Namespace) -> int:
     import uvicorn
 
@@ -210,7 +218,9 @@ def _serve(args: argparse.Namespace) -> int:
     port = args.port or settings.app.port
     workers = settings.app.workers
     if workers == 1:
-        uvicorn.run(create_app(settings), host=host, port=port)
+        # worldsim.access already logs every request; uvicorn's own access
+        # line doubled the log work per request (perf-reads-001).
+        uvicorn.run(create_app(settings), host=host, port=port, access_log=False)
         return 0
     if settings.app.background_loops:
         print(
@@ -219,13 +229,24 @@ def _serve(args: argparse.Namespace) -> int:
             "would run autoplay and painting."
         )
         return 2
-    # Each process builds its own app (its own pool) from the environment.
+    # Each process builds its own app (its own pool) from the environment,
+    # so the shared connection budget is handed down through it.
+    pool, overflow = pool_share(
+        settings.database.pool_size,
+        settings.database.max_overflow,
+        settings.database.connection_budget,
+        workers,
+    )
+    os.environ["WORLDSIM_DATABASE__POOL_SIZE"] = str(pool)
+    os.environ["WORLDSIM_DATABASE__MAX_OVERFLOW"] = str(overflow)
+    print(f"serving from {workers} processes, each with {pool}+{overflow} database connections")
     uvicorn.run(
         "worldsim.interfaces.http.app:create_app",
         factory=True,
         host=host,
         port=port,
         workers=workers,
+        access_log=False,
     )
     return 0
 

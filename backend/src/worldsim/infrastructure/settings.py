@@ -77,6 +77,12 @@ class DatabaseSettings(BaseModel):
     #: locks, generous enough never to cut real work: no app statement
     #: comes near it (reads are 5-50 ms). Migrations use their own engine.
     statement_timeout_ms: int = Field(default=60000, ge=100, le=600000)
+    #: Connections all API processes may hold together when
+    #: WORLDSIM_APP__WORKERS > 1; each process gets an equal share (pool
+    #: first, then overflow). Keep it under Postgres max_connections (200 in
+    #: compose) minus the worker's own pool. Four processes at 10+20 each
+    #: overran the default 100 and failed requests under load (perf-reads-001).
+    connection_budget: int = Field(default=150, ge=10, le=10000)
 
     @field_validator("url")
     @classmethod

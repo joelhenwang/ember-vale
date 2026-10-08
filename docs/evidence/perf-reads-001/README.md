@@ -1,5 +1,7 @@
 # perf-reads-001: per-character reads, long stories, and push vs poll (2026-10-08)
 
+**Correction (same day, after a load test, section 7).** The capacity figures in the verdict and section 3 were estimates, and they were about 2x too generous. Measured: one process carried about 40 viewers watching autoplay before p95 passed 0.5 s, not 90. After the two fixes in section 7 it carries about 60. The load test also found that `WORLDSIM_APP__WORKERS=4` failed requests under load, by running out of database connections. That is fixed (section 7). The original numbers are kept below.
+
 **Question.** `perf-summary-001` left three open items:
 - about 7 per-character reads per model call;
 - observations that pile up with story length, with no window on the salient set;
@@ -118,3 +120,52 @@ A new watcher story (Wren and Ash on Venice): Play for 60 s, Pause, then 40 s id
 The page had one long task (75 ms) and no console errors.
 
 Revalidation, checked directly: an unchanged presentation answers `304` with 0 bytes, but it takes 17 ms against 16.5 ms for the full answer. A 304 saves bytes, not server work, which is the case for the change stamp in section 3.
+
+## 6. The salience cap under live-like citation
+
+The 1,000-turn bench in section 2 used a fake model that never cites, so nothing became salient. `beat_bench.py --cite 0.3` makes the fake day-end summary cite 30% of its sources, which raises their salience as live play does. By turn 1,000, 22–23% of observations were salient, about 3x the live 7%. `--salient-cap` overrides the cap. 3 characters, 1,000 turns each (`data/long-cite30-*.json`):
+
+| Turns | Decide, no citing | Decide, citing, no cap | Decide, citing, cap 200 |
+|---|---|---|---|
+| 1–100 | 201 ms | 196 ms | 160 ms |
+| 401–500 | 137 ms | 412 ms | 241 ms |
+| 801–900 | 143 ms | 403 ms | 287 ms |
+| 901–1000 | 143 ms | 433 ms | 272 ms |
+| Mean turn | 713 ms | 1,064 ms | 843 ms |
+
+Without the cap the decision phase kept growing, to 2.2x by turn 1,000. With it, the phase levelled off near 280 ms once the cap began to bind (about turn 550 at this citation rate). The rest of the gap to no citing is the 200 kept rows plus the recent window, which is the intended cost of remembering important things.
+
+## 7. Poll load test (`data/poll_load.py`)
+
+N simulated viewers each read presentation, autoplay and the chronicle every 2 s, as Watch does while playing. They send If-None-Match like a browser. 30 s per step, against the dev container with Docker Desktop and 14 CPUs. About 90% of the answers were 304s.
+
+**One process, before the fixes** (`data/poll_load.json`):
+
+| Viewers | Requests/s achieved (wanted) | p50 | p95 | Errors |
+|---|---|---|---|---|
+| 10 | 15 (15) | 13 ms | 28 ms | 0 |
+| 25 | 37.5 (37.5) | 16 ms | 44 ms | 0 |
+| 50 | 75 (75) | 44 ms | 640 ms | 0 |
+| 100 | 133 (150) | 541 ms | 1.4 s | 0 |
+| 200 | 103 (300) | 1.6 s | 6.5 s | 0 |
+
+**Four processes (`WORKERS=4`) failed under load.** Each process opened up to 10+20 connections, 120 in all, against Postgres's default `max_connections` of 100. At 300 viewers, 536 requests failed with `TooManyConnectionsError`. The fixes:
+- compose now runs Postgres with `max_connections=200`;
+- `WORLDSIM_DATABASE__CONNECTION_BUDGET` (default 150) is shared between API processes, so N processes can never exceed it (`pool_share` in `interfaces/cli.py`, `tests/test_pool_share.py`).
+
+After the fixes, 4 processes served 300 viewers with 0 errors. They saturated near 270 requests/s, about 68 per process and CPU-bound. They held 150 viewers at p95 about 0.55 s (`data/poll_load_workers4.json`).
+
+**Profile of a quiet tick** (`data/poll_profile.py`, in-process): about 50 statements a tick. There is no single hot spot, so the cost is the number of database round trips plus framework overhead. Two fixes:
+- **An empty chronicle page returns early.** With nothing after the cursor, the reads that only dress entries (config, people, places, narration, scenes) are skipped: 8 to 3 queries, same response.
+- **One access log, not two.** uvicorn's access line duplicated `worldsim.access` on every request; it is off now.
+
+**One process, after** (`data/poll_load_after.json`):
+
+| Viewers | p50 | p95 | Errors |
+|---|---|---|---|
+| 10 | 9 ms | 27 ms | 0 |
+| 25 | 18 ms | 70 ms | 0 |
+| 50 | 26 ms (was 44) | **159 ms (was 640)** | 0 |
+| 100 | 525 ms | 2.5 s | 4 client timeouts at saturation |
+
+**The SSE decision still stands, now measured.** One player is far below every limit. One process now carries about 60 watching viewers, and `WORKERS=N` scales near-linearly in viewers until the CPU runs out. 90% of the load is unchanged 304s that still cost full work, so the change stamp in section 3 is the next lever. It would make most requests about 3 queries. Build it when real viewers approach ~50 per process.

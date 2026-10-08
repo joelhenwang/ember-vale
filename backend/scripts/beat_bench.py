@@ -14,7 +14,7 @@ Optionally profiles a window of beats with cProfile.
 
     python scripts/beat_bench.py --cast 3 --beats 100 [--places 6]
         [--checkpoints 10,100] [--profile 90:100] [--json out.json]
-        [--verify-reads] [--bystanders 2]
+        [--verify-reads] [--bystanders 2] [--cite 0.3] [--salient-cap N]
 
 ``--verify-reads`` builds every decision and reaction context a second time
 from fresh reads and stops on any byte of difference (phase_reads.VERIFY).
@@ -161,6 +161,9 @@ class Script:
     seeded: Seeded
     calls: dict[str, int] = field(default_factory=dict)
     dump: Path | None = None
+    #: Share of a day's sources the day-end summary cites. Cited sources gain
+    #: salience, as in live play; 0 cites nothing (the old behaviour).
+    cite: float = 0.0
 
     def _note(self, role: str, prompt: str) -> int:
         n = self.calls.get(role, 0) + 1
@@ -249,7 +252,11 @@ class Script:
 
     def summary(self, prompt: str) -> str:
         self._note("summary", prompt)
-        return json.dumps({"summary": "A day of talk and short walks.", "highlights": []})
+        if self.cite <= 0:
+            return json.dumps({"summary": "A day of talk and short walks.", "highlights": []})
+        tags = list(dict.fromkeys(re.findall(r"^\[([om]\d+)\]", prompt, re.MULTILINE)))
+        cited = [t for i, t in enumerate(tags) if (i * self.cite) % 1 + self.cite >= 1]
+        return json.dumps({"text": "A day of talk and short walks.", "source_ids": cited})
 
 
 def gateways(script: Script) -> tuple[Callable[[str], Any], dict[str, Any]]:
@@ -338,7 +345,7 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
     dump = Path(args.dump) if args.dump else None
     if dump is not None:
         dump.mkdir(parents=True, exist_ok=True)
-    script = Script(seeded, dump=dump)
+    script = Script(seeded, dump=dump, cite=args.cite)
     gateway_for, profiles = gateways(script)
 
     def factory() -> Any:
@@ -434,6 +441,12 @@ def main() -> int:
     parser.add_argument("--dump", help="directory for the first prompts of each role")
     parser.add_argument("--json")
     parser.add_argument(
+        "--cite", type=float, default=0.0, help="share of sources day-end summaries cite"
+    )
+    parser.add_argument(
+        "--salient-cap", type=int, help="override OLDER_SALIENT_KEPT (old salient rows kept)"
+    )
+    parser.add_argument(
         "--bystanders",
         type=int,
         default=2,
@@ -447,6 +460,10 @@ def main() -> int:
         "--verify-reads", action="store_true", help="check shared reads against fresh ones"
     )
     args = parser.parse_args()
+    if args.salient_cap is not None:
+        from worldsim.application.orchestration import stage1
+
+        stage1.OLDER_SALIENT_KEPT = args.salient_cap
     if args.verify_reads:
         from worldsim.application.orchestration import phase_reads
 
