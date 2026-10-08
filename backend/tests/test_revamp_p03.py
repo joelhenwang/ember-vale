@@ -216,6 +216,8 @@ def test_presentation_snapshot_shape(client: ApiClient) -> None:
         "/api/v1/world/presentation", params={"world_id": str(WORLD)}, headers=_watcher()
     )
     assert response.status_code == 200, response.text
+    # JSON over a kilobyte travels gzipped (the client asks for it by default).
+    assert response.headers.get("content-encoding") == "gzip"
     body = response.json()
     assert body["capabilities"]["role"] == "watcher"
     assert "advance" in body["capabilities"]["capabilities"]

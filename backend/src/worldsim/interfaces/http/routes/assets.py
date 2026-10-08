@@ -21,6 +21,7 @@ from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.infrastructure.assets.fixture import FixtureImageGateway
 from worldsim.infrastructure.storage.local import LocalStorage
 from worldsim.interfaces.http import schemas as api
+from worldsim.interfaces.http.asset_cache import asset_response, not_modified
 from worldsim.interfaces.http.routes.roles import effective_role
 
 router = APIRouter(tags=["assets"])
@@ -173,9 +174,12 @@ async def read_asset_bytes(asset_id: UUID, request: Request, world_id: UUID) -> 
             )
             if not allowed:
                 raise DomainError(ErrorCode.FORBIDDEN, "asset is outside player perspective")
+    cached = not_modified(request, asset)
+    if cached is not None:
+        return cached
     storage = _assets_root(request)
     try:
         data = await storage.read(asset.content_ref)
     except (FileNotFoundError, OSError) as exc:
         raise DomainError(ErrorCode.NOT_FOUND, "stored bytes are missing") from exc
-    return Response(content=data, media_type=asset.mime)
+    return asset_response(asset, data)

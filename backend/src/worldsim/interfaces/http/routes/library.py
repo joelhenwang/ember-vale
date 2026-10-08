@@ -28,6 +28,7 @@ from worldsim.domain.presets import (
 from worldsim.domain.time import utcnow
 from worldsim.infrastructure.storage.local import LocalStorage
 from worldsim.interfaces.http import schemas as api
+from worldsim.interfaces.http.asset_cache import asset_response, not_modified
 
 router = APIRouter(tags=["library"])
 
@@ -434,9 +435,12 @@ async def read_library_asset_bytes(asset_id: UUID, request: Request) -> Response
         asset = await uow.assets.get_asset(asset_id)
         if asset.world_id is not None:
             raise DomainError(ErrorCode.NOT_FOUND, "world-bound assets stay world-scoped")
+    cached = not_modified(request, asset)
+    if cached is not None:
+        return cached
     storage = LocalStorage(state.seed_dir.parent.parent / "assets")
     try:
         data = await storage.read(asset.content_ref)
     except (FileNotFoundError, OSError) as exc:
         raise DomainError(ErrorCode.NOT_FOUND, "stored bytes are missing") from exc
-    return Response(content=data, media_type=asset.mime)
+    return asset_response(asset, data)

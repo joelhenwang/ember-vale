@@ -14,6 +14,7 @@ from pathlib import Path
 from uuid import UUID
 
 from fastapi import FastAPI
+from starlette.middleware.gzip import GZipMiddleware
 
 import worldsim
 from worldsim.application.autoplay import AutoplayRunner
@@ -174,6 +175,18 @@ def create_app(
     key = resolved.security.api_key
     app.add_middleware(ApiKeyMiddleware, expected_key=key.get_secret_value() if key else None)
     app.add_middleware(RequestIdMiddleware)
+    # Outermost: JSON shrinks ~5-8x; pictures are already compressed.
+    app.add_middleware(
+        GZipMiddleware,
+        minimum_size=1024,
+        exclude_content_types=(
+            "text/event-stream",
+            "image/webp",
+            "image/png",
+            "image/jpeg",
+            "image/gif",
+        ),
+    )
     app.add_exception_handler(DomainError, domain_error_handler)
     app.add_exception_handler(Exception, unhandled_error_handler)
     app.include_router(health.router, prefix="/api/v1")

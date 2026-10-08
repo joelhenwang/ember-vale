@@ -160,6 +160,18 @@ def test_bytes_served_with_perspective(client: ApiClient) -> None:
     assert got.status_code == 200, got.text
     assert got.headers["content-type"] == "image/png"
     assert len(got.content) > 100_000
+    # Bytes never change under an id: cached for a year, revalidated by ETag,
+    # and never gzipped (pictures are already compressed).
+    assert "immutable" in got.headers["cache-control"]
+    assert "private" in got.headers["cache-control"]
+    assert "content-encoding" not in got.headers
+    again = client.get(
+        f"/api/v1/assets/{wren_asset['id']}",
+        params={"world_id": str(WORLD)},
+        headers={**_player(WREN), "If-None-Match": got.headers["etag"]},
+    )
+    assert again.status_code == 304
+    assert again.content == b""
 
     # Someone in a place the player can see has a face that loads.
     seen = client.get(
@@ -192,6 +204,13 @@ def test_bytes_served_with_perspective(client: ApiClient) -> None:
         headers=_player(WREN),
     )
     assert foreign.status_code == 403, foreign.text
+    # Holding the ETag does not get round the perspective check.
+    revalidated = client.get(
+        f"/api/v1/assets/{ash_asset['id']}",
+        params={"world_id": str(WORLD)},
+        headers={**_player(WREN), "If-None-Match": seen.headers["etag"]},
+    )
+    assert revalidated.status_code == 403, revalidated.text
 
     public = client.get(
         f"/api/v1/assets/{world_map['id']}",
