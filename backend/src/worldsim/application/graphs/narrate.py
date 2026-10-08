@@ -25,6 +25,7 @@ from uuid import UUID
 from langgraph.graph import StateGraph
 from pydantic import TypeAdapter, ValidationError
 
+from worldsim.application.graphs.compiled import compile_once
 from worldsim.application.graphs.state import GraphState
 from worldsim.application.ports.model_gateway import (
     CompletionRequest,
@@ -839,6 +840,7 @@ def stamp_beats(
     ]
 
 
+@compile_once
 def build_narration_graph(deps: NarratorGraphDeps) -> Any:
     """Compile the post-commit narration graph around injected dependencies."""
 

@@ -24,6 +24,7 @@ from uuid import UUID
 from langgraph.graph import StateGraph
 from pydantic import TypeAdapter, ValidationError
 
+from worldsim.application.graphs.compiled import compile_once
 from worldsim.application.graphs.lenient import normalize_tagged, repair_detail, validate_lenient
 from worldsim.application.graphs.state import GraphState
 from worldsim.application.ports.model_gateway import (
@@ -169,6 +170,7 @@ def _noop(reason: str, errors: list[str], repairs: int) -> dict[str, Any]:
     }
 
 
+@compile_once
 def build_director_graph(deps: DirectorGraphDeps) -> Any:
     """Compile the bounded director graph around injected dependencies."""
 

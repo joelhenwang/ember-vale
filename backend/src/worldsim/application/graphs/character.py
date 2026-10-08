@@ -24,6 +24,7 @@ from uuid import UUID
 from langgraph.graph import StateGraph
 from pydantic import TypeAdapter, ValidationError
 
+from worldsim.application.graphs.compiled import compile_once
 from worldsim.application.graphs.lenient import repair_detail, validate_lenient
 from worldsim.application.graphs.state import GraphInvocation, GraphState
 from worldsim.application.ports.model_gateway import (
@@ -214,6 +215,7 @@ def _proposal(intent: Intent, *, fallback: bool, reason: str) -> dict[str, Any]:
     }
 
 
+@compile_once
 def build_character_graph(deps: CharacterGraphDeps) -> Any:
     """Compile the bounded decision graph around injected dependencies."""
 

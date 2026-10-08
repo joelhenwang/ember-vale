@@ -18,6 +18,7 @@ from typing import Any
 from langgraph.graph import StateGraph
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
 
+from worldsim.application.graphs.compiled import compile_once
 from worldsim.application.graphs.state import GraphState
 from worldsim.application.ports.model_gateway import (
     CompletionRequest,
@@ -117,6 +118,7 @@ def _fallback(reason: str, errors: list[str], repairs: int) -> dict[str, Any]:
     }
 
 
+@compile_once
 def build_summary_graph(deps: SummaryGraphDeps) -> Any:
     """Compile the bounded summary graph around injected dependencies."""
 

@@ -24,6 +24,7 @@ from langgraph.graph import StateGraph
 from pydantic import TypeAdapter, ValidationError
 
 from worldsim.application.graphs.character import precheck_action
+from worldsim.application.graphs.compiled import compile_once
 from worldsim.application.graphs.lenient import repair_detail, validate_lenient
 from worldsim.application.graphs.state import GraphState
 from worldsim.application.ports.model_gateway import (
@@ -175,6 +176,7 @@ def _no_reaction(reason: str, errors: list[str], repairs: int) -> dict[str, Any]
     }
 
 
+@compile_once
 def build_reaction_graph(deps: ReactionGraphDeps) -> Any:
     """Compile the bounded reaction graph around injected dependencies."""
 

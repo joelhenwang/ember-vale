@@ -24,6 +24,7 @@ from uuid import UUID
 from langgraph.graph import StateGraph
 from pydantic import TypeAdapter, ValidationError
 
+from worldsim.application.graphs.compiled import compile_once
 from worldsim.application.graphs.lenient import (
     fill_expected_versions,
     repair_detail,
@@ -362,6 +363,7 @@ def _versions_of(state: ResolveState) -> dict[str, int]:
     return {str(k).split(":", 1)[-1]: int(v) for k, v in raw.items()}
 
 
+@compile_once
 def build_resolve_graph(deps: ResolverGraphDeps) -> Any:
     """Compile the hybrid resolution graph around injected dependencies."""
 
