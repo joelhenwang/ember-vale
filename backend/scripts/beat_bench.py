@@ -14,7 +14,7 @@ Optionally profiles a window of beats with cProfile.
 
     python scripts/beat_bench.py --cast 3 --beats 100 [--places 6]
         [--checkpoints 10,100] [--profile 90:100] [--json out.json]
-        [--verify-reads]
+        [--verify-reads] [--bystanders 2]
 
 ``--verify-reads`` builds every decision and reaction context a second time
 from fresh reads and stops on any byte of difference (phase_reads.VERIFY).
@@ -351,6 +351,7 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
         TraceService(factory, NullExporter()),
         gateway_for,
         profiles,
+        reacting_bystanders=None if args.bystanders < 0 else args.bystanders,
     )
     checkpoints = {int(c) for c in args.checkpoints.split(",") if c} if args.checkpoints else set()
     prof_from, prof_to = (0, -1)
@@ -432,6 +433,12 @@ def main() -> int:
     parser.add_argument("--prof-out")
     parser.add_argument("--dump", help="directory for the first prompts of each role")
     parser.add_argument("--json")
+    parser.add_argument(
+        "--bystanders",
+        type=int,
+        default=2,
+        help="who else answers an attempt (the production default 2; -1 = everyone)",
+    )
     parser.add_argument(
         "--sql-top", type=int, default=0, help="print top statements at checkpoints"
     )

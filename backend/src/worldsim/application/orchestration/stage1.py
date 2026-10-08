@@ -238,12 +238,14 @@ from worldsim.domain.perception import (
     FactChannel,
     FactVisibility,
     ObservableEvent,
+    Observation,
     ObservationFact,
     PerceivedFact,
+    RecentMemory,
 )
 from worldsim.domain.phases import PhaseRun, PhaseSnapshot, SnapshotCharacter
 from worldsim.domain.progress import TRAINING_STAMINA_COST, ItemInstance
-from worldsim.domain.relationships import describe
+from worldsim.domain.relationships import Relationship, describe
 from worldsim.domain.rules.dnd import (
     DataTables,
     MonsterState,
@@ -544,6 +546,17 @@ class _WorldView:
 
     def person(self, character_id: UUID) -> Character | None:
         return next((c for c in self.everyone if c.id == character_id), None)
+
+
+@dataclass(frozen=True)
+class _Mind:
+    """A character's own remembered material, shared within a phase (phase_reads)."""
+
+    observations: list[Observation]
+    memories: list[RecentMemory]
+    relationships: list[Relationship]
+    digests: list[MemoryDigest]
+    families: list[str]
 
 
 async def _card_of(uow: Any, character: Character, cards: CardCache | None) -> CharacterCard:
@@ -2937,14 +2950,21 @@ class Stage1Orchestrator:
                 extra_goal=extra_goal,
             )
             sources, dropped = to_manifest_dict(included, excluded)
-            async with self._factory() as uow:
-                carried_ids = [
-                    str(i.id) for i in await uow.inventory.list_for_owner(world_id, character.id)
-                ]
-                here_ids = [
-                    str(i.id)
-                    for i in await uow.inventory.list_at_location(world_id, character.location_id)
-                ]
+            # The same reads the context just made (shared within the phase).
+            carried_ids = [
+                str(i.id)
+                for i in await self._shared(
+                    ("carried", world_id, character.id),
+                    lambda uow: uow.inventory.list_for_owner(world_id, character.id),
+                )
+            ]
+            here_ids = [
+                str(i.id)
+                for i in await self._shared(
+                    ("items_at", world_id, character.location_id),
+                    lambda uow: uow.inventory.list_at_location(world_id, character.location_id),
+                )
+            ]
             spec = ManifestSpec(
                 role="character_decision",
                 profile=runtime.profiles["character"],
@@ -3128,28 +3148,38 @@ class Stage1Orchestrator:
             ("carried", world_id, character.id),
             lambda uow: uow.inventory.list_for_owner(world_id, character.id),
         )
+        half_life = _config_int(config, HALF_LIFE_PHASES_KEY, DEFAULT_HALF_LIFE_PHASES)
+        recent_phases = _config_int(config, RECENT_PHASES_KEY, DEFAULT_RECENT_PHASES)
+        floor = _config_float(config, SALIENCE_FLOOR_KEY, DEFAULT_SALIENCE_FLOOR)
+        since = max(0, now_index - recent_phases)
+
+        async def load_mind(uow: Any) -> _Mind:
+            return _Mind(
+                observations=await uow.perception.observations_for_observer(
+                    character.id, 100000, since_phase_index=since, min_salience=floor
+                ),
+                memories=await uow.perception.memories_for_owner(
+                    character.id, since_phase_index=since, min_salience=floor
+                ),
+                relationships=await uow.relationships.list_for_character(world_id, character.id),
+                digests=await uow.digests.list_for_owner(world_id, character.id),
+                families=(
+                    await uow.scenes.recent_families(character.id, STREAK_TURNS) if deciding else []
+                ),
+            )
+
+        # A reactor answering several attempts read all of this once per
+        # attempt; nothing in a phase writes it (perf-reads-001). The
+        # intention is read fresh: a reply may restate it mid-phase.
+        mind = await self._shared(("mind", world_id, character.id, since, deciding), load_mind)
+        observations, memories = mind.observations, mind.memories
+        relationships, digests, families = mind.relationships, mind.digests, mind.families
         async with self._factory() as uow:
             card = await _card_of(uow, character, self._cards)
             place = world.place(character.location_id) or await uow.locations.get(
                 character.location_id
             )
-            half_life = _config_int(config, HALF_LIFE_PHASES_KEY, DEFAULT_HALF_LIFE_PHASES)
-            recent_phases = _config_int(config, RECENT_PHASES_KEY, DEFAULT_RECENT_PHASES)
-            floor = _config_float(config, SALIENCE_FLOOR_KEY, DEFAULT_SALIENCE_FLOOR)
-            since = max(0, now_index - recent_phases)
-            observations = await uow.perception.observations_for_observer(
-                character.id, 100000, since_phase_index=since, min_salience=floor
-            )
-            memories = await uow.perception.memories_for_owner(
-                character.id, since_phase_index=since, min_salience=floor
-            )
-
-            relationships = await uow.relationships.list_for_character(world_id, character.id)
-            digests = await uow.digests.list_for_owner(world_id, character.id)
             intention = await uow.intentions.get(character.id)
-            families = (
-                await uow.scenes.recent_families(character.id, STREAK_TURNS) if deciding else []
-            )
             hooks = world.hooks
             everyone = world.everyone
             present = [c for c in everyone if c.id not in world.away]

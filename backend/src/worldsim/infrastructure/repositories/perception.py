@@ -45,7 +45,8 @@ class SqlAlchemyPerceptionRepository:
                 content_hash=observation.content_hash or None,
             )
         )
-        await self._session.flush()
+        # No flush per row: a commit writes every observer's row of an event
+        # in one batched INSERT, not one round trip each (perf-reads-001).
 
     async def observations_for_event(self, event_id: UUID) -> list[Observation]:
         rows = (
@@ -147,7 +148,6 @@ class SqlAlchemyPerceptionRepository:
                 content_hash=memory.content_hash or None,
             )
         )
-        await self._session.flush()
 
     async def memories_for_owner(
         self, owner_id: UUID, since_phase_index: int = 0, min_salience: float = 0.0
