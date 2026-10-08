@@ -8,13 +8,22 @@ import FramedImage from '../components/ui/FramedImage.vue'
 import ChipGroup from '../components/ui/ChipGroup.vue'
 import SortSelect from '../components/ui/SortSelect.vue'
 import CastCard from '../components/newstory/CastCard.vue'
-import StoryStepper from '../components/newstory/StoryStepper.vue'
+import InlineStepper from '../components/studio/InlineStepper.vue'
+import CollapseBox from '../components/studio/CollapseBox.vue'
+import StoryImage from '../components/StoryImage.vue'
+import IconCheck from '../components/icons/IconCheck.vue'
+import IconPlus from '../components/icons/IconPlus.vue'
+import IconEye from '../components/icons/IconEye.vue'
+import IconUser from '../components/icons/IconUser.vue'
+import IconUsers from '../components/icons/IconUsers.vue'
+import IconGlobe from '../components/icons/IconGlobe.vue'
+import IconFeather from '../components/icons/IconFeather.vue'
+import IconSparkle from '../components/icons/IconSparkle.vue'
 import MenuButton from '../components/MenuButton.vue'
 import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
 import IconSave from '../components/icons/IconSave.vue'
 import IconPlay from '../components/icons/IconPlay.vue'
 import MountainRidge from '../components/decor/MountainRidge.vue'
-import PageIntro from '../components/ui/PageIntro.vue'
 import { useBackend } from '../composables/useBackend'
 import {
   applyAdoption,
@@ -38,7 +47,15 @@ import {
   type NewStorySelections
 } from '../game/drafting'
 import { filterCast, type CastFilter } from '../game/filters'
-import { persistStepSlug, stepFromSlug } from '../game/wizardSteps'
+import { WIZARD_STEP_LABELS, persistStepSlug, stepFromSlug } from '../game/wizardSteps'
+import {
+  NEW_STORY_HEADS,
+  TONE_PRESETS,
+  placesLine,
+  searchWorlds,
+  storytellerName,
+  toneLabel
+} from '../game/newStory'
 import type { CharacterDef } from '../game/model'
 import { useStorytellerPin } from '../composables/useStorytellerPin'
 import { describeEnvironment } from '../composables/useStoryProvider'
@@ -218,15 +235,6 @@ const canContinue = computed(() => {
   return true
 })
 
-/** "Hearth · Market · Mill" — the first six, then how many more. */
-function placeList(places: { name: string }[]): string {
-  const shown = places.slice(0, 6).map((p) => p.name)
-  const more = places.length - shown.length
-  return `${places.length} ${places.length === 1 ? 'place' : 'places'}: ${shown.join(' · ')}${
-    more > 0 ? ` and ${more} more` : ''
-  }`
-}
-
 function chooseWorld(world: { id: string; revision: number }): void {
   sel.worldId = world.id
   sel.worldRev = world.revision
@@ -294,6 +302,61 @@ function pinnedCharName(member: {
 }): string {
   return pinned.characterName(member.presetId, member.presetRevision, member.name)
 }
+
+/* ————— what each step shows ————— */
+const head = computed(() => NEW_STORY_HEADS[step.value - 1] ?? NEW_STORY_HEADS[0]!)
+const SIDE_TITLES = [
+  'World preview',
+  'Your cast',
+  'Your role in the story',
+  'Story preview',
+  'Your storyteller',
+  'Story preview'
+]
+const sideTitle = computed(() => SIDE_TITLES[step.value - 1] ?? '')
+const nextLabel = computed(() => WIZARD_STEP_LABELS[step.value] ?? 'Review')
+const worldSearch = ref('')
+const shownWorlds = computed(() => searchWorlds(presets.worlds.value, worldSearch.value))
+
+function defOf(member: { presetId: string }): CharacterDef | undefined {
+  return characterDefs.value.find((d) => d.id === member.presetId)
+}
+function placeName(key: string): string {
+  return worldPlaces.value.find((p) => p.key === key)?.name ?? 'a place not chosen yet'
+}
+const playerMember = computed(() =>
+  sel.role === 'player' ? sel.cast.find((c) => c.key === sel.controlledKey) : undefined
+)
+const playerDef = computed(() => (playerMember.value ? defOf(playerMember.value) : undefined))
+/** Everyone but the character you play. */
+const others = computed(() =>
+  sel.cast.filter((c) => !(sel.role === 'player' && c.key === sel.controlledKey))
+)
+
+/** The app's storyteller by name ("Venice"), and whether this story picks its own. */
+const appTeller = computed(() => storytellerName(backend.status.value.modelProfile))
+const customTeller = ref(false)
+watch(
+  () => pinCtl.providerId.value,
+  (id) => {
+    if (id) customTeller.value = true
+  },
+  { immediate: true }
+)
+function useAppTeller(): void {
+  customTeller.value = false
+  pinCtl.selectProvider('')
+}
+
+/** A line of context beside the draft state. */
+const footerNote = computed(() => {
+  if (step.value === 1 && selectedWorld.value)
+    return `${selectedWorld.value.name} · ${worldPlaces.value.length} places`
+  if (step.value === 2)
+    return `${sel.cast.length} ${sel.cast.length === 1 ? 'character' : 'characters'} selected`
+  if (step.value >= 4 && sel.title.trim()) return sel.title.trim()
+  return ''
+})
 
 const controlledDisplay = computed(() => {
   const member = sel.cast.find((c) => c.key === sel.controlledKey)
@@ -944,18 +1007,25 @@ onMounted(() => {
 
 <template>
   <main class="nsv">
-    <section class="nsv__band ev-card">
-      <MountainRidge class="nsv__ridge" />
-      <PageIntro
-        title="Shape your next tale"
-        sub="Your draft saves to the library as you go — leaving and coming back keeps every choice." />
-    </section>
     <div v-if="bootError" class="nsv__state" role="alert">
       <p class="nsv__state-title">The library is unreachable</p>
       <p class="nsv__state-body">{{ bootError }} — check the backend and reload.</p>
     </div>
     <template v-else-if="booted">
-      <StoryStepper :current="step" @go="go" />
+      <!-- the step's own heading, and the steps across the page -->
+      <header class="nsx__top">
+        <h1 class="nsx__title">{{ head.title }}</h1>
+        <p class="nsx__intro">
+          {{ head.sub }}
+          <span class="nsx__saves"><IconCheck :size="13" /> Your choices save as you go.</span>
+        </p>
+        <InlineStepper
+          class="nsx__stepper"
+          stretch
+          :steps="[...WIZARD_STEP_LABELS]"
+          :current="step"
+          @go="go" />
+      </header>
       <p v-if="bootNotice" class="nsv__notice" role="status">{{ bootNotice }}</p>
       <div v-if="serverAlternative" class="nsv__modes" role="group" aria-label="Recovery choice">
         <button
@@ -1012,61 +1082,59 @@ onMounted(() => {
         submitted with this draft — pick the current world revision or retry.
       </p>
 
-      <section v-if="step === 1" class="nsv__panel" aria-label="Choose a world">
-        <h2 class="nsv__h">Where does the story begin?</h2>
-        <p v-if="sel.worldId" class="nsv__hint">
-          Want it different?
-          <router-link
-            class="sel__refine"
-            :to="{
-              path: `/new-story/world/${sel.worldId}`,
-              query: { draft: draftCtl.draft.value?.id }
-            }">
-            Refine this world in the studio</router-link
-          >
-          or
-          <router-link
-            class="sel__refine"
-            :to="{
-              path: '/new-story/world/new',
-              query: { draft: draftCtl.draft.value?.id }
-            }">
-            shape a new one</router-link
-          >
-          — you come back here to use it.
-        </p>
-        <ul class="nsv__worlds">
-          <li v-for="world in presets.worlds.value" :key="world.id">
-            <button
-              type="button"
-              class="nsv__world"
-              :class="{
-                'nsv__world--on': sel.worldId === world.id,
-                'nsv__world--pictured': world.cover
-              }"
-              :aria-pressed="sel.worldId === world.id"
-              @click="chooseWorld(world)">
-              <FramedImage
-                v-if="world.cover"
-                class="nsv__world-pic"
-                :src="world.cover.src"
-                :frame="world.cover.frame" />
-              <span class="nsv__world-name">{{ world.name }}</span>
-              <span
-                v-if="presets.worlds.value.filter((w) => w.name === world.name).length > 1"
-                class="nsv__world-rev"
-                >Version {{ world.revision }}</span
-              >
-              <span class="nsv__world-desc">{{ world.description }}</span>
-              <span class="nsv__world-places">{{ placeList(world.places) }}</span>
-            </button>
-          </li>
-        </ul>
-      </section>
+      <div class="nsx__body">
+        <!-- ————— the step ————— -->
+        <section class="nsx__main card ev-card" :aria-label="head.title">
+          <!-- 1 · world -->
+          <template v-if="step === 1">
+            <header class="nsx__head">
+              <h2 class="nsx__h">Your worlds</h2>
+              <span class="nsx__count">{{ presets.worlds.value.length }} worlds</span>
+              <SearchField v-model="worldSearch" class="nsx__search" placeholder="Search worlds…" />
+              <router-link
+                class="ghost nsx__create"
+                :to="{ path: '/new-story/world/new', query: { draft: draftCtl.draft.value?.id } }">
+                <IconPlus :size="14" /> Create a world
+              </router-link>
+            </header>
+            <ul class="nsx__worlds">
+              <li v-for="world in shownWorlds" :key="world.id">
+                <button
+                  type="button"
+                  class="wcard"
+                  :class="{ 'wcard--on': sel.worldId === world.id }"
+                  :aria-pressed="sel.worldId === world.id"
+                  @click="chooseWorld(world)">
+                  <span class="wcard__pic">
+                    <FramedImage
+                      v-if="world.cover"
+                      :src="world.cover.src"
+                      :frame="world.cover.frame"
+                      alt="" />
+                    <span v-else class="wcard__nopic">
+                      <MountainRidge class="wcard__ridge" />
+                      <span>No picture yet</span>
+                    </span>
+                    <span class="wcard__tick" aria-hidden="true">
+                      <IconCheck v-if="sel.worldId === world.id" :size="13" />
+                    </span>
+                  </span>
+                  <span class="wcard__name">{{ world.name }}</span>
+                  <span
+                    v-if="presets.worlds.value.filter((w) => w.name === world.name).length > 1"
+                    class="wcard__rev"
+                    >Version {{ world.revision }}</span
+                  >
+                  <span class="wcard__places">{{ placesLine(world.places) }}</span>
+                  <span class="wcard__desc">{{ world.description }}</span>
+                </button>
+              </li>
+              <li v-if="!shownWorlds.length" class="nsx__none">No world matches that search.</li>
+            </ul>
+          </template>
 
-      <section v-if="step === 2" class="nsv__panel" aria-label="Choose the cast">
-        <div class="cast__layout">
-          <div class="cast__main">
+          <!-- 2 · cast -->
+          <template v-else-if="step === 2">
             <div class="cast__toolbar">
               <SearchField v-model="filters.search" />
               <ChipGroup v-model="filters.category" :options="categoryOptions" />
@@ -1081,209 +1149,548 @@ onMounted(() => {
                 @toggle="toggleCast(def)" />
               <CreateCharacterTile @create="goCreateCharacter" />
             </div>
-            <p class="nsv__hint">Only saved library presets can join a real story.</p>
-          </div>
-          <aside class="sel" aria-label="Selected cast">
-            <div class="sel__head">
-              <h2 class="sel__title">Selected</h2>
-              <span class="sel__count">{{ sel.cast.length }} of 6 max</span>
+          </template>
+
+          <!-- 3 · play mode -->
+          <template v-else-if="step === 3">
+            <h2 class="nsx__h">Choose your play mode</h2>
+            <div class="modes">
+              <button
+                type="button"
+                class="mode"
+                :class="{ 'mode--on': sel.role === 'watcher' }"
+                :aria-pressed="sel.role === 'watcher'"
+                @click="sel.role = 'watcher'">
+                <span class="mode__tick" aria-hidden="true">
+                  <IconCheck v-if="sel.role === 'watcher'" :size="13" />
+                </span>
+                <IconEye :size="40" class="mode__icon" />
+                <span class="mode__name">Observer</span>
+                <span class="mode__desc">Watch the cast and guide the story between turns.</span>
+                <span class="mode__foot">No character of your own.</span>
+              </button>
+              <button
+                type="button"
+                class="mode"
+                :class="{ 'mode--on': sel.role === 'player' }"
+                :aria-pressed="sel.role === 'player'"
+                @click="sel.role = 'player'">
+                <span class="mode__tick" aria-hidden="true">
+                  <IconCheck v-if="sel.role === 'player'" :size="13" />
+                </span>
+                <IconUser :size="40" class="mode__icon" />
+                <span class="mode__name">Player</span>
+                <span class="mode__desc">Play one character and decide what they do.</span>
+                <span class="mode__foot">You choose their actions.</span>
+              </button>
             </div>
-            <p v-if="!sel.cast.length" class="sel__empty">No one yet — pick from the library.</p>
-            <ul v-else class="sel__list">
-              <li v-for="member in sel.cast" :key="member.key" class="sel__row">
-                <div class="sel__who">
-                  <strong>{{ pinnedCharName(member) }}</strong>
-                  <span class="sel__rev">preset rev {{ member.presetRevision }}</span>
-                </div>
-                <label class="sel__place">
-                  Starts at
-                  <select v-model="member.location" :disabled="!!pinned.worldError.value">
-                    <option v-for="place in worldPlaces" :key="place.key" :value="place.key">
-                      {{ place.name }}
+            <template v-if="sel.role === 'player'">
+              <h2 class="nsx__h nsx__h--gap">Who will you play?</h2>
+              <div class="whos">
+                <button
+                  v-for="member in sel.cast"
+                  :key="member.key"
+                  type="button"
+                  class="who"
+                  :class="{ 'who--on': sel.controlledKey === member.key }"
+                  :aria-pressed="sel.controlledKey === member.key"
+                  @click="sel.controlledKey = member.key">
+                  <span class="who__pic">
+                    <FramedImage
+                      v-if="defOf(member)?.portrait"
+                      :src="defOf(member)!.portrait!.src"
+                      :frame="defOf(member)!.portrait!.portrait"
+                      alt="" />
+                    <StoryImage
+                      v-else
+                      :image-slot="defOf(member)?.imageSlot ?? 'character.ash'"
+                      alt="" />
+                  </span>
+                  <span class="who__text">
+                    <span class="who__name">{{ pinnedCharName(member) }}</span>
+                    <span v-if="defOf(member)?.role" class="who__role">{{
+                      defOf(member)?.role
+                    }}</span>
+                    <span class="who__start">Starts at {{ placeName(member.location) }}</span>
+                  </span>
+                  <span class="wcard__tick" aria-hidden="true">
+                    <IconCheck v-if="sel.controlledKey === member.key" :size="13" />
+                  </span>
+                </button>
+              </div>
+            </template>
+            <p v-if="modeNotice" class="nsv__notice" role="status">{{ modeNotice }}</p>
+          </template>
+
+          <!-- 4 · story -->
+          <template v-else-if="step === 4">
+            <div class="grp">
+              <h2 class="nsx__h">Title</h2>
+              <p class="nsx__lead">Give your story a title. You can change it later.</p>
+              <input
+                v-model="sel.title"
+                class="ev-input nsx__input"
+                type="text"
+                maxlength="128"
+                aria-label="Title"
+                placeholder="A Morning in Ember Vale" />
+            </div>
+            <div class="grp">
+              <h2 class="nsx__h">Tone</h2>
+              <p class="nsx__lead">
+                Describe the mood in your own words, or choose a starting point.
+              </p>
+              <input
+                v-model="sel.tone"
+                class="ev-input nsx__input"
+                type="text"
+                maxlength="128"
+                aria-label="Tone"
+                placeholder="hopeful mystery" />
+              <div class="tones">
+                <button
+                  v-for="tone in TONE_PRESETS"
+                  :key="tone.value"
+                  type="button"
+                  class="tone"
+                  :class="{ 'tone--on': sel.tone.trim().toLowerCase() === tone.value }"
+                  :aria-pressed="sel.tone.trim().toLowerCase() === tone.value"
+                  @click="sel.tone = tone.value">
+                  <span class="tone__dot" aria-hidden="true"></span>
+                  <span class="tone__title">{{ tone.title }}</span>
+                  <span class="tone__line">{{ tone.line }}</span>
+                </button>
+              </div>
+            </div>
+          </template>
+
+          <!-- 5 · storyteller -->
+          <template v-else-if="step === 5">
+            <h2 class="nsx__h">Storyteller</h2>
+            <div class="opts">
+              <button
+                type="button"
+                class="opt"
+                :class="{ 'opt--on': !customTeller }"
+                :aria-pressed="!customTeller"
+                @click="useAppTeller">
+                <span class="tone__dot" aria-hidden="true"></span>
+                <span class="opt__title"
+                  >Use the app's storyteller <span class="opt__tag">Default</span></span
+                >
+                <span class="opt__line">The storyteller set in Settings: {{ appTeller }}.</span>
+              </button>
+              <button
+                type="button"
+                class="opt"
+                :class="{ 'opt--on': customTeller }"
+                :aria-pressed="customTeller"
+                @click="customTeller = true">
+                <span class="tone__dot" aria-hidden="true"></span>
+                <span class="opt__title">Choose a provider profile</span>
+                <span class="opt__line"
+                  >Keep this story on one exact profile, even if Settings change.</span
+                >
+              </button>
+            </div>
+            <div v-if="customTeller" class="grp nsx__pick">
+              <p
+                v-if="pinCtl.loading.value && !pinCtl.providers.value.length"
+                class="nsv__notice"
+                role="status">
+                Loading providers…
+              </p>
+              <p v-if="pinCtl.error.value" class="nsv__notice" role="alert">
+                {{ pinCtl.error.value }} —
+                <button type="button" class="nsv__link" @click="pinCtl.retry()">retry</button>
+              </p>
+              <p
+                v-if="
+                  !pinCtl.loading.value && !pinCtl.error.value && !pinCtl.providers.value.length
+                "
+                class="nsx__lead">
+                No provider profiles yet. Add one in Settings, or use the app's storyteller.
+              </p>
+              <div class="grid2">
+                <label v-if="pinCtl.providers.value.length" class="nsv__field">
+                  Provider
+                  <select
+                    :value="pinCtl.providerId.value"
+                    @change="pinCtl.selectProvider(($event.target as HTMLSelectElement).value)">
+                    <option value="">Choose a provider…</option>
+                    <option
+                      v-for="connection in pinCtl.providers.value"
+                      :key="connection.id"
+                      :value="connection.id">
+                      {{ connection.name }} ({{ connection.adapter }})
                     </option>
                   </select>
                 </label>
-                <button
-                  type="button"
-                  class="sel__remove"
-                  @click="
-                    toggleCast(
-                      characterDefs.find((d) => d.id === member.presetId) ?? characterDefs[0]
-                    )
-                  ">
-                  Remove
-                </button>
-                <router-link
-                  class="sel__refine"
-                  :to="{
-                    path: `/new-story/character/${member.presetId}`,
-                    query: { draft: draftCtl.draft.value?.id }
-                  }">
-                  Refine
-                </router-link>
+                <label v-if="pinCtl.providerId.value" class="nsv__field">
+                  Profile
+                  <select
+                    :value="pinCtl.profileId.value"
+                    :disabled="!pinCtl.profiles.value.length"
+                    @change="pinCtl.selectProfile(($event.target as HTMLSelectElement).value)">
+                    <option v-if="!pinCtl.profiles.value.length" value="">No profiles yet</option>
+                    <option
+                      v-for="profile in pinCtl.profiles.value"
+                      :key="profile.id"
+                      :value="profile.id">
+                      {{ profile.model_id }} · version {{ profile.revision }}
+                    </option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <CollapseBox class="nsx__more" title="Advanced details">
+              <p class="nsx__lead">
+                Choosing a profile saves its exact version with this story, so later changes in
+                Settings never change how it is told.
+              </p>
+              <p v-if="envNotice" class="nsx__lead">{{ envNotice }}</p>
+              <p class="nsx__lead">Selected: {{ pinCtl.summary.value }}</p>
+            </CollapseBox>
+          </template>
+
+          <!-- 6 · review -->
+          <template v-else>
+            <h2 class="nsx__h">Your story setup</h2>
+            <ul class="setup">
+              <li class="setup__row">
+                <span class="setup__label">World</span>
+                <span class="setup__what">
+                  <span v-if="selectedWorld?.cover" class="setup__pic setup__pic--wide">
+                    <FramedImage
+                      :src="selectedWorld.cover.src"
+                      :frame="selectedWorld.cover.frame"
+                      alt="" />
+                  </span>
+                  <span class="setup__text">
+                    <b>{{ selectedWorld?.name ?? 'No world chosen' }}</b>
+                    <span>{{ worldPlaces.length }} places</span>
+                  </span>
+                </span>
+                <button type="button" class="setup__edit" @click="go(1)">Edit</button>
+              </li>
+              <li class="setup__row">
+                <span class="setup__label">Characters</span>
+                <span class="setup__what">
+                  <span v-for="member in sel.cast" :key="member.key" class="setup__face">
+                    <FramedImage
+                      v-if="defOf(member)?.portrait"
+                      :src="defOf(member)!.portrait!.src"
+                      :frame="defOf(member)!.portrait!.face"
+                      alt="" />
+                    <StoryImage
+                      v-else
+                      :image-slot="defOf(member)?.imageSlot ?? 'character.ash'"
+                      alt="" />
+                    <span>{{ pinnedCharName(member) }}</span>
+                  </span>
+                  <span v-if="!sel.cast.length" class="setup__text">No one yet</span>
+                </span>
+                <button type="button" class="setup__edit" @click="go(2)">Edit</button>
+              </li>
+              <li class="setup__row">
+                <span class="setup__label">Play mode</span>
+                <span class="setup__text">
+                  <b>{{ sel.role === 'player' ? 'Player' : 'Observer' }}</b>
+                  <span>{{
+                    sel.role === 'player'
+                      ? `You play ${controlledDisplay}.`
+                      : 'You watch the story unfold.'
+                  }}</span>
+                </span>
+                <button type="button" class="setup__edit" @click="go(3)">Edit</button>
+              </li>
+              <li class="setup__row">
+                <span class="setup__label">Story</span>
+                <span class="setup__text">
+                  <b>{{ sel.title || 'Untitled' }}</b>
+                  <span v-if="sel.tone">Tone: {{ toneLabel(sel.tone) }}</span>
+                </span>
+                <button type="button" class="setup__edit" @click="go(4)">Edit</button>
+              </li>
+              <li class="setup__row">
+                <span class="setup__label">Storyteller</span>
+                <span class="setup__text">
+                  <b>{{ customTeller ? pinCtl.summary.value : "The app's storyteller" }}</b>
+                  <span v-if="!customTeller">Currently {{ appTeller }}</span>
+                </span>
+                <button type="button" class="setup__edit" @click="go(5)">Edit</button>
               </li>
             </ul>
-          </aside>
-        </div>
-      </section>
+            <ul v-if="localIssues.length" class="nsv__issues" role="alert">
+              <li v-for="issue in localIssues" :key="issue">{{ issue }}</li>
+            </ul>
+            <ul v-if="draftCtl.issues.value.length" class="nsv__issues" role="alert">
+              <li v-for="issue in draftCtl.issues.value" :key="issue">{{ issue }}</li>
+            </ul>
+            <ul v-if="locationIssues.length" class="nsv__issues" role="alert">
+              <li v-for="issue in locationIssues" :key="issue">{{ issue }}</li>
+            </ul>
+            <p v-if="draftCtl.createError.value" class="nsv__notice" role="alert">
+              {{ draftCtl.createError.value }}
+            </p>
+            <p v-if="draftCtl.ambiguous.value" class="nsv__notice" role="status">
+              The last create may already have completed — pressing Begin again replays the same
+              submission, never a duplicate story.
+            </p>
+          </template>
+        </section>
 
-      <section v-if="step === 3" class="nsv__panel" aria-label="Choose how to play">
-        <h2 class="nsv__h">How do you want to play?</h2>
-        <div class="nsv__modes">
-          <button
-            type="button"
-            class="nsv__world"
-            :class="{ 'nsv__world--on': sel.role === 'watcher' }"
-            :aria-pressed="sel.role === 'watcher'"
-            @click="sel.role = 'watcher'">
-            <span class="nsv__world-name">Observer</span>
-            <span class="nsv__world-desc"
-              >Watch the vale unfold and guide the story between beats.</span
+        <!-- ————— what the step adds up to ————— -->
+        <aside class="nsx__side card ev-card" :aria-label="sideTitle">
+          <header class="nsx__sidehead">
+            <h2 class="nsx__sidetitle">{{ sideTitle }}</h2>
+            <span v-if="step === 1 && selectedWorld" class="nsx__pill"
+              ><IconCheck :size="12" /> Selected</span
             >
-          </button>
-          <button
-            type="button"
-            class="nsv__world"
-            :class="{ 'nsv__world--on': sel.role === 'player' }"
-            :aria-pressed="sel.role === 'player'"
-            @click="sel.role = 'player'">
-            <span class="nsv__world-name">Player</span>
-            <span class="nsv__world-desc"
-              >Step into one character's shoes and decide their actions.</span
-            >
-          </button>
-        </div>
-        <label v-if="sel.role === 'player'" class="nsv__field">
-          Play as
-          <select v-model="sel.controlledKey">
-            <option v-for="member in sel.cast" :key="member.key" :value="member.key">
-              {{ pinnedCharName(member) }}
-            </option>
-          </select>
-        </label>
-        <p v-if="modeNotice" class="nsv__notice" role="status">{{ modeNotice }}</p>
-      </section>
+            <span v-if="step === 2" class="nsx__count">{{ sel.cast.length }} of 6 selected</span>
+          </header>
 
-      <section v-if="step === 4" class="nsv__panel" aria-label="Name the story">
-        <h2 class="nsv__h">What is this story called?</h2>
-        <label class="nsv__field">
-          Title
-          <input
-            v-model="sel.title"
-            type="text"
-            maxlength="128"
-            placeholder="A Morning in Ember Vale" />
-        </label>
-        <label class="nsv__field">
-          Tone
-          <input v-model="sel.tone" type="text" maxlength="128" placeholder="hopeful mystery" />
-        </label>
-      </section>
-
-      <section v-if="step === 5" class="nsv__panel" aria-label="Story art and model">
-        <h2 class="nsv__h">Art and telling</h2>
-        <p class="nsv__body">
-          Stories open with curated starter art. Image generation arrives in a later milestone.
-        </p>
-        <p v-if="envNotice" class="nsv__notice" role="status">
-          {{ envNotice }}
-        </p>
-        <p v-else class="nsv__notice" role="status">
-          Model profile unknown — beats will say what they used.
-        </p>
-        <h3 class="nsv__h">Storyteller model</h3>
-        <p class="nsv__body">
-          Pin the provider profile revision every beat executes. The pin saves with this draft and
-          shows on Review; without one, beats use the environment default.
-        </p>
-        <p
-          v-if="pinCtl.loading.value && !pinCtl.providers.value.length"
-          class="nsv__notice"
-          role="status">
-          Loading providers…
-        </p>
-        <p v-if="pinCtl.error.value" class="nsv__notice" role="alert">
-          {{ pinCtl.error.value }} —
-          <button type="button" class="nsv__link" @click="pinCtl.retry()">retry</button>
-        </p>
-        <label v-if="pinCtl.providers.value.length" class="nsv__field">
-          Provider
-          <select
-            :value="pinCtl.providerId.value"
-            @change="pinCtl.selectProvider(($event.target as HTMLSelectElement).value)">
-            <option value="">Environment default</option>
-            <option
-              v-for="connection in pinCtl.providers.value"
-              :key="connection.id"
-              :value="connection.id">
-              {{ connection.name }} ({{ connection.adapter }})
-            </option>
-          </select>
-        </label>
-        <label v-if="pinCtl.providerId.value" class="nsv__field">
-          Profile revision
-          <select
-            :value="pinCtl.profileId.value"
-            :disabled="!pinCtl.profiles.value.length"
-            @change="pinCtl.selectProfile(($event.target as HTMLSelectElement).value)">
-            <option v-if="!pinCtl.profiles.value.length" value="">No profiles yet</option>
-            <option v-for="profile in pinCtl.profiles.value" :key="profile.id" :value="profile.id">
-              {{ profile.model_id }} · rev {{ profile.revision }}
-            </option>
-          </select>
-        </label>
-        <p class="nsv__notice" role="status">Selected: {{ pinCtl.summary.value }}</p>
-      </section>
-
-      <section v-if="step === 6" class="nsv__panel" aria-label="Review and create">
-        <h2 class="nsv__h">Ready to begin?</h2>
-        <dl class="nsv__review">
-          <div>
-            <dt>World</dt>
-            <dd>{{ selectedWorld?.name ?? sel.worldId }}</dd>
+          <!-- the banner: the world, with your character on it from step 3 -->
+          <div v-if="step !== 2 && step !== 5" class="banner">
+            <FramedImage
+              v-if="selectedWorld?.cover"
+              class="banner__world"
+              :src="selectedWorld.cover.src"
+              :frame="selectedWorld.cover.frame"
+              alt="" />
+            <span v-else class="banner__world banner__world--none"><MountainRidge /></span>
+            <span v-if="step >= 3 && playerDef" class="banner__you">
+              <FramedImage
+                v-if="playerDef.portrait"
+                :key="playerDef.portrait.src"
+                :src="playerDef.portrait.src"
+                :frame="playerDef.portrait.portrait"
+                alt="" />
+              <StoryImage
+                v-else
+                :key="playerDef.imageSlot"
+                :image-slot="playerDef.imageSlot"
+                alt="" />
+            </span>
           </div>
-          <div>
-            <dt>Cast</dt>
-            <dd>
-              {{ sel.cast.map((c) => pinnedCharName(c)).join(', ') || 'None' }}
-            </dd>
-          </div>
-          <div>
-            <dt>Mode</dt>
-            <dd>
+
+          <!-- 1 -->
+          <template v-if="step === 1">
+            <template v-if="selectedWorld">
+              <h3 class="nsx__big">{{ selectedWorld.name }}</h3>
+              <p class="nsx__meta">{{ worldPlaces.length }} places</p>
+              <p class="nsx__text">{{ selectedWorld.description }}</p>
+              <div class="nsx__sub2">
+                <h4>Places you'll find</h4>
+                <router-link
+                  class="nsx__link"
+                  :to="{
+                    path: `/new-story/world/${sel.worldId}`,
+                    query: { draft: draftCtl.draft.value?.id }
+                  }"
+                  >Edit this world</router-link
+                >
+              </div>
+              <ul class="chips">
+                <li v-for="place in worldPlaces.slice(0, 8)" :key="place.key">{{ place.name }}</li>
+                <li v-if="worldPlaces.length > 8" class="chips__more">
+                  +{{ worldPlaces.length - 8 }} more
+                </li>
+              </ul>
+            </template>
+            <p v-else class="nsx__quiet">Pick a world to see it here.</p>
+          </template>
+
+          <!-- 2 -->
+          <template v-else-if="step === 2">
+            <p v-if="selectedWorld" class="nsx__meta">{{ selectedWorld.name }}</p>
+            <p v-if="!sel.cast.length" class="nsx__quiet">No one yet. Pick from the library.</p>
+            <ul v-else class="crew">
+              <li v-for="member in sel.cast" :key="member.key" class="crew__row">
+                <span class="crew__pic">
+                  <FramedImage
+                    v-if="defOf(member)?.portrait"
+                    :src="defOf(member)!.portrait!.src"
+                    :frame="defOf(member)!.portrait!.portrait"
+                    alt="" />
+                  <StoryImage
+                    v-else
+                    :image-slot="defOf(member)?.imageSlot ?? 'character.ash'"
+                    alt="" />
+                </span>
+                <span class="crew__body">
+                  <b class="crew__name">{{ pinnedCharName(member) }}</b>
+                  <span v-if="defOf(member)?.role" class="crew__role">{{
+                    defOf(member)?.role
+                  }}</span>
+                  <label class="sel__place">
+                    Starts at
+                    <select v-model="member.location" :disabled="!!pinned.worldError.value">
+                      <option v-for="place in worldPlaces" :key="place.key" :value="place.key">
+                        {{ place.name }}
+                      </option>
+                    </select>
+                  </label>
+                </span>
+                <span class="crew__acts">
+                  <router-link
+                    class="nsx__link"
+                    :to="{
+                      path: `/new-story/character/${member.presetId}`,
+                      query: { draft: draftCtl.draft.value?.id }
+                    }"
+                    >Edit character</router-link
+                  >
+                  <button
+                    type="button"
+                    class="crew__remove"
+                    @click="toggleCast(defOf(member) ?? characterDefs[0]!)">
+                    Remove
+                  </button>
+                </span>
+              </li>
+            </ul>
+            <p class="nsx__note">
+              <IconUsers :size="16" /> Everyone you add can appear in the story.
+            </p>
+          </template>
+
+          <!-- 3 -->
+          <template v-else-if="step === 3">
+            <h3 class="nsx__big">
+              {{ sel.role === 'player' ? `You play ${controlledDisplay}` : 'You watch the story' }}
+            </h3>
+            <ul class="chips chips--teal">
+              <li>{{ sel.role === 'player' ? 'Player' : 'Observer' }}</li>
+              <li v-if="sel.role === 'player' && playerMember">
+                Starts at {{ placeName(playerMember.location) }}
+              </li>
+              <li v-if="selectedWorld">{{ selectedWorld.name }}</li>
+            </ul>
+            <p class="nsx__text">
               {{
                 sel.role === 'player'
-                  ? `You play ${controlledDisplay}`
-                  : 'You watch the story unfold'
+                  ? `${controlledDisplay}'s actions are yours. The storyteller answers through the world and the other characters.`
+                  : 'Every character acts on their own. You can step in between turns to guide the story.'
               }}
-            </dd>
-          </div>
-          <div>
-            <dt>Title</dt>
-            <dd>{{ sel.title || 'Untitled' }}</dd>
-          </div>
-          <div>
-            <dt>Storyteller</dt>
-            <dd>{{ pinCtl.summary.value }}</dd>
-          </div>
-        </dl>
-        <ul v-if="localIssues.length" class="nsv__issues" role="alert">
-          <li v-for="issue in localIssues" :key="issue">{{ issue }}</li>
-        </ul>
-        <ul v-if="draftCtl.issues.value.length" class="nsv__issues" role="alert">
-          <li v-for="issue in draftCtl.issues.value" :key="issue">{{ issue }}</li>
-        </ul>
-        <ul v-if="locationIssues.length" class="nsv__issues" role="alert">
-          <li v-for="issue in locationIssues" :key="issue">{{ issue }}</li>
-        </ul>
-        <p v-if="draftCtl.createError.value" class="nsv__notice" role="alert">
-          {{ draftCtl.createError.value }}
-        </p>
-        <p v-if="draftCtl.ambiguous.value" class="nsv__notice" role="status">
-          The last create may already have completed — pressing Begin again replays the same
-          submission, never a duplicate story.
-        </p>
-      </section>
+            </p>
+            <template v-if="others.length">
+              <h4 class="nsx__h4">
+                {{ sel.role === 'player' ? 'Also in your story' : 'In your story' }}
+              </h4>
+              <ul class="mini">
+                <li v-for="member in others" :key="member.key">
+                  <span class="mini__face">
+                    <FramedImage
+                      v-if="defOf(member)?.portrait"
+                      :src="defOf(member)!.portrait!.src"
+                      :frame="defOf(member)!.portrait!.face"
+                      alt="" />
+                    <StoryImage
+                      v-else
+                      :image-slot="defOf(member)?.imageSlot ?? 'character.ash'"
+                      alt="" />
+                  </span>
+                  <span>
+                    <b>{{ pinnedCharName(member) }}</b>
+                    <span>{{
+                      [defOf(member)?.role, `Starts at ${placeName(member.location)}`]
+                        .filter(Boolean)
+                        .join(' · ')
+                    }}</span>
+                  </span>
+                </li>
+              </ul>
+            </template>
+          </template>
+
+          <!-- 4 and 6 -->
+          <template v-else-if="step === 4 || step === 6">
+            <h3 class="nsx__big">{{ sel.title || 'Untitled story' }}</h3>
+            <ul class="facts">
+              <li v-if="selectedWorld"><IconGlobe :size="16" /> {{ selectedWorld.name }}</li>
+              <li>
+                <IconUser :size="16" />
+                {{ sel.role === 'player' ? `You play ${controlledDisplay}` : 'You watch' }}
+              </li>
+              <li v-if="others.length">
+                <IconUsers :size="16" /> With {{ others.map((m) => pinnedCharName(m)).join(', ') }}
+              </li>
+              <li v-if="playerMember">Starts at {{ placeName(playerMember.location) }}</li>
+            </ul>
+            <ul v-if="sel.tone" class="chips chips--teal">
+              <li>{{ toneLabel(sel.tone) }}</li>
+            </ul>
+            <template v-if="step === 4">
+              <h4 class="nsx__h4">Your cast</h4>
+              <ul class="mini">
+                <li v-for="member in sel.cast" :key="member.key">
+                  <span class="mini__face">
+                    <FramedImage
+                      v-if="defOf(member)?.portrait"
+                      :src="defOf(member)!.portrait!.src"
+                      :frame="defOf(member)!.portrait!.face"
+                      alt="" />
+                    <StoryImage
+                      v-else
+                      :image-slot="defOf(member)?.imageSlot ?? 'character.ash'"
+                      alt="" />
+                  </span>
+                  <span>
+                    <b>{{ pinnedCharName(member) }}</b>
+                    <span>{{
+                      member.key === sel.controlledKey && sel.role === 'player'
+                        ? 'You play them'
+                        : (defOf(member)?.role ?? '')
+                    }}</span>
+                  </span>
+                </li>
+              </ul>
+            </template>
+          </template>
+
+          <!-- 5 -->
+          <template v-else>
+            <div class="teller">
+              <span class="teller__icon"><IconFeather :size="34" /></span>
+              <span>
+                <b class="nsx__big nsx__big--sm">{{
+                  customTeller ? 'Your chosen profile' : "The app's storyteller"
+                }}</b>
+                <span class="nsx__meta">{{
+                  customTeller ? pinCtl.summary.value : `Currently ${appTeller}`
+                }}</span>
+                <span class="nsx__text">{{
+                  customTeller
+                    ? 'This story keeps that profile version, whatever Settings say later.'
+                    : 'Whatever storyteller Settings name will tell this story.'
+                }}</span>
+              </span>
+            </div>
+            <h4 class="nsx__h4">Your story</h4>
+            <div class="mini-story">
+              <span class="mini-story__pic">
+                <FramedImage
+                  v-if="selectedWorld?.cover"
+                  :src="selectedWorld.cover.src"
+                  :frame="selectedWorld.cover.frame"
+                  alt="" />
+              </span>
+              <ul class="facts facts--col">
+                <li>
+                  <b>{{ sel.title || 'Untitled story' }}</b>
+                </li>
+                <li v-if="selectedWorld"><IconGlobe :size="15" /> {{ selectedWorld.name }}</li>
+                <li>
+                  <IconUser :size="15" />
+                  {{ sel.role === 'player' ? `Player · ${controlledDisplay}` : 'Observer' }}
+                </li>
+                <li v-if="sel.tone"><IconSparkle :size="15" /> {{ toneLabel(sel.tone) }}</li>
+              </ul>
+            </div>
+          </template>
+        </aside>
+      </div>
 
       <footer class="nsv__footer">
         <span
@@ -1306,6 +1713,7 @@ onMounted(() => {
                   : 'Draft saved'
           }}
         </span>
+        <span class="nsx__footnote">{{ footerNote }}</span>
         <MenuButton
           class="nsv__btn"
           v-if="step > 1"
@@ -1336,7 +1744,7 @@ onMounted(() => {
           v-if="step < 6"
           :disabled="!canContinue || draftCtl.busy.value || draftCtl.creating.value"
           @click="next()">
-          Continue
+          Continue to {{ nextLabel }}
         </MenuButton>
         <MenuButton
           class="nsv__btn"
@@ -1729,5 +2137,798 @@ onMounted(() => {
   font-size: inherit;
   color: var(--teal-ink);
   text-decoration: underline;
+}
+</style>
+
+<!-- The step-by-step layout: a heading and steps across the page, then the
+     step beside what it adds up to; both columns end together. -->
+<style scoped>
+.nsx__top {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.nsx__title {
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 600;
+  line-height: 1.05;
+  color: var(--ink);
+}
+.nsx__intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  font-size: 18px;
+  color: var(--ink-2);
+}
+.nsx__saves {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 16px;
+  border-left: 1px solid var(--line);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--ink-3);
+}
+.nsx__stepper {
+  margin-top: 6px;
+}
+.nsx__body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(360px, 1fr);
+  gap: 14px;
+  align-items: stretch;
+  margin-top: 14px;
+}
+.nsx__main,
+.nsx__side {
+  min-width: 0;
+  padding: 20px 22px 22px;
+}
+.nsx__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-bottom: 14px;
+}
+.nsx__h {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.nsx__h--gap {
+  margin-top: 22px;
+}
+.nsx__h + .modes,
+.nsx__h + .whos,
+.nsx__h + .setup,
+.nsx__h + .opts {
+  margin-top: 12px;
+}
+.nsx__count {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--ink-3);
+}
+.nsx__search {
+  flex: 1 1 200px;
+  max-width: 280px;
+  margin-left: auto;
+}
+.nsx__create {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+.nsx__lead {
+  margin: 4px 0 10px;
+  font-size: 16px;
+  color: var(--ink-3);
+}
+.nsx__input {
+  width: 100%;
+}
+.nsx__none,
+.nsx__quiet {
+  font-style: italic;
+  color: var(--muted);
+}
+.grp + .grp {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line-soft);
+}
+
+/* worlds */
+.nsx__worlds {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+.wcard {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  height: 100%;
+  padding: 8px 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fcf7ea, #f8f1df);
+  text-align: left;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.wcard:hover {
+  border-color: #c6b48a;
+}
+.wcard--on {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 1px var(--teal);
+}
+.wcard__pic {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 7;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #efe5cc;
+}
+.wcard__pic > :first-child {
+  width: 100%;
+  height: 100%;
+}
+.wcard__nopic {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 10px;
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+.wcard__ridge {
+  position: absolute;
+  inset: 20% 0 0;
+  opacity: 0.6;
+}
+.wcard__tick {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid #c9b791;
+  background: rgba(253, 249, 238, 0.92);
+  color: var(--cream-on-teal);
+}
+.wcard--on .wcard__tick,
+.who--on .wcard__tick {
+  border-color: var(--teal);
+  background: var(--teal);
+}
+.wcard__name,
+.wcard__rev,
+.wcard__places,
+.wcard__desc {
+  padding: 0 6px;
+}
+.wcard__name {
+  font-family: var(--font-display);
+  font-size: 23px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.wcard__rev,
+.wcard__places {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--ink-3);
+}
+.wcard__desc {
+  font-size: 15.5px;
+  line-height: 1.4;
+  color: var(--ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* play mode, tone, storyteller choices */
+.modes,
+.whos,
+.tones,
+.opts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+.tones {
+  margin-top: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+.opts {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.mode,
+.who,
+.tone,
+.opt {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fcf7ea, #f8f1df);
+  text-align: left;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+.mode:hover,
+.who:hover,
+.tone:hover,
+.opt:hover {
+  border-color: #c6b48a;
+}
+.mode--on,
+.who--on,
+.tone--on,
+.opt--on {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 1px var(--teal);
+  background: linear-gradient(180deg, #f1f4ec, #eaf0e6);
+}
+.mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 26px 22px 18px;
+  text-align: center;
+}
+.mode__tick {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid #c9b791;
+  color: var(--cream-on-teal);
+}
+.mode--on .mode__tick {
+  border-color: var(--teal);
+  background: var(--teal);
+}
+.mode__icon {
+  color: var(--gold);
+}
+.mode--on .mode__icon {
+  color: var(--teal-ink);
+}
+.mode__name {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.mode__desc {
+  max-width: 32ch;
+  font-size: 16.5px;
+  color: var(--ink-2);
+}
+.mode__foot {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 15px;
+  color: var(--ink-3);
+}
+.who {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  padding: 8px;
+}
+.who__pic {
+  flex: none;
+  width: 110px;
+  aspect-ratio: 2 / 3;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.who__pic > * {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.who__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 30px 10px 0;
+}
+.who__name {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.who__role {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--ink-3);
+}
+.who__start {
+  margin-top: auto;
+  font-size: 15px;
+  color: var(--ink-2);
+}
+.tone,
+.opt {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  padding: 14px 16px;
+}
+.tone__dot {
+  grid-row: span 2;
+  width: 20px;
+  height: 20px;
+  margin-top: 3px;
+  border-radius: 50%;
+  border: 1.5px solid #b9a679;
+  background: #fffdf6;
+}
+.tone--on .tone__dot,
+.opt--on .tone__dot {
+  border: 6px solid var(--teal);
+}
+.tone__title,
+.opt__title {
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.tone__line,
+.opt__line {
+  font-size: 15px;
+  color: var(--ink-2);
+}
+.opt__tag {
+  margin-left: 8px;
+  padding: 2px 9px;
+  border-radius: 6px;
+  background: rgba(20, 84, 90, 0.12);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--teal-ink);
+  vertical-align: middle;
+}
+.nsx__pick {
+  margin-top: 16px;
+}
+.nsx__more {
+  margin-top: 18px;
+}
+
+/* review */
+.setup {
+  list-style: none;
+  display: grid;
+}
+.setup__row {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.setup__label {
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.setup__what {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.setup__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 15.5px;
+  color: var(--ink-2);
+}
+.setup__text b {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.setup__pic--wide {
+  width: 150px;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.setup__face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.setup__face > :first-child {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--gold-soft);
+}
+.setup__edit {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--teal-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* the side panel */
+.nsx__side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.nsx__sidehead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.nsx__sidetitle {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.nsx__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(20, 84, 90, 0.12);
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  color: var(--teal-ink);
+}
+.banner {
+  position: relative;
+  aspect-ratio: 16 / 8;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #efe5cc;
+}
+.banner__world {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.banner__world--none {
+  display: block;
+  opacity: 0.6;
+}
+.banner__you {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  width: 26%;
+  aspect-ratio: 2 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 3px solid var(--surface-2);
+  box-shadow: 0 6px 18px rgba(40, 30, 12, 0.35);
+}
+.nsx__big {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--ink);
+}
+.nsx__big--sm {
+  display: block;
+  font-size: 25px;
+}
+.nsx__meta {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--ink-3);
+}
+.nsx__text {
+  display: block;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.nsx__sub2 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+.nsx__sub2 h4,
+.nsx__h4 {
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.nsx__h4 {
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+.nsx__link {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--teal-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.chips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chips li {
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: #f3e5c8;
+  border: 1px solid #e2cfa3;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: #6a5328;
+}
+.chips--teal li {
+  background: rgba(20, 84, 90, 0.1);
+  border-color: rgba(20, 84, 90, 0.18);
+  color: var(--teal-ink);
+}
+.chips__more {
+  font-style: italic;
+}
+.crew {
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.crew__row {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+  padding: 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: #fbf6e9;
+}
+.crew__pic {
+  width: 76px;
+  aspect-ratio: 2 / 3;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.crew__pic > * {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.crew__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.crew__name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.crew__role {
+  font-family: var(--font-ui);
+  font-size: 14.5px;
+  color: var(--ink-3);
+}
+.crew__acts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.crew__remove {
+  font-family: var(--font-ui);
+  font-size: 14.5px;
+  color: #a2432c;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.nsx__note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  font-family: var(--font-ui);
+  font-size: 14.5px;
+  color: var(--ink-3);
+}
+.mini {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+}
+.mini li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.mini li > span:last-child {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  color: var(--ink-3);
+}
+.mini b {
+  font-size: 16.5px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.mini__face > *,
+.setup__face > :first-child > *,
+.banner__you > * {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.mini__face {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--gold-soft);
+  background: #efe5cc;
+}
+.facts {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  font-size: 15.5px;
+  color: var(--ink-2);
+}
+.facts li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.facts svg {
+  color: var(--gold);
+}
+.facts--col {
+  flex-direction: column;
+  gap: 6px;
+}
+.teller {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+.teller > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.teller__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #f6ead0, #ead9b4);
+  color: var(--teal-ink);
+}
+.mini-story {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.mini-story__pic {
+  flex: none;
+  width: 44%;
+  aspect-ratio: 4 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #efe5cc;
+}
+
+/* footer context */
+.nsv__footer .nsv__draftstate {
+  margin-right: 0;
+}
+.nsx__footnote:empty {
+  border: 0;
+}
+.nsx__footnote {
+  margin-right: auto;
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+  font-family: var(--font-ui);
+  font-size: 15.5px;
+  color: var(--ink-2);
+}
+
+@media (max-width: 1100px) {
+  .nsx__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .nsx__title {
+    font-size: 32px;
+  }
+  .setup__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .setup__what,
+  .setup__text {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .crew__row {
+    grid-template-columns: 60px minmax(0, 1fr);
+  }
+  .crew__acts {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+  .nsx__footnote {
+    display: none;
+  }
 }
 </style>

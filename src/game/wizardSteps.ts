@@ -11,9 +11,9 @@
 export const WIZARD_STEP_LABELS = [
   'World',
   'Characters',
-  'Play Mode',
+  'Play mode',
   'Story',
-  'AI',
+  'Storyteller',
   'Review'
 ] as const
 

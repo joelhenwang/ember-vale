@@ -17,14 +17,14 @@ describe('wizardSteps', () => {
     expect(stepCount()).toBe(6)
     expect(WIZARD_STEP_LABELS).toHaveLength(6)
     expect(WIZARD_STEP_SLUGS).toHaveLength(6)
-    expect(stepLabel(3)).toBe('Play Mode')
+    expect(stepLabel(3)).toBe('Play mode')
     for (let n = 1; n <= 6; n++) {
       // Every step persists an identifier the backend accepts…
       expect(BACKEND_STEPS).toContain(persistStepSlug(n))
       // …and every persisted identifier restores its step.
       expect(stepFromSlug(persistStepSlug(n))).toBe(n)
     }
-    // Step 3 keeps the Play Mode label while persisting `mode`.
+    // Step 3 keeps the Play mode label while persisting `mode`.
     expect(persistStepSlug(3)).toBe('mode')
   })
 
