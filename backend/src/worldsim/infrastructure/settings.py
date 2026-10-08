@@ -50,7 +50,11 @@ class DatabaseSettings(BaseModel):
 
     url: str = "postgresql+asyncpg://worldsim:changeme-local-only@localhost:5432/worldsim"
     pool_size: int = Field(default=5, ge=1, le=50)
-    statement_timeout_ms: int = Field(default=5000, ge=100, le=60000)
+    #: Server-side cap on any one statement (lock waits included), set on
+    #: every app connection. A backstop against runaway queries and stuck
+    #: locks, generous enough never to cut real work: no app statement
+    #: comes near it (reads are 5-50 ms). Migrations use their own engine.
+    statement_timeout_ms: int = Field(default=60000, ge=100, le=600000)
 
     @field_validator("url")
     @classmethod

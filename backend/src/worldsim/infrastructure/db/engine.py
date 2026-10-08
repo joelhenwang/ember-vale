@@ -20,6 +20,9 @@ def create_engine(settings: Settings) -> AsyncEngine:
         pool_size=settings.database.pool_size,
         pool_pre_ping=True,
         echo=False,
+        connect_args={
+            "server_settings": {"statement_timeout": str(settings.database.statement_timeout_ms)}
+        },
     )
 
 
