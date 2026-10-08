@@ -25,6 +25,8 @@ const props = defineProps<{
   /** The story so far: a scene set at a spot stands its people there. */
   scenes?: ChronicleEntry[]
   focusId?: string | null
+  /** Without the title bar (shown under tabs elsewhere). */
+  bare?: boolean
 }>()
 
 const emit = defineEmits<{ select: [characterId: string]; leave: [] }>()
@@ -47,7 +49,7 @@ function initials(name: string): string {
 
 <template>
   <section class="pm" :aria-label="`Inside ${placeName}`">
-    <header class="pm__bar">
+    <header v-if="!bare" class="pm__bar">
       <button type="button" class="pm__back" @click="emit('leave')">
         <IconArrowLeft :size="14" /> World map
       </button>

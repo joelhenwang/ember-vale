@@ -7,6 +7,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import WorldMap from '../components/observatory/WorldMap.vue'
+import PlaceMap from '../components/observatory/PlaceMap.vue'
 import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
 import IconArrowRight from '../components/icons/IconArrowRight.vue'
 import IconFeather from '../components/icons/IconFeather.vue'
@@ -206,6 +207,15 @@ const byNewest = computed(() =>
 const mainLead = computed(() => byNewest.value[0] ?? null)
 const otherLeads = computed(() => byNewest.value.slice(1))
 const leadsOpen = ref(false)
+
+/* ————— the map: the whole world, or the place you are in ————— */
+const localMap = computed(
+  () =>
+    (adv.presentation.value?.place_maps ?? []).find((m) => m.location_id === adv.hereId.value) ??
+    null
+)
+const mapTab = ref<'world' | 'local'>('world')
+const mapOpen = ref(false)
 const detailsOpen = ref(false)
 
 /** What Tab fills in: the first lead or suggestion, as plain words. */
@@ -468,17 +478,62 @@ onMounted(() => {
           </div>
           <div class="adv__under">
             <section v-if="adv.presentation.value" class="minimap">
-              <h3 class="panel__title"><IconGlobe :size="16" /> Local map</h3>
+              <header class="minimap__head">
+                <div class="maptabs" role="tablist" aria-label="Which map">
+                  <button
+                    type="button"
+                    role="tab"
+                    :aria-selected="mapTab === 'world'"
+                    @click="mapTab = 'world'">
+                    World map
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    :aria-selected="mapTab === 'local'"
+                    @click="mapTab = 'local'">
+                    Local map
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  class="minimap__expand"
+                  :aria-label="`Open the ${mapTab === 'world' ? 'world' : 'local'} map full screen`"
+                  :title="`Open the ${mapTab === 'world' ? 'world' : 'local'} map full screen`"
+                  @click="mapOpen = true">
+                  <IconExpand :size="15" />
+                </button>
+              </header>
               <div class="minimap__map">
                 <WorldMap
+                  v-if="mapTab === 'world'"
                   :world-id="storyId"
                   :map-asset-id="adv.mapAssetId.value"
                   :anchors="adv.presentation.value.manifest.anchors ?? []"
                   :places="adv.places.value"
+                  :roads="adv.presentation.value.manifest.roads ?? []"
                   :tokens="tokens"
                   :active-place-id="adv.hereId.value"
                   :focus-id="adv.me.value"
                   compact />
+                <PlaceMap
+                  v-else-if="localMap"
+                  bare
+                  :world-id="storyId"
+                  :place-map="localMap"
+                  :place-name="adv.here.value?.name ?? 'Here'"
+                  :cast="adv.presentation.value.cast ?? []"
+                  :activities="adv.presentation.value.activities ?? []"
+                  :scenes="adv.entries.value"
+                  :focus-id="adv.me.value"
+                  @select="talkTo" />
+                <p v-else class="minimap__none">
+                  {{
+                    adv.here.value
+                      ? `${adv.here.value.name} has no map of its own yet.`
+                      : 'You are on the road.'
+                  }}
+                </p>
               </div>
             </section>
             <section class="lead">
@@ -829,6 +884,76 @@ onMounted(() => {
       </div>
     </div>
 
+    <div
+      v-if="mapOpen && adv.presentation.value"
+      class="mapdlg"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="mapTab === 'world' ? 'World map' : 'Local map'"
+      @click.self="mapOpen = false"
+      @keydown.esc="mapOpen = false">
+      <div class="mapdlg__card">
+        <header class="mapdlg__head">
+          <div class="maptabs" role="tablist" aria-label="Which map">
+            <button
+              type="button"
+              role="tab"
+              :aria-selected="mapTab === 'world'"
+              @click="mapTab = 'world'">
+              World map
+            </button>
+            <button
+              type="button"
+              role="tab"
+              :aria-selected="mapTab === 'local'"
+              @click="mapTab = 'local'">
+              Local map
+            </button>
+          </div>
+          <h2 class="mapdlg__title">
+            {{
+              mapTab === 'world'
+                ? (adv.title.value ?? 'The world')
+                : (adv.here.value?.name ?? 'Here')
+            }}
+          </h2>
+          <button type="button" class="mapdlg__close" aria-label="Close" @click="mapOpen = false">
+            <IconX :size="20" />
+          </button>
+        </header>
+        <div class="mapdlg__body">
+          <WorldMap
+            v-if="mapTab === 'world'"
+            :world-id="storyId"
+            :map-asset-id="adv.mapAssetId.value"
+            :anchors="adv.presentation.value.manifest.anchors ?? []"
+            :places="adv.places.value"
+            :roads="adv.presentation.value.manifest.roads ?? []"
+            :tokens="tokens"
+            :active-place-id="adv.hereId.value"
+            :focus-id="adv.me.value" />
+          <PlaceMap
+            v-else-if="localMap"
+            bare
+            :world-id="storyId"
+            :place-map="localMap"
+            :place-name="adv.here.value?.name ?? 'Here'"
+            :cast="adv.presentation.value.cast ?? []"
+            :activities="adv.presentation.value.activities ?? []"
+            :scenes="adv.entries.value"
+            :focus-id="adv.me.value"
+            @select="talkTo" />
+          <p v-else class="minimap__none">
+            {{
+              adv.here.value
+                ? `${adv.here.value.name} has no map of its own yet.`
+                : 'You are on the road.'
+            }}
+          </p>
+        </div>
+      </div>
+    </div>
+
     <MomentDialog
       v-if="adv.me.value"
       :world-id="storyId"
@@ -1038,6 +1163,124 @@ onMounted(() => {
 }
 .panel__title svg {
   color: var(--gold);
+}
+.minimap__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.maptabs {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.maptabs [role='tab'] {
+  padding: 4px 13px;
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+.maptabs [role='tab'][aria-selected='true'] {
+  background: var(--teal);
+  color: var(--cream-on-teal);
+}
+.minimap__expand {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  color: var(--ink-3);
+}
+.minimap__expand:hover {
+  color: var(--teal-ink);
+  border-color: var(--gold-soft);
+}
+.minimap__none {
+  padding: 12px;
+  font-style: italic;
+  color: var(--muted);
+}
+/* a place's own map fits the panel's height, centred */
+.minimap__map :deep(.pm),
+.mapdlg__body :deep(.pm) {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  border: 0;
+  box-shadow: none;
+  background: none;
+}
+.minimap__map :deep(.pm__frame),
+.mapdlg__body :deep(.pm__frame) {
+  height: 100%;
+}
+.minimap__map :deep(.pm__art),
+.mapdlg__body :deep(.pm__art) {
+  height: 100%;
+  width: auto;
+  max-width: none;
+}
+.mapdlg {
+  position: fixed;
+  inset: 0;
+  z-index: 58;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(36, 29, 16, 0.55);
+}
+.mapdlg__card {
+  display: flex;
+  flex-direction: column;
+  width: min(1400px, 100%);
+  height: min(900px, calc(100vh - 48px));
+  border-radius: 14px;
+  overflow: hidden;
+  border: 2px solid var(--gold-soft);
+  background: var(--surface-2);
+  box-shadow: 0 24px 60px rgba(30, 22, 8, 0.45);
+}
+.mapdlg__head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.mapdlg__title {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.mapdlg__close {
+  display: inline-flex;
+  padding: 6px;
+  border-radius: 50%;
+  color: var(--ink-3);
+}
+.mapdlg__close:hover {
+  background: var(--panel-2);
+}
+.mapdlg__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+}
+.mapdlg__body > * {
+  width: 100%;
+  height: 100%;
 }
 .minimap {
   display: flex;
