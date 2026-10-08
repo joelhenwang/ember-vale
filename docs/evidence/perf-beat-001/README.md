@@ -151,3 +151,70 @@ beat 50; cast 10: 3.8 s from 8.2 s). It no longer climbs over the first
 50 beats. The live path saves a TLS handshake and 25 ms of CPU per model
 call. Large casts no longer fail beats on the connection pool or on
 crowded scenes.
+
+## Addendum (P5): one world read per phase, and leaner call tracing
+
+**Question.** Every decision and reaction built its context from ~15
+queries, about half of them the same for everyone (config, clock, rumours,
+people, travellers, places, items). Can a phase read those once without
+changing a single prompt?
+
+**Change.**
+- `application/orchestration/phase_reads.py`: a per-phase memo carried by a
+  ContextVar.
+  - Decisions share one view from the start of the decide gather until the
+    director, which runs beside them and may add a rumour, place or
+    newcomer, finishes and drops it.
+  - Scene preparations (read-only) share one view across the parallel
+    gather; it is gone before the first commit.
+  - A one-scene beat, a party scene or a redone scene takes its own view
+    when it prepares, so a redo reads the world the earlier commits left.
+  - Nothing outside those regions sees the view; the director never does.
+- Call tracing:
+  - the `model_profile` upsert runs once per service per profile, after
+    its first commit, instead of on every model call;
+  - `finish_call` is one UPDATE instead of a read and then an UPDATE.
+  - The same rows are written.
+
+**Proof of identity.** `phase_reads.VERIFY` (`beat_bench.py
+--verify-reads`, and `tests/test_phase_reads.py`, 6 beats, 6 characters,
+director, parallel scenes, day end) builds every shared-read context a
+second time from fresh reads at the same moment. It fails on any byte of
+difference in the rendered context, the reactor or the place list.
+- 30 verified beats each at cast 3 and cast 10: zero differences.
+- A deliberately corrupted view (clock + 1) is caught on the first decision.
+
+Comparing recorded prompts across separate runs was tried and dropped. Even
+unchanged code differs run to run: observations from the same phase
+tie-break on random ids, and parallel calls interleave.
+
+**Numbers.** `beat_bench.py`, 30 beats, before = 815a29b (detached
+worktree), back to back on the same machine.
+- "Shared reads" is the phase view alone; "+ tracing" adds the two
+  tracing cuts.
+- The scripted cast picks actions from call order, so call mixes differ
+  between runs; compare the per-model-call columns.
+
+| run | model calls | SQL / beat | SQL / call | wall mean | wall / call |
+|---|---|---|---|---|---|
+| cast 3, before | 265 | 385 | 43.6 | 1,033 ms | 117 ms |
+| cast 3, shared reads | 277 | 361 | 39.1 | 969 ms | 105 ms |
+| cast 3, + tracing | 325 | 344 | 31.7 | 984 ms | 91 ms |
+| cast 10, before | 2,748 | 1,830 | 20.0 | 5,052 ms | 55 ms |
+| cast 10, shared reads | 2,844 | 1,362 | 14.4 | 4,317 ms | 46 ms |
+| cast 10, + tracing | 1,978 | 1,009 | 15.3 | 3,279 ms | 50 ms |
+
+Per model call, shared reads cut statements by 10% (cast 3) and 28%
+(cast 10). The tracing cuts remove 2 more statements per call by
+construction. The last cast-10 row's per-call figure rises only because
+that run made fewer calls, which spreads the fixed per-beat work thinner.
+
+**Left.**
+- Per-character reads are still per call: observations, memories,
+  relationships, digests, intention and recent families, about 7 queries
+  in one session. Sharing them would need writes such as `_remember_intention`
+  to update the view.
+- Sessions per call did not fall: a shared load opens its own session.
+- Tracing still writes 4 statements per call: the call row, the manifest,
+  the finishing update and the cost row. Batching them per beat would
+  delay the record that a call started; not done.

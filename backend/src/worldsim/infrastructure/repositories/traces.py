@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import CursorResult, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -192,12 +192,8 @@ class SqlAlchemyTraceRepository:
         return row
 
     async def finish_call(self, call_id: UUID, completion: StoredCompletion) -> None:
-        row = await self._require_row(call_id)
-        row.status = "succeeded"
-        row.prompt_tokens = completion.prompt_tokens
-        row.completion_tokens = completion.completion_tokens
-        row.latency_ms = completion.latency_ms
-        row.result = {
+        # One UPDATE (no read first): every model call ends here, ~80 a beat.
+        result = {
             "text": completion.text,
             "model": completion.model,
             "profile_version": completion.profile_version,
@@ -209,7 +205,20 @@ class SqlAlchemyTraceRepository:
             "provider": completion.provider,
             "hedge": completion.hedge,
         }
-        await self._session.flush()
+        done = await self._session.execute(
+            update(ModelCallRow)
+            .where(ModelCallRow.id == call_id)
+            .values(
+                status="succeeded",
+                prompt_tokens=completion.prompt_tokens,
+                completion_tokens=completion.completion_tokens,
+                latency_ms=completion.latency_ms,
+                result=result,
+            )
+            .execution_options(synchronize_session=False)
+        )
+        if cast(CursorResult[Any], done).rowcount == 0:
+            raise missing("model call", call_id)
 
     async def fail_call(
         self,

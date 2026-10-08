@@ -142,6 +142,9 @@ class TraceService:
     def __init__(self, uow_factory: UnitOfWorkFactory, exporter: TraceExporter) -> None:
         self._factory = uow_factory
         self._exporter = exporter
+        #: Profiles this service has committed: the upsert runs once each,
+        #: not on every model call (they never change under name + version).
+        self._profiles: set[tuple[str, str]] = set()
 
     async def run_call(
         self,
@@ -177,15 +180,17 @@ class TraceService:
             dropped=list(spec.dropped),
             rendered_hash=rendered,
         )
+        profile_key = (spec.profile.name, spec.profile.version)
         async with self._factory() as uow:
-            await uow.traces.ensure_profile(
-                spec.profile.name,
-                spec.profile.version,
-                spec.profile.adapter,
-                spec.profile.model_id,
-                spec.profile.max_context_tokens,
-                list(spec.profile.capabilities),
-            )
+            if profile_key not in self._profiles:
+                await uow.traces.ensure_profile(
+                    spec.profile.name,
+                    spec.profile.version,
+                    spec.profile.adapter,
+                    spec.profile.model_id,
+                    spec.profile.max_context_tokens,
+                    list(spec.profile.capabilities),
+                )
             sampling: dict[str, Any] = {
                 "model_id": spec.profile.model_id,
                 "temperature": request.temperature,
@@ -204,6 +209,7 @@ class TraceService:
             )
             await uow.traces.save_manifest(manifest)
             await uow.commit()
+        self._profiles.add(profile_key)  # only once the row is surely there
 
         started = time.perf_counter()
         try:
