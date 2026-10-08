@@ -216,11 +216,33 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
     }
   }
 
-  async function refresh(): Promise<void> {
+  /** What changes when the story moves on; an idle tick that sees the same
+   *  stamp reads nothing else (it was ~7 requests every 12 s). */
+  let lastStamp = ''
+  function storyStamp(view: PresentationResponse): string {
+    const art = (view.scene_art ?? []).map((a) => `${a.picture_id}:${a.status}`).join(',')
+    return [
+      view.absolute_index,
+      view.latest_run_id,
+      view.open_run_id,
+      view.run_state,
+      view.revision,
+      art
+    ].join('|')
+  }
+
+  async function refresh(idle = false): Promise<void> {
     try {
       const view = await api.getPresentation(worldId.value, opts.value)
       presentation.value = view
       runState.value = view.run_state ?? null
+      const stamp = storyStamp(view)
+      const writing = entries.value.some((e) => e.scene_id && !e.text)
+      if (idle && stamp === lastStamp && !writing) {
+        error.value = null
+        return
+      }
+      lastStamp = stamp
       await refreshPlacesIfNew(view)
       await readChronicle()
       await Promise.all([readNarration(), readSelf()])
@@ -245,7 +267,7 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
             .catch(() => undefined)
             .finally(planPoll)
         } else {
-          void refresh().then(planPoll)
+          void refresh(true).then(planPoll)
         }
       },
       // A scene still being written (narration finishes after the turn) is

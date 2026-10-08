@@ -136,6 +136,38 @@ describe('useAdventure', () => {
     expect(idle.at(-1)).toBe(IDLE_POLL_MS)
   })
 
+  it('an idle tick on an unchanged story reads only the presentation', async () => {
+    let tick: (() => void) | null = null
+    let chronicleReads = 0
+    let characterReads = 0
+    const base = fakeApi()
+    const api: AdventureApi = {
+      ...base.api,
+      getChronicle: async (...args) => {
+        chronicleReads += 1
+        return base.api.getChronicle(...args)
+      },
+      getCharacter: async (...args) => {
+        characterReads += 1
+        return base.api.getCharacter(...args)
+      }
+    }
+    const adv = useAdventure(ref(WORLD), {
+      api,
+      schedule: (fn) => {
+        tick = fn
+        return () => undefined
+      }
+    })
+    await adv.load()
+    const [chronicleBefore, characterBefore] = [chronicleReads, characterReads]
+    tick!()
+    await vi.waitFor(() => expect(tick).not.toBeNull())
+    await new Promise((done) => setTimeout(done, 0))
+    expect(chronicleReads).toBe(chronicleBefore)
+    expect(characterReads).toBe(characterBefore)
+  })
+
   it('opens as the player, at their place, with who is there', async () => {
     const { api } = fakeApi()
     const adv = useAdventure(ref(WORLD), { api, schedule: never })

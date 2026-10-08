@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
 import type { ChronicleEntry, ChronicleResponse } from '../../content/clients/worldsim'
 import { mergeChronicle } from '../game/observatory'
+import { wakeScene } from './useMotion'
 
 /** Events read per chronicle page when a long story opens newest-first. */
 export const CHRONICLE_TAIL = 100
@@ -38,6 +39,7 @@ export function chronicleReader(
     let after = from
     for (let page = 0; page < 20; page++) {
       const res = await fetch(after, limit)
+      if (res.entries?.length) wakeScene() // the story moved on
       entries.value = mergeChronicle(entries.value, res.entries ?? [])
       after = res.next_after
       cursor = Math.max(cursor, after)
