@@ -6,11 +6,18 @@
   packCharacter) and every card, sheet and token shows its part.
 -->
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import FramedImage from '../ui/FramedImage.vue'
 import PictureFramer, { type FrameStep, type PreviewShape } from '../ui/PictureFramer.vue'
 import IconImage from '../icons/IconImage.vue'
-import { findFace, libraryAssetUrl, paintPortrait, uploadPortrait } from '../../api/worldsim'
+import {
+  findFace,
+  libraryAssetUrl,
+  paintPortrait,
+  previewPortraitPrompt,
+  uploadPortrait
+} from '../../api/worldsim'
+import type { PortraitPromptView } from '../../../content/clients/worldsim'
 import {
   defaultFace,
   faceFromBox,
@@ -136,15 +143,80 @@ async function suggest(step: string, frames: Record<string, Frame>): Promise<Fra
  * the portrait is its centred 2:3, the face is where the map reader sees
  * it (or where faces usually are). "Adjust the frames" is always there.
  */
+/* ————— the prompt itself: read it, or write your own ————— */
+const showPrompt = ref(false)
+const shown = ref<PortraitPromptView | null>(null)
+/** The whole prompt as the player has it; sent as written once edited. */
+const rawPrompt = ref('')
+const promptEdited = ref(false)
+const promptError = ref<string | null>(null)
+
+async function loadPrompt(): Promise<void> {
+  promptError.value = null
+  if (!props.paintPrompt) {
+    shown.value = null
+    if (!promptEdited.value) rawPrompt.value = ''
+    return
+  }
+  try {
+    shown.value = await previewPortraitPrompt(props.paintPrompt)
+    if (!promptEdited.value) rawPrompt.value = shown.value.prompt
+  } catch (err) {
+    promptError.value = message(err, 'Could not read the prompt.')
+  }
+}
+function togglePrompt(): void {
+  showPrompt.value = !showPrompt.value
+  if (showPrompt.value) void loadPrompt()
+}
+function resetPrompt(): void {
+  promptEdited.value = false
+  rawPrompt.value = shown.value?.prompt ?? ''
+}
+// The appearance changed: an untouched prompt follows it.
+watch(
+  () => props.paintPrompt,
+  () => {
+    if (showPrompt.value && !promptEdited.value) void loadPrompt()
+  }
+)
+const settingsLine = computed(() => {
+  const s = shown.value
+  if (!s) return ''
+  const seed = s.seed != null ? `seed ${s.seed}` : 'a new seed each time'
+  return [s.checkpoint, s.style && `style ${s.style}`, `ratio ${s.ratio}`, `${s.mode} mode`, seed]
+    .filter(Boolean)
+    .join(' · ')
+})
+const ownPrompt = computed(() => showPrompt.value && promptEdited.value && !!rawPrompt.value.trim())
+const canPaint = computed(() => !!props.paintPrompt || ownPrompt.value)
+
+/* ————— the clock while painting, to the tenth of a second ————— */
+const elapsed = ref(0)
+let ticker: ReturnType<typeof setInterval> | undefined
+function startClock(): void {
+  const started = performance.now()
+  elapsed.value = 0
+  ticker = setInterval(() => (elapsed.value = (performance.now() - started) / 1000), 100)
+}
+function stopClock(): void {
+  if (ticker) clearInterval(ticker)
+  ticker = undefined
+}
+onBeforeUnmount(stopClock)
+const clock = computed(() => `${elapsed.value.toFixed(1)} s`)
+
 async function paint(): Promise<void> {
-  if (!props.paintPrompt || painting.value) return
+  if (!canPaint.value || painting.value) return
   painting.value = true
   busy.value = true
   error.value = null
   note.value = null
-  const started = performance.now()
+  startClock()
   try {
-    const made = await paintPortrait(props.paintPrompt)
+    const made = ownPrompt.value
+      ? await paintPortrait(rawPrompt.value.trim(), true)
+      : await paintPortrait(props.paintPrompt)
     const size = { width: made.width, height: made.height }
     const portrait = fit(2 / 3, size)
     let face = defaultFace(portrait, size)
@@ -155,10 +227,11 @@ async function paint(): Promise<void> {
       // keep the usual place for a face
     }
     emit('change', made.asset_id, { portrait, face })
-    note.value = `Painted in ${Math.round((performance.now() - started) / 1000)} s. Not quite them? Change the appearance and paint again.`
+    note.value = `Painted in ${elapsed.value.toFixed(1)} s. Not quite them? Change the appearance or the prompt and paint again.`
   } catch (err) {
     error.value = message(err, 'Could not paint them this time.')
   } finally {
+    stopClock()
     painting.value = false
     busy.value = false
   }
@@ -181,9 +254,21 @@ const initial = computed(() =>
   <div class="pick" :class="{ 'pick--panel': variant === 'panel' }">
     <div class="pick__shots" :class="{ 'pick__shots--busy': painting }">
       <span class="pick__card">
-        <FramedImage v-if="assetId && frames" :src="src" :frame="frames.portrait" :alt="name" />
+        <FramedImage
+          v-if="assetId && frames"
+          class="pick__img"
+          :src="src"
+          :frame="frames.portrait"
+          :alt="name" />
         <span v-else class="pick__empty"><IconImage :size="30" /></span>
-        <span v-if="painting" class="pick__painting" aria-hidden="true"></span>
+        <span v-if="painting" class="pick__painting" role="status" aria-live="off">
+          <span class="pick__ring" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+          <IconSparkle :size="22" class="pick__spark" />
+          <span class="pick__clock">{{ clock }}</span>
+          <span class="pick__label">Painting…</span>
+        </span>
       </span>
       <span v-if="assetId && frames && variant !== 'panel'" class="pick__token">
         <FramedImage :src="src" :frame="frames.face" />
@@ -193,7 +278,7 @@ const initial = computed(() =>
       <p class="pick__lead">
         {{
           painting
-            ? 'Painting them… this takes about fifteen seconds.'
+            ? `Painting them… ${clock} (usually about fifteen seconds).`
             : assetId
               ? 'Their picture, on every card, sheet and map token.'
               : 'No picture yet. Paint one from the appearance above, or bring your own.'
@@ -203,11 +288,19 @@ const initial = computed(() =>
         <button
           type="button"
           class="cta pick__paint"
-          :disabled="busy || !paintPrompt"
-          :title="paintPrompt ? paintPrompt : 'Fill in some of the appearance first'"
+          :disabled="busy || !canPaint"
+          :title="canPaint ? '' : 'Fill in some of the appearance first'"
           @click="paint">
           <IconSparkle :size="15" />
-          {{ painting ? 'Painting…' : assetId ? 'Generate again' : 'Generate image' }}
+          {{
+            painting
+              ? `Painting… ${clock}`
+              : ownPrompt
+                ? 'Generate from my prompt'
+                : assetId
+                  ? 'Generate again'
+                  : 'Generate image'
+          }}
         </button>
         <label class="ghost pick__import" :class="{ 'is-busy': busy }">
           <input
@@ -228,6 +321,38 @@ const initial = computed(() =>
           :disabled="busy"
           @click="emit('change', null, null)">
           Remove the picture
+        </button>
+      </div>
+      <button
+        type="button"
+        class="studio__link pick__prompttoggle"
+        :aria-expanded="showPrompt"
+        @click="togglePrompt">
+        {{ showPrompt ? 'Hide the prompt' : 'See and edit the prompt' }}
+      </button>
+      <div v-if="showPrompt" class="pick__prompt">
+        <label class="ev-field-label" for="pick-prompt">
+          Prompt sent to the image service
+          <span v-if="promptEdited" class="pick__mine">Your own: sent exactly as written</span>
+        </label>
+        <textarea
+          id="pick-prompt"
+          v-model="rawPrompt"
+          class="ev-input"
+          rows="7"
+          maxlength="4000"
+          :disabled="painting"
+          placeholder="Fill in some of the appearance to see the prompt, or write your own."
+          @input="promptEdited = true" />
+        <p v-if="settingsLine" class="pick__settings">{{ settingsLine }}</p>
+        <p v-if="promptError" class="pick__error" role="alert">{{ promptError }}</p>
+        <button
+          v-if="promptEdited"
+          type="button"
+          class="studio__link"
+          :disabled="painting"
+          @click="resetPrompt">
+          Back to the prompt from the appearance
         </button>
       </div>
       <p v-if="note && !error" class="pick__note" role="status">{{ note }}</p>
@@ -292,8 +417,23 @@ const initial = computed(() =>
   justify-content: center;
   color: #b49a63;
 }
-/* a slow shimmer while the picture is being painted */
+/* while painting: the old picture blurs, a ring turns, the clock runs */
+.pick__img {
+  transition: filter 0.4s ease;
+}
+.pick__shots--busy .pick__img {
+  filter: blur(7px) saturate(0.75) brightness(1.04);
+}
+.pick__shots--busy .pick__empty {
+  opacity: 0.3;
+}
 .pick__painting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #3d3016;
   position: absolute;
   inset: 0;
   background: linear-gradient(
@@ -304,6 +444,99 @@ const initial = computed(() =>
   );
   background-size: 250% 100%;
   animation: pick-shimmer 1.4s linear infinite;
+}
+.pick__ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 118px;
+  height: 118px;
+  margin: -59px 0 0 -59px;
+}
+.pick__ring span {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: var(--teal);
+  border-right-color: rgba(20, 84, 90, 0.35);
+  animation: pick-turn 1.6s linear infinite;
+}
+.pick__ring span:nth-child(2) {
+  inset: 12px;
+  border-top-color: var(--ember);
+  border-right-color: rgba(194, 97, 42, 0.3);
+  animation-duration: 2.3s;
+  animation-direction: reverse;
+}
+.pick__ring span:nth-child(3) {
+  inset: 24px;
+  border-top-color: var(--gold);
+  animation-duration: 3.1s;
+}
+.pick__spark {
+  position: relative;
+  color: var(--ember);
+  animation: pick-pulse 1.4s ease-in-out infinite;
+}
+.pick__clock {
+  position: relative;
+  font-family: var(--font-ui);
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px rgba(255, 250, 235, 0.9);
+}
+.pick__label {
+  position: relative;
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  text-shadow: 0 1px 2px rgba(255, 250, 235, 0.9);
+}
+@keyframes pick-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes pick-pulse {
+  50% {
+    transform: scale(1.25);
+    opacity: 0.7;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pick__ring span,
+  .pick__spark,
+  .pick__painting {
+    animation: none;
+  }
+}
+.pick__prompttoggle {
+  align-self: center;
+  font-family: var(--font-ui);
+  font-size: 15px;
+}
+.pick__prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+}
+.pick__prompt textarea {
+  font-family: var(--font-ui);
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+.pick__mine {
+  margin-left: 8px;
+  font-weight: 400;
+  color: var(--ember);
+}
+.pick__settings {
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  color: var(--ink-3);
 }
 @keyframes pick-shimmer {
   from {

@@ -1872,7 +1872,26 @@ class PortraitPaintRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    prompt: str = Field(min_length=1, max_length=2000)
+    prompt: str = Field(min_length=1, max_length=4000)
+    #: Send ``prompt`` to the image service exactly as written (the player
+    #: edited the whole prompt); otherwise the house style is added to it.
+    raw: bool = False
+
+
+class PortraitPromptView(BaseModel):
+    """What painting would send the image service, before it is sent."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    #: The whole prompt: the words, then the house style's wording.
+    prompt: str
+    ratio: str
+    checkpoint: str | None = None
+    style: str | None = None
+    mode: str
+    #: "random", "stable" or "fixed" (then ``seed`` is the number).
+    seed_mode: str
+    seed: int | None = None
 
 
 class WritingField(BaseModel):

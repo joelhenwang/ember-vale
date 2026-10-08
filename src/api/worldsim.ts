@@ -72,6 +72,7 @@ import type {
   WritingFillRequest,
   WritingFillView,
   WritingSampleRequest,
+  PortraitPromptView,
   WritingSampleView,
   TerrainView
 } from '../../content/clients/worldsim'
@@ -793,12 +794,30 @@ export function uploadPortrait(dataUrl: string, opts: CallOptions = {}): Promise
  * Paint a character from how they look, in the house style (the image
  * service; free, ~15 s, longer when it first switches its model).
  */
-export function paintPortrait(prompt: string, opts: CallOptions = {}): Promise<MapImageView> {
+/** Paint a character; `raw` sends the prompt exactly as written (no house style added). */
+export function paintPortrait(
+  prompt: string,
+  raw = false,
+  opts: CallOptions = {}
+): Promise<MapImageView> {
   return apiFetch<MapImageView>('/library/portraits/paint', {
     timeoutMs: 240000,
     ...opts,
     method: 'POST',
-    body: { prompt }
+    body: { prompt, raw }
+  })
+}
+
+/** The whole prompt and the settings painting would send the image service. */
+export function previewPortraitPrompt(
+  prompt: string,
+  raw = false,
+  opts: CallOptions = {}
+): Promise<PortraitPromptView> {
+  return apiFetch<PortraitPromptView>('/library/portraits/prompt', {
+    ...opts,
+    method: 'POST',
+    body: { prompt, raw }
   })
 }
 

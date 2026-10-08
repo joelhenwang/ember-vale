@@ -4671,16 +4671,84 @@
         "description": "Paint a character from words: how they look.",
         "properties": {
           "prompt": {
-            "maxLength": 2000,
+            "maxLength": 4000,
             "minLength": 1,
             "title": "Prompt",
             "type": "string"
+          },
+          "raw": {
+            "default": false,
+            "title": "Raw",
+            "type": "boolean"
           }
         },
         "required": [
           "prompt"
         ],
         "title": "PortraitPaintRequest",
+        "type": "object"
+      },
+      "PortraitPromptView": {
+        "additionalProperties": false,
+        "description": "What painting would send the image service, before it is sent.",
+        "properties": {
+          "checkpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkpoint"
+          },
+          "mode": {
+            "title": "Mode",
+            "type": "string"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "ratio": {
+            "title": "Ratio",
+            "type": "string"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "seed_mode": {
+            "title": "Seed Mode",
+            "type": "string"
+          },
+          "style": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Style"
+          }
+        },
+        "required": [
+          "prompt",
+          "ratio",
+          "mode",
+          "seed_mode"
+        ],
+        "title": "PortraitPromptView",
         "type": "object"
       },
       "PreferencesPatchRequest": {
@@ -9276,7 +9344,7 @@
     },
     "/api/v1/library/portraits/paint": {
       "post": {
-        "description": "Paint a character from how they look, in the house style; framed afterwards.",
+        "description": "Paint a character from how they look, in the house style; framed afterwards.\n\nWith ``raw`` the prompt is the player's own, sent as written.",
         "operationId": "paint_portrait_api_v1_library_portraits_paint_post",
         "requestBody": {
           "content": {
@@ -9311,6 +9379,48 @@
           }
         },
         "summary": "Paint Portrait",
+        "tags": [
+          "library"
+        ]
+      }
+    },
+    "/api/v1/library/portraits/prompt": {
+      "post": {
+        "description": "The prompt and settings painting would send, for the player to read or edit.",
+        "operationId": "portrait_prompt_api_v1_library_portraits_prompt_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortraitPaintRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortraitPromptView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Portrait Prompt",
         "tags": [
           "library"
         ]

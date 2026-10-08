@@ -850,6 +850,17 @@ export interface MapPlacesRequest {
 
 export interface PortraitPaintRequest {
   prompt: string;
+  raw?: boolean;
+}
+
+export interface PortraitPromptView {
+  checkpoint?: string | null;
+  mode: string;
+  prompt: string;
+  ratio: string;
+  seed?: number | null;
+  seed_mode: string;
+  style?: string | null;
 }
 
 export interface WritingField {

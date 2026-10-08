@@ -181,6 +181,7 @@ def test_a_character_is_painted_from_how_they_look(raw: TestClient) -> None:
     )
     assert painted.status_code == 200, painted.text
     asset_id = painted.json()["asset_id"]
+    made = [asset_id]
     try:
         # The house style is wrapped around the player's words.
         assert painter.requests[0].prompt.startswith("a tall ferrywoman, grey braid, green eyes")
@@ -188,9 +189,24 @@ def test_a_character_is_painted_from_how_they_look(raw: TestClient) -> None:
         assert client.get(f"/api/v1/library/assets/{asset_id}/bytes").status_code == 200
         # It is a portrait: the face can be looked for on it.
         assert client.post(f"/api/v1/library/maps/{asset_id}/places").status_code == 404
+
+        # The whole prompt can be read first, then edited and sent as written.
+        shown = client.post(
+            "/api/v1/library/portraits/prompt",
+            json={"prompt": "a tall ferrywoman, grey braid, green eyes"},
+        ).json()
+        assert shown["prompt"] == painter.requests[0].prompt
+        assert shown["ratio"] == painter.requests[0].ratio and shown["mode"]
+        mine = "a tall ferrywoman rowing at dawn, watercolour"
+        again = client.post("/api/v1/library/portraits/paint", json={"prompt": mine, "raw": True})
+        assert again.status_code == 200, again.text
+        assert painter.requests[1].prompt == mine
+        assert painter.requests[1].ratio == painter.requests[0].ratio
+        made.append(again.json()["asset_id"])
     finally:
-        for found in Path(ASSETS / "generated" / "portraits").glob(f"{asset_id}.*"):
-            found.unlink()
+        for one in made:
+            for found in Path(ASSETS / "generated" / "portraits").glob(f"{one}.*"):
+                found.unlink()
 
 
 def test_a_voice_sample_is_a_short_exchange_in_their_voice(raw: TestClient) -> None:

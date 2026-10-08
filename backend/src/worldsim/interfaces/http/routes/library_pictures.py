@@ -48,9 +48,41 @@ async def upload_portrait(body: api.MapUploadRequest, request: Request) -> api.M
     )
 
 
+def _portrait_prompt(request: Request, words: str) -> tuple[str, str]:
+    """(whole prompt, ratio): the words, then the house style's portrait wording."""
+    state = request.app.state.app_state
+    pack = load_style_pack(state.seed_dir.parent.parent / "visual-styles", DEFAULT_STYLE_PACK)
+    return compose_prompt(pack, AssetKind.PORTRAIT, words.strip())
+
+
+@router.post("/library/portraits/prompt", response_model=api.PortraitPromptView)
+async def portrait_prompt(
+    body: api.PortraitPaintRequest, request: Request
+) -> api.PortraitPromptView:
+    """The prompt and settings painting would send, for the player to read or edit."""
+    state = request.app.state.app_state
+    composed, ratio = _portrait_prompt(request, body.prompt)
+    prompt = body.prompt.strip() if body.raw else composed
+    async with state.uow_factory()() as uow:
+        prefs = (await uow.settings.get_preferences(OPERATOR)).images
+    sent = image_request(prompt, ratio, AssetKind.PORTRAIT, prefs, pixel=None)
+    return api.PortraitPromptView(
+        prompt=sent.prompt,
+        ratio=sent.ratio,
+        checkpoint=sent.checkpoint,
+        style=sent.style,
+        mode=sent.mode,
+        seed_mode=prefs.seed_mode,
+        seed=sent.seed,
+    )
+
+
 @router.post("/library/portraits/paint", response_model=api.MapImageView)
 async def paint_portrait(body: api.PortraitPaintRequest, request: Request) -> api.MapImageView:
-    """Paint a character from how they look, in the house style; framed afterwards."""
+    """Paint a character from how they look, in the house style; framed afterwards.
+
+    With ``raw`` the prompt is the player's own, sent as written.
+    """
     state = request.app.state.app_state
     generator = state.images()
     if generator is None:
@@ -58,8 +90,8 @@ async def paint_portrait(body: api.PortraitPaintRequest, request: Request) -> ap
             ErrorCode.PRECONDITION_FAILED,
             "no image service: set WORLDSIM_IMAGES__PROVIDER=krea and KREA_BASE_URL",
         )
-    pack = load_style_pack(state.seed_dir.parent.parent / "visual-styles", DEFAULT_STYLE_PACK)
-    prompt, ratio = compose_prompt(pack, AssetKind.PORTRAIT, body.prompt.strip())
+    composed, ratio = _portrait_prompt(request, body.prompt)
+    prompt = body.prompt.strip() if body.raw else composed
     async with state.uow_factory()() as uow:
         prefs = (await uow.settings.get_preferences(OPERATOR)).images
     try:

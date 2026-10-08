@@ -130,6 +130,7 @@ WANTED = (
     "TerrainView",
     "MapPlacesRequest",
     "PortraitPaintRequest",
+    "PortraitPromptView",
     "WritingField",
     "WritingPlace",
     "WritingEnhanceRequest",
