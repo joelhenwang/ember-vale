@@ -15,7 +15,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 #: Pricing table version recorded on every row.
-PRICING_VERSION = "s3-prov-v2"
+PRICING_VERSION = "s3-prov-v3"
 
 #: USD per 1k tokens by model prefix. OpenRouter's `auto` router can
 #: serve anything, so unknown models fall back to DEFAULT_RATE and
@@ -27,6 +27,11 @@ _RATES: dict[str, tuple[float, float]] = {
     "openai/gpt-4o": (0.0025, 0.01),
     "anthropic/claude-3-5-haiku": (0.0008, 0.004),
     "google/gemini-flash-1.5": (0.000075, 0.0003),
+    # Venice list price (GET /models model_spec.pricing, 2026-10-08). Venice
+    # reports no billed amount, so these were costed at DEFAULT_RATE (~4.5x).
+    "venice-uncensored-role-play": (0.0005, 0.002),
+    "venice-uncensored": (0.0002, 0.0009),
+    "gemma-4-uncensored": (0.0001625, 0.0005),
     "fake-": (0.0, 0.0),
 }
 DEFAULT_RATE: tuple[float, float] = (0.001, 0.003)

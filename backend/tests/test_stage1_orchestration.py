@@ -1535,7 +1535,7 @@ def test_two_observers_produce_one_narration_fact(migrated_db: None) -> None:
 def test_role_max_tokens_raises_floor_only_for_growing_roles() -> None:
     from worldsim.application.orchestration.stage1 import role_max_tokens
 
-    assert role_max_tokens(512, "summary") == 1024
+    assert role_max_tokens(512, "summary") == 1536
     assert role_max_tokens(512, "resolver") == 1024
     assert role_max_tokens(512, "director") == 768
     assert role_max_tokens(512, "character") == 512

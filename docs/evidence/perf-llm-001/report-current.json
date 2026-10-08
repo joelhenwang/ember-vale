@@ -1,0 +1,638 @@
+{
+  "by_role_model": [
+    {
+      "role": "reaction",
+      "model": "deepseek/deepseek-v4-flash-0731",
+      "calls": 560,
+      "failed": 0,
+      "prompt_avg": "5324",
+      "prompt_p95": 6684.0,
+      "completion_avg": "141",
+      "cached_pct": "66.1",
+      "lat_p50": 1937.5,
+      "lat_p95": 6363.999999999999,
+      "hit_cap": 0,
+      "usd": "3.1999"
+    },
+    {
+      "role": "character_decision",
+      "model": "deepseek/deepseek-v4-flash-0731",
+      "calls": 362,
+      "failed": 0,
+      "prompt_avg": "5198",
+      "prompt_p95": 6950.8,
+      "completion_avg": "107",
+      "cached_pct": "56.2",
+      "lat_p50": 1619.0,
+      "lat_p95": 4152.949999999998,
+      "hit_cap": 0,
+      "usd": "1.8043"
+    },
+    {
+      "role": "character_decision",
+      "model": "venice-uncensored-1-2",
+      "calls": 168,
+      "failed": 0,
+      "prompt_avg": "5336",
+      "prompt_p95": 6985.6,
+      "completion_avg": "124",
+      "cached_pct": "58.8",
+      "lat_p50": 1771.0,
+      "lat_p95": 2541.25,
+      "hit_cap": 0,
+      "usd": "0.9588"
+    },
+    {
+      "role": "reaction",
+      "model": "venice-uncensored-1-2",
+      "calls": 106,
+      "failed": 0,
+      "prompt_avg": "5577",
+      "prompt_p95": 7092.25,
+      "completion_avg": "138",
+      "cached_pct": "62.6",
+      "lat_p50": 1841.0,
+      "lat_p95": 2710.25,
+      "hit_cap": 0,
+      "usd": "0.6351"
+    },
+    {
+      "role": "resolver",
+      "model": "deepseek/deepseek-v4-flash-0731",
+      "calls": 130,
+      "failed": 0,
+      "prompt_avg": "3426",
+      "prompt_p95": 3591.55,
+      "completion_avg": "290",
+      "cached_pct": "64.5",
+      "lat_p50": 2580.0,
+      "lat_p95": 5235.599999999999,
+      "hit_cap": 0,
+      "usd": "0.3962"
+    },
+    {
+      "role": "daily_summary",
+      "model": "deepseek/deepseek-v4-flash-0731",
+      "calls": 59,
+      "failed": 1,
+      "prompt_avg": "1549",
+      "prompt_p95": 2025.3999999999999,
+      "completion_avg": "780",
+      "cached_pct": "0.0",
+      "lat_p50": 7087.0,
+      "lat_p95": 30694.099999999984,
+      "hit_cap": 1,
+      "usd": "0.2036"
+    },
+    {
+      "role": "narrator",
+      "model": "venice-uncensored-1-2",
+      "calls": 56,
+      "failed": 0,
+      "prompt_avg": "2058",
+      "prompt_p95": 2430.0,
+      "completion_avg": "211",
+      "cached_pct": "52.3",
+      "lat_p50": 2091.5,
+      "lat_p95": 5293.0,
+      "hit_cap": 0,
+      "usd": "0.1506"
+    },
+    {
+      "role": "resolver",
+      "model": "venice-uncensored-1-2",
+      "calls": 35,
+      "failed": 0,
+      "prompt_avg": "3521",
+      "prompt_p95": 3805.4,
+      "completion_avg": "93",
+      "cached_pct": "42.0",
+      "lat_p50": 1786.0,
+      "lat_p95": 3885.099999999995,
+      "hit_cap": 0,
+      "usd": "0.1330"
+    },
+    {
+      "role": "director",
+      "model": "venice-uncensored-1-2",
+      "calls": 22,
+      "failed": 0,
+      "prompt_avg": "2215",
+      "prompt_p95": 2825.0,
+      "completion_avg": "108",
+      "cached_pct": "21.8",
+      "lat_p50": 1846.0,
+      "lat_p95": 3301.0,
+      "hit_cap": 0,
+      "usd": "0.0559"
+    },
+    {
+      "role": "daily_summary",
+      "model": "venice-uncensored-1-2",
+      "calls": 12,
+      "failed": 0,
+      "prompt_avg": "1536",
+      "prompt_p95": 1715.15,
+      "completion_avg": "935",
+      "cached_pct": "27.3",
+      "lat_p50": 4504.5,
+      "lat_p95": 6625.099999999998,
+      "hit_cap": 8,
+      "usd": "0.0521"
+    },
+    {
+      "role": "director",
+      "model": "deepseek/deepseek-v4-flash-0731",
+      "calls": 15,
+      "failed": 0,
+      "prompt_avg": "2188",
+      "prompt_p95": 2369.7,
+      "completion_avg": "114",
+      "cached_pct": "46.0",
+      "lat_p50": 1876.0,
+      "lat_p95": 2846.2,
+      "hit_cap": 0,
+      "usd": "0.0103"
+    },
+    {
+      "role": "memory_digest",
+      "model": "deepseek/deepseek-v4-flash-0731",
+      "calls": 8,
+      "failed": 0,
+      "prompt_avg": "978",
+      "prompt_p95": 1423.9999999999998,
+      "completion_avg": "292",
+      "cached_pct": "0.0",
+      "lat_p50": 2306.5,
+      "lat_p95": 3191.2999999999997,
+      "hit_cap": 0,
+      "usd": "0.0102"
+    }
+  ],
+  "likely_hedged": [
+    {
+      "role": "character_decision",
+      "slow": 22,
+      "calls": 530,
+      "hedge_after_s": 4,
+      "slow_pct": 4.2
+    },
+    {
+      "role": "reaction",
+      "slow": 77,
+      "calls": 666,
+      "hedge_after_s": 4,
+      "slow_pct": 11.6
+    },
+    {
+      "role": "director",
+      "slow": 0,
+      "calls": 37,
+      "hedge_after_s": 5,
+      "slow_pct": 0.0
+    },
+    {
+      "role": "resolver",
+      "slow": 3,
+      "calls": 165,
+      "hedge_after_s": 7,
+      "slow_pct": 1.8
+    },
+    {
+      "role": "narrator",
+      "slow": 0,
+      "calls": 56,
+      "hedge_after_s": 7,
+      "slow_pct": 0.0
+    },
+    {
+      "role": "daily_summary",
+      "slow": 25,
+      "calls": 70,
+      "hedge_after_s": 10,
+      "slow_pct": 35.7
+    }
+  ],
+  "per_beat": [
+    {
+      "beats": 294,
+      "calls_avg": "5.2",
+      "usd_avg": "0.02588",
+      "usd_p95": "0.08935",
+      "prompt_tokens_avg": "24606",
+      "slowest_call_p50": 2745.5
+    }
+  ],
+  "growth": [
+    {
+      "role": "character_decision",
+      "bucket": 0,
+      "calls": 350,
+      "prompt_avg": "4639",
+      "prompt_max": 7363
+    },
+    {
+      "role": "character_decision",
+      "bucket": 10,
+      "calls": 89,
+      "prompt_avg": "6113",
+      "prompt_max": 7235
+    },
+    {
+      "role": "character_decision",
+      "bucket": 20,
+      "calls": 44,
+      "prompt_avg": "6658",
+      "prompt_max": 7102
+    },
+    {
+      "role": "character_decision",
+      "bucket": 30,
+      "calls": 43,
+      "prompt_avg": "6772",
+      "prompt_max": 7091
+    },
+    {
+      "role": "character_decision",
+      "bucket": 40,
+      "calls": 4,
+      "prompt_avg": "6618",
+      "prompt_max": 6856
+    },
+    {
+      "role": "daily_summary",
+      "bucket": 0,
+      "calls": 53,
+      "prompt_avg": "1528",
+      "prompt_max": 1998
+    },
+    {
+      "role": "daily_summary",
+      "bucket": 10,
+      "calls": 6,
+      "prompt_avg": "1505",
+      "prompt_max": 1855
+    },
+    {
+      "role": "daily_summary",
+      "bucket": 20,
+      "calls": 6,
+      "prompt_avg": "1619",
+      "prompt_max": 2050
+    },
+    {
+      "role": "daily_summary",
+      "bucket": 30,
+      "calls": 6,
+      "prompt_avg": "1678",
+      "prompt_max": 2088
+    },
+    {
+      "role": "director",
+      "bucket": 0,
+      "calls": 21,
+      "prompt_avg": "2050",
+      "prompt_max": 2565
+    },
+    {
+      "role": "director",
+      "bucket": 10,
+      "calls": 9,
+      "prompt_avg": "2486",
+      "prompt_max": 2832
+    },
+    {
+      "role": "director",
+      "bucket": 20,
+      "calls": 3,
+      "prompt_avg": "2286",
+      "prompt_max": 2341
+    },
+    {
+      "role": "director",
+      "bucket": 30,
+      "calls": 3,
+      "prompt_avg": "2316",
+      "prompt_max": 2327
+    },
+    {
+      "role": "director",
+      "bucket": 40,
+      "calls": 1,
+      "prompt_avg": "2332",
+      "prompt_max": 2332
+    },
+    {
+      "role": "memory_digest",
+      "bucket": 10,
+      "calls": 2,
+      "prompt_avg": "1250",
+      "prompt_max": 1564
+    },
+    {
+      "role": "memory_digest",
+      "bucket": 20,
+      "calls": 2,
+      "prompt_avg": "1128",
+      "prompt_max": 1164
+    },
+    {
+      "role": "memory_digest",
+      "bucket": 30,
+      "calls": 4,
+      "prompt_avg": "768",
+      "prompt_max": 962
+    },
+    {
+      "role": "narrator",
+      "bucket": 0,
+      "calls": 37,
+      "prompt_avg": "2092",
+      "prompt_max": 2570
+    },
+    {
+      "role": "narrator",
+      "bucket": 10,
+      "calls": 19,
+      "prompt_avg": "1992",
+      "prompt_max": 2340
+    },
+    {
+      "role": "reaction",
+      "bucket": 0,
+      "calls": 379,
+      "prompt_avg": "4731",
+      "prompt_max": 7187
+    },
+    {
+      "role": "reaction",
+      "bucket": 10,
+      "calls": 120,
+      "prompt_avg": "5770",
+      "prompt_max": 7134
+    },
+    {
+      "role": "reaction",
+      "bucket": 20,
+      "calls": 90,
+      "prompt_avg": "6470",
+      "prompt_max": 6753
+    },
+    {
+      "role": "reaction",
+      "bucket": 30,
+      "calls": 74,
+      "prompt_avg": "6563",
+      "prompt_max": 6718
+    },
+    {
+      "role": "reaction",
+      "bucket": 40,
+      "calls": 3,
+      "prompt_avg": "6528",
+      "prompt_max": 6609
+    },
+    {
+      "role": "resolver",
+      "bucket": 0,
+      "calls": 81,
+      "prompt_avg": "3422",
+      "prompt_max": 3813
+    },
+    {
+      "role": "resolver",
+      "bucket": 10,
+      "calls": 30,
+      "prompt_avg": "3470",
+      "prompt_max": 3811
+    },
+    {
+      "role": "resolver",
+      "bucket": 20,
+      "calls": 25,
+      "prompt_avg": "3489",
+      "prompt_max": 3602
+    },
+    {
+      "role": "resolver",
+      "bucket": 30,
+      "calls": 26,
+      "prompt_avg": "3461",
+      "prompt_max": 3672
+    },
+    {
+      "role": "resolver",
+      "bucket": 40,
+      "calls": 3,
+      "prompt_avg": "3373",
+      "prompt_max": 3419
+    }
+  ],
+  "repeats": [
+    {
+      "role": "reaction",
+      "groups_repeated": 209,
+      "groups": 379,
+      "extra_calls": "287"
+    },
+    {
+      "role": "character_decision",
+      "groups_repeated": 54,
+      "groups": 475,
+      "extra_calls": "55"
+    },
+    {
+      "role": "resolver",
+      "groups_repeated": 27,
+      "groups": 138,
+      "extra_calls": "27"
+    },
+    {
+      "role": "narrator",
+      "groups_repeated": 18,
+      "groups": 33,
+      "extra_calls": "23"
+    },
+    {
+      "role": "daily_summary",
+      "groups_repeated": 4,
+      "groups": 67,
+      "extra_calls": "4"
+    },
+    {
+      "role": "director",
+      "groups_repeated": 3,
+      "groups": 34,
+      "extra_calls": "3"
+    },
+    {
+      "role": "memory_digest",
+      "groups_repeated": 0,
+      "groups": 8,
+      "extra_calls": "0"
+    }
+  ],
+  "finish": [
+    {
+      "role": "character_decision",
+      "finish": "stop",
+      "n": 530,
+      "completion_avg": "112",
+      "completion_max": 196,
+      "max_tokens": "512"
+    },
+    {
+      "role": "daily_summary",
+      "finish": "stop",
+      "n": 61,
+      "completion_avg": "680",
+      "completion_max": 982,
+      "max_tokens": "1024"
+    },
+    {
+      "role": "daily_summary",
+      "finish": "length",
+      "n": 8,
+      "completion_avg": "1024",
+      "completion_max": 1024,
+      "max_tokens": "1024"
+    },
+    {
+      "role": "daily_summary",
+      "finish": "length",
+      "n": 1,
+      "completion_avg": "4096",
+      "completion_max": 4096,
+      "max_tokens": "4096"
+    },
+    {
+      "role": "daily_summary",
+      "finish": "stop",
+      "n": 1,
+      "completion_avg": "3482",
+      "completion_max": 3482,
+      "max_tokens": "4096"
+    },
+    {
+      "role": "director",
+      "finish": "stop",
+      "n": 37,
+      "completion_avg": "110",
+      "completion_max": 266,
+      "max_tokens": "768"
+    },
+    {
+      "role": "memory_digest",
+      "finish": "stop",
+      "n": 8,
+      "completion_avg": "292",
+      "completion_max": 447,
+      "max_tokens": "1024"
+    },
+    {
+      "role": "narrator",
+      "finish": "stop",
+      "n": 56,
+      "completion_avg": "211",
+      "completion_max": 625,
+      "max_tokens": "1536"
+    },
+    {
+      "role": "reaction",
+      "finish": "stop",
+      "n": 666,
+      "completion_avg": "141",
+      "completion_max": 218,
+      "max_tokens": "512"
+    },
+    {
+      "role": "resolver",
+      "finish": "stop",
+      "n": 165,
+      "completion_avg": "249",
+      "completion_max": 679,
+      "max_tokens": "1024"
+    }
+  ],
+  "image_jobs": [
+    {
+      "kind": "background",
+      "status": "ready",
+      "n": 10,
+      "attempts_avg": "0.00",
+      "attempts_max": 0
+    },
+    {
+      "kind": "portrait",
+      "status": "ready",
+      "n": 98,
+      "attempts_avg": "0.00",
+      "attempts_max": 0
+    },
+    {
+      "kind": "scene",
+      "status": "ready",
+      "n": 7,
+      "attempts_avg": "0.00",
+      "attempts_max": 0
+    }
+  ],
+  "assets": [
+    {
+      "kind": "portrait",
+      "mime": "image/png",
+      "n": 391,
+      "w_avg": "787",
+      "h_avg": "787"
+    },
+    {
+      "kind": "background",
+      "mime": "image/png",
+      "n": 366,
+      "w_avg": "1669",
+      "h_avg": "939"
+    },
+    {
+      "kind": "map",
+      "mime": "image/webp",
+      "n": 181,
+      "w_avg": "1536",
+      "h_avg": "961"
+    },
+    {
+      "kind": "map",
+      "mime": "image/png",
+      "n": 82,
+      "w_avg": "1424",
+      "h_avg": "810"
+    },
+    {
+      "kind": "portrait",
+      "mime": "image/webp",
+      "n": 23,
+      "w_avg": "512",
+      "h_avg": "512"
+    },
+    {
+      "kind": "background",
+      "mime": "image/webp",
+      "n": 11,
+      "w_avg": "1273",
+      "h_avg": "726"
+    },
+    {
+      "kind": "scene",
+      "mime": "image/webp",
+      "n": 7,
+      "w_avg": "1280",
+      "h_avg": "723"
+    },
+    {
+      "kind": "portrait",
+      "mime": "image/jpeg",
+      "n": 1,
+      "w_avg": "1600",
+      "h_avg": "1200"
+    }
+  ]
+}

@@ -364,7 +364,10 @@ _phase_log = logging.getLogger("worldsim.phase")
 #: effects for every intent, the director emits hook plus arc objects.
 #: The shared sampling cap (default 512) truncates these mid-JSON. The
 #: narrator sizes its own cap from the beat budget (narrator_max_tokens).
-ROLE_MAX_TOKEN_FLOORS: dict[str, int] = {"summary": 1024, "resolver": 1024, "director": 768}
+#: Summaries got 1536 after 9 of 71 traced summaries stopped at 1024 mid-JSON
+#: (8 of 12 on Venice, whose summaries run ~935 tokens), each followed by a
+#: repair that truncated again (docs/evidence/perf-llm-001).
+ROLE_MAX_TOKEN_FLOORS: dict[str, int] = {"summary": 1536, "resolver": 1024, "director": 768}
 
 
 def role_max_tokens(configured: int, role: str) -> int:

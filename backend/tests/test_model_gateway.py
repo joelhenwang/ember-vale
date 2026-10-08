@@ -325,3 +325,14 @@ def test_spend_is_what_openrouter_billed() -> None:
     # Without a report, the table now knows DeepSeek V4 Flash (not the default rate).
     table = compute_cost(uuid.uuid4(), result.model, 1_000_000, 0, 0)
     assert round(table.prompt_cost_usd, 6) == 0.009 and not table.estimated
+
+
+def test_venice_calls_are_costed_at_its_list_price() -> None:
+    from uuid import uuid4
+
+    from worldsim.domain.costs import compute_cost
+
+    cost = compute_cost(uuid4(), "venice-uncensored-1-2", 10_000, 1_000, 0)
+    assert cost.prompt_cost_usd == pytest.approx(0.002)
+    assert cost.completion_cost_usd == pytest.approx(0.0009)
+    assert not cost.estimated
