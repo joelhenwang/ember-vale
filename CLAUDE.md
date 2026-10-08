@@ -29,7 +29,7 @@ operations, and about real product direction.
 | `backend/src/worldsim/infrastructure/` | `settings.py` (every `WORLDSIM_*` env var), `model_gateway/` (openrouter, venice, hedge, selection), `images/` (krea, runner, shrink), `geography/openrouter.py` (map reader with PLACES/ROADS/SPOTS/TERRAIN/FACE prompts), `local_models/` (RecallIndexer, MentionReader), `writing/`, `db/`, `repositories/` |
 | `backend/src/worldsim/interfaces/http/` | `app.py` (all routers under `/api/v1`), `routes/*.py`, `schemas.py` (API DTOs), `beats.py` (`run_beat`, shared by advance and autoplay), `state.py` (AppState wiring), `export.py` (OpenAPI export) |
 | `backend/prompts/` | Versioned role prompts. Active versions: `character_decision.v7`, `reaction.v4`, `resolver.v4`, `narrator.v4`, `director.v12`, `summary.v1`, `digest.v1` (constants in `application/graphs/*.py`) |
-| `backend/migrations/versions/` | Alembic `0001`–`0054` committed. The API container's entrypoint migrates on start |
+| `backend/migrations/versions/` | Alembic `0001`–`0057` committed. The API container's entrypoint migrates on start |
 | `backend/scripts/` | `scorecard.py` (live story-quality scorecard), `play_session.py`, `narrator_prompt_eval.py`, `map_detect_eval.py`, `map_routes_eval.py`, `terrain_eval.py`, `place_spots_eval.py`, `recall_eval.py`, `routing_eval.py`, `prefix_eval.py`, `frame_painted_faces.py`, `gen_ts_client.py` |
 | `backend/tests/` | pytest. Parallel-safe: each DB test clones a migrated template |
 | `src/views/` | One file per page (see the routes in §3.12) |
@@ -138,6 +138,24 @@ of these features.
 - **Motion (game feel, e91d555 and follow-ups):** one motion language in `src/styles/motion.css`: tokens (`--ease-settle` ≈ expo.out for entrances, `--ease-in` for exits, `--ease-io`, `--ease-sine` for loops, `--ease-spring` only for small confirmations), shared `<Transition>` names (`ev-fade`, `ev-swap` tabs/modes, `ev-step-next`/`ev-step-prev` wizards, `ev-modal` scrim + first-child panel, `ev-drawer`, `ev-sheet`, `ev-pop` menus, `ev-rise`, `ev-list` TransitionGroups) and utilities (`ev-press`, `ev-img-fade` + `is-loaded`, `ev-drift` Ken Burns, `ev-breathe`, `ev-flicker`, `ev-sheen`, `ev-push-in`, `ev-stamp`, `ev-skeleton`, `ev-dots`, `ev-pop-stagger`, `ev-rise`). Effects in `composables/useEffects.ts`: `burst(el)` sparks, `shake(el)`, `flash(el)`, `v-tilt`, `v-ripple`. `useMotion.ts`: `moves()`, `useTweened` (numbers glide), `v-reveal`. `decor/EmberField.vue` draws drifting embers. Reuse these before inventing new ones; animate transform/opacity only. Global defaults (f53af21): every button/tab/summary gives on press through the CSS `scale` property (so it composes with transforms); `role=alert`/status lines fade in; any `<img>` that loads after first paint fades in (`installMotion`, opt out with `data-no-fade`); `.ev-empty` gives empty states a floating sparkle, `.ev-pop-once` pops a badge. EmberField pauses off-screen. Clickables must not move constantly (map tokens pause their idle bob on hover; the active place's pin bobs, not its "Inside" label). Story entry from outside plays an iris (App.vue); the New Story launch screen shows only while the create request is in flight.
 - **Settings › Appearance › Motion** (MotionSettings.vue, `src/game/motion.ts`): follow the computer / full / reduced, saved per device in localStorage `ev.motion` and written as `<html data-motion>`.
 
+### 3.10b Performance and scaling (perf pass 2026-10-08, `docs/evidence/perf-summary-001`)
+- **HTTP:** JSON over 1 KB is gzipped. JSON GETs carry a content-hash ETag with `private, no-cache`, so an unchanged poll is a 304 (`interfaces/http/etag.py`). The middlewares are plain ASGI, never `BaseHTTPMiddleware`.
+- **Pictures:**
+  - Pictures are immutable per id: year-long cache plus ETag.
+  - `?w=` on `/assets/{id}` and `/library/assets/{id}/bytes` serves a WebP that wide, snapped to 96…1280 and encoded once into `generated/.variants/`. The frontend passes about 2x the drawn width (`assetUrl(world, id, w)`, `libraryAssetUrl(id, w)`); framers, the moment view and full-screen maps take the original.
+  - Maps and the starter art are stored as WebP (migration 0056, `scripts/maps_to_webp.py`).
+- **Reads:** batched (stories list 3 queries; chronicle 8); presentation flat to 300x story length. Adventure reads the chronicle newest-first and backfills (`chronicleReader.ts`). An idle tick reads only the presentation unless the story stamp changed.
+- **Beats:**
+  - one pooled HTTP client (`infrastructure/http_pool.py`) and graphs compiled once;
+  - `WORLDSIM_APP__PARALLEL_MODEL_CALLS` (12), pool 10+20;
+  - phase-shared world reads (`orchestration/phase_reads.py`, byte-identity verified in `tests/test_phase_reads.py`);
+  - a cancelled request cancels its director.
+- **Scaling:**
+  - Image jobs are claimed with `FOR UPDATE SKIP LOCKED` plus a lease, and record created, started and finished times (migration 0057).
+  - `WORLDSIM_APP__BACKGROUND_LOOPS=false` with `python -m worldsim.interfaces.worker` (compose profile `scale`) moves autoplay, painting and indexing out of the API; `WORLDSIM_APP__WORKERS=N` then serves from N processes.
+- **Frontend idle:** ambient loops rest after 60 s without input; new chronicle entries wake them (`wakeScene()`).
+- **Benches:** `backend/scripts/api_bench.py` (`--inprocess` counts queries), `beat_bench.py` (`--verify-reads`), `scripts/page-bench.mjs` (`--rested`, `--memory`), `llm_usage_report.py`.
+
 ### 3.11 Stories, settings, providers
 - New Story wizard (6 steps, server story drafts, pinned revisions, atomic idempotent create). Layout follows the designer's mockups (7172899): each step has its own heading (`src/game/newStory.ts` `NEW_STORY_HEADS`), steps across the page, the step beside a panel showing its result (world preview, your cast with Starts at, your role over the world picture, story preview, storyteller by name from `storytellerName`), Review as one row per step with Edit; footer buttons say where they go. Step labels: World, Characters, Play mode, Story, Storyteller, Review (slugs unchanged). Left out on purpose: world tags and painted cover art in the mockups (no such data yet). **Quick hero** from Home: "Play as a new hero" (9fce20b, QuickHeroDialog.vue). The Home hero shows "Continue as X" (829f5bb).
 - **Story settings** `/stories/:id/settings` (StorySettingsView.vue, 4dd5cb1, migration 0053): a per-story LLM prefix/suffix that wraps every role's user prompt through FramedGateway (system prompts stay stable for caching), an image prefix/suffix, and per-character image prefix/suffix. API: `GET/PUT /stories/{world_id}/prompts`.
@@ -190,6 +208,7 @@ backend for it already exists.
 | Images: Krea checkpoint `krea2Anime_v15_bf16`, ~14 s per image. Never switch the checkpoint silently | b41ee72, `providers-images` notes |
 | Face frames for painted portraits from Luna, 29/29 | `painted-faces-001` |
 | Background narration: server turns 3–9 s instead of 6.5–17 s | b3130e6 |
+| Perf pass: pages 3–8x lighter, idle CPU ~0.4%, reads flat to 300x, beat overhead 2–3x lower. uvloop, prompt reordering and removing the DB pre-ping were rejected. Open: crowd reactions grow with the square of the cast (a product decision) | `perf-summary-001` and the five `perf-*-001` folders |
 | UI review of 7 Oct (fonts, caching, studios, writing help) | `ui-review-001`, `docs/reviews/1/7_oct_2026-user-review.md` |
 | Play-session fixes (prose opening, carried items, ring layout) | `play-session-001` |
 
@@ -274,6 +293,8 @@ plays Adventure against the dev API.
   measured numbers and evidence folder. End it with the trailers from the session's
   attribution reminder (currently `Co-Authored-By: Claude …`; follow whatever the reminder
   of your own session says). Commit evidence separately when it is large. Never skip hooks.
+- **Pictures drawn small take a width:** `assetUrl(world, id, ~2x drawn px)`. A bare URL downloads the whole painting (a 1.6 MB PNG was drawn at 191 px). Only framers, the moment view and full-screen maps need the original.
+- **asyncio cancels once:** when cleanup awaits a sibling task on cancellation, cancel that sibling first (`59528c7`; plain ASGI exposed a hang that anyio's repeated cancels had hidden).
 - **Pictures that can change need a key.** `StoryImage` reads its slot once (`useGameImage`), so a reused one shows a stale picture when the slot changes; give it `:key` (the New Story banner bug, 7172899).
 - **No `:global(.x) .y` in scoped styles:** Vue compiles it to plain `.x`, so the rule hits the parent itself (it collapsed the Library's List mode to 240 px). Style a child from the parent with `.x :deep(.y)` instead.
 - **Reduced motion:** `src/styles/motion.css` applies it when `<html data-motion="reduced">`, or when the system asks and the viewer did not choose Full (Windows with animation effects off reports it; the user's machine does). It stops movement but keeps opacity/colour fades; progress indicators keep the class `ev-progress-spin` so they still turn (7646ede). A component's own reduced rule must use both selectors, `:root[data-motion='reduced'] .x` and, inside `@media (prefers-reduced-motion: reduce)`, `:root:not([data-motion='full']) .x`, never a bare media query (it would override Full). Script-driven motion asks `moves()`.
