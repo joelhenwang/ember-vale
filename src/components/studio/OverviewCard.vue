@@ -7,6 +7,7 @@
 -->
 <script setup lang="ts">
 import { ref } from 'vue'
+import { burst, flash } from '../../composables/useEffects'
 import { enhanceOverview } from '../../api/worldsim'
 import IconSparkle from '../icons/IconSparkle.vue'
 import IconFeather from '../icons/IconFeather.vue'
@@ -26,6 +27,8 @@ const overview = defineModel<string>({ required: true })
 defineEmits<{ fill: [] }>()
 
 const improving = ref(false)
+/* the overview box: an accepted rewrite glows and throws sparks as it lands */
+const box = ref<HTMLTextAreaElement | null>(null)
 const proposal = ref<string | null>(null)
 const note = ref<string | null>(null)
 const failed = ref(false)
@@ -48,7 +51,11 @@ async function improve(): Promise<void> {
 }
 
 function useProposal(): void {
-  if (proposal.value) overview.value = proposal.value
+  if (proposal.value) {
+    overview.value = proposal.value
+    flash(box.value)
+    burst(box.value, { count: 14, spread: 90 })
+  }
   proposal.value = null
   note.value = 'Using the improved overview. Fill the empty fields from it whenever you like.'
 }
@@ -60,6 +67,7 @@ function useProposal(): void {
       <h2 class="card__title"><IconFeather :size="18" /> Overview</h2>
     </header>
     <textarea
+      ref="box"
       v-model="overview"
       class="ev-input ovw__text"
       rows="7"
@@ -85,6 +93,7 @@ function useProposal(): void {
       <button
         type="button"
         class="ovw__btn"
+        :class="{ 'is-writing': improving }"
         :disabled="!overview.trim() || improving"
         :title="overview.trim() ? '' : 'Write a few words first'"
         @click="improve">
@@ -94,6 +103,7 @@ function useProposal(): void {
       <button
         type="button"
         class="ovw__btn ovw__btn--fill"
+        :class="{ 'is-writing': filling }"
         :disabled="filling || empty === 0"
         @click="$emit('fill')">
         <IconSparkle :size="15" />
@@ -106,10 +116,19 @@ function useProposal(): void {
         }}
       </button>
     </div>
-    <p v-if="note" class="ovw__note" :class="{ 'ovw__note--bad': failed }" role="status">
-      {{ note }}
-    </p>
-    <p v-if="fillNote" class="ovw__note" role="status">{{ fillNote }}</p>
+    <Transition name="ev-rise" mode="out-in">
+      <p
+        v-if="note"
+        :key="note"
+        class="ovw__note"
+        :class="{ 'ovw__note--bad': failed }"
+        role="status">
+        {{ note }}
+      </p>
+    </Transition>
+    <Transition name="ev-rise" mode="out-in">
+      <p v-if="fillNote" :key="fillNote" class="ovw__note" role="status">{{ fillNote }}</p>
+    </Transition>
     <p class="ovw__hint">Suggestions wait for your review. Only empty fields are filled.</p>
   </section>
 </template>
@@ -224,5 +243,21 @@ function useProposal(): void {
 .ovw-pop-enter-from {
   opacity: 0;
   transform: translateY(-6px) scale(0.98);
+}
+/* ————— motion ————— */
+.ovw__btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.ovw__btn.is-writing svg {
+  animation: ovw-twinkle 1.1s var(--ease-io) infinite;
+}
+@keyframes ovw-twinkle {
+  50% {
+    transform: rotate(180deg) scale(1.3);
+    opacity: 0.6;
+  }
+}
+.ovw__proposal {
+  transform-origin: top center;
 }
 </style>

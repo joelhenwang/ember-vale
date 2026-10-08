@@ -28,6 +28,7 @@ import MapPreview from './MapPreview.vue'
 import IconEmblem from '../icons/IconEmblem.vue'
 import IconImage from '../icons/IconImage.vue'
 import IconSparkle from '../icons/IconSparkle.vue'
+import { burst, vTilt } from '../../composables/useEffects'
 
 const props = defineProps<{
   draft: WorldDraft
@@ -42,6 +43,12 @@ const emit = defineEmits<{
 }>()
 
 const tab = ref<'world' | 'place' | 'summary'>('world')
+const TABS = ['world', 'place', 'summary'] as const
+/* the underline glides to the chosen tab */
+const tabIndex = computed(() => TABS.indexOf(tab.value))
+/* a freshly painted picture arrives with a few sparks */
+const worldPic = ref<HTMLElement | null>(null)
+const placePic = ref<HTMLElement | null>(null)
 
 function message(err: unknown, fallback: string): string {
   return err instanceof Error && err.message ? err.message : fallback
@@ -96,6 +103,7 @@ async function paintWorld(): Promise<void> {
     const made = await paintMap(mapWords.value, '16:9')
     const size = { width: made.width, height: made.height }
     emit('cover', { assetId: made.asset_id, frame: fit(16 / 7, size) })
+    window.setTimeout(() => burst(worldPic.value, { count: 20, spread: 120 }), 160)
     worldNote.value = `Painted in ${Math.round((performance.now() - started) / 1000)} s. Adjust the framing, or paint again.`
   } catch (err) {
     worldError.value = message(err, 'Could not paint the world this time.')
@@ -206,6 +214,7 @@ async function paintPlace(): Promise<void> {
   try {
     const made = await paintMap(placePrompt(place.value, props.draft), '16:9')
     await keepPlacePicture(made.asset_id)
+    window.setTimeout(() => burst(placePic.value, { count: 20, spread: 120 }), 160)
     placeNote.value = `Painted in ${Math.round((performance.now() - started) / 1000)} s and kept with the world.`
   } catch (err) {
     placeError.value = message(err, 'Could not paint the place this time.')
@@ -265,9 +274,13 @@ const facts = computed(() => [
       <h2 class="wpv__title">Preview</h2>
     </header>
 
-    <div class="preview__tabs" role="tablist" aria-label="Preview sections">
+    <div class="preview__tabs wpv__tabs" role="tablist" aria-label="Preview sections">
+      <span
+        class="wpv__ink"
+        aria-hidden="true"
+        :style="{ transform: `translateX(${tabIndex * 100}%)` }"></span>
       <button
-        v-for="t in ['world', 'place', 'summary'] as const"
+        v-for="t in TABS"
         :id="`wpanel-tab-${t}`"
         :key="t"
         type="button"
@@ -287,9 +300,15 @@ const facts = computed(() => [
       class="wpv__pane"
       role="tabpanel"
       aria-labelledby="wpanel-tab-world">
-      <div class="wpv__pic" :class="{ 'wpv__pic--busy': worldBusy === 'paint' }">
+      <div
+        ref="worldPic"
+        v-tilt="4"
+        class="wpv__pic"
+        :class="{ 'wpv__pic--busy': worldBusy === 'paint' }">
         <FramedImage
           v-if="draft.cover"
+          :key="coverSrc"
+          class="wpv__art"
           :src="coverSrc"
           :frame="draft.cover.frame"
           :alt="`${name}: the world`" />
@@ -374,10 +393,15 @@ const facts = computed(() => [
         </button>
       </div>
       <template v-if="place">
-        <div class="wpv__pic" :class="{ 'wpv__pic--busy': placeBusy === 'paint' }">
+        <div
+          ref="placePic"
+          v-tilt="4"
+          class="wpv__pic"
+          :class="{ 'wpv__pic--busy': placeBusy === 'paint' }">
           <img
             v-if="placePicture"
-            class="wpv__img"
+            :key="placePicture"
+            class="wpv__img wpv__art"
             :src="libraryAssetUrl(placePicture)"
             :alt="place.name" />
           <span v-else class="wpv__nopic">
@@ -450,16 +474,18 @@ const facts = computed(() => [
       </dl>
     </div>
 
-    <PictureFramer
-      v-if="framing"
-      :title="`Frame ${name || 'the world'}`"
-      :src="framing.src"
-      :size="framing.size"
-      :steps="bannerSteps"
-      :previews="bannerPreviews"
-      :initial="bannerInitial"
-      @done="framed"
-      @cancel="framing = null" />
+    <Transition name="ev-modal">
+      <PictureFramer
+        v-if="framing"
+        :title="`Frame ${name || 'the world'}`"
+        :src="framing.src"
+        :size="framing.size"
+        :steps="bannerSteps"
+        :previews="bannerPreviews"
+        :initial="bannerInitial"
+        @done="framed"
+        @cancel="framing = null" />
+    </Transition>
   </aside>
 </template>
 
@@ -622,5 +648,64 @@ const facts = computed(() => [
   .wpv {
     position: static;
   }
+}
+/* ————— motion ————— */
+.wpv__emblem {
+  animation: ev-float 5s var(--ease-sine) infinite;
+}
+.wpv__tabs {
+  position: relative;
+}
+.wpv .preview__tabs--on::after {
+  display: none;
+}
+.wpv__ink {
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: calc(100% / 3);
+  height: 2.5px;
+  pointer-events: none;
+  transition: transform 0.45s var(--ease-settle);
+}
+.wpv__ink::after {
+  content: '';
+  position: absolute;
+  inset: 0 22%;
+  border-radius: 3px;
+  background: var(--teal-ink);
+}
+/* a pane shown again replays its arrival (display: none restarts it) */
+.wpv__pane {
+  animation: wpv-pane 0.45s var(--ease-settle) both;
+}
+@keyframes wpv-pane {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+/* a new picture arrives like a camera pushing in, then drifts on hover */
+.wpv__art {
+  animation: ev-push-in 1s var(--ease-settle) both;
+}
+.wpv__pic > .wpv__art {
+  transition: transform 1.2s var(--ease-settle);
+}
+.wpv__pic:hover > .wpv__art {
+  transform: scale(1.04);
+}
+.wpv__chip {
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.25s var(--ease-settle);
+}
+.wpv__chip:hover {
+  transform: translateY(-2px);
+}
+.wpv__chip:active {
+  transform: scale(0.95);
 }
 </style>

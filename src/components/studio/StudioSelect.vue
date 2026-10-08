@@ -65,4 +65,18 @@ const normalized = computed(() =>
   cursor: default;
   color: var(--muted);
 }
+/* the chevron turns toward the list while the select is in use */
+.ev-sel__chev {
+  transition:
+    transform 0.3s var(--ease-settle),
+    color 0.15s ease;
+}
+.ev-sel:hover .ev-sel__chev {
+  color: var(--teal-ink);
+  transform: translateY(-40%);
+}
+.ev-sel:focus-within .ev-sel__chev {
+  color: var(--teal-ink);
+  transform: translateY(-50%) rotate(180deg);
+}
 </style>

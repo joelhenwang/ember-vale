@@ -92,6 +92,8 @@ const situation = ref<string>(VOICE_SITUATIONS[1])
 const sample = ref<WritingSampleView | null>(null)
 const sampling = ref(false)
 const sampleError = ref<string | null>(null)
+/** Each new sample replays its lines one after another. */
+const sampleRun = ref(0)
 const lines = computed(() => sayings(props.draft))
 
 async function hear(): Promise<void> {
@@ -104,6 +106,7 @@ async function hear(): Promise<void> {
       situation: situation.value,
       other: 'A stranger'
     })
+    sampleRun.value += 1
   } catch (err) {
     sampleError.value =
       err instanceof Error && err.message ? err.message : 'The sample could not be written.'
@@ -117,7 +120,7 @@ async function hear(): Promise<void> {
   <aside class="card ev-card side" :aria-label="head.title">
     <header class="side__head">
       <IconEmblem :size="22" class="side__emblem" />
-      <div>
+      <div :key="step" class="side__headtext">
         <h2 class="side__title">{{ head.title }}</h2>
         <p class="side__sub">{{ head.sub }}</p>
       </div>
@@ -150,7 +153,7 @@ async function hear(): Promise<void> {
     </div>
 
     <!-- 1 · concept -->
-    <ul v-if="step === 1" class="side__rows">
+    <ul v-if="step === 1" class="side__rows ev-rise">
       <li v-for="row in concept" :key="row.key" class="side__row">
         <span class="side__icon"><component :is="CONCEPT_ICONS[row.key]" :size="18" /></span>
         <span class="side__rowtext">
@@ -166,6 +169,7 @@ async function hear(): Promise<void> {
     <!-- 2 · portrait studio -->
     <PortraitPicker
       v-else-if="step === 2"
+      class="side__in"
       variant="panel"
       :name="name || 'The character'"
       :asset-id="draft.portraitAssetId"
@@ -174,7 +178,7 @@ async function hear(): Promise<void> {
       @change="(assetId, frames) => emit('portrait', assetId, frames)" />
 
     <!-- 3 · compass -->
-    <ul v-else-if="step === 3" class="side__rows">
+    <ul v-else-if="step === 3" class="side__rows ev-rise">
       <li
         v-for="row in compass"
         :key="row.key"
@@ -189,7 +193,7 @@ async function hear(): Promise<void> {
     </ul>
 
     <!-- 4 · voice -->
-    <div v-else-if="step === 4" class="side__voice">
+    <div v-else-if="step === 4" class="side__voice side__in">
       <p class="side__voicehead">
         {{ sample ? situation : 'Things they would say' }}
       </p>
@@ -197,8 +201,9 @@ async function hear(): Promise<void> {
         <template v-if="sample">
           <div
             v-for="(line, i) in sample.lines"
-            :key="i"
-            class="say"
+            :key="`${sampleRun}-${i}`"
+            class="say say--unfold"
+            :style="{ animationDelay: `${i * 0.38}s` }"
             :class="{ 'say--them': line.who === 'them' }">
             <span class="say__face">
               <FramedImage
@@ -228,7 +233,11 @@ async function hear(): Promise<void> {
             </span>
           </div>
         </template>
-        <div v-else class="side__waiting">
+        <div v-if="sampling" class="say say--them say--typing" aria-hidden="true">
+          <span class="say__face"><IconUser :size="18" /></span>
+          <span class="say__body ev-dots"><span>●</span><span>●</span><span>●</span></span>
+        </div>
+        <div v-else-if="!sample && !lines.length" class="side__waiting">
           <IconFeather :size="22" />
           <b>Your sample dialogue will appear here.</b>
           <span>Add a tone and a few lines, then generate a sample to hear them in a scene.</span>
@@ -540,5 +549,61 @@ async function hear(): Promise<void> {
     position: static;
     max-height: none;
   }
+}
+/* ————— motion: each step's panel arrives, lines unfold like a dialogue box ————— */
+.side__headtext,
+.side__in {
+  animation: side-in 0.5s var(--ease-settle) both;
+}
+@keyframes side-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.side__who {
+  animation: side-in 0.5s var(--ease-settle) both;
+}
+.side__pic {
+  transition: transform 0.5s var(--ease-settle);
+}
+.side__who:hover .side__pic {
+  transform: rotate(-1.5deg) scale(1.03);
+}
+.side__emblem {
+  animation: ev-float 5s var(--ease-sine) infinite;
+}
+.side__row {
+  transition:
+    background-color 0.2s ease,
+    transform 0.3s var(--ease-settle);
+}
+.side__row:hover {
+  transform: translateX(3px);
+}
+.say--unfold {
+  animation: say-in 0.46s var(--ease-settle) both;
+}
+.say--unfold:not(.say--them) {
+  transform-origin: left bottom;
+}
+.say--them.say--unfold {
+  transform-origin: right bottom;
+}
+@keyframes say-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.94);
+  }
+}
+.say--typing {
+  animation: say-in 0.3s var(--ease-settle) both;
+}
+.say--typing .say__body {
+  flex-direction: row;
+  gap: 4px;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--teal-ink);
 }
 </style>

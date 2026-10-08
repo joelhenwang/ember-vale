@@ -24,6 +24,8 @@ import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
 import IconSave from '../components/icons/IconSave.vue'
 import IconPlay from '../components/icons/IconPlay.vue'
 import MountainRidge from '../components/decor/MountainRidge.vue'
+import EmberField from '../components/decor/EmberField.vue'
+import { burst } from '../composables/useEffects'
 import { useBackend } from '../composables/useBackend'
 import {
   applyAdoption,
@@ -239,6 +241,36 @@ function chooseWorld(world: { id: string; revision: number }): void {
   sel.worldId = world.id
   sel.worldRev = world.revision
 }
+/** A world picked by hand: its tick throws a few sparks. */
+function pickWorld(world: { id: string; revision: number }, event: Event): void {
+  const fresh = sel.worldId !== world.id
+  chooseWorld(world)
+  if (fresh) {
+    const card = event.currentTarget as HTMLElement | null
+    burst(card?.querySelector('.wcard__tick'), { count: 12, spread: 52 })
+  }
+}
+/** A choice card (play mode, who you play) answers the click with sparks. */
+function cheer(event: Event): void {
+  const card = event.currentTarget as HTMLElement | null
+  burst(card?.querySelector('.mode__tick, .wcard__tick'), { count: 8, spread: 38 })
+}
+function chooseRole(role: 'watcher' | 'player', event: Event): void {
+  const fresh = sel.role !== role
+  sel.role = role
+  if (fresh) cheer(event)
+}
+function choosePlayer(key: string, event: Event): void {
+  const fresh = sel.controlledKey !== key
+  sel.controlledKey = key
+  if (fresh) cheer(event)
+}
+
+/* Steps slide the way you are going: forward from the right, back from the left. */
+const stepMotion = ref<'ev-step-next' | 'ev-step-prev'>('ev-step-next')
+watch(step, (now, was) => {
+  stepMotion.value = now >= was ? 'ev-step-next' : 'ev-step-prev'
+})
 
 /**
  * Enter the character creation studio bound to this draft: leaving
@@ -1085,359 +1117,375 @@ onMounted(() => {
       <div class="nsx__body">
         <!-- ————— the step ————— -->
         <section class="nsx__main card ev-card" :aria-label="head.title">
-          <!-- 1 · world -->
-          <template v-if="step === 1">
-            <header class="nsx__head">
-              <h2 class="nsx__h">Your worlds</h2>
-              <span class="nsx__count">{{ presets.worlds.value.length }} worlds</span>
-              <SearchField v-model="worldSearch" class="nsx__search" placeholder="Search worlds…" />
-              <router-link
-                class="ghost nsx__create"
-                :to="{ path: '/new-story/world/new', query: { draft: draftCtl.draft.value?.id } }">
-                <IconPlus :size="14" /> Create a world
-              </router-link>
-            </header>
-            <ul class="nsx__worlds">
-              <li v-for="world in shownWorlds" :key="world.id">
-                <button
-                  type="button"
-                  class="wcard"
-                  :class="{ 'wcard--on': sel.worldId === world.id }"
-                  :aria-pressed="sel.worldId === world.id"
-                  @click="chooseWorld(world)">
-                  <span class="wcard__pic">
-                    <FramedImage
-                      v-if="world.cover"
-                      :src="world.cover.src"
-                      :frame="world.cover.frame"
-                      alt="" />
-                    <span v-else class="wcard__nopic">
-                      <MountainRidge class="wcard__ridge" />
-                      <span>No picture yet</span>
+          <Transition :name="stepMotion">
+            <div :key="step" class="nsx__step">
+              <!-- 1 · world -->
+              <template v-if="step === 1">
+                <header class="nsx__head">
+                  <h2 class="nsx__h">Your worlds</h2>
+                  <span class="nsx__count">{{ presets.worlds.value.length }} worlds</span>
+                  <SearchField
+                    v-model="worldSearch"
+                    class="nsx__search"
+                    placeholder="Search worlds…" />
+                  <router-link
+                    class="ghost nsx__create"
+                    :to="{
+                      path: '/new-story/world/new',
+                      query: { draft: draftCtl.draft.value?.id }
+                    }">
+                    <IconPlus :size="14" /> Create a world
+                  </router-link>
+                </header>
+                <ul class="nsx__worlds">
+                  <li v-for="world in shownWorlds" :key="world.id">
+                    <button
+                      type="button"
+                      class="wcard"
+                      :class="{ 'wcard--on': sel.worldId === world.id }"
+                      :aria-pressed="sel.worldId === world.id"
+                      @click="pickWorld(world, $event)">
+                      <span class="wcard__pic">
+                        <FramedImage
+                          v-if="world.cover"
+                          :src="world.cover.src"
+                          :frame="world.cover.frame"
+                          alt="" />
+                        <span v-else class="wcard__nopic">
+                          <MountainRidge class="wcard__ridge" />
+                          <span>No picture yet</span>
+                        </span>
+                        <span class="wcard__tick" aria-hidden="true">
+                          <IconCheck v-if="sel.worldId === world.id" :size="13" />
+                        </span>
+                      </span>
+                      <span class="wcard__name">{{ world.name }}</span>
+                      <span
+                        v-if="presets.worlds.value.filter((w) => w.name === world.name).length > 1"
+                        class="wcard__rev"
+                        >Version {{ world.revision }}</span
+                      >
+                      <span class="wcard__places">{{ placesLine(world.places) }}</span>
+                      <span class="wcard__desc">{{ world.description }}</span>
+                    </button>
+                  </li>
+                  <li v-if="!shownWorlds.length" class="nsx__none">
+                    No world matches that search.
+                  </li>
+                </ul>
+              </template>
+
+              <!-- 2 · cast -->
+              <template v-else-if="step === 2">
+                <div class="cast__toolbar">
+                  <SearchField v-model="filters.search" />
+                  <ChipGroup v-model="filters.category" :options="categoryOptions" />
+                  <SortSelect v-model="sortProxy" :options="sortOptions" />
+                </div>
+                <TransitionGroup name="ev-list" tag="div" class="cast__grid">
+                  <CastCard
+                    v-for="def in visibleCharacters"
+                    :key="def.id"
+                    :character="def"
+                    :selected="selectedIds.has(def.id)"
+                    @toggle="toggleCast(def)" />
+                  <CreateCharacterTile key="create" @create="goCreateCharacter" />
+                </TransitionGroup>
+              </template>
+
+              <!-- 3 · play mode -->
+              <template v-else-if="step === 3">
+                <h2 class="nsx__h">Choose your play mode</h2>
+                <div class="modes">
+                  <button
+                    type="button"
+                    class="mode"
+                    :class="{ 'mode--on': sel.role === 'watcher' }"
+                    :aria-pressed="sel.role === 'watcher'"
+                    @click="chooseRole('watcher', $event)">
+                    <span class="mode__tick" aria-hidden="true">
+                      <IconCheck v-if="sel.role === 'watcher'" :size="13" />
                     </span>
-                    <span class="wcard__tick" aria-hidden="true">
-                      <IconCheck v-if="sel.worldId === world.id" :size="13" />
+                    <IconEye :size="40" class="mode__icon" />
+                    <span class="mode__name">Observer</span>
+                    <span class="mode__desc"
+                      >Watch the cast and guide the story between turns.</span
+                    >
+                    <span class="mode__foot">No character of your own.</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="mode"
+                    :class="{ 'mode--on': sel.role === 'player' }"
+                    :aria-pressed="sel.role === 'player'"
+                    @click="chooseRole('player', $event)">
+                    <span class="mode__tick" aria-hidden="true">
+                      <IconCheck v-if="sel.role === 'player'" :size="13" />
                     </span>
-                  </span>
-                  <span class="wcard__name">{{ world.name }}</span>
-                  <span
-                    v-if="presets.worlds.value.filter((w) => w.name === world.name).length > 1"
-                    class="wcard__rev"
-                    >Version {{ world.revision }}</span
-                  >
-                  <span class="wcard__places">{{ placesLine(world.places) }}</span>
-                  <span class="wcard__desc">{{ world.description }}</span>
-                </button>
-              </li>
-              <li v-if="!shownWorlds.length" class="nsx__none">No world matches that search.</li>
-            </ul>
-          </template>
+                    <IconUser :size="40" class="mode__icon" />
+                    <span class="mode__name">Player</span>
+                    <span class="mode__desc">Play one character and decide what they do.</span>
+                    <span class="mode__foot">You choose their actions.</span>
+                  </button>
+                </div>
+                <template v-if="sel.role === 'player'">
+                  <h2 class="nsx__h nsx__h--gap">Who will you play?</h2>
+                  <div class="whos">
+                    <button
+                      v-for="member in sel.cast"
+                      :key="member.key"
+                      type="button"
+                      class="who"
+                      :class="{ 'who--on': sel.controlledKey === member.key }"
+                      :aria-pressed="sel.controlledKey === member.key"
+                      @click="choosePlayer(member.key, $event)">
+                      <span class="who__pic">
+                        <FramedImage
+                          v-if="defOf(member)?.portrait"
+                          :src="defOf(member)!.portrait!.src"
+                          :frame="defOf(member)!.portrait!.portrait"
+                          alt="" />
+                        <StoryImage
+                          v-else
+                          :image-slot="defOf(member)?.imageSlot ?? 'character.ash'"
+                          alt="" />
+                      </span>
+                      <span class="who__text">
+                        <span class="who__name">{{ pinnedCharName(member) }}</span>
+                        <span v-if="defOf(member)?.role" class="who__role">{{
+                          defOf(member)?.role
+                        }}</span>
+                        <span class="who__start">Starts at {{ placeName(member.location) }}</span>
+                      </span>
+                      <span class="wcard__tick" aria-hidden="true">
+                        <IconCheck v-if="sel.controlledKey === member.key" :size="13" />
+                      </span>
+                    </button>
+                  </div>
+                </template>
+                <p v-if="modeNotice" class="nsv__notice" role="status">{{ modeNotice }}</p>
+              </template>
 
-          <!-- 2 · cast -->
-          <template v-else-if="step === 2">
-            <div class="cast__toolbar">
-              <SearchField v-model="filters.search" />
-              <ChipGroup v-model="filters.category" :options="categoryOptions" />
-              <SortSelect v-model="sortProxy" :options="sortOptions" />
-            </div>
-            <div class="cast__grid">
-              <CastCard
-                v-for="def in visibleCharacters"
-                :key="def.id"
-                :character="def"
-                :selected="selectedIds.has(def.id)"
-                @toggle="toggleCast(def)" />
-              <CreateCharacterTile @create="goCreateCharacter" />
-            </div>
-          </template>
+              <!-- 4 · story -->
+              <template v-else-if="step === 4">
+                <div class="grp">
+                  <h2 class="nsx__h">Title</h2>
+                  <p class="nsx__lead">Give your story a title. You can change it later.</p>
+                  <input
+                    v-model="sel.title"
+                    class="ev-input nsx__input"
+                    type="text"
+                    maxlength="128"
+                    aria-label="Title"
+                    placeholder="A Morning in Ember Vale" />
+                </div>
+                <div class="grp">
+                  <h2 class="nsx__h">Tone</h2>
+                  <p class="nsx__lead">
+                    Describe the mood in your own words, or choose a starting point.
+                  </p>
+                  <input
+                    v-model="sel.tone"
+                    class="ev-input nsx__input"
+                    type="text"
+                    maxlength="128"
+                    aria-label="Tone"
+                    placeholder="hopeful mystery" />
+                  <div class="tones">
+                    <button
+                      v-for="tone in TONE_PRESETS"
+                      :key="tone.value"
+                      type="button"
+                      class="tone"
+                      :class="{ 'tone--on': sel.tone.trim().toLowerCase() === tone.value }"
+                      :aria-pressed="sel.tone.trim().toLowerCase() === tone.value"
+                      @click="sel.tone = tone.value">
+                      <span class="tone__dot" aria-hidden="true"></span>
+                      <span class="tone__title">{{ tone.title }}</span>
+                      <span class="tone__line">{{ tone.line }}</span>
+                    </button>
+                  </div>
+                </div>
+              </template>
 
-          <!-- 3 · play mode -->
-          <template v-else-if="step === 3">
-            <h2 class="nsx__h">Choose your play mode</h2>
-            <div class="modes">
-              <button
-                type="button"
-                class="mode"
-                :class="{ 'mode--on': sel.role === 'watcher' }"
-                :aria-pressed="sel.role === 'watcher'"
-                @click="sel.role = 'watcher'">
-                <span class="mode__tick" aria-hidden="true">
-                  <IconCheck v-if="sel.role === 'watcher'" :size="13" />
-                </span>
-                <IconEye :size="40" class="mode__icon" />
-                <span class="mode__name">Observer</span>
-                <span class="mode__desc">Watch the cast and guide the story between turns.</span>
-                <span class="mode__foot">No character of your own.</span>
-              </button>
-              <button
-                type="button"
-                class="mode"
-                :class="{ 'mode--on': sel.role === 'player' }"
-                :aria-pressed="sel.role === 'player'"
-                @click="sel.role = 'player'">
-                <span class="mode__tick" aria-hidden="true">
-                  <IconCheck v-if="sel.role === 'player'" :size="13" />
-                </span>
-                <IconUser :size="40" class="mode__icon" />
-                <span class="mode__name">Player</span>
-                <span class="mode__desc">Play one character and decide what they do.</span>
-                <span class="mode__foot">You choose their actions.</span>
-              </button>
-            </div>
-            <template v-if="sel.role === 'player'">
-              <h2 class="nsx__h nsx__h--gap">Who will you play?</h2>
-              <div class="whos">
-                <button
-                  v-for="member in sel.cast"
-                  :key="member.key"
-                  type="button"
-                  class="who"
-                  :class="{ 'who--on': sel.controlledKey === member.key }"
-                  :aria-pressed="sel.controlledKey === member.key"
-                  @click="sel.controlledKey = member.key">
-                  <span class="who__pic">
-                    <FramedImage
-                      v-if="defOf(member)?.portrait"
-                      :src="defOf(member)!.portrait!.src"
-                      :frame="defOf(member)!.portrait!.portrait"
-                      alt="" />
-                    <StoryImage
-                      v-else
-                      :image-slot="defOf(member)?.imageSlot ?? 'character.ash'"
-                      alt="" />
-                  </span>
-                  <span class="who__text">
-                    <span class="who__name">{{ pinnedCharName(member) }}</span>
-                    <span v-if="defOf(member)?.role" class="who__role">{{
-                      defOf(member)?.role
-                    }}</span>
-                    <span class="who__start">Starts at {{ placeName(member.location) }}</span>
-                  </span>
-                  <span class="wcard__tick" aria-hidden="true">
-                    <IconCheck v-if="sel.controlledKey === member.key" :size="13" />
-                  </span>
-                </button>
-              </div>
-            </template>
-            <p v-if="modeNotice" class="nsv__notice" role="status">{{ modeNotice }}</p>
-          </template>
+              <!-- 5 · storyteller -->
+              <template v-else-if="step === 5">
+                <h2 class="nsx__h">Storyteller</h2>
+                <div class="opts">
+                  <button
+                    type="button"
+                    class="opt"
+                    :class="{ 'opt--on': !customTeller }"
+                    :aria-pressed="!customTeller"
+                    @click="useAppTeller">
+                    <span class="tone__dot" aria-hidden="true"></span>
+                    <span class="opt__title"
+                      >Use the app's storyteller <span class="opt__tag">Default</span></span
+                    >
+                    <span class="opt__line">The storyteller set in Settings: {{ appTeller }}.</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="opt"
+                    :class="{ 'opt--on': customTeller }"
+                    :aria-pressed="customTeller"
+                    @click="customTeller = true">
+                    <span class="tone__dot" aria-hidden="true"></span>
+                    <span class="opt__title">Choose a provider profile</span>
+                    <span class="opt__line"
+                      >Keep this story on one exact profile, even if Settings change.</span
+                    >
+                  </button>
+                </div>
+                <div v-if="customTeller" class="grp nsx__pick">
+                  <p
+                    v-if="pinCtl.loading.value && !pinCtl.providers.value.length"
+                    class="nsv__notice"
+                    role="status">
+                    Loading providers…
+                  </p>
+                  <p v-if="pinCtl.error.value" class="nsv__notice" role="alert">
+                    {{ pinCtl.error.value }} —
+                    <button type="button" class="nsv__link" @click="pinCtl.retry()">retry</button>
+                  </p>
+                  <p
+                    v-if="
+                      !pinCtl.loading.value && !pinCtl.error.value && !pinCtl.providers.value.length
+                    "
+                    class="nsx__lead">
+                    No provider profiles yet. Add one in Settings, or use the app's storyteller.
+                  </p>
+                  <div class="grid2">
+                    <label v-if="pinCtl.providers.value.length" class="nsv__field">
+                      Provider
+                      <select
+                        :value="pinCtl.providerId.value"
+                        @change="pinCtl.selectProvider(($event.target as HTMLSelectElement).value)">
+                        <option value="">Choose a provider…</option>
+                        <option
+                          v-for="connection in pinCtl.providers.value"
+                          :key="connection.id"
+                          :value="connection.id">
+                          {{ connection.name }} ({{ connection.adapter }})
+                        </option>
+                      </select>
+                    </label>
+                    <label v-if="pinCtl.providerId.value" class="nsv__field">
+                      Profile
+                      <select
+                        :value="pinCtl.profileId.value"
+                        :disabled="!pinCtl.profiles.value.length"
+                        @change="pinCtl.selectProfile(($event.target as HTMLSelectElement).value)">
+                        <option v-if="!pinCtl.profiles.value.length" value="">
+                          No profiles yet
+                        </option>
+                        <option
+                          v-for="profile in pinCtl.profiles.value"
+                          :key="profile.id"
+                          :value="profile.id">
+                          {{ profile.model_id }} · version {{ profile.revision }}
+                        </option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+                <CollapseBox class="nsx__more" title="Advanced details">
+                  <p class="nsx__lead">
+                    Choosing a profile saves its exact version with this story, so later changes in
+                    Settings never change how it is told.
+                  </p>
+                  <p v-if="envNotice" class="nsx__lead">{{ envNotice }}</p>
+                  <p class="nsx__lead">Selected: {{ pinCtl.summary.value }}</p>
+                </CollapseBox>
+              </template>
 
-          <!-- 4 · story -->
-          <template v-else-if="step === 4">
-            <div class="grp">
-              <h2 class="nsx__h">Title</h2>
-              <p class="nsx__lead">Give your story a title. You can change it later.</p>
-              <input
-                v-model="sel.title"
-                class="ev-input nsx__input"
-                type="text"
-                maxlength="128"
-                aria-label="Title"
-                placeholder="A Morning in Ember Vale" />
+              <!-- 6 · review -->
+              <template v-else>
+                <h2 class="nsx__h">Your story setup</h2>
+                <ul class="setup ev-rise">
+                  <li class="setup__row">
+                    <span class="setup__label">World</span>
+                    <span class="setup__what">
+                      <span v-if="selectedWorld?.cover" class="setup__pic setup__pic--wide">
+                        <FramedImage
+                          :src="selectedWorld.cover.src"
+                          :frame="selectedWorld.cover.frame"
+                          alt="" />
+                      </span>
+                      <span class="setup__text">
+                        <b>{{ selectedWorld?.name ?? 'No world chosen' }}</b>
+                        <span>{{ worldPlaces.length }} places</span>
+                      </span>
+                    </span>
+                    <button type="button" class="setup__edit" @click="go(1)">Edit</button>
+                  </li>
+                  <li class="setup__row">
+                    <span class="setup__label">Characters</span>
+                    <span class="setup__what">
+                      <span v-for="member in sel.cast" :key="member.key" class="setup__face">
+                        <FramedImage
+                          v-if="defOf(member)?.portrait"
+                          :src="defOf(member)!.portrait!.src"
+                          :frame="defOf(member)!.portrait!.face"
+                          alt="" />
+                        <StoryImage
+                          v-else
+                          :image-slot="defOf(member)?.imageSlot ?? 'character.ash'"
+                          alt="" />
+                        <span>{{ pinnedCharName(member) }}</span>
+                      </span>
+                      <span v-if="!sel.cast.length" class="setup__text">No one yet</span>
+                    </span>
+                    <button type="button" class="setup__edit" @click="go(2)">Edit</button>
+                  </li>
+                  <li class="setup__row">
+                    <span class="setup__label">Play mode</span>
+                    <span class="setup__text">
+                      <b>{{ sel.role === 'player' ? 'Player' : 'Observer' }}</b>
+                      <span>{{
+                        sel.role === 'player'
+                          ? `You play ${controlledDisplay}.`
+                          : 'You watch the story unfold.'
+                      }}</span>
+                    </span>
+                    <button type="button" class="setup__edit" @click="go(3)">Edit</button>
+                  </li>
+                  <li class="setup__row">
+                    <span class="setup__label">Story</span>
+                    <span class="setup__text">
+                      <b>{{ sel.title || 'Untitled' }}</b>
+                      <span v-if="sel.tone">Tone: {{ toneLabel(sel.tone) }}</span>
+                    </span>
+                    <button type="button" class="setup__edit" @click="go(4)">Edit</button>
+                  </li>
+                  <li class="setup__row">
+                    <span class="setup__label">Storyteller</span>
+                    <span class="setup__text">
+                      <b>{{ customTeller ? pinCtl.summary.value : "The app's storyteller" }}</b>
+                      <span v-if="!customTeller">Currently {{ appTeller }}</span>
+                    </span>
+                    <button type="button" class="setup__edit" @click="go(5)">Edit</button>
+                  </li>
+                </ul>
+                <ul v-if="localIssues.length" class="nsv__issues" role="alert">
+                  <li v-for="issue in localIssues" :key="issue">{{ issue }}</li>
+                </ul>
+                <ul v-if="draftCtl.issues.value.length" class="nsv__issues" role="alert">
+                  <li v-for="issue in draftCtl.issues.value" :key="issue">{{ issue }}</li>
+                </ul>
+                <ul v-if="locationIssues.length" class="nsv__issues" role="alert">
+                  <li v-for="issue in locationIssues" :key="issue">{{ issue }}</li>
+                </ul>
+                <p v-if="draftCtl.createError.value" class="nsv__notice" role="alert">
+                  {{ draftCtl.createError.value }}
+                </p>
+                <p v-if="draftCtl.ambiguous.value" class="nsv__notice" role="status">
+                  The last create may already have completed — pressing Begin again replays the same
+                  submission, never a duplicate story.
+                </p>
+              </template>
             </div>
-            <div class="grp">
-              <h2 class="nsx__h">Tone</h2>
-              <p class="nsx__lead">
-                Describe the mood in your own words, or choose a starting point.
-              </p>
-              <input
-                v-model="sel.tone"
-                class="ev-input nsx__input"
-                type="text"
-                maxlength="128"
-                aria-label="Tone"
-                placeholder="hopeful mystery" />
-              <div class="tones">
-                <button
-                  v-for="tone in TONE_PRESETS"
-                  :key="tone.value"
-                  type="button"
-                  class="tone"
-                  :class="{ 'tone--on': sel.tone.trim().toLowerCase() === tone.value }"
-                  :aria-pressed="sel.tone.trim().toLowerCase() === tone.value"
-                  @click="sel.tone = tone.value">
-                  <span class="tone__dot" aria-hidden="true"></span>
-                  <span class="tone__title">{{ tone.title }}</span>
-                  <span class="tone__line">{{ tone.line }}</span>
-                </button>
-              </div>
-            </div>
-          </template>
-
-          <!-- 5 · storyteller -->
-          <template v-else-if="step === 5">
-            <h2 class="nsx__h">Storyteller</h2>
-            <div class="opts">
-              <button
-                type="button"
-                class="opt"
-                :class="{ 'opt--on': !customTeller }"
-                :aria-pressed="!customTeller"
-                @click="useAppTeller">
-                <span class="tone__dot" aria-hidden="true"></span>
-                <span class="opt__title"
-                  >Use the app's storyteller <span class="opt__tag">Default</span></span
-                >
-                <span class="opt__line">The storyteller set in Settings: {{ appTeller }}.</span>
-              </button>
-              <button
-                type="button"
-                class="opt"
-                :class="{ 'opt--on': customTeller }"
-                :aria-pressed="customTeller"
-                @click="customTeller = true">
-                <span class="tone__dot" aria-hidden="true"></span>
-                <span class="opt__title">Choose a provider profile</span>
-                <span class="opt__line"
-                  >Keep this story on one exact profile, even if Settings change.</span
-                >
-              </button>
-            </div>
-            <div v-if="customTeller" class="grp nsx__pick">
-              <p
-                v-if="pinCtl.loading.value && !pinCtl.providers.value.length"
-                class="nsv__notice"
-                role="status">
-                Loading providers…
-              </p>
-              <p v-if="pinCtl.error.value" class="nsv__notice" role="alert">
-                {{ pinCtl.error.value }} —
-                <button type="button" class="nsv__link" @click="pinCtl.retry()">retry</button>
-              </p>
-              <p
-                v-if="
-                  !pinCtl.loading.value && !pinCtl.error.value && !pinCtl.providers.value.length
-                "
-                class="nsx__lead">
-                No provider profiles yet. Add one in Settings, or use the app's storyteller.
-              </p>
-              <div class="grid2">
-                <label v-if="pinCtl.providers.value.length" class="nsv__field">
-                  Provider
-                  <select
-                    :value="pinCtl.providerId.value"
-                    @change="pinCtl.selectProvider(($event.target as HTMLSelectElement).value)">
-                    <option value="">Choose a provider…</option>
-                    <option
-                      v-for="connection in pinCtl.providers.value"
-                      :key="connection.id"
-                      :value="connection.id">
-                      {{ connection.name }} ({{ connection.adapter }})
-                    </option>
-                  </select>
-                </label>
-                <label v-if="pinCtl.providerId.value" class="nsv__field">
-                  Profile
-                  <select
-                    :value="pinCtl.profileId.value"
-                    :disabled="!pinCtl.profiles.value.length"
-                    @change="pinCtl.selectProfile(($event.target as HTMLSelectElement).value)">
-                    <option v-if="!pinCtl.profiles.value.length" value="">No profiles yet</option>
-                    <option
-                      v-for="profile in pinCtl.profiles.value"
-                      :key="profile.id"
-                      :value="profile.id">
-                      {{ profile.model_id }} · version {{ profile.revision }}
-                    </option>
-                  </select>
-                </label>
-              </div>
-            </div>
-            <CollapseBox class="nsx__more" title="Advanced details">
-              <p class="nsx__lead">
-                Choosing a profile saves its exact version with this story, so later changes in
-                Settings never change how it is told.
-              </p>
-              <p v-if="envNotice" class="nsx__lead">{{ envNotice }}</p>
-              <p class="nsx__lead">Selected: {{ pinCtl.summary.value }}</p>
-            </CollapseBox>
-          </template>
-
-          <!-- 6 · review -->
-          <template v-else>
-            <h2 class="nsx__h">Your story setup</h2>
-            <ul class="setup">
-              <li class="setup__row">
-                <span class="setup__label">World</span>
-                <span class="setup__what">
-                  <span v-if="selectedWorld?.cover" class="setup__pic setup__pic--wide">
-                    <FramedImage
-                      :src="selectedWorld.cover.src"
-                      :frame="selectedWorld.cover.frame"
-                      alt="" />
-                  </span>
-                  <span class="setup__text">
-                    <b>{{ selectedWorld?.name ?? 'No world chosen' }}</b>
-                    <span>{{ worldPlaces.length }} places</span>
-                  </span>
-                </span>
-                <button type="button" class="setup__edit" @click="go(1)">Edit</button>
-              </li>
-              <li class="setup__row">
-                <span class="setup__label">Characters</span>
-                <span class="setup__what">
-                  <span v-for="member in sel.cast" :key="member.key" class="setup__face">
-                    <FramedImage
-                      v-if="defOf(member)?.portrait"
-                      :src="defOf(member)!.portrait!.src"
-                      :frame="defOf(member)!.portrait!.face"
-                      alt="" />
-                    <StoryImage
-                      v-else
-                      :image-slot="defOf(member)?.imageSlot ?? 'character.ash'"
-                      alt="" />
-                    <span>{{ pinnedCharName(member) }}</span>
-                  </span>
-                  <span v-if="!sel.cast.length" class="setup__text">No one yet</span>
-                </span>
-                <button type="button" class="setup__edit" @click="go(2)">Edit</button>
-              </li>
-              <li class="setup__row">
-                <span class="setup__label">Play mode</span>
-                <span class="setup__text">
-                  <b>{{ sel.role === 'player' ? 'Player' : 'Observer' }}</b>
-                  <span>{{
-                    sel.role === 'player'
-                      ? `You play ${controlledDisplay}.`
-                      : 'You watch the story unfold.'
-                  }}</span>
-                </span>
-                <button type="button" class="setup__edit" @click="go(3)">Edit</button>
-              </li>
-              <li class="setup__row">
-                <span class="setup__label">Story</span>
-                <span class="setup__text">
-                  <b>{{ sel.title || 'Untitled' }}</b>
-                  <span v-if="sel.tone">Tone: {{ toneLabel(sel.tone) }}</span>
-                </span>
-                <button type="button" class="setup__edit" @click="go(4)">Edit</button>
-              </li>
-              <li class="setup__row">
-                <span class="setup__label">Storyteller</span>
-                <span class="setup__text">
-                  <b>{{ customTeller ? pinCtl.summary.value : "The app's storyteller" }}</b>
-                  <span v-if="!customTeller">Currently {{ appTeller }}</span>
-                </span>
-                <button type="button" class="setup__edit" @click="go(5)">Edit</button>
-              </li>
-            </ul>
-            <ul v-if="localIssues.length" class="nsv__issues" role="alert">
-              <li v-for="issue in localIssues" :key="issue">{{ issue }}</li>
-            </ul>
-            <ul v-if="draftCtl.issues.value.length" class="nsv__issues" role="alert">
-              <li v-for="issue in draftCtl.issues.value" :key="issue">{{ issue }}</li>
-            </ul>
-            <ul v-if="locationIssues.length" class="nsv__issues" role="alert">
-              <li v-for="issue in locationIssues" :key="issue">{{ issue }}</li>
-            </ul>
-            <p v-if="draftCtl.createError.value" class="nsv__notice" role="alert">
-              {{ draftCtl.createError.value }}
-            </p>
-            <p v-if="draftCtl.ambiguous.value" class="nsv__notice" role="status">
-              The last create may already have completed — pressing Begin again replays the same
-              submission, never a duplicate story.
-            </p>
-          </template>
+          </Transition>
         </section>
 
         <!-- ————— what the step adds up to ————— -->
@@ -1451,244 +1499,269 @@ onMounted(() => {
           </header>
 
           <!-- the banner: the world, with your character on it from step 3 -->
-          <div v-if="step !== 2 && step !== 5" class="banner">
-            <FramedImage
-              v-if="selectedWorld?.cover"
-              class="banner__world"
-              :src="selectedWorld.cover.src"
-              :frame="selectedWorld.cover.frame"
-              alt="" />
-            <span v-else class="banner__world banner__world--none"><MountainRidge /></span>
-            <span v-if="step >= 3 && playerDef" class="banner__you">
-              <FramedImage
-                v-if="playerDef.portrait"
-                :key="playerDef.portrait.src"
-                :src="playerDef.portrait.src"
-                :frame="playerDef.portrait.portrait"
-                alt="" />
-              <StoryImage
-                v-else
-                :key="playerDef.imageSlot"
-                :image-slot="playerDef.imageSlot"
-                alt="" />
-            </span>
-          </div>
-
-          <!-- 1 -->
-          <template v-if="step === 1">
-            <template v-if="selectedWorld">
-              <h3 class="nsx__big">{{ selectedWorld.name }}</h3>
-              <p class="nsx__meta">{{ worldPlaces.length }} places</p>
-              <p class="nsx__text">{{ selectedWorld.description }}</p>
-              <div class="nsx__sub2">
-                <h4>Places you'll find</h4>
-                <router-link
-                  class="nsx__link"
-                  :to="{
-                    path: `/new-story/world/${sel.worldId}`,
-                    query: { draft: draftCtl.draft.value?.id }
-                  }"
-                  >Edit this world</router-link
-                >
-              </div>
-              <ul class="chips">
-                <li v-for="place in worldPlaces.slice(0, 8)" :key="place.key">{{ place.name }}</li>
-                <li v-if="worldPlaces.length > 8" class="chips__more">
-                  +{{ worldPlaces.length - 8 }} more
-                </li>
-              </ul>
-            </template>
-            <p v-else class="nsx__quiet">Pick a world to see it here.</p>
-          </template>
-
-          <!-- 2 -->
-          <template v-else-if="step === 2">
-            <p v-if="selectedWorld" class="nsx__meta">{{ selectedWorld.name }}</p>
-            <p v-if="!sel.cast.length" class="nsx__quiet">No one yet. Pick from the library.</p>
-            <ul v-else class="crew">
-              <li v-for="member in sel.cast" :key="member.key" class="crew__row">
-                <span class="crew__pic">
-                  <FramedImage
-                    v-if="defOf(member)?.portrait"
-                    :src="defOf(member)!.portrait!.src"
-                    :frame="defOf(member)!.portrait!.portrait"
-                    alt="" />
-                  <StoryImage
-                    v-else
-                    :image-slot="defOf(member)?.imageSlot ?? 'character.ash'"
-                    alt="" />
-                </span>
-                <span class="crew__body">
-                  <b class="crew__name">{{ pinnedCharName(member) }}</b>
-                  <span v-if="defOf(member)?.role" class="crew__role">{{
-                    defOf(member)?.role
-                  }}</span>
-                  <label class="sel__place">
-                    Starts at
-                    <select v-model="member.location" :disabled="!!pinned.worldError.value">
-                      <option v-for="place in worldPlaces" :key="place.key" :value="place.key">
-                        {{ place.name }}
-                      </option>
-                    </select>
-                  </label>
-                </span>
-                <span class="crew__acts">
-                  <router-link
-                    class="nsx__link"
-                    :to="{
-                      path: `/new-story/character/${member.presetId}`,
-                      query: { draft: draftCtl.draft.value?.id }
-                    }"
-                    >Edit character</router-link
-                  >
-                  <button
-                    type="button"
-                    class="crew__remove"
-                    @click="toggleCast(defOf(member) ?? characterDefs[0]!)">
-                    Remove
-                  </button>
-                </span>
-              </li>
-            </ul>
-            <p class="nsx__note">
-              <IconUsers :size="16" /> Everyone you add can appear in the story.
-            </p>
-          </template>
-
-          <!-- 3 -->
-          <template v-else-if="step === 3">
-            <h3 class="nsx__big">
-              {{ sel.role === 'player' ? `You play ${controlledDisplay}` : 'You watch the story' }}
-            </h3>
-            <ul class="chips chips--teal">
-              <li>{{ sel.role === 'player' ? 'Player' : 'Observer' }}</li>
-              <li v-if="sel.role === 'player' && playerMember">
-                Starts at {{ placeName(playerMember.location) }}
-              </li>
-              <li v-if="selectedWorld">{{ selectedWorld.name }}</li>
-            </ul>
-            <p class="nsx__text">
-              {{
-                sel.role === 'player'
-                  ? `${controlledDisplay}'s actions are yours. The storyteller answers through the world and the other characters.`
-                  : 'Every character acts on their own. You can step in between turns to guide the story.'
-              }}
-            </p>
-            <template v-if="others.length">
-              <h4 class="nsx__h4">
-                {{ sel.role === 'player' ? 'Also in your story' : 'In your story' }}
-              </h4>
-              <ul class="mini">
-                <li v-for="member in others" :key="member.key">
-                  <span class="mini__face">
-                    <FramedImage
-                      v-if="defOf(member)?.portrait"
-                      :src="defOf(member)!.portrait!.src"
-                      :frame="defOf(member)!.portrait!.face"
-                      alt="" />
-                    <StoryImage
-                      v-else
-                      :image-slot="defOf(member)?.imageSlot ?? 'character.ash'"
-                      alt="" />
-                  </span>
-                  <span>
-                    <b>{{ pinnedCharName(member) }}</b>
-                    <span>{{
-                      [defOf(member)?.role, `Starts at ${placeName(member.location)}`]
-                        .filter(Boolean)
-                        .join(' · ')
-                    }}</span>
-                  </span>
-                </li>
-              </ul>
-            </template>
-          </template>
-
-          <!-- 4 and 6 -->
-          <template v-else-if="step === 4 || step === 6">
-            <h3 class="nsx__big">{{ sel.title || 'Untitled story' }}</h3>
-            <ul class="facts">
-              <li v-if="selectedWorld"><IconGlobe :size="16" /> {{ selectedWorld.name }}</li>
-              <li>
-                <IconUser :size="16" />
-                {{ sel.role === 'player' ? `You play ${controlledDisplay}` : 'You watch' }}
-              </li>
-              <li v-if="others.length">
-                <IconUsers :size="16" /> With {{ others.map((m) => pinnedCharName(m)).join(', ') }}
-              </li>
-              <li v-if="playerMember">Starts at {{ placeName(playerMember.location) }}</li>
-            </ul>
-            <ul v-if="sel.tone" class="chips chips--teal">
-              <li>{{ toneLabel(sel.tone) }}</li>
-            </ul>
-            <template v-if="step === 4">
-              <h4 class="nsx__h4">Your cast</h4>
-              <ul class="mini">
-                <li v-for="member in sel.cast" :key="member.key">
-                  <span class="mini__face">
-                    <FramedImage
-                      v-if="defOf(member)?.portrait"
-                      :src="defOf(member)!.portrait!.src"
-                      :frame="defOf(member)!.portrait!.face"
-                      alt="" />
-                    <StoryImage
-                      v-else
-                      :image-slot="defOf(member)?.imageSlot ?? 'character.ash'"
-                      alt="" />
-                  </span>
-                  <span>
-                    <b>{{ pinnedCharName(member) }}</b>
-                    <span>{{
-                      member.key === sel.controlledKey && sel.role === 'player'
-                        ? 'You play them'
-                        : (defOf(member)?.role ?? '')
-                    }}</span>
-                  </span>
-                </li>
-              </ul>
-            </template>
-          </template>
-
-          <!-- 5 -->
-          <template v-else>
-            <div class="teller">
-              <span class="teller__icon"><IconFeather :size="34" /></span>
-              <span>
-                <b class="nsx__big nsx__big--sm">{{
-                  customTeller ? 'Your chosen profile' : "The app's storyteller"
-                }}</b>
-                <span class="nsx__meta">{{
-                  customTeller ? pinCtl.summary.value : `Currently ${appTeller}`
-                }}</span>
-                <span class="nsx__text">{{
-                  customTeller
-                    ? 'This story keeps that profile version, whatever Settings say later.'
-                    : 'Whatever storyteller Settings name will tell this story.'
-                }}</span>
-              </span>
-            </div>
-            <h4 class="nsx__h4">Your story</h4>
-            <div class="mini-story">
-              <span class="mini-story__pic">
+          <Transition name="ev-fade">
+            <div v-if="step !== 2 && step !== 5" class="banner">
+              <span :key="selectedWorld?.id ?? 'none'" class="banner__pan">
                 <FramedImage
                   v-if="selectedWorld?.cover"
+                  class="banner__world ev-drift"
                   :src="selectedWorld.cover.src"
                   :frame="selectedWorld.cover.frame"
                   alt="" />
+                <span v-else class="banner__world banner__world--none"><MountainRidge /></span>
               </span>
-              <ul class="facts facts--col">
-                <li>
-                  <b>{{ sel.title || 'Untitled story' }}</b>
-                </li>
-                <li v-if="selectedWorld"><IconGlobe :size="15" /> {{ selectedWorld.name }}</li>
-                <li>
-                  <IconUser :size="15" />
-                  {{ sel.role === 'player' ? `Player · ${controlledDisplay}` : 'Observer' }}
-                </li>
-                <li v-if="sel.tone"><IconSparkle :size="15" /> {{ toneLabel(sel.tone) }}</li>
-              </ul>
+              <EmberField :count="9" :rise="140" tone="dust" />
+              <span v-if="step >= 3 && playerDef" class="banner__you">
+                <FramedImage
+                  v-if="playerDef.portrait"
+                  :key="playerDef.portrait.src"
+                  :src="playerDef.portrait.src"
+                  :frame="playerDef.portrait.portrait"
+                  alt="" />
+                <StoryImage
+                  v-else
+                  :key="playerDef.imageSlot"
+                  :image-slot="playerDef.imageSlot"
+                  alt="" />
+              </span>
             </div>
-          </template>
+          </Transition>
+
+          <div class="nsx__swap">
+            <Transition name="ev-swap">
+              <div :key="step" class="nsx__sidebody">
+                <!-- 1 -->
+                <template v-if="step === 1">
+                  <template v-if="selectedWorld">
+                    <h3 class="nsx__big">{{ selectedWorld.name }}</h3>
+                    <p class="nsx__meta">{{ worldPlaces.length }} places</p>
+                    <p class="nsx__text">{{ selectedWorld.description }}</p>
+                    <div class="nsx__sub2">
+                      <h4>Places you'll find</h4>
+                      <router-link
+                        class="nsx__link"
+                        :to="{
+                          path: `/new-story/world/${sel.worldId}`,
+                          query: { draft: draftCtl.draft.value?.id }
+                        }"
+                        >Edit this world</router-link
+                      >
+                    </div>
+                    <ul class="chips ev-pop-stagger">
+                      <li v-for="place in worldPlaces.slice(0, 8)" :key="place.key">
+                        {{ place.name }}
+                      </li>
+                      <li v-if="worldPlaces.length > 8" class="chips__more">
+                        +{{ worldPlaces.length - 8 }} more
+                      </li>
+                    </ul>
+                  </template>
+                  <p v-else class="nsx__quiet">Pick a world to see it here.</p>
+                </template>
+
+                <!-- 2 -->
+                <template v-else-if="step === 2">
+                  <p v-if="selectedWorld" class="nsx__meta">{{ selectedWorld.name }}</p>
+                  <p v-if="!sel.cast.length" class="nsx__quiet">
+                    No one yet. Pick from the library.
+                  </p>
+                  <TransitionGroup v-else name="ev-list" tag="ul" class="crew">
+                    <li v-for="member in sel.cast" :key="member.key" class="crew__row">
+                      <span class="crew__pic">
+                        <FramedImage
+                          v-if="defOf(member)?.portrait"
+                          :src="defOf(member)!.portrait!.src"
+                          :frame="defOf(member)!.portrait!.portrait"
+                          alt="" />
+                        <StoryImage
+                          v-else
+                          :image-slot="defOf(member)?.imageSlot ?? 'character.ash'"
+                          alt="" />
+                      </span>
+                      <span class="crew__body">
+                        <b class="crew__name">{{ pinnedCharName(member) }}</b>
+                        <span v-if="defOf(member)?.role" class="crew__role">{{
+                          defOf(member)?.role
+                        }}</span>
+                        <label class="sel__place">
+                          Starts at
+                          <select v-model="member.location" :disabled="!!pinned.worldError.value">
+                            <option
+                              v-for="place in worldPlaces"
+                              :key="place.key"
+                              :value="place.key">
+                              {{ place.name }}
+                            </option>
+                          </select>
+                        </label>
+                      </span>
+                      <span class="crew__acts">
+                        <router-link
+                          class="nsx__link"
+                          :to="{
+                            path: `/new-story/character/${member.presetId}`,
+                            query: { draft: draftCtl.draft.value?.id }
+                          }"
+                          >Edit character</router-link
+                        >
+                        <button
+                          type="button"
+                          class="crew__remove"
+                          @click="toggleCast(defOf(member) ?? characterDefs[0]!)">
+                          Remove
+                        </button>
+                      </span>
+                    </li>
+                  </TransitionGroup>
+                  <p class="nsx__note">
+                    <IconUsers :size="16" /> Everyone you add can appear in the story.
+                  </p>
+                </template>
+
+                <!-- 3 -->
+                <template v-else-if="step === 3">
+                  <h3 class="nsx__big">
+                    {{
+                      sel.role === 'player'
+                        ? `You play ${controlledDisplay}`
+                        : 'You watch the story'
+                    }}
+                  </h3>
+                  <ul class="chips chips--teal">
+                    <li>{{ sel.role === 'player' ? 'Player' : 'Observer' }}</li>
+                    <li v-if="sel.role === 'player' && playerMember">
+                      Starts at {{ placeName(playerMember.location) }}
+                    </li>
+                    <li v-if="selectedWorld">{{ selectedWorld.name }}</li>
+                  </ul>
+                  <p class="nsx__text">
+                    {{
+                      sel.role === 'player'
+                        ? `${controlledDisplay}'s actions are yours. The storyteller answers through the world and the other characters.`
+                        : 'Every character acts on their own. You can step in between turns to guide the story.'
+                    }}
+                  </p>
+                  <template v-if="others.length">
+                    <h4 class="nsx__h4">
+                      {{ sel.role === 'player' ? 'Also in your story' : 'In your story' }}
+                    </h4>
+                    <ul class="mini">
+                      <li v-for="member in others" :key="member.key">
+                        <span class="mini__face">
+                          <FramedImage
+                            v-if="defOf(member)?.portrait"
+                            :src="defOf(member)!.portrait!.src"
+                            :frame="defOf(member)!.portrait!.face"
+                            alt="" />
+                          <StoryImage
+                            v-else
+                            :image-slot="defOf(member)?.imageSlot ?? 'character.ash'"
+                            alt="" />
+                        </span>
+                        <span>
+                          <b>{{ pinnedCharName(member) }}</b>
+                          <span>{{
+                            [defOf(member)?.role, `Starts at ${placeName(member.location)}`]
+                              .filter(Boolean)
+                              .join(' · ')
+                          }}</span>
+                        </span>
+                      </li>
+                    </ul>
+                  </template>
+                </template>
+
+                <!-- 4 and 6 -->
+                <template v-else-if="step === 4 || step === 6">
+                  <h3 class="nsx__big">{{ sel.title || 'Untitled story' }}</h3>
+                  <ul class="facts">
+                    <li v-if="selectedWorld"><IconGlobe :size="16" /> {{ selectedWorld.name }}</li>
+                    <li>
+                      <IconUser :size="16" />
+                      {{ sel.role === 'player' ? `You play ${controlledDisplay}` : 'You watch' }}
+                    </li>
+                    <li v-if="others.length">
+                      <IconUsers :size="16" /> With
+                      {{ others.map((m) => pinnedCharName(m)).join(', ') }}
+                    </li>
+                    <li v-if="playerMember">Starts at {{ placeName(playerMember.location) }}</li>
+                  </ul>
+                  <ul v-if="sel.tone" class="chips chips--teal">
+                    <li>{{ toneLabel(sel.tone) }}</li>
+                  </ul>
+                  <template v-if="step === 4">
+                    <h4 class="nsx__h4">Your cast</h4>
+                    <ul class="mini">
+                      <li v-for="member in sel.cast" :key="member.key">
+                        <span class="mini__face">
+                          <FramedImage
+                            v-if="defOf(member)?.portrait"
+                            :src="defOf(member)!.portrait!.src"
+                            :frame="defOf(member)!.portrait!.face"
+                            alt="" />
+                          <StoryImage
+                            v-else
+                            :image-slot="defOf(member)?.imageSlot ?? 'character.ash'"
+                            alt="" />
+                        </span>
+                        <span>
+                          <b>{{ pinnedCharName(member) }}</b>
+                          <span>{{
+                            member.key === sel.controlledKey && sel.role === 'player'
+                              ? 'You play them'
+                              : (defOf(member)?.role ?? '')
+                          }}</span>
+                        </span>
+                      </li>
+                    </ul>
+                  </template>
+                </template>
+
+                <!-- 5 -->
+                <template v-else>
+                  <div class="teller">
+                    <span class="teller__icon"><IconFeather :size="34" /></span>
+                    <span>
+                      <b class="nsx__big nsx__big--sm">{{
+                        customTeller ? 'Your chosen profile' : "The app's storyteller"
+                      }}</b>
+                      <span class="nsx__meta">{{
+                        customTeller ? pinCtl.summary.value : `Currently ${appTeller}`
+                      }}</span>
+                      <span class="nsx__text">{{
+                        customTeller
+                          ? 'This story keeps that profile version, whatever Settings say later.'
+                          : 'Whatever storyteller Settings name will tell this story.'
+                      }}</span>
+                    </span>
+                  </div>
+                  <h4 class="nsx__h4">Your story</h4>
+                  <div class="mini-story">
+                    <span class="mini-story__pic">
+                      <FramedImage
+                        v-if="selectedWorld?.cover"
+                        :src="selectedWorld.cover.src"
+                        :frame="selectedWorld.cover.frame"
+                        alt="" />
+                    </span>
+                    <ul class="facts facts--col">
+                      <li>
+                        <b>{{ sel.title || 'Untitled story' }}</b>
+                      </li>
+                      <li v-if="selectedWorld">
+                        <IconGlobe :size="15" /> {{ selectedWorld.name }}
+                      </li>
+                      <li>
+                        <IconUser :size="15" />
+                        {{ sel.role === 'player' ? `Player · ${controlledDisplay}` : 'Observer' }}
+                      </li>
+                      <li v-if="sel.tone"><IconSparkle :size="15" /> {{ toneLabel(sel.tone) }}</li>
+                    </ul>
+                  </div>
+                </template>
+              </div>
+            </Transition>
+          </div>
         </aside>
       </div>
 
@@ -1747,7 +1820,7 @@ onMounted(() => {
           Continue to {{ nextLabel }}
         </MenuButton>
         <MenuButton
-          class="nsv__btn"
+          class="nsv__btn ev-sheen"
           v-else
           :icon="IconPlay"
           arrow="none"
@@ -1763,6 +1836,28 @@ onMounted(() => {
           {{ draftCtl.creating.value ? 'Creating…' : 'Begin the story' }}
         </MenuButton>
       </footer>
+
+      <!-- Begin: the world opens while the story is being made -->
+      <Transition name="ev-fade">
+        <div v-if="draftCtl.creating.value" class="launch" role="status">
+          <span class="launch__art">
+            <FramedImage
+              v-if="selectedWorld?.cover"
+              class="launch__world"
+              :src="selectedWorld.cover.src"
+              :frame="selectedWorld.cover.frame"
+              alt="" />
+          </span>
+          <EmberField :count="26" :rise="420" />
+          <span class="launch__card">
+            <span class="launch__ring" aria-hidden="true">
+              <span class="ev-progress-spin"></span><span class="ev-progress-spin"></span>
+            </span>
+            <b class="launch__title ev-stamp">{{ sel.title || 'Untitled story' }}</b>
+            <span class="launch__label">Creating…</span>
+          </span>
+        </div>
+      </Transition>
     </template>
     <div v-else class="nsv__state" role="status">
       <p class="nsv__state-title">Opening the library…</p>
@@ -2930,5 +3025,272 @@ onMounted(() => {
   .nsx__footnote {
     display: none;
   }
+}
+/* ————— motion ————— */
+
+/* the step and the panel beside it change in place: old and new share one
+   cell while one leaves and the other arrives, so nothing below jumps */
+.nsx__main {
+  display: grid;
+  overflow-x: clip;
+}
+.nsx__step {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+.nsx__swap {
+  display: grid;
+}
+.nsx__sidebody {
+  grid-area: 1 / 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* world cards lift and their picture leans in */
+.wcard {
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.3s var(--ease-settle),
+    transform 0.3s var(--ease-settle);
+}
+.wcard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 22px -16px rgba(96, 74, 40, 0.55);
+}
+.wcard:active {
+  transform: translateY(-1px) scale(0.985);
+  transition-duration: 0.12s;
+}
+.wcard--on {
+  box-shadow:
+    0 0 0 1px var(--teal),
+    0 12px 22px -16px rgba(23, 82, 86, 0.55);
+}
+.wcard__pic > :first-child {
+  transition: transform 0.7s var(--ease-settle);
+}
+.wcard:hover .wcard__pic > :first-child {
+  transform: scale(1.05);
+}
+.wcard__tick,
+.mode__tick {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+.wcard--on .wcard__tick,
+.who--on .wcard__tick,
+.mode--on .mode__tick {
+  animation: nsx-tick 0.45s var(--ease-spring);
+}
+.wcard__tick svg,
+.mode__tick svg {
+  animation: nsx-check 0.4s var(--ease-spring) both;
+}
+@keyframes nsx-tick {
+  from {
+    transform: scale(0.6);
+  }
+}
+@keyframes nsx-check {
+  from {
+    opacity: 0;
+    transform: scale(0.2) rotate(-25deg);
+  }
+}
+
+/* choice cards: lift, press, and the chosen one comes alive */
+.mode,
+.who,
+.tone,
+.opt {
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.3s var(--ease-settle),
+    background-color 0.2s ease,
+    transform 0.3s var(--ease-settle);
+}
+.mode:hover,
+.who:hover,
+.tone:hover,
+.opt:hover {
+  transform: translateY(-2px);
+}
+.mode:active,
+.who:active,
+.tone:active,
+.opt:active {
+  transform: scale(0.985);
+  transition-duration: 0.12s;
+}
+.mode__icon {
+  transition:
+    color 0.2s ease,
+    transform 0.4s var(--ease-settle);
+}
+.mode:hover .mode__icon {
+  transform: translateY(-3px) scale(1.06);
+}
+.mode--on .mode__icon {
+  animation:
+    nsx-icon 0.55s var(--ease-spring),
+    ev-float 4.5s var(--ease-sine) 0.55s infinite;
+}
+@keyframes nsx-icon {
+  from {
+    transform: scale(0.7) rotate(-8deg);
+  }
+}
+.who__pic > * {
+  transition: transform 0.6s var(--ease-settle);
+}
+.who:hover .who__pic > * {
+  transform: scale(1.06);
+}
+.tone__dot {
+  transition:
+    border-width 0.3s var(--ease-spring),
+    border-color 0.2s ease;
+}
+
+/* the review: each Edit nudges toward its step */
+.setup__edit {
+  transition:
+    color 0.15s ease,
+    transform 0.25s var(--ease-settle);
+}
+.setup__edit:hover {
+  transform: translateX(3px);
+}
+
+/* the cast list: removed cards leave at once, the rest glide into place */
+.cast__grid > .ev-list-leave-active {
+  display: none;
+}
+.crew {
+  position: relative;
+}
+.crew__row.ev-list-leave-active {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+/* the side banner: the world drifts, its new picture fades in, you step in */
+.banner__pan {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  animation: nsx-banner 0.9s var(--ease-settle) both;
+}
+@keyframes nsx-banner {
+  from {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}
+.banner__you > * {
+  animation: nsx-you 0.6s var(--ease-settle) both;
+}
+@keyframes nsx-you {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.94);
+  }
+}
+.banner__you {
+  z-index: 2;
+}
+
+/* Begin: the world opens while the story is made */
+.launch {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  background: #1d1810;
+  overflow: hidden;
+}
+.launch__art {
+  position: absolute;
+  inset: 0;
+  animation: nsx-launch 6s var(--ease-settle) both;
+}
+.launch__world {
+  width: 100%;
+  height: 100%;
+  opacity: 0.55;
+}
+.launch__art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    80% 70% at 50% 50%,
+    rgba(29, 24, 16, 0.15),
+    rgba(29, 24, 16, 0.85) 100%
+  );
+}
+@keyframes nsx-launch {
+  from {
+    transform: scale(1.18);
+    filter: blur(8px);
+  }
+  to {
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+.launch__card {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: #f6ecd6;
+  text-align: center;
+}
+.launch__ring {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+.launch__ring span {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: var(--ember-hi);
+  border-right-color: rgba(220, 122, 60, 0.3);
+  animation: nsx-turn 1.4s linear infinite;
+}
+.launch__ring span:nth-child(2) {
+  inset: 12px;
+  border-top-color: #e9d38a;
+  animation-duration: 2.1s;
+  animation-direction: reverse;
+}
+@keyframes nsx-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.launch__title {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5vw, 54px);
+  font-weight: 600;
+  line-height: 1.05;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.5);
+}
+.launch__label {
+  font-family: var(--font-ui);
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  color: #e7d6b0;
 }
 </style>

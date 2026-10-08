@@ -33,7 +33,11 @@ import IconPlus from '../icons/IconPlus.vue'
   transition:
     border-color 0.15s ease,
     background-color 0.15s ease,
-    transform 0.15s ease;
+    transform 0.3s var(--ease-settle);
+}
+.ctile:active {
+  transform: scale(0.98);
+  transition-duration: 0.12s;
 }
 .ctile:hover {
   border-color: #a98d57;
@@ -50,7 +54,19 @@ import IconPlus from '../icons/IconPlus.vue'
   width: 140px;
   opacity: 0.75;
   pointer-events: none;
+  /* the compass needle never quite settles */
+  animation: ctile-sway 7s var(--ease-sine) infinite;
 }
+@keyframes ctile-sway {
+  0%,
+  100% {
+    transform: translateX(-50%) scale(0.62) rotate(-6deg);
+  }
+  50% {
+    transform: translateX(-50%) scale(0.62) rotate(6deg);
+  }
+}
+
 .ctile__plus {
   margin-top: 78px;
   width: 32px;
@@ -64,11 +80,13 @@ import IconPlus from '../icons/IconPlus.vue'
   background: #fbf5e6;
   transition:
     color 0.15s ease,
-    border-color 0.15s ease;
+    border-color 0.15s ease,
+    transform 0.4s var(--ease-settle);
 }
 .ctile:hover .ctile__plus {
   color: var(--teal-ink);
   border-color: var(--teal-ink);
+  transform: rotate(90deg) scale(1.12);
 }
 .ctile__title {
   margin-top: 12px;
@@ -92,5 +110,9 @@ import IconPlus from '../icons/IconPlus.vue'
   height: 76px;
   opacity: 0.85;
   pointer-events: none;
+  transition: transform 0.8s var(--ease-settle);
+}
+.ctile:hover .ctile__ridge {
+  transform: translateY(5px);
 }
 </style>

@@ -67,11 +67,15 @@ const lines = computed(() =>
         vector-effect="non-scaling-stroke" />
     </svg>
     <span
-      v-for="p in board.places"
+      v-for="(p, i) in board.places"
       :key="p.id"
       class="mapprev__pin"
       :class="{ 'mapprev__pin--left': p.point[0] > 800 }"
-      :style="{ left: `${p.point[0] / 10}%`, top: `${p.point[1] / 10}%` }">
+      :style="{
+        left: `${p.point[0] / 10}%`,
+        top: `${p.point[1] / 10}%`,
+        '--pin-delay': `${0.35 + Math.min(i, 10) * 0.04}s`
+      }">
       <span class="mapprev__dot" />
       <span class="mapprev__label">{{ p.name }}</span>
     </span>
@@ -125,5 +129,38 @@ const lines = computed(() =>
   text-shadow:
     0 0 3px #000,
     0 0 2px #000;
+}
+/* ————— motion: the map unrolls, roads are inked in, places drop onto it ————— */
+.mapprev img {
+  animation: mapprev-unroll 0.9s var(--ease-settle) both;
+}
+@keyframes mapprev-unroll {
+  from {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+}
+.mapprev svg {
+  animation: mapprev-ink 1.1s var(--ease-io) 0.2s both;
+}
+@keyframes mapprev-ink {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.mapprev__pin > * {
+  animation: mapprev-drop 0.5s var(--ease-settle) var(--pin-delay, 0.35s) both;
+}
+@keyframes mapprev-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.6);
+  }
+}
+.mapprev__dot {
+  box-shadow: 0 0 0 0 rgba(242, 201, 76, 0.6);
 }
 </style>

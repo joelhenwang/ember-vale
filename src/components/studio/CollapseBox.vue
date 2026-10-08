@@ -12,8 +12,12 @@ const isOpen = ref(false)
       <IconChevronRight :size="13" class="cb__chev" />
       {{ title }}
     </button>
-    <div v-show="isOpen" class="cb__body">
-      <slot />
+    <div class="cb__wrap" :inert="!isOpen">
+      <div class="cb__inner">
+        <div class="cb__body">
+          <slot />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -45,12 +49,42 @@ const isOpen = ref(false)
 }
 .cb__chev {
   color: #6c5f45;
-  transition: transform 0.18s ease;
+  transition: transform 0.32s var(--ease-settle);
 }
 .cb--open .cb__chev {
   transform: rotate(90deg);
 }
+/* opens by growing its row, so the content below glides instead of jumping */
+.cb__wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.3s var(--ease-io),
+    visibility 0s linear 0.3s;
+}
+.cb--open .cb__wrap {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition: grid-template-rows 0.42s var(--ease-settle);
+}
+.cb__inner {
+  min-height: 0;
+  overflow: hidden;
+}
 .cb__body {
   padding: 2px 16px 15px;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity 0.2s var(--ease-in),
+    transform 0.2s var(--ease-in);
+}
+.cb--open .cb__body {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.32s var(--ease-out) 0.08s,
+    transform 0.42s var(--ease-settle) 0.08s;
 }
 </style>

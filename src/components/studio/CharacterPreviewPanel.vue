@@ -18,6 +18,7 @@ import IconHeart from '../icons/IconHeart.vue'
 import IconUser from '../icons/IconUser.vue'
 import IconBook from '../icons/IconBook.vue'
 import IconFeather from '../icons/IconFeather.vue'
+import { vTilt } from '../../composables/useEffects'
 
 const props = defineProps<{ draft: CharacterDraft; name: string; title?: string }>()
 
@@ -80,7 +81,7 @@ const traits = computed(() =>
     </header>
 
     <div class="cpv__hero">
-      <span class="cpv__pic">
+      <span v-tilt="7" class="cpv__pic">
         <FramedImage
           v-if="draft.portraitAssetId && draft.portraitFrames"
           :src="src"
@@ -92,7 +93,7 @@ const traits = computed(() =>
         <p class="cpv__name">{{ name || 'Unnamed' }}</p>
         <p v-if="draft.pronouns" class="cpv__pron">{{ draft.pronouns }}</p>
         <p v-if="who" class="cpv__line">{{ who }}</p>
-        <ul v-if="traits.length" class="cpv__traits">
+        <ul v-if="traits.length" class="cpv__traits ev-pop-stagger">
           <li v-for="t in traits" :key="t">{{ t }}</li>
         </ul>
       </div>
@@ -105,7 +106,7 @@ const traits = computed(() =>
       <li v-for="l in looks" :key="l">{{ l }}</li>
     </ul>
 
-    <ul v-if="gear.length" class="cpv__gear">
+    <ul v-if="gear.length" class="cpv__gear ev-rise">
       <li v-for="g in gear" :key="g.label">
         <component :is="g.icon" :size="18" />
         <span>
@@ -310,5 +311,21 @@ const traits = computed(() =>
     width: 110px;
     height: 165px;
   }
+}
+/* ————— motion: the sheet lays itself out, the portrait is a card in hand ————— */
+.cpv {
+  animation: cpv-in 0.55s var(--ease-settle) both;
+}
+@keyframes cpv-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+.cpv .preview__emblem {
+  animation: ev-float 5s var(--ease-sine) infinite;
+}
+.cpv__hero {
+  animation: cpv-in 0.6s var(--ease-settle) 0.08s both;
 }
 </style>

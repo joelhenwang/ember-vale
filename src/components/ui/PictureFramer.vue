@@ -190,7 +190,7 @@ function finish(): void {
       </header>
 
       <template v-if="!previewing && step">
-        <p class="framer__hint">{{ step.hint }}</p>
+        <p :key="step.key" class="framer__hint framer__swap">{{ step.hint }}</p>
         <p v-if="suggesting" class="framer__note" role="status">Looking for the face…</p>
         <p v-else-if="suggestNote" class="framer__note" role="status">{{ suggestNote }}</p>
         <div
@@ -212,6 +212,7 @@ function finish(): void {
             }" />
           <div
             v-if="current"
+            :key="step.key"
             class="framer__frame"
             :class="{ 'framer__frame--round': step.round }"
             :style="{
@@ -238,8 +239,10 @@ function finish(): void {
       </template>
 
       <template v-else>
-        <p class="framer__hint">This is how it will look. Go back to change a frame.</p>
-        <div class="framer__previews">
+        <p class="framer__hint framer__swap">
+          This is how it will look. Go back to change a frame.
+        </p>
+        <div class="framer__previews ev-pop-stagger">
           <figure v-for="p in previews" :key="p.label">
             <span
               class="framer__preview"
@@ -423,5 +426,48 @@ function finish(): void {
 }
 .framer__spacer {
   flex: 1;
+}
+/* ————— motion: each step's frame lands on the picture, the check pops in ————— */
+.framer__swap {
+  animation: framer-swap 0.4s var(--ease-settle) both;
+}
+@keyframes framer-swap {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.framer__frame {
+  animation: framer-land 0.5s var(--ease-settle) both;
+}
+@keyframes framer-land {
+  from {
+    opacity: 0;
+    transform: scale(1.12);
+  }
+}
+.framer__corner {
+  transition: transform 0.2s var(--ease-settle);
+}
+.framer__corner:hover {
+  transform: scale(1.35);
+}
+.framer__steps li {
+  transition: color 0.25s ease;
+}
+.framer__steps .is-on {
+  animation: framer-step 0.4s var(--ease-spring);
+}
+@keyframes framer-step {
+  from {
+    transform: translateY(3px);
+    opacity: 0.4;
+  }
+}
+.framer__preview {
+  transition: transform 0.35s var(--ease-settle);
+}
+.framer__preview:hover {
+  transform: translateY(-3px) rotate(-1deg);
 }
 </style>

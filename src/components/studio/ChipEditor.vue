@@ -26,7 +26,7 @@ function remove(tag: string): void {
 </script>
 
 <template>
-  <div class="ce">
+  <TransitionGroup name="ce" tag="div" class="ce">
     <span v-for="tag in model" :key="tag" class="ce__chip">
       {{ tag }}
       <button type="button" :aria-label="`Remove ${tag}`" @click="remove(tag)">
@@ -35,6 +35,7 @@ function remove(tag: string): void {
     </span>
     <input
       v-if="adding"
+      key="adding"
       ref="inputEl"
       v-model="draft"
       class="ce__add ce__add--editing"
@@ -42,10 +43,10 @@ function remove(tag: string): void {
       @keydown.enter.prevent="commit"
       @keydown.esc="adding = false"
       @blur="commit" />
-    <button v-else type="button" class="ce__add" @click="startAdd">
+    <button v-else key="add" type="button" class="ce__add" @click="startAdd">
       <IconPlus :size="12" /> Add
     </button>
-  </div>
+  </TransitionGroup>
 </template>
 
 <style scoped>
@@ -110,5 +111,42 @@ function remove(tag: string): void {
   border-color: #5f9488;
   background: #f7faf8;
   outline: none;
+}
+/* ————— motion: a new chip pops in, a removed one is gone and the rest glide ————— */
+.ce-enter-active {
+  transition:
+    opacity 0.2s var(--ease-out),
+    transform 0.4s var(--ease-spring);
+}
+.ce-enter-from {
+  opacity: 0;
+  transform: scale(0.6);
+}
+.ce-leave-active {
+  display: none;
+}
+.ce-move {
+  transition: transform 0.35s var(--ease-settle);
+}
+.ce__chip {
+  transition: transform 0.2s var(--ease-settle);
+}
+.ce__chip:hover {
+  transform: translateY(-1px);
+}
+.ce__chip button:hover {
+  transform: rotate(90deg);
+}
+.ce__chip button {
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease,
+    transform 0.25s var(--ease-settle);
+}
+.ce__add svg {
+  transition: transform 0.3s var(--ease-settle);
+}
+.ce__add:hover svg {
+  transform: rotate(90deg);
 }
 </style>

@@ -62,6 +62,7 @@ import CollapseBox from '../components/studio/CollapseBox.vue'
 import StudioSelect from '../components/studio/StudioSelect.vue'
 import OverviewCard from '../components/studio/OverviewCard.vue'
 import WorldPreviewPanel from '../components/studio/WorldPreviewPanel.vue'
+import { burst } from '../composables/useEffects'
 import SaveBar from '../components/ui/SaveBar.vue'
 import MenuButton from '../components/MenuButton.vue'
 import IconSparkle from '../components/icons/IconSparkle.vue'
@@ -162,6 +163,11 @@ function goStep(n: number): void {
   step.value = Math.min(lastStep, Math.max(1, n))
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
+/* Steps slide the way you are going: forward from the right, back from the left. */
+const stepMotion = ref<'ev-step-next' | 'ev-step-prev'>('ev-step-next')
+watch(step, (now, was) => {
+  stepMotion.value = now >= was ? 'ev-step-next' : 'ev-step-prev'
+})
 
 /* save / dirty ----------------------------------------------------------- */
 const dirty = computed(() => isWorldDirty(id.value))
@@ -474,6 +480,15 @@ async function save(): Promise<boolean> {
   return ok
 }
 
+/* A publish that lands throws sparks from the button that asked for it. */
+const nextBtn = ref<{ $el?: Element } | null>(null)
+watch(
+  () => editor.status.value,
+  (now, was) => {
+    if (now === 'published' && was !== 'published') burst(nextBtn.value?.$el, { count: 22 })
+  }
+)
+
 const pubStatus = computed(() => {
   if (isNew.value) return null
   switch (editor.status.value) {
@@ -649,6 +664,7 @@ const emptyTotal = computed(
  */
 async function fill(opts: { fields: boolean; places: boolean; add: number }): Promise<void> {
   if (filling.value) return
+  const asker = document.activeElement
   filling.value = true
   fillNote.value = null
   try {
@@ -710,6 +726,7 @@ async function fill(opts: { fields: boolean; places: boolean; add: number }): Pr
       count ? `filled ${count} field${count === 1 ? '' : 's'}` : '',
       added ? `added ${added} place${added === 1 ? '' : 's'}` : ''
     ].filter(Boolean)
+    if (parts.length) burst(asker, { count: 16, spread: 80 })
     fillNote.value = parts.length
       ? `${parts.join(' and ')} for $${Number(made.cost_usd).toFixed(4)} — look them over and change anything.`.replace(
           /^./,
@@ -782,222 +799,230 @@ const placesUndescribed = computed(
     <div class="studio__body">
       <!-- ————————————————— form column ————————————————— -->
       <div class="studio__left">
-        <Transition name="wstep" mode="out-in">
-          <div :key="step" class="wstudio__step">
-            <!-- 1 · overview -->
-            <template v-if="step === 1">
-              <section class="card ev-card">
-                <label class="ev-field-label" for="w-name">Name</label>
-                <input
-                  v-if="isNew"
-                  id="w-name"
-                  v-model="draft.presetName"
-                  class="ev-input"
-                  maxlength="128"
-                  placeholder="What is this world called?" />
-                <p v-else id="w-name" class="wstudio__fixed">{{ worldName }}</p>
-              </section>
-              <OverviewCard
-                v-model="draft.details"
-                kind="world"
-                :name="displayNameForm"
-                placeholder="What is it? e.g. A ring of salt-marsh islands where ferry clans keep the old roads of water, the tide decides the calendar, and the drowned city under the bay still rings its bells."
-                :empty="emptyTotal"
-                :filling="filling"
-                :fill-note="fillNote"
-                @fill="fill({ fields: true, places: true, add: 0 })" />
-            </template>
-
-            <!-- 2 · the world -->
-            <section v-else-if="step === 2" class="card ev-card">
-              <div class="wstudio__grid">
-                <div class="wf">
-                  <span class="ev-field-label">Terrain</span>
-                  <ChipEditor
-                    v-model="draft.terrain"
-                    :class="{ 'is-helped': helped.has('terrain') }" />
-                </div>
-                <div class="wf">
-                  <label class="ev-field-label" for="w-climate">Climate</label>
-                  <StudioSelect
-                    id="w-climate"
-                    v-model="draft.climate"
-                    :class="{ 'is-helped': helped.has('climate') }"
-                    :options="climateOptions" />
-                </div>
-                <div
-                  v-for="f in WORLD_FIELDS.filter(
-                    (x) => x.key !== 'terrain' && x.key !== 'climate'
-                  )"
-                  :key="f.key"
-                  class="wf"
-                  :class="{ 'wf--wide': f.max > 400 }">
-                  <label class="ev-field-label" :for="`w-${f.key}`">{{ f.label }}</label>
-                  <textarea
-                    :id="`w-${f.key}`"
-                    v-model="draft[f.key as 'architecture']"
+        <div class="wstudio__stage">
+          <Transition :name="stepMotion">
+            <div :key="step" class="wstudio__step">
+              <!-- 1 · overview -->
+              <template v-if="step === 1">
+                <section class="card ev-card">
+                  <label class="ev-field-label" for="w-name">Name</label>
+                  <input
+                    v-if="isNew"
+                    id="w-name"
+                    v-model="draft.presetName"
                     class="ev-input"
-                    :class="{ 'is-helped': helped.has(f.key) }"
-                    :maxlength="f.max"
-                    :placeholder="f.hint"
-                    :rows="f.max > 400 ? 3 : 2"
-                    @input="helped.delete(f.key)" />
-                </div>
-              </div>
-              <div class="wstudio__fill">
-                <button
-                  type="button"
-                  class="wstudio__fillbtn"
-                  :disabled="filling"
-                  @click="fill({ fields: true, places: false, add: 0 })">
-                  <IconSparkle :size="14" />
-                  {{ filling ? 'Writing…' : 'Fill the empty ones from the overview' }}
-                </button>
-                <span v-if="fillNote" class="wstudio__fillnote" role="status">{{ fillNote }}</span>
-              </div>
-            </section>
+                    maxlength="128"
+                    placeholder="What is this world called?" />
+                  <p v-else id="w-name" class="wstudio__fixed">{{ worldName }}</p>
+                </section>
+                <OverviewCard
+                  v-model="draft.details"
+                  kind="world"
+                  :name="displayNameForm"
+                  placeholder="What is it? e.g. A ring of salt-marsh islands where ferry clans keep the old roads of water, the tide decides the calendar, and the drowned city under the bay still rings its bells."
+                  :empty="emptyTotal"
+                  :filling="filling"
+                  :fill-note="fillNote"
+                  @fill="fill({ fields: true, places: true, add: 0 })" />
+              </template>
 
-            <!-- 3 · places -->
-            <section v-else-if="step === 3" class="card ev-card">
-              <div class="wstudio__helper">
-                <span class="wstudio__helper-text">
-                  <IconSparkle :size="14" /> Let the helper add
-                </span>
-                <select v-model.number="addCount" class="wstudio__count" aria-label="How many">
-                  <option v-for="n in 6" :key="n" :value="n">{{ n }}</option>
-                </select>
-                <span class="wstudio__helper-text">
-                  {{ addCount === 1 ? 'place' : 'places' }} from the overview
-                </span>
-                <button
-                  type="button"
-                  class="wstudio__fillbtn"
-                  :disabled="filling"
-                  @click="fill({ fields: false, places: true, add: addCount })">
-                  {{ filling ? 'Writing…' : 'Add them' }}
-                </button>
-                <button
-                  v-if="placesUndescribed"
-                  type="button"
-                  class="wstudio__fillbtn"
-                  :disabled="filling"
-                  @click="fill({ fields: false, places: true, add: 0 })">
-                  Describe the {{ placesUndescribed }} without words
-                </button>
-              </div>
-              <p v-if="fillNote" class="wstudio__fillnote" role="status">{{ fillNote }}</p>
-
-              <div class="places">
-                <div class="places__tabs">
-                  <button
-                    v-for="p in draft.places"
-                    :key="p.id"
-                    type="button"
-                    class="places__tab"
-                    :class="{ 'places__tab--on': p.id === draft.activePlace }"
-                    @click="draft.activePlace = p.id">
-                    {{ p.name }}
-                  </button>
-                  <button type="button" class="places__add" @click="addPlace">
-                    <IconPlus :size="12" /> Add a place
-                  </button>
-                </div>
-
-                <div class="places__fields grid2">
-                  <div>
-                    <label class="ev-field-label" for="p-name">Name</label>
-                    <input id="p-name" v-model="place.name" class="ev-input" />
+              <!-- 2 · the world -->
+              <section v-else-if="step === 2" class="card ev-card">
+                <div class="wstudio__grid">
+                  <div class="wf">
+                    <span class="ev-field-label">Terrain</span>
+                    <ChipEditor
+                      v-model="draft.terrain"
+                      :class="{ 'is-helped': helped.has('terrain') }" />
                   </div>
-                  <div>
-                    <label class="ev-field-label" for="p-type">Type</label>
-                    <StudioSelect id="p-type" v-model="place.type" :options="typeOptions" />
-                  </div>
-                  <div class="grid2__wide">
-                    <label class="ev-field-label" for="p-look">What it is like</label>
-                    <textarea
-                      id="p-look"
-                      v-model="place.appearance"
-                      class="ev-input"
-                      rows="3"
-                      placeholder="One honest paragraph of stone, cloth and light…" />
-                  </div>
-                  <div>
-                    <label class="ev-field-label" for="p-purpose">What it is for</label>
-                    <input
-                      id="p-purpose"
-                      v-model="place.purpose"
-                      class="ev-input"
-                      placeholder="Trade, rest, worship…" />
-                  </div>
-                  <div>
-                    <label class="ev-field-label" for="p-landmark">Landmark</label>
-                    <input
-                      id="p-landmark"
-                      v-model="place.landmark"
-                      class="ev-input"
-                      placeholder="The thing everyone navigates by" />
-                  </div>
-                  <div>
-                    <label class="ev-field-label" for="p-conn">Road to</label>
+                  <div class="wf">
+                    <label class="ev-field-label" for="w-climate">Climate</label>
                     <StudioSelect
-                      id="p-conn"
-                      :model-value="connectionLabel(draft.places, place.connectedKey)"
-                      :options="connectionOptions(draft.places, place.id)"
-                      @update:model-value="setConnection(place, $event)" />
+                      id="w-climate"
+                      v-model="draft.climate"
+                      :class="{ 'is-helped': helped.has('climate') }"
+                      :options="climateOptions" />
                   </div>
-                  <div class="grid2__wide">
-                    <CollapseBox title="Sounds, scents & hidden details">
-                      <textarea
-                        v-model="place.sounds"
-                        class="ev-input"
-                        aria-label="Sounds, scents and hidden details"
-                        placeholder="What does it sound like at dusk?" />
-                    </CollapseBox>
+                  <div
+                    v-for="f in WORLD_FIELDS.filter(
+                      (x) => x.key !== 'terrain' && x.key !== 'climate'
+                    )"
+                    :key="f.key"
+                    class="wf"
+                    :class="{ 'wf--wide': f.max > 400 }">
+                    <label class="ev-field-label" :for="`w-${f.key}`">{{ f.label }}</label>
+                    <textarea
+                      :id="`w-${f.key}`"
+                      v-model="draft[f.key as 'architecture']"
+                      class="ev-input"
+                      :class="{ 'is-helped': helped.has(f.key) }"
+                      :maxlength="f.max"
+                      :placeholder="f.hint"
+                      :rows="f.max > 400 ? 3 : 2"
+                      @input="helped.delete(f.key)" />
                   </div>
                 </div>
-                <div class="places__foot">
-                  <span class="places__count"
-                    >{{ draft.places.length }} place{{ draft.places.length === 1 ? '' : 's' }}</span
-                  >
+                <div class="wstudio__fill">
                   <button
                     type="button"
-                    class="ghost ghost--sm"
-                    :disabled="draft.places.length <= 1"
-                    @click="removeActivePlace">
-                    Remove {{ place.name }}
+                    class="wstudio__fillbtn"
+                    :disabled="filling"
+                    @click="fill({ fields: true, places: false, add: 0 })">
+                    <IconSparkle :size="14" />
+                    {{ filling ? 'Writing…' : 'Fill the empty ones from the overview' }}
+                  </button>
+                  <span v-if="fillNote" class="wstudio__fillnote" role="status">{{
+                    fillNote
+                  }}</span>
+                </div>
+              </section>
+
+              <!-- 3 · places -->
+              <section v-else-if="step === 3" class="card ev-card">
+                <div class="wstudio__helper">
+                  <span class="wstudio__helper-text">
+                    <IconSparkle :size="14" /> Let the helper add
+                  </span>
+                  <select v-model.number="addCount" class="wstudio__count" aria-label="How many">
+                    <option v-for="n in 6" :key="n" :value="n">{{ n }}</option>
+                  </select>
+                  <span class="wstudio__helper-text">
+                    {{ addCount === 1 ? 'place' : 'places' }} from the overview
+                  </span>
+                  <button
+                    type="button"
+                    class="wstudio__fillbtn"
+                    :disabled="filling"
+                    @click="fill({ fields: false, places: true, add: addCount })">
+                    {{ filling ? 'Writing…' : 'Add them' }}
+                  </button>
+                  <button
+                    v-if="placesUndescribed"
+                    type="button"
+                    class="wstudio__fillbtn"
+                    :disabled="filling"
+                    @click="fill({ fields: false, places: true, add: 0 })">
+                    Describe the {{ placesUndescribed }} without words
                   </button>
                 </div>
-              </div>
-            </section>
+                <p v-if="fillNote" class="wstudio__fillnote" role="status">{{ fillNote }}</p>
 
-            <!-- 4 · review -->
-            <section v-else class="card ev-card">
-              <div class="grid2">
-                <div>
-                  <label class="ev-field-label" for="w-start">Stories start at</label>
-                  <StudioSelect
-                    id="w-start"
-                    v-model="startPlaceName"
-                    :options="draft.places.map((p) => p.name)" />
+                <div class="places">
+                  <TransitionGroup name="ev-list" tag="div" class="places__tabs">
+                    <button
+                      v-for="p in draft.places"
+                      :key="p.id"
+                      type="button"
+                      class="places__tab"
+                      :class="{ 'places__tab--on': p.id === draft.activePlace }"
+                      @click="draft.activePlace = p.id">
+                      {{ p.name }}
+                    </button>
+                    <button key="add" type="button" class="places__add" @click="addPlace">
+                      <IconPlus :size="12" /> Add a place
+                    </button>
+                  </TransitionGroup>
+
+                  <div class="places__fields grid2">
+                    <div>
+                      <label class="ev-field-label" for="p-name">Name</label>
+                      <input id="p-name" v-model="place.name" class="ev-input" />
+                    </div>
+                    <div>
+                      <label class="ev-field-label" for="p-type">Type</label>
+                      <StudioSelect id="p-type" v-model="place.type" :options="typeOptions" />
+                    </div>
+                    <div class="grid2__wide">
+                      <label class="ev-field-label" for="p-look">What it is like</label>
+                      <textarea
+                        id="p-look"
+                        v-model="place.appearance"
+                        class="ev-input"
+                        rows="3"
+                        placeholder="One honest paragraph of stone, cloth and light…" />
+                    </div>
+                    <div>
+                      <label class="ev-field-label" for="p-purpose">What it is for</label>
+                      <input
+                        id="p-purpose"
+                        v-model="place.purpose"
+                        class="ev-input"
+                        placeholder="Trade, rest, worship…" />
+                    </div>
+                    <div>
+                      <label class="ev-field-label" for="p-landmark">Landmark</label>
+                      <input
+                        id="p-landmark"
+                        v-model="place.landmark"
+                        class="ev-input"
+                        placeholder="The thing everyone navigates by" />
+                    </div>
+                    <div>
+                      <label class="ev-field-label" for="p-conn">Road to</label>
+                      <StudioSelect
+                        id="p-conn"
+                        :model-value="connectionLabel(draft.places, place.connectedKey)"
+                        :options="connectionOptions(draft.places, place.id)"
+                        @update:model-value="setConnection(place, $event)" />
+                    </div>
+                    <div class="grid2__wide">
+                      <CollapseBox title="Sounds, scents & hidden details">
+                        <textarea
+                          v-model="place.sounds"
+                          class="ev-input"
+                          aria-label="Sounds, scents and hidden details"
+                          placeholder="What does it sound like at dusk?" />
+                      </CollapseBox>
+                    </div>
+                  </div>
+                  <div class="places__foot">
+                    <span class="places__count"
+                      >{{ draft.places.length }} place{{
+                        draft.places.length === 1 ? '' : 's'
+                      }}</span
+                    >
+                    <button
+                      type="button"
+                      class="ghost ghost--sm"
+                      :disabled="draft.places.length <= 1"
+                      @click="removeActivePlace">
+                      Remove {{ place.name }}
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <ul class="wstudio__checks">
-                <li :class="{ 'is-ok': !!displayNameForm }">
-                  {{ displayNameForm ? `Named ${displayNameForm}` : 'No name yet (Overview step)' }}
-                </li>
-                <li :class="{ 'is-ok': !!draft.details.trim() }">
-                  {{ draft.details.trim() ? 'Has an overview' : 'No overview yet' }}
-                </li>
-                <li :class="{ 'is-ok': draft.places.length > 1 }">
-                  {{ draft.places.length }} place{{ draft.places.length === 1 ? '' : 's' }}
-                </li>
-                <li :class="{ 'is-ok': !!draft.cover }">
-                  {{ draft.cover ? 'Has its own picture' : 'No picture yet (see the preview)' }}
-                </li>
-              </ul>
-            </section>
-          </div>
-        </Transition>
+              </section>
+
+              <!-- 4 · review -->
+              <section v-else class="card ev-card">
+                <div class="grid2">
+                  <div>
+                    <label class="ev-field-label" for="w-start">Stories start at</label>
+                    <StudioSelect
+                      id="w-start"
+                      v-model="startPlaceName"
+                      :options="draft.places.map((p) => p.name)" />
+                  </div>
+                </div>
+                <ul class="wstudio__checks ev-rise">
+                  <li :class="{ 'is-ok': !!displayNameForm }">
+                    {{
+                      displayNameForm ? `Named ${displayNameForm}` : 'No name yet (Overview step)'
+                    }}
+                  </li>
+                  <li :class="{ 'is-ok': !!draft.details.trim() }">
+                    {{ draft.details.trim() ? 'Has an overview' : 'No overview yet' }}
+                  </li>
+                  <li :class="{ 'is-ok': draft.places.length > 1 }">
+                    {{ draft.places.length }} place{{ draft.places.length === 1 ? '' : 's' }}
+                  </li>
+                  <li :class="{ 'is-ok': !!draft.cover }">
+                    {{ draft.cover ? 'Has its own picture' : 'No picture yet (see the preview)' }}
+                  </li>
+                </ul>
+              </section>
+            </div>
+          </Transition>
+        </div>
 
         <!-- the last step makes it real: create, or publish the changes -->
         <section v-if="step === lastStep" class="card ev-card wstudio__finish">
@@ -1054,7 +1079,11 @@ const placesUndescribed = computed(
             </p>
           </template>
           <template v-else>
-            <p v-if="pubStatus" class="studio__state" role="status">{{ pubStatus }}</p>
+            <Transition name="ev-rise" mode="out-in">
+              <p v-if="pubStatus" :key="pubStatus" class="studio__state" role="status">
+                {{ pubStatus }}
+              </p>
+            </Transition>
             <p v-if="unsavedAfterPublish" class="studio__state" role="status">
               Newer edits are still unsaved — save or publish again before leaving.
             </p>
@@ -1093,6 +1122,7 @@ const placesUndescribed = computed(
       </template>
       <template #end>
         <MenuButton
+          ref="nextBtn"
           class="wstudio__next"
           :disabled="
             step === lastStep &&
@@ -1365,20 +1395,61 @@ const placesUndescribed = computed(
   font-size: 15px;
   color: var(--muted);
 }
-.wstep-enter-active {
+/* the old step and the new share one cell while they swap: nothing jumps */
+.wstudio__stage {
+  flex: 1;
+  display: grid;
+  overflow-x: clip;
+}
+.wstudio__stage > .wstudio__step {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+/* fields the writing helper filled glow as they arrive */
+.is-helped {
+  animation: ws-helped 1.4s var(--ease-out);
+}
+@keyframes ws-helped {
+  from {
+    outline: 3px solid rgba(220, 122, 60, 0.6);
+    outline-offset: 5px;
+  }
+  to {
+    outline: 3px solid rgba(220, 122, 60, 0);
+    outline-offset: 0;
+  }
+}
+.wstudio__fillbtn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+/* a ticked check pops as it turns green */
+.wstudio__checks li::before {
   transition:
-    opacity 0.28s ease,
-    transform 0.32s var(--ease-out);
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.35s var(--ease-spring);
 }
-.wstep-leave-active {
-  transition: opacity 0.12s ease;
+.wstudio__checks li.is-ok::before {
+  transform: scale(1.15);
 }
-.wstep-enter-from {
-  opacity: 0;
-  transform: translateX(18px);
+/* place tabs: a new place pops in; the chosen tab lifts */
+.places__tab {
+  transition:
+    color 0.14s ease,
+    background-color 0.2s ease,
+    transform 0.25s var(--ease-settle);
 }
-.wstep-leave-to {
-  opacity: 0;
+.places__tab:hover:not(.places__tab--on) {
+  transform: translateY(-2px);
+}
+.places__tabs > .ev-list-leave-active {
+  display: none;
+}
+.places__add svg {
+  transition: transform 0.35s var(--ease-settle);
+}
+.places__add:hover svg {
+  transform: rotate(90deg);
 }
 @media (max-width: 760px) {
   .wstudio__grid {

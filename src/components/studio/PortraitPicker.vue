@@ -27,6 +27,7 @@ import {
   type Size
 } from '../../game/framing'
 import IconSparkle from '../icons/IconSparkle.vue'
+import { burst, vTilt } from '../../composables/useEffects'
 import type { PortraitFrames } from '../../game/studio'
 
 const props = defineProps<{
@@ -42,6 +43,11 @@ const emit = defineEmits<{ change: [assetId: string | null, frames: PortraitFram
 
 const busy = ref(false)
 const painting = ref(false)
+/* the portrait card: a new picture lands here with a few sparks */
+const card = ref<HTMLElement | null>(null)
+function landed(): void {
+  window.setTimeout(() => burst(card.value, { count: 18, spread: 110 }), 120)
+}
 const note = ref<string | null>(null)
 const error = ref<string | null>(null)
 /** The picture being framed (a new upload, or the current one to adjust). */
@@ -227,6 +233,7 @@ async function paint(): Promise<void> {
       // keep the usual place for a face
     }
     emit('change', made.asset_id, { portrait, face })
+    landed()
     note.value = `Painted in ${elapsed.value.toFixed(1)} s. Not quite them? Change the appearance or the prompt and paint again.`
   } catch (err) {
     error.value = message(err, 'Could not paint them this time.')
@@ -241,6 +248,7 @@ function done(frames: Record<string, Frame>): void {
   if (!framing.value) return
   emit('change', framing.value.assetId, { portrait: frames['portrait']!, face: frames['face']! })
   framing.value = null
+  landed()
 }
 
 const initial = computed(() =>
@@ -253,9 +261,10 @@ const initial = computed(() =>
 <template>
   <div class="pick" :class="{ 'pick--panel': variant === 'panel' }">
     <div class="pick__shots" :class="{ 'pick__shots--busy': painting }">
-      <span class="pick__card">
+      <span ref="card" v-tilt="7" class="pick__card">
         <FramedImage
           v-if="assetId && frames"
+          :key="assetId"
           class="pick__img"
           :src="src"
           :frame="frames.portrait"
@@ -370,17 +379,19 @@ const initial = computed(() =>
         </div>
       </div>
     </div>
-    <PictureFramer
-      v-if="framing"
-      :title="`Frame ${name}`"
-      :src="framing.src"
-      :size="framing.size"
-      :steps="steps"
-      :previews="previews"
-      :initial="initial"
-      :suggest="initial ? undefined : suggest"
-      @done="done"
-      @cancel="framing = null" />
+    <Transition name="ev-modal">
+      <PictureFramer
+        v-if="framing"
+        :title="`Frame ${name}`"
+        :src="framing.src"
+        :size="framing.size"
+        :steps="steps"
+        :previews="previews"
+        :initial="initial"
+        :suggest="initial ? undefined : suggest"
+        @done="done"
+        @cancel="framing = null" />
+    </Transition>
   </div>
 </template>
 
@@ -421,6 +432,8 @@ const initial = computed(() =>
 /* while painting: the old picture blurs, a ring turns, the clock runs */
 .pick__img {
   transition: filter 0.4s ease;
+  /* a new portrait arrives like a camera pushing in */
+  animation: ev-push-in 1s var(--ease-settle) both;
 }
 .pick__shots--busy .pick__img {
   filter: blur(7px) saturate(0.75) brightness(1.04);

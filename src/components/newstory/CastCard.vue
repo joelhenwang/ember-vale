@@ -4,9 +4,20 @@ import FramedImage from '../ui/FramedImage.vue'
 import StoryImage from '../StoryImage.vue'
 import IconSparkle from '../icons/IconSparkle.vue'
 import IconCheck from '../icons/IconCheck.vue'
+import { ref, watch } from 'vue'
+import { burst } from '../../composables/useEffects'
 
-defineProps<{ character: CharacterDef; selected: boolean }>()
+const props = defineProps<{ character: CharacterDef; selected: boolean }>()
 defineEmits<{ toggle: [] }>()
+
+/* Joining the cast throws a few sparks from the tick. */
+const tick = ref<HTMLElement | null>(null)
+watch(
+  () => props.selected,
+  (now, was) => {
+    if (now && !was) burst(tick.value, { count: 10, spread: 46 })
+  }
+)
 </script>
 
 <template>
@@ -32,7 +43,11 @@ defineEmits<{ toggle: [] }>()
         :image-slot="character.imageSlot"
         :alt="`${character.name} portrait`"
         class="cast__img" />
-      <span class="cast__tick" :class="{ 'cast__tick--on': selected }" aria-hidden="true">
+      <span
+        ref="tick"
+        class="cast__tick"
+        :class="{ 'cast__tick--on': selected }"
+        aria-hidden="true">
         <IconCheck v-if="selected" :size="12" />
       </span>
     </div>
@@ -56,12 +71,12 @@ defineEmits<{ toggle: [] }>()
   box-shadow: 0 1px 2px rgba(96, 74, 40, 0.08);
   cursor: pointer;
   transition:
-    transform 0.14s ease,
-    box-shadow 0.14s ease,
-    border-color 0.14s ease;
+    transform 0.32s var(--ease-settle),
+    box-shadow 0.32s var(--ease-settle),
+    border-color 0.2s ease;
 }
 .cast:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
   border-color: #bfa978;
   box-shadow: 0 10px 20px -14px rgba(96, 74, 40, 0.5);
 }
@@ -73,6 +88,17 @@ defineEmits<{ toggle: [] }>()
 }
 .cast--selected:hover {
   border-color: #2e7265;
+}
+.cast:active {
+  transform: translateY(-1px) scale(0.98);
+  transition-duration: 0.12s;
+}
+.cast__img {
+  transition: transform 0.6s var(--ease-settle);
+}
+/* the portrait leans in a little when you look at it */
+.cast:hover .cast__img {
+  transform: scale(1.05);
 }
 
 .cast__media {
@@ -101,11 +127,32 @@ defineEmits<{ toggle: [] }>()
   align-items: center;
   justify-content: center;
   color: var(--cream-on-teal);
-  transition: background 0.14s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.3s var(--ease-settle);
+}
+.cast:hover .cast__tick {
+  transform: scale(1.1);
 }
 .cast__tick--on {
   background: linear-gradient(180deg, #256e67, #175a5e);
   border-color: #0f4147;
+  animation: cast-tick-on 0.45s var(--ease-spring);
+}
+.cast__tick svg {
+  animation: cast-check 0.4s var(--ease-spring) both;
+}
+@keyframes cast-tick-on {
+  from {
+    transform: scale(0.6);
+  }
+}
+@keyframes cast-check {
+  from {
+    opacity: 0;
+    transform: scale(0.2) rotate(-25deg);
+  }
 }
 
 .cast__body {
