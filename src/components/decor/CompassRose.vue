@@ -15,15 +15,17 @@
           :stroke-width="i % 8 === 1 ? 1.6 : 1"
           :transform="`rotate(${(i - 1) * (360 / 32)} 100 100)`" />
       </g>
-      <!-- star -->
-      <path
-        class="rose__star"
-        d="M100 12C104.5 60.5 139.5 95.5 188 100c-48.5 4.5-83.5 39.5-88 88-4.5-48.5-39.5-83.5-88-88 48.5-4.5 83.5-39.5 88-88Z"
-        stroke-width="1.2" />
-      <path
-        d="M100 40C102.6 73.5 126.5 97.4 160 100c-33.5 2.6-57.4 26.5-60 60-2.6-33.5-26.5-57.4-60-60 33.5-2.6 57.4-26.5 60-60Z"
-        transform="rotate(45 100 100)"
-        opacity=".6" />
+      <!-- star: swings slowly like a needle settling on north -->
+      <g class="rose__needle">
+        <path
+          class="rose__star"
+          d="M100 12C104.5 60.5 139.5 95.5 188 100c-48.5 4.5-83.5 39.5-88 88-4.5-48.5-39.5-83.5-88-88 48.5-4.5 83.5-39.5 88-88Z"
+          stroke-width="1.2" />
+        <path
+          d="M100 40C102.6 73.5 126.5 97.4 160 100c-33.5 2.6-57.4 26.5-60 60-2.6-33.5-26.5-57.4-60-60 33.5-2.6 57.4-26.5 60-60Z"
+          transform="rotate(45 100 100)"
+          opacity=".6" />
+      </g>
     </g>
   </svg>
 </template>
@@ -34,5 +36,17 @@
 }
 .rose__star {
   fill: rgba(179, 148, 93, 0.16);
+}
+.rose__needle {
+  transform-origin: 100px 100px;
+  animation: rose-swing 9s var(--ease-sine) infinite alternate;
+}
+@keyframes rose-swing {
+  from {
+    transform: rotate(-9deg);
+  }
+  to {
+    transform: rotate(7deg);
+  }
 }
 </style>

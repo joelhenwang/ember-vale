@@ -9,8 +9,9 @@
   slot content rather than props, so the card stays presentation-only.
 -->
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { Component } from 'vue'
+import { burst, shake } from '../../composables/useEffects'
 import StatusPill from '../ui/StatusPill.vue'
 import type { ConnStatus } from '../../game/providerSettings'
 
@@ -30,14 +31,27 @@ const STATUS = {
 } as const
 
 const pill = computed(() => STATUS[props.status])
+
+/* A finished check answers out loud: sparks when the endpoint answered,
+   a shake when it did not. Only after a check, never on page load. */
+const card = ref<HTMLElement | null>(null)
+const pillEl = ref<HTMLElement | null>(null)
+watch(
+  () => props.status,
+  (now, before) => {
+    if (before !== 'testing') return
+    if (now === 'reachable') burst(pillEl.value, { count: 12, spread: 50 })
+    else if (now === 'unreachable') shake(card.value)
+  }
+)
 </script>
 
 <template>
-  <section class="conn ev-card">
+  <section ref="card" class="conn ev-card">
     <header class="conn__head">
       <span class="conn__icon"><component :is="icon" :size="21" /></span>
       <h3 class="conn__title">{{ title }}</h3>
-      <StatusPill :tone="pill.tone" :label="pill.label" />
+      <span ref="pillEl"><StatusPill :tone="pill.tone" :label="pill.label" /></span>
     </header>
     <p class="conn__caption">{{ caption }}</p>
     <div class="conn__body">
@@ -57,6 +71,12 @@ const pill = computed(() => STATUS[props.status])
   display: flex;
   align-items: center;
   gap: 13px;
+}
+.conn:hover .conn__icon :deep(svg) {
+  transform: rotate(-8deg) scale(1.08);
+}
+.conn__icon :deep(svg) {
+  transition: transform 0.45s var(--ease-spring);
 }
 .conn__icon {
   width: 40px;

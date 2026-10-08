@@ -67,7 +67,7 @@ const at = computed(() =>
   box-shadow:
     inset 0 1px 0 rgba(255, 243, 214, 0.22),
     0 2px 6px -2px rgba(16, 46, 46, 0.45);
-  transition: transform 0.28s var(--ease-spring);
+  transition: transform 0.42s var(--ease-spring);
 }
 .vt__opt {
   position: relative;
@@ -89,6 +89,20 @@ const at = computed(() =>
 }
 .vt__opt--on {
   color: var(--cream-on-teal);
+}
+.vt__opt :deep(svg) {
+  transition: transform 0.4s var(--ease-spring);
+}
+.vt__opt--on :deep(svg) {
+  transform: scale(1.12);
+}
+.vt__opt:active {
+  transform: scale(0.94);
+}
+.vt__opt {
+  transition:
+    color 0.2s ease,
+    transform 0.12s var(--ease-out);
 }
 @media (max-width: 560px) {
   .vt__text {

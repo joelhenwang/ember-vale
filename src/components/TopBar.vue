@@ -4,7 +4,7 @@ import { useGameImage } from '../game/images'
 import IconEmblem from './icons/IconEmblem.vue'
 import IconHelp from './icons/IconHelp.vue'
 import HelpDialog from './HelpDialog.vue'
-import { nextTick, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const nav = [
@@ -22,16 +22,42 @@ const helpOpen = ref(false)
    page's link in view. */
 const route = useRoute()
 const navEl = ref<HTMLElement | null>(null)
+
+/* One ink line under the nav glides from page to page instead of each
+   link drawing its own: the eye follows where you went. */
+const ink = ref({ x: 0, w: 0, on: false })
+const inkReady = ref(false)
+function placeInk(): void {
+  const active = navEl.value?.querySelector<HTMLElement>('.nav__item--active')
+  if (!active) {
+    ink.value = { ...ink.value, on: false }
+    return
+  }
+  ink.value = { x: active.offsetLeft, w: active.offsetWidth, on: true }
+}
 watch(
   () => route.path,
   () =>
-    nextTick(() =>
+    nextTick(() => {
+      placeInk()
       navEl.value
         ?.querySelector('.nav__item--active')
         ?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
-    ),
+    }),
   { immediate: true }
 )
+let resizer: ResizeObserver | undefined
+onMounted(() => {
+  placeInk()
+  // fonts settle after the first paint: place again, then let it glide
+  void document.fonts?.ready.then(placeInk)
+  requestAnimationFrame(() => (inkReady.value = true))
+  if (typeof ResizeObserver !== 'undefined' && navEl.value) {
+    resizer = new ResizeObserver(placeInk)
+    resizer.observe(navEl.value)
+  }
+})
+onBeforeUnmount(() => resizer?.disconnect())
 </script>
 
 <template>
@@ -52,11 +78,23 @@ watch(
           :exact-active-class="item.to === '/' ? 'nav__item--active' : ''">
           {{ item.label }}
         </router-link>
+        <span
+          class="nav__ink"
+          :class="{ 'nav__ink--ready': inkReady }"
+          :style="{
+            transform: `translateX(${ink.x}px) scaleX(${ink.w / 100})`,
+            opacity: ink.on ? 1 : 0
+          }"
+          aria-hidden="true"></span>
       </nav>
 
       <div class="topbar__right">
-        <button class="help" type="button" aria-haspopup="dialog" @click="helpOpen = true">
-          <IconHelp :size="19" />
+        <button
+          class="helpbtn ev-press"
+          type="button"
+          aria-haspopup="dialog"
+          @click="helpOpen = true">
+          <IconHelp :size="19" class="help__icon" />
           <span>Help</span>
         </button>
         <span class="vr" aria-hidden="true"></span>
@@ -105,6 +143,39 @@ watch(
 }
 .brand__mark {
   color: #3a3122;
+  /* the emblem holds a small ember that glows and dims, like a hearth */
+  animation: brand-glow 4.8s var(--ease-sine) infinite;
+  transition: transform 0.5s var(--ease-spring);
+}
+.brand:hover .brand__mark {
+  transform: rotate(-12deg) scale(1.08);
+}
+@keyframes brand-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgba(220, 122, 60, 0));
+  }
+  50% {
+    filter: drop-shadow(0 0 5px rgba(220, 122, 60, 0.55));
+  }
+}
+.brand__name {
+  background: linear-gradient(100deg, var(--ink) 40%, #b8722f 50%, var(--ink) 60%) 0 0 / 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  background-position: 100% 0;
+}
+.brand:hover .brand__name {
+  animation: brand-sheen 1.1s var(--ease-io);
+}
+@keyframes brand-sheen {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0% 0;
+  }
 }
 .brand__name {
   font-family: var(--font-display);
@@ -115,6 +186,7 @@ watch(
 
 /* nav */
 .nav {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 40px;
@@ -135,6 +207,9 @@ watch(
 .nav__item:hover {
   color: var(--teal-ink);
 }
+.nav__item:active {
+  transform: translateY(1px);
+}
 .nav__item--active {
   color: var(--teal-ink);
 }
@@ -154,7 +229,25 @@ watch(
   transform: scaleX(0.35);
 }
 .nav__item--active::after {
-  transform: scaleX(1);
+  transform: scaleX(0);
+}
+/* the gliding ink: 100px wide, scaled to the active link */
+.nav__ink {
+  position: absolute;
+  left: 0;
+  bottom: 12px;
+  width: 100px;
+  height: 2.5px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--teal-ink), var(--ember));
+  box-shadow: 0 0 8px rgba(220, 122, 60, 0.35);
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+.nav__ink--ready {
+  transition:
+    transform 0.52s var(--ease-settle),
+    opacity 0.3s ease;
 }
 
 /* right cluster */
@@ -164,7 +257,7 @@ watch(
   align-items: center;
   gap: 16px;
 }
-.help {
+.helpbtn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -175,8 +268,14 @@ watch(
   padding: 4px 6px;
   transition: color 0.15s ease;
 }
-.help:hover {
+.helpbtn:hover {
   color: var(--teal-ink);
+}
+.help__icon {
+  transition: transform 0.45s var(--ease-spring);
+}
+.helpbtn:hover .help__icon {
+  transform: rotate(-14deg) scale(1.1);
 }
 .vr {
   width: 1px;
@@ -203,6 +302,16 @@ watch(
   box-shadow:
     0 0 0 2px #fdf9ee,
     0 1px 3px rgba(96, 74, 40, 0.3);
+  transition:
+    transform 0.35s var(--ease-settle),
+    box-shadow 0.25s ease;
+}
+.profile:hover .profile__avatar {
+  transform: scale(1.07);
+  box-shadow:
+    0 0 0 2px #fdf9ee,
+    0 0 0 4px rgba(220, 122, 60, 0.35),
+    0 2px 6px rgba(96, 74, 40, 0.3);
 }
 .profile__name {
   font-family: var(--font-ui);
@@ -246,7 +355,7 @@ watch(
   .nav__item {
     font-size: 16.5px;
   }
-  .help span,
+  .helpbtn span,
   .profile__name,
   .profile__chev,
   .vr {

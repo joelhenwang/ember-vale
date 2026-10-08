@@ -13,6 +13,8 @@ const props = defineProps<{ src: string; frame?: Frame | null; alt?: string }>()
 const box = ref<HTMLElement | null>(null)
 const boxRatio = ref<number | null>(null)
 const natural = ref<Size | null>(null)
+/* the picture fades in once it has arrived, never popping in half-drawn */
+const shown = ref(false)
 let observer: ResizeObserver | null = null
 
 onMounted(() => {
@@ -26,6 +28,7 @@ onMounted(() => {
 onBeforeUnmount(() => observer?.disconnect())
 
 function loaded(event: Event): void {
+  shown.value = true
   const img = event.target as HTMLImageElement
   if (img.naturalWidth && img.naturalHeight) {
     natural.value = { width: img.naturalWidth, height: img.naturalHeight }
@@ -44,8 +47,25 @@ const style = computed(() => {
 
 <template>
   <span ref="box" class="framed">
-    <img v-if="style" :src="src" :alt="alt ?? ''" :style="style" draggable="false" @load="loaded" />
-    <img v-else class="framed__cover" :src="src" :alt="alt ?? ''" draggable="false" />
+    <img
+      v-if="style"
+      class="ev-img-fade"
+      :class="{ 'is-loaded': shown }"
+      :src="src"
+      :alt="alt ?? ''"
+      :style="style"
+      draggable="false"
+      @load="loaded"
+      @error="shown = true" />
+    <img
+      v-else
+      class="framed__cover ev-img-fade"
+      :class="{ 'is-loaded': shown }"
+      :src="src"
+      :alt="alt ?? ''"
+      draggable="false"
+      @load="shown = true"
+      @error="shown = true" />
   </span>
 </template>
 

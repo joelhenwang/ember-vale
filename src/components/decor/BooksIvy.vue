@@ -2,7 +2,7 @@
   <!-- a small stack of worn books with ivy, for the inspiration rail -->
   <svg class="ivy" viewBox="0 0 150 96" aria-hidden="true" focusable="false">
     <!-- ivy behind -->
-    <g fill="#7c9360" opacity=".85">
+    <g class="ivy__sway" fill="#7c9360" opacity=".85">
       <path
         d="M96 12c14-9 30-8 44 2-13 9-30 9-44-2Z"
         transform="translate(-8 4) rotate(14 100 16)" />
@@ -15,7 +15,7 @@
       stroke-width="1.6"
       stroke-linecap="round"
       opacity=".7" />
-    <g fill="#6f875a" opacity=".9">
+    <g class="ivy__sway ivy__sway--2" fill="#6f875a" opacity=".9">
       <path d="M122 10c4-4 10-4 13 0-4 4-10 5-13 0Z" />
       <path d="M108 18c4-4 10-4 13 0-4 4-10 4-13 0Z" transform="rotate(20 114 18)" />
       <path d="M92 32c4-4 10-4 13 0-4 4-10 4-13 0Z" transform="rotate(-30 98 32)" />
@@ -69,7 +69,7 @@
     </g>
     <!-- tiny flower -->
     <g transform="translate(122 44)">
-      <g fill="#fbf4e4" stroke="#c9ac7c" stroke-width=".7">
+      <g class="ivy__flower" fill="#fbf4e4" stroke="#c9ac7c" stroke-width=".7">
         <ellipse rx="2" ry="3.4" cy="-3.4" />
         <ellipse rx="2" ry="3.4" cy="-3.4" transform="rotate(72)" />
         <ellipse rx="2" ry="3.4" cy="-3.4" transform="rotate(144)" />
@@ -84,5 +84,33 @@
 <style scoped>
 .ivy {
   filter: drop-shadow(0 6px 6px rgba(120, 92, 48, 0.16));
+}
+/* the ivy stirs in a draught; the little flower turns */
+.ivy__sway {
+  transform-box: fill-box;
+  transform-origin: 100% 0%;
+  animation: ivy-sway 6s var(--ease-sine) infinite alternate;
+}
+.ivy__sway--2 {
+  animation-duration: 7.5s;
+  animation-delay: -2s;
+}
+.ivy__flower {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: ivy-turn 30s linear infinite;
+}
+@keyframes ivy-sway {
+  from {
+    transform: rotate(-2.5deg);
+  }
+  to {
+    transform: rotate(3deg);
+  }
+}
+@keyframes ivy-turn {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

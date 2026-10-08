@@ -44,7 +44,13 @@ const model = defineModel<boolean>({ required: true })
   background: #d8ccb0;
   border: 1px solid #c6b48e;
   position: relative;
-  transition: background 0.16s ease;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.tsw:hover:not(.tsw--off) .tsw__track {
+  border-color: #b39d6e;
 }
 .tsw__thumb {
   position: absolute;
@@ -55,11 +61,21 @@ const model = defineModel<boolean>({ required: true })
   border-radius: 50%;
   background: #fffaf0;
   box-shadow: 0 1px 2px rgba(46, 39, 24, 0.3);
-  transition: transform 0.16s ease;
+  transform-origin: 50% 50%;
+  /* the thumb springs across and squashes a little while held */
+  transition: transform 0.42s var(--ease-spring);
+}
+.tsw:active:not(.tsw--off) .tsw__thumb {
+  transform: scaleX(1.18);
+  transition-duration: 0.12s;
+}
+.tsw:active:not(.tsw--off) .tsw__input:checked + .tsw__track .tsw__thumb {
+  transform: translateX(19px) scaleX(1.18);
 }
 .tsw__input:checked + .tsw__track {
   background: linear-gradient(180deg, #256e67, #14535a);
   border-color: #14535a;
+  box-shadow: 0 0 0 3px rgba(46, 122, 108, 0.12);
 }
 .tsw__input:checked + .tsw__track .tsw__thumb {
   transform: translateX(19px);

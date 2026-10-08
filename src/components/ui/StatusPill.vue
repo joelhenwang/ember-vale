@@ -8,7 +8,7 @@ defineProps<{ tone: 'ok' | 'warn' | 'info' | 'fail'; label: string }>()
 
 <template>
   <span class="spill" :class="`spill--${tone}`">
-    <span class="spill__dot" aria-hidden="true"></span>{{ label }}
+    <span :key="tone" class="spill__dot" aria-hidden="true"></span>{{ label }}
   </span>
 </template>
 
@@ -26,12 +26,18 @@ defineProps<{ tone: 'ok' | 'warn' | 'info' | 'fail'; label: string }>()
   height: 9px;
   border-radius: 50%;
   flex: none;
+  /* a new state pops in, so the change is seen */
+  animation: ev-pop-in 0.4s var(--ease-spring) both;
 }
 .spill--ok {
   color: #2e7d43;
 }
 .spill--ok .spill__dot {
   background: #2e7d43;
+  --ev-breathe-color: rgba(46, 125, 67, 0.4);
+  animation:
+    ev-pop-in 0.4s var(--ease-spring) both,
+    ev-breathe 2.6s var(--ease-sine) 0.4s infinite;
 }
 .spill--warn {
   color: #a8762a;
@@ -44,7 +50,9 @@ defineProps<{ tone: 'ok' | 'warn' | 'info' | 'fail'; label: string }>()
 }
 .spill--info .spill__dot {
   background: var(--teal-ink);
-  animation: spill-pulse 0.9s ease-in-out infinite alternate;
+  animation:
+    ev-pop-in 0.4s var(--ease-spring) both,
+    spill-pulse 0.9s ease-in-out 0.4s infinite alternate;
 }
 .spill--fail {
   color: #a84a2e;

@@ -44,6 +44,7 @@ import { NEW_CONNECTION, useProviderSettings } from '../composables/useProviderS
 import { useImageSettings } from '../composables/useImageSettings'
 import ImageSettingsPanel from '../components/settings/ImageSettingsPanel.vue'
 import MotionSettings from '../components/settings/MotionSettings.vue'
+import { burst, shake, vRipple } from '../composables/useEffects'
 
 /* sections ------------------------------------------------------------- */
 const sections = [
@@ -131,9 +132,12 @@ function testedAt(iso: string | undefined): string {
 /* save bar ---------------------------------------------------------------- */
 const savedFlash = ref(false)
 let flashTimer: ReturnType<typeof setTimeout> | undefined
-async function save(): Promise<void> {
+async function save(event: MouseEvent): Promise<void> {
+  const button = event.currentTarget as HTMLElement | null
   const ok = active.value === 'images' ? await img.save() : await s.save()
+  if (!ok) shake(button)
   if (ok) {
+    burst(button, { count: 12, spread: 60 })
     savedFlash.value = true
     clearTimeout(flashTimer)
     flashTimer = setTimeout(() => (savedFlash.value = false), 1400)
@@ -231,10 +235,15 @@ onBeforeUnmount(() => clearTimeout(flashTimer))
                   <template #after>
                     <div class="testcol">
                       <button
+                        v-ripple
                         type="button"
                         class="testbtn"
                         :disabled="!s.canTest.value"
                         @click="s.test()">
+                        <span
+                          v-if="s.testing.value"
+                          class="testbtn__spin ev-progress-spin"
+                          aria-hidden="true"></span>
                         {{ s.testing.value ? 'Testing…' : 'Test connection' }}
                       </button>
                       <p v-if="s.dirty.value || !s.connection.value" class="testcol__note">
@@ -242,7 +251,8 @@ onBeforeUnmount(() => clearTimeout(flashTimer))
                       </p>
                       <template v-else-if="s.lastTest.value">
                         <p
-                          class="testcol__note"
+                          :key="s.lastTest.value.tested_at"
+                          class="testcol__note testcol__note--fresh"
                           :class="{ 'testcol__note--ok': s.lastTest.value.reachable }">
                           <IconCheck v-if="s.lastTest.value.reachable" :size="10" />
                           {{ s.lastTest.value.detail }} · {{ testedAt(s.lastTest.value.tested_at) }}
@@ -359,38 +369,40 @@ onBeforeUnmount(() => clearTimeout(flashTimer))
       </div>
     </div>
 
-    <SaveBar
-      v-if="active === 'ai-connections'"
-      :dirty="s.dirty.value"
-      :saved="savedFlash"
-      secondary-label="Discard"
-      @secondary="s.discard()">
-      <template #end>
-        <button
-          type="button"
-          class="cta cta--foot"
-          :disabled="!s.dirty.value || !s.valid.value || s.saving.value"
-          @click="save">
-          {{ s.saving.value ? 'Saving…' : 'Save connection' }}
-        </button>
-      </template>
-    </SaveBar>
-    <SaveBar
-      v-else-if="active === 'images'"
-      :dirty="img.dirty.value"
-      :saved="savedFlash"
-      secondary-label="Discard"
-      @secondary="img.discard()">
-      <template #end>
-        <button
-          type="button"
-          class="cta cta--foot"
-          :disabled="!img.dirty.value || !img.valid.value || img.saving.value"
-          @click="save">
-          {{ img.saving.value ? 'Saving…' : 'Save image settings' }}
-        </button>
-      </template>
-    </SaveBar>
+    <Transition name="ev-sheet" mode="out-in">
+      <SaveBar
+        v-if="active === 'ai-connections'"
+        :dirty="s.dirty.value"
+        :saved="savedFlash"
+        secondary-label="Discard"
+        @secondary="s.discard()">
+        <template #end>
+          <button
+            type="button"
+            class="cta cta--foot"
+            :disabled="!s.dirty.value || !s.valid.value || s.saving.value"
+            @click="save">
+            {{ s.saving.value ? 'Saving…' : 'Save connection' }}
+          </button>
+        </template>
+      </SaveBar>
+      <SaveBar
+        v-else-if="active === 'images'"
+        :dirty="img.dirty.value"
+        :saved="savedFlash"
+        secondary-label="Discard"
+        @secondary="img.discard()">
+        <template #end>
+          <button
+            type="button"
+            class="cta cta--foot"
+            :disabled="!img.dirty.value || !img.valid.value || img.saving.value"
+            @click="save">
+            {{ img.saving.value ? 'Saving…' : 'Save image settings' }}
+          </button>
+        </template>
+      </SaveBar>
+    </Transition>
   </main>
 </template>
 
@@ -499,10 +511,42 @@ onBeforeUnmount(() => clearTimeout(flashTimer))
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  transition: background 0.14s ease;
+  transition:
+    background 0.14s ease,
+    transform 0.2s var(--ease-settle),
+    box-shadow 0.2s ease;
 }
 .testbtn:hover:not(:disabled) {
   background: #f1ead6;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px -8px rgba(16, 46, 46, 0.4);
+}
+.testbtn:active:not(:disabled) {
+  transform: scale(0.96);
+  transition-duration: 0.08s;
+}
+.testbtn__spin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(31, 106, 94, 0.25);
+  border-top-color: var(--teal-ink);
+  animation: testbtn-spin 0.8s linear infinite;
+}
+@keyframes testbtn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* a fresh result slides in under the button */
+.testcol__note--fresh {
+  animation: testcol-in 0.45s var(--ease-settle) both;
+}
+@keyframes testcol-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }
 .testbtn:disabled {
   opacity: 0.55;

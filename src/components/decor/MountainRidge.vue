@@ -21,9 +21,17 @@
       </g>
     </g>
     <!-- birds -->
-    <g fill="none" stroke="#a08a63" stroke-width="1.4" stroke-linecap="round" opacity=".8">
-      <path d="M148 66q4-4.5 8 0q4-4.5 8 0" transform="translate(0 -2)" />
-      <path d="M176 55q3-3.4 6 0q3-3.4 6 0" />
+    <g
+      class="ridge__birds"
+      fill="none"
+      stroke="#a08a63"
+      stroke-width="1.4"
+      stroke-linecap="round"
+      opacity=".8">
+      <g transform="translate(0 -2)">
+        <path class="ridge__bird" d="M148 66q4-4.5 8 0q4-4.5 8 0" />
+      </g>
+      <path class="ridge__bird ridge__bird--2" d="M176 55q3-3.4 6 0q3-3.4 6 0" />
     </g>
   </svg>
 </template>
@@ -47,5 +55,36 @@ const pines: Array<[number, number, number]> = [
   width: 100%;
   height: 100%;
   display: block;
+}
+/* two birds glide along the horizon, wings beating now and then */
+.ridge__birds {
+  animation: ridge-glide 14s var(--ease-sine) infinite alternate;
+}
+.ridge__bird {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: ridge-flap 1.6s var(--ease-io) infinite;
+}
+.ridge__bird--2 {
+  animation-duration: 1.9s;
+  animation-delay: -0.7s;
+}
+@keyframes ridge-glide {
+  from {
+    transform: translate(-14px, 3px);
+  }
+  to {
+    transform: translate(26px, -4px);
+  }
+}
+@keyframes ridge-flap {
+  0%,
+  60%,
+  100% {
+    transform: scaleY(1);
+  }
+  75% {
+    transform: scaleY(-0.5);
+  }
 }
 </style>

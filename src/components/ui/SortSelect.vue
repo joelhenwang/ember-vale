@@ -64,5 +64,12 @@ const model = defineModel<string>({ required: true })
   right: 10px;
   color: #6c5f45;
   pointer-events: none;
+  transition:
+    transform 0.3s var(--ease-settle),
+    color 0.2s ease;
+}
+.ss__field:hover .ss__chev {
+  color: var(--teal-ink);
+  transform: translateY(2px);
 }
 </style>

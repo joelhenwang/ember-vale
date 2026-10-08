@@ -61,8 +61,8 @@
         opacity=".9" />
     </g>
 
-    <!-- quill -->
-    <g>
+    <!-- quill: it writes a few strokes, rests, writes again -->
+    <g class="desk__quill">
       <path
         d="M151 74C139 46 131 33 140 17c13 11 20 26 22 42 .6 7-2.6 12.6-11 15Z"
         fill="#33454f" />
@@ -125,7 +125,7 @@
     </g>
 
     <!-- tiny sprite by the scroll -->
-    <g>
+    <g class="desk__sprite">
       <path d="M22 96c4.5-6 9.5-6 13.5 0-4.5 5.5-9.5 5.5-13.5 0Z" fill="#dfe9c4" opacity=".9" />
       <path d="M27 102l4.5 8-9-2Z" fill="#2f5f59" />
       <circle cx="27" cy="99" r="4" fill="#e2b685" />
@@ -145,5 +145,31 @@
 <style scoped>
 .desk {
   filter: drop-shadow(0 10px 10px rgba(120, 92, 48, 0.18));
+}
+.desk__quill {
+  transform-origin: 143px 86px;
+  animation: desk-write 5s var(--ease-io) infinite;
+}
+.desk__sprite {
+  animation: ev-float 3.8s var(--ease-sine) infinite;
+}
+@keyframes desk-write {
+  0%,
+  45%,
+  100% {
+    transform: rotate(0deg);
+  }
+  52% {
+    transform: rotate(-4deg) translateX(-1px);
+  }
+  59% {
+    transform: rotate(2deg) translateX(1px);
+  }
+  66% {
+    transform: rotate(-3deg);
+  }
+  73% {
+    transform: rotate(1deg) translateX(2px);
+  }
 }
 </style>

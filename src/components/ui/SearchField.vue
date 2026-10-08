@@ -37,6 +37,14 @@ const model = defineModel<string>({ default: '' })
 .sf__icon {
   color: #9a8a6b;
   flex: none;
+  transition:
+    transform 0.4s var(--ease-spring),
+    color 0.2s ease;
+}
+/* the glass leans in as you start searching */
+.sf:focus-within .sf__icon {
+  color: var(--teal-ink);
+  transform: scale(1.15) rotate(-12deg);
 }
 .sf input {
   flex: 1;

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, type Component } from 'vue'
 import IconArrowRight from './icons/IconArrowRight.vue'
+import { vRipple } from '../composables/useEffects'
 
 const props = withDefaults(
   defineProps<{
@@ -18,7 +19,7 @@ const arrowSize = computed(() => (props.arrow === 'circle' ? (props.size === 'sm
 </script>
 
 <template>
-  <button class="mb" :class="[`mb--${variant}`, `mb--${size}`]" type="button">
+  <button v-ripple class="mb" :class="[`mb--${variant}`, `mb--${size}`]" type="button">
     <span v-if="$slots.icon || icon" class="mb__icon">
       <slot name="icon"><component :is="icon" :size="size === 'sm' ? 16 : 19" /></slot>
     </span>
@@ -61,7 +62,8 @@ const arrowSize = computed(() => (props.arrow === 'circle' ? (props.size === 'sm
   transform: translateY(-1px);
 }
 .mb:active:not(:disabled) {
-  transform: translateY(1px);
+  transform: translateY(1px) scale(0.985);
+  transition-duration: 0.08s;
 }
 .mb:disabled {
   cursor: not-allowed;
@@ -73,6 +75,10 @@ const arrowSize = computed(() => (props.arrow === 'circle' ? (props.size === 'sm
   display: inline-flex;
   align-items: center;
   flex: none;
+  transition: transform 0.45s var(--ease-spring);
+}
+.mb:hover:not(:disabled) .mb__icon {
+  transform: scale(1.12) rotate(-6deg);
 }
 .mb__label {
   flex: 1;
@@ -145,7 +151,7 @@ const arrowSize = computed(() => (props.arrow === 'circle' ? (props.size === 'sm
 .mb--teal::before {
   content: '';
   position: absolute;
-  inset: -2px auto -2px -60%;
+  inset: -2px auto -2px 0;
   width: 45%;
   z-index: -1;
   background: linear-gradient(
@@ -155,11 +161,11 @@ const arrowSize = computed(() => (props.arrow === 'circle' ? (props.size === 'sm
     rgba(255, 236, 196, 0.32) 50%,
     transparent
   );
-  transform: skewX(-18deg);
-  transition: left 0.6s var(--ease-out);
+  transform: translateX(-140%) skewX(-18deg);
+  transition: transform 0.7s var(--ease-out);
 }
 .mb--teal:hover:not(:disabled)::before {
-  left: 120%;
+  transform: translateX(290%) skewX(-18deg);
 }
 .mb--teal:hover:not(:disabled) {
   filter: brightness(1.06);

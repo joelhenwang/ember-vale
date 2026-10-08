@@ -56,11 +56,11 @@ onBeforeUnmount(close)
       aria-haspopup="menu"
       :aria-expanded="open"
       @click="toggle">
-      <IconEllipsis :size="15" />
+      <IconEllipsis :size="15" class="cmenu__ell" />
     </button>
     <Transition name="cmenu">
       <ul v-if="open" class="cmenu__list" role="menu">
-        <li v-for="item in items" :key="item.key">
+        <li v-for="(item, i) in items" :key="item.key" :style="{ '--i': i }">
           <button
             type="button"
             role="menuitem"
@@ -94,6 +94,15 @@ onBeforeUnmount(close)
     border-color 0.14s ease,
     color 0.14s ease,
     background-color 0.14s ease;
+}
+.cmenu__ell {
+  transition: transform 0.4s var(--ease-spring);
+}
+.cmenu__dots--open .cmenu__ell {
+  transform: rotate(90deg);
+}
+.cmenu__dots:active {
+  transform: scale(0.92);
 }
 .cmenu__dots:hover,
 .cmenu__dots--open {
@@ -155,7 +164,23 @@ onBeforeUnmount(close)
 .cmenu-enter-active {
   transition:
     opacity 0.16s ease,
-    transform 0.22s var(--ease-spring);
+    transform 0.32s var(--ease-settle);
+}
+/* the choices slide in one after another */
+.cmenu-enter-active li {
+  animation: cmenu-item 0.32s var(--ease-settle) calc(0.03s * var(--i)) both;
+}
+@keyframes cmenu-item {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+}
+.cmenu__list button svg {
+  transition: transform 0.3s var(--ease-spring);
+}
+.cmenu__list button:hover svg {
+  transform: scale(1.15);
 }
 .cmenu-leave-active {
   transition:

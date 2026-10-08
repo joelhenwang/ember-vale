@@ -5,9 +5,9 @@ import MountainRidge from '../components/decor/MountainRidge.vue'
 
 <template>
   <main class="stub">
-    <section class="stub__card ev-card">
+    <section class="stub__card ev-card ev-rise">
       <MountainRidge class="stub__ridge" />
-      <IconEmblem :size="34" class="stub__mark" />
+      <IconEmblem :size="34" class="stub__mark ev-float" />
       <h1 class="stub__title">This chapter is still being written.</h1>
       <p class="stub__copy">
         The narrator hasn't reached this page yet. Wander back to the common room while the ink

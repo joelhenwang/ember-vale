@@ -33,11 +33,31 @@ defineProps<{ title: string; sub?: string }>()
   color: var(--gold);
   flex: none;
   margin-top: 2px;
+  /* the seal turns into place, then glows softly like the brand mark */
+  animation:
+    intro-seal 0.9s var(--ease-settle) both,
+    intro-glow 5s var(--ease-sine) 0.9s infinite;
+}
+@keyframes intro-seal {
+  from {
+    opacity: 0;
+    transform: rotate(-120deg) scale(0.5);
+  }
+}
+@keyframes intro-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgba(220, 122, 60, 0));
+  }
+  50% {
+    filter: drop-shadow(0 0 6px rgba(220, 122, 60, 0.45));
+  }
 }
 .intro__text {
   min-width: 0;
 }
 .intro__title {
+  animation: intro-title 0.8s var(--ease-settle) 0.08s both;
   font-family: var(--font-display);
   font-size: 37px;
   font-weight: 600;
@@ -45,11 +65,19 @@ defineProps<{ title: string; sub?: string }>()
   color: var(--ink);
 }
 .intro__sub {
+  animation: ev-fade 0.6s var(--ease-out) 0.3s both;
   margin-top: 3px;
   font-size: 15.5px;
   color: #55482f;
 }
+@keyframes intro-title {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+}
 .intro__actions {
+  animation: ev-fade 0.5s var(--ease-out) 0.35s both;
   margin-left: auto;
   align-self: center;
   flex: none;

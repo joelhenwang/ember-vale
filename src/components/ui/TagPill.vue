@@ -22,6 +22,7 @@ withDefaults(defineProps<{ tag: Tag; small?: boolean }>(), { small: false })
   letter-spacing: 0.01em;
   border: 1px solid;
   white-space: nowrap;
+  animation: ev-pop-in 0.35s var(--ease-settle) both;
 }
 .tp--sm {
   height: 19px;

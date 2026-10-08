@@ -35,13 +35,15 @@ function onInput(event: Event): void {
     <output class="strength__value" :class="{ 'strength__value--default': model === 1 }">
       {{ text }}
     </output>
-    <button
-      v-if="model !== 1 && !disabled"
-      type="button"
-      class="strength__reset"
-      @click="model = 1">
-      Reset
-    </button>
+    <Transition name="ev-pop">
+      <button
+        v-if="model !== 1 && !disabled"
+        type="button"
+        class="strength__reset"
+        @click="model = 1">
+        Reset
+      </button>
+    </Transition>
   </div>
 </template>
 
@@ -75,6 +77,18 @@ function onInput(event: Event): void {
   background: #fffaf0;
   border: 2px solid var(--teal);
   box-shadow: 0 1px 3px rgba(46, 39, 24, 0.3);
+  transition:
+    transform 0.3s var(--ease-spring),
+    box-shadow 0.2s ease;
+}
+.strength__range:not(:disabled):hover::-webkit-slider-thumb {
+  transform: scale(1.15);
+  box-shadow:
+    0 1px 3px rgba(46, 39, 24, 0.3),
+    0 0 0 5px rgba(46, 122, 108, 0.14);
+}
+.strength__range:not(:disabled):active::-webkit-slider-thumb {
+  transform: scale(1.28);
 }
 .strength__range::-moz-range-thumb {
   width: 18px;

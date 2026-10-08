@@ -9,6 +9,7 @@ import { useRouter } from 'vue-router'
 import { createDraft, createPreset, createStory, listPresets } from '../api/worldsim'
 import { checkHero, heroDraft, heroPreset, type PresetRef } from '../game/quickHero'
 import { storyLocation } from '../game/storyRoute'
+import { burst, shake, vRipple } from '../composables/useEffects'
 
 defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
@@ -23,12 +24,15 @@ const problem = ref<string | null>(null)
 const key = `hero-${Math.random().toString(36).slice(2, 10)}`
 
 const step = ref<string>('')
+const card = ref<HTMLElement | null>(null)
+const go = ref<HTMLButtonElement | null>(null)
 const canStart = computed(() => name.value.trim().length > 0 && !busy.value)
 
 async function begin(): Promise<void> {
   const checked = checkHero({ name: name.value, about: about.value, pronouns: pronouns.value })
   if ('problem' in checked) {
     problem.value = checked.problem
+    shake(card.value)
     return
   }
   busy.value = true
@@ -66,10 +70,13 @@ async function begin(): Promise<void> {
     )
     step.value = 'Opening the story…'
     const story = await createStory(draft.id, draft.version, `${key}-story`)
+    // the hero is real: sparks fly from Begin as the story opens
+    burst(go.value, { count: 22, spread: 110 })
     emit('close')
     await router.push(storyLocation(story.world_id, 'player'))
   } catch (err) {
     problem.value = err instanceof Error ? err.message : 'The story could not begin. Try again.'
+    shake(card.value)
   } finally {
     busy.value = false
     step.value = ''
@@ -78,54 +85,60 @@ async function begin(): Promise<void> {
 </script>
 
 <template>
-  <div
-    v-if="open"
-    class="hero-dlg"
-    role="dialog"
-    aria-modal="true"
-    aria-label="Play as a new hero"
-    @click.self="!busy && emit('close')">
-    <form class="hero-dlg__card" @submit.prevent="begin">
-      <h2>Who are you?</h2>
-      <p class="hero-dlg__lead">
-        Wake in Ember Vale as someone new. Your portrait is painted from your words.
-      </p>
-      <label class="ev-field-label" for="hero-name">Name</label>
-      <input
-        id="hero-name"
-        v-model="name"
-        class="ev-input"
-        maxlength="64"
-        placeholder="Mira, Tobin, Old Sal…"
-        :disabled="busy"
-        autofocus />
-      <label class="ev-field-label" for="hero-about">Who you are</label>
-      <textarea
-        id="hero-about"
-        v-model="about"
-        class="ev-input hero-dlg__about"
-        maxlength="600"
-        rows="3"
-        placeholder="A tinker with soot on her cheek and a satchel of half-mended clocks, looking for her runaway brother."
-        :disabled="busy" />
-      <label class="ev-field-label" for="hero-pronouns">Pronouns (optional)</label>
-      <input
-        id="hero-pronouns"
-        v-model="pronouns"
-        class="ev-input"
-        maxlength="40"
-        placeholder="she/her, he/him, they/them…"
-        :disabled="busy" />
-      <p v-if="problem" class="hero-dlg__problem" role="alert">{{ problem }}</p>
-      <p v-else-if="step" class="hero-dlg__step" role="status">{{ step }}</p>
-      <div class="hero-dlg__buttons">
-        <button type="button" class="hero-dlg__cancel" :disabled="busy" @click="emit('close')">
-          Not now
-        </button>
-        <button type="submit" class="hero-dlg__go" :disabled="!canStart">Begin</button>
-      </div>
-    </form>
-  </div>
+  <Transition name="ev-modal">
+    <div
+      v-if="open"
+      class="hero-dlg"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Play as a new hero"
+      @click.self="!busy && emit('close')">
+      <form ref="card" class="hero-dlg__card" @submit.prevent="begin">
+        <h2>Who are you?</h2>
+        <p class="hero-dlg__lead">
+          Wake in Ember Vale as someone new. Your portrait is painted from your words.
+        </p>
+        <label class="ev-field-label" for="hero-name">Name</label>
+        <input
+          id="hero-name"
+          v-model="name"
+          class="ev-input"
+          maxlength="64"
+          placeholder="Mira, Tobin, Old Sal…"
+          :disabled="busy"
+          autofocus />
+        <label class="ev-field-label" for="hero-about">Who you are</label>
+        <textarea
+          id="hero-about"
+          v-model="about"
+          class="ev-input hero-dlg__about"
+          maxlength="600"
+          rows="3"
+          placeholder="A tinker with soot on her cheek and a satchel of half-mended clocks, looking for her runaway brother."
+          :disabled="busy" />
+        <label class="ev-field-label" for="hero-pronouns">Pronouns (optional)</label>
+        <input
+          id="hero-pronouns"
+          v-model="pronouns"
+          class="ev-input"
+          maxlength="40"
+          placeholder="she/her, he/him, they/them…"
+          :disabled="busy" />
+        <Transition name="ev-swap" mode="out-in">
+          <p v-if="problem" key="problem" class="hero-dlg__problem" role="alert">{{ problem }}</p>
+          <p v-else-if="step" :key="step" class="hero-dlg__step" role="status">{{ step }}</p>
+        </Transition>
+        <div class="hero-dlg__buttons">
+          <button type="button" class="hero-dlg__cancel" :disabled="busy" @click="emit('close')">
+            Not now
+          </button>
+          <button ref="go" v-ripple type="submit" class="hero-dlg__go" :disabled="!canStart">
+            Begin
+          </button>
+        </div>
+      </form>
+    </div>
+  </Transition>
 </template>
 
 <style scoped>
@@ -188,5 +201,26 @@ async function begin(): Promise<void> {
 .hero-dlg__go:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+.hero-dlg__go {
+  transition:
+    transform 0.22s var(--ease-settle),
+    box-shadow 0.22s ease,
+    filter 0.14s ease;
+}
+.hero-dlg__go:hover:not(:disabled) {
+  filter: brightness(1.07);
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 3px var(--ember-glow);
+}
+.hero-dlg__go:active:not(:disabled) {
+  transform: scale(0.96);
+  transition-duration: 0.08s;
+}
+.hero-dlg__cancel {
+  transition: color 0.15s ease;
+}
+.hero-dlg__cancel:hover:not(:disabled) {
+  color: var(--teal-ink);
 }
 </style>

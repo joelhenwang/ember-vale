@@ -13,71 +13,74 @@ onUnmounted(() => document.removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <div
-    v-if="open"
-    class="help"
-    role="dialog"
-    aria-modal="true"
-    aria-label="How to play"
-    @click.self="emit('close')">
-    <article class="help__card">
-      <header class="help__head">
-        <h2>How to play</h2>
-        <button type="button" class="help__close" @click="emit('close')">Close</button>
-      </header>
-      <p class="help__lead">
-        Ember Vale is a living story. You play one person in it; everyone else lives their own
-        lives, and every turn the whole vale moves on.
-      </p>
-      <dl class="help__list">
-        <div>
-          <dt>Do</dt>
-          <dd>
-            Type anything your character tries —
-            <i>search the stalls, mend the cart, follow the stranger</i>. The world judges whether
-            it works. Heading somewhere by name (<i>walk to the market</i>) takes you there.
-          </dd>
-        </div>
-        <div>
-          <dt>Say</dt>
-          <dd>
-            Speak to someone here, word for word. Click a face in the scene to choose who hears you.
-          </dd>
-        </div>
-        <div>
-          <dt>Chips</dt>
-          <dd>
-            One-click moves: go somewhere, look around, pick something up, rest — and leads drawn
-            from what you have heard.
-          </dd>
-        </div>
-        <div>
-          <dt>Rumours</dt>
-          <dd>
-            <i>Word around the vale</i> lists openings worth chasing. When one is dealt with, it is
-            settled and remembered with how it ended.
-          </dd>
-        </div>
-        <div>
-          <dt>Renown</dt>
-          <dd>
-            New places, new faces, deeds that succeed and rumours settled all earn renown — and the
-            vale starts to know your name.
-          </dd>
-        </div>
-        <div>
-          <dt>Watching</dt>
-          <dd>
-            Rather watch than play? Start a story as an observer and open the world map: the cast
-            acts on its own while you watch, step by step or on autoplay.
-          </dd>
-        </div>
-      </dl>
-      <p class="help__foot">
-        Press <kbd>Enter</kbd> to act, <kbd>Shift</kbd>+<kbd>Enter</kbd> for a new line.
-      </p>
-    </article>
-  </div>
+  <Transition name="ev-modal">
+    <div
+      v-if="open"
+      class="help"
+      role="dialog"
+      aria-modal="true"
+      aria-label="How to play"
+      @click.self="emit('close')">
+      <article class="help__card">
+        <header class="help__head">
+          <h2>How to play</h2>
+          <button type="button" class="help__close" @click="emit('close')">Close</button>
+        </header>
+        <p class="help__lead">
+          Ember Vale is a living story. You play one person in it; everyone else lives their own
+          lives, and every turn the whole vale moves on.
+        </p>
+        <dl class="help__list ev-rise">
+          <div>
+            <dt>Do</dt>
+            <dd>
+              Type anything your character tries —
+              <i>search the stalls, mend the cart, follow the stranger</i>. The world judges whether
+              it works. Heading somewhere by name (<i>walk to the market</i>) takes you there.
+            </dd>
+          </div>
+          <div>
+            <dt>Say</dt>
+            <dd>
+              Speak to someone here, word for word. Click a face in the scene to choose who hears
+              you.
+            </dd>
+          </div>
+          <div>
+            <dt>Chips</dt>
+            <dd>
+              One-click moves: go somewhere, look around, pick something up, rest — and leads drawn
+              from what you have heard.
+            </dd>
+          </div>
+          <div>
+            <dt>Rumours</dt>
+            <dd>
+              <i>Word around the vale</i> lists openings worth chasing. When one is dealt with, it
+              is settled and remembered with how it ended.
+            </dd>
+          </div>
+          <div>
+            <dt>Renown</dt>
+            <dd>
+              New places, new faces, deeds that succeed and rumours settled all earn renown — and
+              the vale starts to know your name.
+            </dd>
+          </div>
+          <div>
+            <dt>Watching</dt>
+            <dd>
+              Rather watch than play? Start a story as an observer and open the world map: the cast
+              acts on its own while you watch, step by step or on autoplay.
+            </dd>
+          </div>
+        </dl>
+        <p class="help__foot">
+          Press <kbd>Enter</kbd> to act, <kbd>Shift</kbd>+<kbd>Enter</kbd> for a new line.
+        </p>
+      </article>
+    </div>
+  </Transition>
 </template>
 
 <style scoped>

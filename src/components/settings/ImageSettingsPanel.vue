@@ -18,6 +18,7 @@ import IconRefresh from '../icons/IconRefresh.vue'
 import IconSparkle from '../icons/IconSparkle.vue'
 import IconInfo from '../icons/IconInfo.vue'
 import IconClock from '../icons/IconClock.vue'
+import { burst, flash, vRipple } from '../../composables/useEffects'
 import {
   IMAGE_RATIOS,
   IMAGE_STEPS,
@@ -135,8 +136,10 @@ const seedText = computed({
   get: () => String(form.value.seed),
   set: (v: string) => (form.value.seed = v.trim() === '' ? Number.NaN : Number(v))
 })
+const seedInput = ref<HTMLElement | null>(null)
 function rollSeed(): void {
   form.value.seed = Math.floor(Math.random() * MAX_SEED)
+  flash(seedInput.value)
 }
 
 /* try it -------------------------------------------------------------------- */
@@ -168,6 +171,14 @@ watch(
   }
 )
 onBeforeUnmount(() => clearInterval(timer))
+// new previews arrive with a small flourish from the Paint button
+const goBtn = ref<HTMLElement | null>(null)
+watch(
+  () => s.previews.value.length,
+  (now, before) => {
+    if (now > 0 && now !== before) burst(goBtn.value, { count: 12, spread: 60 })
+  }
+)
 const progress = computed(() => Math.min(0.95, elapsed.value / Math.max(1, expected.value)))
 </script>
 
@@ -188,7 +199,9 @@ const progress = computed(() => Math.min(0.95, elapsed.value / Math.max(1, expec
           title="Check again"
           aria-label="Check the image machine again"
           @click="s.refreshService()">
-          <IconRefresh :size="16" :class="{ spin: s.checking.value }" />
+          <IconRefresh
+            :size="16"
+            :class="{ spin: s.checking.value, 'ev-progress-spin': s.checking.value }" />
         </button>
       </header>
       <p class="card__caption">
@@ -368,6 +381,7 @@ const progress = computed(() => Math.min(0.95, elapsed.value / Math.max(1, expec
           <span class="field__label">Seed number</span>
           <span class="seedrow">
             <input
+              ref="seedInput"
               v-model="seedText"
               class="ev-input"
               inputmode="numeric"
@@ -410,6 +424,8 @@ const progress = computed(() => Math.min(0.95, elapsed.value / Math.max(1, expec
           <ChipGroup v-model="previewCount" :options="countChips" />
         </div>
         <button
+          ref="goBtn"
+          v-ripple
           type="button"
           class="cta tryrow__go"
           :disabled="!s.canPreview.value"
@@ -424,16 +440,22 @@ const progress = computed(() => Math.min(0.95, elapsed.value / Math.max(1, expec
         }}.
       </p>
 
-      <div v-if="s.previewing.value" class="painting" role="status">
-        <div class="painting__bar"><span :style="{ width: `${progress * 100}%` }"></span></div>
-        <span>Painting… {{ elapsed }} s</span>
-      </div>
+      <Transition name="ev-rise">
+        <div v-if="s.previewing.value" class="painting" role="status">
+          <div class="painting__bar"><span :style="{ width: `${progress * 100}%` }"></span></div>
+          <span>Painting… {{ elapsed }} s</span>
+        </div>
+      </Transition>
       <p v-if="s.previewError.value" class="imgset__alert" role="alert">
         {{ s.previewError.value }}
       </p>
 
       <div v-if="s.previews.value.length" class="results">
-        <figure v-for="(img, i) in s.previews.value" :key="i" class="result">
+        <figure
+          v-for="(img, i) in s.previews.value"
+          :key="img.data_url.slice(-24) + i"
+          class="result"
+          :style="{ animationDelay: `${i * 0.08}s` }">
           <img :src="img.data_url" :alt="`Preview ${i + 1}`" />
           <figcaption>
             seed {{ img.seed ?? '—' }} · {{ img.width }}×{{ img.height }}
@@ -589,6 +611,7 @@ const progress = computed(() => Math.min(0.95, elapsed.value / Math.max(1, expec
 .spin {
   animation: spin 0.9s linear infinite;
 }
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -651,10 +674,37 @@ const progress = computed(() => Math.min(0.95, elapsed.value / Math.max(1, expec
   overflow: hidden;
 }
 .painting__bar span {
+  position: relative;
   display: block;
   height: 100%;
+  overflow: hidden;
   background: linear-gradient(90deg, #256e67, #3f9184);
   transition: width 1s linear;
+}
+/* light runs along the bar while the machine works */
+.painting__bar span::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 244, 214, 0.45), transparent);
+  transform: translateX(-100%);
+  animation: painting-run 1.4s var(--ease-io) infinite;
+}
+@keyframes painting-run {
+  to {
+    transform: translateX(100%);
+  }
+}
+/* a finished picture develops: sharpening out of a warm blur */
+.result {
+  animation: result-develop 0.9s var(--ease-settle) both;
+}
+@keyframes result-develop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+    filter: blur(8px) sepia(0.5);
+  }
 }
 .results {
   display: grid;
