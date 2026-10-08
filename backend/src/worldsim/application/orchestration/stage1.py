@@ -1378,7 +1378,12 @@ class Stage1Orchestrator:
                 grant_role=admitted_role,
                 timings=timings,
             )
-        except BaseException:
+        except BaseException as exc:
+            # Cancelled (the caller went away): stop the director too, or
+            # this await waits on a model call nobody is listening for.
+            # asyncio delivers a cancel once; under anyio it used to repeat.
+            if isinstance(exc, asyncio.CancelledError):
+                director.cancel()
             with contextlib.suppress(BaseException):
                 await director
             raise
