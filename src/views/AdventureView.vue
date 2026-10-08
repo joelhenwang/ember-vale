@@ -13,6 +13,16 @@ import IconFeather from '../components/icons/IconFeather.vue'
 import IconClock from '../components/icons/IconClock.vue'
 import IconSatchel from '../components/icons/IconSatchel.vue'
 import IconImage from '../components/icons/IconImage.vue'
+import IconExpand from '../components/icons/IconExpand.vue'
+import IconGlobe from '../components/icons/IconGlobe.vue'
+import IconDoc from '../components/icons/IconDoc.vue'
+import IconBook from '../components/icons/IconBook.vue'
+import IconUser from '../components/icons/IconUser.vue'
+import IconX from '../components/icons/IconX.vue'
+import IconGear from '../components/icons/IconGear.vue'
+import IconChevronRight from '../components/icons/IconChevronRight.vue'
+import MomentDialog from '../components/story/MomentDialog.vue'
+import { momentTitle, readyMoments, type Speaker } from '../game/moments'
 import PaintSceneDialog from '../components/story/PaintSceneDialog.vue'
 import { assetUrl } from '../api/worldsim'
 import FramedImage from '../components/ui/FramedImage.vue'
@@ -161,6 +171,52 @@ const leads = computed(() =>
     : []
 )
 const nowIndex = computed(() => adv.presentation.value?.absolute_index ?? 0)
+
+/* ————— the picture: the latest painted moment, else the place ————— */
+const moments = computed(() => readyMoments(adv.presentation.value?.scene_art))
+const latest = computed(() => moments.value[moments.value.length - 1] ?? null)
+const latestUrl = computed(() =>
+  latest.value?.asset_id ? assetUrl(storyId.value, latest.value.asset_id) : null
+)
+/** Where the latest moment happened, when that is not where you are now. */
+const latestElsewhere = computed(() => {
+  const where = latest.value?.location_id
+  return where && where !== adv.hereId.value ? (placeNames.value.get(where) ?? null) : null
+})
+const openedMoment = ref<number | null>(null)
+function openMoment(): void {
+  if (moments.value.length) openedMoment.value = moments.value.length - 1
+}
+function openPicture(pictureId: string): void {
+  const at = moments.value.findIndex((m) => m.picture_id === pictureId)
+  if (at >= 0) openedMoment.value = at
+}
+const speakers = computed(() => {
+  const out = new Map<string, Speaker>()
+  for (const c of adv.presentation.value?.cast ?? []) {
+    out.set(c.character_id, {
+      name: c.name,
+      portraitUrl: c.portrait_asset_id ? assetUrl(storyId.value, c.portrait_asset_id) : null
+    })
+  }
+  return out
+})
+
+/* ————— the lead: the newest rumour, the rest folded ————— */
+const byNewest = computed(() =>
+  [...rumours.value].sort((a, b) => (b.since_index ?? 0) - (a.since_index ?? 0))
+)
+const mainLead = computed(() => byNewest.value[0] ?? null)
+const otherLeads = computed(() => byNewest.value.slice(1))
+const leadsOpen = ref(false)
+const detailsOpen = ref(false)
+
+/** What Tab fills in: the first lead or suggestion, as plain words. */
+const suggestion = computed(() => {
+  if (mode.value !== 'do') return ''
+  const first = leads.value[0]?.label ?? adv.chips.value[0]?.title ?? ''
+  return first.split(' — ')[0]!.trim()
+})
 const elapsed = computed(() =>
   startedAt.value ? Math.max(0, Math.round((now.value - startedAt.value) / 1000)) : 0
 )
@@ -172,10 +228,12 @@ const sayTarget = computed(
 const placeholder = computed(() =>
   mode.value === 'say'
     ? `What do you say to ${sayTarget.value?.name ?? 'them'}?`
-    : doPrompt(
-        rumours.value[0]?.title ?? null,
-        adv.present.value.map((c) => c.name)
-      )
+    : suggestion.value
+      ? `Suggested: ${suggestion.value} (Tab to fill)`
+      : doPrompt(
+          rumours.value[0]?.title ?? null,
+          adv.present.value.map((c) => c.name)
+        )
 )
 const ready = computed(() => !adv.acting.value && adv.alive.value && text.value.trim().length > 0)
 
@@ -241,6 +299,11 @@ function talkTo(id: string): void {
 }
 
 function onKey(event: KeyboardEvent): void {
+  if (event.key === 'Tab' && !event.shiftKey && !text.value.trim() && suggestion.value) {
+    event.preventDefault()
+    text.value = suggestion.value
+    return
+  }
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
     void submit()
@@ -337,10 +400,14 @@ onMounted(() => {
         <p v-if="adv.me.value">Playing as {{ myName }} · {{ timeLabel }}</p>
       </div>
       <nav class="adv__links">
-        <RouterLink :to="{ name: 'story-watch', params: { storyId } }">World map</RouterLink>
-        <RouterLink :to="{ name: 'story-play', params: { storyId } }">Story room</RouterLink>
+        <RouterLink :to="{ name: 'story-watch', params: { storyId } }"
+          ><IconGlobe :size="16" /> World map</RouterLink
+        >
+        <RouterLink :to="{ name: 'story-play', params: { storyId } }"
+          ><IconBook :size="16" /> Story room</RouterLink
+        >
         <RouterLink :to="{ name: 'story-settings', params: { storyId } }"
-          >Story settings</RouterLink
+          ><IconGear :size="16" /> Story settings</RouterLink
         >
       </nav>
     </header>
@@ -356,19 +423,42 @@ onMounted(() => {
     </section>
 
     <div v-else class="adv__grid">
-      <section class="adv__stage ev-card">
-        <div class="scene" :style="sceneStyle">
+      <!-- left: what you see, the land around you, and the thread to pull -->
+      <section class="adv__visual">
+        <div class="stage ev-card">
+          <img
+            v-if="latest && latestUrl"
+            class="stage__img"
+            :src="latestUrl"
+            :alt="latest.caption" />
+          <div v-else class="stage__img" :style="sceneStyle" />
           <div
             v-if="light"
             class="scene__light"
             :style="{ background: light }"
             aria-hidden="true" />
-          <div class="scene__shade" />
-          <div class="scene__body">
-            <div class="scene__where">
-              <p class="scene__eyebrow">{{ timeLabel }}</p>
+          <div class="stage__shade" aria-hidden="true" />
+          <span v-if="latest" class="stage__badge">
+            Latest illustrated moment<template v-if="latestElsewhere">
+              · {{ latestElsewhere }}</template
+            >
+          </span>
+          <button
+            v-if="latest"
+            type="button"
+            class="stage__expand"
+            :title="`Open “${momentTitle(latest)}”`"
+            aria-label="Open this moment"
+            @click="openMoment()">
+            <IconExpand :size="18" />
+          </button>
+          <div class="stage__foot">
+            <div class="stage__where">
               <h2 class="scene__place">{{ adv.here.value?.name ?? 'On the road' }}</h2>
-              <p v-if="adv.present.value.length === 0" class="scene__alone">No one else is here.</p>
+              <p class="stage__when">
+                {{ timeLabel
+                }}<template v-if="adv.present.value.length === 0"> · No one else is here</template>
+              </p>
             </div>
             <ul class="scene__people" aria-label="Here with you">
               <li v-for="c in adv.present.value" :key="c.character_id">
@@ -396,10 +486,80 @@ onMounted(() => {
             </ul>
           </div>
         </div>
+        <div class="adv__under">
+          <section v-if="adv.presentation.value" class="minimap ev-card">
+            <h3 class="panel__title"><IconGlobe :size="16" /> Local map</h3>
+            <div class="minimap__map">
+              <WorldMap
+                :world-id="storyId"
+                :map-asset-id="adv.mapAssetId.value"
+                :anchors="adv.presentation.value.manifest.anchors ?? []"
+                :places="adv.places.value"
+                :tokens="tokens"
+                :active-place-id="adv.hereId.value"
+                :focus-id="adv.me.value"
+                compact />
+            </div>
+          </section>
+          <section class="lead ev-card">
+            <h3 class="panel__title"><IconDoc :size="16" /> Current story lead</h3>
+            <template v-if="mainLead">
+              <p class="lead__title">
+                {{ mainLead.title }}
+                <span v-if="isFresh(mainLead.since_index, nowIndex)" class="rumours__new">new</span>
+              </p>
+              <p v-if="mainLead.purpose" class="lead__text">{{ mainLead.purpose }}</p>
+            </template>
+            <p v-else class="lead__text lead__quiet">
+              No word yet. Look around, or talk to someone.
+            </p>
+            <button
+              v-if="otherLeads.length || settled.length"
+              type="button"
+              class="lead__more"
+              :aria-expanded="leadsOpen"
+              @click="leadsOpen = !leadsOpen">
+              {{
+                leadsOpen
+                  ? 'Show less'
+                  : [
+                      otherLeads.length ? `${otherLeads.length} more` : '',
+                      settled.length ? `${settled.length} settled` : ''
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')
+              }}
+            </button>
+            <div v-if="leadsOpen" class="rumours">
+              <ul>
+                <li v-for="r in otherLeads" :key="r.hook_id">
+                  <b>{{ r.title }}</b>
+                  <p v-if="r.purpose">{{ r.purpose }}</p>
+                </li>
+              </ul>
+              <ul v-if="settled.length" class="rumours__done">
+                <li v-for="r in settled" :key="r.hook_id">
+                  <b>✓ {{ r.title }}</b>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </div>
+      </section>
 
+      <!-- right: the story, and what you do next -->
+      <section class="adv__stage ev-card">
+        <header class="story__head">
+          <IconBook :size="20" />
+          <h2>The story</h2>
+        </header>
         <div ref="logEl" class="log" aria-live="polite">
           <div v-if="intro.length" class="log__intro">
-            <p v-for="(text, i) in intro" :key="i">{{ text }}</p>
+            <p>{{ intro[0] }}</p>
+            <details v-if="intro.length > 1" class="log__more">
+              <summary>Character introduction</summary>
+              <p v-for="(text, i) in intro.slice(1)" :key="i">{{ text }}</p>
+            </details>
             <p v-if="adv.log.value.length === 0" class="log__hint">
               Type what you do below — or look around, speak to someone, or set out.
             </p>
@@ -436,18 +596,25 @@ onMounted(() => {
                 </button>
               </template>
               <template v-else-if="line.kind === 'picture' && line.picture">
-                <figure class="log__picture">
+                <button
+                  v-if="line.picture.status === 'ready' && line.picture.asset_id"
+                  type="button"
+                  class="log__picture"
+                  :title="`Open “${momentTitle(line.picture)}”`"
+                  @click="openPicture(line.picture.picture_id)">
                   <img
-                    v-if="line.picture.status === 'ready' && line.picture.asset_id"
                     :src="assetUrl(storyId, line.picture.asset_id)"
                     :alt="line.picture.caption"
                     loading="lazy" />
-                  <div v-else class="log__picture-wait" role="status">
-                    <IconImage :size="22" />
-                    <span>Painting this moment…</span>
-                  </div>
-                  <figcaption>{{ line.picture.caption }}</figcaption>
-                </figure>
+                  <span class="log__picture-text">
+                    <b>{{ momentTitle(line.picture) }}</b>
+                    <i>{{ line.picture.caption }}</i>
+                  </span>
+                </button>
+                <div v-else class="log__picture log__picture--wait" role="status">
+                  <span class="log__picture-wait"><IconImage :size="20" /></span>
+                  <span class="log__picture-text"><i>Painting this moment…</i></span>
+                </div>
               </template>
               <template v-else-if="line.kind === 'elsewhere'">
                 <span class="log__elsewhere">
@@ -537,6 +704,7 @@ onMounted(() => {
               rows="2"
               maxlength="250"
               :placeholder="placeholder"
+              :aria-description="suggestion ? `Press Tab to fill: ${suggestion}` : undefined"
               :disabled="adv.acting.value || !adv.alive.value"
               @keydown="onKey" />
             <div class="composer__buttons">
@@ -580,8 +748,50 @@ onMounted(() => {
           </p>
         </form>
       </section>
+    </div>
 
-      <aside class="adv__side">
+    <!-- who you are, always in view -->
+    <footer v-if="!adv.loading.value && adv.me.value" class="status ev-card">
+      <span class="status__face">
+        <FramedImage
+          v-if="portraits.get(adv.me.value)"
+          :src="portraits.get(adv.me.value)!.src"
+          :frame="portraits.get(adv.me.value)!.face" />
+        <span v-else>{{ initials(myName) }}</span>
+      </span>
+      <b class="status__name">{{ myName }}</b>
+      <span v-if="journey" class="status__level" :title="`${journey.renown} renown`"
+        >Level {{ journey.level }} · {{ journey.title }}</span
+      >
+      <div class="bar bar--stamina status__bar">
+        <span>Stamina</span>
+        <div><i :style="{ width: `${barFraction(stats?.stamina) * 100}%` }" /></div>
+        <b>{{ stats?.stamina ?? '–' }}</b>
+      </div>
+      <div class="bar bar--mana status__bar">
+        <span>Mana</span>
+        <div><i :style="{ width: `${barFraction(stats?.mana) * 100}%` }" /></div>
+        <b>{{ stats?.mana ?? '–' }}</b>
+      </div>
+      <span v-if="!adv.alive.value" class="sheet__fallen">Fallen</span>
+      <button type="button" class="status__details" @click="detailsOpen = true">
+        <IconUser :size="16" /> Character details <IconChevronRight :size="14" />
+      </button>
+    </footer>
+
+    <!-- the full sheet: renown, drives, what you carry -->
+    <div
+      v-if="detailsOpen && adv.me.value"
+      class="drawer"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="`${myName}: character details`"
+      @click.self="detailsOpen = false"
+      @keydown.esc="detailsOpen = false">
+      <div class="drawer__panel">
+        <button type="button" class="drawer__close" aria-label="Close" @click="detailsOpen = false">
+          <IconX :size="18" />
+        </button>
         <section class="sheet ev-card">
           <div class="sheet__head">
             <div class="sheet__portrait">
@@ -645,43 +855,19 @@ onMounted(() => {
           </ul>
           <p v-else class="sheet__empty">Empty pockets.</p>
         </section>
-
-        <section v-if="adv.presentation.value" class="minimap ev-card">
-          <WorldMap
-            :world-id="storyId"
-            :map-asset-id="adv.mapAssetId.value"
-            :anchors="adv.presentation.value.manifest.anchors ?? []"
-            :places="adv.places.value"
-            :tokens="tokens"
-            :active-place-id="adv.hereId.value"
-            :focus-id="adv.me.value"
-            compact />
-        </section>
-
-        <section v-if="rumours.length || settled.length" class="rumours ev-card">
-          <h3 v-if="rumours.length">Word around the vale</h3>
-          <ul>
-            <li
-              v-for="r in rumours"
-              :key="r.hook_id"
-              :class="{ fresh: isFresh(r.since_index, nowIndex) }">
-              <b>{{ r.title }}</b>
-              <span v-if="isFresh(r.since_index, nowIndex)" class="rumours__new">new</span>
-              <p v-if="r.purpose">{{ r.purpose }}</p>
-            </li>
-          </ul>
-          <template v-if="settled.length">
-            <h3 class="rumours__done-title">Settled</h3>
-            <ul class="rumours__done">
-              <li v-for="r in settled" :key="r.hook_id">
-                <b>✓ {{ r.title }}</b>
-                <p v-if="r.purpose">{{ r.purpose }}</p>
-              </li>
-            </ul>
-          </template>
-        </section>
-      </aside>
+      </div>
     </div>
+
+    <MomentDialog
+      v-if="adv.me.value"
+      :world-id="storyId"
+      :moments="moments"
+      :index="openedMoment"
+      :speakers="speakers"
+      :places="placeNames"
+      :opts="adv.opts.value"
+      @update:index="openedMoment = $event"
+      @close="openedMoment = null" />
     <PaintSceneDialog
       :world-id="storyId"
       :scene-id="paintingScene"
@@ -695,13 +881,19 @@ onMounted(() => {
 .adv {
   max-width: 1440px;
   margin: 0 auto;
-  padding: 14px 16px 10px;
+  padding: 10px 16px 10px;
+  /* one screen: the story scrolls inside, the bars stay in view */
+  height: calc(100vh - 62px);
+  min-height: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 .adv__bar {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 18px;
-  margin-bottom: 12px;
 }
 .adv__back,
 .adv__links a {
@@ -728,7 +920,7 @@ onMounted(() => {
 }
 .adv__links {
   display: flex;
-  gap: 16px;
+  gap: 18px;
 }
 .adv__note {
   max-width: 640px;
@@ -747,17 +939,288 @@ onMounted(() => {
   text-decoration: underline;
 }
 .adv__grid {
+  flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  gap: 16px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 14px;
+}
+.adv__visual {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) clamp(190px, 26vh, 240px);
+  gap: 14px;
 }
 .adv__stage {
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 150px);
-  min-height: 560px;
   overflow: hidden;
+}
+
+/* The picture --------------------------------------------------------------- */
+.stage {
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+  background: #3a3220;
+}
+.stage__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background-color: #6b7f55;
+  background-repeat: no-repeat;
+}
+.stage__shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(20, 15, 6, 0.35) 0%,
+    transparent 22%,
+    transparent 55%,
+    rgba(20, 15, 6, 0.78) 100%
+  );
+  pointer-events: none;
+}
+.stage__badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  padding: 5px 11px;
+  border-radius: 8px;
+  background: rgba(24, 19, 9, 0.62);
+  color: #f7efd9;
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+.stage__expand {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(24, 19, 9, 0.55);
+  color: #f7efd9;
+}
+.stage__expand:hover {
+  background: rgba(24, 19, 9, 0.8);
+}
+.stage__foot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  color: #f7efd9;
+}
+.stage__foot .scene__place {
+  font-size: 40px;
+}
+.stage__when {
+  font-size: 18px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Under the picture: the map and the lead ----------------------------------------- */
+.adv__under {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+}
+.panel__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.panel__title svg {
+  color: var(--gold);
+}
+.minimap {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 10px 12px 12px;
+}
+.minimap__map {
+  flex: 1;
+  min-height: 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.lead {
+  min-height: 0;
+  padding: 10px 16px 14px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.lead__title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--ink);
+}
+.lead__text {
+  margin-top: 4px;
+  font-size: 15.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.lead__quiet {
+  font-style: italic;
+  color: var(--muted);
+}
+.lead__more {
+  margin-top: 8px;
+  font-family: var(--font-ui);
+  font-size: 14.5px;
+  color: var(--teal-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.lead .rumours {
+  margin-top: 8px;
+  padding: 0;
+}
+
+/* The story ----------------------------------------------------------------------- */
+.story__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 22px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--gold);
+}
+.story__head h2 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.log__more summary {
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--teal-ink);
+}
+.log__more p {
+  margin-top: 6px;
+}
+
+/* Who you are, along the foot ---------------------------------------------------- */
+.status {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 8px 16px;
+}
+.status__face img,
+.status__face > span {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--gold-soft);
+  background: var(--teal);
+  color: var(--cream-on-teal);
+}
+.status__face {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+.status__name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.status__level {
+  padding-left: 18px;
+  border-left: 1px solid var(--line);
+  font-family: var(--font-ui);
+  font-size: 15.5px;
+  color: var(--ink-2);
+}
+.status__bar {
+  flex: 1;
+  max-width: 340px;
+}
+.status__details {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-ui);
+  font-size: 15.5px;
+  color: var(--teal-ink);
+}
+.status__details:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* The full sheet, sliding in from the side ---------------------------------------- */
+.drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(36, 29, 16, 0.4);
+}
+.drawer__panel {
+  position: relative;
+  width: min(420px, 100%);
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px;
+  background: var(--bg);
+  box-shadow: -10px 0 30px rgba(30, 22, 8, 0.3);
+  animation: drawer-in 0.25s var(--ease-out);
+}
+.drawer__close {
+  position: absolute;
+  top: 22px;
+  right: 24px;
+  z-index: 1;
+  display: inline-flex;
+  padding: 6px;
+  border-radius: 50%;
+  color: var(--ink-3);
+}
+.drawer__close:hover {
+  background: var(--panel-2);
+}
+@keyframes drawer-in {
+  from {
+    transform: translateX(30px);
+    opacity: 0;
+  }
 }
 
 /* Scene banner ---------------------------------------------------------- */
@@ -941,22 +1404,48 @@ button.who:hover > span {
   border-color: var(--line);
   background: #fbf6e9;
 }
+/* pictures in the story are small: the large one is beside it */
 .log__picture {
-  margin: 6px 0 4px;
-  max-width: 640px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  overflow: hidden;
-  background: #fbf6e9;
-  box-shadow: 0 6px 18px rgba(46, 39, 24, 0.12);
-}
-.log__picture img {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 14px;
   width: 100%;
-  height: auto;
+  max-width: 560px;
+  margin: 6px 0 4px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fbf6e9;
+  text-align: left;
+}
+button.log__picture:hover {
+  border-color: var(--gold-soft);
+}
+.log__picture img,
+.log__picture-wait {
+  flex: none;
+  width: 150px;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.log__picture-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.log__picture-text b {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.log__picture-text i {
+  font-size: 14.5px;
+  color: var(--ink-2);
 }
 .log__picture-wait {
-  aspect-ratio: 16 / 9;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -968,12 +1457,7 @@ button.who:hover > span {
   background-size: 250% 100%;
   animation: shimmer 2.2s linear infinite;
 }
-.log__picture figcaption {
-  padding: 8px 14px 10px;
-  font-size: 14.5px;
-  font-style: italic;
-  color: var(--ink-2);
-}
+
 @keyframes shimmer {
   to {
     background-position: -150% 0;
@@ -1501,23 +1985,51 @@ button.who:hover > span {
   overflow: hidden;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1100px) {
   .adv {
-    padding: 8px 8px 16px;
+    height: auto;
   }
   .adv__grid {
     grid-template-columns: 1fr;
   }
-  .adv__side {
-    height: auto;
-    min-height: 0;
-    overflow: visible;
-    padding: 0;
+  .adv__visual {
+    grid-template-rows: auto auto;
+  }
+  .stage {
+    aspect-ratio: 16 / 10;
+  }
+  .adv__under {
+    min-height: 220px;
   }
   /* The story fills the screen with the composer always in reach. */
   .adv__stage {
-    height: calc(100dvh - 120px);
+    order: -1;
+    height: calc(100dvh - 260px);
     min-height: 420px;
+  }
+  .status {
+    position: sticky;
+    bottom: 8px;
+    z-index: 4;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+  .status__bar {
+    flex: 1 1 140px;
+  }
+}
+@media (max-width: 960px) {
+  .adv {
+    padding: 8px 8px 16px;
+  }
+  .adv__under {
+    grid-template-columns: 1fr;
+  }
+  .stage__foot .scene__place {
+    font-size: 28px;
+  }
+  .status__level {
+    display: none;
   }
   .scene {
     height: 118px;
