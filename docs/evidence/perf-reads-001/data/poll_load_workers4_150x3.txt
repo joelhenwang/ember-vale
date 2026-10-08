@@ -1,0 +1,12 @@
+rep 1:
+{"viewers": 50, "requests": 2247, "req_per_s": 74.9, "expected_req_per_s": 75.0, "p50_ms": 25.5, "p95_ms": 401.0, "max_ms": 1122.4, "not_modified": 2047, "errors": 0}
+{"viewers": 50, "requests": 2244, "req_per_s": 74.8, "expected_req_per_s": 75.0, "p50_ms": 26.0, "p95_ms": 389.5, "max_ms": 1186.3, "not_modified": 2044, "errors": 0}
+{"viewers": 50, "requests": 2256, "req_per_s": 75.2, "expected_req_per_s": 75.0, "p50_ms": 26.8, "p95_ms": 379.8, "max_ms": 1221.3, "not_modified": 2056, "errors": 0}
+rep 2:
+{"viewers": 50, "requests": 2250, "req_per_s": 75.0, "expected_req_per_s": 75.0, "p50_ms": 30.3, "p95_ms": 190.5, "max_ms": 874.8, "not_modified": 2050, "errors": 0}
+{"viewers": 50, "requests": 2259, "req_per_s": 75.3, "expected_req_per_s": 75.0, "p50_ms": 27.0, "p95_ms": 185.3, "max_ms": 803.9, "not_modified": 2059, "errors": 0}
+{"viewers": 50, "requests": 2259, "req_per_s": 75.3, "expected_req_per_s": 75.0, "p50_ms": 26.6, "p95_ms": 191.1, "max_ms": 849.0, "not_modified": 2059, "errors": 0}
+rep 3:
+{"viewers": 50, "requests": 2013, "req_per_s": 67.1, "expected_req_per_s": 75.0, "p50_ms": 440.4, "p95_ms": 1506.4, "max_ms": 4943.4, "not_modified": 1813, "errors": 0}
+{"viewers": 50, "requests": 2034, "req_per_s": 67.8, "expected_req_per_s": 75.0, "p50_ms": 434.7, "p95_ms": 1433.0, "max_ms": 4171.7, "not_modified": 1832, "errors": 2}
+{"viewers": 50, "requests": 2028, "req_per_s": 67.6, "expected_req_per_s": 75.0, "p50_ms": 460.3, "p95_ms": 1436.7, "max_ms": 4261.1, "not_modified": 1828, "errors": 0}

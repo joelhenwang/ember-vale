@@ -155,6 +155,8 @@ N simulated viewers each read presentation, autoplay and the chronicle every 2 s
 
 After the fixes, 4 processes served 300 viewers with 0 errors. They saturated near 270 requests/s, about 68 per process and CPU-bound. They held 150 viewers at p95 about 0.55 s (`data/poll_load_workers4.json`).
 
+Repeated three times at 150 viewers (three clients of 50, `data/poll_load_workers4_150x3.txt`), p95 was 380–400 ms, then 185–190 ms, then 1.4–1.5 s. In the last repetition p50 also rose to about 440 ms. The host is shared with Docker Desktop's VM and other apps, so 150 viewers is at the edge for four processes. The dependable figure is about 100 viewers (p95 122 ms).
+
 **Profile of a quiet tick** (`data/poll_profile.py`, in-process): about 50 statements a tick. There is no single hot spot, so the cost is the number of database round trips plus framework overhead. Two fixes:
 - **An empty chronicle page returns early.** With nothing after the cursor, the reads that only dress entries (config, people, places, narration, scenes) are skipped: 8 to 3 queries, same response.
 - **One access log, not two.** uvicorn's access line duplicated `worldsim.access` on every request; it is off now.
@@ -169,3 +171,25 @@ After the fixes, 4 processes served 300 viewers with 0 errors. They saturated ne
 | 100 | 525 ms | 2.5 s | 4 client timeouts at saturation |
 
 **The SSE decision still stands, now measured.** One player is far below every limit. One process now carries about 60 watching viewers, and `WORKERS=N` scales near-linearly in viewers until the CPU runs out. 90% of the load is unchanged 304s that still cost full work, so the change stamp in section 3 is the next lever. It would make most requests about 3 queries. Build it when real viewers approach ~50 per process.
+
+## 8. The change stamp: why it is designed but not built
+
+The stamp would let an unchanged poll skip building the presentation, the lever on the 90% of load that is 304s. Building it needs one value that changes whenever anything the presentation shows changes. The presentation reads 19 repository methods over 11 kinds of data:
+- events and their narration;
+- people, places, journeys and activities;
+- rumours;
+- phase runs;
+- pictures, image assets and their paint jobs;
+- the world and its config.
+
+Those are written from at least six places: turn commits, background narration, the director, the image runner (a separate process when scaled), autoplay, and story settings and interventions.
+
+Three ways to keep the stamp, and what goes wrong with each:
+
+| Way | Problem |
+|---|---|
+| The app bumps it on every write | A write that forgets the bump leaves a screen stale with no error. The risk grows with every new feature that writes. |
+| A Postgres trigger on every world table bumps one row per story | It cannot forget, but every write in a turn then updates the same row. The turn's commits, which run in parallel (`1caa5e7`, `4de0533`), would wait on that row lock and run one after another. That throws away the beat engine's main speed-up. |
+| A fingerprint query (max sequence, versions and counts over the 11 inputs) | No lock, but it is about 11 lookups a poll. A quiet tick is already 3 + 16 + 3 queries, so it saves about half and still needs every input listed. |
+
+**Decision:** not now. One player uses a fraction of one process, and `WORKERS=N` adds about 60 viewers per process, which is cheaper and carries no staleness risk. If it is ever needed, the fingerprint query is the safe first step. It should come with a test that runs a scripted story (turns, background narration, a painted picture, a director rumour, autoplay) and checks after every step that the fingerprint changed whenever the presentation body did.
