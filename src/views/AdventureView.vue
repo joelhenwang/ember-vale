@@ -397,7 +397,6 @@ onMounted(() => {
       <RouterLink class="adv__back" to="/stories"><IconArrowLeft :size="16" /> Stories</RouterLink>
       <div class="adv__title">
         <h1>{{ adv.title.value ?? 'Adventure' }}</h1>
-        <p v-if="adv.me.value">Playing as {{ myName }} · {{ timeLabel }}</p>
       </div>
       <nav class="adv__links">
         <RouterLink :to="{ name: 'story-watch', params: { storyId } }"
