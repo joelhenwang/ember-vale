@@ -70,6 +70,34 @@ class SqlAlchemyPerceptionRepository:
             for row in rows
         ]
 
+    async def observations_for_events(self, event_ids: list[UUID]) -> dict[UUID, list[Observation]]:
+        """Observations of many events in one query, each in observer order."""
+        if not event_ids:
+            return {}
+        rows = (
+            await self._session.execute(
+                select(ObservationRow)
+                .where(ObservationRow.event_id.in_(event_ids))
+                .order_by(ObservationRow.event_id, ObservationRow.observer_character_id)
+            )
+        ).scalars()
+        out: dict[UUID, list[Observation]] = {}
+        for row in rows:
+            out.setdefault(row.event_id, []).append(
+                Observation(
+                    id=row.id,
+                    world_id=row.world_id,
+                    event_id=row.event_id,
+                    observer_character_id=row.observer_character_id,
+                    facts=_facts_to_domain(row.facts),
+                    created_phase_index=row.created_phase_index,
+                    salience=row.salience,
+                    content_hash=row.content_hash or "",
+                    source_id=row.source_id,
+                )
+            )
+        return out
+
     async def observations_for_observer(
         self,
         observer_id: UUID,

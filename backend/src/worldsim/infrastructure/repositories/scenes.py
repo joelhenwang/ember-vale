@@ -311,6 +311,36 @@ class SqlAlchemySceneRepository:
         )
         return await self._scenes_with_participants(list(rows))
 
+    async def scenes_for_events(self, event_ids: list[UUID]) -> list[Scene]:
+        """The scenes these events tell, with people and intents: three queries."""
+        if not event_ids:
+            return []
+        rows = (
+            (
+                await self._session.execute(
+                    select(SceneRow).where(SceneRow.event_id.in_(event_ids)).order_by(SceneRow.id)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        return await self._scenes_with_participants(list(rows))
+
+    async def get_intents(self, intent_ids: list[UUID]) -> dict[UUID, Intent]:
+        """Many intents in one query (missing ids are left out)."""
+        if not intent_ids:
+            return {}
+        rows = (
+            (
+                await self._session.execute(
+                    select(CharacterIntentRow).where(CharacterIntentRow.id.in_(intent_ids))
+                )
+            )
+            .scalars()
+            .all()
+        )
+        return {row.id: Intent.model_validate(row.intent) for row in rows}
+
     async def _scenes_with_participants(self, rows: list[SceneRow]) -> list[Scene]:
         """Scenes with their participants and intents: two queries for all."""
         if not rows:
