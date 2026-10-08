@@ -36,7 +36,6 @@ import {
   isFresh,
   phaseLight,
   leadChips,
-  type LeadChip,
   levelProgress,
   prologue,
   trimPlaceLead,
@@ -45,11 +44,9 @@ import {
   type TurnChange,
   sayIntent,
   sceneFocus,
-  suggestionIntent,
   type LogLine
 } from '../game/adventure'
 import { beatTimeLabel, layoutTokens } from '../game/observatory'
-import type { SuggestionView } from '../../content/clients/worldsim'
 
 const route = useRoute()
 const storyId = computed(() => String(route.params.storyId ?? ''))
@@ -265,26 +262,6 @@ async function submit(): Promise<void> {
   const ok = await turn(() => adv.act(intent))
   echo.value = null
   if (!ok) text.value = words
-}
-
-async function chip(s: SuggestionView): Promise<void> {
-  const me = adv.me.value
-  if (!me || adv.acting.value) return
-  const intent = suggestionIntent(me, s)
-  if (!intent) return
-  echo.value = { kind: 'do', text: `You ${s.title.charAt(0).toLowerCase()}${s.title.slice(1)}.` }
-  await turn(() => adv.act(intent))
-  echo.value = null
-}
-
-async function followLead(lead: LeadChip): Promise<void> {
-  if (adv.acting.value) return
-  echo.value =
-    lead.intent.family === 'communicate'
-      ? { kind: 'say', text: String(lead.intent.topic ?? '') }
-      : { kind: 'do', text: `You ${lead.label.charAt(0).toLowerCase()}${lead.label.slice(1)}.` }
-  await turn(() => adv.act(lead.intent))
-  echo.value = null
 }
 
 async function pass(): Promise<void> {
@@ -554,10 +531,6 @@ onMounted(() => {
 
         <!-- right: the story, and what you do next -->
         <section class="adv__stage">
-          <header class="story__head">
-            <IconBook :size="20" />
-            <h2>The story</h2>
-          </header>
           <div ref="logEl" class="log" aria-live="polite">
             <div v-if="intro.length" class="log__intro">
               <p>{{ intro[0] }}</p>
@@ -679,32 +652,44 @@ onMounted(() => {
           </div>
 
           <form class="composer" @submit.prevent="submit">
-            <div class="composer__modes" role="tablist" aria-label="How you act">
-              <button type="button" role="tab" :aria-selected="mode === 'do'" @click="mode = 'do'">
-                Do
-              </button>
-              <button
-                type="button"
-                role="tab"
-                :aria-selected="mode === 'say'"
-                :disabled="!canSay"
-                :title="canSay ? '' : 'No one here to talk to'"
-                @click="mode = 'say'">
-                Say
-              </button>
-              <label v-if="mode === 'say' && adv.talkable.value.length > 1" class="composer__to">
-                to
-                <select v-model="sayTo">
-                  <option
-                    v-for="c in adv.talkable.value"
-                    :key="c.character_id"
-                    :value="c.character_id">
-                    {{ c.name }}
-                  </option>
-                </select>
-              </label>
-            </div>
             <div class="composer__row">
+              <!-- Do or Say: one sliding switch beside the words -->
+              <div class="composer__side">
+                <div
+                  class="composer__modes"
+                  :class="{ 'composer__modes--say': mode === 'say' }"
+                  role="radiogroup"
+                  aria-label="How you act">
+                  <span class="composer__thumb" aria-hidden="true"></span>
+                  <button
+                    type="button"
+                    role="radio"
+                    :aria-checked="mode === 'do'"
+                    @click="mode = 'do'">
+                    Do
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    :aria-checked="mode === 'say'"
+                    :disabled="!canSay"
+                    :title="canSay ? '' : 'No one here to talk to'"
+                    @click="mode = 'say'">
+                    Say
+                  </button>
+                </div>
+                <label v-if="mode === 'say' && adv.talkable.value.length > 1" class="composer__to">
+                  to
+                  <select v-model="sayTo">
+                    <option
+                      v-for="c in adv.talkable.value"
+                      :key="c.character_id"
+                      :value="c.character_id">
+                      {{ c.name }}
+                    </option>
+                  </select>
+                </label>
+              </div>
               <textarea
                 v-model="text"
                 class="composer__input"
@@ -727,28 +712,6 @@ onMounted(() => {
                   <IconClock :size="15" /> Wait
                 </button>
               </div>
-            </div>
-            <div v-if="adv.chips.value.length || leads.length" class="composer__chips">
-              <button
-                v-for="lead in leads"
-                :key="lead.key"
-                type="button"
-                class="chip chip--lead"
-                :disabled="adv.acting.value || !adv.alive.value"
-                @click="followLead(lead)">
-                {{ lead.label }}
-              </button>
-              <button
-                v-for="s in adv.chips.value"
-                :key="s.id"
-                type="button"
-                class="chip"
-                :class="`chip--${s.family}`"
-                :disabled="adv.acting.value || !adv.alive.value"
-                :title="s.subtitle"
-                @click="chip(s)">
-                {{ s.title }}
-              </button>
             </div>
             <p v-if="adv.actionError.value" class="composer__error" role="alert">
               {{ adv.actionError.value }}
@@ -955,6 +918,10 @@ onMounted(() => {
   padding: 0;
   overflow: hidden;
 }
+/* one clean edge: no inner frame line on this card */
+.adv__frame::after {
+  display: none;
+}
 .adv__grid {
   flex: 1;
   min-height: 0;
@@ -1121,21 +1088,6 @@ onMounted(() => {
 }
 
 /* The story ----------------------------------------------------------------------- */
-.story__head {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 22px 6px;
-  border-bottom: 1px solid var(--line-soft);
-  color: var(--gold);
-}
-.story__head h2 {
-  font-family: var(--font-display);
-  font-size: 21px;
-  font-weight: 600;
-  color: var(--ink);
-}
 .log__more summary {
   cursor: pointer;
   font-family: var(--font-ui);
@@ -1658,25 +1610,55 @@ button.log__picture:hover {
   background: linear-gradient(180deg, var(--panel), var(--panel-2));
   padding: 8px 14px 10px;
 }
-.composer__modes {
+.composer__side {
+  flex: none;
   display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  margin-bottom: 6px;
 }
-.composer__modes [role='tab'] {
-  padding: 3px 14px;
+/* a two-way switch: the teal thumb slides under the chosen word */
+.composer__modes {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 116px;
+  padding: 3px;
   border-radius: 999px;
   border: 1px solid var(--line);
-  font-size: 14px;
+  background: var(--surface-2);
+  box-shadow: inset 0 1px 2px rgba(96, 74, 40, 0.12);
+}
+.composer__thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--teal-hi), var(--teal));
+  box-shadow: 0 1px 3px rgba(16, 46, 46, 0.35);
+  transition: transform 0.25s var(--ease-out);
+}
+.composer__modes--say .composer__thumb {
+  transform: translateX(100%);
+}
+.composer__modes [role='radio'] {
+  position: relative;
+  z-index: 1;
+  padding: 6px 0;
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 600;
   color: var(--ink-3);
+  transition: color 0.2s ease;
 }
-.composer__modes [role='tab'][aria-selected='true'] {
-  background: var(--teal);
+.composer__modes [role='radio'][aria-checked='true'] {
   color: var(--cream-on-teal);
-  border-color: var(--teal);
 }
-.composer__modes [role='tab']:disabled {
+.composer__modes [role='radio']:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
@@ -1741,45 +1723,9 @@ button.log__picture:hover {
   color: var(--ink-3);
 }
 .composer__act:disabled,
-.composer__wait:disabled,
-.chip:disabled {
+.composer__wait:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-.composer__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-}
-.chip {
-  border: 1px solid var(--line);
-  background: var(--surface-2);
-  border-radius: 999px;
-  padding: 3px 12px;
-  font-size: 14px;
-  color: var(--ink-2);
-  transition:
-    background 0.15s ease,
-    transform 0.15s ease;
-}
-.chip:not(:disabled):hover {
-  background: #efe3c3;
-  transform: translateY(-1px);
-}
-.chip--take,
-.chip--transfer {
-  border-color: var(--gold-soft);
-  color: var(--gold);
-}
-.chip--lead {
-  border-color: var(--gold-soft);
-  background: #fbf1d8;
-  color: #7a5a1e;
-}
-.chip--move {
-  border-color: #a9c2b8;
-  color: var(--teal-ink);
 }
 .composer__error {
   margin-top: 6px;
@@ -2046,6 +1992,17 @@ button.log__picture:hover {
     flex: 1 1 140px;
   }
 }
+@media (max-width: 640px) {
+  /* the switch on its own line, so the words keep the width */
+  .composer__row {
+    flex-wrap: wrap;
+  }
+  .composer__side {
+    flex-basis: 100%;
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+}
 @media (max-width: 960px) {
   .adv {
     padding: 8px 8px 16px;
@@ -2078,14 +2035,6 @@ button.log__picture:hover {
   }
   .log__bubble {
     max-width: 85%;
-  }
-  .composer__chips {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .chip {
-    flex: none;
   }
   .adv__links {
     display: none;

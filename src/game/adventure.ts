@@ -264,46 +264,7 @@ export function waitIntent(me: string): Intent {
   return { ...base(me), family: 'wait' }
 }
 
-/** The intent for a suggestion chip, or null when it needs words first. */
-export function suggestionIntent(me: string, s: SuggestionView, words?: string): Intent | null {
-  switch (s.family) {
-    case 'rest':
-      return { ...base(me), family: 'rest' }
-    case 'observe':
-      return { ...base(me), family: 'observe', focus: 'surroundings' }
-    case 'move':
-      return s.destination_location_id
-        ? { ...base(me), family: 'move', destination_location_id: s.destination_location_id }
-        : null
-    case 'take':
-      return s.item_instance_id
-        ? { ...base(me), family: 'take', item_instance_id: s.item_instance_id }
-        : null
-    case 'transfer':
-      return s.item_instance_id && s.target_character_id
-        ? {
-            ...base(me),
-            family: 'transfer',
-            item_instance_id: s.item_instance_id,
-            target_character_id: s.target_character_id
-          }
-        : null
-    case 'spar':
-      return s.target_character_id
-        ? { ...base(me), family: 'spar', target_character_id: s.target_character_id }
-        : null
-    case 'communicate':
-      return s.target_character_id && words?.trim()
-        ? sayIntent(me, s.target_character_id, words)
-        : null
-    case 'appeal':
-      return words?.trim() ? { ...base(me), family: 'appeal', proposition: words.trim() } : null
-    default:
-      return null
-  }
-}
-
-/** Chips shown under the composer: one click acts, no typing needed. */
+/** The game's suggestions, best first (the composer's Tab fills the first). */
 export function quickChips(suggestions: SuggestionView[]): SuggestionView[] {
   const order: Record<string, number> = {
     take: 0,

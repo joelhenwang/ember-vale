@@ -17,7 +17,6 @@ import {
   sayIntent,
   sceneFocus,
   scenesToLoad,
-  suggestionIntent,
   trimPlaceLead,
   turnChanges,
   levelProgress,
@@ -172,28 +171,6 @@ describe('adventure actions', () => {
     family: 'rest',
     title: 'T',
     ...over
-  })
-
-  it('turns chips into intents, asking for words only when needed', () => {
-    expect(
-      suggestionIntent(ME, s({ family: 'move', destination_location_id: 'mkt' }))
-    ).toMatchObject({ family: 'move', destination_location_id: 'mkt' })
-    expect(suggestionIntent(ME, s({ family: 'take', item_instance_id: 'i1' }))).toMatchObject({
-      family: 'take',
-      item_instance_id: 'i1'
-    })
-    expect(
-      suggestionIntent(
-        ME,
-        s({ family: 'transfer', item_instance_id: 'i1', target_character_id: 'ash' })
-      )
-    ).toMatchObject({ family: 'transfer', item_instance_id: 'i1', target_character_id: 'ash' })
-    expect(suggestionIntent(ME, s({ family: 'communicate', target_character_id: 'ash' }))).toBe(
-      null
-    )
-    expect(
-      suggestionIntent(ME, s({ family: 'communicate', target_character_id: 'ash' }), 'hi')
-    ).toMatchObject({ topic: '"hi"' })
   })
 
   it('orders quick chips: pick up, go, look, spar, rest', () => {
