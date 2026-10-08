@@ -53,7 +53,8 @@ const error = ref<string | null>(null)
 /** The picture being framed (a new upload, or the current one to adjust). */
 const framing = ref<{ assetId: string; src: string; size: Size } | null>(null)
 
-const src = computed(() => (props.assetId ? libraryAssetUrl(props.assetId) : ''))
+// Drawn at most ~300 px wide: a 640 px copy. The framer gets the whole picture.
+const src = computed(() => (props.assetId ? libraryAssetUrl(props.assetId, 640) : ''))
 
 const steps: FrameStep[] = [
   {
@@ -128,7 +129,8 @@ async function adjust(): Promise<void> {
   busy.value = true
   error.value = null
   try {
-    framing.value = { assetId: props.assetId, src: src.value, size: await sizeOf(src.value) }
+    const whole = libraryAssetUrl(props.assetId)
+    framing.value = { assetId: props.assetId, src: whole, size: await sizeOf(whole) }
   } catch (err) {
     error.value = message(err, 'Could not open the picture.')
   } finally {

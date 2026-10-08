@@ -1167,7 +1167,8 @@ onMounted(() => {
                 :roads="adv.presentation.value.manifest.roads ?? []"
                 :tokens="tokens"
                 :active-place-id="adv.hereId.value"
-                :focus-id="adv.me.value" />
+                :focus-id="adv.me.value"
+                :art-width="0" />
               <PlaceMap
                 v-else-if="localMap"
                 bare

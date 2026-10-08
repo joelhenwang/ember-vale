@@ -49,7 +49,7 @@ const emit = defineEmits<{
 }>()
 
 const src = computed(() =>
-  props.draft.portraitAssetId ? libraryAssetUrl(props.draft.portraitAssetId) : ''
+  props.draft.portraitAssetId ? libraryAssetUrl(props.draft.portraitAssetId, 640) : ''
 )
 const who = computed(() => identityLine(props.draft))
 const traits = computed(() =>

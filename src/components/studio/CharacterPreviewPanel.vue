@@ -23,7 +23,7 @@ import { vTilt } from '../../composables/useEffects'
 const props = defineProps<{ draft: CharacterDraft; name: string; title?: string }>()
 
 const src = computed(() =>
-  props.draft.portraitAssetId ? libraryAssetUrl(props.draft.portraitAssetId) : ''
+  props.draft.portraitAssetId ? libraryAssetUrl(props.draft.portraitAssetId, 640) : ''
 )
 const who = computed(() => identityLine(props.draft))
 const looks = computed(() =>

@@ -29,6 +29,8 @@ const props = defineProps<{
   /** The art's size from the manifest, so the box holds its shape at once. */
   mapWidth?: number | null
   mapHeight?: number | null
+  /** Widest the art is drawn (device px); 0 = the whole picture (full screen). */
+  artWidth?: number
 }>()
 
 const emit = defineEmits<{ select: [characterId: string]; enter: [placeId: string] }>()
@@ -68,7 +70,13 @@ const routes = computed(() => {
   }
   return lines
 })
-const art = computed(() => (props.mapAssetId ? assetUrl(props.worldId, props.mapAssetId) : null))
+/* A page-sized map needs no 2560 px original: the minimap takes 640, the
+   Watch page 1280, and only the full-screen view loads the whole picture. */
+const art = computed(() => {
+  if (!props.mapAssetId) return null
+  const width = props.artWidth ?? (props.compact ? 640 : 1280)
+  return assetUrl(props.worldId, props.mapAssetId, width || undefined)
+})
 
 /* The map's box takes its picture's shape before the picture arrives, so
    pins and tokens do not jump when it loads (it was the Watch page's layout

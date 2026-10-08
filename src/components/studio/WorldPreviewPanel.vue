@@ -75,8 +75,9 @@ const worldBusy = ref<'' | 'paint' | 'import'>('')
 const worldNote = ref<string | null>(null)
 const worldError = ref<string | null>(null)
 const framing = ref<{ assetId: string; src: string; size: Size } | null>(null)
+// The banner is drawn at most ~600 px wide; the framer gets the whole picture.
 const coverSrc = computed(() =>
-  props.draft.cover ? libraryAssetUrl(props.draft.cover.assetId) : ''
+  props.draft.cover ? libraryAssetUrl(props.draft.cover.assetId, 1280) : ''
 )
 const mapWords = computed(() => worldMapPrompt(props.draft, props.name))
 
@@ -142,8 +143,8 @@ async function adjustWorld(): Promise<void> {
   try {
     framing.value = {
       assetId: props.draft.cover.assetId,
-      src: coverSrc.value,
-      size: await sizeOf(coverSrc.value)
+      src: libraryAssetUrl(props.draft.cover.assetId),
+      size: await sizeOf(libraryAssetUrl(props.draft.cover.assetId))
     }
   } catch (err) {
     worldError.value = message(err, 'Could not open the picture.')
