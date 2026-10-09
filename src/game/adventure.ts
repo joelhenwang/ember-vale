@@ -10,6 +10,7 @@
 import type {
   BeatView,
   ChronicleEntry,
+  CombatRollView,
   SceneArtView,
   SuggestionView
 } from '../../content/clients/worldsim'
@@ -19,7 +20,7 @@ import { QUIET_TYPES, beatTimeLabel } from './observatory'
 export const NIL_SNAPSHOT = '00000000-0000-0000-0000-000000000000'
 
 export type LogKind =
-  'time' | 'narration' | 'dialogue' | 'elsewhere' | 'pending' | 'picture' | 'paint'
+  'time' | 'narration' | 'dialogue' | 'elsewhere' | 'pending' | 'picture' | 'paint' | 'rolls'
 
 export interface LogLine {
   key: string
@@ -35,6 +36,8 @@ export interface LogLine {
   paintScene?: string | null
   /** Picture lines: the painted moment (or the one being painted). */
   picture?: SceneArtView
+  /** Rolls lines: a fight's dice, under the scene they were rolled in. */
+  rolls?: CombatRollView[]
 }
 
 export interface LogInput {
@@ -83,9 +86,29 @@ export function buildLog({ entries, beats, me, hereId, pictures = [] }: LogInput
   const shown = [...entries]
     .filter((e) => !QUIET_TYPES.has(e.event_type))
     .sort((a, b) => a.sequence - b.sequence)
+  // A fight's rolls are their own event; they show under their scene.
+  const scenes = new Set(shown.map((e) => e.event_id))
+  const fought = new Map<string, ChronicleEntry>()
+  for (const e of shown) {
+    const of = e.combat?.scene_event_id
+    if (of && scenes.has(of) && e.combat?.rolls?.length) fought.set(of, e)
+  }
   const out: LogLine[] = []
   let lastIndex: number | null = null
   for (const entry of shown) {
+    if (entry.combat) {
+      // Rolls whose scene is not loaded (yet) stand on their own.
+      const of = entry.combat.scene_event_id
+      if (of && scenes.has(of)) continue
+      if (!entry.combat.rolls?.length) continue
+      out.push({
+        key: `rolls:${entry.event_id}`,
+        kind: 'rolls',
+        text: '',
+        rolls: entry.combat.rolls
+      })
+      continue
+    }
     const near = isNear(entry, me, hereId)
     if (!near && entry.idle) continue
     if (entry.absolute_index !== lastIndex) {
@@ -100,6 +123,15 @@ export function buildLog({ entries, beats, me, hereId, pictures = [] }: LogInput
       const lines = linesFor(entry, entry.scene_id ? beats[entry.scene_id] : undefined, me)
       const sceneId = entry.scene_id ?? null
       out.push(...lines)
+      const fight = fought.get(entry.event_id)
+      if (fight?.combat?.rolls?.length) {
+        out.push({
+          key: `rolls:${fight.event_id}`,
+          kind: 'rolls',
+          text: '',
+          rolls: fight.combat.rolls
+        })
+      }
       const told = lines.every((l) => l.kind !== 'pending')
       if (sceneId && told && entry.participant_ids?.includes(me)) {
         out.push({ key: `paint:${sceneId}`, kind: 'paint', text: '', paintScene: sceneId })

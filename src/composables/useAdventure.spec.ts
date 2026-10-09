@@ -63,6 +63,7 @@ function fakeApi(over: Partial<AdventureApi> = {}) {
     getCharacter: async () => ({ id: ME, name: 'Wren', state: { stamina: 80, mana: 40 } }) as never,
     getSuggestions: async () => [],
     listItems: async () => ({ world_id: WORLD, owner_id: ME, members: [] }) as never,
+    getParty: async () => ({ world_id: WORLD, members: [], foes: [] }) as never,
     advance: async (_w, i, intents, opts) => {
       calls.advance.push([i, intents, opts])
       index = i

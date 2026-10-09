@@ -121,6 +121,7 @@ const EMPTY_EQUIVALENT: Record<string, readonly string[]> = {
 
 const NULL_EQUIVALENT: Record<string, readonly string[]> = {
   world: ['description'],
+  mode: ['adventure'],
   story: ['premise', 'pacing'],
   ai: ['profile_id', 'profile_revision', 'model', 'style_pack_revision']
 }

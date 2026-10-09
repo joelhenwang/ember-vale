@@ -23,6 +23,9 @@ import IconX from '../components/icons/IconX.vue'
 import IconGear from '../components/icons/IconGear.vue'
 import IconChevronRight from '../components/icons/IconChevronRight.vue'
 import MomentDialog from '../components/story/MomentDialog.vue'
+import PartyPanel from '../components/story/PartyPanel.vue'
+import CombatRolls from '../components/story/CombatRolls.vue'
+import { hpFraction, hpTone } from '../game/party'
 import { momentTitle, readyMoments, type Speaker } from '../game/moments'
 import PaintSceneDialog from '../components/story/PaintSceneDialog.vue'
 import { assetUrl } from '../api/worldsim'
@@ -179,6 +182,13 @@ function statOf(key: string): number | null {
   return typeof v === 'number' && Number.isFinite(v) ? v : null
 }
 const stamina = computed(() => statOf('stamina'))
+/** A story with fights has a party; the hero's sheet is its first member. */
+const party = computed(() =>
+  adv.party.value && (adv.party.value.members ?? []).length ? adv.party.value : null
+)
+const hero = computed(
+  () => party.value?.members?.find((m) => m.character_id === adv.me.value) ?? null
+)
 const mana = computed(() => statOf('mana'))
 const staminaShown = useTweened(computed(() => stamina.value ?? 0))
 const manaShown = useTweened(computed(() => mana.value ?? 0))
@@ -710,6 +720,11 @@ onMounted(() => {
               </div>
             </section>
             <section class="lead">
+              <PartyPanel
+                v-if="party"
+                class="lead__party"
+                :party="party"
+                :me="adv.me.value ?? null" />
               <h3 class="panel__title"><IconDoc :size="16" /> Current story lead</h3>
               <Transition name="ev-swap" mode="out-in">
                 <div v-if="mainLead" :key="mainLead.hook_id">
@@ -854,6 +869,9 @@ onMounted(() => {
                       trimPlaceLead(line.text, line.placeId ? placeNames.get(line.placeId) : null)
                     }}
                   </span>
+                </template>
+                <template v-else-if="line.kind === 'rolls' && line.rolls">
+                  <CombatRolls :rolls="line.rolls" :fresh="reveal.has(line.key)" />
                 </template>
                 <template v-else-if="line.kind === 'pending'">
                   <p class="log__prose">
@@ -1008,6 +1026,17 @@ onMounted(() => {
           :title="`${journey.renown} renown`"
           >Level {{ journey.level }} · {{ journey.title }}</span
         >
+        <div
+          v-if="hero"
+          class="bar bar--hp status__bar"
+          :class="`bar--hp-${hpTone(hero.hp_current, hero.hp_max)}`"
+          :title="`Armour class ${hero.armor_class ?? '?'}`">
+          <span>Health</span>
+          <div>
+            <i :style="{ transform: `scaleX(${hpFraction(hero.hp_current, hero.hp_max)})` }" />
+          </div>
+          <b>{{ hero.hp_current ?? '–' }}</b>
+        </div>
         <div ref="staminaEl" class="bar bar--stamina status__bar">
           <span>Stamina</span>
           <div><i :style="{ transform: `scaleX(${barFraction(staminaShown)})` }" /></div>
@@ -1086,6 +1115,12 @@ onMounted(() => {
               </div>
             </div>
             <p v-if="conditions.length" class="sheet__conditions">{{ conditions.join(' · ') }}</p>
+            <PartyPanel
+              v-if="party"
+              class="sheet__party"
+              :party="party"
+              :me="adv.me.value ?? null"
+              full />
             <p v-if="!adv.alive.value" class="sheet__fallen">
               {{ myName }} has fallen. The story goes on without you.
             </p>
@@ -2714,6 +2749,25 @@ button.log__picture:hover .log__thumb img {
 }
 .bar--mana i {
   background: linear-gradient(90deg, #2f6f8f, #4f95b5);
+}
+.bar--hp i {
+  background: linear-gradient(90deg, #4f8a4a, #6fae5e);
+  transition: transform 0.6s var(--ease-settle);
+}
+.bar--hp-hurt i {
+  background: linear-gradient(90deg, #b5803a, #d6a14d);
+}
+.bar--hp-low i,
+.bar--hp-down i {
+  background: linear-gradient(90deg, #a8402a, #d0603a);
+}
+.lead__party {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.sheet__party {
+  margin-top: 14px;
 }
 .bar b {
   font-weight: 500;

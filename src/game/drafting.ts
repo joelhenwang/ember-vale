@@ -23,6 +23,8 @@ export interface DraftWorldSelection {
 export interface DraftModeSelection {
   role: 'watcher' | 'player' | 'director' | 'deity'
   controlledKey?: string
+  /** A story you play with fights in it: your hero's people and calling. */
+  adventure?: { race: string; characterClass: string }
 }
 
 export interface DraftAiPin {
@@ -62,6 +64,14 @@ export function buildDraftPayload(selections: NewStorySelections): DraftPayloadJ
       role: selections.mode.role,
       ...(selections.mode.controlledKey
         ? { controlled_cast_key: selections.mode.controlledKey }
+        : {}),
+      ...(selections.mode.role === 'player' && selections.mode.adventure
+        ? {
+            adventure: {
+              race: selections.mode.adventure.race,
+              character_class: selections.mode.adventure.characterClass
+            }
+          }
         : {})
     },
     story: {

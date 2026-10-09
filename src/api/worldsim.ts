@@ -76,7 +76,8 @@ import type {
   PicturePromptView,
   JobView,
   WritingSampleView,
-  TerrainView
+  TerrainView,
+  PartyRosterResponse
 } from '../../content/clients/worldsim'
 import { apiFetch, type Role } from './http'
 
@@ -513,6 +514,15 @@ export function listItems(
 ): Promise<ItemListResponse> {
   const owner = ownerId ? `&owner_id=${ownerId}` : ''
   return apiFetch<ItemListResponse>(`/stage2/items?world_id=${worldId}${owner}`, {
+    ...opts,
+    method: 'GET'
+  })
+}
+
+/** A combat story's party (hero and companions, 5e sheets) and the foes of
+ *  its latest fight while it is on; a story without fights has no members. */
+export function getParty(worldId: string, opts: CallOptions = {}): Promise<PartyRosterResponse> {
+  return apiFetch<PartyRosterResponse>(`/stage1/party?world_id=${worldId}`, {
     ...opts,
     method: 'GET'
   })

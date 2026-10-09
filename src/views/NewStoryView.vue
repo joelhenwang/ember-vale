@@ -12,6 +12,9 @@ import InlineStepper from '../components/studio/InlineStepper.vue'
 import CollapseBox from '../components/studio/CollapseBox.vue'
 import StoryImage from '../components/StoryImage.vue'
 import IconCheck from '../components/icons/IconCheck.vue'
+import IconBook from '../components/icons/IconBook.vue'
+import IconEmblem from '../components/icons/IconEmblem.vue'
+import { DEFAULT_HERO, HERO_CLASSES, HERO_RACES, heroLine } from '../game/party'
 import IconPlus from '../components/icons/IconPlus.vue'
 import IconEye from '../components/icons/IconEye.vue'
 import IconUser from '../components/icons/IconUser.vue'
@@ -147,6 +150,10 @@ const sel = reactive({
   }[],
   role: 'watcher' as 'watcher' | 'player',
   controlledKey: undefined as string | undefined,
+  /** A story you play with fights: your hero's people and calling. */
+  fights: false,
+  race: DEFAULT_HERO.race,
+  characterClass: DEFAULT_HERO.characterClass,
   title: '',
   tone: 'hopeful mystery'
 })
@@ -202,7 +209,13 @@ const selections = computed<NewStorySelections>(() => ({
   })),
   mode:
     sel.role === 'player'
-      ? { role: 'player', controlledKey: sel.controlledKey }
+      ? {
+          role: 'player',
+          controlledKey: sel.controlledKey,
+          ...(sel.fights
+            ? { adventure: { race: sel.race, characterClass: sel.characterClass } }
+            : {})
+        }
       : { role: 'watcher' },
   title: sel.title,
   tone: sel.tone || undefined,
@@ -255,6 +268,14 @@ function cheer(event: Event): void {
   const card = event.currentTarget as HTMLElement | null
   burst(card?.querySelector('.mode__tick, .wcard__tick'), { count: 8, spread: 38 })
 }
+function chooseFights(fights: boolean, event: Event): void {
+  const fresh = sel.fights !== fights
+  sel.fights = fights
+  if (fresh) cheer(event)
+}
+const heroSummary = computed(() =>
+  sel.role === 'player' && sel.fights ? heroLine(sel.race, sel.characterClass) : null
+)
 function chooseRole(role: 'watcher' | 'player', event: Event): void {
   const fresh = sel.role !== role
   sel.role = role
@@ -451,6 +472,13 @@ function hydrate(payload: Record<string, unknown>): void {
   sel.role = mode['role'] === 'player' ? 'player' : 'watcher'
   sel.controlledKey =
     typeof mode['controlled_cast_key'] === 'string' ? mode['controlled_cast_key'] : undefined
+  const adventure = mode['adventure'] as Record<string, unknown> | null | undefined
+  sel.fights = !!adventure && typeof adventure === 'object'
+  if (adventure && typeof adventure === 'object') {
+    if (typeof adventure['race'] === 'string') sel.race = adventure['race']
+    if (typeof adventure['character_class'] === 'string')
+      sel.characterClass = adventure['character_class']
+  }
   const story = (payload['story'] ?? {}) as Record<string, unknown>
   if (typeof story['title'] === 'string') sel.title = story['title']
   if (typeof story['tone'] === 'string') sel.tone = story['tone']
@@ -515,6 +543,11 @@ function applyRecoverySelections(s: NewStorySelections): void {
   }))
   sel.role = s.mode.role === 'player' ? 'player' : 'watcher'
   sel.controlledKey = s.mode.controlledKey
+  sel.fights = !!s.mode.adventure
+  if (s.mode.adventure) {
+    sel.race = s.mode.adventure.race
+    sel.characterClass = s.mode.adventure.characterClass
+  }
   sel.title = s.title
   sel.tone = s.tone ?? 'hopeful mystery'
 }
@@ -1262,6 +1295,82 @@ onMounted(() => {
                       </span>
                     </button>
                   </div>
+                  <h2 class="nsx__h nsx__h--gap">What kind of story?</h2>
+                  <div class="modes modes--kind">
+                    <button
+                      type="button"
+                      class="mode mode--small"
+                      :class="{ 'mode--on': !sel.fights }"
+                      :aria-pressed="!sel.fights"
+                      @click="chooseFights(false, $event)">
+                      <span class="mode__tick" aria-hidden="true">
+                        <IconCheck v-if="!sel.fights" :size="13" />
+                      </span>
+                      <IconBook :size="30" class="mode__icon" />
+                      <span class="mode__name">A tale</span>
+                      <span class="mode__desc">Talk, travel and discover. No dice, no fights.</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="mode mode--small"
+                      :class="{ 'mode--on': sel.fights }"
+                      :aria-pressed="sel.fights"
+                      @click="chooseFights(true, $event)">
+                      <span class="mode__tick" aria-hidden="true">
+                        <IconCheck v-if="sel.fights" :size="13" />
+                      </span>
+                      <IconEmblem :size="30" class="mode__icon" />
+                      <span class="mode__name">An adventure with fights</span>
+                      <span class="mode__desc"
+                        >Your hero gets health, armour and weapons. The storyteller starts fights;
+                        the dice decide them.</span
+                      >
+                    </button>
+                  </div>
+                  <Transition name="ev-rise">
+                    <div v-if="sel.fights" class="hero">
+                      <h3 class="hero__h">{{ controlledDisplay || 'Your hero' }}'s people</h3>
+                      <div class="hero__picks" role="radiogroup" aria-label="People">
+                        <button
+                          v-for="r in HERO_RACES"
+                          :key="r.key"
+                          type="button"
+                          role="radio"
+                          class="hero__pick ev-press"
+                          :class="{ 'hero__pick--on': sel.race === r.key }"
+                          :aria-checked="sel.race === r.key"
+                          :title="r.blurb"
+                          @click="sel.race = r.key">
+                          {{ r.name }}
+                        </button>
+                      </div>
+                      <p class="hero__blurb">
+                        {{ HERO_RACES.find((r) => r.key === sel.race)?.blurb }}
+                      </p>
+                      <h3 class="hero__h">Calling</h3>
+                      <div class="hero__picks" role="radiogroup" aria-label="Calling">
+                        <button
+                          v-for="c in HERO_CLASSES"
+                          :key="c.key"
+                          type="button"
+                          role="radio"
+                          class="hero__pick ev-press"
+                          :class="{ 'hero__pick--on': sel.characterClass === c.key }"
+                          :aria-checked="sel.characterClass === c.key"
+                          :title="c.blurb"
+                          @click="sel.characterClass = c.key">
+                          {{ c.name }}
+                        </button>
+                      </div>
+                      <p class="hero__blurb">
+                        {{ HERO_CLASSES.find((c) => c.key === sel.characterClass)?.blurb }}
+                      </p>
+                      <p class="nsx__lead">
+                        {{ controlledDisplay || 'Your hero' }} starts as a {{ heroSummary }}.
+                        Companions can join the party along the way.
+                      </p>
+                    </div>
+                  </Transition>
                 </template>
                 <p v-if="modeNotice" class="nsv__notice" role="status">{{ modeNotice }}</p>
               </template>
@@ -1457,6 +1566,10 @@ onMounted(() => {
                           ? `You play ${controlledDisplay}.`
                           : 'You watch the story unfold.'
                       }}</span>
+                      <span v-if="heroSummary"
+                        >An adventure with fights: {{ controlledDisplay }} is a
+                        {{ heroSummary }}.</span
+                      >
                     </span>
                     <button type="button" class="setup__edit" @click="go(3)">Edit</button>
                   </li>
@@ -1639,6 +1752,7 @@ onMounted(() => {
                   </h3>
                   <ul class="chips chips--teal">
                     <li>{{ sel.role === 'player' ? 'Player' : 'Observer' }}</li>
+                    <li v-if="heroSummary">With fights · {{ heroSummary }}</li>
                     <li v-if="sel.role === 'player' && playerMember">
                       Starts at {{ placeName(playerMember.location) }}
                     </li>
@@ -2550,6 +2664,58 @@ onMounted(() => {
   max-width: 32ch;
   font-size: 16.5px;
   color: var(--ink-2);
+}
+.mode--small {
+  padding: 18px 18px 14px;
+}
+.mode--small .mode__name {
+  font-size: 23px;
+}
+.mode--small .mode__desc {
+  font-size: 15px;
+}
+/* A story with fights: the hero's people and calling. */
+.hero {
+  margin-top: 16px;
+  padding: 14px 16px 6px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.hero__h {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.hero__picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.hero__pick {
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--panel);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.hero__pick:hover {
+  border-color: var(--line-strong);
+}
+.hero__pick--on {
+  border-color: var(--teal);
+  color: var(--cream-on-teal);
+  background: var(--teal);
+}
+.hero__blurb {
+  margin: 6px 0 14px;
+  font-size: 15px;
+  color: var(--ink-3);
 }
 .mode__foot {
   margin-top: 6px;
