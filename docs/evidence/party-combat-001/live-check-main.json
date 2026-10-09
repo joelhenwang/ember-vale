@@ -1,0 +1,44 @@
+{
+ "world_id": "c29532dc-20cd-4c7d-9900-72d2915aeb1d",
+ "turns": [
+  {
+   "turn": 1,
+   "status": 200,
+   "seconds": 10.0
+  },
+  {
+   "turn": 2,
+   "status": 200,
+   "seconds": 12.6
+  },
+  {
+   "turn": 3,
+   "status": 200,
+   "seconds": 17.2
+  }
+ ],
+ "scenes": [
+  "The Hearth's back door bangs open, and a goblin raider bursts in, knife glinting. Wren's hand flies to their longsword, steel hissing from its scabbard as they leap to meet the threat. Wren lunges, blade flashing in the dim light of the Hearth.",
+  "The Hearth's back door creaks open, revealing the dimly lit kitchen. The air is thick with the scent of freshly baked bread, and the sound of Wren's blade clashing against the goblin's knife echoes through the room. Wren, their longsword gleaming, stands ready for the next strike. Wren's longsword flashes again, the steel singing through the air as they continue their assault on the wounded goblin",
+  "The Hearth's kitchen, dimly lit and thick with the scent of fresh bread, echoes with the clang of steel. Wren, longsword gleaming, stands ready, their blade flashing as they strike at the wounded goblin. Ash, their voice steady, turns to Wren and asks about the missing flour. Wren lunges forward, their longsword a blur as they aim to finish the goblin."
+ ],
+ "tags_in_prose": false,
+ "rolls": [
+  "Wren hits Goblin for 2 slashing. (7->5 HP)",
+  "Wren misses Goblin (8 vs AC 15)."
+ ],
+ "party": [
+  [
+   "Wren",
+   12,
+   12
+  ]
+ ],
+ "foes": [
+  [
+   "Goblin",
+   5,
+   7
+  ]
+ ]
+}

@@ -142,3 +142,13 @@ Known gaps:
 - The Observatory and story room show the rolls only as the chronicle line.
 - Whether the narrator tags reliably needs a scorecard-style measurement over
   several runs before anyone relies on it.
+
+## After the merge into main (2026-10-09)
+
+`live_check.py` ran against the rebuilt dev API (Venice) on merged main (`e3f6fc2`):
+- 3 turns of 10–17 s;
+- the storyteller started a goblin fight;
+- the engine rolled `Wren hits Goblin for 2 slashing (7->5 HP)` and `Wren misses Goblin (8 vs AC 15)`;
+- no tags showed in the prose.
+
+Results are in `live-check-main.json`. Adventure (`shots/9-live-main.png`, `adv-shot.mjs`) shows "Your party" with the "In a fight" badge, the goblin at 5/7, "The dice" under the scene, and a key-moment picture of the fight, with no page errors.
