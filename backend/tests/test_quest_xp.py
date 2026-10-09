@@ -113,7 +113,7 @@ def _run(coro: Any) -> Any:
     return asyncio.run(coro)
 
 
-async def _add_hooks(world: UUID, *titles: str) -> list[UUID]:
+async def _add_hooks(world: UUID, *titles: str, people: tuple[UUID, ...] = ()) -> list[UUID]:
     engine = create_engine(Settings())
     ids = [uuid.uuid4() for _ in titles]
     try:
@@ -126,6 +126,7 @@ async def _add_hooks(world: UUID, *titles: str) -> list[UUID]:
                         title=title,
                         purpose=f"{title}: a matter in the vale.",
                         status=NarrativeStatus.ACTIVE,
+                        participant_ids=list(people),
                     )
                 )
             await uow.commit()
@@ -158,7 +159,12 @@ def test_both_ways_of_settling_give_the_party_xp_once(
     world_id = UUID(created.json()["world_id"])
     wren = created.json()["character_id"]
     headers = {"X-Worldsim-Role": "player", "X-Worldsim-Character": wren}
-    cart, flour = _run(_add_hooks(world_id, "The stuck cart", "The missing flour"))
+    cart, flour = _run(
+        _add_hooks(world_id, "The stuck cart", "The missing flour", people=(UUID(wren),))
+    )
+    # A rumour among others only, settled by the director: the party took no
+    # part in it, so it pays nothing.
+    (quarrel,) = _run(_add_hooks(world_id, "The baker's quarrel"))
     cast = client.get(
         "/api/v1/world/presentation", params={"world_id": str(world_id)}, headers=headers
     ).json()["cast"]
@@ -171,7 +177,10 @@ def test_both_ways_of_settling_give_the_party_xp_once(
                 {
                     "action": "noop",
                     "reason": "story is moving",
-                    "resolved": [{"hook_id": str(flour), "ending": "The flour was found."}],
+                    "resolved": [
+                        {"hook_id": str(flour), "ending": "The flour was found."},
+                        {"hook_id": str(quarrel), "ending": "The bakers made peace."},
+                    ],
                 }
             )
         if "You resolve" in system and "heave the wheel" in prompt:

@@ -134,7 +134,9 @@ function eventSnippets(eventId: string): TimelineEntry[] {
       </span>
     </h3>
     <template v-for="(segment, si) in segments" :key="si">
-      <template v-if="segment.kind === 'legacy'">
+      <!-- A fight's own record is its dice: its text only repeated them. -->
+      <template v-if="segment.kind === 'legacy' && segment.entry.combat?.rolls?.length" />
+      <template v-else-if="segment.kind === 'legacy'">
         <p v-if="eventLabel(segment.entry.event_type)" class="beat__kind">
           {{ eventLabel(segment.entry.event_type) }}
         </p>

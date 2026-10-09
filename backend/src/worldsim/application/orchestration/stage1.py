@@ -40,6 +40,7 @@ from uuid import UUID, uuid4, uuid5
 
 from sqlalchemy.exc import IntegrityError
 
+from worldsim.application.callings import suggest_calling
 from worldsim.application.commands.director import accept_decision, open_place
 from worldsim.application.commands.inventory import move_item
 from worldsim.application.commands.knowledge import fold_claim
@@ -145,6 +146,7 @@ from worldsim.domain.commands import (
     SparAction,
     TakeAction,
     TransferAction,
+    WaitAction,
 )
 from worldsim.domain.context import ContextEnvelope, ContextRequest, SourceCandidate
 from worldsim.domain.director import (
@@ -237,7 +239,9 @@ from worldsim.domain.narration import NarrationBeat
 from worldsim.domain.narrative import NarrativeHook
 from worldsim.domain.party import (
     Monster,
+    PartyMember,
     chooser_keys,
+    companion_note,
     down_line,
     fight_keys,
     fight_over_line,
@@ -281,7 +285,6 @@ from worldsim.domain.rules.dnd.data import dict_field, entry, str_field, table
 from worldsim.domain.rules.dnd.deeds import Deed, looks_like_deed
 from worldsim.domain.rules.dnd.invites import (
     accepts,
-    companion_description,
     invitation_note,
     is_invitation,
 )
@@ -3071,6 +3074,20 @@ class Stage1Orchestrator:
             )
             await self._finish_task(task_run_id, owner, True)
             return intent
+        follow = await self._follow_hero(
+            world_id, sealed, character, player_intents, runtime.controlled_character_id
+        )
+        if follow is not None:
+            await self._finish_task(task_run_id, owner, True)
+            return Intent(
+                id=derive_intent_id(world_id, sealed.snapshot_id, character.id),
+                world_id=world_id,
+                snapshot_id=sealed.snapshot_id,
+                phase_run_id=run_id,
+                author_character_id=character.id,
+                action=follow,
+                idempotency_key=f"follow:{task_run_id}",
+            )
         answered = await self._answered(world_id, character)
 
         async def _attempt(task_id: UUID, extra_goal: str | None) -> dict[str, Any]:
@@ -3164,6 +3181,14 @@ class Stage1Orchestrator:
             await self._finish_task(retry_id, owner, True)
         await self._remember_intention(world_id, character.id, result.get("raw_response"))
         await self._finish_task(task_run_id, owner, True)
+        if isinstance(intent.action, MoveAction) and await self._is_companion(
+            world_id, character.id
+        ):
+            # The party travels together: a companion leaves only with the
+            # hero (following above). Told so, Ash still walked off mid-fight
+            # (companions-002 run-1), so the walk away becomes staying put.
+            stay = WaitAction(character_id=character.id, snapshot_id=sealed.snapshot_id)
+            intent = intent.model_copy(update={"action": stay})
         return intent
 
     async def _answered(self, world_id: UUID, character: Character) -> list[Exchange]:
@@ -3423,6 +3448,18 @@ class Stage1Orchestrator:
                     score=2.5,
                 )
             )
+        party = await self._party_note(world_id, character)
+        if party is not None:
+            candidates.append(
+                SourceCandidate(
+                    source_id=f"party:{character.id}",
+                    data_class="goals",
+                    visibility=Visibility.PRIVATE,
+                    owner_id=character.id,
+                    text=party,
+                    score=4.5,
+                )
+            )
         if extra_goal is not None:
             candidates.append(
                 SourceCandidate(
@@ -3567,6 +3604,79 @@ class Stage1Orchestrator:
                     f"shared reads changed {character.name}'s context: " + " | ".join(diff)
                 )
         return envelope, included, excluded
+
+    async def _companions(self, world_id: UUID) -> tuple[list[PartyMember], UUID | None]:
+        """The party and the played hero's character (one read per phase)."""
+        roster = await self._shared(
+            ("party", world_id), lambda uow: uow.party.list_for_world(world_id)
+        )
+        if not roster:
+            return [], None
+        grant = await self._shared(
+            ("grant", world_id), lambda uow: uow.roles.get_for_world(world_id)
+        )
+        return roster, grant.character_id if grant is not None else None
+
+    async def _is_companion(self, world_id: UUID, character_id: UUID) -> bool:
+        """A linked companion of the played hero (not the hero)."""
+        roster, played = await self._companions(world_id)
+        return (
+            played is not None
+            and played != character_id
+            and any(m.character_id == character_id for m in roster)
+        )
+
+    async def _party_note(self, world_id: UUID, character: Character) -> str | None:
+        """A linked companion's note: in the party, and the fight that is on."""
+        roster, played = await self._companions(world_id)
+        if played is None or played == character.id:
+            return None
+        if not any(m.character_id == character.id for m in roster):
+            return None
+        hero = next((m for m in roster if m.character_id == played), None)
+        if hero is None:
+            return None
+
+        async def load_foes(uow: Any) -> list[Monster]:
+            fight = await uow.events.latest_fight(world_id)
+            if fight is None:
+                return []
+            _day, _phase, now = await uow.worlds.get_clock(world_id)
+            return foes_on(
+                fight.absolute_index,
+                now,
+                fight_keys(fight.summary),
+                await uow.monsters.list_for_world(world_id),
+            )
+
+        foes = await self._shared(("foes-on", world_id), load_foes)
+        return companion_note(hero.name, foes)
+
+    async def _follow_hero(
+        self,
+        world_id: UUID,
+        sealed: SealedPhase,
+        character: Character,
+        player_intents: Mapping[UUID, ActionIntent],
+        hero_id: UUID | None,
+    ) -> MoveAction | None:
+        """A linked companion where the hero stands goes where the hero goes:
+        the party travels together (a companion of their own mind left the
+        fight for the market, companions-001)."""
+        if hero_id is None or hero_id == character.id:
+            return None
+        move = player_intents.get(hero_id)
+        if not isinstance(move, MoveAction):
+            return None
+        here = sealed.locations.get(character.id)
+        if here is None or here != sealed.locations.get(hero_id):
+            return None
+        roster, _played = await self._companions(world_id)
+        if not any(m.character_id == character.id for m in roster):
+            return None
+        return move.model_copy(
+            update={"character_id": character.id, "snapshot_id": sealed.snapshot_id, "note": None}
+        )
 
     async def _shared[T](self, key: object, load: Callable[[Any], Awaitable[T]]) -> T:
         """One read per phase while a phase view is shared, else a fresh one."""
@@ -4329,14 +4439,15 @@ class Stage1Orchestrator:
                     continue
                 who = await uow.characters.get(reaction.reactor_character_id)
                 card = await _card_of(uow, who, self._cards)
-            words = " ".join([card.appearance, card.personality, card.background])
+            # Race and calling: the writing model's choice, else the card's words.
+            described = await suggest_calling(self._moment_writer, card, roster, self._dnd_tables())
             async with self._factory() as uow:
                 result = await recruit_companion(
                     uow,
                     self._dnd_tables(),
                     world_id,
                     who.name,
-                    companion_description(words, self._dnd_tables()),
+                    described,
                     character_id=who.id,
                 )
             if result.joined:
@@ -4889,6 +5000,7 @@ class Stage1Orchestrator:
                 if member.character_id is not None
             }
             deeds: list[Deed] = []
+            orders: dict[str, str] = {}
             hero_here = False
             grant = await uow.roles.get_for_world(world_id)
             chooses = chooser_keys(roster, grant.character_id if grant is not None else None)
@@ -4906,6 +5018,13 @@ class Stage1Orchestrator:
                 action = intent.action
                 if isinstance(action, InteractAction) and intent.author_character_id in heroes:
                     deeds.append(Deed(key=heroes[intent.author_character_id], text=action.attempt))
+                if (
+                    isinstance(action, CommunicateAction)
+                    and intent.author_character_id in heroes
+                    and action.target_character_id in heroes
+                ):
+                    # "Ash, take the second goblin": an order to a companion.
+                    orders[heroes[action.target_character_id]] = action.topic
             # The fight that is on (before this scene): newcomers of a kind
             # still standing join it instead of replacing it.
             fight = await uow.events.latest_fight(world_id)
@@ -4949,6 +5068,7 @@ class Stage1Orchestrator:
                     chooses=chooses,
                     strike_back=hero_here,
                     present=present_keys(roster, chooses, participants, places),
+                    orders=orders,
                 )
                 if not report.outcomes and not report.unresolved and not joined:
                     return "no-tags"

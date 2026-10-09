@@ -74,7 +74,12 @@ def companion_description(card_text: str, tables: DataTables) -> str:
     else human fighter (the sheet the companion fights with)."""
     low = card_text.lower()
     race = next(
-        (key for key in table(tables, "races") if re.search(rf"\b{re.escape(key)}\b", low)),
+        (
+            key
+            # Longest first: "half-elf" is not an elf.
+            for key in sorted(table(tables, "races"), key=len, reverse=True)
+            if re.search(rf"\b{re.escape(key)}\b", low)
+        ),
         "human",
     )
     calling = next(

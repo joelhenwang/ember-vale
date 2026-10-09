@@ -274,3 +274,138 @@ def test_a_spar_and_a_fight_in_one_scene_both_keep_their_dice(
     ).json()["entries"]
     kinds = [r["kind"] for e in entries if e["combat"] for r in e["combat"]["rolls"]]
     assert "spar" in kinds and "encounter" in kinds, kinds
+
+
+def test_a_companion_hears_the_party_and_the_fight() -> None:
+    from uuid import uuid4
+
+    from worldsim.domain.party import Monster, companion_note
+
+    quiet = companion_note("Wren", [])
+    assert quiet.startswith("You travel with Wren's party as their companion")
+    assert "fight is on" not in quiet
+
+    def goblin(n: int, hp: int) -> Monster:
+        return Monster(
+            id=uuid4(),
+            world_id=uuid4(),
+            name_key=f"goblin-{n}",
+            name=f"Goblin {n}",
+            hp_current=hp,
+            hp_max=7,
+            ac=15,
+        )
+
+    fight = companion_note("Wren", [goblin(1, 0), goblin(2, 3)])
+    assert "A fight is on with Goblin 2 (badly wounded)" in fight
+    assert "Goblin 1" not in fight and "Never spar" in fight
+
+
+def test_a_companion_takes_the_most_wounded_foe_or_the_one_they_are_told() -> None:
+    def ash_swings(orders: dict[str, str] | None) -> list[str | None]:
+        report = resolve_narration_tags(
+            "Steel rings.",
+            [_wren(), _ash()],
+            DATA,
+            _rng(0.0),
+            live=_goblins(7, 2, 7),
+            fighting=["goblin-1", "goblin-2", "goblin-3"],
+            chooses={"wren"},
+            strike_back=True,
+            present={"wren", "ash"},
+            orders=orders,
+        )
+        return [o.target for o in report.outcomes if o.actor == "Ash"]
+
+    assert ash_swings(None) == ["Goblin 2"]
+    assert ash_swings({"ash": "Ash, take the third goblin!"}) == ["Goblin 3"]
+    assert ash_swings({"ash": "Ash, watch the door."}) == ["Goblin 2"]
+
+
+def test_a_companion_follows_the_hero_and_keeps_the_party_in_mind(
+    wired: tuple[ApiClient, FakeGateway],
+) -> None:
+    client, gateway = wired
+    created = _create(client, FIGHTER, "follow-story", ash_at="hearth")
+    assert created.status_code == 200, created.text
+    world_id = UUID(created.json()["world_id"])
+    wren = created.json()["character_id"]
+    headers = {"X-Worldsim-Role": "player", "X-Worldsim-Character": wren}
+    cast = client.get(
+        "/api/v1/world/presentation", params={"world_id": str(world_id)}, headers=headers
+    ).json()["cast"]
+    ash = next(c["character_id"] for c in cast if c["name"] == "Ash")
+    places = {
+        p["name"]: p["id"]
+        for p in client.get(
+            "/api/v1/stage2/map", params={"world_id": str(world_id)}, headers=headers
+        ).json()["places"]
+    }
+    noted: list[str] = []
+
+    def route(request: Any) -> str | None:
+        system, prompt = request.system or "", request.prompt
+        if "You narrate" in system:
+            return None
+        if "travel with Wren's party" in prompt:
+            noted.append(prompt)
+        if "You react" in system and "join their party" in prompt:
+            reply = {
+                "family": "communicate",
+                "target_character_id": wren,
+                "topic": "Yes, I will come.",
+            }
+            return json.dumps({**reply, "character_id": ash, "snapshot_id": ash})
+        if "You decide" in system:
+            # Ash would rather go to the market alone: a companion stays.
+            alone = {"family": "move", "destination_location_id": places["Market"]}
+            return json.dumps({**alone, "character_id": ash, "snapshot_id": ash})
+        if "You react" in system:
+            return json.dumps({"family": "wait", "character_id": ash, "snapshot_id": ash})
+        if "You resolve" in system:
+            return json.dumps({"outcome": "success", "effects": [], "rationale": "Fine."})
+        return None
+
+    gateway.route = route
+    for index, intent in (
+        (
+            1,
+            {
+                "family": "communicate",
+                "target_character_id": ash,
+                "topic": "Will you join me as my companion?",
+            },
+        ),
+        (2, {"family": "wait"}),
+        (3, {"family": "move", "destination_location_id": places["Market"]}),
+    ):
+        moved = client.post(
+            "/api/v1/stage1/advance",
+            json={
+                "world_id": str(world_id),
+                "absolute_index": index,
+                "player_intents": {
+                    wren: {**intent, "character_id": wren, "snapshot_id": NIL_SNAPSHOT}
+                },
+            },
+            headers=headers,
+        )
+        assert moved.status_code == 200, moved.text
+        if index == 2:
+            here = {
+                c["name"]: c.get("location_id")
+                for c in client.get(
+                    "/api/v1/world/presentation",
+                    params={"world_id": str(world_id)},
+                    headers=headers,
+                ).json()["cast"]
+            }
+            assert here["Ash"] == here["Wren"] != places["Market"], here
+    assert noted, "Ash never heard that they travel with Wren's party"
+    where = {
+        c["name"]: c.get("location_id")
+        for c in client.get(
+            "/api/v1/world/presentation", params={"world_id": str(world_id)}, headers=headers
+        ).json()["cast"]
+    }
+    assert where["Ash"] == where["Wren"] == places["Market"], where

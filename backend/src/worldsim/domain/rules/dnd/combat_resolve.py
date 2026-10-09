@@ -304,6 +304,7 @@ def resolve_narration_tags(
     chooses: set[str] | None = None,
     strike_back: bool = False,
     present: set[str] | None = None,
+    orders: dict[str, str] | None = None,
 ) -> CombatReport:
     """Resolve every combat tag in narration order. Inputs are never mutated.
 
@@ -330,7 +331,9 @@ def resolve_narration_tags(
     once no fight is on (or this scene ends it), whoever was down gets back
     up with 1 hit point: there is no death and dying.
     ``present`` are the party members in this scene: companions among them
-    (not in ``chooses``) whom nothing had act fight beside the party.
+    (not in ``chooses``) whom nothing had act fight beside the party: at the
+    foe the hero's ``orders`` (their words to a companion, by key) name,
+    else the most wounded foe standing.
     """
     if not sheets or not (text or deeds):
         return CombatReport()
@@ -382,6 +385,15 @@ def resolve_narration_tags(
                 inner = line[line.index("[") + 1 : line.index("]")]
                 for ref in parse_encounter_tag(inner, tables):
                     standing_kinds.append((ref.index, ref.name))
+
+    def most_wounded() -> str | None:
+        """The foe of the fight that is on with the least health left (by share)."""
+        up = [k for k in on_now if monster_hp.get(k, 0) > 0]
+        if not up:
+            return None
+        key = min(up, key=lambda k: monster_hp[k] / max(1, monster_meta[k].hp))
+        return monster_meta[key].label
+
     helped = 0
     if strike_back:
         extra = helper_lines(
@@ -392,6 +404,8 @@ def resolve_narration_tags(
             {deed.key for deed in deeds or []},
             list(dict.fromkeys(standing_kinds)),
             tables,
+            aim=most_wounded(),
+            orders=orders,
         )
         text, helped = after_encounter(text, extra), len(extra)
     text, deed_count = deed_lines(

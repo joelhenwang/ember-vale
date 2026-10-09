@@ -186,3 +186,28 @@ def present_keys(
         or str(m.character_id) in participants
         or (spot is not None and places.get(str(m.character_id)) == spot)
     }
+
+
+def party_took_part(roster: list[PartyMember], people: set[CharacterId]) -> bool:
+    """A matter the party took part in: one of its linked members is among
+    the people (a rumour's own, or the scene where it settled)."""
+    return any(m.character_id is not None and m.character_id in people for m in roster)
+
+
+def companion_note(hero: str, foes: list[Monster]) -> str:
+    """What a companion keeps in mind (companions-001): they are in the party,
+    and which fight is on. Without it Ash walked off to the market, waited or
+    sparred the hero with goblins standing; only the fallback ever swung."""
+    note = (
+        f"You travel with {hero}'s party as their companion: you go where {hero} goes "
+        f"and stand by them; your own errands wait while you travel together."
+    )
+    standing = [foe for foe in foes if foe.hp_current > 0]
+    if standing:
+        shown = ", ".join(f"{foe.name} ({_shape(foe)})" for foe in standing)
+        note += (
+            f" A fight is on with {shown}. Fight beside {hero}: attack one of them and "
+            f'name it ("I swing at {standing[0].name}"). Never spar with your companions '
+            "while foes stand."
+        )
+    return note

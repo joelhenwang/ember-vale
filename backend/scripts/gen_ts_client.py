@@ -41,6 +41,7 @@ WANTED = (
     "LevelChoiceView",
     "SpellOption",
     "LevelChoiceRequest",
+    "PartyCallingRequest",
     "CombatRollView",
     "CombatLogView",
     "ActivityStartRequest",
