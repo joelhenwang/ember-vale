@@ -19,7 +19,7 @@ from worldsim.domain.enums import EventType, NarrativeStatus
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.events import WorldEvent
 from worldsim.domain.ids import derive_settle_xp_event_id
-from worldsim.domain.party import chooser_keys
+from worldsim.domain.party import chooser_keys, party_took_part
 from worldsim.domain.rules.dnd.data import DataTables
 from worldsim.domain.rules.dnd.quests import award_settled
 from worldsim.domain.time import split_absolute
@@ -67,6 +67,19 @@ async def _award_one(
                 return False
             hook = await uow.narrative.get_hook(hook_id)
             if hook.world_id != world_id or hook.status != NarrativeStatus.CLOSED:
+                return False
+            # Only a rumour the party took part in pays: one whose people include
+            # a party member, or that settled in a scene a party member was in.
+            # Rumours settle often among others (0-2 in a 6-turn scorecard
+            # story), and 50 XP each was a free level every few story days.
+            seen = set(hook.participant_ids)
+            if scene_event_id is not None:
+                try:
+                    seen |= set((await uow.events.get_event(scene_event_id)).participant_ids)
+                except DomainError as exc:
+                    if exc.code is not ErrorCode.NOT_FOUND:
+                        raise
+            if not party_took_part(roster, seen):
                 return False
             try:
                 await uow.events.get_event(event_id)

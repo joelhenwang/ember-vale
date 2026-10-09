@@ -186,3 +186,9 @@ def present_keys(
         or str(m.character_id) in participants
         or (spot is not None and places.get(str(m.character_id)) == spot)
     }
+
+
+def party_took_part(roster: list[PartyMember], people: set[CharacterId]) -> bool:
+    """A matter the party took part in: one of its linked members is among
+    the people (a rumour's own, or the scene where it settled)."""
+    return any(m.character_id is not None and m.character_id in people for m in roster)
