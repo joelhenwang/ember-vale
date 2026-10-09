@@ -290,9 +290,18 @@ class _Moment:
     scene_id: UUID
 
 
-async def _moments(uow: UnitOfWork, scene: Scene, player_id: UUID) -> list[_Moment]:
-    """This scene's key moments for the player, most notable first."""
-    if scene.event_id is None or player_id not in {p.character_id for p in scene.participants}:
+async def _moments(uow: UnitOfWork, scene: Scene, player_id: UUID | None) -> list[_Moment]:
+    """This scene's key moments for the player, most notable first.
+
+    A watched story (no player) keeps settled rumours and the first scene
+    any two characters share; arrivals are left out, since in a watched
+    cast someone is always arriving somewhere.
+    """
+    if scene.event_id is None:
+        return []
+    if player_id is None:
+        return await _watched_moments(uow, scene)
+    if player_id not in {p.character_id for p in scene.participants}:
         return []
     people = _people(scene, player_id)
     place = await _scene_place(uow, scene)
@@ -339,6 +348,47 @@ async def _moments(uow: UnitOfWork, scene: Scene, player_id: UUID) -> list[_Mome
         )
     order = [PictureMoment.SETTLED, PictureMoment.ARRIVAL, PictureMoment.MEETING]
     return sorted(found, key=lambda m: order.index(m.moment))
+
+
+async def _watched_moments(uow: UnitOfWork, scene: Scene) -> list[_Moment]:
+    """Settled rumours, then first meetings of any two people in the scene."""
+    assert scene.event_id is not None
+    people = _people(scene, None)
+    place = await _scene_place(uow, scene)
+    found: list[_Moment] = []
+    for committed in await uow.events.list_effects(scene.event_id):
+        effect = committed.effect
+        if isinstance(effect, HookSettledEffect):
+            found.append(
+                _Moment(
+                    PictureMoment.SETTLED,
+                    effect.ending,
+                    f"scene:settled:{effect.hook_id}",
+                    people,
+                    place,
+                    scene.id,
+                )
+            )
+    names = {person: await _name_of(uow, person) for person in people}
+    for position, first in enumerate(people):
+        for second in people[position + 1 :]:
+            low, high = sorted((first, second), key=lambda i: i.hex)
+            found.append(
+                _Moment(
+                    PictureMoment.MEETING,
+                    f"{names[first]} meets {names[second]}.",
+                    f"scene:meeting:{low}:{high}",
+                    [first, second],
+                    place,
+                    scene.id,
+                )
+            )
+    return found
+
+
+async def _name_of(uow: UnitOfWork, character_id: UUID) -> str:
+    character = await uow.characters.get(character_id)
+    return (await uow.characters.get_card(character.id, character.card_version)).name
 
 
 #: What the writing model is asked after a turn (one call per beat, at most).
@@ -424,18 +474,20 @@ class MomentPlan:
         )
 
 
-async def plan_moments(uow: UnitOfWork, player_id: UUID, scenes: list[Scene]) -> list[MomentPlan]:
-    """The player's scenes of a beat, with their narration and key moments."""
+async def plan_moments(
+    uow: UnitOfWork, player_id: UUID | None, scenes: list[Scene]
+) -> list[MomentPlan]:
+    """The player's scenes of a beat (every scene in a watched story), with
+    their narration and key moments."""
     plans: list[MomentPlan] = []
-    player = await uow.characters.get(player_id)
-    me = (await uow.characters.get_card(player.id, player.card_version)).name
+    me = await _name_of(uow, player_id) if player_id is not None else ""
     for scene in scenes:
-        if scene.event_id is None or player_id not in {p.character_id for p in scene.participants}:
+        if scene.event_id is None:
             continue
-        names: list[str] = []
-        for participant in scene.participants:
-            character = await uow.characters.get(participant.character_id)
-            names.append((await uow.characters.get_card(character.id, character.card_version)).name)
+        present = {p.character_id for p in scene.participants}
+        if player_id is not None and player_id not in present:
+            continue
+        names = [await _name_of(uow, p.character_id) for p in scene.participants]
         place_id = await _scene_place(uow, scene)
         place = (await uow.locations.get(place_id)).name if place_id is not None else ""
         beats = await uow.scenes.narrations_for_event(scene.event_id)
@@ -443,7 +495,7 @@ async def plan_moments(uow: UnitOfWork, player_id: UUID, scenes: list[Scene]) ->
             MomentPlan(
                 scene=scene,
                 moments=await _moments(uow, scene, player_id),
-                me=me,
+                me=me or " and ".join(names) or "them",
                 people=names,
                 place=place,
                 narration=" ".join(b.text for b in beats),
@@ -467,7 +519,7 @@ async def queue_moment(
     uow: UnitOfWork,
     world_id: UUID,
     index: int,
-    player_id: UUID,
+    player_id: UUID | None,
     plans: list[MomentPlan],
     style_pack: str,
     words: dict[UUID, MomentWords] | None = None,
@@ -502,8 +554,12 @@ async def queue_moment(
                 [turning, *candidates] if said.worth >= TURNING_POINT else [*candidates, turning]
             )
         for moment in candidates:
+            # A watched story reads several scenes a turn, so the writer
+            # finds "turning points" often there: only a settled rumour
+            # skips its cooldown (watched-moments-001).
             urgent = moment.moment == PictureMoment.SETTLED or (
                 moment.moment == PictureMoment.TURNING
+                and player_id is not None
                 and said is not None
                 and said.worth >= TURNING_POINT
             )

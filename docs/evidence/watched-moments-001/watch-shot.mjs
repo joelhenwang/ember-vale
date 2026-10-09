@@ -1,0 +1,17 @@
+// The Watch screen of a watched story with its automatic pictures.
+import { chromium } from 'playwright-core'
+const [story, out] = process.argv.slice(2)
+const browser = await chromium.launch({ channel: 'msedge' })
+const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+await page.goto(`http://localhost:5180/stories/${story}/watch`, { waitUntil: 'networkidle' })
+await page.waitForTimeout(1500)
+const marked = page.locator('.ef__entry:has(.ef__pictured)')
+const marks = await marked.count()
+await page.screenshot({ path: `${out}/1-watch.png` })
+await marked.first().click()
+await page.waitForSelector('dialog.em[open]')
+await page.waitForTimeout(1500)
+await page.screenshot({ path: `${out}/2-event-with-picture.png` })
+const caption = await page.locator('.em__caption').innerText()
+await browser.close()
+console.log(JSON.stringify({ marks, caption }))

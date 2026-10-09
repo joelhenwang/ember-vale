@@ -436,3 +436,44 @@ def test_a_picture_is_repainted_from_its_edited_prompt(
         "repainting": False,
         "repaint_job_id": None,
     }
+
+
+def test_a_watched_story_gets_its_first_meeting_and_turning_points(
+    stack: tuple[ApiClient, TestClient, FakeGateway], tmp_path: Path
+) -> None:
+    """No player: every scene is a candidate (watched-moments-001)."""
+    api, raw, gateway = stack
+    ids = asyncio.run(_seed_two_at_hearth())
+    krea = _Krea()
+    raw.app.state.app_state._images = krea.client()  # pyright: ignore[reportAttributeAccessIssue, reportFunctionMemberAccess]
+    gateway.route = _ash_greets_wren(ids)
+    assert _advance(api, ids["world"], 1, headers=_watcher()).status_code == 200
+
+    def scene_art() -> list[dict[str, Any]]:
+        view = api.get(
+            "/api/v1/world/presentation", params={"world_id": str(ids["world"])}, headers=_watcher()
+        )
+        return view.json()["scene_art"]
+
+    art = scene_art()
+    assert [a["moment"] for a in art] == ["meeting"]
+    assert art[0]["caption"] in ("Wren meets Ash.", "Ash meets Wren.")
+    # The same two never get a second first meeting.
+    for index in (2, 3, 4, 5):
+        assert _advance(api, ids["world"], index, headers=_watcher()).status_code == 200
+    assert [a["moment"] for a in scene_art()] == ["meeting"]
+
+    # With a writer, a turning point leads and is painted past the cooldown.
+    writer = _MomentWriter(
+        '{"worth": 3, "title": "The bell", "line": "Wren and Ash find a bell.", '
+        '"picture": "Two travellers lift a bronze bell from the shallows."}'
+    )
+    raw.app.state.app_state._writer = writer  # pyright: ignore[reportAttributeAccessIssue, reportFunctionMemberAccess]
+    assert _advance(api, ids["world"], 6, headers=_watcher()).status_code == 200
+    assert writer.prompts and "Wren" in writer.prompts[0]
+    assert [a["moment"] for a in scene_art()] == ["meeting", "turning"]
+    # A watched story's turning point waits out the cooldown like any moment.
+    assert _advance(api, ids["world"], 7, headers=_watcher()).status_code == 200
+    assert [a["moment"] for a in scene_art()] == ["meeting", "turning"]
+    _paint_all(ids["world"], krea, tmp_path)
+    assert all(a["status"] == "ready" for a in scene_art())

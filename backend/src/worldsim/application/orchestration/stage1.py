@@ -465,6 +465,9 @@ def scene_surroundings(
 #: default dropped 15-24 observations per call by beat 12 of a play
 #: session (manifests), losing what was said a few beats earlier;
 #: continuity sections get room, the rest keep the default.
+#: Scenes of one turn the moment writer reads in a watched story.
+WATCHED_SCENES_JUDGED = 3
+
 #: Salient observations and memories from before the recent window that a
 #: context still considers, newest first. Each row costs ~0.02 ms to rank
 #: on every call, and the salient set has no time limit; at the live
@@ -1598,7 +1601,8 @@ class Stage1Orchestrator:
         self._fire("after_scenes_committed")
         await self._set_state(run_id, PhaseRunState.COMPLETED)
         player = runtime.controlled_character_id
-        if self._paint_moments and player is not None and outcomes:
+        # Watched stories (no player) get key moments too (watched-moments-001).
+        if self._paint_moments and outcomes:
             # The moment is read from the narration, so it waits for it;
             # behind the beat when narration is, keeping turns quick.
             paint = self._queue_moment(
@@ -1644,7 +1648,7 @@ class Stage1Orchestrator:
         self,
         world_id: UUID,
         index: int,
-        player: UUID,
+        player: UUID | None,
         scene_ids: list[UUID],
         narrated: asyncio.Future[Any] | None = None,
     ) -> None:
@@ -1665,18 +1669,34 @@ class Stage1Orchestrator:
                 scenes = [await uow.scenes.get_scene(scene_id) for scene_id in scene_ids]
                 plans = await plan_moments(uow, player, scenes)
             words: dict[UUID, MomentWords] = {}
-            judged = next((plan for plan in plans if plan.narration.strip()), None)
-            if self._moment_writer is not None and judged is not None:
-                said, cost = await judge_moment(self._moment_writer, judged)
-                if said is not None:
-                    words[judged.scene.id] = said
-                _phase_log.info(
-                    "moment judged",
-                    extra={
-                        "world_id": str(world_id),
-                        "worth": said.worth if said else None,
-                        "cost_usd": cost,
-                    },
+            told = [plan for plan in plans if plan.narration.strip()]
+            # The player's first scene; in a watched story the longest few
+            # (one writer call each, about $0.0001), the most worthwhile first.
+            judged = (
+                told[:1]
+                if player is not None
+                else sorted(told, key=lambda p: len(p.narration), reverse=True)[
+                    :WATCHED_SCENES_JUDGED
+                ]
+            )
+            if self._moment_writer is not None:
+                for plan in judged:
+                    said, cost = await judge_moment(self._moment_writer, plan)
+                    if said is not None:
+                        words[plan.scene.id] = said
+                    _phase_log.info(
+                        "moment judged",
+                        extra={
+                            "world_id": str(world_id),
+                            "worth": said.worth if said else None,
+                            "cost_usd": cost,
+                        },
+                    )
+            if player is None:
+                plans = sorted(
+                    plans,
+                    key=lambda p: words[p.scene.id].worth if p.scene.id in words else -1,
+                    reverse=True,
                 )
             async with self._factory() as uow:
                 style_pack = await world_style_pack(uow, world_id)
