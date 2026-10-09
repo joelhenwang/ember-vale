@@ -618,6 +618,17 @@ export function useStory(
   }
 
   /**
+   * After going back to a turn: the reading pointers of the removed later
+   * turns are dropped, so a replayed turn never reads a removed scene.
+   */
+  function forgetAfter(index: number, worldId: string = id()): void {
+    beatScenes.value = Object.fromEntries(
+      Object.entries(beatScenes.value).filter(([, ref]) => ref.index <= index)
+    )
+    persistBeatScenes(worldId)
+  }
+
+  /**
    * Best-effort structured content for one feed entry. No pointer (older
    * beat) or a failed read leaves the entry on snippet rendering — the
    * room never invents dialogue, speakers, or fallback claims.
@@ -976,6 +987,7 @@ export function useStory(
     beatScenes,
     beatDetails,
     loadBeatDetail,
+    forgetAfter,
     load,
     cancel,
     advance,

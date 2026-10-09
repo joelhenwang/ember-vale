@@ -355,7 +355,7 @@ async def chronicle(
         ]
         text = " ".join(beats) or None
         title = (beats[0] if beats else _untold_title(event.event_type.value))[:120]
-        combat = _combat_log(event.summary, event.random_result, fought_in.get(event.id))
+        combat = combat_log(event.summary, event.random_result, fought_in.get(event.id))
         if not beats and event.summary.get("arrival") == "1":
             # A journey's end is told in one line, never narrated as a scene.
             people = [who.get(p, "Someone") for p in event.participant_ids] or ["Someone"]
@@ -400,7 +400,7 @@ async def chronicle(
 _ROLLS = TypeAdapter(list[api.CombatRollView])
 
 
-def _combat_log(
+def combat_log(
     summary: dict[str, str], random_result: str | None, scene_event: UUID | None
 ) -> api.CombatLogView | None:
     """A fight's rolls from its event: in parts when recorded so, else the

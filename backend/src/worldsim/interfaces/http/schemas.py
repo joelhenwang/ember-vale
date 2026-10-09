@@ -638,6 +638,8 @@ class TimelineEntry(BaseModel):
     event_type: str
     absolute_index: int
     snippet: str | None = None
+    #: A fight's rolls (combat stories), folded under their scene by the story room.
+    combat: CombatLogView | None = None
 
 
 class TimelineResponse(BaseModel):

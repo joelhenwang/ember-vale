@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
-import type { TimelineEntry } from '../../../content/clients/worldsim'
+import type { CombatRollView, TimelineEntry } from '../../../content/clients/worldsim'
+import CombatRolls from './CombatRolls.vue'
+import IconBranch from '../icons/IconBranch.vue'
+import IconRewind from '../icons/IconRewind.vue'
 import type { BeatDetailState } from '../../composables/useStory'
 import {
   eventLabel,
@@ -18,9 +21,19 @@ const props = defineProps<{
   loadedMap: Record<string, BeatDetailState | undefined>
   nameOf: (id: string) => string
   youId?: string | null
+  /** A combat story's dice, by the event they show under (`rollsInTurn`). */
+  rolls?: Map<string, CombatRollView[]>
+  /** This turn's end was kept: offer "Branch from here". */
+  branchable?: boolean
+  /** An earlier kept turn: offer "Go back to this turn". */
+  rewindable?: boolean
 }>()
 
-const emit = defineEmits<{ (e: 'request-details', eventIds: string[]): void }>()
+const emit = defineEmits<{
+  (e: 'request-details', eventIds: string[]): void
+  (e: 'branch', index: number): void
+  (e: 'rewind', index: number): void
+}>()
 
 function request(): void {
   const missing = props.pointers.map((p) => p.eventId).filter((id) => !props.loadedMap[id])
@@ -87,6 +100,12 @@ const segments = computed<Segment[]>(() => {
   return out
 })
 
+/** The dice shown after a segment: its event's fight, if any. */
+function segmentRolls(segment: Segment): CombatRollView[] {
+  const id = segment.kind === 'rich' ? segment.pointer.eventId : segment.entry.event_id
+  return props.rolls?.get(id) ?? []
+}
+
 function eventSnippets(eventId: string): TimelineEntry[] {
   return props.entries.filter((e) => e.event_id === eventId && e.snippet)
 }
@@ -94,7 +113,26 @@ function eventSnippets(eventId: string): TimelineEntry[] {
 
 <template>
   <article class="beat" :aria-label="`Beat ${index}`">
-    <h3 class="beat__head">Turn {{ index }}</h3>
+    <h3 class="beat__head">
+      <span>Turn {{ index }}</span>
+      <span v-if="branchable" class="beat__acts">
+        <button
+          type="button"
+          class="beat__branch ev-press"
+          :title="`Start a new story from the end of turn ${index}`"
+          @click="emit('branch', index)">
+          <IconBranch :size="12" /> Branch from here
+        </button>
+        <button
+          v-if="rewindable"
+          type="button"
+          class="beat__branch ev-press"
+          :title="`Continue this story from the end of turn ${index}`"
+          @click="emit('rewind', index)">
+          <IconRewind :size="12" /> Go back to this turn
+        </button>
+      </span>
+    </h3>
     <template v-for="(segment, si) in segments" :key="si">
       <template v-if="segment.kind === 'legacy'">
         <p v-if="eventLabel(segment.entry.event_type)" class="beat__kind">
@@ -203,6 +241,7 @@ function eventSnippets(eventId: string): TimelineEntry[] {
           </template>
         </template>
       </template>
+      <CombatRolls v-if="segmentRolls(segment).length" :rolls="segmentRolls(segment)" />
     </template>
   </article>
 </template>
@@ -242,6 +281,37 @@ function eventSnippets(eventId: string): TimelineEntry[] {
   margin: 0;
   font-size: 14px;
   color: #4a4436;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 8px;
+}
+.beat__acts {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.beat__branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 500 12px var(--font-ui);
+  color: var(--teal-ink);
+  background: none;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  padding: 1px 9px;
+  cursor: pointer;
+  opacity: 0.8;
+  transition:
+    opacity 0.2s ease,
+    border-color 0.2s ease;
+}
+.beat__branch:hover,
+.beat__branch:focus-visible {
+  opacity: 1;
+  border-color: var(--teal-ink);
 }
 .beat__say {
   display: flex;

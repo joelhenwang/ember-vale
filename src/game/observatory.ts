@@ -12,6 +12,7 @@ import type {
   AutoplayView,
   CastEntry,
   ChronicleEntry,
+  CombatLogView,
   CombatRollView,
   MapAnchorView,
   MapRoadLineView
@@ -350,6 +351,26 @@ export function rollsFor(
   entry: ChronicleEntry
 ): CombatRollView[] {
   return byScene.get(entry.event_id) ?? entry.combat?.rolls ?? []
+}
+
+/**
+ * One turn's dice by the event they show under (the story room): a fight's
+ * rolls sit under their scene when that scene is in the turn, else under the
+ * fight's own event, so no roll is shown twice or lost.
+ */
+export function rollsInTurn(
+  entries: Array<{ event_id: string; combat?: CombatLogView | null }>
+): Map<string, CombatRollView[]> {
+  const here = new Set(entries.map((e) => e.event_id))
+  const out = new Map<string, CombatRollView[]>()
+  for (const e of entries) {
+    const rolls = e.combat?.rolls
+    if (!rolls?.length) continue
+    const scene = e.combat?.scene_event_id
+    const key = scene && here.has(scene) ? scene : e.event_id
+    out.set(key, [...(out.get(key) ?? []), ...rolls])
+  }
+  return out
 }
 
 /** Merge a new chronicle page into what is shown, by event id. */

@@ -12,6 +12,7 @@ import {
   groupFeed,
   rollsByScene,
   rollsFor,
+  rollsInTurn,
   layoutTokens,
   mergeChronicle,
   speedFor
@@ -271,5 +272,14 @@ describe('the dice in Watch', () => {
     expect(rollsFor(byScene, scene).map((r) => r.target)).toEqual(['Goblin 2'])
     expect(rollsFor(byScene, lone).map((r) => r.text)).toEqual(['Old fight'])
     expect(rollsFor(byScene, entry(9, 6))).toEqual([])
+  })
+
+  it('keeps the dice of a turn under its scene in the story room, once', () => {
+    const turn = rollsInTurn([scene, fight])
+    expect([...turn.keys()]).toEqual(['e1'])
+    expect(turn.get('e1')?.map((r) => r.target)).toEqual(['Goblin 2'])
+    // The scene is not in this turn: the fight's own event carries its dice.
+    expect([...rollsInTurn([lone]).keys()]).toEqual(['e3'])
+    expect(rollsInTurn([scene]).size).toBe(0)
   })
 })
