@@ -61,3 +61,44 @@ A spar is never a bout while a fight is on.
 
 **Spend:** Venice went from $4.0304 to $3.9219 ($0.1085), and OpenRouter usage from $9.3788 to
 $9.3820 ($0.0033: the writing model and moments). That is **$0.112** for 5 stories.
+
+## Follow-up: companions who fight of their own accord, and orders that hold (runs 4–7)
+
+**What was still wrong after run-3**
+1. Ash's own choices on fight turns: logged live, Ash chose **spar** every fight turn, not wait.
+   The spar-becomes-waiting rule turned that into waiting first, so a companion's own blow never
+   happened. The prose showed Ash idle while the fallback's dice had him strike.
+2. An order given this turn could not reach Ash's choice for the same turn, since choices are made
+   at once. Ash attacked Goblin 2 while told to take the third.
+3. A blow at a foe that had just fallen rolled nothing. Wren's "I strike at the second goblin"
+   came after Ash had killed it, with Goblin 3 still standing.
+4. A storyteller tag smaller than its prose ("Two goblins burst in" under `ENCOUNTER[goblin]`)
+   gave one goblin. Goblins seen last turn could not be attacked this turn when no fight was open
+   yet.
+
+**What changed**
+- **A companion's own choice is a blow while a fight is on.** A spar, wait, look-around or rest
+  becomes their attempt ("I attack Goblin 2 with my longsword"), told and rolled.
+- **Orders steer and last.** An order steers that companion's blows in the scene it is given, the
+  storyteller's tag included. It lasts the fight it was given in (`party_orders` in the world
+  config, kept while a foe of that fight remains). The companion's own blow is then chosen at the
+  ordered foe.
+- **No blow is wasted on the fallen.** A party member's blow aimed at a foe already down goes to
+  the most wounded foe standing.
+- **The prose sets the count.**
+  - An `ENCOUNTER` tag smaller than its prose opens as many foes as the prose says.
+  - The prose of the last two turns counts when a fight is opened by the player's words.
+
+| run | code | what it showed |
+|---|---|---|
+| run-4 | companion choice → blow (wait only) | Ash still recorded "wait": it was the spar that needed converting (a debug log showed spar) |
+| run-5 | + spar → blow | Ash's own choices were blows on every fight turn ("I attack Goblin 2 with my longsword"); but the same-turn order went to Goblin 2, and Wren's blow at a fallen goblin was lost |
+| run-6 | (the image build failed: Docker Hub timed out; old code ran) | — |
+| run-7 | + orders steer and last, re-aim from the fallen (code copied into the running API) | the order sent Ash at Goblin 3 in both stories; next turn Ash's own choice was "I attack the third goblin with my rapier" and it fell; Wren's blow at the second goblin landed; when three goblins dropped both Wren and Ash, both got back up once the fight was over |
+
+**Spend:** Venice went from $3.9219 to $3.7198 ($0.2021), and OpenRouter usage from $9.3820 to
+$9.3882 ($0.0062). That is $0.21 for runs 4–7, the debug run and the browser-check story.
+
+**Note:** the dev API image could not be rebuilt at the end (Docker Hub's sign-in timed out), so
+the new code was copied into the running container. A plain `docker compose up -d --build api`
+rebuilds it properly once Docker Hub answers.

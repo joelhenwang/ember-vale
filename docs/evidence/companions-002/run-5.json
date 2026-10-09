@@ -1,0 +1,473 @@
+[
+ {
+  "run": 1,
+  "world_id": "64b3a07b-c869-4a72-85f5-e17374c15b83",
+  "joined": true,
+  "turns": [
+   {
+    "turn": 1,
+    "words": "Ash, the roads are getting dangerous. Will you join me as my companion and fight at my side?",
+    "status": 200,
+    "seconds": 18.3,
+    "party": [
+     [
+      "Ash",
+      "ranger",
+      12,
+      12
+     ],
+     [
+      "Wren",
+      "fighter",
+      12,
+      12
+     ]
+    ],
+    "foes": [],
+    "roll_lines": [],
+    "companion_rolls": 0,
+    "hero_rolls": 0,
+    "unresolved": 0,
+    "places": null,
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow on the wooden benches and tables. Ash, a human ranger, and Wren, a human fighter, stand near the fire, their eyes meeting in a silent exchange. Ash takes a step closer to Wren, their voice low and serious. \"Why did you come to Ember Vale?\" they ask, their eyes searching for an answer. Wren's expression softens as they respond, \"Ash, the roads are getting dangerous. Will you join me as my companion and fight at my side?\" Ash nods, a determined look in their eyes. \"Yes, I will come. The roads are indeed treacherous, and I believe we can watch each other's backs.\""
+   },
+   {
+    "turn": 2,
+    "words": "Three goblins burst in through the Hearth's back door. I draw my longsword and attack the first goblin.",
+    "status": 200,
+    "seconds": 12.0,
+    "party": [
+     [
+      "Ash",
+      "ranger",
+      12,
+      12
+     ],
+     [
+      "Wren",
+      "fighter",
+      12,
+      12
+     ]
+    ],
+    "foes": [
+     [
+      "Goblin 1",
+      0
+     ],
+     [
+      "Goblin 2",
+      7
+     ],
+     [
+      "Goblin 3",
+      7
+     ]
+    ],
+    "roll_lines": [
+     "Encounter: 3x Goblin (overwhelming, 300 adjusted XP).",
+     "Wren hits Goblin 1 for 9 slashing. (7->0 HP)",
+     "Ash misses Goblin 2 (7 vs AC 15).",
+     "Goblin 2 misses Wren (12 vs AC 18).",
+     "Goblin 3 misses Wren (10 vs AC 18).",
+     "Defeated Goblin 1: 50 XP, 25 each."
+    ],
+    "companion_rolls": 1,
+    "hero_rolls": 1,
+    "unresolved": 0,
+    "places": null,
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow on the wooden benches and tables. Ash lingers by the door, counting the bells, while Wren draws their longsword as three goblins burst in through the back door."
+   },
+   {
+    "turn": 3,
+    "words": "Ash, take the third goblin!",
+    "status": 200,
+    "seconds": 15.0,
+    "party": [
+     [
+      "Ash",
+      "ranger",
+      12,
+      12
+     ],
+     [
+      "Wren",
+      "fighter",
+      12,
+      12
+     ]
+    ],
+    "foes": [
+     [
+      "Goblin 1",
+      0
+     ],
+     [
+      "Goblin 2",
+      0
+     ],
+     [
+      "Goblin 3",
+      7
+     ]
+    ],
+    "roll_lines": [
+     "Ash hits Goblin 2 for 9 slashing. (7->0 HP)",
+     "Goblin 3 misses Ash (8 vs AC 14).",
+     "Defeated Goblin 2: 50 XP, 25 each."
+    ],
+    "companion_rolls": 1,
+    "hero_rolls": 0,
+    "unresolved": 0,
+    "places": null,
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow on the wooden benches and tables. Ash, lingering by the door, counts the bells, while Wren, their longsword drawn, faces the three goblins that burst in through the back door. Wren turns to Ash, their voice firm, \"Ash, take the third goblin!\" Ash nods, gripping their longsword, and moves to engage the third goblin. Ash lunges at Goblin 2, their blade flashing in the firelight."
+   },
+   {
+    "turn": 4,
+    "words": "I strike at the second goblin.",
+    "status": 200,
+    "seconds": 13.9,
+    "party": [
+     [
+      "Ash",
+      "ranger",
+      12,
+      12
+     ],
+     [
+      "Wren",
+      "fighter",
+      12,
+      12
+     ]
+    ],
+    "foes": [
+     [
+      "Goblin 1",
+      0
+     ],
+     [
+      "Goblin 2",
+      0
+     ],
+     [
+      "Goblin 3",
+      7
+     ]
+    ],
+    "roll_lines": [
+     "Ash misses Goblin 3 (4 vs AC 15).",
+     "Goblin 3 misses Ash (8 vs AC 14)."
+    ],
+    "companion_rolls": 1,
+    "hero_rolls": 0,
+    "unresolved": 1,
+    "places": null,
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow on the wooden benches and tables. Ash, lingering by the door, counts the bells, while Wren, their longsword drawn, faces the three goblins that burst in through the back door. Ash nods, turning to face the third goblin, and Wren raises their sword, ready to strike. Ash tries to attack Goblin 3 with their longsword, the blade glinting in the firelight as they step forward. Wren tries to strike at the second goblin, their longsword slicing through the air with a determined look in their eyes. Ash lunges at the third goblin, their blade aimed for a swift strike. Wren swings their longsword at the second goblin, the steel ringing as it cuts through the air."
+   },
+   {
+    "turn": 5,
+    "words": "I fight on beside Ash.",
+    "status": 200,
+    "seconds": 12.6,
+    "party": [
+     [
+      "Ash",
+      "ranger",
+      9,
+      12
+     ],
+     [
+      "Wren",
+      "fighter",
+      12,
+      12
+     ]
+    ],
+    "foes": [
+     [
+      "Goblin 1",
+      0
+     ],
+     [
+      "Goblin 2",
+      0
+     ],
+     [
+      "Goblin 3",
+      2
+     ]
+    ],
+    "roll_lines": [
+     "Ash hits Goblin 3 for 5 slashing. (7->2 HP)",
+     "Wren misses Goblin 3 (10 vs AC 15).",
+     "Goblin 3 hits Ash for 3 slashing. (12->9 HP)"
+    ],
+    "companion_rolls": 1,
+    "hero_rolls": 1,
+    "unresolved": 0,
+    "places": null,
+    "prose": "Ash lunges at Goblin 3, their longsword flashing in the firelight. Ash strikes at the third goblin. Wren swings their longsword, joining the fray beside Ash. Wren fights on beside Ash."
+   },
+   {
+    "turn": 6,
+    "words": "MARKET",
+    "status": 200,
+    "seconds": 11.7,
+    "party": [
+     [
+      "Ash",
+      "ranger",
+      1,
+      12
+     ],
+     [
+      "Wren",
+      "fighter",
+      12,
+      12
+     ]
+    ],
+    "foes": [
+     [
+      "Goblin 1",
+      0
+     ],
+     [
+      "Goblin 2",
+      0
+     ],
+     [
+      "Goblin 3",
+      2
+     ]
+    ],
+    "roll_lines": [
+     "Ash misses Goblin 3 (14 vs AC 15).",
+     "Goblin 3 hits Ash for 8 slashing. (9->1 HP)"
+    ],
+    "companion_rolls": 1,
+    "hero_rolls": 0,
+    "unresolved": 0,
+    "places": {
+     "Ash": "ae6d1036-039d-4355-b3e6-12bc1f30c825",
+     "Wren": "ae6d1036-039d-4355-b3e6-12bc1f30c825"
+    },
+    "prose": "The Market is a flurry of activity, the air thick with the scent of fresh bread and the clamor of merchants hawking their wares. Ash and Wren, their weapons still gleaming from the recent skirmish, step into the bustling square, their eyes scanning the crowd. The sun dips low, casting long shadows that dance with the flickering torchlight. Wren moves with purpose, their longsword at their side, as they navigate through the throng. Ash follows, their keen eyes alert, ready for any sign of danger. Ash's gaze lingers on the wounded Goblin 3, a reminder of the battle they've just left behind. The two warriors press on, their steps echoing the determination to face whatever lies ahead."
+   }
+  ],
+  "spend_usd": 0.02109
+ },
+ {
+  "run": 2,
+  "world_id": "0a314f12-42ec-4387-af2d-bfb4a7b4b439",
+  "joined": true,
+  "turns": [
+   {
+    "turn": 1,
+    "words": "Ash, the roads are getting dangerous. Will you join me as my companion and fight at my side?",
+    "status": 200,
+    "seconds": 16.1,
+    "party": [
+     [
+      "Ash",
+      "rogue",
+      10,
+      10
+     ],
+     [
+      "Wren",
+      "fighter",
+      12,
+      12
+     ]
+    ],
+    "foes": [],
+    "roll_lines": [],
+    "companion_rolls": 0,
+    "hero_rolls": 0,
+    "unresolved": 0,
+    "places": null,
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow over the wooden benches and tables. Ash, a human rogue, and Wren, a human fighter, stand by the fire, their eyes meeting in a moment of understanding. Wren, with a determined look, turns to Ash and speaks of the dangers on the roads, asking for their companionship in the journey ahead. \"Yes, I will come. The roads are indeed treacherous, and I would be honored to stand by your side.\" Ash nods, a silent agreement passing between them, and with a final glance at the hearth, they both prepare to face the challenges that lie ahead."
+   },
+   {
+    "turn": 2,
+    "words": "Three goblins burst in through the Hearth's back door. I draw my longsword and attack the first goblin.",
+    "status": 200,
+    "seconds": 13.9,
+    "party": [
+     [
+      "Ash",
+      "rogue",
+      10,
+      10
+     ],
+     [
+      "Wren",
+      "fighter",
+      3,
+      12
+     ]
+    ],
+    "foes": [
+     [
+      "Goblin 1",
+      0
+     ],
+     [
+      "Goblin 2",
+      7
+     ],
+     [
+      "Goblin 3",
+      7
+     ]
+    ],
+    "roll_lines": [
+     "Encounter: 3x Goblin (overwhelming, 300 adjusted XP).",
+     "Wren hits Goblin 1 for 7 slashing. (7->0 HP)",
+     "Goblin 2 hits Wren for 3 slashing. (12->9 HP)",
+     "Goblin 3 hits Wren for 6 slashing. (9->3 HP)",
+     "Defeated Goblin 1: 50 XP, 25 each."
+    ],
+    "companion_rolls": 0,
+    "hero_rolls": 1,
+    "unresolved": 0,
+    "places": null,
+    "prose": "The bustling Market is alive with the sounds of merchants hawking their wares and the scent of fresh bread wafting through the air. Ash lingers by the fire, their eyes scanning the crowd, while Wren stands nearby, a determined look on their face. Ash waits patiently, their gaze fixed on the crowd, as if searching for something or someone. The hearth crackles in the center of Hearth, casting a warm glow over the wooden benches and tables. Ash and Wren stand by the fire, their eyes meeting in a moment of understanding. Suddenly, three goblins burst in through the back door, their eyes wild and weapons drawn. Wren, with a determined look, turns to Ash and speaks of the dangers on the roads, asking for their company. Ash nods, understanding the gravity of the situation. Wren lunges at the nearest goblin, her longsword flashing in the firelight."
+   },
+   {
+    "turn": 3,
+    "words": "Ash, take the third goblin!",
+    "status": 200,
+    "seconds": 11.8,
+    "party": [
+     [
+      "Ash",
+      "rogue",
+      10,
+      10
+     ],
+     [
+      "Wren",
+      "fighter",
+      3,
+      12
+     ]
+    ],
+    "foes": [
+     [
+      "Goblin 1",
+      0
+     ],
+     [
+      "Goblin 2",
+      0
+     ],
+     [
+      "Goblin 3",
+      7
+     ]
+    ],
+    "roll_lines": [
+     "Ash hits Goblin 2 for 8 piercing. (7->0 HP)",
+     "Goblin 3 misses Ash (9 vs AC 14).",
+     "Defeated Goblin 2: 50 XP, 25 each."
+    ],
+    "companion_rolls": 1,
+    "hero_rolls": 0,
+    "unresolved": 0,
+    "places": null,
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow over the wooden benches and tables. Ash and Wren stand by the fire, their eyes meeting in a moment of understanding. Wren turns to Ash, their voice firm and determined. Wren attempts to communicate with Ash, their voice clear and urgent. \"Ash, take the third goblin!\" they instruct, their eyes never leaving the goblins. Ash, with a swift and practiced motion, draws their rapier and prepares to strike. Ash lunges forward, their rapier glinting in the firelight as they aim for Goblin 2."
+   },
+   {
+    "turn": 4,
+    "words": "I strike at the second goblin.",
+    "status": 200,
+    "seconds": 14.1,
+    "party": [
+     [
+      "Ash",
+      "rogue",
+      10,
+      10
+     ],
+     [
+      "Wren",
+      "fighter",
+      3,
+      12
+     ]
+    ],
+    "foes": [],
+    "roll_lines": [
+     "Ash hits Goblin 3 for 9 piercing. (7->0 HP)",
+     "Defeated Goblin 3: 50 XP, 25 each."
+    ],
+    "companion_rolls": 1,
+    "hero_rolls": 0,
+    "unresolved": 0,
+    "places": null,
+    "prose": "The Market hums with the distant chatter of merchants and the clink of coins, the scent of fresh bread mingling with the tang of iron. Ash and Wren stand in the open square, the sun casting long shadows across the cobblestones. Ash's eyes narrow as they focus on the last standing goblin, their rapier glinting in the light. Ash lunges forward, their rapier slicing through the air with precision. The hearth crackles in the center of Hearth, casting a warm glow over the wooden benches and tables. Wren, their eyes meeting Ash's in a moment of understanding, turns to them with a firm voice. Wren attempts to strike at the second goblin, their weapon raised."
+   },
+   {
+    "turn": 5,
+    "words": "I fight on beside Ash.",
+    "status": 200,
+    "seconds": 16.6,
+    "party": [
+     [
+      "Ash",
+      "rogue",
+      10,
+      10
+     ],
+     [
+      "Wren",
+      "fighter",
+      3,
+      12
+     ]
+    ],
+    "foes": [],
+    "roll_lines": [],
+    "companion_rolls": 0,
+    "hero_rolls": 0,
+    "unresolved": 0,
+    "places": null,
+    "prose": "Wren tries to I fight on beside Ash, their weapon raised, ready to face any new threats that may arise. The Market's open square, where the cobblestones still hum with the echoes of the recent skirmish, is now quiet. Ash stands, rapier at their side, eyes scanning the area, while Wren leans against a nearby stall, catching their breath. The scent of fresh bread lingers, a stark contrast to the metallic tang of blood that still clings to the air. Ash waits, their gaze fixed on the horizon, as if expecting another threat to emerge. The sun dips lower, casting longer shadows across the square, and the market's usual bustle seems to have taken a step back, leaving an eerie calm in its wake."
+   },
+   {
+    "turn": 6,
+    "words": "MARKET",
+    "status": 200,
+    "seconds": 9.0,
+    "party": [
+     [
+      "Ash",
+      "rogue",
+      10,
+      10
+     ],
+     [
+      "Wren",
+      "fighter",
+      3,
+      12
+     ]
+    ],
+    "foes": [],
+    "roll_lines": [],
+    "companion_rolls": 0,
+    "hero_rolls": 0,
+    "unresolved": 0,
+    "places": {
+     "Ash": "4d2f35e0-cb1a-46a0-b1be-4f127106bd43",
+     "Wren": "4d2f35e0-cb1a-46a0-b1be-4f127106bd43"
+    },
+    "prose": "Ash waits, their gaze never leaving the perimeter, while Wren takes a moment to steady themselves, the weight of their longsword a familiar comfort at their side."
+   }
+  ],
+  "spend_usd": 0.02256
+ }
+]
