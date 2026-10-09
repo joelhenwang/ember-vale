@@ -38,7 +38,11 @@ _VERBS = (
     "attack|strike|hit|slash|stab|swing|lunge|shoot|shot|fire|loose|cut|smite|charge|"
     "punch|kick|fight|cleave|thrust|hurl|throw|bash|stick|skewer|hack|cast|blast"
 )
-_ATTACK_RE = re.compile(rf"\b(?:{_VERBS})(?:s|es|ed|ing)?\b", re.IGNORECASE)
+_ATTACK_RE = re.compile(
+    rf"\b(?:(?:{_VERBS})(?:s|es|ed|ing)?|go(?:es)? (?:after|for)|takes? on|"
+    r"finish(?:es)? off|engage[sd]?|rush(?:es)?|tackle[sd]?|swipe[sd]?|jab(?:s|bed)?)\b",
+    re.IGNORECASE,
+)
 _RANGED_RE = re.compile(
     r"\b(?:shoot|shot|fire|loose|arrow|bow|bolt|crossbow|sling|throw|hurl)", re.IGNORECASE
 )
@@ -66,6 +70,11 @@ _GENERIC = {
 _ENCOUNTER_RE = re.compile(r"^\s*ENCOUNTER\s*\[[^\]]+\][^\n]*\n?", re.IGNORECASE | re.MULTILINE)
 _SHEET_TAG_RE = re.compile(r"^\s*(ATTACK|CAST)\s*\[([^\]]+)\]", re.IGNORECASE | re.MULTILINE)
 _ORDINALS = "first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth"
+
+
+def looks_like_deed(text: str) -> bool:
+    """Words that plainly attack or cast (the dice, not the resolver, decide)."""
+    return bool(_ATTACK_RE.search(text)) and not _STAND_DOWN_RE.search(text)
 
 
 def _named(text: str, name: str) -> bool:
@@ -162,12 +171,15 @@ def deed_lines(
     keys: list[str],
     tables: DataTables,
     foes: list[tuple[str, str]],
+    fallen: set[str] | None = None,
 ) -> tuple[str, int]:
     """The narration with the deeds' tag lines added, and how many were.
 
     ``foes`` are the kinds standing in the fight that is on or opened in
-    this scene, as (kind, name), in order. Lines go right after the
-    scene's first ENCOUNTER line (else at the start)."""
+    this scene, as (kind, name), in order. ``fallen`` are kinds already
+    slain in this story: the words alone never bring one back (only the
+    storyteller's ENCOUNTER does). Lines go right after the scene's first
+    ENCOUNTER line (else at the start)."""
     if not deeds:
         return text, 0
     acted = tagged_members(text, order, tables)
@@ -179,7 +191,8 @@ def deed_lines(
             continue
         sheet = order[keys.index(deed.key)]
         words = deed.text
-        if sheet.name in acted or _STAND_DOWN_RE.search(words):
+        down = sheet.hp is not None and sheet.hp.current <= 0
+        if down or sheet.name in acted or _STAND_DOWN_RE.search(words):
             continue
         spell = _spell_named(words, sheet, tables)
         if spell is None and not _ATTACK_RE.search(words):
@@ -198,7 +211,7 @@ def deed_lines(
             target = foes[0][1]
         if target is None:
             found = _creature_named(words, text, tables)
-            if found is None:
+            if found is None or found[0] in (fallen or set()):
                 continue
             kind, label = found
             opened.append(f"ENCOUNTER[{label}]: {label} turns on {sheet.name}.")

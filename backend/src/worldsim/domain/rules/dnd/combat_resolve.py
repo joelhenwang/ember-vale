@@ -292,6 +292,7 @@ def resolve_narration_tags(
     fighting: list[str] | None = None,
     deeds: list[Deed] | None = None,
     chooses: set[str] | None = None,
+    strike_back: bool = False,
 ) -> CombatReport:
     """Resolve every combat tag in narration order. Inputs are never mutated.
 
@@ -312,8 +313,11 @@ def resolve_narration_tags(
 
     ``deeds`` are what party members tried this scene in their own words:
     a plain attack or spell the storyteller did not tag rolls anyway.
+    ``strike_back``: when the party fought here and the storyteller tagged
+    no foe's blow, each foe still standing strikes once (at the one who
+    acted, else the first party member standing).
     """
-    if not text or not sheets:
+    if not sheets or not (text or deeds):
         return CombatReport()
     order = [long_rest(sheet, day) for sheet in sheets]
     woke = {
@@ -352,8 +356,15 @@ def resolve_narration_tags(
         if match.group(1).upper() == "ENCOUNTER":
             for ref in parse_encounter_tag(match.group(2), tables):
                 standing_kinds.append((ref.index, ref.name))
+    fallen_kinds = {monster_kind(key, monsters) for key, hp in monster_hp.items() if hp <= 0}
     text, deed_count = deed_lines(
-        text, deeds or [], order, keys, tables, list(dict.fromkeys(standing_kinds))
+        text,
+        deeds or [],
+        order,
+        keys,
+        tables,
+        list(dict.fromkeys(standing_kinds)),
+        fallen_kinds,
     )
 
     def cite(*members: str | None) -> list[str]:
@@ -590,7 +601,8 @@ def resolve_narration_tags(
                 if not foe_strike(inner, tag.target):
                     unresolved.append(match.group(0))
                 continue
-            if tag is None or attacker is None:
+            if tag is None or attacker is None or currents[id(attacker)] <= 0:
+                # A hero who is down does not swing.
                 unresolved.append(match.group(0))
                 continue
             akey = key_of[id(attacker)]
@@ -671,7 +683,7 @@ def resolve_narration_tags(
             attacker = None
             if tag is not None and tag.index:
                 attacker = next((s for s in order if tag.index in s.spells), None)
-            if tag is None or attacker is None:
+            if tag is None or attacker is None or currents[id(attacker)] <= 0:
                 unresolved.append(match.group(0))
                 continue
             akey = key_of[id(attacker)]
@@ -895,6 +907,33 @@ def resolve_narration_tags(
             beats.append(CombatBeat(text=f"{tlabel} is {label.lower()}{span}.", cited=cite(tkey)))
             continue
         unresolved.append(match.group(0))
+
+    # Foes the storyteller left silent strike back: a fight goes both ways.
+    fought = any(o.target_foe and not o.actor_foe for o in outcomes) or any(
+        o.kind == "encounter" for o in outcomes
+    )
+    if strike_back and fought and not any(o.actor_foe for o in outcomes):
+        acted = [k for d in deeds or [] for k in [d.key] if k in keys]
+        aim_at = next(
+            (
+                order[keys.index(k)].name
+                for k in [*acted, *keys]
+                if currents[id(order[keys.index(k)])] > 0
+            ),
+            None,
+        )
+        standing_foes = [
+            key
+            for key in dict.fromkeys([*foes, *on_now])
+            if key in monster_meta and monster_hp.get(key, 0) > 0
+        ]
+        for key in standing_foes[:3]:
+            if aim_at is None:
+                break
+            label = monster_meta[key].label
+            foe_strike(f"{label} at {aim_at}", aim_at)
+            if currents[id(order[keys.index(slugify(aim_at))])] <= 0:
+                aim_at = next((s.name for s in order if currents[id(s)] > 0), None)
 
     # Foes that fell give their XP to the whole party, shared evenly.
     working = {key_of[id(sheet)]: casting[id(sheet)] for sheet in order}

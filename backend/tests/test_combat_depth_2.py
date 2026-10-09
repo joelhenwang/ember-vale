@@ -387,3 +387,158 @@ def test_a_level_roll_keeps_its_choice_for_the_reader() -> None:
     )
     (row,) = _ROLLS.validate_json(rolls)
     assert (row.kind, row.level, row.choose) == ("level", 4, "ability")
+
+
+def test_foes_the_storyteller_left_silent_strike_back() -> None:
+    report = resolve_narration_tags(
+        "Steel rings in the smoke.",
+        [_wren()],
+        DATA,
+        _rng(0.95, 0.5),
+        live=_goblins(7, 7),
+        fighting=["goblin-1", "goblin-2"],
+        deeds=[Deed(key="wren", text="I attack the first goblin")],
+        strike_back=True,
+    )
+    strikes = [o for o in report.outcomes if o.actor_foe]
+    assert {(o.actor, o.target) for o in strikes} == {
+        ("Goblin 1", "Wren"),
+        ("Goblin 2", "Wren"),
+    } or ([(o.actor, o.target) for o in strikes] == [("Goblin 2", "Wren")])
+    # A tagged strike is the storyteller's: none are added; nor without a fight.
+    tagged = resolve_narration_tags(
+        "ATTACK[goblin at Wren]: It slashes.",
+        [_wren()],
+        DATA,
+        _rng(0.5),
+        live=_goblins(7),
+        fighting=["goblin-1"],
+        deeds=[Deed(key="wren", text="I attack the goblin")],
+        strike_back=True,
+    )
+    assert len([o for o in tagged.outcomes if o.actor_foe]) == 1
+    quiet = resolve_narration_tags(
+        "Wren looks around.",
+        [_wren()],
+        DATA,
+        _rng(0.5),
+        live=_goblins(7),
+        fighting=["goblin-1"],
+        deeds=[Deed(key="wren", text="I look around")],
+        strike_back=True,
+    )
+    assert quiet.outcomes == []
+
+
+def test_the_slain_do_not_come_back_by_the_players_words() -> None:
+    report = resolve_narration_tags(
+        "The wolf lies still by the hearth.",
+        [_wren()],
+        DATA,
+        _rng(0.5),
+        live=[MonsterState(key="wolf", name="Wolf", hp_current=0, hp_max=11, ac=13)],
+        deeds=[Deed(key="wren", text="I stab at the wolf")],
+    )
+    assert report.outcomes == [] and report.deeds == 0
+
+
+def test_a_blow_reads_as_the_dices_to_decide() -> None:
+    from worldsim.domain.rules.dnd.deeds import looks_like_deed
+
+    assert looks_like_deed("Wren tries to attack the goblin: it does not work")
+    assert not looks_like_deed("Wren tries to lower the sword and talk")
+    assert not looks_like_deed("Wren tries to bake bread: it works")
+
+
+def test_a_downed_hero_does_not_swing_and_more_ways_of_attacking_count() -> None:
+    down = resolve_narration_tags(
+        "ATTACK[longsword at goblin]: Wren lunges.",
+        [_wren(hp=0)],
+        DATA,
+        _rng(0.5),
+        live=_goblins(7),
+        fighting=["goblin-1"],
+        deeds=[Deed(key="wren", text="I attack the goblin")],
+    )
+    assert [o for o in down.outcomes if o.actor == "Wren"] == [] and down.deeds == 0
+    for words in ("I go after the second goblin", "I take on the goblin", "I rush the goblin"):
+        report = resolve_narration_tags(
+            "",
+            [_wren()],
+            DATA,
+            _rng(0.5),
+            live=_goblins(7, 7),
+            fighting=["goblin-1", "goblin-2"],
+            deeds=[Deed(key="wren", text=words)],
+        )
+        assert report.deeds == 1, words
+
+
+def test_a_sparring_npc_without_a_sheet_does_not_break_the_turn(
+    wired: tuple[ApiClient, FakeGateway],
+) -> None:
+    client, gateway = wired
+    created = _create(client, FIGHTER, "spar-story", ash_at="hearth")
+    assert created.status_code == 200, created.text
+    world_id = UUID(created.json()["world_id"])
+    wren = created.json()["character_id"]
+    headers = {"X-Worldsim-Role": "player", "X-Worldsim-Character": wren}
+    cast = client.get(
+        "/api/v1/world/presentation", params={"world_id": str(world_id)}, headers=headers
+    ).json()["cast"]
+    ids = {c["name"]: c["character_id"] for c in cast}
+
+    def route(request: Any) -> str | None:
+        system, prompt = request.system or "", request.prompt
+        if "You narrate" in system:
+            return None
+        if "You decide" in system:  # only Ash decides: Wren is played
+            return json.dumps(
+                {
+                    "family": "spar",
+                    "character_id": ids["Ash"],
+                    "snapshot_id": ids["Ash"],
+                    "target_character_id": wren,
+                    "weapon": "longsword",
+                }
+            )
+        who = ids["Wren"] if "Wren" in prompt else ids["Ash"]
+        if "You decide" in system or "You react" in system:
+            return json.dumps({"family": "wait", "character_id": who, "snapshot_id": who})
+        if "You resolve" in system:
+            return json.dumps({"outcome": "success", "effects": [], "rationale": "Fine."})
+        return None
+
+    gateway.route = route
+    for index in (1, 2):
+        moved = client.post(
+            "/api/v1/stage1/advance",
+            json={
+                "world_id": str(world_id),
+                "absolute_index": index,
+                "player_intents": {
+                    wren: {"family": "wait", "character_id": wren, "snapshot_id": NIL_SNAPSHOT}
+                },
+            },
+            headers=headers,
+        )
+        assert moved.status_code == 200, moved.text
+    assert "spar" in _families(world_id), "Ash's spar never reached the turn"
+
+
+def _families(world_id: UUID) -> list[str]:
+    from sqlalchemy import text
+
+    async def inner() -> list[str]:
+        engine = create_engine(Settings())
+        try:
+            async with engine.connect() as conn:
+                rows = await conn.execute(
+                    text("SELECT family FROM character_intent WHERE world_id = :w"),
+                    {"w": world_id},
+                )
+                return [str(row[0]) for row in rows]
+        finally:
+            await engine.dispose()
+
+    return asyncio.run(inner())

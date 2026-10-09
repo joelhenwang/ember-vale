@@ -59,7 +59,7 @@ def wired(migrated_db: None) -> Iterator[tuple[ApiClient, FakeGateway]]:
         yield ApiClient(raw), gateway
 
 
-def _draft(client: ApiClient, mode: dict[str, Any]) -> str:
+def _draft(client: ApiClient, mode: dict[str, Any], ash_at: str = "market") -> str:
     created = client.post(
         "/api/v1/story-drafts",
         json={
@@ -78,7 +78,7 @@ def _draft(client: ApiClient, mode: dict[str, Any]) -> str:
                         "preset_id": ASH_PRESET_ID,
                         "preset_revision": 1,
                         "name": "Ash",
-                        "location_key": "market",
+                        "location_key": ash_at,
                     },
                 ],
                 "mode": mode,
@@ -92,10 +92,10 @@ def _draft(client: ApiClient, mode: dict[str, Any]) -> str:
     return created.json()["id"]
 
 
-def _create(client: ApiClient, mode: dict[str, Any], key: str) -> Any:
+def _create(client: ApiClient, mode: dict[str, Any], key: str, ash_at: str = "market") -> Any:
     return client.post(
         "/api/v1/stories",
-        json={"draft_id": _draft(client, mode), "expected_draft_version": 1},
+        json={"draft_id": _draft(client, mode, ash_at), "expected_draft_version": 1},
         headers={"Idempotency-Key": key},
     )
 
@@ -349,6 +349,10 @@ def _set_state(world_id: UUID, *, hero_xp: int, pools: dict[str, int]) -> None:
                 (hero,) = await uow.party.list_for_world(world_id)
                 sheet = hero.sheet.model_copy(deep=True)
                 sheet.xp = hero_xp
+                # The goblins strike back on their own now (combat-depth-002):
+                # stand the hero up so this turn's blows are theirs to make.
+                if sheet.hp is not None:
+                    sheet.hp = sheet.hp.model_copy(update={"current": sheet.hp.max})
                 await uow.party.save_sheet(hero.id, sheet, hero.version)
                 for monster in await uow.monsters.list_for_world(world_id):
                     if monster.name_key in pools:
@@ -450,7 +454,9 @@ def test_group_foes_xp_levels_and_spent_slots(
     _set_state(world_id, hero_xp=290, pools={"goblin-2": 1})
     scripts.pop(0)
     second = advance(2)
-    struck = {r["target"] for r in second if r["kind"] == "attack"}
+    # Goblin 1, still standing and left silent by the storyteller, strikes
+    # back at Wren (combat-depth-002); Wren's blows all went at Goblin 2.
+    struck = {r["target"] for r in second if r["kind"] == "attack" and not r.get("actor_foe")}
     assert struck == {"Goblin 2"}
     xp = next(r for r in second if r["kind"] == "xp")
     assert (xp["amount"], xp["share"], xp["target"]) == (50, 50, "Goblin 2")

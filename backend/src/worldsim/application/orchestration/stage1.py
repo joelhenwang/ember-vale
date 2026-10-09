@@ -271,7 +271,7 @@ from worldsim.domain.rules.dnd import (
     weapon_attack_bonus,
 )
 from worldsim.domain.rules.dnd.data import dict_field, entry, str_field, table
-from worldsim.domain.rules.dnd.deeds import Deed
+from worldsim.domain.rules.dnd.deeds import Deed, looks_like_deed
 from worldsim.domain.rules.dnd.progress import long_rest
 from worldsim.domain.rules.grounding import grounded_move
 from worldsim.domain.rules.meetups import resolve_meetups
@@ -3933,16 +3933,18 @@ class Stage1Orchestrator:
         by_name = {member.name_key: member for member in roster}
         attacker = by_name.get(party_name_key(author.name))
         defender = by_name.get(party_name_key(target.name))
+        # A bout needs two sheets with health and a weapon. Without them it is
+        # just talk of sparring: no roll. It used to raise here, after the
+        # scene had committed, and the half-done turn blocked every later one
+        # (an NPC without a sheet chose to spar with the hero, combat-depth-002).
         if attacker is None or defender is None:
-            raise DomainError(ErrorCode.PRECONDITION_FAILED, "bouts need seated sheets")
+            return
         # Sheets as they woke today: a new story day was the night's rest.
         day = split_absolute(index)[0]
         striker, struck = long_rest(attacker.sheet, day), long_rest(defender.sheet, day)
-        if striker.hp is None or struck.hp is None:
-            raise DomainError(ErrorCode.PRECONDITION_FAILED, "bouts need tracked vitals")
-        weapon_key = action.weapon or (striker.weapons[0] if striker.weapons else None)
-        if weapon_key is None or weapon_key not in striker.weapons:
-            raise DomainError(ErrorCode.VALIDATION_FAILED, "sparring needs a carried weapon")
+        if striker.hp is None or struck.hp is None or not striker.weapons:
+            return
+        weapon_key = action.weapon if action.weapon in striker.weapons else striker.weapons[0]
         tables = self._dnd_tables()
         weapons = table(tables, "weapons")
         weapon = entry(weapons, weapon_key)
@@ -4551,6 +4553,17 @@ class Stage1Orchestrator:
         dnd_context: str | None = None
         dnd_sources: list[ManifestSource] = []
         if roster:
+            # A blow or spell is the dice's to decide (they roll after the
+            # prose), not the resolver's: "it does not work" over a hit read
+            # as a contradiction, and a "the dice decide" note was echoed into
+            # the prose, so the attempt goes without a verdict (combat-depth-002).
+            for fact in facts:
+                value = str(fact.get("value", ""))
+                if fact["key"] == "attempt:interact" and looks_like_deed(value):
+                    for words in _OUTCOME_WORDS.values():
+                        if value.endswith(f": {words}"):
+                            fact["value"] = value[: -len(words) - 2]
+                            break
             tables = self._dnd_tables()
             today = split_absolute(scene_index)[0]
             summaries = {
@@ -4616,6 +4629,9 @@ class Stage1Orchestrator:
         roster_pre = bool(roster)
         if over_budget or (quiet and not roster_pre):
             await self._save_fallback_beats(world_id, scene, event_id, facts, source="fallback")
+            if roster_pre:
+                # The party's own blows still roll without the storyteller.
+                await self._resolve_combat_tags(world_id, run_id, scene, event_id, [])
             return "fallback"
         if structured and not roster_pre:
             # Configured structured narration, not a provider outcome:
@@ -4648,6 +4664,9 @@ class Stage1Orchestrator:
             except Exception:
                 # Best-effort only: failures here must never fail the phase.
                 pass
+            if roster_pre:
+                # The storyteller failed, but the party's own blows still roll.
+                await self._resolve_combat_tags(world_id, run_id, scene, event_id, [])
             return "failed"
         source = "narrated" if not result["proposal"]["fallback"] else "fallback"
         async with self._factory() as uow:
@@ -4742,8 +4761,10 @@ class Stage1Orchestrator:
                 if member.character_id is not None
             }
             deeds: list[Deed] = []
+            hero_here = False
             for intent_id in scene.intent_ids:
                 intent = await uow.scenes.get_intent(intent_id)
+                hero_here = hero_here or intent.author_character_id in heroes
                 action = intent.action
                 if isinstance(action, InteractAction) and intent.author_character_id in heroes:
                     deeds.append(Deed(key=heroes[intent.author_character_id], text=action.attempt))
@@ -4788,6 +4809,7 @@ class Stage1Orchestrator:
                     fighting=fighting,
                     deeds=deeds,
                     chooses=set(heroes.values()),
+                    strike_back=hero_here,
                 )
                 if not report.outcomes and not report.unresolved and not joined:
                     return "no-tags"
