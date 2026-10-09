@@ -1,0 +1,10 @@
+{
+ "party": "Your party\nIn a fight\nWren\nLevel 1 Fighter\nAC 18\n12/12\nBrann\nLevel 1 Cleric\nAC 18\n10/10\nFoes\nOrc\nAC 13\n5/15",
+ "dice": [
+  "⚄\nThe dice\n4 rolls\n›\n•\nA fight begins: Orc\nDeadly fight\n2\nWren attacks Orc with Longsword\n7 vs AC 13\nMiss\n5\nOrc attacks Wren with Greataxe\n10 vs AC 18\nMiss\n3\nOrc attacks Wren with Greataxe\n8 vs AC 18\nMiss",
+  "⚄\nThe dice\n5 rolls\n›\n8\nWren attacks Orc with Longsword\n13 vs AC 13\nHit · 6 slashing\nOrc 15 → 9\n20\nBrann casts Sacred Flame at Orc\nOrc rolls 21 vs DC 12\nShrugs it off\n18\nOrc attacks Wren with Greataxe\n23 vs AC 18\nHit · 4 slashing\nWren 12 → 8\n•\nBrann heals Wren with Cure Wounds\nHealed 5\nWren 8 → 12\n•\nBrann joins the party",
+  "⚄\nThe dice\n2 rolls\n›\n19\nWren attacks Orc with Longsword\n24 vs AC 13\nHit · 4 slashing\nOrc 9 → 5\n5\nBrann attacks Orc with Mace\n9 vs AC 13\nMiss"
+ ],
+ "tagsVisible": false,
+ "errors": []
+}
