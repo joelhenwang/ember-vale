@@ -33,6 +33,7 @@ from worldsim.domain.pictures import (
     PictureMoment,
     ScenePicture,
 )
+from worldsim.domain.rules.dnd import strip_combat_tags
 from worldsim.domain.scenes import Scene
 
 #: Words of narration a suggested prompt keeps (the service reads 512 tokens).
@@ -209,7 +210,8 @@ async def suggest(
     if happening is None:
         beats = await uow.scenes.narrations_for_event(scene.event_id) if scene.event_id else []
         happening = _sentences(
-            without_speech(" ".join(b.text for b in beats)), _SUGGESTION_SENTENCES
+            without_speech(strip_combat_tags(" ".join(b.text for b in beats))),
+            _SUGGESTION_SENTENCES,
         )
     location_id = await _scene_place(uow, scene)
     place = ""
@@ -446,7 +448,7 @@ async def plan_moments(uow: UnitOfWork, player_id: UUID, scenes: list[Scene]) ->
                 me=me,
                 people=names,
                 place=place,
-                narration=" ".join(b.text for b in beats),
+                narration=strip_combat_tags(" ".join(b.text for b in beats)),
             )
         )
     return plans

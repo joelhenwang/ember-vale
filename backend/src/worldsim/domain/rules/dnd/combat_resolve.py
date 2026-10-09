@@ -15,11 +15,12 @@ adventurers and the precomputed bonuses for monsters.
 
 from __future__ import annotations
 
+import json
 import math
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 from worldsim.domain.rules.dnd.combat import (
     roll_attack,
@@ -74,10 +75,30 @@ class CombatBeat:
 
 @dataclass(frozen=True)
 class TagOutcome:
+    """One resolved tag: ``text`` is the audit line; the rest is the roll
+    in parts, so a reader can show who rolled what against what."""
+
     kind: str
     text: str
     attacker_key: str | None = None
     target_key: str | None = None
+    actor: str | None = None
+    target: str | None = None
+    using: str | None = None
+    roll: int | None = None
+    natural: int | None = None
+    ac: int | None = None
+    dc: int | None = None
+    #: hit, miss, crit, saved, half, failed, healed (None: no roll).
+    result: str | None = None
+    amount: int | None = None
+    damage_type: str | None = None
+    hp_before: int | None = None
+    hp_after: int | None = None
+    #: The target is one of the foes (not the party).
+    target_foe: bool = False
+    #: The actor is one of the foes.
+    actor_foe: bool = False
 
 
 @dataclass(frozen=True)
@@ -111,6 +132,8 @@ class CombatReport:
     monsters: dict[str, MonsterResult] = field(default_factory=dict)
     beats: list[CombatBeat] = field(default_factory=list)
     unresolved: list[str] = field(default_factory=list)
+    #: Monster pool keys this fight touched, in the order they appeared.
+    foes: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -119,6 +142,29 @@ class _MonsterTarget:
     ac: int
     hp: int
     key: str
+
+
+#: The ``at Wren`` tail of an attack tag; what is left names the striker.
+_ATTACK_SUBJECT_RE = re.compile(r"\b(?:at|on|against|vs\.?)\s+.+$", re.IGNORECASE)
+
+
+def _first_strike(row: dict[str, Any]) -> tuple[str, int, str, str] | None:
+    """A monster's first weapon action: (name, to-hit, damage dice, type)."""
+    for raw in list_field(row, "actions"):
+        if not isinstance(raw, dict):
+            continue
+        action = cast("dict[str, Any]", raw)
+        bonus = action.get("attack_bonus")
+        if not isinstance(bonus, int) or isinstance(bonus, bool):
+            continue
+        for hit in list_field(action, "damage"):
+            if isinstance(hit, dict):
+                damage = cast("dict[str, Any]", hit)
+                dice = str_field(damage, "dice")
+                if dice:
+                    name = str_field(action, "name") or "Strike"
+                    return name, bonus, dice, str_field(damage, "type") or "damage"
+    return None
 
 
 def _sheet_key(name: str) -> str:
@@ -233,6 +279,102 @@ def resolve_narration_tags(
             damaged.add(target.key)
         return start, after
 
+    foes: list[str] = []
+    # Pools first met mid-fight (no ENCOUNTER, nothing carried): kept, so
+    # the next scene and the party panel know them.
+    implied: set[str] = set()
+
+    def saw(key: str) -> None:
+        if key not in foes:
+            foes.append(key)
+
+    def meet(target: _MonsterTarget) -> None:
+        """A real monster (one the tables know) joins this fight's foes."""
+        if target.key not in monsters and target.key not in monster_meta:
+            return
+        if target.key not in monster_hp:
+            monster_meta.setdefault(target.key, target)
+            monster_hp[target.key] = target.hp
+            implied.add(target.key)
+        saw(target.key)
+
+    def foe_strike(inner: str, target_name: str | None) -> bool:
+        """``ATTACK[goblin at Wren]``: a standing foe swings its first weapon
+        at a party member. False when no such foe, target or weapon."""
+        pos = _party_position(order, keys, target_name)
+        subject = _ATTACK_SUBJECT_RE.sub("", inner).strip()
+        found = find_entry(monsters, subject) if subject else None
+        if pos is None or found is None:
+            return False
+        action = _first_strike(found.entry)
+        if action is None:
+            return False
+        foe = monster_meta.get(found.index) or _MonsterTarget(
+            label=str(found.entry.get("name", subject)),
+            ac=int_field(found.entry, "ac", 10),
+            hp=int_field(found.entry, "hp"),
+            key=found.index,
+        )
+        if monster_hp.get(found.index, foe.hp) <= 0:
+            return False  # the fallen do not strike
+        meet(foe)
+        using, bonus, dice, dtype = action
+        sheet = order[pos]
+        target_ac = armor_ac(tables, sheet)
+        attack = roll_attack(bonus, target_ac, rng)
+        parts: dict[str, Any] = {
+            "actor": foe.label,
+            "target": sheet.name,
+            "using": using,
+            "roll": attack.total,
+            "natural": attack.nat,
+            "ac": target_ac,
+            "actor_foe": True,
+        }
+        tkey = keys[pos]
+        if not attack.hit:
+            outcomes.append(
+                TagOutcome(
+                    kind="attack",
+                    target_key=tkey,
+                    text=f"{foe.label} misses {sheet.name} ({attack.total} vs AC {target_ac}).",
+                    result="miss",
+                    **parts,
+                )
+            )
+            beats.append(
+                CombatBeat(
+                    text=f"The {foe.label.lower()}'s {using.lower()} misses {sheet.name}.",
+                    cited=cite(tkey),
+                )
+            )
+            return True
+        rolled = roll_damage(dice, rng, attack.crit)
+        before, after = hurt_party(pos, rolled)
+        crit = " Critical!" if attack.crit else ""
+        outcomes.append(
+            TagOutcome(
+                kind="attack",
+                target_key=tkey,
+                text=f"{foe.label} hits {sheet.name} for {rolled} {dtype}.{crit} "
+                f"({before}->{after} HP)",
+                result="crit" if attack.crit else "hit",
+                amount=rolled,
+                damage_type=dtype,
+                hp_before=before,
+                hp_after=after,
+                **parts,
+            )
+        )
+        beats.append(
+            CombatBeat(
+                text=f"The {foe.label.lower()}'s {using.lower()} hits {sheet.name} "
+                f"for {rolled} {dtype}.{crit}",
+                cited=cite(tkey),
+            )
+        )
+        return True
+
     for match in _TAG_RE.finditer(text):
         kind, inner = match.group(1).upper(), match.group(2).strip()
         if kind == "ENCOUNTER":
@@ -256,12 +398,15 @@ def resolve_narration_tags(
                 monster_hp[ref.index] = fresh.hp
                 monster_meta[ref.index] = fresh
                 spawned.add(ref.index)
+                saw(ref.index)
             described = ", ".join(f"{r.count}x {r.name}" if r.count > 1 else r.name for r in refs)
             outcomes.append(
                 TagOutcome(
                     kind="encounter",
                     text=f"Encounter: {described} ({diff.difficulty}, "
                     f"{diff.adjusted_xp} adjusted XP).",
+                    target=described,
+                    result=diff.difficulty,
                 )
             )
             beats.append(
@@ -278,6 +423,11 @@ def resolve_narration_tags(
                 attacker = next((s for s in order if tag.index and tag.index in s.weapons), None)
                 if attacker is None and tag.index is None:
                     attacker = next((s for s in order if tag.name in s.weapons), None)
+            if tag is not None and attacker is None:
+                # ``ATTACK[goblin at Wren]``: a foe strikes back with its own weapon.
+                if not foe_strike(inner, tag.target):
+                    unresolved.append(match.group(0))
+                continue
             if tag is None or attacker is None:
                 unresolved.append(match.group(0))
                 continue
@@ -293,14 +443,26 @@ def resolve_narration_tags(
                 target = _monster_target(tables, monsters, tag.target)
                 target_ac = target.ac
                 tkey = None
+                meet(target)
             label = target if isinstance(target, str) else target.label
             attack = roll_attack(bonus, target_ac, rng)
+            parts: dict[str, Any] = {
+                "actor": attacker.name,
+                "target": label,
+                "using": tag.name,
+                "roll": attack.total,
+                "natural": attack.nat,
+                "ac": target_ac,
+                "target_foe": pos is None,
+            }
             if not attack.hit:
                 outcomes.append(
                     TagOutcome(
                         kind="attack",
                         attacker_key=akey,
                         text=f"{attacker.name} misses {label} ({attack.total} vs AC {target_ac}).",
+                        result="miss",
+                        **parts,
                     )
                 )
                 beats.append(
@@ -327,6 +489,12 @@ def resolve_narration_tags(
                     target_key=tkey,
                     text=f"{attacker.name} hits {label} for {rolled} {dtype}.{crit} "
                     f"({before}->{after} HP)",
+                    result="crit" if attack.crit else "hit",
+                    amount=rolled,
+                    damage_type=dtype,
+                    hp_before=before,
+                    hp_after=after,
+                    **parts,
                 )
             )
             beats.append(
@@ -357,6 +525,9 @@ def resolve_narration_tags(
                         attacker_key=akey,
                         text=f"{attacker.name} casts {resolved.name} "
                         f"({tag.target or 'no target'}).",
+                        actor=attacker.name,
+                        target=tag.target,
+                        using=resolved.name,
                     )
                 )
                 beats.append(
@@ -368,10 +539,11 @@ def resolve_narration_tags(
                 ability = spellcasting_ability(tables, attacker) or "wis"
                 dice = resolved.heal_dice.replace("MOD", str(sheet_mod(attacker, ability)))
                 rolled = roll_dice(dice, rng)
+                mended: tuple[int, int] | None = None
                 if pos is not None:
-                    before, after = mend_party(pos, rolled)
+                    mended = mend_party(pos, rolled)
                     label, tkey = order[pos].name, keys[pos]
-                    trail = f" ({before}->{after} HP)"
+                    trail = f" ({mended[0]}->{mended[1]} HP)"
                 else:
                     label, tkey, trail = tag.target or "the air", None, " (no one to mend)"
                 outcomes.append(
@@ -380,6 +552,13 @@ def resolve_narration_tags(
                         attacker_key=akey,
                         target_key=tkey,
                         text=f"{attacker.name} heals {label} for {rolled}.{trail}",
+                        actor=attacker.name,
+                        target=label,
+                        using=resolved.name,
+                        result="healed",
+                        amount=rolled,
+                        hp_before=mended[0] if mended else None,
+                        hp_after=mended[1] if mended else None,
                     )
                 )
                 beats.append(
@@ -391,6 +570,12 @@ def resolve_narration_tags(
                 continue
             assert resolved.damage is not None
             dtype = resolved.damage.kind or "damage"
+            spell: dict[str, Any] = {
+                "actor": attacker.name,
+                "using": resolved.name,
+                "target_foe": pos is None,
+                "damage_type": dtype,
+            }
             if resolved.attack_type is not None:
                 bonus = spell_attack_bonus(tables, attacker) or 0
                 if pos is not None:
@@ -399,7 +584,9 @@ def resolve_narration_tags(
                 else:
                     monster = _monster_target(tables, monsters, tag.target)
                     target_ac, label, tkey = monster.ac, monster.label, None
+                    meet(monster)
                 attack = roll_attack(bonus, target_ac, rng)
+                spell.update(target=label, roll=attack.total, natural=attack.nat, ac=target_ac)
                 if not attack.hit:
                     outcomes.append(
                         TagOutcome(
@@ -407,6 +594,8 @@ def resolve_narration_tags(
                             attacker_key=akey,
                             text=f"{resolved.name} misses {label} "
                             f"({attack.total} vs AC {target_ac}).",
+                            result="miss",
+                            **spell,
                         )
                     )
                     beats.append(
@@ -419,6 +608,7 @@ def resolve_narration_tags(
                 rolled = roll_damage(resolved.damage.dice, rng, attack.crit)
                 crit = " Critical!" if attack.crit else ""
                 detail = f"hits {label} for {rolled} {dtype}.{crit}"
+                spell["result"] = "crit" if attack.crit else "hit"
             else:
                 dc = resolved.dc
                 save_ability = (dc.kind if dc else None) or "dex"
@@ -432,16 +622,23 @@ def resolve_narration_tags(
                     row = entry(monsters, monster.key) if monster.key in monsters else {}
                     bonus = _save_bonus(tables, attacker, save_ability, row or None)
                     label, tkey = monster.label, None
+                    meet(monster)
                 save = roll_save(bonus, dc_value, rng)
                 if save.success and success_word == "half":
                     rolled = math.floor(roll_dice(resolved.damage.dice, rng) / 2)
                     how = f"saves ({save.total} vs DC {dc_value}), half damage"
+                    verdict = "half"
                 elif save.success:
                     rolled, how = 0, f"saves ({save.total} vs DC {dc_value}), unharmed"
+                    verdict = "saved"
                 else:
                     rolled = roll_dice(resolved.damage.dice, rng)
                     how = f"fails ({save.total} vs DC {dc_value})"
+                    verdict = "failed"
                 detail = f"{label} {how} for {rolled} {dtype}."
+                spell.update(
+                    target=label, roll=save.total, natural=save.nat, dc=dc_value, result=verdict
+                )
             if pos is not None:
                 before, after = hurt_party(pos, rolled)
                 trail = f" ({before}->{after} HP)"
@@ -455,6 +652,10 @@ def resolve_narration_tags(
                     attacker_key=akey,
                     target_key=tkey,
                     text=f"{resolved.name} {detail}{trail}",
+                    amount=rolled,
+                    hp_before=before,
+                    hp_after=after,
+                    **spell,
                 )
             )
             beats.append(
@@ -484,7 +685,14 @@ def resolve_narration_tags(
                 tkey, tlabel = None, tag.target or "the air"
             span = f" ({tag.duration})" if tag.duration else ""
             outcomes.append(
-                TagOutcome(kind="condition", target_key=tkey, text=f"{label} on {tlabel}{span}.")
+                TagOutcome(
+                    kind="condition",
+                    target_key=tkey,
+                    text=f"{label} on {tlabel}{span}.",
+                    target=tlabel,
+                    using=label,
+                    target_foe=pos is None,
+                )
             )
             beats.append(CombatBeat(text=f"{tlabel} is {label.lower()}{span}.", cited=cite(tkey)))
             continue
@@ -499,7 +707,7 @@ def resolve_narration_tags(
             ac=monster_meta[key].ac,
             spawned=key in spawned,
         )
-        for key in sorted(set(spawned) | damaged)
+        for key in sorted(set(spawned) | damaged | implied)
         if key in monster_meta and key in monster_hp
     }
     return CombatReport(
@@ -509,4 +717,42 @@ def resolve_narration_tags(
         monsters=persisted,
         beats=beats,
         unresolved=unresolved,
+        foes=foes,
     )
+
+
+#: Fields of a roll the story log shows (the party keys stay internal).
+_ROLL_FIELDS = (
+    "kind",
+    "text",
+    "actor",
+    "target",
+    "using",
+    "roll",
+    "natural",
+    "ac",
+    "dc",
+    "result",
+    "amount",
+    "damage_type",
+    "hp_before",
+    "hp_after",
+    "target_foe",
+    "actor_foe",
+)
+
+
+def combat_rolls(outcomes: list[TagOutcome], joined: list[str]) -> list[dict[str, Any]]:
+    """The rolls in parts, for the story log; recruits close the list."""
+    rows: list[dict[str, Any]] = []
+    for outcome in outcomes:
+        row = {name: getattr(outcome, name) for name in _ROLL_FIELDS}
+        rows.append({k: v for k, v in row.items() if v is not None and v is not False})
+    rows.extend(
+        {"kind": "recruit", "text": f"{name} joins the party.", "actor": name} for name in joined
+    )
+    return rows
+
+
+def combat_rolls_json(outcomes: list[TagOutcome], joined: list[str]) -> str:
+    return json.dumps(combat_rolls(outcomes, joined), separators=(",", ":"))

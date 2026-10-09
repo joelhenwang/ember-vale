@@ -249,10 +249,12 @@ from worldsim.domain.relationships import Relationship, describe
 from worldsim.domain.rules.dnd import (
     DataTables,
     MonsterState,
+    TagOutcome,
     armor_ac,
     build_sheet_summary,
+    combat_rolls_json,
     dnd_party_prompt,
-    dnd_rules_text,
+    dnd_story_rules_text,
     load_data,
     parse_recruit_tags,
     resolve_narration_tags,
@@ -3884,7 +3886,30 @@ class Stage1Orchestrator:
                 participant_ids=sorted(
                     [intent.author_character_id, action.target_character_id], key=str
                 ),
-                summary={"spar": outcome[:512]},
+                summary={
+                    "spar": outcome[:512],
+                    "scene_event_id": str(event_id),
+                    "rolls": combat_rolls_json(
+                        [
+                            TagOutcome(
+                                kind="spar",
+                                text=f"{outcome}.",
+                                actor=attacker.name,
+                                target=defender.name,
+                                using=str(weapon.get("name", weapon_key)),
+                                roll=attack.total,
+                                natural=attack.nat,
+                                ac=target_ac,
+                                result=("crit" if attack.crit else "hit") if attack.hit else "miss",
+                                amount=rolled if attack.hit else None,
+                                damage_type=dtype if attack.hit else None,
+                                hp_before=defender.sheet.hp.current if attack.hit else None,
+                                hp_after=after if attack.hit else None,
+                            )
+                        ],
+                        [],
+                    ),
+                },
                 random_seed=seed,
                 random_algorithm="seeded-d20-v1",
                 random_result=outcome[:512],
@@ -4425,7 +4450,7 @@ class Stage1Orchestrator:
                 {"key": f"dnd-sheet:{key}", "value": summary} for key, summary in summaries.items()
             )
             dnd_context = (
-                dnd_party_prompt([m.sheet for m in roster], tables) + "\n" + dnd_rules_text()
+                dnd_party_prompt([m.sheet for m in roster], tables) + "\n" + dnd_story_rules_text()
             )
             dnd_sources = [
                 ManifestSource(
@@ -4517,8 +4542,10 @@ class Stage1Orchestrator:
             beat_texts = [
                 str(beat_json.get("text", "")) for beat_json in result["proposal"]["beats"]
             ]
-        await self._recruit_from_narration(world_id, "\n".join(beat_texts))
-        await self._resolve_combat_tags(world_id, run_id, scene, event_id, beat_texts)
+        joined = await self._recruit_from_narration(world_id, "\n".join(beat_texts))
+        await self._resolve_combat_tags(
+            world_id, run_id, scene, event_id, beat_texts, joined=joined
+        )
         return source
 
     async def _save_fallback_beats(
@@ -4567,8 +4594,15 @@ class Stage1Orchestrator:
         scene: Scene,
         event_id: UUID,
         beat_texts: list[str],
+        *,
+        joined: list[str] | None = None,
     ) -> str:
         """Roll tagged combat, persist HP, and record one combat event plus beats.
+
+        The event's summary also carries the rolls in parts (``rolls``), the
+        scene they belong under (``scene_event_id``) and the foes in the
+        fight (``foes``), so the story log can show each roll under its
+        scene; companions who joined in the scene are listed there too.
 
         Runs after narration is saved and never fails the phase: domain
         contention returns "failed" while unexpected errors stay loud.
@@ -4604,7 +4638,7 @@ class Stage1Orchestrator:
                         for monster in live_monsters
                     ],
                 )
-                if not report.outcomes and not report.unresolved:
+                if not report.outcomes and not report.unresolved and not joined:
                     return "no-tags"
                 try:
                     async with self._factory() as uow:
@@ -4666,6 +4700,9 @@ class Stage1Orchestrator:
                                 summary={
                                     "tags": str(len(report.outcomes)),
                                     "unresolved": str(len(report.unresolved)),
+                                    "scene_event_id": str(event_id),
+                                    "rolls": combat_rolls_json(report.outcomes, joined or []),
+                                    **({"foes": json.dumps(report.foes)} if report.foes else {}),
                                 },
                                 random_seed=seed,
                                 random_algorithm="seeded-d20-v1",

@@ -1,0 +1,260 @@
+"""Combat stories: the hero's sheet at creation, rolls under their scene, foes.
+
+A player story can opt into fights in the New Story wizard; the hero's 5e
+sheet is made in the same transaction as the story. The storyteller's tags
+then roll through the existing engine, and the reads show the rolls in
+parts (chronicle), the prose without tags (narration) and the party with
+the current foes (roster).
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+from collections.abc import Iterator
+from pathlib import Path
+from typing import Any
+from uuid import UUID
+
+import pytest
+from fastapi.testclient import TestClient
+from test_stage1_api import ApiClient
+
+from worldsim.domain.rules.dnd import strip_combat_tags
+from worldsim.infrastructure.db.engine import create_engine
+from worldsim.infrastructure.model_gateway.fake import FakeGateway
+from worldsim.infrastructure.model_gateway.profiles import FAKE_TEST_PROFILE
+from worldsim.infrastructure.repositories.unit_of_work import create_unit_of_work
+from worldsim.infrastructure.settings import Settings
+from worldsim.interfaces.http.app import create_app
+
+ROOT = Path(__file__).parent.parent.parent
+SEED_DIR = ROOT / "content" / "seeds" / "stage0"
+MIGRATIONS = ROOT / "backend" / "migrations"
+
+WORLD_PRESET_ID = "20000000-0000-4000-8000-000000000001"
+WREN_PRESET_ID = "20000000-0000-4000-8000-000000000101"
+ASH_PRESET_ID = "20000000-0000-4000-8000-000000000102"
+
+NIL_SNAPSHOT = "00000000-0000-0000-0000-000000000000"
+FIGHT = (
+    "ENCOUNTER[goblin]: A goblin bursts from behind the hearth stones.\n"
+    "ATTACK[longsword at goblin]: Wren swings her blade at it.\n"
+    "ATTACK[goblin at Wren]: The goblin slashes back.\n"
+    "Smoke curls between them."
+)
+
+
+@pytest.fixture
+def wired(migrated_db: None) -> Iterator[tuple[ApiClient, FakeGateway]]:
+    gateway = FakeGateway(profile=FAKE_TEST_PROFILE)
+    gateway.route = lambda request: None
+    app = create_app(
+        Settings(),
+        seed_dir=SEED_DIR,
+        migrations_dir=MIGRATIONS,
+        gateway_factory=lambda: gateway,
+    )
+    with TestClient(app) as raw:
+        yield ApiClient(raw), gateway
+
+
+def _draft(client: ApiClient, mode: dict[str, Any]) -> str:
+    created = client.post(
+        "/api/v1/story-drafts",
+        json={
+            "payload": {
+                "world": {"preset_id": WORLD_PRESET_ID, "preset_revision": 2},
+                "cast": [
+                    {
+                        "instance_key": "cast-wren",
+                        "preset_id": WREN_PRESET_ID,
+                        "preset_revision": 1,
+                        "name": "Wren",
+                        "location_key": "hearth",
+                    },
+                    {
+                        "instance_key": "cast-ash",
+                        "preset_id": ASH_PRESET_ID,
+                        "preset_revision": 1,
+                        "name": "Ash",
+                        "location_key": "market",
+                    },
+                ],
+                "mode": mode,
+                "story": {"title": "Smoke at the Hearth"},
+                "ai": {"art_source": "curated"},
+            },
+            "current_step": "review",
+        },
+    )
+    assert created.status_code == 200, created.text
+    return created.json()["id"]
+
+
+def _create(client: ApiClient, mode: dict[str, Any], key: str) -> Any:
+    return client.post(
+        "/api/v1/stories",
+        json={"draft_id": _draft(client, mode), "expected_draft_version": 1},
+        headers={"Idempotency-Key": key},
+    )
+
+
+FIGHTER = {
+    "role": "player",
+    "controlled_cast_key": "cast-wren",
+    "adventure": {"race": "human", "character_class": "fighter"},
+}
+
+
+def _pools(world_id: UUID) -> dict[str, int]:
+    async def inner() -> dict[str, int]:
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                return {
+                    m.name_key: m.hp_current for m in await uow.monsters.list_for_world(world_id)
+                }
+        finally:
+            await engine.dispose()
+
+    return asyncio.run(inner())
+
+
+def test_strip_combat_tags_keeps_the_prose() -> None:
+    assert strip_combat_tags(FIGHT) == (
+        "A goblin bursts from behind the hearth stones.\n"
+        "Wren swings her blade at it.\n"
+        "The goblin slashes back.\n"
+        "Smoke curls between them."
+    )
+    assert strip_combat_tags("RECRUIT[Lyra]: elf ranger, level 3\nLyra nods.") == "Lyra nods."
+    assert strip_combat_tags("CONDITION[poisoned on Wren]") == ""
+    assert strip_combat_tags("Wren [quietly] waits.") == "Wren [quietly] waits."
+
+
+def test_only_a_played_story_with_a_known_hero_can_fight(
+    wired: tuple[ApiClient, FakeGateway],
+) -> None:
+    client, _ = wired
+    watcher = _create(
+        client,
+        {"role": "watcher", "adventure": {"race": "human", "character_class": "fighter"}},
+        "fight-watcher",
+    )
+    assert watcher.status_code == 422, watcher.text
+    assert "only a story you play in" in watcher.text
+    unknown = _create(
+        client,
+        {**FIGHTER, "adventure": {"race": "centaur", "character_class": "fighter"}},
+        "fight-centaur",
+    )
+    assert unknown.status_code == 422, unknown.text
+    narrative = _create(client, {"role": "player", "controlled_cast_key": "cast-wren"}, "plain")
+    assert narrative.status_code == 200, narrative.text
+    roster = client.get(
+        "/api/v1/stage1/party", params={"world_id": narrative.json()["world_id"]}
+    ).json()
+    assert roster["members"] == [] and roster["foes"] == []
+
+
+def test_combat_story_rolls_show_under_their_scene(
+    wired: tuple[ApiClient, FakeGateway],
+) -> None:
+    client, gateway = wired
+    created = _create(client, FIGHTER, "fight-story")
+    assert created.status_code == 200, created.text
+    world_id = UUID(created.json()["world_id"])
+    wren = created.json()["character_id"]
+    headers = {"X-Worldsim-Role": "player", "X-Worldsim-Character": wren}
+
+    roster = client.get(
+        "/api/v1/stage1/party", params={"world_id": str(world_id)}, headers=headers
+    ).json()
+    (hero,) = roster["members"]
+    assert (hero["name"], hero["race"], hero["character_class"], hero["level"]) == (
+        "Wren",
+        "human",
+        "fighter",
+        1,
+    )
+    assert hero["character_id"] == wren
+    assert hero["weapons"] == ["Longsword", "Handaxe"]
+    assert hero["armor_class"] >= 16 and hero["hp_current"] == hero["hp_max"] > 0
+    assert hero["spell_slots"] == [] and roster["foes"] == []
+
+    cast = client.get(
+        "/api/v1/world/presentation", params={"world_id": str(world_id)}, headers=headers
+    ).json()["cast"]
+    ids = {c["name"]: c["character_id"] for c in cast}
+
+    def route(request: Any) -> str | None:
+        system, prompt = request.system or "", request.prompt
+        if "You narrate" in system:
+            if "Hearth" not in prompt:
+                return None
+            return json.dumps(
+                [{"text": FIGHT, "cited_fact_keys": ["attempt:wait", "dnd-sheet:wren"]}]
+            )
+        who = ids["Wren"] if "Wren" in prompt else ids["Ash"]
+        if "You decide" in system or "You react" in system:
+            return json.dumps({"family": "wait", "character_id": who, "snapshot_id": who})
+        if "You resolve" in system:
+            return json.dumps({"outcome": "success", "effects": [], "rationale": "Waiting."})
+        return None
+
+    gateway.route = route
+    advanced = client.post(
+        "/api/v1/stage1/advance",
+        json={
+            "world_id": str(world_id),
+            "absolute_index": 1,
+            "player_intents": {
+                wren: {"family": "wait", "character_id": wren, "snapshot_id": NIL_SNAPSHOT}
+            },
+        },
+        headers=headers,
+    )
+    assert advanced.status_code == 200, advanced.text
+
+    chronicle = client.get(
+        "/api/v1/world/chronicle",
+        params={"world_id": str(world_id), "after": 0, "limit": 50},
+        headers=headers,
+    ).json()
+    fights = [e for e in chronicle["entries"] if e["combat"]]
+    assert len(fights) == 1, chronicle["entries"]
+    log = fights[0]["combat"]
+    scene = next(e for e in chronicle["entries"] if e["event_id"] == log["scene_event_id"])
+    assert scene["scene_id"] is not None
+    assert "[" not in (scene["text"] or "") and "Wren swings her blade" in scene["text"]
+
+    kinds = [(r["kind"], r.get("actor"), r.get("target")) for r in log["rolls"]]
+    assert kinds == [
+        ("encounter", None, "Goblin"),
+        ("attack", "Wren", "Goblin"),
+        ("attack", "Goblin", "Wren"),
+    ]
+    strike, back = log["rolls"][1], log["rolls"][2]
+    assert strike["using"] == "Longsword" and strike["target_foe"] is True
+    assert strike["result"] in ("hit", "miss", "crit") and strike["ac"] == 15
+    assert strike["roll"] - strike["natural"] == 5  # +3 Str, +2 proficiency
+    assert back["actor_foe"] is True and back["using"] == "Scimitar"
+    assert back["ac"] == hero["armor_class"]
+
+    narration = client.get(
+        f"/api/v1/stage1/scenes/{scene['scene_id']}/narration", headers=headers
+    ).json()
+    assert narration and all("[" not in beat["text"] for beat in narration)
+
+    after = client.get(
+        "/api/v1/stage1/party", params={"world_id": str(world_id)}, headers=headers
+    ).json()
+    goblin_hp = _pools(world_id)["goblin"]
+    if back["result"] in ("hit", "crit"):
+        assert after["members"][0]["hp_current"] == back["hp_after"] < hero["hp_max"]
+    if goblin_hp > 0:
+        assert [(f["key"], f["hp_current"]) for f in after["foes"]] == [("goblin", goblin_hp)]
+        assert after["fight_index"] == 1
+    else:
+        assert after["foes"] == []

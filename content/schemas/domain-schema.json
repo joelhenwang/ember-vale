@@ -10482,6 +10482,30 @@
     },
     "StoryDraft": {
       "$defs": {
+        "DraftAdventure": {
+          "additionalProperties": false,
+          "description": "A story you play with fights in it: your hero's people and calling.\n\nThe hero starts at level 1 with a full 5e sheet built from these two;\nthe storyteller then rolls every fight through it.",
+          "properties": {
+            "character_class": {
+              "maxLength": 32,
+              "minLength": 1,
+              "title": "Character Class",
+              "type": "string"
+            },
+            "race": {
+              "maxLength": 32,
+              "minLength": 1,
+              "title": "Race",
+              "type": "string"
+            }
+          },
+          "required": [
+            "race",
+            "character_class"
+          ],
+          "title": "DraftAdventure",
+          "type": "object"
+        },
         "DraftAi": {
           "additionalProperties": false,
           "properties": {
@@ -10618,6 +10642,17 @@
         "DraftMode": {
           "additionalProperties": false,
           "properties": {
+            "adventure": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/DraftAdventure"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
             "controlled_cast_key": {
               "anyOf": [
                 {
@@ -10661,6 +10696,7 @@
             "mode": {
               "$ref": "#/$defs/DraftMode",
               "default": {
+                "adventure": null,
                 "controlled_cast_key": null,
                 "role": "watcher"
               }

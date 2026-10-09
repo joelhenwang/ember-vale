@@ -22,9 +22,9 @@ from worldsim.application.geography import PLACE_MAPS
 from worldsim.application.images import queue_image
 from worldsim.application.library.builtins import WORLD_PRESET_ID
 from worldsim.application.orchestration.stage1 import UnitOfWorkFactory
-from worldsim.application.stories.validation import validate_draft
+from worldsim.application.stories.validation import story_dnd_tables, validate_draft
 from worldsim.application.unit_of_work import UnitOfWork
-from worldsim.domain.activities import TravelRoute
+from worldsim.domain.activities import TravelRoute, focus_for_seat
 from worldsim.domain.assets import AssetKind, AssetRecord
 from worldsim.domain.carried import carried_items
 from worldsim.domain.characters import Character, CharacterCard
@@ -39,10 +39,12 @@ from worldsim.domain.ids import (
     new_character_id,
     new_item_instance_id,
     new_location_id,
+    new_party_member_id,
     new_role_grant_id,
     new_route_id,
     new_world_id,
 )
+from worldsim.domain.party import PartyMember, party_name_key
 from worldsim.domain.phases import PhaseRun
 from worldsim.domain.presets import (
     CharacterPresetPayload,
@@ -52,6 +54,7 @@ from worldsim.domain.presets import (
 )
 from worldsim.domain.progress import ItemInstance
 from worldsim.domain.roles import RoleGrant
+from worldsim.domain.rules.dnd import auto_sheet
 from worldsim.domain.stories import (
     DraftCastMember,
     DraftPayload,
@@ -182,11 +185,16 @@ async def _replay(uow: UnitOfWork, receipt: StoryCreationReceipt) -> CreateResul
 
 
 def _request_hash(draft: StoryDraft, expected_version: int) -> str:
+    payload = draft.payload.model_dump(mode="json")
+    if payload["mode"].get("adventure") is None:
+        # A story without fights hashes as it did before fights existed,
+        # so a receipt from then still replays.
+        payload["mode"].pop("adventure", None)
     canonical = json.dumps(
         {
             "draft_id": str(draft.id),
             "expected_version": expected_version,
-            "payload": draft.payload.model_dump(mode="json"),
+            "payload": payload,
         },
         sort_keys=True,
     )
@@ -604,6 +612,24 @@ async def _instantiate(
             granted_absolute=0,
         )
     )
+    adventure = payload.mode.adventure
+    if adventure is not None and controlled is not None:
+        # A story with fights: the hero's 5e sheet joins in the same
+        # transaction, so a failure leaves no story half made.
+        hero = next(m for m in payload.cast if m.instance_key == payload.mode.controlled_cast_key)
+        await uow.party.add(
+            PartyMember(
+                id=new_party_member_id(),
+                world_id=world_id,
+                name=hero.name,
+                name_key=party_name_key(hero.name),
+                character_id=controlled,
+                focus_slot=focus_for_seat(0),
+                sheet=auto_sheet(
+                    hero.name, adventure.race, adventure.character_class, 1, story_dnd_tables()
+                ),
+            )
+        )
     setup_payload = _snapshot_payload(
         payload, world_preset, cast_presets, runtime_characters, location_ids, role
     )
@@ -703,6 +729,11 @@ def _snapshot_payload(
                 str(runtime_characters[inner.mode.controlled_cast_key])
                 if role == UserRole.PLAYER and inner.mode.controlled_cast_key is not None
                 else None
+            ),
+            **(
+                {"adventure": inner.mode.adventure.model_dump(mode="json")}
+                if inner.mode.adventure is not None
+                else {}
             ),
         },
         "story": inner.story.model_dump(mode="json"),

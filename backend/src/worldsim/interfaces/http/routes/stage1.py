@@ -10,6 +10,7 @@ orchestrator's idempotent keys: repeats return stored reports.
 from __future__ import annotations
 
 import json
+from typing import Any, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Request, Response
@@ -24,6 +25,8 @@ from worldsim.domain.commands import ActionIntent
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.ids import derive_attempt_id
 from worldsim.domain.party import PartyMember
+from worldsim.domain.rules.dnd import DataTables, Sheet, armor_ac, strip_combat_tags
+from worldsim.domain.rules.dnd.data import dict_field, entry, list_field, table
 from worldsim.domain.scenes import Intent, Reaction
 from worldsim.domain.time import absolute_index
 from worldsim.interfaces.http import schemas as api
@@ -36,9 +39,28 @@ router = APIRouter(tags=["stage1"])
 _ACTION_ADAPTER: TypeAdapter[ActionIntent] = TypeAdapter(ActionIntent)
 
 
-def _party_view(member: PartyMember) -> api.PartyMemberView:
+def _spell_slots(tables: DataTables, sheet: Sheet) -> list[int]:
+    """Slots per day by spell level at the sheet's level ([] for non-casters)."""
+    levels = list_field(entry(table(tables, "classes"), sheet.character_class), "levels")
+    at = min(max(sheet.level, 1), 20) - 1
+    raw: object = levels[at] if len(levels) > at else None
+    row = cast("dict[str, Any]", raw) if isinstance(raw, dict) else {}
+    casting = dict_field(row, "spellcasting")
+    slots = [n if isinstance(n, int) else 0 for n in list_field(casting, "slots")]
+    while slots and slots[-1] == 0:
+        slots.pop()
+    return slots
+
+
+def _named(rows: dict[str, Any], keys: list[str]) -> list[str]:
+    return [str(entry(rows, key).get("name", key)) for key in keys]
+
+
+def _party_view(member: PartyMember, tables: DataTables | None = None) -> api.PartyMemberView:
     """Project one roster row; sheets are shared party knowledge."""
     hit_points = member.sheet.hp
+    tables = tables if tables is not None else dnd_tables()
+    sheet = member.sheet
     return api.PartyMemberView(
         id=member.id,
         world_id=member.world_id,
@@ -50,7 +72,46 @@ def _party_view(member: PartyMember) -> api.PartyMemberView:
         conditions=list(member.sheet.conditions),
         character_id=member.character_id,
         version=member.version,
+        race=sheet.race,
+        armor_class=armor_ac(tables, sheet),
+        weapons=_named(table(tables, "weapons"), sheet.weapons),
+        spells=_named(table(tables, "spells"), sheet.spells),
+        spell_slots=_spell_slots(tables, sheet),
     )
+
+
+#: A fight shows its foes this many turns after its last roll.
+FIGHT_LINGERS = 2
+
+
+async def _foes(uow: Any, world_id: UUID) -> tuple[list[api.FoeView], int | None]:
+    """The latest fight's foes with live hit points, while it is on: rolled
+    within the last turns and someone still standing."""
+    fight = await uow.events.latest_fight(world_id)
+    if fight is None:
+        return [], None
+    world = await uow.worlds.get(world_id)
+    if absolute_index(world.day, world.phase) - fight.absolute_index > FIGHT_LINGERS:
+        return [], fight.absolute_index
+    try:
+        keys = [str(k) for k in json.loads(fight.summary.get("foes", "[]"))]
+    except (ValueError, TypeError):
+        keys = []
+    pools = {m.name_key: m for m in await uow.monsters.list_for_world(world_id)}
+    foes = [
+        api.FoeView(
+            key=key,
+            name=pools[key].name,
+            hp_current=pools[key].hp_current,
+            hp_max=pools[key].hp_max,
+            armor_class=pools[key].ac,
+        )
+        for key in keys
+        if key in pools
+    ]
+    if not any(foe.hp_current > 0 for foe in foes):
+        return [], fight.absolute_index
+    return foes, fight.absolute_index
 
 
 async def _perspective(request: Request, world_id: UUID | None = None) -> tuple[str, UUID | None]:
@@ -254,16 +315,18 @@ async def get_narration(scene_id: UUID, request: Request) -> list[api.BeatView]:
     state = request.app.state.app_state
     async with state.uow_factory()() as uow:
         beats = await uow.scenes.narrations_for_event(detail.event_id)
+    # Combat tags are what the dice rolled from, not prose: never shown.
     return [
         api.BeatView(
             id=b.id,
             speaker_id=b.speaker_id,
             kind=b.kind.value,
-            text=b.text,
+            text=text,
             source_event_id=b.source_event_id,
             cited_fact_keys=list(b.cited_fact_keys),
         )
         for b in beats
+        if (text := strip_combat_tags(b.text)) or not b.text
     ]
 
 
@@ -495,7 +558,11 @@ async def party_roster(world_id: UUID, request: Request) -> api.PartyRosterRespo
     state = request.app.state.app_state
     async with state.uow_factory()() as uow:
         members = await uow.party.list_for_world(world_id)
+        foes, fought = await _foes(uow, world_id) if members else ([], None)
+    tables = dnd_tables()
     return api.PartyRosterResponse(
         world_id=world_id,
-        members=[_party_view(member) for member in members],
+        members=[_party_view(member, tables) for member in members],
+        foes=foes,
+        fight_index=fought,
     )

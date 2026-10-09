@@ -271,3 +271,14 @@ def dnd_rules_text() -> str:
     """DM instructions for D&D mode, verbatim from the monolith prompt."""
     path = Path(__file__).resolve().parents[5] / "prompts" / f"{RULES_PROMPT_VERSION}.md"
     return path.read_text(encoding="utf-8")
+
+
+STORY_RULES_PROMPT_VERSION = "dnd-rules.v2"
+
+
+@functools.cache
+def dnd_story_rules_text() -> str:
+    """DM instructions the story narrator gets: v1 plus who-at-whom tags and
+    foes that strike back (v1 stays the monolith's text, for parity)."""
+    path = Path(__file__).resolve().parents[5] / "prompts" / f"{STORY_RULES_PROMPT_VERSION}.md"
+    return path.read_text(encoding="utf-8")

@@ -341,6 +341,25 @@ class PartyMemberView(BaseModel):
     conditions: list[str] = Field(default_factory=list)
     character_id: UUID | None = None
     version: int
+    race: str | None = None
+    armor_class: int | None = None
+    #: Weapons and spells by their table names ("Longsword", "Fire Bolt").
+    weapons: list[str] = Field(default_factory=list)
+    spells: list[str] = Field(default_factory=list)
+    #: Spell slots per day by spell level (index 0 = first level), if a caster.
+    spell_slots: list[int] = Field(default_factory=list)
+
+
+class FoeView(BaseModel):
+    """One foe of the party's latest fight, with its live hit points."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    key: str
+    name: str
+    hp_current: int
+    hp_max: int
+    armor_class: int
 
 
 class ActivityStartRequest(BaseModel):
@@ -681,6 +700,10 @@ class PartyRosterResponse(BaseModel):
 
     world_id: UUID
     members: list[PartyMemberView] = Field(default_factory=list)
+    #: The latest fight's foes while it is on (recent and someone still stands).
+    foes: list[FoeView] = Field(default_factory=list)
+    #: The turn that fight was last rolled in.
+    fight_index: int | None = None
 
 
 class MacroEffectView(BaseModel):
@@ -896,6 +919,41 @@ class ChronicleEntry(BaseModel):
     revision: int = 0
     #: Everyone in the scene only waited or rested (feeds fold these together).
     idle: bool = False
+    #: A fight's rolls (combat stories): shown under the scene they belong to.
+    combat: CombatLogView | None = None
+
+
+class CombatRollView(BaseModel):
+    """One roll of a fight, in parts; ``text`` says it in one line."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    #: encounter, attack, cast, condition, spar, recruit or note.
+    kind: str
+    text: str
+    actor: str | None = None
+    target: str | None = None
+    using: str | None = None
+    roll: int | None = None
+    natural: int | None = None
+    ac: int | None = None
+    dc: int | None = None
+    #: hit, miss, crit, saved, half, failed or healed (encounters: how hard).
+    result: str | None = None
+    amount: int | None = None
+    damage_type: str | None = None
+    hp_before: int | None = None
+    hp_after: int | None = None
+    target_foe: bool = False
+    actor_foe: bool = False
+
+
+class CombatLogView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    #: The scene these rolls belong under (its event).
+    scene_event_id: UUID | None = None
+    rolls: list[CombatRollView] = Field(default_factory=list)
 
 
 class ChronicleResponse(BaseModel):

@@ -140,6 +140,7 @@ export interface PartyBeginRequest {
 }
 
 export interface PartyMemberView {
+  armor_class?: number | null;
   character_class: string;
   character_id?: string | null;
   conditions?: string[];
@@ -148,13 +149,51 @@ export interface PartyMemberView {
   id: string;
   level: number;
   name: string;
+  race?: string | null;
+  spell_slots?: number[];
+  spells?: string[];
   version: number;
+  weapons?: string[];
   world_id: string;
 }
 
 export interface PartyRosterResponse {
+  fight_index?: number | null;
+  foes?: FoeView[];
   members?: PartyMemberView[];
   world_id: string;
+}
+
+export interface FoeView {
+  armor_class: number;
+  hp_current: number;
+  hp_max: number;
+  key: string;
+  name: string;
+}
+
+export interface CombatRollView {
+  ac?: number | null;
+  actor?: string | null;
+  actor_foe?: boolean;
+  amount?: number | null;
+  damage_type?: string | null;
+  dc?: number | null;
+  hp_after?: number | null;
+  hp_before?: number | null;
+  kind: string;
+  natural?: number | null;
+  result?: string | null;
+  roll?: number | null;
+  target?: string | null;
+  target_foe?: boolean;
+  text: string;
+  using?: string | null;
+}
+
+export interface CombatLogView {
+  rolls?: CombatRollView[];
+  scene_event_id?: string | null;
 }
 
 export interface ActivityStartRequest {
@@ -576,6 +615,7 @@ export interface PartyLinkRequest {
 
 export interface ChronicleEntry {
   absolute_index: number;
+  combat?: CombatLogView | null;
   event_id: string;
   event_type: string;
   idle?: boolean;

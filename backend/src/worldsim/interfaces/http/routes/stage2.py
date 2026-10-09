@@ -16,6 +16,7 @@ from worldsim.application.capabilities import is_omniscient, parse_role
 from worldsim.domain.enums import Visibility
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.narration import NarrationBeat
+from worldsim.domain.rules.dnd import strip_combat_tags
 from worldsim.interfaces.http import schemas as api
 from worldsim.interfaces.http.routes.activities import activity_view
 from worldsim.interfaces.http.routes.roles import effective_role, require_role
@@ -81,7 +82,10 @@ async def timeline(
                     event_id=event.id,
                     event_type=event.event_type.value,
                     absolute_index=event.absolute_index,
-                    snippet=clip(" ".join(_voiced_beat_text(b, names) for b in beats)) or None,
+                    snippet=clip(
+                        strip_combat_tags(" ".join(_voiced_beat_text(b, names) for b in beats))
+                    )
+                    or None,
                 )
             )
         total = await uow.events.count_events(world_id)
