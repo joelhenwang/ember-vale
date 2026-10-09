@@ -513,3 +513,25 @@ mod tests {
         assert_eq!(minutes(Duration::from_secs(30)), "a minute");
     }
 }
+
+#[cfg(test)]
+mod live {
+    use super::*;
+    use std::sync::mpsc::channel;
+
+    /// Against the running stack: take a backup, then read it back in the list.
+    /// `cargo test -- --ignored live_backup` (needs Docker and the compose stack).
+    #[test]
+    #[ignore]
+    fn live_backup() {
+        let root = sys::find_root().expect("run inside the repo");
+        let (tx, _rx) = channel();
+        let before = read_list(&root, &tx).expect("list");
+        docker(&root, &now_args(), NOW_TIMEOUT, &tx).expect("back up now");
+        let after = read_list(&root, &tx).expect("list");
+        assert!(after.len() >= before.len().min(7));
+        let newest = before.first().map(|b| b.stamp.as_str()).unwrap_or("");
+        assert!(after[0].stamp.as_str() > newest);
+        assert!(after[0].stories > 0 && !after[0].size.is_empty());
+    }
+}
