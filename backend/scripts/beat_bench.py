@@ -15,6 +15,10 @@ Optionally profiles a window of beats with cProfile.
     python scripts/beat_bench.py --cast 3 --beats 100 [--places 6]
         [--checkpoints 10,100] [--profile 90:100] [--json out.json]
         [--verify-reads] [--bystanders 2] [--cite 0.3] [--salient-cap N]
+        [--keep-turns N]
+
+``--keep-turns`` overrides how many newest turns keep their checkpoint
+(retention, rewind-001; default 200); the result reports what is stored.
 
 ``--verify-reads`` builds every decision and reaction context a second time
 from fresh reads and stops on any byte of difference (phase_reads.VERIFY).
@@ -408,6 +412,8 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
                 f"  sessions {statistics.median(b['checkouts'] for b in window):4.0f}",
                 flush=True,
             )
+    stored = await checkpoint_storage(engine, seeded.world, args.beats)
+    print(f"checkpoints: {stored}")
     await engine.dispose()
 
     out: dict[str, Any] = {
@@ -416,6 +422,7 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
         "beats": beats,
         "calls": script.calls,
         "top_tables": sorted(meter.by_table.items(), key=lambda kv: -kv[1])[:25],
+        "checkpoints": stored,
     }
     if profiler is not None:
         buf = io.StringIO()
@@ -428,6 +435,40 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
             Path(args.prof_out).write_text(buf.getvalue(), encoding="utf-8")  # noqa: ASYNC240
             profiler.dump_stats(str(Path(args.prof_out).with_suffix(".prof")))
     return out
+
+
+async def checkpoint_storage(engine: Any, world: UUID, latest: int) -> dict[str, Any]:
+    """What the story's kept turns hold, and what a prune costs once they are pruned."""
+    from sqlalchemy import text
+
+    from worldsim.infrastructure.repositories.unit_of_work import create_unit_of_work
+
+    async with engine.connect() as conn:
+        row = (
+            await conn.execute(
+                text(
+                    "SELECT count(*), coalesce(sum(pg_column_size(state)), 0),"
+                    " coalesce(sum(octet_length(state::text)), 0),"
+                    " pg_total_relation_size('story_checkpoint')"
+                    " FROM story_checkpoint WHERE world_id = :w"
+                ),
+                {"w": world},
+            )
+        ).one()
+    timings: list[float] = []
+    for _ in range(20):
+        async with create_unit_of_work(engine) as uow:
+            started = time.perf_counter()
+            await uow.checkpoints.prune(world, latest)
+            timings.append((time.perf_counter() - started) * 1000)
+            await uow.commit()
+    return {
+        "rows": int(row[0]),
+        "stored_bytes": int(row[1]),
+        "json_bytes": int(row[2]),
+        "table_bytes": int(row[3]),
+        "prune_noop_ms_p50": round(statistics.median(timings), 2),
+    }
 
 
 def main() -> int:
@@ -459,7 +500,12 @@ def main() -> int:
     parser.add_argument(
         "--verify-reads", action="store_true", help="check shared reads against fresh ones"
     )
+    parser.add_argument("--keep-turns", type=int, help="override KEEP_RECENT_TURNS (retention)")
     args = parser.parse_args()
+    if args.keep_turns is not None:
+        from worldsim.domain import branches
+
+        branches.KEEP_RECENT_TURNS = args.keep_turns
     if args.salient_cap is not None:
         from worldsim.application.orchestration import stage1
 

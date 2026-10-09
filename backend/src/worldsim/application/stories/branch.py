@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from uuid import UUID
 
@@ -20,7 +21,7 @@ from sqlalchemy.exc import IntegrityError
 from worldsim.application.orchestration.service import derive_run_id
 from worldsim.application.orchestration.stage1 import UnitOfWorkFactory
 from worldsim.application.unit_of_work import UnitOfWork
-from worldsim.domain.branches import BranchCopy, StoryBranchOrigin, branch_title
+from worldsim.domain.branches import BranchCopy, StoryBranchOrigin, branch_title, keeps_turn
 from worldsim.domain.enums import PhaseRunState
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.ids import new_world_id
@@ -33,6 +34,10 @@ NOT_KEPT = (
     "isn't stored. Turns played from now on can be branched."
 )
 NOT_PLAYED = "That turn hasn't been played yet."
+PRUNED = (
+    "For older days only each day's last turn is kept. Choose the last turn of that day "
+    "(midnight) instead."
+)
 
 
 @dataclass(frozen=True)
@@ -86,38 +91,12 @@ async def branch_story(
                     "idempotency key was used for a different request",
                 )
             return await _replay(uow, existing.created_world_id)
-        source = await uow.stories.get_catalog(source_id)
+        await uow.stories.get_catalog(source_id)  # NOT_FOUND for unknown stories
         await _require_branchable(uow, source_id, absolute_index, writing=writing)
-        head = await uow.checkpoints.head(source_id, absolute_index)
-        state = await uow.checkpoints.state(source_id, absolute_index)
-        assert head is not None and state is not None
-        world_id = new_world_id()
-        copy = await uow.checkpoints.copy_branch(source_id, absolute_index, head, state, world_id)
-        name = (clean_title or branch_title(source.title, absolute_index))[:128]
+        world_id, name, copy = await copy_into_new_story(
+            uow, source_id, absolute_index, clean_title, branch_title
+        )
         now = utcnow()
-        cover = source.cover_asset_id
-        if cover is not None:
-            cover = UUID(copy.remap.get(str(cover), str(cover)))
-        await uow.stories.put_catalog(
-            StoryCatalogEntry(
-                world_id=world_id,
-                title=name,
-                cover_asset_id=cover,
-                created_at=now,
-                last_played_at=now,
-                archived_at=None,
-                metadata_version=1,
-            )
-        )
-        await uow.checkpoints.add_origin(
-            StoryBranchOrigin(
-                world_id=world_id,
-                source_world_id=source_id,
-                source_index=absolute_index,
-                source_title=source.title,
-                created_at=now,
-            )
-        )
         grant = await uow.roles.get_for_world(world_id)
         try:
             await uow.stories.put_receipt(
@@ -152,6 +131,51 @@ async def branch_story(
     )
 
 
+async def copy_into_new_story(
+    uow: UnitOfWork,
+    source_id: UUID,
+    absolute_index: int,
+    title: str | None,
+    default_title: Callable[[str, int], str],
+) -> tuple[UUID, str, BranchCopy]:
+    """Write the new story (rows, catalog entry, provenance); the caller commits.
+
+    The turn must already have passed ``_require_branchable``.
+    """
+    source = await uow.stories.get_catalog(source_id)
+    head = await uow.checkpoints.head(source_id, absolute_index)
+    state = await uow.checkpoints.state(source_id, absolute_index)
+    assert head is not None and state is not None
+    world_id = new_world_id()
+    copy = await uow.checkpoints.copy_branch(source_id, absolute_index, head, state, world_id)
+    name = (title or default_title(source.title, absolute_index))[:128]
+    now = utcnow()
+    cover = source.cover_asset_id
+    if cover is not None:
+        cover = UUID(copy.remap.get(str(cover), str(cover)))
+    await uow.stories.put_catalog(
+        StoryCatalogEntry(
+            world_id=world_id,
+            title=name,
+            cover_asset_id=cover,
+            created_at=now,
+            last_played_at=now,
+            archived_at=None,
+            metadata_version=1,
+        )
+    )
+    await uow.checkpoints.add_origin(
+        StoryBranchOrigin(
+            world_id=world_id,
+            source_world_id=source_id,
+            source_index=absolute_index,
+            source_title=source.title,
+            created_at=now,
+        )
+    )
+    return world_id, name, copy
+
+
 async def branchable_turns(uow: UnitOfWork, world_id: UUID) -> list[int]:
     """Turns of this story that can be branched from, oldest first."""
     return [head.absolute_index for head in await uow.checkpoints.heads(world_id)]
@@ -175,6 +199,14 @@ async def _require_branchable(
         is_latest = latest is not None and latest.absolute_index == absolute_index
         if is_latest and writing:
             raise DomainError(ErrorCode.PRECONDITION_FAILED, STILL_WRITING)
+        heads = await uow.checkpoints.heads(world_id)
+        if (
+            heads
+            and heads[0].absolute_index < absolute_index
+            and not keeps_turn(absolute_index, heads[-1].absolute_index)
+        ):
+            # Turns were kept around this one: it went with retention.
+            raise DomainError(ErrorCode.PRECONDITION_FAILED, PRUNED)
         raise DomainError(ErrorCode.PRECONDITION_FAILED, NOT_KEPT)
     if await uow.checkpoints.unnarrated_scenes(world_id, absolute_index):
         raise DomainError(ErrorCode.PRECONDITION_FAILED, STILL_WRITING)

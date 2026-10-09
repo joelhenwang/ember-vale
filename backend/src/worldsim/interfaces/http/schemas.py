@@ -1775,6 +1775,32 @@ class StoryBranchPoints(BaseModel):
 
     story_id: UUID
     turns: list[int]
+    #: The newest finished turn (None before the first): it can be branched
+    #: from but not gone back to.
+    latest_turn: int | None = None
+
+
+class StoryRewindRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    #: The kept turn to go back to: the story continues from its end.
+    absolute_index: int = Field(ge=1)
+
+
+class StoryRewindResponse(BaseModel):
+    """The story went back; the removed turns live on as their own story."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    story_id: UUID
+    absolute_index: int
+    #: "<story> — the path not taken (Day N, <time>)": the turns removed.
+    saved_story_id: UUID
+    saved_title: str
+    #: The seat in the saved story (the same as in this one).
+    role: str
+    removed_turns: int
+    replayed: bool = False
 
 
 class AutoplayView(BaseModel):

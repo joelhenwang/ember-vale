@@ -14,7 +14,7 @@ import EventFeed from '../components/observatory/EventFeed.vue'
 import EventModal from '../components/observatory/EventModal.vue'
 import BranchDialog from '../components/story/BranchDialog.vue'
 import { useBranchPoints } from '../composables/useBranchPoints'
-import { canBranch } from '../game/branches'
+import { canBranch, canRewind } from '../game/branches'
 import MomentDialog from '../components/story/MomentDialog.vue'
 import PaintSceneDialog from '../components/story/PaintSceneDialog.vue'
 import { assetUrl } from '../api/worldsim'
@@ -37,6 +37,16 @@ function branchFrom(index: number): void {
   // The event view is a native dialog on the top layer: close it first.
   opened.value = null
   branchingTurn.value = index
+}
+/** The turn whose "Go back to this turn" was chosen (the confirmation is open). */
+const rewindingTurn = ref<number | null>(null)
+function rewindTo(index: number): void {
+  opened.value = null
+  rewindingTurn.value = index
+}
+/** The story went back: read it again from the start, in place. */
+async function rewound(): Promise<void> {
+  await Promise.all([obs.load(), branches.reload()])
 }
 
 const speed = ref(SPEEDS[0].delaySeconds)
@@ -295,7 +305,9 @@ onUnmounted(() => {
         :place-of="placeOf"
         :pictured="pictured"
         :branchable="branches.kept.value"
+        :latest-turn="branches.latest.value"
         @branch="branchFrom"
+        @rewind="rewindTo"
         @open="opened = $event"
         @focus="focusId = $event" />
     </div>
@@ -310,7 +322,9 @@ onUnmounted(() => {
       :place-of="placeOf"
       :picture="pictureFor(opened)"
       :branchable="canBranch(branches.kept.value, opened.absolute_index)"
+      :rewindable="canRewind(branches.kept.value, branches.latest.value, opened.absolute_index)"
       @branch="branchFrom"
+      @rewind="rewindTo"
       @moment="openMoment"
       @paint="paint"
       @close="opened = null" />
@@ -336,6 +350,15 @@ onUnmounted(() => {
       :story-title="obs.title.value ?? 'Story'"
       :turn="branchingTurn"
       @close="branchingTurn = null" />
+    <BranchDialog
+      mode="rewind"
+      :open="rewindingTurn !== null"
+      :story-id="storyId"
+      :story-title="obs.title.value ?? 'Story'"
+      :turn="rewindingTurn"
+      :latest="branches.latest.value"
+      @rewound="rewound"
+      @close="rewindingTurn = null" />
   </main>
 </template>
 

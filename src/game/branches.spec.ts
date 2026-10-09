@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { branchTitle, canBranch, originLine, turnLabel } from './branches'
+import {
+  branchTitle,
+  canBranch,
+  canRewind,
+  originLine,
+  pathNotTakenTitle,
+  turnLabel
+} from './branches'
 
 describe('branches', () => {
   it('labels turns as the server does', () => {
@@ -29,5 +36,26 @@ describe('branches', () => {
       'Branched from The Ledger at Day 1, morning'
     )
     expect(originLine(null)).toBeNull()
+  })
+
+  it('names the path not taken after the turn it ends at, once', () => {
+    expect(pathNotTakenTitle('The Ledger', 5)).toBe(
+      'The Ledger — the path not taken (Day 1, sunset)'
+    )
+    expect(pathNotTakenTitle('The Ledger — the path not taken (Day 1, sunset)', 17)).toBe(
+      'The Ledger — the path not taken (Day 2, evening)'
+    )
+    expect(branchTitle('The Ledger — the path not taken (Day 1, sunset)', 2)).toBe(
+      'The Ledger — from Day 1, morning'
+    )
+  })
+
+  it('offers going back only to kept turns before a kept newest turn', () => {
+    const kept = new Set([1, 2, 5])
+    expect(canRewind(kept, 5, 2)).toBe(true)
+    expect(canRewind(kept, 5, 5)).toBe(false)
+    expect(canRewind(kept, 5, 3)).toBe(false)
+    expect(canRewind(kept, 6, 2)).toBe(false)
+    expect(canRewind(kept, null, 2)).toBe(false)
   })
 })

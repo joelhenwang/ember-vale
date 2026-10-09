@@ -1255,8 +1255,23 @@ export interface StoryBranchResponse {
 }
 
 export interface StoryBranchPoints {
+  latest_turn?: number | null;
   story_id: string;
   turns: number[];
+}
+
+export interface StoryRewindRequest {
+  absolute_index: number;
+}
+
+export interface StoryRewindResponse {
+  absolute_index: number;
+  removed_turns: number;
+  replayed?: boolean;
+  role: string;
+  saved_story_id: string;
+  saved_title: string;
+  story_id: string;
 }
 
 export interface PresetSummary {

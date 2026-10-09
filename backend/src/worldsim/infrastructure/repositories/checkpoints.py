@@ -35,6 +35,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from worldsim.domain import branches
 from worldsim.domain.branches import (
     CHECKPOINT_SCHEMA_VERSION,
     BranchCopy,
@@ -224,6 +225,33 @@ INSERT_ORDER: tuple[str, ...] = (
     "story_checkpoint",
 )
 
+#: State rows that history points at (an observation names its observer, a
+#: scene its people): a rewind updates these in place and removes only the
+#: ones made after the turn. Every other state table is emptied and put back
+#: from the checkpoint whole, so a table added to STATE_TABLES is rewound
+#: with no change here.
+ANCHOR_TABLES: tuple[str, ...] = (
+    "world",
+    "entity",
+    "location",
+    "character",
+    "character_card_version",
+)
+
+#: History rows found through their parent rather than a world_id column.
+_HISTORY_SCOPE: dict[str, str] = {
+    "phase_snapshot_character": (
+        "t.snapshot_id IN (SELECT id FROM phase_snapshot WHERE world_id = :w)"
+    ),
+    "event_effect": "t.event_id IN (SELECT id FROM world_event WHERE world_id = :w)",
+    "scene_participant": "t.scene_id IN (SELECT id FROM scene WHERE world_id = :w)",
+}
+
+#: Story setup rather than turns: a rewind leaves these as they are.
+_SETUP_TABLES = frozenset({"story_initial_setup", "story_prompts", "character_image_prompt"})
+
+_LATER_EVENTS = "SELECT id FROM world_event WHERE world_id = :w AND sequence > :seq"
+
 #: Columns copied as they are: the stored file a branch shares.
 KEEP_AS_IS: frozenset[tuple[str, str]] = frozenset({("asset_record", "content_ref")})
 
@@ -334,6 +362,39 @@ class SqlAlchemyCheckpointRepository:
             )
         ).scalar_one_or_none()
         return int(written or 0)
+
+    async def prune(self, world_id: UUID, absolute_index: int, recent: int | None = None) -> int:
+        """Retention (rewind-001): checkpoints of the newest turns, older day ends.
+
+        Run when turn ``absolute_index`` is kept: every turn at least
+        ``recent`` turns older that does not end a day goes. An index range
+        delete on the key, so it costs the same at turn 10 and turn 10 000.
+        Day-end turns stay, which is also what keeps the salience pointer of
+        a turn inside a day valid. Rows deleted.
+        """
+        window = branches.KEEP_RECENT_TURNS if recent is None else recent
+        result = await self._session.execute(
+            text(
+                "DELETE FROM story_checkpoint WHERE world_id = :w"
+                " AND absolute_index <= CAST(:edge AS integer)"
+                " AND absolute_index % CAST(:per AS integer) <> CAST(:per AS integer) - 1"
+            ),
+            {"w": world_id, "edge": absolute_index - window, "per": PHASES_PER_DAY},
+        )
+        return int(getattr(result, "rowcount", 0) or 0)
+
+    async def latest_completed(self, world_id: UUID) -> int | None:
+        """The newest turn of the story that finished."""
+        found = (
+            await self._session.execute(
+                text(
+                    "SELECT max(absolute_index) FROM phase_run"
+                    " WHERE world_id = :w AND state = 'completed'"
+                ),
+                {"w": world_id},
+            )
+        ).scalar_one_or_none()
+        return None if found is None else int(found)
 
     async def heads(self, world_id: UUID) -> list[CheckpointHead]:
         rows = (
@@ -560,6 +621,242 @@ class SqlAlchemyCheckpointRepository:
         ]
         written += await self._insert(schema, "story_checkpoint", kept)
         return BranchCopy(world_id=new_world_id, remap=remap, rows=written)
+
+    # --- rewind in place --------------------------------------------------------
+
+    async def rewind(
+        self,
+        world_id: UUID,
+        absolute_index: int,
+        head: CheckpointHead,
+        state: Mapping[str, Any],
+    ) -> dict[str, int]:
+        """Put the story back as it stood at the end of the turn (rewind-001).
+
+        Changeable state comes back from the turn's checkpoint; history after
+        the turn goes (the same "up to the turn" rule a branch copies by),
+        with what hangs off it: pictures of removed scenes and their jobs and
+        asset rows, model calls of removed turns, recall vectors, later
+        checkpoints and task runs. Stored picture files are left on disk
+        (branches share them by ``content_ref``). The caller's transaction
+        makes it all or nothing. Rows removed or restored, per table.
+        """
+        if head.schema_version != CHECKPOINT_SCHEMA_VERSION:
+            raise DomainError(
+                ErrorCode.PRECONDITION_FAILED,
+                "This turn was kept in an older format, so the story can't go back to it.",
+            )
+        schema = await self._schema()
+        params: dict[str, Any] = {
+            "w": world_id,
+            "n": absolute_index,
+            "seq": head.event_sequence,
+            "days": completed_days(absolute_index),
+        }
+        tables: dict[str, list[Row]] = {
+            table: [dict(r) for r in rows]
+            for table, rows in cast(Mapping[str, list[Row]], state["tables"]).items()
+        }
+        # Checked before anything changes: both refuse rather than guess.
+        tables["world_config"] = await self._resolve_config(world_id, tables["world_config"])
+        salience = await self._salience(
+            world_id, cast(Mapping[str, Any], state.get("salience", {}))
+        )
+        before = await self._source_ids(world_id)
+        counts: dict[str, int] = {}
+
+        async def run(label: str, sql: str, **extra: Any) -> None:
+            merged = {**params, **extra}
+            used = {k: v for k, v in merged.items() if f":{k}" in sql}
+            result = await self._session.execute(text(sql), used)
+            counts[label] = counts.get(label, 0) + int(getattr(result, "rowcount", 0) or 0)
+
+        later_runs = [
+            r[0]
+            for r in (
+                await self._session.execute(
+                    text("SELECT id FROM phase_run WHERE world_id = :w AND absolute_index > :n"),
+                    {"w": world_id, "n": absolute_index},
+                )
+            ).all()
+        ]
+        later_calls = "SELECT id FROM model_call WHERE world_id = :w AND phase_run_id = ANY(:runs)"
+        call_tasks = [
+            str(r[0])
+            for r in (
+                await self._session.execute(
+                    text(
+                        "SELECT DISTINCT task_run_id FROM model_call WHERE world_id = :w"
+                        " AND phase_run_id = ANY(:runs) AND task_run_id IS NOT NULL"
+                    ),
+                    {"w": world_id, "runs": later_runs},
+                )
+            ).all()
+        ]
+
+        # 1. Commands let go of the events that are about to go.
+        await run(
+            "user_command.result",
+            "UPDATE user_command SET result_event_id = NULL WHERE world_id = :w"
+            f" AND result_event_id IN ({_LATER_EVENTS})",
+        )
+        # 2. State other than the anchors goes whole; the checkpoint puts it back.
+        state_where = dict(STATE_TABLES)
+        for table in reversed(INSERT_ORDER):
+            if table in ANCHOR_TABLES:
+                continue
+            if table == "world_config":
+                await run(table, "DELETE FROM world_config WHERE world_id = :w")
+            elif table in state_where:
+                await run(table, f"DELETE FROM {_q(table)} t WHERE {state_where[table]}")
+        # 3. What hangs off removed turns.
+        await run(
+            "scene_picture",
+            "DELETE FROM scene_picture t WHERE t.world_id = :w"
+            f" AND NOT coalesce(t.scene_id IN ({_SCENES}), false)",
+        )
+        await run(
+            "context_manifest",
+            f"DELETE FROM context_manifest WHERE world_id = :w AND call_id IN ({later_calls})",
+            runs=later_runs,
+        )
+        await run(
+            "model_cost",
+            f"DELETE FROM model_cost WHERE world_id = :w AND call_id IN ({later_calls})",
+            runs=later_runs,
+        )
+        await run(
+            "model_call",
+            "DELETE FROM model_call WHERE world_id = :w AND phase_run_id = ANY(:runs)",
+            runs=later_runs,
+        )
+        await run(
+            "outbox_message",
+            f"DELETE FROM outbox_message WHERE world_id = :w AND event_id IN ({_LATER_EVENTS})",
+        )
+        await run(
+            "story_checkpoint",
+            "DELETE FROM story_checkpoint WHERE world_id = :w AND absolute_index > :n",
+        )
+        # 4. History after the turn, children first.
+        # Snapshots are immutable but for this (migration 0060), this transaction only.
+        await self._session.execute(text("SELECT set_config('worldsim.rewind', 'on', true)"))
+        history_where = dict(HISTORY_TABLES)
+        for table in reversed(INSERT_ORDER):
+            if table not in history_where or table in _SETUP_TABLES:
+                continue
+            if table == "user_command":
+                # Kept: the commands the kept events came from (as a branch).
+                await run(
+                    table,
+                    "DELETE FROM user_command t WHERE t.world_id = :w AND t.id NOT IN"
+                    " (SELECT source_command_id FROM world_event WHERE world_id = :w"
+                    " AND source_command_id IS NOT NULL)",
+                )
+                continue
+            scope = _HISTORY_SCOPE.get(table, "t.world_id = :w")
+            await run(
+                table,
+                f"DELETE FROM {_q(table)} t WHERE {scope}"
+                f" AND NOT coalesce(({history_where[table]}), false)",
+            )
+        await self._session.execute(text("SELECT set_config('worldsim.rewind', 'off', true)"))
+        # 5. Anchors: back to their values at the turn; later ones go.
+        for table in ANCHOR_TABLES:
+            counts[f"{table}.restored"] = await self._upsert(schema, table, tables.get(table, []))
+        for table in reversed(ANCHOR_TABLES[1:]):
+            keys = schema.keys.get(table, ())
+            if len(keys) != 1:
+                raise DomainError(
+                    ErrorCode.INVARIANT_VIOLATED, f"rewind: {table} needs a one-column key"
+                )
+            kept_ids = [str(row[keys[0]]) for row in tables.get(table, [])]
+            await run(
+                table,
+                f"DELETE FROM {_q(table)} t WHERE {state_where[table]}"
+                f' AND NOT (t."{keys[0]}"::text = ANY(CAST(:kept AS text[])))',
+                kept=kept_ids,
+            )
+        # 6. The rest of the state, as it stood.
+        for table in INSERT_ORDER:
+            if table in ANCHOR_TABLES or (table not in state_where and table != "world_config"):
+                continue
+            counts[f"{table}.restored"] = await self._insert(schema, table, tables.get(table, []))
+        for table in ("observation", "recent_memory"):
+            await run(
+                f"{table}.salience",
+                f"UPDATE {table} t SET salience = coalesce("
+                "(CAST(:bumped AS jsonb) ->> t.id::text)::double precision, 1.0)"
+                " WHERE t.world_id = :w",
+                bumped=json.dumps(salience.get(table, {})),
+            )
+        # 7. Pictures, jobs and recall of rows that no longer exist.
+        gone = sorted(before - await self._source_ids(world_id))
+        await run(
+            "image_job",
+            "DELETE FROM image_job WHERE world_id = :w AND (subject_id::text = ANY(CAST(:gone"
+            " AS text[])) OR result_asset_id IN (SELECT id FROM asset_record WHERE world_id = :w"
+            " AND subject_id::text = ANY(CAST(:gone AS text[]))))",
+            gone=gone,
+        )
+        await run(
+            "asset_record",
+            "DELETE FROM asset_record WHERE world_id = :w"
+            " AND subject_id::text = ANY(CAST(:gone AS text[]))",
+            gone=gone,
+        )
+        gone_set = set(gone)
+        vectors = [
+            str(r[0])
+            for r in (
+                await self._session.execute(
+                    text("SELECT source_id FROM recall_vector WHERE world_id = :w"),
+                    {"w": world_id},
+                )
+            ).all()
+        ]
+        stale = [v for v in vectors if _names_copied(v, gone_set)]
+        await run(
+            "recall_vector",
+            "DELETE FROM recall_vector WHERE world_id = :w AND (created_phase_index > :n"
+            " OR source_id = ANY(CAST(:stale AS text[])))",
+            stale=stale,
+        )
+        # 8. Task runs of removed turns (a slot held right now stays).
+        await run(
+            "task_run",
+            "DELETE FROM task_run t WHERE t.world_id = :w AND t.state <> 'running'"
+            " AND (t.id::text = ANY(CAST(:tasks AS text[]))"
+            " OR (t.idempotency_key LIKE :slots"
+            " AND split_part(t.idempotency_key, ':', 4) ~ '^[0-9]+$'"
+            " AND split_part(t.idempotency_key, ':', 4)::integer > :n))"
+            " AND t.id NOT IN (SELECT source_task_id FROM world_event"
+            " WHERE world_id = :w AND source_task_id IS NOT NULL)",
+            tasks=call_tasks,
+            slots=f"execute:{world_id.hex}:phase:%",
+        )
+        return counts
+
+    async def _upsert(self, schema: _Schema, table: str, rows: list[Row]) -> int:
+        """Insert rows, or set every column of the row with that key."""
+        if not rows:
+            return 0
+        present = schema.columns[table]
+        keys = schema.keys[table]
+        names = sorted({key for row in rows for key in row} & present.keys())
+        columns = ", ".join(f'"{name}"' for name in names)
+        updates = ", ".join(f'"{n}" = EXCLUDED."{n}"' for n in names if n not in keys)
+        conflict = ", ".join(f'"{k}"' for k in keys)
+        action = f"DO UPDATE SET {updates}" if updates else "DO NOTHING"
+        await self._session.execute(
+            text(
+                f"INSERT INTO {_q(table)} ({columns}) SELECT {columns}"
+                f" FROM jsonb_populate_recordset(NULL::{_q(table)}, CAST(:rows AS jsonb))"
+                f" ON CONFLICT ({conflict}) {action}"
+            ),
+            {"rows": json.dumps(rows)},
+        )
+        return len(rows)
 
     # --- helpers ---------------------------------------------------------------
 

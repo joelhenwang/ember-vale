@@ -14,12 +14,27 @@ from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
-from worldsim.domain.time import phase_label
+from worldsim.domain.time import PHASES_PER_DAY, phase_label
 
 #: Bumped when the checkpoint document's shape changes incompatibly.
 CHECKPOINT_SCHEMA_VERSION = 1
 
-_FROM_SUFFIX = re.compile(r"\s+—\s+from Day \d+, \w+$")
+#: A story keeps the checkpoint of every one of its newest turns ...
+KEEP_RECENT_TURNS = 200
+# ... and, before those, only the turn that ends each day (rewind-001).
+
+_FROM_SUFFIX = re.compile(r"\s+—\s+(from Day \d+, \w+|the path not taken \(Day \d+, \w+\))$")
+
+
+def ends_a_day(absolute_index: int) -> bool:
+    """The turn that ends a day (midnight): its checkpoint is always kept."""
+    return absolute_index % PHASES_PER_DAY == PHASES_PER_DAY - 1
+
+
+def keeps_turn(absolute_index: int, latest: int, recent: int | None = None) -> bool:
+    """Whether a story whose newest kept turn is ``latest`` keeps this turn's checkpoint."""
+    window = KEEP_RECENT_TURNS if recent is None else recent
+    return absolute_index > latest - window or ends_a_day(absolute_index)
 
 
 @dataclass(frozen=True)
@@ -55,8 +70,20 @@ class BranchCopy:
 def branch_title(source_title: str, absolute_index: int) -> str:
     """A branch's title, e.g. The Saltreach — from Day 2, evening.
 
-    A branch of a branch keeps one "from" suffix, the newest.
+    A branch of a branch keeps one suffix, the newest.
     """
+    return _titled(source_title, f" — from {phase_label(absolute_index)}")
+
+
+def path_not_taken_title(source_title: str, latest_index: int) -> str:
+    """The story that keeps the turns a rewind removes.
+
+    e.g. The Saltreach — the path not taken (Day 3, dusk), named after the
+    turn that path ends at.
+    """
+    return _titled(source_title, f" — the path not taken ({phase_label(latest_index)})")
+
+
+def _titled(source_title: str, suffix: str) -> str:
     base = _FROM_SUFFIX.sub("", source_title.strip()) or "Story"
-    suffix = f" — from {phase_label(absolute_index)}"
     return base[: 128 - len(suffix)].rstrip() + suffix
