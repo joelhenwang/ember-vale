@@ -197,3 +197,80 @@ def test_companions_are_beside_the_hero_only_where_the_hero_is() -> None:
     assert present_keys(roster, {"wren"}, {str(wren_id)}, apart) == {"wren", "lyra"}
     # Ash's own scene without Wren: nobody fights beside anyone there.
     assert present_keys(roster, {"wren"}, {str(ash_id)}, hearth) == set()
+
+
+def test_a_spar_and_a_fight_in_one_scene_both_keep_their_dice(
+    wired: tuple[ApiClient, FakeGateway],
+) -> None:
+    client, gateway = wired
+    created = _create(client, FIGHTER, "spar-and-fight", ash_at="hearth")
+    assert created.status_code == 200, created.text
+    world_id = UUID(created.json()["world_id"])
+    wren = created.json()["character_id"]
+    headers = {"X-Worldsim-Role": "player", "X-Worldsim-Character": wren}
+    cast = client.get(
+        "/api/v1/world/presentation", params={"world_id": str(world_id)}, headers=headers
+    ).json()["cast"]
+    ash = next(c["character_id"] for c in cast if c["name"] == "Ash")
+    turn = {"n": 0}
+
+    def route(request: Any) -> str | None:
+        system, prompt = request.system or "", request.prompt
+        if "You narrate" in system:
+            if turn["n"] == 2 and "Hearth" in prompt:
+                text = (
+                    "ENCOUNTER[goblin]: A goblin bursts in.\n"
+                    "ATTACK[longsword at goblin]: Wren swings at it."
+                )
+                return json.dumps([{"text": text, "cited_fact_keys": ["dnd-sheet:wren"]}])
+            return None
+        if "You react" in system:
+            if "join their party" in prompt:
+                reply = {
+                    "family": "communicate",
+                    "target_character_id": wren,
+                    "topic": "Yes, I will come.",
+                }
+                return json.dumps({**reply, "character_id": ash, "snapshot_id": ash})
+            return json.dumps({"family": "wait", "character_id": ash, "snapshot_id": ash})
+        if "You decide" in system:
+            if turn["n"] == 2:
+                spar = {"family": "spar", "target_character_id": wren, "weapon": "longsword"}
+                return json.dumps({**spar, "character_id": ash, "snapshot_id": ash})
+            return json.dumps({"family": "wait", "character_id": ash, "snapshot_id": ash})
+        if "You resolve" in system:
+            return json.dumps({"outcome": "success", "effects": [], "rationale": "Fine."})
+        return None
+
+    gateway.route = route
+    for index, intent in (
+        (
+            1,
+            {
+                "family": "communicate",
+                "target_character_id": ash,
+                "topic": "Will you join me as my companion?",
+            },
+        ),
+        (2, {"family": "wait"}),
+    ):
+        turn["n"] = index
+        moved = client.post(
+            "/api/v1/stage1/advance",
+            json={
+                "world_id": str(world_id),
+                "absolute_index": index,
+                "player_intents": {
+                    wren: {**intent, "character_id": wren, "snapshot_id": NIL_SNAPSHOT}
+                },
+            },
+            headers=headers,
+        )
+        assert moved.status_code == 200, moved.text
+    entries = client.get(
+        "/api/v1/world/chronicle",
+        params={"world_id": str(world_id), "after": 0, "limit": 80},
+        headers=headers,
+    ).json()["entries"]
+    kinds = [r["kind"] for e in entries if e["combat"] for r in e["combat"]["rolls"]]
+    assert "spar" in kinds and "encounter" in kinds, kinds

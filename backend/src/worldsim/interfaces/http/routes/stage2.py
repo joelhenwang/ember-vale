@@ -16,7 +16,7 @@ from worldsim.application.capabilities import is_omniscient, parse_role
 from worldsim.application.queries.presentation import combat_log
 from worldsim.domain.enums import Visibility
 from worldsim.domain.errors import DomainError, ErrorCode
-from worldsim.domain.ids import derive_combat_event_id
+from worldsim.domain.ids import derive_combat_event_id, derive_spar_event_id
 from worldsim.domain.narration import NarrationBeat
 from worldsim.domain.rules.dnd import strip_combat_tags
 from worldsim.interfaces.http import schemas as api
@@ -81,6 +81,7 @@ async def timeline(
             or (viewer is not None and viewer in event.participant_ids)
         ]
         fought_in = {derive_combat_event_id(e.id): e.id for e in visible}
+        fought_in |= {derive_spar_event_id(e.id): e.id for e in visible}
         for event in visible:
             beats = await uow.scenes.narrations_for_event(event.id)
             entries.append(

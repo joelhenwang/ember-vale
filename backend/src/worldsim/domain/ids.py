@@ -206,6 +206,13 @@ def derive_combat_event_id(source_event_id: UUID) -> EventId:
     return _derive("combat", source_event_id.hex)
 
 
+def derive_spar_event_id(source_event_id: UUID) -> EventId:
+    """Stable spar event ID: one bout per scene, apart from the scene's fight
+    record (they shared the combat id, and the fight's dice were lost when a
+    companion sparred in a scene with a fight, companions-001)."""
+    return _derive("spar", source_event_id.hex)
+
+
 def derive_settle_xp_event_id(hook_id: UUID) -> EventId:
     """Stable event ID for the experience a settled rumour gives: one per rumour."""
     return _derive("settle-xp", hook_id.hex)

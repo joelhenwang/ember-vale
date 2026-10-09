@@ -186,6 +186,7 @@ from worldsim.domain.ids import (
     derive_attempt_id,
     derive_combat_event_id,
     derive_intent_id,
+    derive_spar_event_id,
     derive_task_id,
     new_activity_id,
     new_arc_id,
@@ -3979,6 +3980,16 @@ class Stage1Orchestrator:
         # (an NPC without a sheet chose to spar with the hero, combat-depth-002).
         if attacker is None or defender is None:
             return
+        # No friendly bout while a fight is on: the companion sparred the hero
+        # with goblins standing (companions-001); they fight beside them instead.
+        fight = await uow.events.latest_fight(world_id)
+        if fight is not None and foes_on(
+            fight.absolute_index,
+            index,
+            fight_keys(fight.summary),
+            await uow.monsters.list_for_world(world_id),
+        ):
+            return
         # Sheets as they woke today: a new story day was the night's rest.
         day = split_absolute(index)[0]
         striker, struck = long_rest(attacker.sheet, day), long_rest(defender.sheet, day)
@@ -4014,7 +4025,7 @@ class Stage1Orchestrator:
         assert defender_sheet.hp is not None
         defender_sheet.hp.current = after
         await uow.party.save_sheet(defender.id, defender_sheet, defender.version)
-        combat_id = derive_combat_event_id(event_id)
+        combat_id = derive_spar_event_id(event_id)
         sequence = await uow.events.max_sequence(world_id) + 1
         await uow.events.append_event(
             WorldEvent(
