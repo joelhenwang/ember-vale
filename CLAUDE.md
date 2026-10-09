@@ -167,7 +167,7 @@ of these features.
 - Settings > AI connections are real (`/settings/providers`, 070ddfb). Keys stay server-side and are referenced by env var NAME.
 - Providers (`infrastructure/model_gateway/`): `fake` (default), `openrouter`, `venice` (f0106a5, always `include_venice_system_prompt=false`). OpenRouter `provider.sort` comes from `WORLDSIM_PROVIDER__OPENROUTER_SORT` (ac1d21b). Spend is OpenRouter's billed `usage.cost` (08f8c44), and cached tokens are stored (b9e84e5).
 - **Local models** (`local-models/`, port 8110; 09a66c2, 8ac272d, 92b2ea0): optional. The API must keep working with it off. Start it with `local-models/.venv/Scripts/python.exe -m local_models.server --port 8110`.
-- **Launcher** (cb8a7e3, acf3c79): `launcher-vX.Y.Z` tags publish binaries through `.github/workflows/launcher.yml` (first tag `launcher-v0.1.0`). After changing `launcher/`, bump `launcher/Cargo.toml` and push a new tag. Never hand-build release assets.
+- **Launcher** (cb8a7e3, acf3c79): `launcher-vX.Y.Z` tags publish binaries through `.github/workflows/launcher.yml` (first tag `launcher-v0.1.0`). After changing `launcher/`, bump `launcher/Cargo.toml` and push a new tag. Never hand-build release assets. **Backups screen** (launcher 0.2.0, `launcher/src/backups.rs`): **B** while playing lists `./backups` (local time, stories, size), **N** backs up now, **Enter** restores the chosen one after a confirmation (backup of the current state first, stop api/worker, `backup restore <stamp>`, start api, wait for health); each step is logged and a failure names its step.
 - CI: `.github/workflows/ci.yml` (frontend typecheck/lint/format/test, backend ruff/basedpyright/pytest), plus `nightly.yml` for the 11 `sim_gate` simulations.
 
 ### 3.12 Frontend routes (`src/router.ts`)

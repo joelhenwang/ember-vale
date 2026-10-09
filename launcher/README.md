@@ -32,6 +32,14 @@ installed.
 4. **While playing:** live status of every part, logs per part (**Tab**),
    **O** opens the game again, **R** restarts, **Q** quits and stops what the
    launcher started (and the server too, unless you chose to keep it warm).
+5. **Backups (B, while playing):** your game (stories and pictures) is backed
+   up every day into `backups/` in the game folder, and the newest 7 are kept.
+   The screen lists them by local date and time, with how many stories each
+   holds and its size. **N** backs up now. **Enter** puts the chosen backup
+   back after asking first: it backs up the game as it is now (so the restore
+   can be undone), stops the game server, restores, starts the server again
+   and waits for it to answer. Each step shows in the log; if Docker isn't
+   running or a step fails, the screen says which step and what was changed.
 
 Where things are kept:
 
@@ -66,6 +74,7 @@ Built with [ratatui](https://ratatui.rs/). The code is split by concern:
 | `checks.rs` | gear checks |
 | `config.rs` | `.env` and `launcher.toml` |
 | `services.rs` | launch, watch and stop |
+| `backups.rs` | list, take and restore backups (compose `backup` service) |
 | `app.rs` | state and keys |
 | `ui.rs` | screens |
 | `theme.rs` | palette, title and embers |
