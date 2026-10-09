@@ -518,7 +518,8 @@ async def read_branch_points(story_id: UUID, request: Request) -> api.StoryBranc
     async with state.uow_factory()() as uow:
         await uow.stories.get_catalog(story_id)
         turns = await branchable_turns(uow, story_id)
-    return api.StoryBranchPoints(story_id=story_id, turns=turns)
+        latest = await uow.checkpoints.latest_completed(story_id)
+    return api.StoryBranchPoints(story_id=story_id, turns=turns, latest_turn=latest)
 
 
 @router.post("/stories/{story_id}/branch", response_model=api.StoryBranchResponse)
@@ -555,5 +556,44 @@ async def branch_story_route(
         role=result.role,
         character_id=result.character_id,
         absolute_index=result.absolute_index,
+        replayed=result.replayed,
+    )
+
+
+@router.post("/stories/{story_id}/rewind", response_model=api.StoryRewindResponse)
+async def rewind_story_route(
+    story_id: UUID,
+    body: api.StoryRewindRequest,
+    request: Request,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> api.StoryRewindResponse:
+    """Go back to a kept turn of this story; later turns become their own story.
+
+    One transaction: the story as it stands is saved as a branch from its
+    newest turn ("the path not taken"), then this story's state comes back
+    from the turn's checkpoint and every later turn is removed. Idempotent
+    (same key and body: the same answer). Refused, plainly, for the newest
+    turn, a turn not kept, or while a turn or its writing is still running.
+    """
+    from worldsim.application.stories.create import OPERATOR
+    from worldsim.application.stories.rewind import rewind_story
+
+    state = request.app.state.app_state
+    narration = state.narration
+    result = await rewind_story(
+        state.uow_factory(),
+        story_id,
+        body.absolute_index,
+        OPERATOR,
+        idempotency_key or "",
+        writing=narration is not None and narration.busy(story_id),
+    )
+    return api.StoryRewindResponse(
+        story_id=result.story_id,
+        absolute_index=result.absolute_index,
+        saved_story_id=result.saved_story_id,
+        saved_title=result.saved_title,
+        role=result.role,
+        removed_turns=result.removed_turns,
         replayed=result.replayed,
     )

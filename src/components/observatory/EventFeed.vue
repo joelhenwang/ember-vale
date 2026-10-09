@@ -11,7 +11,8 @@ import type { ChronicleEntry } from '../../../content/clients/worldsim'
 import type { FeedBeat } from '../../game/observatory'
 import IconImage from '../icons/IconImage.vue'
 import IconBranch from '../icons/IconBranch.vue'
-import { canBranch } from '../../game/branches'
+import IconRewind from '../icons/IconRewind.vue'
+import { canBranch, canRewind } from '../../game/branches'
 
 const props = defineProps<{
   beats: FeedBeat[]
@@ -23,12 +24,15 @@ const props = defineProps<{
   branchable?: ReadonlySet<number>
   /** Scenes (by event id) with dice rolled in them: a small die marks them. */
   fought?: ReadonlySet<string>
+  /** The newest finished turn: earlier kept turns offer "Go back to this turn". */
+  latestTurn?: number | null
 }>()
 
 const emit = defineEmits<{
   open: [entry: ChronicleEntry]
   focus: [characterId: string | null]
   branch: [index: number]
+  rewind: [index: number]
 }>()
 
 const list = ref<HTMLElement | null>(null)
@@ -118,6 +122,14 @@ function body(entry: ChronicleEntry): string {
               :title="`Start a new story from the end of ${beat.label}`"
               @click="emit('branch', beat.index)">
               <IconBranch :size="12" /> Branch from here
+            </button>
+            <button
+              v-if="branchable && canRewind(branchable, latestTurn, beat.index)"
+              type="button"
+              class="ef__branch ev-press"
+              :title="`Continue this story from the end of ${beat.label}`"
+              @click="emit('rewind', beat.index)">
+              <IconRewind :size="12" /> Go back to this turn
             </button>
           </h3>
           <p v-if="beat.quiet" class="ef__quiet">

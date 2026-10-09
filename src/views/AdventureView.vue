@@ -30,8 +30,9 @@ import { momentTitle, readyMoments, type Speaker } from '../game/moments'
 import PaintSceneDialog from '../components/story/PaintSceneDialog.vue'
 import BranchDialog from '../components/story/BranchDialog.vue'
 import IconBranch from '../components/icons/IconBranch.vue'
+import IconRewind from '../components/icons/IconRewind.vue'
 import { useBranchPoints } from '../composables/useBranchPoints'
-import { canBranch } from '../game/branches'
+import { canBranch, canRewind } from '../game/branches'
 import { assetUrl } from '../api/worldsim'
 import FramedImage from '../components/ui/FramedImage.vue'
 import EmberField from '../components/decor/EmberField.vue'
@@ -182,6 +183,12 @@ const nowIndex = computed(() => adv.presentation.value?.absolute_index ?? 0)
 const branches = useBranchPoints(storyId, nowIndex)
 /** The turn whose "Branch from here" was chosen (the confirmation is open). */
 const branchingTurn = ref<number | null>(null)
+/** The turn whose "Go back to this turn" was chosen (the confirmation is open). */
+const rewindingTurn = ref<number | null>(null)
+/** The story went back: read it again from the start, in place. */
+async function rewound(): Promise<void> {
+  await Promise.all([adv.load(), branches.reload()])
+}
 
 /* ————— motion: numbers that glide, a level that stamps, a scene that breathes ————— */
 function statOf(key: string): number | null {
@@ -826,6 +833,14 @@ onMounted(() => {
                     @click="branchingTurn = line.turn ?? null">
                     <IconBranch :size="13" /> Branch from here
                   </button>
+                  <button
+                    v-if="canRewind(branches.kept.value, branches.latest.value, line.turn)"
+                    type="button"
+                    class="log__branch ev-press"
+                    :title="`Continue this story from the end of ${line.text}`"
+                    @click="rewindingTurn = line.turn ?? null">
+                    <IconRewind :size="13" /> Go back to this turn
+                  </button>
                 </template>
                 <template v-else-if="line.kind === 'dialogue'">
                   <span class="log__face" :title="nameOf(line.speakerId)">
@@ -1273,6 +1288,15 @@ onMounted(() => {
       :story-title="adv.title.value ?? 'Story'"
       :turn="branchingTurn"
       @close="branchingTurn = null" />
+    <BranchDialog
+      mode="rewind"
+      :open="rewindingTurn !== null"
+      :story-id="storyId"
+      :story-title="adv.title.value ?? 'Story'"
+      :turn="rewindingTurn"
+      :latest="branches.latest.value"
+      @rewound="rewound"
+      @close="rewindingTurn = null" />
   </main>
 </template>
 

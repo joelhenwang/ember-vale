@@ -13,13 +13,24 @@ export function turnLabel(index: number): string {
   return `Day ${day}, ${phase}`
 }
 
-const FROM_SUFFIX = /\s+—\s+from Day \d+, \w+$/
+const FROM_SUFFIX = /\s+—\s+(from Day \d+, \w+|the path not taken \(Day \d+, \w+\))$/
+
+function titled(source: string, suffix: string): string {
+  const base = source.trim().replace(FROM_SUFFIX, '') || 'Story'
+  return base.slice(0, 128 - suffix.length).trimEnd() + suffix
+}
 
 /** "The Saltreach — from Day 2, evening"; a branch of a branch keeps one suffix. */
 export function branchTitle(source: string, index: number): string {
-  const base = source.trim().replace(FROM_SUFFIX, '') || 'Story'
-  const suffix = ` — from ${turnLabel(index)}`
-  return base.slice(0, 128 - suffix.length).trimEnd() + suffix
+  return titled(source, ` — from ${turnLabel(index)}`)
+}
+
+/**
+ * The story that keeps the turns "Go back to this turn" removes, named after
+ * the turn that path ends at: "The Saltreach — the path not taken (Day 3, dusk)".
+ */
+export function pathNotTakenTitle(source: string, latest: number): string {
+  return titled(source, ` — the path not taken (${turnLabel(latest)})`)
 }
 
 export interface OriginLike {
@@ -36,6 +47,23 @@ export function originLine(origin: OriginLike | null | undefined): string | null
 /** Whether a turn heading offers "Branch from here" (its end state was kept). */
 export function canBranch(kept: ReadonlySet<number>, index: number | null | undefined): boolean {
   return typeof index === 'number' && index >= 1 && kept.has(index)
+}
+
+/**
+ * Whether a turn heading offers "Go back to this turn": a kept turn before the
+ * newest one, and the newest turn kept too (it is saved as its own story first).
+ */
+export function canRewind(
+  kept: ReadonlySet<number>,
+  latest: number | null | undefined,
+  index: number | null | undefined
+): boolean {
+  return (
+    canBranch(kept, index) &&
+    typeof latest === 'number' &&
+    kept.has(latest) &&
+    (index as number) < latest
+  )
 }
 
 /** One key per confirmation: a retry gets the same new story, never a second. */

@@ -232,9 +232,13 @@ def test_combat_story_rolls_show_under_their_scene(
     assert scene["scene_id"] is not None
     assert "[" not in (scene["text"] or "") and "Wren swings her blade" in scene["text"]
 
-    kinds = [(r["kind"], r.get("actor"), r.get("target")) for r in log["rolls"]]
-    strike = log["rolls"][1]
+    # Experience rows follow a fallen foe (combat-depth-001); the dice decide
+    # whether the opening blow fells the goblin, so they are checked apart.
+    fight = [r for r in log["rolls"] if r["kind"] not in ("xp", "level")]
+    kinds = [(r["kind"], r.get("actor"), r.get("target")) for r in fight]
+    strike = fight[1]
     felled = strike.get("hp_after") == 0  # a fallen goblin does not strike back
+    assert any(r["kind"] == "xp" for r in log["rolls"]) == felled
     assert kinds == [
         ("encounter", None, "Goblin"),
         ("attack", "Wren", "Goblin"),
@@ -243,7 +247,7 @@ def test_combat_story_rolls_show_under_their_scene(
     assert strike["using"] == "Longsword" and strike["target_foe"] is True
     assert strike["result"] in ("hit", "miss", "crit") and strike["ac"] == 15
     assert strike["roll"] - strike["natural"] == 5  # +3 Str, +2 proficiency
-    back = {} if felled else log["rolls"][2]
+    back = {} if felled else fight[2]
     if back:
         assert back["actor_foe"] is True and back["using"] == "Scimitar"
         assert back["ac"] == hero["armor_class"]

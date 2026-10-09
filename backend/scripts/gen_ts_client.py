@@ -176,6 +176,8 @@ WANTED = (
     "StoryBranchRequest",
     "StoryBranchResponse",
     "StoryBranchPoints",
+    "StoryRewindRequest",
+    "StoryRewindResponse",
     "PresetSummary",
     "PresetDetail",
     "PresetPublishView",

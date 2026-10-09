@@ -311,6 +311,17 @@ class CheckpointRepository(Protocol):
         state: Mapping[str, Any],
         new_world_id: UUID,
     ) -> BranchCopy: ...
+    async def prune(
+        self, world_id: UUID, absolute_index: int, recent: int | None = None
+    ) -> int: ...
+    async def latest_completed(self, world_id: UUID) -> int | None: ...
+    async def rewind(
+        self,
+        world_id: UUID,
+        absolute_index: int,
+        head: CheckpointHead,
+        state: Mapping[str, Any],
+    ) -> dict[str, int]: ...
 
 
 class StoryPromptRepository(Protocol):

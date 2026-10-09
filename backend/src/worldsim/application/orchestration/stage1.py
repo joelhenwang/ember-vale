@@ -1707,6 +1707,18 @@ class Stage1Orchestrator:
                 "keeping a turn for branching failed",
                 extra={"world_id": str(world_id), "phase_index": index},
             )
+            return
+        # Retention (rewind-001): the newest turns, and the last turn of each
+        # older day. Its own transaction: a failure keeps a few extra rows.
+        try:
+            async with self._factory() as uow:
+                await uow.checkpoints.prune(world_id, index)
+                await uow.commit()
+        except Exception:
+            _phase_log.exception(
+                "pruning kept turns failed",
+                extra={"world_id": str(world_id), "phase_index": index},
+            )
 
     async def _queue_moment(
         self,

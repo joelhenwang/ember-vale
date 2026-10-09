@@ -20,6 +20,7 @@ import { momentTitle } from '../../game/moments'
 import { moves } from '../../composables/useMotion'
 import IconX from '../icons/IconX.vue'
 import IconImage from '../icons/IconImage.vue'
+import IconRewind from '../icons/IconRewind.vue'
 import IconBranch from '../icons/IconBranch.vue'
 import CombatRolls from '../story/CombatRolls.vue'
 
@@ -36,6 +37,8 @@ const props = defineProps<{
   branchable?: boolean
   /** The dice rolled in this scene (a combat story), shown under its text. */
   rolls?: CombatRollView[]
+  /** A kept turn before the newest: offer "Go back to this turn". */
+  rewindable?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -43,6 +46,7 @@ const emit = defineEmits<{
   moment: [pictureId: string]
   paint: [sceneId: string]
   branch: [index: number]
+  rewind: [index: number]
 }>()
 
 const ready = computed(() =>
@@ -191,8 +195,19 @@ function onBackdrop(event: MouseEvent): void {
             @click="emit('branch', entry.absolute_index)">
             <IconBranch :size="14" /> Branch from here
           </button>
+          <button
+            v-if="rewindable"
+            type="button"
+            class="em__act"
+            :title="`Continue this story from the end of ${beatTimeLabel(entry.absolute_index)}`"
+            @click="emit('rewind', entry.absolute_index)">
+            <IconRewind :size="14" /> Go back to this turn
+          </button>
           <span class="em__note"
-            >A new story from the end of this turn; this one stays as it is.</span
+            >Branch: a new story from the end of this turn.<template v-if="rewindable">
+              Go back: this story continues from here, and the later turns become a story of their
+              own.</template
+            ></span
           >
         </footer>
       </div>

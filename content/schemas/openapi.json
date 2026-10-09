@@ -7028,6 +7028,17 @@
         "additionalProperties": false,
         "description": "Turns a story can branch from (the state at their end was kept).",
         "properties": {
+          "latest_turn": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Turn"
+          },
           "story_id": {
             "format": "uuid",
             "title": "Story Id",
@@ -7832,6 +7843,68 @@
           "effective_source"
         ],
         "title": "StoryProviderView",
+        "type": "object"
+      },
+      "StoryRewindRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "absolute_index": {
+            "minimum": 1.0,
+            "title": "Absolute Index",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "absolute_index"
+        ],
+        "title": "StoryRewindRequest",
+        "type": "object"
+      },
+      "StoryRewindResponse": {
+        "additionalProperties": false,
+        "description": "The story went back; the removed turns live on as their own story.",
+        "properties": {
+          "absolute_index": {
+            "title": "Absolute Index",
+            "type": "integer"
+          },
+          "removed_turns": {
+            "title": "Removed Turns",
+            "type": "integer"
+          },
+          "replayed": {
+            "default": false,
+            "title": "Replayed",
+            "type": "boolean"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "saved_story_id": {
+            "format": "uuid",
+            "title": "Saved Story Id",
+            "type": "string"
+          },
+          "saved_title": {
+            "title": "Saved Title",
+            "type": "string"
+          },
+          "story_id": {
+            "format": "uuid",
+            "title": "Story Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "story_id",
+          "absolute_index",
+          "saved_story_id",
+          "saved_title",
+          "role",
+          "removed_turns"
+        ],
+        "title": "StoryRewindResponse",
         "type": "object"
       },
       "StorySetupView": {
@@ -14764,6 +14837,76 @@
           }
         },
         "summary": "Read Story Provider",
+        "tags": [
+          "stories"
+        ]
+      }
+    },
+    "/api/v1/stories/{story_id}/rewind": {
+      "post": {
+        "description": "Go back to a kept turn of this story; later turns become their own story.\n\nOne transaction: the story as it stands is saved as a branch from its\nnewest turn (\"the path not taken\"), then this story's state comes back\nfrom the turn's checkpoint and every later turn is removed. Idempotent\n(same key and body: the same answer). Refused, plainly, for the newest\nturn, a turn not kept, or while a turn or its writing is still running.",
+        "operationId": "rewind_story_route_api_v1_stories__story_id__rewind_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "story_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Story Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoryRewindRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoryRewindResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rewind Story Route",
         "tags": [
           "stories"
         ]

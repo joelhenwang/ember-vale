@@ -54,6 +54,7 @@ import type {
   Stage1AdvanceResponse,
   StoryBranchPoints,
   StoryBranchResponse,
+  StoryRewindResponse,
   StoryCreateResponse,
   StoryDetail,
   StoryDraftCreateRequest,
@@ -336,6 +337,24 @@ export function branchStory(
   opts: CallOptions = {}
 ): Promise<StoryBranchResponse> {
   return apiFetch<StoryBranchResponse>(`/stories/${storyId}/branch`, {
+    ...opts,
+    method: 'POST',
+    body: { absolute_index: absoluteIndex },
+    idempotencyKey
+  })
+}
+
+/**
+ * Go back to a kept turn of this story. The later turns are removed from it
+ * and kept as a story of their own ("the path not taken").
+ */
+export function rewindStory(
+  storyId: string,
+  absoluteIndex: number,
+  idempotencyKey: string,
+  opts: CallOptions = {}
+): Promise<StoryRewindResponse> {
+  return apiFetch<StoryRewindResponse>(`/stories/${storyId}/rewind`, {
     ...opts,
     method: 'POST',
     body: { absolute_index: absoluteIndex },
