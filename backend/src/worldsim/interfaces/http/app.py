@@ -25,6 +25,7 @@ from worldsim.application.tasks.service import TaskService
 from worldsim.domain.errors import DomainError
 from worldsim.infrastructure.http_pool import aclose_pooled
 from worldsim.infrastructure.images.runner import ImageJobRunner
+from worldsim.infrastructure.images.sweep import PictureSweeper
 from worldsim.infrastructure.local_models.indexer import MentionReader, RecallIndexer
 from worldsim.infrastructure.model_gateway.fake import FakeGateway
 from worldsim.infrastructure.ops.logging import install
@@ -110,10 +111,11 @@ class BackgroundLoops:
 
 
 def start_loops(state: AppState) -> BackgroundLoops:
-    """Start autoplay, the image runner and local-model jobs.
+    """Start autoplay, the image runner, the picture sweep and local-model jobs.
 
     Every one is safe beside another copy in a second process: autoplay
-    claims a story with a lease, image jobs are claimed with SKIP LOCKED.
+    claims a story with a lease, image jobs are claimed with SKIP LOCKED,
+    and deleting an already-deleted file is a no-op for the sweep.
     """
     loops = BackgroundLoops()
     if state.settings.autoplay.enabled:
@@ -123,7 +125,7 @@ def start_loops(state: AppState) -> BackgroundLoops:
             poll_seconds=state.settings.autoplay.poll_seconds,
         )
     loops.images = _image_runner(state)
-    jobs: list[Any] = [loops.autoplay, loops.images, *_local_jobs(state)]
+    jobs: list[Any] = [loops.autoplay, loops.images, _sweeper(state), *_local_jobs(state)]
     loops.tasks = [(job, asyncio.create_task(job.run_forever())) for job in jobs if job]
     return loops
 
@@ -142,6 +144,19 @@ def _image_runner(state: AppState) -> ImageJobRunner | None:
         pixel=images.krea_pixel,
         poll_seconds=images.poll_seconds,
         faces=state.map_reader(),
+    )
+
+
+def _sweeper(state: AppState) -> PictureSweeper | None:
+    """Deletes picture files no asset row refers to any more (when switched on)."""
+    images = state.settings.images
+    if not images.sweep_unused:
+        return None
+    return PictureSweeper(
+        state.uow_factory(),
+        state.seed_dir.parent.parent / "assets",
+        every_s=images.sweep_every_hours * 3600,
+        grace_s=images.sweep_grace_hours * 3600,
     )
 
 

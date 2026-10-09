@@ -1,4 +1,5 @@
-"""Background loops in their own process: autoplay, painting, local indexing.
+"""Background loops in their own process: autoplay, painting, the picture
+sweep, local indexing.
 
 The API runs these itself by default. To scale the HTTP side to several
 processes, run the API with ``WORLDSIM_APP__BACKGROUND_LOOPS=false`` and

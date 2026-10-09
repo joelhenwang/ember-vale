@@ -130,6 +130,11 @@ class SqlAlchemyAssetRepository:
         ).scalars()
         return [self._to_asset(row) for row in rows]
 
+    async def stored_refs(self) -> list[tuple[UUID, str]]:
+        """(id, content_ref) of every asset row: every story, every branch, the library."""
+        rows = await self._session.execute(select(AssetRow.id, AssetRow.content_ref))
+        return [(row[0], row[1]) for row in rows.all()]
+
     async def add_job(self, job: ImageJob) -> None:
         self._session.add(
             ImageJobRow(
