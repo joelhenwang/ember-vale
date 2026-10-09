@@ -173,3 +173,19 @@ measured.
 - Level-ups add spells by the auto-build's picks; the player does not choose them. Ability score
   improvements (level 4+) are not applied.
 - The "Level up!" badge follows the newest fight's rolls, so it stays until the next fight.
+
+## Correction after review: the storyteller keeps the v2 rules (2026-10-09)
+
+The live check above wrote no tags under v3, so v2 and v3 were compared on this branch's code, live on Venice. Each run is a new combat story with three "attack the goblin" turns. The script is `rules_ab.py` (`serve_rules.py` picks the version), raw results in `rules-ab.json`, total $0.061.
+
+| Rules | Dice rolled per run | Result |
+|---|---|---|
+| `dnd-rules.v2` | 2 / 0 / 3 | a goblin wounded, then a goblin killed with "Defeated Goblin: 50 XP" on the new engine |
+| `dnd-rules.v3` | 0 / 0 / 0 | the storyteller wrote prose only |
+
+v3's three additions (numbered foes, spell slots, experience) stopped the storyteller tagging blows at all, so **the narrator keeps `dnd-rules.v2`** (`STORY_RULES_PROMPT_VERSION`). The v3 file is kept and marked as not used. Nothing the engine does depends on v3:
+- it numbers groups by itself;
+- it aims a plain name at the first foe still standing;
+- it spends slots and counts experience by itself.
+
+The one thing lost is the narrator choosing a particular foe by number; its blows land on the first one standing. Separate health, XP, levels, slots and the dice in Watch are unchanged.

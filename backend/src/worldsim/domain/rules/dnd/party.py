@@ -273,7 +273,12 @@ def dnd_rules_text() -> str:
     return path.read_text(encoding="utf-8")
 
 
-STORY_RULES_PROMPT_VERSION = "dnd-rules.v3"
+#: v2, not v3: v3 taught the narrator foe numbers, spell slots and
+#: experience, and live it then wrote no combat tags at all (0 rolls in 3
+#: fights against 2/0/3 with v2, combat-depth-001 rules-ab.json). The engine
+#: numbers groups, aims a plain name at the first foe standing, spends slots
+#: and counts experience by itself, so the narrator needs none of it.
+STORY_RULES_PROMPT_VERSION = "dnd-rules.v2"
 
 
 @functools.cache
