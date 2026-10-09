@@ -4884,6 +4884,11 @@ class Stage1Orchestrator:
             participants = {
                 str(p.character_id) for p in (await uow.scenes.get_scene(scene.id)).participants
             }
+            places: dict[str, str] = {}
+            for member in roster:
+                if member.character_id is not None:
+                    who = await uow.characters.get(member.character_id)
+                    places[str(member.character_id)] = str(who.location_id)
             for intent_id in scene.intent_ids:
                 intent = await uow.scenes.get_intent(intent_id)
                 hero_here = hero_here or intent.author_character_id in heroes
@@ -4932,7 +4937,7 @@ class Stage1Orchestrator:
                     deeds=deeds,
                     chooses=chooses,
                     strike_back=hero_here,
-                    present=present_keys(roster, participants, hero_here),
+                    present=present_keys(roster, chooses, participants, places),
                 )
                 if not report.outcomes and not report.unresolved and not joined:
                     return "no-tags"

@@ -169,3 +169,31 @@ def test_two_fighters_with_longswords_each_swing_their_own() -> None:
     ]
     assert ("Ash", "Goblin 1") in swings and ("Wren", "Goblin 2") in swings
     assert report.deeds == 1 and report.helped == 0
+
+
+def test_companions_are_beside_the_hero_only_where_the_hero_is() -> None:
+    from uuid import uuid4
+
+    from worldsim.domain.party import PartyMember, present_keys
+
+    world = uuid4()
+    wren_id, ash_id = uuid4(), uuid4()
+
+    def member(name: str, character: UUID | None) -> PartyMember:
+        return PartyMember(
+            id=uuid4(),
+            world_id=world,
+            name=name,
+            name_key=name.lower(),
+            character_id=character,
+            sheet=_ash(),
+        )
+
+    roster = [member("Wren", wren_id), member("Ash", ash_id), member("Lyra", None)]
+    hearth = {str(wren_id): "hearth", str(ash_id): "hearth"}
+    # Ash waits in a scene of their own at the same place: still beside Wren.
+    assert present_keys(roster, {"wren"}, {str(wren_id)}, hearth) == {"wren", "ash", "lyra"}
+    apart = {str(wren_id): "hearth", str(ash_id): "market"}
+    assert present_keys(roster, {"wren"}, {str(wren_id)}, apart) == {"wren", "lyra"}
+    # Ash's own scene without Wren: nobody fights beside anyone there.
+    assert present_keys(roster, {"wren"}, {str(ash_id)}, hearth) == set()

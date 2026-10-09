@@ -9,6 +9,7 @@ slots mutate through version-guarded saves; joins are inserts.
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from typing import cast
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -162,11 +163,26 @@ def chooser_keys(roster: list[PartyMember], played: CharacterId | None) -> set[s
     return {m.name_key for m in linked}
 
 
-def present_keys(roster: list[PartyMember], participants: set[str], hero_here: bool) -> set[str]:
-    """Party members in a scene: linked ones by their character, the unlinked
-    (who travel with the hero) whenever the party is here."""
+def present_keys(
+    roster: list[PartyMember],
+    choosers: set[str],
+    participants: set[str],
+    places: Mapping[str, str],
+) -> set[str]:
+    """The party beside the played hero in this scene: empty unless the hero
+    is in it. Linked companions count when they stand where the hero stands
+    (a companion who only waits gets a scene of their own, and once struck
+    alone there, ahead of the hero, companions-001); the unlinked travel
+    with the hero. ``places`` maps linked characters to their location."""
+    heroes = [m for m in roster if m.name_key in choosers and m.character_id is not None]
+    here = [m for m in heroes if str(m.character_id) in participants]
+    if not here:
+        return set()
+    spot = places.get(str(here[0].character_id))
     return {
         m.name_key
         for m in roster
-        if (str(m.character_id) in participants if m.character_id is not None else hero_here)
+        if m.character_id is None
+        or str(m.character_id) in participants
+        or (spot is not None and places.get(str(m.character_id)) == spot)
     }
