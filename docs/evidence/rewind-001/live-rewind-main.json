@@ -1,0 +1,69 @@
+{
+ "branch_points": {
+  "story_id": "c29532dc-20cd-4c7d-9900-72d2915aeb1d",
+  "turns": [
+   4,
+   5
+  ],
+  "latest_turn": 5
+ },
+ "before": {
+  "turn": 5,
+  "events": 15,
+  "party": [
+   [
+    "Wren",
+    12
+   ]
+  ],
+  "foes": [
+   [
+    "Goblin",
+    5
+   ]
+  ]
+ },
+ "rewind_status": 200,
+ "rewind": {
+  "story_id": "c29532dc-20cd-4c7d-9900-72d2915aeb1d",
+  "absolute_index": 4,
+  "saved_story_id": "6d782d4c-dc6c-4510-9781-363a0150f6e9",
+  "saved_title": "Live goblin check \u2014 the path not taken (Day 1, sunset)",
+  "role": "player",
+  "removed_turns": 1,
+  "replayed": false
+ },
+ "after_rewind": {
+  "turn": 4,
+  "events": 12,
+  "party": [
+   [
+    "Wren",
+    12
+   ]
+  ],
+  "foes": [
+   [
+    "Goblin",
+    5
+   ]
+  ]
+ },
+ "played_on": {
+  "status": 200,
+  "turn": 5,
+  "events": 15,
+  "party": [
+   [
+    "Wren",
+    12
+   ]
+  ],
+  "foes": [
+   [
+    "Goblin",
+    5
+   ]
+  ]
+ }
+}

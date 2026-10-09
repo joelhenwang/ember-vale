@@ -166,3 +166,12 @@ is stored, and at 1 000 turns the story keeps 280 checkpoints instead of 1 000.
   briefed; the API serves any seat.
 * Rewind holds the next turn's slot. A beat already waiting on a long model call in another
   process is caught by "newest turn not kept / still being written", not by the slot.
+
+## After the merge into main (2026-10-09)
+
+The dev API was rebuilt on merged main (`6f24122`). It migrated to `0060_rewind_snapshots` after a fresh backup (`20261009-120218`). `live_rewind_check.py` then ran on "Live goblin check", with the response parsing fixed after the run; raw output in `live-rewind-main.json`:
+- Kept turns were 4 and 5 (latest 5). Going back to turn 4 returned 200.
+- The story went from turn 5 with 15 events to turn 4 with 12 events, the same state the turn-4 branch had in story-branches-001. Wren stayed at 12 and the goblin at 5.
+- The path not taken was saved as "Live goblin check — the path not taken (Day 1, sunset)": turn 5, 15 events, branched from the original at Day 1, sunset.
+- **Spend kept:** the story's cost rows went from 22 to 26. The 22 stayed, and the 4 are the replayed turn's calls ($0.01758 → $0.02056).
+- The story played on from turn 4 (turn 5 again, 200).
