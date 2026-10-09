@@ -3189,6 +3189,12 @@ class Stage1Orchestrator:
             # (companions-002 run-1), so the walk away becomes staying put.
             stay = WaitAction(character_id=character.id, snapshot_id=sealed.snapshot_id)
             intent = intent.model_copy(update={"action": stay})
+        elif isinstance(intent.action, SparAction) and await self._foes_now(world_id):
+            # No friendly bout while a fight is on (none is rolled), so none
+            # is told either: the storyteller narrated Ash sparring Wren with
+            # goblins standing (companions-002).
+            stay = WaitAction(character_id=character.id, snapshot_id=sealed.snapshot_id)
+            intent = intent.model_copy(update={"action": stay})
         return intent
 
     async def _answered(self, world_id: UUID, character: Character) -> list[Exchange]:
@@ -3636,6 +3642,10 @@ class Stage1Orchestrator:
         hero = next((m for m in roster if m.character_id == played), None)
         if hero is None:
             return None
+        return companion_note(hero.name, await self._foes_now(world_id))
+
+    async def _foes_now(self, world_id: UUID) -> list[Monster]:
+        """The foes of the fight that is on (one read per phase)."""
 
         async def load_foes(uow: Any) -> list[Monster]:
             fight = await uow.events.latest_fight(world_id)
@@ -3649,8 +3659,7 @@ class Stage1Orchestrator:
                 await uow.monsters.list_for_world(world_id),
             )
 
-        foes = await self._shared(("foes-on", world_id), load_foes)
-        return companion_note(hero.name, foes)
+        return await self._shared(("foes-on", world_id), load_foes)
 
     async def _follow_hero(
         self,

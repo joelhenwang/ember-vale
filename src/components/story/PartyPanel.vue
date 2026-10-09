@@ -35,6 +35,8 @@ const props = withDefaults(
     full?: boolean
     /** Names who reached a new level in the newest fight (their badge shows). */
     levelled?: string[]
+    /** Members side by side (Adventure's party row), not one under another. */
+    row?: boolean
     /** "The party" for the Director and God seats, who play no one in it. */
     title?: string
     /** The story, for changing a new companion's calling (none: read only). */
@@ -96,7 +98,7 @@ function calling(cls: string, race?: string | null): string {
 </script>
 
 <template>
-  <section class="party" :class="{ 'party--full': full }" :aria-label="title">
+  <section class="party" :class="{ 'party--full': full, 'party--row': row }" :aria-label="title">
     <h3 class="party__title">
       {{ title }}
       <span v-if="standing" class="party__fight ev-pop-once">In a fight</span>
@@ -220,6 +222,10 @@ function calling(cls: string, race?: string | null): string {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+.party--row .party__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
 }
 .pm {
   padding: 6px 9px 7px;

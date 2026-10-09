@@ -586,7 +586,7 @@ onMounted(() => {
     <div v-else class="adv__frame ev-card">
       <div class="adv__grid">
         <!-- left: what you see, the land around you, and the thread to pull -->
-        <section class="adv__visual">
+        <section class="adv__visual" :class="{ 'adv__visual--party': party }">
           <div class="stage">
             <div class="stage__cam ev-drift">
               <Transition name="stage-cut">
@@ -681,6 +681,25 @@ onMounted(() => {
               </TransitionGroup>
             </div>
           </div>
+          <!-- A combat story's party: its own row, every member side by side
+               (squeezed into the lead box, a companion's Change was cut off). -->
+          <section v-if="party" class="adv__party">
+            <PartyPanel
+              :party="party"
+              :me="adv.me.value ?? null"
+              :levelled="levelled"
+              :world-id="storyId"
+              :opts="adv.opts.value"
+              row
+              @changed="choiceMade" />
+            <button
+              v-if="hero?.choices?.length"
+              type="button"
+              class="lead__choose ev-press ev-pop-once"
+              @click="detailsOpen = true">
+              A level-up choice is waiting <IconChevronRight :size="14" />
+            </button>
+          </section>
           <div class="adv__under">
             <section v-if="adv.presentation.value" class="minimap">
               <header class="minimap__head">
@@ -751,22 +770,6 @@ onMounted(() => {
               </div>
             </section>
             <section class="lead">
-              <PartyPanel
-                v-if="party"
-                class="lead__party"
-                :party="party"
-                :me="adv.me.value ?? null"
-                :levelled="levelled"
-                :world-id="storyId"
-                :opts="adv.opts.value"
-                @changed="choiceMade" />
-              <button
-                v-if="hero?.choices?.length"
-                type="button"
-                class="lead__choose ev-press ev-pop-once"
-                @click="detailsOpen = true">
-                A level-up choice is waiting <IconChevronRight :size="14" />
-              </button>
               <h3 class="panel__title"><IconDoc :size="16" /> Current story lead</h3>
               <Transition name="ev-swap" mode="out-in">
                 <div v-if="mainLead" :key="mainLead.hook_id">
@@ -2891,10 +2894,21 @@ button.log__picture:hover .log__thumb img {
 .sheet__choices {
   margin-top: 12px;
 }
-.lead__party {
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--line-soft);
+.adv__visual--party {
+  grid-template-rows: minmax(0, 1fr) auto clamp(170px, 23vh, 220px);
+}
+.adv__party {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 210px;
+  padding: 10px 16px 8px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  border-top: 1px solid var(--line);
+}
+.adv__party .lead__choose {
+  margin: 0;
 }
 .sheet__party {
   margin-top: 14px;
@@ -3014,7 +3028,8 @@ button.log__picture:hover .log__thumb img {
   .adv__frame {
     overflow: visible;
   }
-  .adv__visual {
+  .adv__visual,
+  .adv__visual--party {
     grid-template-rows: auto auto;
     border-right: 0;
     border-top: 1px solid var(--line);

@@ -409,3 +409,76 @@ def test_a_companion_follows_the_hero_and_keeps_the_party_in_mind(
         ).json()["cast"]
     }
     assert where["Ash"] == where["Wren"] == places["Market"], where
+
+
+def test_a_spar_chosen_while_a_fight_is_on_is_waiting(
+    wired: tuple[ApiClient, FakeGateway],
+) -> None:
+    from test_combat_depth_2 import _families
+
+    client, gateway = wired
+    created = _create(client, FIGHTER, "no-spar-mid-fight", ash_at="hearth")
+    assert created.status_code == 200, created.text
+    world_id = UUID(created.json()["world_id"])
+    wren = created.json()["character_id"]
+    headers = {"X-Worldsim-Role": "player", "X-Worldsim-Character": wren}
+    cast = client.get(
+        "/api/v1/world/presentation", params={"world_id": str(world_id)}, headers=headers
+    ).json()["cast"]
+    ash = next(c["character_id"] for c in cast if c["name"] == "Ash")
+    turn = {"n": 0}
+
+    def route(request: Any) -> str | None:
+        system, prompt = request.system or "", request.prompt
+        if "You narrate" in system:
+            if turn["n"] == 2 and "Hearth" in prompt:
+                text = "ENCOUNTER[goblin]: A goblin bursts in, snarling."
+                return json.dumps([{"text": text, "cited_fact_keys": ["dnd-sheet:wren"]}])
+            return None
+        if "You react" in system and "join their party" in prompt:
+            reply = {
+                "family": "communicate",
+                "target_character_id": wren,
+                "topic": "Yes, I will come.",
+            }
+            return json.dumps({**reply, "character_id": ash, "snapshot_id": ash})
+        if "You decide" in system and turn["n"] == 3:
+            spar = {"family": "spar", "target_character_id": wren, "weapon": "longsword"}
+            return json.dumps({**spar, "character_id": ash, "snapshot_id": ash})
+        if "You decide" in system or "You react" in system:
+            return json.dumps({"family": "wait", "character_id": ash, "snapshot_id": ash})
+        if "You resolve" in system:
+            return json.dumps({"outcome": "success", "effects": [], "rationale": "Fine."})
+        return None
+
+    gateway.route = route
+    for index, intent in (
+        (
+            1,
+            {
+                "family": "communicate",
+                "target_character_id": ash,
+                "topic": "Will you join me as my companion?",
+            },
+        ),
+        (2, {"family": "wait"}),
+        (3, {"family": "wait"}),
+    ):
+        turn["n"] = index
+        moved = client.post(
+            "/api/v1/stage1/advance",
+            json={
+                "world_id": str(world_id),
+                "absolute_index": index,
+                "player_intents": {
+                    wren: {**intent, "character_id": wren, "snapshot_id": NIL_SNAPSHOT}
+                },
+            },
+            headers=headers,
+        )
+        assert moved.status_code == 200, moved.text
+    foes = client.get(
+        "/api/v1/stage1/party", params={"world_id": str(world_id)}, headers=headers
+    ).json()["foes"]
+    assert foes and all(f["hp_current"] > 0 for f in foes)  # the fight is on
+    assert "spar" not in _families(world_id)
