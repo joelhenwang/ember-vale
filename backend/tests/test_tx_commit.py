@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 from collections.abc import AsyncGenerator, Callable
 from contextlib import asynccontextmanager
 from uuid import UUID
@@ -280,5 +281,32 @@ def test_two_stale_writers_only_one_commits(migrated_db: None) -> None:
                 assert await uow.events.count_events(wid) == 1
         finally:
             await engine.dispose()
+
+    asyncio.run(_inner())
+
+
+def test_a_plan_from_an_older_row_is_a_version_conflict_not_out_of_bounds(
+    migrated_db: None,
+) -> None:
+    """long-adventure-001: a rest planned from stamina 90 on a row already at
+    100 projected 110 and failed the turn (500) before the version check; a
+    stale plan is a version conflict, so the scene is redone."""
+
+    async def _inner() -> None:
+        wid, cid, run_id = await _seed_tx()
+        async with _service() as tx:
+            await tx.commit(_tick_request(wid, cid, run_id, "tick-1"))  # character v1, 75
+            # The request reads the row fresh (v1); the rest was planned at v0.
+            stale = _tick_request(wid, cid, run_id, "tick-2", versions={str(wid): 1, str(cid): 1})
+            rest = ResourceAdjustedEffect(
+                affected_ids=[cid],
+                expected_versions={str(cid): 0},
+                resource=ResourceKind.STAMINA,
+                delta=30,  # planned from an older 70: fine then, 105 now
+            )
+            stale = dataclasses.replace(stale, effects=[stale.effects[0], rest])
+            with pytest.raises(DomainError) as excinfo:
+                await tx.commit(stale)
+            assert excinfo.value.code is ErrorCode.VERSION_CONFLICT
 
     asyncio.run(_inner())

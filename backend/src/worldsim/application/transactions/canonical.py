@@ -290,6 +290,8 @@ class CanonicalTransaction:
         # effect goes stale on the second touch of one aggregate.
         worlds: dict[UUID, World] = {}
         characters: dict[UUID, Character] = {}
+        #: Each character's version as loaded, before this commit touched it.
+        loaded: dict[UUID, int] = {}
         clock: dict[UUID, AdvanceClockEffect] = {}
         for effect in request.effects:
             if isinstance(effect, AdvanceClockEffect):
@@ -331,7 +333,13 @@ class CanonicalTransaction:
                 current = characters.get(target)
                 if current is None:
                     current = await uow.characters.get(target)
-                characters[target] = apply_character_effect(current, effect)
+                    loaded[target] = current.version
+                try:
+                    characters[target] = apply_character_effect(current, effect)
+                except DomainError as exc:
+                    if exc.code is ErrorCode.INVARIANT_VIOLATED:
+                        _check_fresh("character", target, loaded.get(target), effect)
+                    raise
             else:
                 # Observation and memory effects project no state. New effect
                 # types must add a projector branch instead of landing here.
@@ -503,3 +511,19 @@ def _result_versions(effects: list[CommittedEffect]) -> dict[str, int]:
             preimage = item.effect.expected_versions.get(key, 0)
             versions[key] = max(versions.get(key, 0), preimage + 1)
     return versions
+
+
+def _check_fresh(kind: str, identity: UUID, actual: int | None, effect: DomainEffect) -> None:
+    """An out-of-bounds projection of an effect planned from an older row is a
+    version conflict (the scene is redone), not a broken invariant: a rest planned from stamina 90
+    on a row a moment later at 100 reached 110 and failed the turn with 500
+    (long-adventure-001). The request's own versions are read fresh when the
+    scene resolves, but an effect is planned from the phase's shared view and
+    carries the version it was planned from: that is the one to check."""
+    expected = effect.expected_versions.get(str(identity))
+    if expected is not None and actual is not None and expected != actual:
+        raise DomainError(
+            ErrorCode.VERSION_CONFLICT,
+            f"{kind} {identity} changed since the plan (expected {expected}, found {actual})",
+            {"aggregate": kind, "id": str(identity), "expected": expected, "actual": actual},
+        )
