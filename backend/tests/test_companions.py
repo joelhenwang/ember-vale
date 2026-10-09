@@ -673,3 +673,29 @@ def test_orders_last_the_fight_they_were_given_in() -> None:
     assert stored_orders(kept, ["wolf"]) == {}
     assert stored_orders(None, ["goblin-3"]) == {}
     assert stored_orders({"orders": "junk", "foes": ["goblin-3"]}, ["goblin-3"]) == {}
+
+
+def test_a_kind_slain_long_ago_can_be_met_again_and_odd_targets_roll_nothing() -> None:
+    dead = [MonsterState(key="goblin", name="Goblin", hp_current=0, hp_max=7, ac=15)]
+    words = [Deed(key="wren", text="I attack the goblin")]
+    prose = "A goblin creeps out from behind the market stalls."
+    again = resolve_narration_tags(
+        prose, [_wren()], DATA, _rng(0.5), live=dead, deeds=words, slain_lately=set()
+    )
+    assert [o.kind for o in again.outcomes][:2] == ["encounter", "attack"]
+    lately = resolve_narration_tags(
+        prose, [_wren()], DATA, _rng(0.5), live=dead, deeds=words, slain_lately={"goblin"}
+    )
+    assert lately.outcomes == []
+    odd = resolve_narration_tags(
+        "ATTACK[longsword at enemy]: Wren swings at the shadows.", [_wren()], DATA, _rng(0.5)
+    )
+    assert odd.outcomes == [] and odd.unresolved == ["ATTACK[longsword at enemy]"]
+
+
+def test_the_storyteller_hears_the_party_is_looking_for_a_fight() -> None:
+    from worldsim.domain.party import seeking_line
+
+    assert seeking_line([]) is None
+    line = seeking_line(["Wren tries to attack the first goblin I see"])
+    assert line is not None and "looking for a fight" in line and "ENCOUNTER[" in line

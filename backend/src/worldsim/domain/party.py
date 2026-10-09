@@ -234,3 +234,17 @@ def stored_orders(raw: object, foes: list[str]) -> dict[str, str]:
 def orders_record(orders: dict[str, str], foes: list[str]) -> dict[str, object]:
     """What ``stored_orders`` reads back: the orders and the fight's foes."""
     return {"orders": dict(orders), "foes": list(dict.fromkeys(foes))}
+
+
+def seeking_line(attempts: list[str]) -> str | None:
+    """The party wants a fight and none is on: the storyteller is told to
+    stage it or say it is not found (long-adventure-001: "I attack the first
+    goblin I see" was narrated as a declaration by the hearth, no goblin)."""
+    if not attempts:
+        return None
+    wanted = "; ".join(attempts)
+    return (
+        f"The party is looking for a fight ({wanted}). If such foes can plausibly be "
+        "met here and now, bring them in this scene and open the fight on its own line "
+        "with ENCOUNTER[...]; if none could be here, show plainly that none are found."
+    )

@@ -308,6 +308,7 @@ def resolve_narration_tags(
     present: set[str] | None = None,
     orders: dict[str, str] | None = None,
     recent: str = "",
+    slain_lately: set[str] | None = None,
 ) -> CombatReport:
     """Resolve every combat tag in narration order. Inputs are never mutated.
 
@@ -377,7 +378,15 @@ def resolve_narration_tags(
         if match.group(1).upper() == "ENCOUNTER":
             for ref in parse_encounter_tag(match.group(2), tables):
                 standing_kinds.append((ref.index, ref.name))
-    fallen_kinds = {monster_kind(key, monsters) for key, hp in monster_hp.items() if hp <= 0}
+    # Kinds slain lately (the last fight, while it lingers): the player's
+    # words alone do not bring one straight back. Not forever: after a goblin
+    # fell on the first evening, no goblin could ever be met again by the
+    # player's words (long-adventure-001). None: every kind ever slain.
+    fallen_kinds = (
+        set(slain_lately)
+        if slain_lately is not None
+        else {monster_kind(key, monsters) for key, hp in monster_hp.items() if hp <= 0}
+    )
     if not on_now:
         # A fight begun without an ENCOUNTER: open it, as large as the words
         # count ("two goblins"), so the second goblin is a real foe.
@@ -732,6 +741,16 @@ def resolve_narration_tags(
             akey = key_of[id(attacker)]
             aimed = retarget(akey, tag.target)
             if aimed is None and tag.target:
+                unresolved.append(match.group(0))
+                continue
+            if (
+                aimed
+                and _party_position(order, keys, aimed) is None
+                and pick_foe(aimed) is None
+                and find_entry(monsters, foe_name_parts(aimed)[0]) is None
+            ):
+                # Not a creature the tables know ("ATTACK[longsword at enemy]"):
+                # no roll; it read "hits enemy for 9 slashing (0->0 HP)".
                 unresolved.append(match.group(0))
                 continue
             tag = tag.model_copy(update={"target": aimed})

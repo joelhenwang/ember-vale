@@ -240,6 +240,7 @@ from worldsim.domain.memory import (
 from worldsim.domain.narration import NarrationBeat
 from worldsim.domain.narrative import NarrativeHook
 from worldsim.domain.party import (
+    FIGHT_LINGERS,
     PARTY_ORDERS_KEY,
     Monster,
     PartyMember,
@@ -254,6 +255,7 @@ from worldsim.domain.party import (
     party_in_scene,
     party_name_key,
     present_keys,
+    seeking_line,
     slots_line,
     stored_orders,
 )
@@ -4857,6 +4859,16 @@ class Stage1Orchestrator:
                 facts.append({"key": "dnd-foes", "value": foes_line(foes)})
             elif fight_over is not None:
                 facts.append({"key": "dnd-foes", "value": fight_over})
+            if not foes:
+                seeking = seeking_line(
+                    [
+                        str(fact["value"])
+                        for fact in facts
+                        if fact["key"] == "attempt:interact" and looks_like_deed(str(fact["value"]))
+                    ]
+                )
+                if seeking is not None:
+                    facts.append({"key": "dnd-seek", "value": seeking})
             fallen = down_line(
                 [
                     m.name
@@ -5111,6 +5123,18 @@ class Stage1Orchestrator:
             # goblin" holds until those goblins are gone).
             config = await uow.worlds.get_config(world_id)
             orders = {**stored_orders(config.get(PARTY_ORDERS_KEY), fighting), **orders}
+            # Foes of the last fight that fell, while it lingers.
+            pools = {m.name_key: m for m in live_monsters}
+            monster_rows = table(self._dnd_tables(), "monsters")
+            slain_lately = (
+                {
+                    monster_kind(key, monster_rows)
+                    for key in fight_keys(fight.summary)
+                    if key in pools and pools[key].hp_current <= 0
+                }
+                if fight is not None and run.absolute_index - fight.absolute_index <= FIGHT_LINGERS
+                else set[str]()
+            )
         tables = self._dnd_tables()
         story_day = split_absolute(run.absolute_index)[0]
         digest = hashlib.sha256(str(event_id).encode()).digest()[:8]
@@ -5134,6 +5158,7 @@ class Stage1Orchestrator:
                     ],
                     day=story_day,
                     fighting=fighting,
+                    slain_lately=slain_lately,
                     deeds=deeds,
                     chooses=chooses,
                     strike_back=hero_here,
