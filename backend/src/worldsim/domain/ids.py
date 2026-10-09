@@ -206,6 +206,11 @@ def derive_combat_event_id(source_event_id: UUID) -> EventId:
     return _derive("combat", source_event_id.hex)
 
 
+def derive_settle_xp_event_id(hook_id: UUID) -> EventId:
+    """Stable event ID for the experience a settled rumour gives: one per rumour."""
+    return _derive("settle-xp", hook_id.hex)
+
+
 def derive_task_id(run_id: PhaseRunId, role: str, actor: CharacterId) -> TaskId:
     """Stable task-run ID: restarts resume the same graph thread."""
     return _derive("task", run_id.hex, role, actor.hex)

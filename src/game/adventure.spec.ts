@@ -58,6 +58,22 @@ describe('adventure log', () => {
     expect(log[2]!.rolls).toEqual(rolls)
   })
 
+  it("keeps a fight's dice and a settled rumour's experience under one scene", () => {
+    const dice = [{ kind: 'attack', text: 'Wren hits Goblin for 6 slashing.' }]
+    const earned = [{ kind: 'xp', result: 'settled', text: '', target: 'The cart', share: 50 }]
+    const log = buildLog({
+      entries: [
+        entry({ sequence: 1, scene_id: 's1', participant_ids: [ME], text: 'Steel rings.' }),
+        entry({ sequence: 2, combat: { scene_event_id: 'e1', rolls: earned } }),
+        entry({ sequence: 3, combat: { scene_event_id: 'e1', rolls: dice } })
+      ],
+      beats: {},
+      me: ME,
+      hereId: HERE
+    })
+    expect(log.filter((l) => l.kind === 'rolls').map((l) => l.rolls)).toEqual([earned, dice])
+  })
+
   it('shows dice whose scene is not loaded where they fell', () => {
     const rolls = [{ kind: 'note', text: 'Wren misses Goblin (6 vs AC 15).' }]
     const log = buildLog({

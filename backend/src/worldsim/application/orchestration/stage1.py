@@ -110,6 +110,7 @@ from worldsim.application.orchestration import phase_reads
 from worldsim.application.orchestration.background import BackgroundNarration
 from worldsim.application.orchestration.framing import frame_gateways
 from worldsim.application.orchestration.service import derive_run_id, derive_snapshot_id
+from worldsim.application.orchestration.settle_xp import award_settled_hooks
 from worldsim.application.pictures import MomentWords, judge_moment, plan_moments, queue_moment
 from worldsim.application.ports.local_models import LocalModels, LocalModelsUnavailable
 from worldsim.application.ports.model_gateway import ModelGateway, ModelProfile
@@ -159,6 +160,7 @@ from worldsim.domain.director import (
 from worldsim.domain.effects import (
     AdvanceClockEffect,
     DomainEffect,
+    HookSettledEffect,
     MoveEntityEffect,
     ResourceAdjustedEffect,
     SkillProgressEffect,
@@ -2902,6 +2904,16 @@ class Stage1Orchestrator:
                 f"director:{run_id.hex}:{index}",
                 index,
             )
+        if decision.closed:
+            # A settled rumour is experience for a combat story's party.
+            await award_settled_hooks(
+                self._factory,
+                self._dnd_tables,
+                world_id,
+                [ending.hook_id for ending in decision.closed],
+                absolute_index=index,
+                run_id=run_id,
+            )
         await self._set_state(run_id, PhaseRunState.DIRECTOR_COMPLETE)
         if decision.accepted:
             return "proposed"
@@ -3770,6 +3782,17 @@ class Stage1Orchestrator:
             await record_attempts(self._factory, directed_outcomes)
         if journeys:
             await self._set_off(world_id, index, scene.id, journeys)
+        settled = [e.hook_id for e in effects if isinstance(e, HookSettledEffect)]
+        if settled:
+            await award_settled_hooks(
+                self._factory,
+                self._dnd_tables,
+                world_id,
+                settled,
+                absolute_index=index,
+                run_id=run_id,
+                scene_event_id=result.event_id,
+            )
         if resolution.outcome == ResolutionOutcome.SUCCESS:
             await self._settle_scene_verbs(world_id, run_id, index, scene, members, result.event_id)
         return SceneOutcome(

@@ -8,6 +8,7 @@ import {
   improvementReady,
   hpTone,
   levelledUp,
+  onlyExperience,
   partyHurt,
   partyOrder,
   sayRoll,
@@ -200,6 +201,41 @@ describe('combat depth', () => {
     expect(xpProgress(wren)).toEqual({ fraction: 0.4 / 6, label: '340 / 900 XP' })
     expect(xpProgress({ ...wren, xp_next_level: null }).fraction).toBe(1)
     expect(slotsLeftLine(wren)).toBe('1 of 3 first-level')
+  })
+})
+
+describe('a settled rumour', () => {
+  it('says the matter is settled and what each gained', () => {
+    const all = sayRoll({
+      kind: 'xp',
+      result: 'settled',
+      text: '',
+      target: 'The missing flour',
+      amount: 100,
+      share: 50
+    })
+    expect([all.lead, all.outcome, all.tone]).toEqual([
+      'The missing flour is settled',
+      '50 XP each',
+      'info'
+    ])
+    const some = sayRoll({
+      kind: 'xp',
+      result: 'settled',
+      text: '',
+      target: 'The cart',
+      actor: 'Elara',
+      share: 150
+    })
+    expect(some.outcome).toBe('Elara: 150 XP each')
+  })
+
+  it('knows experience with no dice', () => {
+    const earned = { kind: 'xp', result: 'settled', text: '', share: 50 }
+    const up = { kind: 'level', text: '', actor: 'Wren', level: 2 }
+    expect(onlyExperience([earned, up])).toBe(true)
+    expect(onlyExperience([earned, { kind: 'attack', text: '' }])).toBe(false)
+    expect(onlyExperience([])).toBe(false)
   })
 })
 
