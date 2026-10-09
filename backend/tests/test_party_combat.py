@@ -232,6 +232,24 @@ def test_combat_story_rolls_show_under_their_scene(
     assert scene["scene_id"] is not None
     assert "[" not in (scene["text"] or "") and "Wren swings her blade" in scene["text"]
 
+    # The story room (Director and God seats) reads the timeline and the
+    # party: the same rolls under the same scene, the same roster.
+    timeline = client.get(
+        "/api/v1/stage2/timeline",
+        params={"world_id": str(world_id), "after": 0, "limit": 50},
+        headers=headers,
+    ).json()
+    (logged,) = [e["combat"] for e in timeline["entries"] if e["combat"]]
+    assert logged == log
+    for seat in ("director", "deity", "watcher"):
+        seen = client.get(
+            "/api/v1/stage1/party",
+            params={"world_id": str(world_id)},
+            headers={"X-Worldsim-Role": seat},
+        )
+        assert seen.status_code == 200, seen.text
+        assert [m["name"] for m in seen.json()["members"]] == ["Wren"]
+
     # Experience rows follow a fallen foe (combat-depth-001); the dice decide
     # whether the opening blow fells the goblin, so they are checked apart.
     fight = [r for r in log["rolls"] if r["kind"] not in ("xp", "level")]

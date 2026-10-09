@@ -2,6 +2,8 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BeatEntry from '../components/story/BeatEntry.vue'
+import BranchDialog from '../components/story/BranchDialog.vue'
+import PartyPanel from '../components/story/PartyPanel.vue'
 import SetupDialog from '../components/story/SetupDialog.vue'
 import MountainRidge from '../components/decor/MountainRidge.vue'
 import EmberField from '../components/decor/EmberField.vue'
@@ -12,9 +14,18 @@ import { useInterventions, type DirectMode } from '../composables/useInterventio
 import { usePlayerAsk } from '../composables/usePlayerAsk'
 import { useStory } from '../composables/useStory'
 import { collectScenePointers, type ScenePointer } from '../components/story/beatReading'
-import type { ActivityView, TimelineEntry } from '../../content/clients/worldsim'
+import type {
+  ActivityView,
+  CombatRollView,
+  PartyRosterResponse,
+  TimelineEntry
+} from '../../content/clients/worldsim'
 import { useStoryProvider } from '../composables/useStoryProvider'
-import { listActivities, selectSeat } from '../api/worldsim'
+import { useBranchPoints } from '../composables/useBranchPoints'
+import { getParty, listActivities, selectSeat } from '../api/worldsim'
+import { canBranch, canRewind } from '../game/branches'
+import { rollsInTurn } from '../game/observatory'
+import { levelledUp } from '../game/party'
 import type { Role } from '../api/http'
 import { phaseLabel } from '../game/format'
 import { inputLimit, topicFor, type SpeechMode } from '../game/playerSpeech'
@@ -160,6 +171,52 @@ watch(
   () => void loadActivities(),
   { immediate: true }
 )
+
+/**
+ * A combat story's party and the foes of the fight that is on, read again
+ * whenever the story moves on (a fight's rolls land as their own event, so
+ * new entries count too). Every seat may read it; a story without fights
+ * has no members and shows nothing.
+ */
+const roster = ref<PartyRosterResponse | null>(null)
+async function loadParty(): Promise<void> {
+  const world = storyId.value
+  try {
+    const read = await getParty(world, {
+      role: (seat.value ?? story.effectiveRole.value) as Role,
+      characterId: headerChar.value
+    })
+    if (world === storyId.value) roster.value = read
+  } catch {
+    // Not knowing the party never blocks the room; the last read stays.
+  }
+}
+watch(
+  // Once a load has paged through, not once per page.
+  () =>
+    story.loading.value
+      ? null
+      : `${storyId.value}:${story.detail.value?.absolute_index}:${story.entries.value.length}`,
+  (stamp) => {
+    if (stamp !== null) void loadParty()
+  },
+  { immediate: true }
+)
+const party = computed(() => (roster.value?.members?.length ? roster.value : null))
+
+/** The turns that can be branched from or gone back to. */
+const nowIndex = computed(() => story.detail.value?.absolute_index ?? 0)
+const branches = useBranchPoints(storyId, nowIndex)
+/** The turn whose "Branch from here" was chosen (the confirmation is open). */
+const branchingTurn = ref<number | null>(null)
+/** The turn whose "Go back to this turn" was chosen (the confirmation is open). */
+const rewindingTurn = ref<number | null>(null)
+/** The story went back: forget the removed turns and read it again, in place. */
+async function rewound(): Promise<void> {
+  if (rewindingTurn.value !== null) story.forgetAfter(rewindingTurn.value)
+  await Promise.all([story.load(), branches.reload()])
+  if (seat.value) await queueCtl.refresh()
+}
 
 /** The controlled character's journey under way, if any: they act again on arrival. */
 const myJourney = computed(() => {
@@ -316,6 +373,8 @@ const waitingIndex = computed(() => story.openRun.value?.index ?? nextIndex.valu
 interface FeedBeat {
   index: number
   entries: TimelineEntry[]
+  /** A combat story's dice, by the event they show under. */
+  rolls: Map<string, CombatRollView[]>
 }
 const feedBeats = computed<FeedBeat[]>(() => {
   const groups = new Map<number, TimelineEntry[]>()
@@ -325,8 +384,18 @@ const feedBeats = computed<FeedBeat[]>(() => {
     groups.set(entry.absolute_index, list)
   }
   return [...groups.entries()]
-    .map(([index, beatEntries]) => ({ index, entries: beatEntries }))
+    .map(([index, beatEntries]) => ({
+      index,
+      entries: beatEntries,
+      rolls: rollsInTurn(beatEntries)
+    }))
     .sort((a, b) => b.index - a.index)
+})
+
+/** Who reached a new level in the newest fight (the party panel says so). */
+const levelled = computed(() => {
+  const fought = feedBeats.value.find((b) => b.rolls.size)
+  return levelledUp(fought ? [...fought.rolls.values()].flat() : undefined)
 })
 
 const nameById = computed(() => new Map(cast.value.map((c) => [c.id, c.name])))
@@ -467,6 +536,13 @@ function loadBeatDetails(eventIds: string[]): void {
       </div>
       <div class="play__grid">
         <section class="play__card" aria-label="Cast and places">
+          <PartyPanel
+            v-if="party"
+            class="play__party"
+            :party="party"
+            :me="controlledId"
+            :levelled="levelled"
+            :title="controlledId ? 'Your party' : 'The party'" />
           <h2>Cast &amp; places</h2>
           <ul class="play__cast ev-rise">
             <li v-for="member in cast" :key="member.id">
@@ -589,6 +665,11 @@ function loadBeatDetails(eventIds: string[]): void {
                 :loaded-map="story.beatDetails.value"
                 :name-of="nameOf"
                 :you-id="controlledId"
+                :rolls="beat.rolls"
+                :branchable="canBranch(branches.kept.value, beat.index)"
+                :rewindable="canRewind(branches.kept.value, branches.latest.value, beat.index)"
+                @branch="branchingTurn = $event"
+                @rewind="rewindingTurn = $event"
                 @request-details="loadBeatDetails($event)" />
             </li>
           </TransitionGroup>
@@ -750,6 +831,21 @@ function loadBeatDetails(eventIds: string[]): void {
       >
     </p>
     <SetupDialog :setup="story.setup.value" :open="showSetup" @close="showSetup = false" />
+    <BranchDialog
+      :open="branchingTurn !== null"
+      :story-id="storyId"
+      :story-title="detail?.title ?? 'Story'"
+      :turn="branchingTurn"
+      @close="branchingTurn = null" />
+    <BranchDialog
+      mode="rewind"
+      :open="rewindingTurn !== null"
+      :story-id="storyId"
+      :story-title="detail?.title ?? 'Story'"
+      :turn="rewindingTurn"
+      :latest="branches.latest.value"
+      @rewound="rewound"
+      @close="rewindingTurn = null" />
   </main>
 </template>
 
@@ -1023,6 +1119,9 @@ function loadBeatDetails(eventIds: string[]): void {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fffdf6;
+}
+.play__party {
+  margin-bottom: 14px;
 }
 .play__feed {
   list-style: none;

@@ -8281,6 +8281,16 @@
             "title": "Absolute Index",
             "type": "integer"
           },
+          "combat": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CombatLogView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "event_id": {
             "format": "uuid",
             "title": "Event Id",

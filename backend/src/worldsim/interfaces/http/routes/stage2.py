@@ -13,8 +13,10 @@ from uuid import UUID
 from fastapi import APIRouter, Query, Request
 
 from worldsim.application.capabilities import is_omniscient, parse_role
+from worldsim.application.queries.presentation import combat_log
 from worldsim.domain.enums import Visibility
 from worldsim.domain.errors import DomainError, ErrorCode
+from worldsim.domain.ids import derive_combat_event_id
 from worldsim.domain.narration import NarrationBeat
 from worldsim.domain.rules.dnd import strip_combat_tags
 from worldsim.interfaces.http import schemas as api
@@ -69,12 +71,17 @@ async def timeline(
         names = {c.id: c.name for c in characters}
         events = await uow.events.list_range(world_id, after, limit)
         entries: list[api.TimelineEntry] = []
-        for event in events:
-            if not omniscient and (
-                event.visibility != Visibility.PUBLIC
-                and (viewer is None or viewer not in event.participant_ids)
-            ):
-                continue
+        # A fight's rolls are their own event; old ones name no scene, so the
+        # scene is found by the id the fight event derives from it.
+        visible = [
+            event
+            for event in events
+            if omniscient
+            or event.visibility == Visibility.PUBLIC
+            or (viewer is not None and viewer in event.participant_ids)
+        ]
+        fought_in = {derive_combat_event_id(e.id): e.id for e in visible}
+        for event in visible:
             beats = await uow.scenes.narrations_for_event(event.id)
             entries.append(
                 api.TimelineEntry(
@@ -86,6 +93,7 @@ async def timeline(
                         strip_combat_tags(" ".join(_voiced_beat_text(b, names) for b in beats))
                     )
                     or None,
+                    combat=combat_log(event.summary, event.random_result, fought_in.get(event.id)),
                 )
             )
         total = await uow.events.count_events(world_id)

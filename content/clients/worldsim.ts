@@ -392,6 +392,7 @@ export interface DeityOverrideView {
 
 export interface TimelineEntry {
   absolute_index: number;
+  combat?: CombatLogView | null;
   event_id: string;
   event_type: string;
   sequence: number;

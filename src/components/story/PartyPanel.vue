@@ -24,13 +24,18 @@ import {
   xpProgress
 } from '../../game/party'
 
-const props = defineProps<{
-  party: PartyRosterResponse
-  me: string | null
-  full?: boolean
-  /** Names who reached a new level in the newest fight (their badge shows). */
-  levelled?: string[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    party: PartyRosterResponse
+    me: string | null
+    full?: boolean
+    /** Names who reached a new level in the newest fight (their badge shows). */
+    levelled?: string[]
+    /** "The party" for the Director and God seats, who play no one in it. */
+    title?: string
+  }>(),
+  { title: 'Your party', levelled: undefined }
+)
 
 const members = computed(() => partyOrder(props.party.members ?? [], props.me))
 const foes = computed(() => props.party.foes ?? [])
@@ -83,9 +88,9 @@ function calling(cls: string, race?: string | null): string {
 </script>
 
 <template>
-  <section class="party" :class="{ 'party--full': full }" aria-label="Your party">
+  <section class="party" :class="{ 'party--full': full }" :aria-label="title">
     <h3 class="party__title">
-      Your party
+      {{ title }}
       <span v-if="standing" class="party__fight ev-pop-once">In a fight</span>
     </h3>
     <ul class="party__list">
