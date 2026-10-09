@@ -71,6 +71,9 @@ class Monster(BaseModel):
     version: int = Field(default=0, ge=0)
 
 
+#: World config: the orders the hero gave companions in the fight that is on.
+PARTY_ORDERS_KEY = "party_orders"
+
 #: A fight stays "on" this many turns after its last roll.
 FIGHT_LINGERS = 2
 
@@ -211,3 +214,23 @@ def companion_note(hero: str, foes: list[Monster]) -> str:
             "while foes stand."
         )
     return note
+
+
+def stored_orders(raw: object, foes: list[str]) -> dict[str, str]:
+    """The orders kept in the world config (``PARTY_ORDERS_KEY``), when the
+    fight they were given in is still the one on (a foe key in common)."""
+    if not isinstance(raw, dict):
+        return {}
+    record = cast("dict[str, object]", raw)
+    given = record.get("foes")
+    orders = record.get("orders")
+    if not isinstance(given, list) or not isinstance(orders, dict):
+        return {}
+    if not {str(k) for k in cast("list[object]", given)} & set(foes):
+        return {}
+    return {str(k): str(v) for k, v in cast("dict[object, object]", orders).items()}
+
+
+def orders_record(orders: dict[str, str], foes: list[str]) -> dict[str, object]:
+    """What ``stored_orders`` reads back: the orders and the fight's foes."""
+    return {"orders": dict(orders), "foes": list(dict.fromkeys(foes))}

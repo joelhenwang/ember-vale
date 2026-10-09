@@ -12,7 +12,7 @@ from test_party_combat import FIGHTER, NIL_SNAPSHOT, _create
 from test_party_combat import wired as wired
 from test_stage1_api import ApiClient
 
-from worldsim.domain.rules.dnd import HitPoints, Sheet, load_data
+from worldsim.domain.rules.dnd import HitPoints, MonsterState, Sheet, load_data
 from worldsim.domain.rules.dnd.combat_resolve import resolve_narration_tags
 from worldsim.domain.rules.dnd.deeds import Deed
 from worldsim.domain.rules.dnd.invites import accepts, companion_description, is_invitation
@@ -432,7 +432,8 @@ def test_a_companions_spar_while_a_fight_is_on_is_a_blow(
         system, prompt = request.system or "", request.prompt
         if "You narrate" in system:
             if turn["n"] == 2 and "Hearth" in prompt:
-                text = "ENCOUNTER[goblin]: A goblin bursts in, snarling."
+                # A zombie: hardy but weak-handed, so the fight is still on next turn.
+                text = "ENCOUNTER[zombie]: A zombie shambles in, moaning."
                 return json.dumps([{"text": text, "cited_fact_keys": ["dnd-sheet:wren"]}])
             return None
         if "You react" in system and "join their party" in prompt:
@@ -477,10 +478,17 @@ def test_a_companions_spar_while_a_fight_is_on_is_a_blow(
             headers=headers,
         )
         assert moved.status_code == 200, moved.text
-    foes = client.get(
-        "/api/v1/stage1/party", params={"world_id": str(world_id)}, headers=headers
-    ).json()["foes"]
-    assert foes  # a fight was on
+        if index == 2:
+            _heal_all(world_id)
+    entries = client.get(
+        "/api/v1/world/chronicle",
+        params={"world_id": str(world_id), "after": 0, "limit": 80},
+        headers=headers,
+    ).json()["entries"]
+    # A fight began (its goblin may have fallen since: Ash fights now).
+    assert any(
+        r["kind"] == "encounter" for e in entries if e["combat"] for r in e["combat"]["rolls"]
+    )
     # A companion's spar mid-fight is their blow at a foe instead.
     families = _families(world_id)
     assert "spar" not in families and "interact" in families
@@ -538,7 +546,7 @@ def test_a_waiting_companion_fights_while_a_fight_is_on(
         system, prompt = request.system or "", request.prompt
         if "You narrate" in system:
             if turn["n"] == 2 and "Hearth" in prompt:
-                text = "ENCOUNTER[orc]: An orc kicks in the door."
+                text = "ENCOUNTER[zombie]: A zombie lurches through the door."
                 return json.dumps([{"text": text, "cited_fact_keys": ["dnd-sheet:wren"]}])
             return None
         if "You react" in system and "join their party" in prompt:
@@ -580,6 +588,8 @@ def test_a_waiting_companion_fights_while_a_fight_is_on(
             headers=headers,
         )
         assert moved.status_code == 200, moved.text
+        if index == 2:
+            _heal_all(world_id)
     assert "interact" in _families(world_id)
     entries = client.get(
         "/api/v1/world/chronicle",
@@ -593,4 +603,73 @@ def test_a_waiting_companion_fights_while_a_fight_is_on(
         for r in e["combat"]["rolls"]
         if r["kind"] == "attack" and r.get("actor") == "Ash"
     ]
-    assert ash_blows and all(r["target"].startswith("Orc") for r in ash_blows)
+    assert ash_blows and all(r["target"].startswith("Zombie") for r in ash_blows)
+
+
+def _heal_all(world_id: UUID) -> None:
+    """Everyone back to full: the next turn starts with the fight still on
+    and every companion standing, whatever the dice did this one."""
+    import asyncio
+
+    from worldsim.infrastructure.db.engine import create_engine
+    from worldsim.infrastructure.repositories.unit_of_work import create_unit_of_work
+    from worldsim.infrastructure.settings import Settings
+
+    async def inner() -> None:
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                for m in await uow.monsters.list_for_world(world_id):
+                    await uow.monsters.save_hp(m.id, m.hp_max, m.version)
+                for member in await uow.party.list_for_world(world_id):
+                    sheet = member.sheet.model_copy(deep=True)
+                    if sheet.hp is not None:
+                        sheet.hp = HitPoints(current=sheet.hp.max, max=sheet.hp.max)
+                    await uow.party.save_sheet(member.id, sheet, member.version)
+                await uow.commit()
+        finally:
+            await engine.dispose()
+
+    asyncio.run(inner())
+
+
+def test_an_order_steers_a_companions_own_blow_and_the_fallen_are_not_struck() -> None:
+    report = resolve_narration_tags(
+        "Steel rings.",
+        [_wren(), _ash()],
+        DATA,
+        _rng(0.5),
+        live=[
+            *_goblins(0, 0),
+            MonsterState(key="goblin-3", name="Goblin 3", hp_current=30, hp_max=30, ac=15),
+        ],
+        fighting=["goblin-1", "goblin-2", "goblin-3"],
+        deeds=[
+            Deed(key="wren", text="I strike at the second goblin"),
+            Deed(key="ash", text="I attack Goblin 1 with my handaxe"),
+        ],
+        chooses={"wren"},
+        strike_back=True,
+        present={"wren", "ash"},
+        orders={"ash": "Ash, take the third goblin!"},
+    )
+    swings = {o.actor: o.target for o in report.outcomes if o.kind == "attack" and not o.actor_foe}
+    # Goblin 2 already fell: Wren's blow goes to the one still standing.
+    assert swings == {"Wren": "Goblin 3", "Ash": "Goblin 3"}
+
+
+def test_orders_last_the_fight_they_were_given_in() -> None:
+    from worldsim.domain.party import orders_record, stored_orders
+
+    kept = orders_record(
+        {"ash": "Ash, take the third goblin!"}, ["goblin-1", "goblin-3", "goblin-3"]
+    )
+    assert kept == {
+        "orders": {"ash": "Ash, take the third goblin!"},
+        "foes": ["goblin-1", "goblin-3"],
+    }
+    assert stored_orders(kept, ["goblin-3"]) == {"ash": "Ash, take the third goblin!"}
+    # A new fight (no foe in common), or nothing kept: no order.
+    assert stored_orders(kept, ["wolf"]) == {}
+    assert stored_orders(None, ["goblin-3"]) == {}
+    assert stored_orders({"orders": "junk", "foes": ["goblin-3"]}, ["goblin-3"]) == {}

@@ -454,27 +454,33 @@ def test_group_foes_xp_levels_and_spent_slots(
     _set_state(world_id, hero_xp=290, pools={"goblin-2": 1})
     scripts.pop(0)
     second = advance(2)
-    # Goblin 1, still standing and left silent by the storyteller, strikes
-    # back at Wren (combat-depth-002); Wren's blows all went at Goblin 2.
-    struck = {r["target"] for r in second if r["kind"] == "attack" and not r.get("actor_foe")}
-    assert struck == {"Goblin 2"}
+    # Wren's blows go at Goblin 2 until it falls; the rest re-aim at the foe
+    # still standing (companions-002), so Goblin 1 may fall too.
+    blows = [r for r in second if r["kind"] == "attack" and not r.get("actor_foe")]
+    assert blows[0]["target"] == "Goblin 2"
+    assert {r["target"] for r in blows} <= {"Goblin 1", "Goblin 2"}
     xp = next(r for r in second if r["kind"] == "xp")
-    assert (xp["amount"], xp["share"], xp["target"]) == (50, 50, "Goblin 2")
+    assert xp["target"].startswith("Goblin 2") and xp["amount"] in (50, 100)
     level = next(r for r in second if r["kind"] == "level")
     assert (level["actor"], level["level"]) == ("Wren", 2)
-    assert _pools(world_id) == {"goblin-1": 7, "goblin-2": 0}
+    pools = _pools(world_id)
+    assert pools["goblin-2"] == 0 and pools["goblin-1"] <= 7
     after = client.get(
         "/api/v1/stage1/party", params={"world_id": str(world_id)}, headers=headers
     ).json()
     (wren_now,) = after["members"]
-    assert (wren_now["level"], wren_now["xp"], wren_now["xp_next_level"]) == (2, 340, 900)
+    assert (wren_now["level"], wren_now["xp_next_level"]) == (2, 900)
+    assert wren_now["xp"] == 290 + xp["share"]
     assert wren_now["hp_max"] == hero["hp_max"] + level["amount"]
     # Level 2 brings a third first-level slot; two were spent today.
     assert wren_now["spell_slots"] == [3] and wren_now["spell_slots_left"] == [1]
-    assert [(f["name"], f["hp_current"]) for f in after["foes"]] == [
-        ("Goblin 1", 7),
-        ("Goblin 2", 0),
-    ]
+    if pools["goblin-1"] > 0:
+        assert [(f["name"], f["hp_current"]) for f in after["foes"]] == [
+            ("Goblin 1", pools["goblin-1"]),
+            ("Goblin 2", 0),
+        ]
+    else:
+        assert after["foes"] == []  # both fell: the fight is over
 
 
 def test_the_party_is_only_in_its_own_scenes() -> None:

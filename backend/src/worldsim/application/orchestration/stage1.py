@@ -240,6 +240,7 @@ from worldsim.domain.memory import (
 from worldsim.domain.narration import NarrationBeat
 from worldsim.domain.narrative import NarrativeHook
 from worldsim.domain.party import (
+    PARTY_ORDERS_KEY,
     Monster,
     PartyMember,
     chooser_keys,
@@ -249,10 +250,12 @@ from worldsim.domain.party import (
     fight_over_line,
     foes_line,
     foes_on,
+    orders_record,
     party_in_scene,
     party_name_key,
     present_keys,
     slots_line,
+    stored_orders,
 )
 from worldsim.domain.perception import (
     Disclosure,
@@ -285,7 +288,7 @@ from worldsim.domain.rules.dnd import (
     weapon_attack_bonus,
 )
 from worldsim.domain.rules.dnd.data import dict_field, entry, str_field, table
-from worldsim.domain.rules.dnd.deeds import Deed, looks_like_deed
+from worldsim.domain.rules.dnd.deeds import ORDINAL_WORDS, Deed, looks_like_deed, order_target
 from worldsim.domain.rules.dnd.invites import (
     accepts,
     companion_attack,
@@ -293,7 +296,7 @@ from worldsim.domain.rules.dnd.invites import (
     is_invitation,
 )
 from worldsim.domain.rules.dnd.party import MAX_PARTY_SIZE
-from worldsim.domain.rules.dnd.progress import long_rest
+from worldsim.domain.rules.dnd.progress import long_rest, monster_kind
 from worldsim.domain.rules.dnd.sheets import weapon_damage
 from worldsim.domain.rules.grounding import grounded_move
 from worldsim.domain.rules.meetups import resolve_meetups
@@ -3660,7 +3663,8 @@ class Stage1Orchestrator:
         return companion_note(hero.name, await self._foes_now(world_id))
 
     async def _companion_attack(self, world_id: UUID, character_id: UUID) -> str | None:
-        """A companion's blow while a fight is on, at the most wounded foe."""
+        """A companion's blow while a fight is on: at the foe the hero told
+        them to take this fight, else the most wounded foe."""
         foes = [foe for foe in await self._foes_now(world_id) if foe.hp_current > 0]
         if not foes or not await self._is_companion(world_id, character_id):
             return None
@@ -3668,8 +3672,19 @@ class Stage1Orchestrator:
         member = next((m for m in roster if m.character_id == character_id), None)
         if member is None:
             return None
-        foe = min(foes, key=lambda f: f.hp_current / max(1, f.hp_max))
-        return companion_attack(member.sheet, foe.name, self._dnd_tables())
+        foe = min(foes, key=lambda f: f.hp_current / max(1, f.hp_max)).name
+        config = (await self._world_view(world_id)).config
+        kept = stored_orders(config.get(PARTY_ORDERS_KEY), [f.name_key for f in foes])
+        words = kept.get(member.name_key)
+        if words:
+            monsters = table(self._dnd_tables(), "monsters")
+            kinds = [(monster_kind(f.name_key, monsters), f.name) for f in foes]
+            told = order_target(str(words), list(dict.fromkeys(kinds)))
+            if told is not None and any(f.name.lower() == told.lower() for f in foes):
+                foe = told
+            elif told is not None:
+                foe = f"the {told}" if told.split()[0].lower() in ORDINAL_WORDS else told
+        return companion_attack(member.sheet, foe, self._dnd_tables())
 
     async def _foes_now(self, world_id: UUID) -> list[Monster]:
         """The foes of the fight that is on (one read per phase)."""
@@ -5092,6 +5107,10 @@ class Stage1Orchestrator:
                 if fight is not None
                 else []
             )
+            # Orders last the fight they were given in ("Ash, take the third
+            # goblin" holds until those goblins are gone).
+            config = await uow.worlds.get_config(world_id)
+            orders = {**stored_orders(config.get(PARTY_ORDERS_KEY), fighting), **orders}
         tables = self._dnd_tables()
         story_day = split_absolute(run.absolute_index)[0]
         digest = hashlib.sha256(str(event_id).encode()).digest()[:8]
@@ -5156,6 +5175,12 @@ class Stage1Orchestrator:
                             ):
                                 await uow.monsters.save_hp(pool.id, result.hp_current, pool.version)
                         combat_id = derive_combat_event_id(event_id)
+                        if orders:
+                            await uow.worlds.put_config(
+                                world_id,
+                                PARTY_ORDERS_KEY,
+                                orders_record(orders, fighting + report.foes),
+                            )
                         sequence = await uow.events.max_sequence(world_id) + 1
                         involved = {
                             by_key[key].id

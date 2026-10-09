@@ -70,6 +70,8 @@ _GENERIC = {
 _ENCOUNTER_RE = re.compile(r"^\s*ENCOUNTER\s*\[[^\]]+\][^\n]*\n?", re.IGNORECASE | re.MULTILINE)
 _SHEET_TAG_RE = re.compile(r"^\s*(ATTACK|CAST)\s*\[([^\]]+)\]", re.IGNORECASE | re.MULTILINE)
 _ORDINALS = "first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth"
+#: Words that count a foe of a group ("the third goblin").
+ORDINAL_WORDS = frozenset(_ORDINALS.split("|"))
 
 
 def looks_like_deed(text: str) -> bool:

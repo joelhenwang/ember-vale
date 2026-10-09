@@ -53,6 +53,7 @@ from worldsim.domain.rules.dnd.deeds import (
     helper_lines,
     line_actor,
     opening_lines,
+    order_target,
 )
 from worldsim.domain.rules.dnd.progress import (
     LevelGain,
@@ -388,9 +389,14 @@ def resolve_narration_tags(
                 for ref in parse_encounter_tag(inner, tables):
                     standing_kinds.append((ref.index, ref.name))
 
-    def most_wounded() -> str | None:
-        """The foe of the fight that is on with the least health left (by share)."""
-        up = [k for k in on_now if monster_hp.get(k, 0) > 0]
+    def most_wounded(met: list[str] | None = None) -> str | None:
+        """The foe standing (in the fight that is on, or met in this scene)
+        with the least health left, by share."""
+        up = [
+            k
+            for k in list(dict.fromkeys(on_now + list(met or [])))
+            if k in monster_meta and monster_hp.get(k, 0) > 0
+        ]
         if not up:
             return None
         key = min(up, key=lambda k: monster_hp[k] / max(1, monster_meta[k].hp))
@@ -515,6 +521,28 @@ def resolve_narration_tags(
         """The foe a tag aims at has already fallen: a blow there rolls nothing."""
         foe = pick_foe(text)
         return foe is not None and foe.key in monster_hp and monster_hp[foe.key] <= 0
+
+    # The foe each companion was told to take ("Ash, take the third goblin").
+    ordered = {
+        key: phrase
+        for key, words in (orders or {}).items()
+        if (phrase := order_target(words, list(dict.fromkeys(standing_kinds))))
+    }
+
+    def retarget(akey: str, target: str | None) -> str | None:
+        """Where a party member's blow lands: at a party member as tagged;
+        else the foe they were told to take while it stands; else, when the
+        tagged foe has already fallen, the most wounded foe standing (None:
+        nobody is left). A blow at the second goblin, slain a moment before
+        by a companion, rolled nothing with Goblin 3 still standing."""
+        if _party_position(order, keys, target) is not None:
+            return target
+        told = ordered.get(akey)
+        if told and pick_foe(told) is not None and not slain(told):
+            return told
+        if target and slain(target):
+            return most_wounded(foes)
+        return target
 
     def foe_strike(inner: str, target_name: str | None) -> bool:
         """``ATTACK[goblin at Wren]``: a standing foe swings its first weapon
@@ -702,6 +730,11 @@ def resolve_narration_tags(
                 unresolved.append(match.group(0))
                 continue
             akey = key_of[id(attacker)]
+            aimed = retarget(akey, tag.target)
+            if aimed is None and tag.target:
+                unresolved.append(match.group(0))
+                continue
+            tag = tag.model_copy(update={"target": aimed})
             weapon = entry(weapons, tag.index) if tag.index else {}
             bonus = weapon_attack_bonus(tables, attacker, weapon)
             pos = _party_position(order, keys, tag.target)
@@ -783,6 +816,9 @@ def resolve_narration_tags(
             attacker = None
             if tag is not None and tag.index:
                 attacker = carrier(tag.index, spell=True, named=voiced)
+            if tag is not None and attacker is not None and tag.target:
+                aimed = retarget(key_of[id(attacker)], tag.target)
+                tag = tag.model_copy(update={"target": aimed or tag.target})
             if (
                 tag is None
                 or attacker is None
