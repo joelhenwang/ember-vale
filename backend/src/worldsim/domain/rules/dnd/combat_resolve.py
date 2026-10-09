@@ -309,6 +309,7 @@ def resolve_narration_tags(
     orders: dict[str, str] | None = None,
     recent: str = "",
     slain_lately: set[str] | None = None,
+    xp_scale: int = 1,
 ) -> CombatReport:
     """Resolve every combat tag in narration order. Inputs are never mutated.
 
@@ -1115,7 +1116,8 @@ def resolve_narration_tags(
             book.conditions = list(new_conditions[key])
     changed: set[str] = set(hp_updates) | set(new_conditions) | cast_keys | woke
     gains: list[LevelGain] = []
-    total_xp = sum(
+    # Story pacing (``xp_scale``): a story has a fight every dozen turns.
+    total_xp = xp_scale * sum(
         int_field(entry(monsters, monster_kind(key, monsters)), "xp") for key in defeated
     )
     if total_xp > 0:

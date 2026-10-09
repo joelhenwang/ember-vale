@@ -460,7 +460,8 @@ def test_group_foes_xp_levels_and_spent_slots(
     assert blows[0]["target"] == "Goblin 2"
     assert {r["target"] for r in blows} <= {"Goblin 1", "Goblin 2"}
     xp = next(r for r in second if r["kind"] == "xp")
-    assert xp["target"].startswith("Goblin 2") and xp["amount"] in (50, 100)
+    # Story pacing: 4x the 5e XP (WORLDSIM_APP__XP_SCALE, long-adventure-001).
+    assert xp["target"].startswith("Goblin 2") and xp["amount"] in (200, 400)
     level = next(r for r in second if r["kind"] == "level")
     assert (level["actor"], level["level"]) == ("Wren", 2)
     pools = _pools(world_id)

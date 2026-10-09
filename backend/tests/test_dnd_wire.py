@@ -40,8 +40,11 @@ MIGRATIONS = ROOT / "backend" / "migrations"
 @pytest.fixture
 def wire(migrated_db: None) -> Iterator[tuple[ApiClient, FakeGateway]]:
     gateway = FakeGateway(profile=FAKE_TEST_PROFILE)
+    # Plain 5e XP: this checks tags becoming health and beats, not pacing.
+    plain = Settings()
+    plain = plain.model_copy(update={"app": plain.app.model_copy(update={"xp_scale": 1})})
     app = create_app(
-        Settings(),
+        plain,
         seed_dir=SEED_DIR,
         migrations_dir=MIGRATIONS,
         gateway_factory=lambda: gateway,
@@ -305,13 +308,14 @@ def test_combat_tags_resolve_to_hp_events_and_beats(wire: tuple[ApiClient, FakeG
     }
 
     narration_texts.pop(0)
+    # Borin as the second turn begins (with story-paced XP a level can come in it).
+    second_borin = SheetModel.model_validate(asyncio.run(_roster_sheets())["borin"])
     second = client.post(
         "/api/v1/stage1/advance",
         json={"world_id": str(ids["world"]), "absolute_index": 2},
         headers=headers,
     )
     assert second.status_code == 200, second.text
-    second_borin = SheetModel.model_validate(asyncio.run(_roster_sheets())["borin"])
     for entry in second.json()["scenes"]:
         scene_id = UUID(entry["event_id"])
         on = _on()

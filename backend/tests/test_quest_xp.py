@@ -227,7 +227,8 @@ def test_both_ways_of_settling_give_the_party_xp_once(
     (hero,) = client.get(
         "/api/v1/stage1/party", params={"world_id": str(world_id)}, headers=headers
     ).json()["members"]
-    assert hero["xp"] == 100 and hero["level"] == 1
+    # Story pacing: 4x (WORLDSIM_APP__XP_SCALE); 400 XP is level 2.
+    assert hero["xp"] == 400 and hero["level"] == 2
 
     chronicle = client.get(
         "/api/v1/world/chronicle",
@@ -238,8 +239,8 @@ def test_both_ways_of_settling_give_the_party_xp_once(
     settled = {r["target"]: log for log in logs for r in log["rolls"] if r["kind"] == "xp"}
     assert set(settled) == {"The stuck cart", "The missing flour"}
     for log in settled.values():
-        (row,) = log["rolls"]
-        assert (row["result"], row["share"]) == ("settled", 50)
+        (row,) = [r for r in log["rolls"] if r["kind"] == "xp"]
+        assert (row["result"], row["share"]) == ("settled", 200)
     # The resolver's settle sits under the scene that did it.
     scene = next(
         e for e in chronicle if e["event_id"] == settled["The stuck cart"]["scene_event_id"]
@@ -252,4 +253,12 @@ def test_both_ways_of_settling_give_the_party_xp_once(
     (again,) = client.get(
         "/api/v1/stage1/party", params={"world_id": str(world_id)}, headers=headers
     ).json()["members"]
-    assert again["xp"] == 100
+    assert again["xp"] == 400
+
+
+def test_story_pacing_scales_settled_xp() -> None:
+    from worldsim.domain.rules.dnd.quests import award_settled
+
+    plain = award_settled(DATA, "The cart", [("wren", _sheet("Wren"))], xp_scale=1)
+    paced = award_settled(DATA, "The cart", [("wren", _sheet("Wren"))], xp_scale=4)
+    assert (plain.sheets["wren"].xp, paced.sheets["wren"].xp) == (50, 200)

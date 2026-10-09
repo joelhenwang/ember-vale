@@ -46,6 +46,7 @@ def award_settled(
     *,
     chooses: set[str] | None = None,
     day: int | None = None,
+    xp_scale: int = 1,
 ) -> SettleAward:
     """Give each member (``(name_key, sheet)``) the settle XP for their level.
 
@@ -58,7 +59,7 @@ def award_settled(
     working = {key: long_rest(sheet, day).model_copy(deep=True) for key, sheet in members}
     by_amount: dict[int, list[str]] = {}
     for key, sheet in members:
-        by_amount.setdefault(settle_xp(sheet.level), []).append(key)
+        by_amount.setdefault(settle_xp(sheet.level) * xp_scale, []).append(key)
     rows: list[dict[str, Any]] = []
     for amount, keys in by_amount.items():
         names = ", ".join(working[key].name for key in keys)

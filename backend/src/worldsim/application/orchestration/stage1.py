@@ -1273,10 +1273,13 @@ class Stage1Orchestrator:
         moment_writer: Writer | None = None,
         max_parallel_calls: int = 12,
         reacting_bystanders: int | None = None,
+        xp_scale: int = 1,
     ) -> None:
         self._factory = uow_factory
         #: Crowd cap on who answers an attempt (None: everyone present).
         self._reacting_bystanders = reacting_bystanders
+        #: Story pacing: experience is this many times the 5e XP.
+        self._xp_scale = xp_scale
         #: Model-backed tasks (decisions, reactions, summaries) a beat runs at
         #: once, per event loop; see _bounded.
         self._max_parallel = max_parallel_calls
@@ -2936,6 +2939,7 @@ class Stage1Orchestrator:
                 [ending.hook_id for ending in decision.closed],
                 absolute_index=index,
                 run_id=run_id,
+                xp_scale=self._xp_scale,
             )
         await self._set_state(run_id, PhaseRunState.DIRECTOR_COMPLETE)
         if decision.accepted:
@@ -3966,6 +3970,7 @@ class Stage1Orchestrator:
                 absolute_index=index,
                 run_id=run_id,
                 scene_event_id=result.event_id,
+                xp_scale=self._xp_scale,
             )
         if resolution.outcome == ResolutionOutcome.SUCCESS:
             await self._settle_scene_verbs(world_id, run_id, index, scene, members, result.event_id)
@@ -5159,6 +5164,7 @@ class Stage1Orchestrator:
                     day=story_day,
                     fighting=fighting,
                     slain_lately=slain_lately,
+                    xp_scale=self._xp_scale,
                     deeds=deeds,
                     chooses=chooses,
                     strike_back=hero_here,

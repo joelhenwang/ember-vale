@@ -60,6 +60,12 @@ class ApplicationSettings(BaseModel):
     #: runs each (docs/evidence/crowd-reactions-001). Set
     #: WORLDSIM_APP__REACTING_BYSTANDERS to a large number to let everyone react.
     reacting_bystanders: int | None = Field(default=2, ge=0, le=24)
+    #: Story pacing for a combat story's experience: fallen foes and settled
+    #: rumours give this many times their 5e XP. The SRD assumes many fights a
+    #: day; a story has one every dozen turns, and after 26 live turns a hero
+    #: had 25-50 XP against 300 for level 2 (docs/evidence/long-adventure-001).
+    #: WORLDSIM_APP__XP_SCALE=1 is plain 5e.
+    xp_scale: int = Field(default=4, ge=1, le=20)
     #: API processes (`serve`). More than one needs background_loops=false
     #: and a separate worker: each process would otherwise run every loop.
     workers: int = Field(default=1, ge=1, le=32)

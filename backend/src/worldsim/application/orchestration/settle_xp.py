@@ -36,13 +36,21 @@ async def award_settled_hooks(
     absolute_index: int,
     run_id: UUID | None,
     scene_event_id: UUID | None = None,
+    xp_scale: int = 1,
 ) -> list[UUID]:
     """Award each closed rumour's experience once; the events written."""
     written: list[UUID] = []
     for hook_id in dict.fromkeys(hook_ids):
         try:
             if await _award_one(
-                factory, tables, world_id, hook_id, absolute_index, run_id, scene_event_id
+                factory,
+                tables,
+                world_id,
+                hook_id,
+                absolute_index,
+                run_id,
+                scene_event_id,
+                xp_scale,
             ):
                 written.append(derive_settle_xp_event_id(hook_id))
         except DomainError:
@@ -58,6 +66,7 @@ async def _award_one(
     absolute_index: int,
     run_id: UUID | None,
     scene_event_id: UUID | None,
+    xp_scale: int = 1,
 ) -> bool:
     event_id = derive_settle_xp_event_id(hook_id)
     for _ in range(2):
@@ -95,6 +104,7 @@ async def _award_one(
                     roster, getattr(await uow.roles.get_for_world(world_id), "character_id", None)
                 ),
                 day=split_absolute(absolute_index)[0],
+                xp_scale=xp_scale,
             )
             try:
                 for member in roster:
