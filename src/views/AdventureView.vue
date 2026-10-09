@@ -205,7 +205,8 @@ const party = computed(() =>
 const hero = computed(
   () => party.value?.members?.find((m) => m.character_id === adv.me.value) ?? null
 )
-/** The hero's level-up choices made: the sheet comes back at once. */
+/** The hero's level-up choices made, or a companion's calling changed: the
+ *  sheet comes back at once. */
 function choiceMade(made: PartyMemberView) {
   const roster = adv.party.value
   if (!roster) return
@@ -755,7 +756,10 @@ onMounted(() => {
                 class="lead__party"
                 :party="party"
                 :me="adv.me.value ?? null"
-                :levelled="levelled" />
+                :levelled="levelled"
+                :world-id="storyId"
+                :opts="adv.opts.value"
+                @changed="choiceMade" />
               <button
                 v-if="hero?.choices?.length"
                 type="button"
@@ -1175,7 +1179,10 @@ onMounted(() => {
               :party="party"
               :me="adv.me.value ?? null"
               :levelled="levelled"
-              full />
+              :world-id="storyId"
+              :opts="adv.opts.value"
+              full
+              @changed="choiceMade" />
             <LevelChoices
               v-if="hero?.choices?.length"
               class="sheet__choices"

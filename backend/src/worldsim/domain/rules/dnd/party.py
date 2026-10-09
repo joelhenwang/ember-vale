@@ -239,8 +239,11 @@ def recruit_sheet(name: str, desc: str, party_levels: list[int], data: DataTable
         level = party_max
     class_hit = find_entry(table(data, "classes"), text)
     class_key = class_hit.index if class_hit else "fighter"
+    # A race named in full first ("half-elf ranger" is not an elf).
+    words = set(re.findall(r"[a-z]+(?:-[a-z]+)*", text.lower()))
+    named = [key for key in table(data, "races") if key in words]
     race_hit = find_entry(table(data, "races"), text)
-    race = race_hit.index if race_hit else "human"
+    race = max(named, key=len) if named else race_hit.index if race_hit else "human"
     return auto_sheet(name, race, class_key, level, data)
 
 

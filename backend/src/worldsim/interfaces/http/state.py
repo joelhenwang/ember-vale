@@ -136,7 +136,9 @@ class AppState:
             local_models=self.local_models(),
             narration=self.narration,
             paint_moments=self.images() is not None,
-            moment_writer=self.writer() if self.images() is not None else None,
+            # Reads key moments (only when painting) and suggests a joining
+            # companion's calling (callings-001).
+            moment_writer=self.writer(),
             max_parallel_calls=self.settings.app.parallel_model_calls,
             reacting_bystanders=self.settings.app.reacting_bystanders,
         )

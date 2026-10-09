@@ -142,6 +142,7 @@ export interface PartyBeginRequest {
 export interface PartyMemberView {
   abilities?: Record<string, number>;
   armor_class?: number | null;
+  calling_changeable?: boolean;
   character_class: string;
   character_id?: string | null;
   choices?: LevelChoiceView[];
@@ -197,6 +198,13 @@ export interface LevelChoiceRequest {
   choice_id: string;
   expected_version: number;
   spells?: string[] | null;
+  world_id: string;
+}
+
+export interface PartyCallingRequest {
+  character_class: string;
+  expected_version: number;
+  race: string;
   world_id: string;
 }
 

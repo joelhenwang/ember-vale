@@ -4701,6 +4701,42 @@
         "title": "PartyBeginRequest",
         "type": "object"
       },
+      "PartyCallingRequest": {
+        "additionalProperties": false,
+        "description": "Another people and calling for a companion who has not fought yet.",
+        "properties": {
+          "character_class": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Character Class",
+            "type": "string"
+          },
+          "expected_version": {
+            "minimum": 0.0,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "race": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Race",
+            "type": "string"
+          },
+          "world_id": {
+            "format": "uuid",
+            "title": "World Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "world_id",
+          "race",
+          "character_class",
+          "expected_version"
+        ],
+        "title": "PartyCallingRequest",
+        "type": "object"
+      },
       "PartyLinkRequest": {
         "additionalProperties": false,
         "properties": {
@@ -4748,6 +4784,11 @@
               }
             ],
             "title": "Armor Class"
+          },
+          "calling_changeable": {
+            "default": false,
+            "title": "Calling Changeable",
+            "type": "boolean"
           },
           "character_class": {
             "title": "Character Class",
@@ -12832,6 +12873,60 @@
           }
         },
         "summary": "Begin Party Member",
+        "tags": [
+          "stage1"
+        ]
+      }
+    },
+    "/api/v1/stage1/party/{member_id}/calling": {
+      "post": {
+        "description": "Another people and calling for a companion who has not fought yet: the\nhero's own player (or a Director or God).",
+        "operationId": "change_party_calling_api_v1_stage1_party__member_id__calling_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "member_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Member Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartyCallingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartyMemberView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Party Calling",
         "tags": [
           "stage1"
         ]

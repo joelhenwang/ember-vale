@@ -359,6 +359,9 @@ class PartyMemberView(BaseModel):
     abilities: dict[str, int] = Field(default_factory=dict)
     #: Level-up choices not made yet (only a player's hero has any).
     choices: list[LevelChoiceView] = Field(default_factory=list)
+    #: A companion who has not fought yet: the player may still change their
+    #: people and calling (``POST /stage1/party/{id}/calling``).
+    calling_changeable: bool = False
 
 
 class SpellOption(BaseModel):
@@ -939,6 +942,17 @@ class LevelChoiceRequest(BaseModel):
     expected_version: int = Field(ge=0)
     abilities: dict[str, int] | None = None
     spells: list[str] | None = Field(default=None, max_length=12)
+
+
+class PartyCallingRequest(BaseModel):
+    """Another people and calling for a companion who has not fought yet."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    world_id: UUID
+    race: str = Field(min_length=1, max_length=32)
+    character_class: str = Field(min_length=1, max_length=32)
+    expected_version: int = Field(ge=0)
 
 
 class PartyLinkRequest(BaseModel):
