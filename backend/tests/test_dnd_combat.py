@@ -15,6 +15,7 @@ from worldsim.domain.rules.dnd import (
     HitPoints,
     MonsterState,
     Sheet,
+    combat_rolls,
     load_data,
     resolve_narration_tags,
 )
@@ -217,3 +218,59 @@ def test_dead_pool_stays_down() -> None:
     )
     assert report.outcomes[0].text == "Borin hits Goblin for 5 slashing. (0->0 HP)"
     assert report.monsters == {}
+
+
+def test_foe_strikes_back_with_its_own_weapon() -> None:
+    report = resolve_narration_tags(
+        "ENCOUNTER[goblin]\nATTACK[goblin at Borin]", [_borin()], DATA, _rng(0.9, 0.5)
+    )
+    strike = report.outcomes[1]
+    assert (strike.actor, strike.target, strike.using) == ("Goblin", "Borin", "Scimitar")
+    assert strike.actor_foe and not strike.target_foe
+    assert (strike.natural, strike.roll, strike.ac, strike.result) == (19, 23, 18, "hit")
+    assert strike.text == "Goblin hits Borin for 6 slashing. (13->7 HP)"
+    assert report.hp == {"borin": 7}
+    assert report.beats[1].text == "The goblin's scimitar hits Borin for 6 slashing."
+    assert report.foes == ["goblin"]
+
+
+def test_fallen_or_unknown_foes_do_not_strike() -> None:
+    fallen = resolve_narration_tags(
+        "ATTACK[goblin at Borin]", [_borin()], DATA, _rng(0.9), live=[_goblin(0)]
+    )
+    assert fallen.unresolved == ["ATTACK[goblin at Borin]"] and fallen.hp == {}
+    nobody = resolve_narration_tags("ATTACK[goblin at Ash]", [_borin()], DATA, _rng(0.9))
+    assert nobody.unresolved == ["ATTACK[goblin at Ash]"]
+
+
+def test_rolls_carry_their_parts() -> None:
+    report = resolve_narration_tags(
+        "ATTACK[longsword at goblin]\nCAST[fireball at goblin]",
+        [_borin(), _elara()],
+        DATA,
+        _rng(0.0, *[0.0] * 9),
+    )
+    miss, burn = report.outcomes
+    assert (miss.result, miss.roll, miss.ac, miss.target_foe) == ("miss", 6, 15, True)
+    assert (burn.result, burn.dc, burn.using, burn.damage_type) == (
+        "failed",
+        13,
+        "Fireball",
+        "fire",
+    )
+    # A foe first met mid-fight is kept for the next scene and the party panel.
+    assert report.foes == ["goblin"] and "goblin" in report.monsters
+    rows = combat_rolls(report.outcomes, ["Lyra"])
+    assert rows[0] == {
+        "kind": "attack",
+        "text": "Borin misses Goblin (6 vs AC 15).",
+        "actor": "Borin",
+        "target": "Goblin",
+        "using": "Longsword",
+        "roll": 6,
+        "natural": 1,
+        "ac": 15,
+        "result": "miss",
+        "target_foe": True,
+    }
+    assert rows[-1] == {"kind": "recruit", "text": "Lyra joins the party.", "actor": "Lyra"}

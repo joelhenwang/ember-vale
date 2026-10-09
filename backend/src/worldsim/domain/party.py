@@ -8,6 +8,9 @@ slots mutate through version-guarded saves; joins are inserts.
 
 from __future__ import annotations
 
+import json
+from typing import cast
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from worldsim.domain.enums import FocusSlot
@@ -51,3 +54,44 @@ class Monster(BaseModel):
     hp_max: int = Field(ge=0)
     ac: int = Field(ge=0)
     version: int = Field(default=0, ge=0)
+
+
+#: A fight stays "on" this many turns after its last roll.
+FIGHT_LINGERS = 2
+
+
+def fight_keys(summary: dict[str, str]) -> list[str]:
+    """The foes a fight event names (its ``foes`` summary, JSON)."""
+    try:
+        raw: object = json.loads(summary.get("foes", "[]"))
+    except ValueError:
+        return []
+    return [str(key) for key in cast("list[object]", raw)] if isinstance(raw, list) else []
+
+
+def foes_on(fight_index: int, now: int, keys: list[str], pools: list[Monster]) -> list[Monster]:
+    """The latest fight's foes while it is on: recent, and someone standing."""
+    if now - fight_index > FIGHT_LINGERS:
+        return []
+    by_key = {pool.name_key: pool for pool in pools}
+    foes = [by_key[key] for key in keys if key in by_key]
+    return foes if any(foe.hp_current > 0 for foe in foes) else []
+
+
+def _shape(foe: Monster) -> str:
+    if foe.hp_current <= 0:
+        return "down"
+    share = foe.hp_current / foe.hp_max if foe.hp_max else 1
+    if share > 0.99:
+        return "unhurt"
+    return "wounded" if share > 0.5 else "badly wounded"
+
+
+def foes_line(foes: list[Monster]) -> str:
+    """The fight that is on, for the narrator: in words, never numbers."""
+    shown = ", ".join(f"{foe.name} ({_shape(foe)})" for foe in foes)
+    return (
+        f"A fight is on with: {shown}. Do not ENCOUNTER them again (that would bring "
+        "fresh ones); strike them by name, and let those still standing strike back. "
+        "The down stay down."
+    )

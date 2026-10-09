@@ -41,6 +41,34 @@ function beat(id: string, kind: string, text: string, speaker: string | null = n
 }
 
 describe('adventure log', () => {
+  it("puts a fight's dice under the scene they were rolled in", () => {
+    const rolls = [{ kind: 'attack', text: 'Wren hits Goblin for 6 slashing.' }]
+    const log = buildLog({
+      entries: [
+        entry({ sequence: 1, scene_id: 's1', participant_ids: [ME], text: 'Steel rings.' }),
+        entry({ sequence: 2, scene_id: 's2', participant_ids: [ME], text: 'Later.' }),
+        entry({ sequence: 3, combat: { scene_event_id: 'e1', rolls } })
+      ],
+      beats: {},
+      me: ME,
+      hereId: HERE
+    })
+    const kinds = log.map((l) => l.kind)
+    expect(kinds).toEqual(['time', 'narration', 'rolls', 'paint', 'narration', 'paint'])
+    expect(log[2]!.rolls).toEqual(rolls)
+  })
+
+  it('shows dice whose scene is not loaded where they fell', () => {
+    const rolls = [{ kind: 'note', text: 'Wren misses Goblin (6 vs AC 15).' }]
+    const log = buildLog({
+      entries: [entry({ sequence: 9, combat: { scene_event_id: 'gone', rolls } })],
+      beats: {},
+      me: ME,
+      hereId: HERE
+    })
+    expect(log.map((l) => l.kind)).toEqual(['rolls'])
+  })
+
   it('tells scenes you saw in full, spoken lines under their speaker', () => {
     const log = buildLog({
       entries: [entry({ sequence: 1, scene_id: 's1', participant_ids: [ME, 'ash'] })],

@@ -4,6 +4,7 @@ import {
   getCharacter,
   getChronicle,
   getMap,
+  getParty,
   getPresentation,
   getRole,
   getSceneNarration,
@@ -22,6 +23,7 @@ import type {
   ItemView,
   MapPlace,
   MapResponse,
+  PartyRosterResponse,
   PresentationResponse,
   RoleGrantView,
   Stage1AdvanceResponse,
@@ -49,6 +51,7 @@ export interface AdventureApi {
   getCharacter(characterId: string, opts: CallOptions): Promise<CharacterDetail>
   getSuggestions(characterId: string, opts: CallOptions): Promise<SuggestionView[]>
   listItems(worldId: string, ownerId: string | null, opts: CallOptions): Promise<ItemListResponse>
+  getParty(worldId: string, opts: CallOptions): Promise<PartyRosterResponse>
   advance(
     worldId: string,
     index: number,
@@ -68,6 +71,7 @@ const LIVE_API: AdventureApi = {
   getCharacter: (id, o) => getCharacter(id, o),
   getSuggestions: (id, o) => getSuggestions(id, o),
   listItems: (id, owner, o) => listItems(id, owner, o),
+  getParty: (id, o) => getParty(id, o),
   advance: (id, index, intents, o) =>
     advanceStory(id, index, intents as Parameters<typeof advanceStory>[2], o)
 }
@@ -117,6 +121,9 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
   const sheet = ref<CharacterDetail | null>(null)
   const items = ref<ItemView[]>([])
   const suggestions = ref<SuggestionView[]>([])
+  /** A combat story's party and current foes; null until read, empty members
+   *  for a story without fights. */
+  const party = ref<PartyRosterResponse | null>(null)
   const loading = ref(true)
   const error = ref<string | null>(null)
   const actionError = ref<string | null>(null)
@@ -196,14 +203,16 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
 
   async function readSelf(): Promise<void> {
     if (!me.value) return
-    const [detail, owned, offered] = await Promise.allSettled([
+    const [detail, owned, offered, roster] = await Promise.allSettled([
       api.getCharacter(me.value, opts.value),
       api.listItems(worldId.value, me.value, opts.value),
-      api.getSuggestions(me.value, opts.value)
+      api.getSuggestions(me.value, opts.value),
+      api.getParty(worldId.value, opts.value)
     ])
     if (detail.status === 'fulfilled') sheet.value = detail.value
     if (owned.status === 'fulfilled') items.value = owned.value.members ?? []
     if (offered.status === 'fulfilled') suggestions.value = offered.value
+    if (roster.status === 'fulfilled') party.value = roster.value
   }
 
   async function refreshPlacesIfNew(view: PresentationResponse): Promise<void> {
@@ -227,6 +236,8 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
       view.open_run_id,
       view.run_state,
       view.revision,
+      // A fight's rolls land as their own event after the scene is told.
+      view.recent_event_id,
       art
     ].join('|')
   }
@@ -359,6 +370,7 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
     sheet,
     items,
     suggestions,
+    party,
     loading,
     error,
     actionError,

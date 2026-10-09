@@ -898,6 +898,16 @@
             "title": "Absolute Index",
             "type": "integer"
           },
+          "combat": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CombatLogView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "event_id": {
             "format": "uuid",
             "title": "Event Id",
@@ -1191,6 +1201,194 @@
           "absolute_index"
         ],
         "title": "ClockResponse",
+        "type": "object"
+      },
+      "CombatLogView": {
+        "additionalProperties": false,
+        "properties": {
+          "rolls": {
+            "items": {
+              "$ref": "#/components/schemas/CombatRollView"
+            },
+            "title": "Rolls",
+            "type": "array"
+          },
+          "scene_event_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scene Event Id"
+          }
+        },
+        "title": "CombatLogView",
+        "type": "object"
+      },
+      "CombatRollView": {
+        "additionalProperties": false,
+        "description": "One roll of a fight, in parts; ``text`` says it in one line.",
+        "properties": {
+          "ac": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ac"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor"
+          },
+          "actor_foe": {
+            "default": false,
+            "title": "Actor Foe",
+            "type": "boolean"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "damage_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Damage Type"
+          },
+          "dc": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dc"
+          },
+          "hp_after": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hp After"
+          },
+          "hp_before": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hp Before"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "natural": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Natural"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "roll": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roll"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
+          "target_foe": {
+            "default": false,
+            "title": "Target Foe",
+            "type": "boolean"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "using": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Using"
+          }
+        },
+        "required": [
+          "kind",
+          "text"
+        ],
+        "title": "CombatRollView",
         "type": "object"
       },
       "ConditionView": {
@@ -2240,6 +2438,41 @@
           "world_id"
         ],
         "title": "FocusResponse",
+        "type": "object"
+      },
+      "FoeView": {
+        "additionalProperties": false,
+        "description": "One foe of the party's latest fight, with its live hit points.",
+        "properties": {
+          "armor_class": {
+            "title": "Armor Class",
+            "type": "integer"
+          },
+          "hp_current": {
+            "title": "Hp Current",
+            "type": "integer"
+          },
+          "hp_max": {
+            "title": "Hp Max",
+            "type": "integer"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "hp_current",
+          "hp_max",
+          "armor_class"
+        ],
+        "title": "FoeView",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -4368,6 +4601,17 @@
       "PartyMemberView": {
         "additionalProperties": false,
         "properties": {
+          "armor_class": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Armor Class"
+          },
           "character_class": {
             "title": "Character Class",
             "type": "string"
@@ -4426,9 +4670,41 @@
             "title": "Name",
             "type": "string"
           },
+          "race": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Race"
+          },
+          "spell_slots": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Spell Slots",
+            "type": "array"
+          },
+          "spells": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Spells",
+            "type": "array"
+          },
           "version": {
             "title": "Version",
             "type": "integer"
+          },
+          "weapons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Weapons",
+            "type": "array"
           },
           "world_id": {
             "format": "uuid",
@@ -4450,6 +4726,24 @@
       "PartyRosterResponse": {
         "additionalProperties": false,
         "properties": {
+          "fight_index": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fight Index"
+          },
+          "foes": {
+            "items": {
+              "$ref": "#/components/schemas/FoeView"
+            },
+            "title": "Foes",
+            "type": "array"
+          },
           "members": {
             "items": {
               "$ref": "#/components/schemas/PartyMemberView"

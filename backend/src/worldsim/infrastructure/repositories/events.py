@@ -134,6 +134,21 @@ class SqlAlchemyEventRepository:
         ).scalars()
         return [self._to_domain(row) for row in rows]
 
+    async def latest_fight(self, world_id: UUID) -> WorldEvent | None:
+        """The newest event that rolled a fight with foes (combat stories)."""
+        row = (
+            await self._session.execute(
+                select(WorldEventRow)
+                .where(
+                    WorldEventRow.world_id == world_id,
+                    WorldEventRow.summary.has_key("foes"),
+                )
+                .order_by(WorldEventRow.sequence.desc())
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        return self._to_domain(row) if row is not None else None
+
     async def list_by_absolute(
         self, world_id: UUID, start_absolute: int, end_absolute: int
     ) -> list[WorldEvent]:

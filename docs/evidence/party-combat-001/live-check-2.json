@@ -1,0 +1,38 @@
+{
+ "world_id": "6aed3d88-76b7-4120-a5d1-3f50145baeb4",
+ "turns": [
+  {
+   "turn": 1,
+   "status": 200,
+   "seconds": 13.3
+  },
+  {
+   "turn": 2,
+   "status": 200,
+   "seconds": 11.3
+  },
+  {
+   "turn": 3,
+   "status": 200,
+   "seconds": 16.6
+  }
+ ],
+ "scenes": [
+  "The Hearth's back door bursts open, and a goblin raider lunges inside, knife flashing. Wren's longsword is out in a heartbeat, and they charge the intruder. The blade bites deep, but the goblin twists away, snarling. Ash arrives at the Hearth, breath quick, eyes scanning the room for the source of the commotion.",
+  "The Hearth's back door stands ajar, the morning sun casting a golden glow across the wooden floor. The scent of fresh bread lingers in the air, but the usual warmth of the hearth is overshadowed by the tension that still hangs from the previous day's skirmish. Wren, their longsword still in hand, stands alert, eyes scanning the room for any sign of the goblin raider. Ash, breath steadying, enters ",
+  "The Hearth's back door creaks open, revealing the golden glow of morning sun on the wooden floor. The scent of fresh bread still lingers, but the tension from the previous day's skirmish is palpable. Wren, longsword in hand, stands alert, eyes scanning the room. Ash steps in, their gaze meeting Wren's, and they begin to speak. Ash attempts to communicate with Wren, their voice low as they mention "
+ ],
+ "tags_in_prose": false,
+ "rolls": [
+  "Wren hits Goblin for 6 slashing. (7->1 HP)",
+  "Wren hits Goblin for 6 slashing. (1->0 HP)"
+ ],
+ "party": [
+  [
+   "Wren",
+   12,
+   12
+  ]
+ ],
+ "foes": []
+}

@@ -177,3 +177,24 @@ def parse_recruit_tags(text: str | None) -> list[RecruitTag]:
         for match in _RECRUIT_RE.finditer(text)
         if match.group(1).strip()
     ]
+
+
+#: A recruit line is all mechanics (``RECRUIT[Lyra]: elf ranger, level 3``).
+_RECRUIT_LINE_RE = re.compile(r"RECRUIT\s*\[[^\]]*\]\s*:?[^\n]*", re.IGNORECASE)
+#: The other tags lead their prose (``ATTACK[longsword at goblin]: The blade…``).
+_TAG_LEAD_RE = re.compile(
+    r"(?:ENCOUNTER|ATTACK|CAST|CONDITION)\s*\[[^\]]*\]\s*:?[ \t]*", re.IGNORECASE
+)
+
+
+def strip_combat_tags(text: str) -> str:
+    """What a reader sees of tagged narration: the prose, never the tags.
+
+    The stored beat keeps its tags (they are what the engine rolled from);
+    every read that shows narration passes it through here.
+    """
+    if "[" not in text:
+        return text
+    plain = _TAG_LEAD_RE.sub("", _RECRUIT_LINE_RE.sub("", text))
+    lines = [re.sub(r"[ \t]{2,}", " ", line).strip() for line in plain.split("\n")]
+    return "\n".join(line for line in lines if line).strip()

@@ -25,6 +25,8 @@ from worldsim.domain.rules.dnd.combat_resolve import (
     MonsterResult,
     MonsterState,
     TagOutcome,
+    combat_rolls,
+    combat_rolls_json,
     resolve_narration_tags,
 )
 from worldsim.domain.rules.dnd.core import (
@@ -81,6 +83,7 @@ from worldsim.domain.rules.dnd.party import (
     auto_spells,
     dnd_party_prompt,
     dnd_rules_text,
+    dnd_story_rules_text,
     first_subclass,
     recruit_sheet,
     spell_limits,
@@ -120,6 +123,7 @@ from worldsim.domain.rules.dnd.tags import (
     parse_condition_tag,
     parse_encounter_tag,
     parse_recruit_tags,
+    strip_combat_tags,
 )
 
 __all__ = [
@@ -163,6 +167,8 @@ __all__ = [
     "MonsterState",
     "TagOutcome",
     "apply_damage",
+    "combat_rolls",
+    "combat_rolls_json",
     "armor_ac",
     "auto_sheet",
     "auto_spells",
@@ -175,6 +181,7 @@ __all__ = [
     "describe_spell",
     "dnd_party_prompt",
     "dnd_rules_text",
+    "dnd_story_rules_text",
     "encounter_difficulty",
     "encounter_xp",
     "ensure_hp",
@@ -210,6 +217,7 @@ __all__ = [
     "sheet_mod",
     "sheet_prof",
     "slugify",
+    "strip_combat_tags",
     "spell_attack_bonus",
     "spell_dc",
     "spell_limits",

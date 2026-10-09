@@ -1,0 +1,35 @@
+{
+ "world_id": "26932028-d619-463c-86f1-a266b91a2ebb",
+ "turns": [
+  {
+   "turn": 1,
+   "status": 200,
+   "seconds": 14.6
+  },
+  {
+   "turn": 2,
+   "status": 200,
+   "seconds": 11.4
+  },
+  {
+   "turn": 3,
+   "status": 200,
+   "seconds": 11.2
+  }
+ ],
+ "scenes": [
+  "The Hearth's back door bursts open, and a goblin raider lunges in, knife glinting. Wren, a human fighter, reacts swiftly, drawing their longsword and preparing to strike.",
+  "The Hearth's back door stands ajar, the morning light spilling in as Wren, longsword in hand, braces for another strike. The goblin raider, caught off guard, stumbles back, its knife glinting in the dawn. Wren's eyes are sharp, their stance ready, as they prepare to swing again.",
+  "Wren lunges forward, their longsword flashing as they aim to finish the goblin. The blade arcs through the air, a deadly dance of steel and determination."
+ ],
+ "tags_in_prose": false,
+ "rolls": [],
+ "party": [
+  [
+   "Wren",
+   12,
+   12
+  ]
+ ],
+ "foes": []
+}

@@ -26,8 +26,10 @@ from worldsim.domain.activities import Activity, effective_progress
 from worldsim.domain.enums import NarrativeStatus, UserRole, Visibility
 from worldsim.domain.errors import DomainError
 from worldsim.domain.geography import spot_named
+from worldsim.domain.ids import derive_combat_event_id
 from worldsim.domain.journey import Journey, level_floor, level_for, title_for
 from worldsim.domain.narrative import NarrativeHook
+from worldsim.domain.rules.dnd import strip_combat_tags
 from worldsim.domain.time import absolute_index
 from worldsim.domain.world import Location
 from worldsim.interfaces.http import schemas as api
@@ -344,10 +346,16 @@ async def chronicle(
     scenes = await uow.scenes.scene_ids_for_events(
         [e.id for e in visible if e.phase_run_id is not None]
     )
+    # A fight's rolls are their own event; old ones name no scene, so the
+    # scene is found by the id the fight event derives from it.
+    fought_in = {derive_combat_event_id(e.id): e.id for e in visible}
     for event in visible:
-        beats = told.get(event.id, [])
-        text = " ".join(b.text for b in beats) or None
-        title = (beats[0].text if beats else _untold_title(event.event_type.value))[:120]
+        beats = [
+            plain for b in told.get(event.id, []) if (plain := strip_combat_tags(b.text).strip())
+        ]
+        text = " ".join(beats) or None
+        title = (beats[0] if beats else _untold_title(event.event_type.value))[:120]
+        combat = _combat_log(event.summary, event.random_result, fought_in.get(event.id))
         if not beats and event.summary.get("arrival") == "1":
             # A journey's end is told in one line, never narrated as a scene.
             people = [who.get(p, "Someone") for p in event.participant_ids] or ["Someone"]
@@ -375,6 +383,7 @@ async def chronicle(
                 scene_id=scene_id,
                 absolute_index=event.absolute_index,
                 idle=event.summary.get("idle") == "1",
+                combat=combat,
             )
         )
     high = await uow.events.max_sequence(world_id)
@@ -385,6 +394,35 @@ async def chronicle(
         next_after=scanned,
         has_more=high > scanned,
         watermark=high,
+    )
+
+
+_ROLLS = TypeAdapter(list[api.CombatRollView])
+
+
+def _combat_log(
+    summary: dict[str, str], random_result: str | None, scene_event: UUID | None
+) -> api.CombatLogView | None:
+    """A fight's rolls from its event: in parts when recorded so, else the
+    audit lines one per roll (fights rolled before the parts were kept)."""
+    fight = "rolls" in summary or "spar" in summary or {"tags", "unresolved"} <= summary.keys()
+    if not fight:
+        return None
+    rolls: list[api.CombatRollView] = []
+    try:
+        rolls = _ROLLS.validate_json(summary.get("rolls") or "[]")
+    except ValidationError:
+        rolls = []
+    if not rolls and random_result:
+        rolls = [
+            api.CombatRollView(kind="note", text=line.strip())
+            for line in random_result.split(" | ")
+            if line.strip()
+        ]
+    if not rolls:
+        return None
+    return api.CombatLogView(
+        scene_event_id=_as_uuid(summary.get("scene_event_id")) or scene_event, rolls=rolls
     )
 
 
