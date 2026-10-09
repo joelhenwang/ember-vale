@@ -35,6 +35,8 @@ export interface StoryRecord {
   /** Relative epoch — display strings are pre-composed (mockup parity). */
   lastPlayedAt: number
   lastPlayedLabel: string
+  /** A branched story: "Branched from The Ledger at Day 1, morning". */
+  origin?: string | null
 }
 
 export const storyShelf = reactive<StoryRecord[]>([

@@ -35,6 +35,8 @@ export interface LogLine {
   paintScene?: string | null
   /** Picture lines: the painted moment (or the one being painted). */
   picture?: SceneArtView
+  /** Time lines: the turn (absolute index) the heading opens. */
+  turn?: number
 }
 
 export interface LogInput {
@@ -93,7 +95,8 @@ export function buildLog({ entries, beats, me, hereId, pictures = [] }: LogInput
       out.push({
         key: `t:${entry.absolute_index}`,
         kind: 'time',
-        text: beatTimeLabel(entry.absolute_index)
+        text: beatTimeLabel(entry.absolute_index),
+        turn: entry.absolute_index
       })
     }
     if (near) {

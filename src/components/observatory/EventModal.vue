@@ -15,6 +15,7 @@ import { momentTitle } from '../../game/moments'
 import { moves } from '../../composables/useMotion'
 import IconX from '../icons/IconX.vue'
 import IconImage from '../icons/IconImage.vue'
+import IconBranch from '../icons/IconBranch.vue'
 
 const props = defineProps<{
   worldId: string
@@ -25,9 +26,16 @@ const props = defineProps<{
   placeOf: (id: string | null | undefined) => string | null
   /** This scene's newest picture that did not fail, if any. */
   picture?: SceneArtView | null
+  /** This entry's turn was kept: offer "Branch from here". */
+  branchable?: boolean
 }>()
 
-const emit = defineEmits<{ close: []; moment: [pictureId: string]; paint: [sceneId: string] }>()
+const emit = defineEmits<{
+  close: []
+  moment: [pictureId: string]
+  paint: [sceneId: string]
+  branch: [index: number]
+}>()
 
 const ready = computed(() =>
   props.picture?.status === 'ready' && props.picture.asset_id ? props.picture : null
@@ -166,6 +174,18 @@ function onBackdrop(event: MouseEvent): void {
           <p v-else class="em__narration">{{ entry.text ?? entry.title }}</p>
           <p v-if="failed" class="em__note">Could not load the scene's dialogue lines.</p>
         </div>
+        <footer v-if="branchable" class="em__foot">
+          <button
+            type="button"
+            class="em__act"
+            :title="`Start a new story from the end of ${beatTimeLabel(entry.absolute_index)}`"
+            @click="emit('branch', entry.absolute_index)">
+            <IconBranch :size="14" /> Branch from here
+          </button>
+          <span class="em__note"
+            >A new story from the end of this turn; this one stays as it is.</span
+          >
+        </footer>
       </div>
     </div>
   </dialog>
@@ -342,6 +362,14 @@ function onBackdrop(event: MouseEvent): void {
 .em__speaker {
   color: var(--gold);
   margin-right: 4px;
+}
+.em__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--line-soft);
 }
 .em__note {
   font-size: 13px;

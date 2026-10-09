@@ -25,6 +25,10 @@ import IconChevronRight from '../components/icons/IconChevronRight.vue'
 import MomentDialog from '../components/story/MomentDialog.vue'
 import { momentTitle, readyMoments, type Speaker } from '../game/moments'
 import PaintSceneDialog from '../components/story/PaintSceneDialog.vue'
+import BranchDialog from '../components/story/BranchDialog.vue'
+import IconBranch from '../components/icons/IconBranch.vue'
+import { useBranchPoints } from '../composables/useBranchPoints'
+import { canBranch } from '../game/branches'
 import { assetUrl } from '../api/worldsim'
 import FramedImage from '../components/ui/FramedImage.vue'
 import EmberField from '../components/decor/EmberField.vue'
@@ -172,6 +176,9 @@ const leads = computed(() =>
     : []
 )
 const nowIndex = computed(() => adv.presentation.value?.absolute_index ?? 0)
+const branches = useBranchPoints(storyId, nowIndex)
+/** The turn whose "Branch from here" was chosen (the confirmation is open). */
+const branchingTurn = ref<number | null>(null)
 
 /* ————— motion: numbers that glide, a level that stamps, a scene that breathes ————— */
 function statOf(key: string): number | null {
@@ -790,6 +797,14 @@ onMounted(() => {
                 :style="revealStyle(line.key)">
                 <template v-if="line.kind === 'time'">
                   <span class="log__time">{{ line.text }}</span>
+                  <button
+                    v-if="canBranch(branches.kept.value, line.turn)"
+                    type="button"
+                    class="log__branch ev-press"
+                    :title="`Start a new story from the end of ${line.text}`"
+                    @click="branchingTurn = line.turn ?? null">
+                    <IconBranch :size="13" /> Branch from here
+                  </button>
                 </template>
                 <template v-else-if="line.kind === 'dialogue'">
                   <span class="log__face" :title="nameOf(line.speakerId)">
@@ -1210,6 +1225,12 @@ onMounted(() => {
       :opts="adv.opts.value"
       @close="paintingScene = null"
       @painted="adv.onVisible()" />
+    <BranchDialog
+      :open="branchingTurn !== null"
+      :story-id="storyId"
+      :story-title="adv.title.value ?? 'Story'"
+      :turn="branchingTurn"
+      @close="branchingTurn = null" />
   </main>
 </template>
 
@@ -2072,6 +2093,35 @@ button.who:active > span {
   flex: 1;
   height: 1px;
   background: var(--line-soft);
+}
+.log__branch {
+  order: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: inherit;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--ink-soft, #6b5d43);
+  background: none;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  padding: 2px 10px;
+  cursor: pointer;
+  opacity: 0.75;
+  transition:
+    opacity 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+.log__line--time:hover .log__branch,
+.log__branch:focus-visible {
+  opacity: 1;
+  border-color: var(--ember);
+  color: var(--ember);
+}
+.log__line--time::after {
+  order: 2;
 }
 .log__time {
   font-size: 12px;

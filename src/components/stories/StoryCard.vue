@@ -18,6 +18,7 @@ import IconArchive from '../icons/IconArchive.vue'
 import IconArrowRight from '../icons/IconArrowRight.vue'
 import IconBook from '../icons/IconBook.vue'
 import IconClock from '../icons/IconClock.vue'
+import IconBranch from '../icons/IconBranch.vue'
 import IconDotsVertical from '../icons/IconDotsVertical.vue'
 import IconEye from '../icons/IconEye.vue'
 import IconInfo from '../icons/IconInfo.vue'
@@ -137,6 +138,9 @@ function menuArchive(): void {
         <span class="meta"><IconClock :size="14" /> {{ story.lastPlayedLabel }}</span>
       </p>
 
+      <p v-if="story.origin" class="scard__origin">
+        <IconBranch :size="13" /> <span>{{ story.origin }}</span>
+      </p>
       <p class="scard__blurb">{{ story.blurb }}</p>
 
       <ul class="scard__cast">
@@ -342,6 +346,21 @@ function menuArchive(): void {
 }
 .meta svg {
   color: #8a6d2f;
+}
+.scard__origin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  color: var(--ember);
+  min-width: 0;
+}
+.scard__origin span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .scard__blurb {
   margin-top: 9px;

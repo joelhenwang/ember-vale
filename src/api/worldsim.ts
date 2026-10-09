@@ -52,6 +52,8 @@ import type {
   SimulationStatus,
   Stage1AdvanceRequest,
   Stage1AdvanceResponse,
+  StoryBranchPoints,
+  StoryBranchResponse,
   StoryCreateResponse,
   StoryDetail,
   StoryDraftCreateRequest,
@@ -316,6 +318,26 @@ export function createStory(
     ...opts,
     method: 'POST',
     body: { draft_id: draftId, expected_draft_version: version },
+    idempotencyKey
+  })
+}
+
+/** Turns this story can branch from (their end state was kept). */
+export function branchPoints(storyId: string, opts: CallOptions = {}): Promise<StoryBranchPoints> {
+  return apiFetch<StoryBranchPoints>(`/stories/${storyId}/branch-points`, opts)
+}
+
+/** A new story continuing from the end of one turn; the original is untouched. */
+export function branchStory(
+  storyId: string,
+  absoluteIndex: number,
+  idempotencyKey: string,
+  opts: CallOptions = {}
+): Promise<StoryBranchResponse> {
+  return apiFetch<StoryBranchResponse>(`/stories/${storyId}/branch`, {
+    ...opts,
+    method: 'POST',
+    body: { absolute_index: absoluteIndex },
     idempotencyKey
   })
 }
