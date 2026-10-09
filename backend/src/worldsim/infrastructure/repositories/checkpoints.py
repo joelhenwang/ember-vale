@@ -680,7 +680,6 @@ class SqlAlchemyCheckpointRepository:
                 )
             ).all()
         ]
-        later_calls = "SELECT id FROM model_call WHERE world_id = :w AND phase_run_id = ANY(:runs)"
         call_tasks = [
             str(r[0])
             for r in (
@@ -715,19 +714,14 @@ class SqlAlchemyCheckpointRepository:
             "DELETE FROM scene_picture t WHERE t.world_id = :w"
             f" AND NOT coalesce(t.scene_id IN ({_SCENES}), false)",
         )
-        await run(
-            "context_manifest",
-            f"DELETE FROM context_manifest WHERE world_id = :w AND call_id IN ({later_calls})",
-            runs=later_runs,
-        )
-        await run(
-            "model_cost",
-            f"DELETE FROM model_cost WHERE world_id = :w AND call_id IN ({later_calls})",
-            runs=later_runs,
-        )
+        # Model calls of removed turns stay, with their cost and manifest: the
+        # money was spent, and the story's spend must not drop on a rewind.
+        # Only their links to the removed run and task go (a replayed turn
+        # derives the same run and task ids).
         await run(
             "model_call",
-            "DELETE FROM model_call WHERE world_id = :w AND phase_run_id = ANY(:runs)",
+            "UPDATE model_call SET phase_run_id = NULL, task_run_id = NULL"
+            " WHERE world_id = :w AND phase_run_id = ANY(:runs)",
             runs=later_runs,
         )
         await run(

@@ -225,8 +225,15 @@ def test_going_back_restores_the_turn_and_keeps_the_path_not_taken(story: Story)
         w=world,
     )
     assert calls_later > 0
+    spend = (
+        "SELECT count(*), coalesce(sum(prompt_cost_usd + completion_cost_usd), 0)"
+        " FROM model_cost WHERE world_id = :w"
+    )
+    spent_before = tuple(_run(_sql(spend, w=world))[0])
 
     result = _rewind(world, 2, "go-back")
+    # The money was spent: the story's calls and their cost stay after a rewind.
+    assert tuple(_run(_sql(spend, w=world))[0]) == spent_before
     assert result.copy is not None
     assert result.removed_turns == 3
     assert result.saved_title == path_not_taken_title("The Ledger", 5)

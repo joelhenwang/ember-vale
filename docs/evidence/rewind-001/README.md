@@ -153,9 +153,12 @@ is stored, and at 1 000 turns the story keeps 280 checkpoints instead of 1 000.
 
 ## Known gaps
 
-* Removed turns' model-call cost rows leave the story (the spec asked for it). The story's
-  own spend total drops, although the money was spent; the path-not-taken story does not
-  carry them either.
+* ~~Removed turns' model-call cost rows leave the story.~~ **Changed in review:** the
+  model calls of removed turns stay, with their cost and manifest, and only their links to
+  the removed run and task are cleared (a replayed turn derives the same run and task ids).
+  The money was spent, so the story's spend must not drop on a rewind;
+  `test_going_back_restores_the_turn_and_keeps_the_rest` asserts the cost rows and their
+  sum are unchanged.
 * Picture files nobody references any more stay on disk (no file garbage collection).
 * An image job the runner is painting at the moment of a rewind may finish onto a deleted
   job row; its asset then has no picture pointing at it.
