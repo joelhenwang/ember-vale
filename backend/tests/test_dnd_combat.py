@@ -216,7 +216,9 @@ def test_dead_pool_stays_down() -> None:
         _rng(0.5, 0.5),
         live=[_goblin(0)],
     )
-    assert report.outcomes[0].text == "Borin hits Goblin for 5 slashing. (0->0 HP)"
+    # A blow at a foe already down rolls nothing (combat-depth-002: the dice
+    # read "hits Goblin for 4 slashing (0->0 HP)").
+    assert report.outcomes == [] and len(report.unresolved) == 1
     assert report.monsters == {}
 
 

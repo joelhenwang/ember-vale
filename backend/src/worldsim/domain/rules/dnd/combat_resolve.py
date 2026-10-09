@@ -458,6 +458,11 @@ def resolve_narration_tags(
     def aim(text: str | None) -> _MonsterTarget:
         return pick_foe(text) or _monster_target(tables, monsters, text)
 
+    def slain(text: str | None) -> bool:
+        """The foe a tag aims at has already fallen: a blow there rolls nothing."""
+        foe = pick_foe(text)
+        return foe is not None and foe.key in monster_hp and monster_hp[foe.key] <= 0
+
     def foe_strike(inner: str, target_name: str | None) -> bool:
         """``ATTACK[goblin at Wren]``: a standing foe swings its first weapon
         at a party member. False when no such foe, target or weapon."""
@@ -614,6 +619,9 @@ def resolve_narration_tags(
                 target: str | _MonsterTarget = order[pos].name
                 tkey: str | None = keys[pos]
             else:
+                if slain(tag.target):
+                    unresolved.append(match.group(0))
+                    continue
                 target = aim(tag.target)
                 target_ac = target.ac
                 tkey = None
@@ -683,7 +691,12 @@ def resolve_narration_tags(
             attacker = None
             if tag is not None and tag.index:
                 attacker = next((s for s in order if tag.index in s.spells), None)
-            if tag is None or attacker is None or currents[id(attacker)] <= 0:
+            if (
+                tag is None
+                or attacker is None
+                or currents[id(attacker)] <= 0
+                or (_party_position(order, keys, tag.target) is None and slain(tag.target))
+            ):
                 unresolved.append(match.group(0))
                 continue
             akey = key_of[id(attacker)]

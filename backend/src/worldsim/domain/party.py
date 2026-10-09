@@ -136,7 +136,8 @@ def fight_over_line(
     if not foes or any(foe.hp_current > 0 for foe in foes):
         return None
     shown = ", ".join(foe.name for foe in foes)
-    return f"The fight is over: {shown} lie defeated. They do not rise, growl or strike again."
+    lie = "lies" if len(foes) == 1 else "lie"
+    return f"The fight is over: {shown} {lie} defeated. They do not rise, growl or strike again."
 
 
 def down_line(names: list[str]) -> str | None:

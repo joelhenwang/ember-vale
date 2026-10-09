@@ -561,7 +561,7 @@ def test_the_storyteller_hears_a_fight_is_over_and_who_is_down() -> None:
         )
 
     assert fight_over_line(3, 4, ["wolf"], [wolf(0)]) == (
-        "The fight is over: Wolf lie defeated. They do not rise, growl or strike again."
+        "The fight is over: Wolf lies defeated. They do not rise, growl or strike again."
     )
     assert fight_over_line(3, 4, ["wolf"], [wolf(4)]) is None  # still on
     assert fight_over_line(3, 9, ["wolf"], [wolf(0)]) is None  # long ago
