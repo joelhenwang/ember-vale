@@ -1,0 +1,372 @@
+[
+ {
+  "scenario": "fighter-goblins",
+  "run": 1,
+  "world_id": "0f01b025-0d93-4ff3-b893-f60cadb51066",
+  "class": "fighter",
+  "spell": "a spell",
+  "turns": [
+   {
+    "turn": 1,
+    "attempt": "Two goblins burst in through the Hearth's back door, knives out. I draw my longsword and attack the nearest goblin.",
+    "attacks": true,
+    "status": 200,
+    "seconds": 15.5,
+    "hero_rolls": 1,
+    "deeds": 0,
+    "storyteller_hero_rolls": 1,
+    "foe_strikes": 2,
+    "encounters": [
+     "Goblin 1, Goblin 2"
+    ],
+    "unresolved": 0,
+    "roll_lines": [
+     "Encounter: 2x Goblin (overwhelming, 150 adjusted XP).",
+     "Wren hits Goblin 1 for 4 slashing. (7->3 HP)",
+     "Goblin 1 misses Wren (7 vs AC 18).",
+     "Goblin 2 misses Wren (6 vs AC 18)."
+    ],
+    "prose": "The Hearth's back door bursts open, and two goblins charge in, knives flashing. Wren's hand flies to their longsword, and they step forward to meet the threat. Wren lunges at the nearest goblin, their blade a silver arc in the dim light."
+   },
+   {
+    "turn": 2,
+    "attempt": "I attack the goblin again with my longsword.",
+    "attacks": true,
+    "status": 200,
+    "seconds": 16.1,
+    "hero_rolls": 1,
+    "deeds": 1,
+    "storyteller_hero_rolls": 0,
+    "foe_strikes": 1,
+    "encounters": [],
+    "unresolved": 0,
+    "roll_lines": [
+     "Wren hits Goblin 1 for 8 slashing. (3->0 HP)",
+     "Goblin 2 hits Wren for 4 slashing. (12->8 HP)",
+     "Defeated Goblin 1: 50 XP, 50 each."
+    ],
+    "prose": "The Hearth's back door stands ajar, the morning light creeping in as Wren, longsword in hand, braces for another attack. The scent of damp earth and old wood lingers in the air, a reminder of the goblins' recent intrusion. Wren's eyes are fixed on the doorway, their grip tightening on the hilt of their weapon. Wren's longsword flashes again, a silver arc in the dim light, as they attempt to strike down the goblin. The blade cuts through the air with a hiss, aimed at the goblin's chest. Meanwhile, Ash's footsteps echo in the distance, approaching the Hearth with a sense of urgency. The sound of their boots on the cobblestones grows louder, signaling their imminent arrival."
+   },
+   {
+    "turn": 3,
+    "attempt": "I go after the second goblin.",
+    "attacks": true,
+    "status": 200,
+    "seconds": 20.7,
+    "hero_rolls": 1,
+    "deeds": 1,
+    "storyteller_hero_rolls": 0,
+    "foe_strikes": 0,
+    "encounters": [],
+    "unresolved": 0,
+    "roll_lines": [
+     "Wren hits Goblin 2 for 9 slashing. (7->0 HP)",
+     "Defeated Goblin 2: 50 XP, 50 each."
+    ],
+    "prose": "The Hearth's back door creaks open, the morning light spilling in as Wren, longsword in hand, steps out, their eyes scanning the area for any sign of the second goblin. Ash follows, their footsteps crunching on the damp earth. The scent of old wood and damp earth lingers in the air, a reminder of the recent goblin intrusion. Wren's grip tightens on the hilt of their longsword as they move forward, their senses on high alert. Ash walks beside them, their presence a silent support. The two of them are ready to face whatever comes next."
+   },
+   {
+    "turn": 4,
+    "attempt": "I strike at whichever goblin is still standing.",
+    "attacks": true,
+    "status": 200,
+    "seconds": 11.4,
+    "hero_rolls": 0,
+    "deeds": 0,
+    "storyteller_hero_rolls": 0,
+    "foe_strikes": 0,
+    "encounters": [],
+    "unresolved": 0,
+    "roll_lines": [],
+    "prose": "The back door of Hearth creaks open, the morning light spilling in as Wren, longsword in hand, steps out, their eyes scanning the area. The scent of old wood and damp earth lingers in the air. Ash follows, their footsteps crunching on the damp earth. The defeated goblins lie still, no longer a threat. Wren raises their longsword, ready to strike at the remaining goblin, but hesitates, sensing the fight is truly over. Ash stands by, waiting, their eyes alert for any sign of danger."
+   },
+   {
+    "turn": 5,
+    "attempt": "I catch my breath and look around the room.",
+    "attacks": false,
+    "status": 200,
+    "seconds": 8.9,
+    "hero_rolls": 0,
+    "deeds": 0,
+    "storyteller_hero_rolls": 0,
+    "foe_strikes": 0,
+    "encounters": [],
+    "unresolved": 0,
+    "roll_lines": [],
+    "prose": "The back door of Hearth creaks open, the morning light spilling in as Wren, longsword in hand, steps out, their eyes scanning the area. The scent of old wood and damp earth lingers in the air. Ash lingers by the door, counting the bells, as Wren tries to catch their breath and look around the room."
+   },
+   {
+    "turn": 6,
+    "attempt": "If anything still threatens us, I attack it.",
+    "attacks": true,
+    "status": 200,
+    "seconds": 14.1,
+    "hero_rolls": 0,
+    "deeds": 0,
+    "storyteller_hero_rolls": 0,
+    "foe_strikes": 0,
+    "encounters": [],
+    "unresolved": 0,
+    "roll_lines": [],
+    "prose": "Wren's grip tightens on the longsword, their stance shifting as they prepare to face any lingering threats. Ash remains by the door, their eyes fixed on the horizon, waiting for any sign of danger."
+   }
+  ],
+  "foes_left": [],
+  "hero_after": {
+   "level": 1,
+   "xp": 100,
+   "hp_current": 8,
+   "hp_max": 12,
+   "choices": []
+  },
+  "spend_usd": 0.02264
+ },
+ {
+  "scenario": "wizard-wolf",
+  "run": 1,
+  "world_id": "9db29eda-737a-4739-93f5-0132e0b9dfa7",
+  "class": "wizard",
+  "spell": "Fire Bolt",
+  "turns": [
+   {
+    "turn": 1,
+    "attempt": "A grey wolf slinks into the Hearth, growling at me. I hurl a fire bolt at the wolf.",
+    "attacks": true,
+    "status": 200,
+    "seconds": 12.6,
+    "hero_rolls": 1,
+    "deeds": 1,
+    "storyteller_hero_rolls": 0,
+    "foe_strikes": 1,
+    "encounters": [
+     "Wolf"
+    ],
+    "unresolved": 0,
+    "roll_lines": [
+     "Encounter: Wolf (medium, 50 adjusted XP).",
+     "Fire Bolt hits Wolf for 5 fire. (11->6 HP)",
+     "Wolf hits Wren for 6 piercing. (8->2 HP)"
+    ],
+    "prose": "The Hearth is warm and inviting, the fire crackling in the hearth casting a soft glow. Ash enters the Hearth, their eyes scanning the room. Wren, already present, turns to face the door, a look of concern on their face. Ash speaks to Wren about a wolf that has appeared at the Hearth, its growls echoing through the room. Wren's eyes widen as they hear Ash's words, and they quickly cast a spell, a fire bolt streaking towards the wolf."
+   },
+   {
+    "turn": 2,
+    "attempt": "I cast fire bolt at the wolf again.",
+    "attacks": true,
+    "status": 200,
+    "seconds": 12.0,
+    "hero_rolls": 1,
+    "deeds": 0,
+    "storyteller_hero_rolls": 1,
+    "foe_strikes": 1,
+    "encounters": [],
+    "unresolved": 0,
+    "roll_lines": [
+     "Fire Bolt misses Wolf (8 vs AC 13).",
+     "Wolf misses Wren (8 vs AC 12)."
+    ],
+    "prose": "Ash catches Wren's sleeve and asks about the wolf that has appeared at the Hearth, its growls echoing through the room. Wren raises their hands, fingers dancing in the air as they prepare to cast a spell. Wren hurls a mote of flame at the wolf, aiming to drive it back."
+   },
+   {
+    "turn": 3,
+    "attempt": "I back away and throw another fire bolt at it.",
+    "attacks": true,
+    "status": 200,
+    "seconds": 11.3,
+    "hero_rolls": 1,
+    "deeds": 0,
+    "storyteller_hero_rolls": 1,
+    "foe_strikes": 0,
+    "encounters": [],
+    "unresolved": 0,
+    "roll_lines": [
+     "Fire Bolt hits Wolf for 7 fire. (6->0 HP)",
+     "Defeated Wolf: 50 XP, 50 each."
+    ],
+    "prose": "The Hearth is alive with the crackle of the hearth and the scent of burning wood. Ash and Wren stand near the door, the wolf's growls still echoing in the room. Ash turns to Wren, their voice urgent. \"Wren, we need to figure out what's driving the wolf to act this way.\" Wren nods, their fingers dancing in the air as they prepare another spell. \"I'll try to drive it back with another fire bolt,\" they say, stepping back to gain some distance. \"But I need to be careful not to hurt it too badly.\" Wren hurls a mote of flame at the wolf, aiming to drive it back."
+   },
+   {
+    "turn": 4,
+    "attempt": "I stab at the wolf with my dagger.",
+    "attacks": true,
+    "status": 200,
+    "seconds": 14.7,
+    "hero_rolls": 0,
+    "deeds": 0,
+    "storyteller_hero_rolls": 0,
+    "foe_strikes": 0,
+    "encounters": [],
+    "unresolved": 0,
+    "roll_lines": [],
+    "prose": "Ash attempts to communicate with Wren, their eyes meeting in a silent understanding. They need to uncover the wolf's motives. Wren tries to I stab at the wolf with my dagger, their fingers dancing in the air as they prepare a spell. \"Be careful, Wren. The wolf is quick.\""
+   },
+   {
+    "turn": 5,
+    "attempt": "I look around the room.",
+    "attacks": false,
+    "status": 200,
+    "seconds": 15.2,
+    "hero_rolls": 0,
+    "deeds": 0,
+    "storyteller_hero_rolls": 0,
+    "foe_strikes": 0,
+    "encounters": [],
+    "unresolved": 0,
+    "roll_lines": [],
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow over the room. Ash and Wren stand near the defeated wolf, its form still. Ash's eyes meet Wren's, a silent understanding passing between them. Wren's fingers twitch, ready to cast a spell, but they pause, looking around the room, their dagger at the ready."
+   },
+   {
+    "turn": 6,
+    "attempt": "I cast fire bolt at anything still hostile.",
+    "attacks": true,
+    "status": 200,
+    "seconds": 11.6,
+    "hero_rolls": 0,
+    "deeds": 0,
+    "storyteller_hero_rolls": 0,
+    "foe_strikes": 0,
+    "encounters": [],
+    "unresolved": 0,
+    "roll_lines": [],
+    "prose": "Ash attempts to communicate with Wren, their voice low and cautious, \"What do you think the wolf's behavior means?\" Wren nods, their eyes narrowing as they consider the question. They turn to Ash, \"I'm not sure, but we should be ready for anything. I'll cast a fire bolt if I see any more movement.\""
+   }
+  ],
+  "foes_left": [],
+  "hero_after": {
+   "level": 1,
+   "xp": 50,
+   "hp_current": 2,
+   "hp_max": 8,
+   "choices": []
+  },
+  "spend_usd": 0.02284
+ },
+ {
+  "scenario": "cleric-bandit",
+  "run": 1,
+  "world_id": "5b456dfb-fd27-4049-9022-773a3739ba10",
+  "class": "cleric",
+  "spell": "Sacred Flame",
+  "turns": [
+   {
+    "turn": 1,
+    "attempt": "A bandit kicks open the Hearth's door and swings a club at me. I raise my mace and strike the bandit.",
+    "attacks": true,
+    "status": 200,
+    "seconds": 8.3,
+    "hero_rolls": 1,
+    "deeds": 1,
+    "storyteller_hero_rolls": 0,
+    "foe_strikes": 1,
+    "encounters": [
+     "Bandit"
+    ],
+    "unresolved": 0,
+    "roll_lines": [
+     "Encounter: Bandit (easy, 25 adjusted XP).",
+     "Wren misses Bandit (10 vs AC 12).",
+     "Bandit misses Wren (16 vs AC 18)."
+    ],
+    "prose": "The Hearth's door creaks open, and a bandit bursts in, club swinging. Wren raises their mace, ready to strike."
+   },
+   {
+    "turn": 2,
+    "attempt": "I hit the bandit with my mace again.",
+    "attacks": true,
+    "status": 200,
+    "seconds": 12.6,
+    "hero_rolls": 1,
+    "deeds": 0,
+    "storyteller_hero_rolls": 1,
+    "foe_strikes": 1,
+    "encounters": [],
+    "unresolved": 0,
+    "roll_lines": [
+     "Wren hits Bandit for 9 bludgeoning. Critical! (11->2 HP)",
+     "Bandit misses Wren (8 vs AC 18)."
+    ],
+    "prose": "The Hearth's door creaks open again, the morning light spilling in as Wren, mace in hand, steps forward. The bandit, still unhurt, raises their club, ready to strike back. Wren tries to hit the bandit with their mace again, the cleric's eyes focused on the bandit's movements. Wren swings their mace at the bandit, the weapon cutting through the air with a whoosh."
+   },
+   {
+    "turn": 3,
+    "attempt": "I call down sacred flame on the bandit.",
+    "attacks": true,
+    "status": 200,
+    "seconds": 10.1,
+    "hero_rolls": 1,
+    "deeds": 1,
+    "storyteller_hero_rolls": 0,
+    "foe_strikes": 1,
+    "encounters": [],
+    "unresolved": 0,
+    "roll_lines": [
+     "Sacred Flame Bandit saves (21 vs DC 13), unharmed for 0 radiant. (2->2 HP)",
+     "Bandit misses Wren (12 vs AC 18)."
+    ],
+    "prose": "The market square is alive with the hum of voices and the scent of fresh bread. Ash, having left the bustling square, now stands at the door of Hearth, the baker's shop, ready to assist with the flour shortage. Wren, meanwhile, faces the wounded bandit, their hand raised as they prepare to call down sacred flame."
+   },
+   {
+    "turn": 4,
+    "attempt": "I cast cure wounds on myself.",
+    "attacks": false,
+    "status": 200,
+    "seconds": 14.0,
+    "hero_rolls": 1,
+    "deeds": 0,
+    "storyteller_hero_rolls": 1,
+    "foe_strikes": 0,
+    "encounters": [],
+    "unresolved": 0,
+    "roll_lines": [
+     "Wren heals Wren for 4. (10->10 HP)"
+    ],
+    "prose": "The door of Hearth creaks open, revealing the warm glow of the baker's shop. Ash steps inside, the scent of fresh bread filling the air, while outside, Wren stands poised, their hand raised, ready to cast a spell. Ash turns to Wren, their voice steady as they speak of the baker's urgent need for flour, a plea for help in the face of the shortage. Wren, however, is focused on the wounded bandit before them, their hand glowing with the promise of healing. Wren begins the incantation, their voice a soothing chant as they prepare to mend their own wounds."
+   },
+   {
+    "turn": 5,
+    "attempt": "I attack the bandit.",
+    "attacks": true,
+    "status": 200,
+    "seconds": 10.8,
+    "hero_rolls": 1,
+    "deeds": 0,
+    "storyteller_hero_rolls": 1,
+    "foe_strikes": 1,
+    "encounters": [],
+    "unresolved": 0,
+    "roll_lines": [
+     "Wren misses Bandit (8 vs AC 12).",
+     "Bandit misses Wren (12 vs AC 18)."
+    ],
+    "prose": "Ash attempts to communicate with Wren, explaining the baker's desperate need for flour. Wren, however, is focused on the task at hand, their eyes locked on the bandit. Wren tries to attack the bandit, their hand tightening around their mace. The bandit, badly wounded, braces for the impact. Wren lunges forward, their mace swinging towards the bandit."
+   },
+   {
+    "turn": 6,
+    "attempt": "I look around the room.",
+    "attacks": false,
+    "status": 200,
+    "seconds": 9.4,
+    "hero_rolls": 1,
+    "deeds": 0,
+    "storyteller_hero_rolls": 1,
+    "foe_strikes": 0,
+    "encounters": [],
+    "unresolved": 0,
+    "roll_lines": [
+     "Wren hits Bandit for 12 bludgeoning. Critical! (2->0 HP)",
+     "Defeated Bandit: 25 XP, 25 each."
+    ],
+    "prose": "The hearth's glow flickers as Ash tries to reason with Wren, their voice tense with urgency, but Wren's focus remains on the wounded bandit, their grip tightening on their mace. The bandit, battered and bruised, braces for the inevitable strike. Wren's eyes narrow, their body coiled like a spring, ready to unleash their mace upon the bandit. Wren swings their mace with a fierce cry, aiming to end the bandit's threat."
+   }
+  ],
+  "foes_left": [],
+  "hero_after": {
+   "level": 1,
+   "xp": 25,
+   "hp_current": 10,
+   "hp_max": 10,
+   "choices": []
+  },
+  "spend_usd": 0.0214
+ }
+]
