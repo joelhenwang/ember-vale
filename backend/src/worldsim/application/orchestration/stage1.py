@@ -1613,8 +1613,13 @@ class Stage1Orchestrator:
 
             async def _day_end() -> None:
                 day = index // PHASES_PER_DAY + 1
-                await self._summarize_day(world_id, run_id, index, day, runtime)
-                await self._promote_memories(world_id, run_id, index, day, runtime)
+                try:
+                    await self._summarize_day(world_id, run_id, index, day, runtime)
+                    await self._promote_memories(world_id, run_id, index, day, runtime)
+                finally:
+                    # The day's summaries and the salience they bump belong
+                    # to the turn that ended the day: keep it after them.
+                    await self._keep_turn(world_id, index)
 
             if self._narration is not None:
                 # Midnight turns took 26-36 s with this inline; the next
@@ -1623,6 +1628,9 @@ class Stage1Orchestrator:
             else:
                 with _timed(timings, "day_end"):
                     await _day_end()
+        else:
+            with _timed(timings, "checkpoint"):
+                await self._keep_turn(world_id, index)
         timings["total"] = int((time.monotonic() - phase_started) * 1000)
         _phase_log.info(
             "phase %s timings %s",
@@ -1639,6 +1647,26 @@ class Stage1Orchestrator:
             quiet=quiet,
             timings_ms=timings,
         )
+
+    async def _keep_turn(self, world_id: UUID, index: int) -> None:
+        """Keep the story's state at this turn's end, so it can branch from it.
+
+        At a safe boundary: the turn's scenes are committed and the next
+        beat waits for this. A failure is logged, never raised: the turn
+        stands, it just can't be branched from.
+        """
+        try:
+            async with self._factory() as uow:
+                size = await uow.checkpoints.capture(world_id, index)
+                await uow.commit()
+            _phase_log.debug(
+                "turn kept", extra={"world_id": str(world_id), "phase_index": index, "bytes": size}
+            )
+        except Exception:
+            _phase_log.exception(
+                "keeping a turn for branching failed",
+                extra={"world_id": str(world_id), "phase_index": index},
+            )
 
     async def _queue_moment(
         self,

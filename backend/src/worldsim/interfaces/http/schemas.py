@@ -1284,6 +1284,18 @@ class ConditionsResponse(BaseModel):
     conditions: list[ConditionView] = Field(default_factory=list)
 
 
+class StoryOrigin(BaseModel):
+    """Where a branched story came from: the story and the turn."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    story_id: UUID
+    title: str
+    absolute_index: int
+    #: "Day 2, evening"
+    time_label: str
+
+
 class StorySummary(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -1298,6 +1310,7 @@ class StorySummary(BaseModel):
     last_played_at: datetime | None = None
     archived: bool = False
     status: str
+    branched_from: StoryOrigin | None = None
 
 
 class StoryDetail(BaseModel):
@@ -1319,6 +1332,7 @@ class StoryDetail(BaseModel):
     #: frame [x, y, w, h]; None: the story has no cover.
     cover_asset_id: UUID | None = None
     cover_frame: list[float] | None = None
+    branched_from: StoryOrigin | None = None
 
 
 class StoryListResponse(BaseModel):
@@ -1673,6 +1687,36 @@ class StoryCreateResponse(BaseModel):
     character_id: UUID | None = None
     replayed: bool = False
     art_registered: int = 0
+
+
+class StoryBranchRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    #: The turn to branch from: the new story continues from its end.
+    absolute_index: int = Field(ge=1)
+    #: None: "<story> — from Day N, <time>".
+    title: str | None = Field(default=None, max_length=128)
+
+
+class StoryBranchResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    story_id: UUID
+    world_id: UUID
+    title: str
+    role: str
+    character_id: UUID | None = None
+    absolute_index: int
+    replayed: bool = False
+
+
+class StoryBranchPoints(BaseModel):
+    """Turns a story can branch from (the state at their end was kept)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    story_id: UUID
+    turns: list[int]
 
 
 class AutoplayView(BaseModel):

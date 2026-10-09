@@ -6680,6 +6680,110 @@
         "title": "StoryArchiveRequest",
         "type": "object"
       },
+      "StoryBranchPoints": {
+        "additionalProperties": false,
+        "description": "Turns a story can branch from (the state at their end was kept).",
+        "properties": {
+          "story_id": {
+            "format": "uuid",
+            "title": "Story Id",
+            "type": "string"
+          },
+          "turns": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Turns",
+            "type": "array"
+          }
+        },
+        "required": [
+          "story_id",
+          "turns"
+        ],
+        "title": "StoryBranchPoints",
+        "type": "object"
+      },
+      "StoryBranchRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "absolute_index": {
+            "minimum": 1.0,
+            "title": "Absolute Index",
+            "type": "integer"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "absolute_index"
+        ],
+        "title": "StoryBranchRequest",
+        "type": "object"
+      },
+      "StoryBranchResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "absolute_index": {
+            "title": "Absolute Index",
+            "type": "integer"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "replayed": {
+            "default": false,
+            "title": "Replayed",
+            "type": "boolean"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "story_id": {
+            "format": "uuid",
+            "title": "Story Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "world_id": {
+            "format": "uuid",
+            "title": "World Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "story_id",
+          "world_id",
+          "title",
+          "role",
+          "absolute_index"
+        ],
+        "title": "StoryBranchResponse",
+        "type": "object"
+      },
       "StoryCreateRequest": {
         "additionalProperties": false,
         "properties": {
@@ -6767,6 +6871,16 @@
               }
             ],
             "title": "Archived At"
+          },
+          "branched_from": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StoryOrigin"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "cover_asset_id": {
             "anyOf": [
@@ -7045,6 +7159,37 @@
           }
         },
         "title": "StoryListResponse",
+        "type": "object"
+      },
+      "StoryOrigin": {
+        "additionalProperties": false,
+        "description": "Where a branched story came from: the story and the turn.",
+        "properties": {
+          "absolute_index": {
+            "title": "Absolute Index",
+            "type": "integer"
+          },
+          "story_id": {
+            "format": "uuid",
+            "title": "Story Id",
+            "type": "string"
+          },
+          "time_label": {
+            "title": "Time Label",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "story_id",
+          "title",
+          "absolute_index",
+          "time_label"
+        ],
+        "title": "StoryOrigin",
         "type": "object"
       },
       "StoryPatchRequest": {
@@ -7403,6 +7548,16 @@
             "default": false,
             "title": "Archived",
             "type": "boolean"
+          },
+          "branched_from": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StoryOrigin"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "day": {
             "title": "Day",
@@ -14065,6 +14220,120 @@
         "summary": "Presence Route",
         "tags": [
           "autoplay"
+        ]
+      }
+    },
+    "/api/v1/stories/{story_id}/branch": {
+      "post": {
+        "description": "A new story continuing from the end of one turn; the original is untouched.\n\nAtomic and idempotent (same key and body: the same branch). Refused,\nwith a plain reason, when the turn's state was not kept or is still\nbeing written: a branch is never approximated or rewritten.",
+        "operationId": "branch_story_route_api_v1_stories__story_id__branch_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "story_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Story Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoryBranchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoryBranchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Branch Story Route",
+        "tags": [
+          "stories"
+        ]
+      }
+    },
+    "/api/v1/stories/{story_id}/branch-points": {
+      "get": {
+        "description": "Turns this story can branch from: those whose end state was kept.",
+        "operationId": "read_branch_points_api_v1_stories__story_id__branch_points_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "story_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Story Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoryBranchPoints"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Branch Points",
+        "tags": [
+          "stories"
         ]
       }
     },

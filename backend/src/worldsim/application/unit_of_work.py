@@ -10,6 +10,7 @@ from worldsim.application.ports.repositories import (
     AssetRepository,
     AutoplayRepository,
     CharacterRepository,
+    CheckpointRepository,
     CommandRepository,
     ConditionRepository,
     CostRepository,
@@ -102,6 +103,8 @@ class UnitOfWork(Protocol):
     def pictures(self) -> PictureRepository: ...
     @property
     def story_prompts(self) -> StoryPromptRepository: ...
+    @property
+    def checkpoints(self) -> CheckpointRepository: ...
     @property
     def roles(self) -> RoleRepository: ...
     @property

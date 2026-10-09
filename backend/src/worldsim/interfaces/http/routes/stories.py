@@ -14,6 +14,7 @@ from fastapi import APIRouter, Header, Request
 from worldsim.application.settings.resolution import resolve_pin
 from worldsim.application.stories.create import COVER, story_cover
 from worldsim.application.stories.validation import validate_draft as validate_draft_payload
+from worldsim.domain.branches import StoryBranchOrigin
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.framing import as_list
 from worldsim.domain.ids import new_story_draft_id
@@ -24,7 +25,7 @@ from worldsim.domain.stories import (
     StoryCatalogEntry,
     StoryDraft,
 )
-from worldsim.domain.time import absolute_index, utcnow
+from worldsim.domain.time import absolute_index, phase_label, utcnow
 from worldsim.domain.world import World
 from worldsim.interfaces.http import schemas as api
 from worldsim.interfaces.http.routes.roles import role_from
@@ -40,11 +41,27 @@ async def _summary(request: Request, world_id: UUID) -> api.StorySummary:
         entry = await uow.stories.get_catalog(world_id)
         world = await uow.worlds.get(world_id)
         grant = await uow.roles.get_for_world(world_id)
-    return _summary_of(request, entry, world, grant)
+        origin = (await uow.checkpoints.origins([world_id])).get(world_id)
+    return _summary_of(request, entry, world, grant, origin)
+
+
+def _origin_view(origin: StoryBranchOrigin | None) -> api.StoryOrigin | None:
+    if origin is None:
+        return None
+    return api.StoryOrigin(
+        story_id=origin.source_world_id,
+        title=origin.source_title,
+        absolute_index=origin.source_index,
+        time_label=phase_label(origin.source_index),
+    )
 
 
 def _summary_of(
-    request: Request, entry: StoryCatalogEntry, world: World, grant: RoleGrant | None
+    request: Request,
+    entry: StoryCatalogEntry,
+    world: World,
+    grant: RoleGrant | None,
+    origin: StoryBranchOrigin | None = None,
 ) -> api.StorySummary:
     world_id = entry.world_id
     role, viewer = role_from(request, grant)
@@ -66,6 +83,7 @@ def _summary_of(
         last_played_at=entry.last_played_at,
         archived=entry.archived_at is not None,
         status=status,
+        branched_from=_origin_view(origin),
     )
 
 
@@ -100,12 +118,15 @@ async def list_stories(
         ids = [entry.world_id for entry in entries]
         worlds = await uow.worlds.get_many(ids)
         grants = await uow.roles.get_for_worlds(ids)
+        origins = await uow.checkpoints.origins(ids)
     items: list[api.StorySummary] = []
     for entry in entries:
         world = worlds.get(entry.world_id)
         if world is None:
             raise DomainError(ErrorCode.NOT_FOUND, f"unknown world: {entry.world_id}")
-        summary = _summary_of(request, entry, world, grants.get(entry.world_id))
+        summary = _summary_of(
+            request, entry, world, grants.get(entry.world_id), origins.get(entry.world_id)
+        )
         if status == "in_progress" and summary.status != "active":
             continue
         if status == "completed" and (summary.status == "active" or summary.archived):
@@ -158,6 +179,7 @@ async def read_story(story_id: UUID, request: Request) -> api.StoryDetail:
             if cover is not None and cover.asset_id == entry.cover_asset_id
             else None
         ),
+        branched_from=summary.branched_from,
     )
 
 
@@ -484,4 +506,54 @@ async def create_new_story(
         character_id=result.character_id,
         replayed=result.replayed,
         art_registered=art,
+    )
+
+
+@router.get("/stories/{story_id}/branch-points", response_model=api.StoryBranchPoints)
+async def read_branch_points(story_id: UUID, request: Request) -> api.StoryBranchPoints:
+    """Turns this story can branch from: those whose end state was kept."""
+    from worldsim.application.stories.branch import branchable_turns
+
+    state = request.app.state.app_state
+    async with state.uow_factory()() as uow:
+        await uow.stories.get_catalog(story_id)
+        turns = await branchable_turns(uow, story_id)
+    return api.StoryBranchPoints(story_id=story_id, turns=turns)
+
+
+@router.post("/stories/{story_id}/branch", response_model=api.StoryBranchResponse)
+async def branch_story_route(
+    story_id: UUID,
+    body: api.StoryBranchRequest,
+    request: Request,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> api.StoryBranchResponse:
+    """A new story continuing from the end of one turn; the original is untouched.
+
+    Atomic and idempotent (same key and body: the same branch). Refused,
+    with a plain reason, when the turn's state was not kept or is still
+    being written: a branch is never approximated or rewritten.
+    """
+    from worldsim.application.stories.branch import branch_story
+    from worldsim.application.stories.create import OPERATOR
+
+    state = request.app.state.app_state
+    narration = state.narration
+    result = await branch_story(
+        state.uow_factory(),
+        story_id,
+        body.absolute_index,
+        body.title,
+        OPERATOR,
+        idempotency_key or "",
+        writing=narration is not None and narration.busy(story_id),
+    )
+    return api.StoryBranchResponse(
+        story_id=result.story_id,
+        world_id=result.world_id,
+        title=result.title,
+        role=result.role,
+        character_id=result.character_id,
+        absolute_index=result.absolute_index,
+        replayed=result.replayed,
     )
