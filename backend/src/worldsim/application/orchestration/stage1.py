@@ -145,6 +145,7 @@ from worldsim.domain.commands import (
     SparAction,
     TakeAction,
     TransferAction,
+    WaitAction,
 )
 from worldsim.domain.context import ContextEnvelope, ContextRequest, SourceCandidate
 from worldsim.domain.director import (
@@ -3180,6 +3181,14 @@ class Stage1Orchestrator:
             await self._finish_task(retry_id, owner, True)
         await self._remember_intention(world_id, character.id, result.get("raw_response"))
         await self._finish_task(task_run_id, owner, True)
+        if isinstance(intent.action, MoveAction) and await self._is_companion(
+            world_id, character.id
+        ):
+            # The party travels together: a companion leaves only with the
+            # hero (following above). Told so, Ash still walked off mid-fight
+            # (companions-002 run-1), so the walk away becomes staying put.
+            stay = WaitAction(character_id=character.id, snapshot_id=sealed.snapshot_id)
+            intent = intent.model_copy(update={"action": stay})
         return intent
 
     async def _answered(self, world_id: UUID, character: Character) -> list[Exchange]:
@@ -3607,6 +3616,15 @@ class Stage1Orchestrator:
             ("grant", world_id), lambda uow: uow.roles.get_for_world(world_id)
         )
         return roster, grant.character_id if grant is not None else None
+
+    async def _is_companion(self, world_id: UUID, character_id: UUID) -> bool:
+        """A linked companion of the played hero (not the hero)."""
+        roster, played = await self._companions(world_id)
+        return (
+            played is not None
+            and played != character_id
+            and any(m.character_id == character_id for m in roster)
+        )
 
     async def _party_note(self, world_id: UUID, character: Character) -> str | None:
         """A linked companion's note: in the party, and the fight that is on."""

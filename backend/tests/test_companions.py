@@ -356,7 +356,11 @@ def test_a_companion_follows_the_hero_and_keeps_the_party_in_mind(
                 "topic": "Yes, I will come.",
             }
             return json.dumps({**reply, "character_id": ash, "snapshot_id": ash})
-        if "You decide" in system or "You react" in system:
+        if "You decide" in system:
+            # Ash would rather go to the market alone: a companion stays.
+            alone = {"family": "move", "destination_location_id": places["Market"]}
+            return json.dumps({**alone, "character_id": ash, "snapshot_id": ash})
+        if "You react" in system:
             return json.dumps({"family": "wait", "character_id": ash, "snapshot_id": ash})
         if "You resolve" in system:
             return json.dumps({"outcome": "success", "effects": [], "rationale": "Fine."})
@@ -387,6 +391,16 @@ def test_a_companion_follows_the_hero_and_keeps_the_party_in_mind(
             headers=headers,
         )
         assert moved.status_code == 200, moved.text
+        if index == 2:
+            here = {
+                c["name"]: c.get("location_id")
+                for c in client.get(
+                    "/api/v1/world/presentation",
+                    params={"world_id": str(world_id)},
+                    headers=headers,
+                ).json()["cast"]
+            }
+            assert here["Ash"] == here["Wren"] != places["Market"], here
     assert noted, "Ash never heard that they travel with Wren's party"
     where = {
         c["name"]: c.get("location_id")
