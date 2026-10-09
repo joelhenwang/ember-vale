@@ -32,6 +32,19 @@ class PartyMember(BaseModel):
     version: int = Field(default=0, ge=0)
 
 
+def party_in_scene(roster: list[PartyMember], participants: list[str]) -> list[PartyMember]:
+    """The roster when the party is in this scene, else nobody.
+
+    The party travels with its linked hero, so a scene without them has no
+    party. A roster with no linked member at all (a party begun by hand)
+    counts everywhere, as before.
+    """
+    linked = [m for m in roster if m.character_id is not None]
+    if not linked or any(str(m.character_id) in participants for m in linked):
+        return roster
+    return []
+
+
 def party_name_key(name: str) -> str:
     """Dedupe key for member names (monolith compares lowercased names)."""
     return slugify(name)

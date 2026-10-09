@@ -237,6 +237,7 @@ from worldsim.domain.party import (
     fight_keys,
     foes_line,
     foes_on,
+    party_in_scene,
     party_name_key,
     slots_line,
 )
@@ -4405,10 +4406,6 @@ class Stage1Orchestrator:
             self._dnd_data = load_data(DND_DATA_DIR)
         return self._dnd_data
 
-    async def _roster_present(self, world_id: UUID) -> bool:
-        async with self._factory() as uow:
-            return bool(await uow.party.list_for_world(world_id))
-
     async def _narrate_scene(
         self,
         world_id: UUID,
@@ -4447,7 +4444,10 @@ class Stage1Orchestrator:
             participants = [
                 str(p.character_id) for p in (await uow.scenes.get_scene(scene.id)).participants
             ]
-            roster = await uow.party.list_for_world(world_id)
+            # The party's sheets and rules go only to a scene the party is in:
+            # someone waiting at the market far from the fight gets plain
+            # narration, as in a story without fights.
+            roster = party_in_scene(await uow.party.list_for_world(world_id), participants)
             # A fight that is on: the narrator strikes its foes, never respawns them.
             fight = await uow.events.latest_fight(world_id) if roster else None
             scene_index = (await uow.phases.get_run(run_id)).absolute_index if roster else 0
@@ -4596,7 +4596,7 @@ class Stage1Orchestrator:
                 "dnd_context": dnd_context,
             },
         )
-        roster_pre = await self._roster_present(world_id)
+        roster_pre = bool(roster)
         if over_budget or (quiet and not roster_pre):
             await self._save_fallback_beats(world_id, scene, event_id, facts, source="fallback")
             return "fallback"

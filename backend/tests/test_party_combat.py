@@ -404,6 +404,9 @@ def test_group_foes_xp_levels_and_spent_slots(
             params={"world_id": str(world_id), "after": 0, "limit": 80},
             headers=headers,
         ).json()
+        # Ash, waiting at the market away from the fight, is told without
+        # the party's sheets (they once leaked into fallback narration).
+        assert all("D&D" not in (e["text"] or "") for e in chronicle["entries"])
         fights = [e for e in chronicle["entries"] if e["combat"]]
         return fights[-1]["combat"]["rolls"]
 
@@ -444,3 +447,27 @@ def test_group_foes_xp_levels_and_spent_slots(
         ("Goblin 1", 7),
         ("Goblin 2", 0),
     ]
+
+
+def test_the_party_is_only_in_its_own_scenes() -> None:
+    from worldsim.domain.ids import new_character_id, new_party_member_id, new_world_id
+    from worldsim.domain.party import PartyMember, party_in_scene
+    from worldsim.domain.rules.dnd import Sheet
+
+    world, hero = new_world_id(), new_character_id()
+
+    def member(character: UUID | None) -> PartyMember:
+        return PartyMember(
+            id=new_party_member_id(),
+            world_id=world,
+            name="Wren",
+            name_key="wren",
+            character_id=character,
+            sheet=Sheet(name="Wren"),
+        )
+
+    linked = [member(hero)]
+    assert party_in_scene(linked, [str(hero)]) == linked
+    assert party_in_scene(linked, [str(new_character_id())]) == []
+    unlinked = [member(None)]  # a party begun by hand counts everywhere
+    assert party_in_scene(unlinked, []) == unlinked
