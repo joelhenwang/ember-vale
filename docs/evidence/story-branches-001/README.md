@@ -120,3 +120,11 @@ played before this change.
   branch's next beat, as it would be in the source.
 * No rewind in place and no deleting old checkpoints; the old-schema trap was avoided, not
   extended.
+
+## After the merge into main (2026-10-09)
+
+The dev API was rebuilt on merged main (`e1cb79e`). It migrated to `0058_story_checkpoints` after a fresh backup (`20261009-092035`). `live_branch_check.py` then ran on the live combat story "Live goblin check" (Venice), results in `live-branch-main.json`:
+- Branch points listed only turns 4 and 5, the two played after the migration; turns 1–3 predate it and are refused.
+- A branch from turn 4 matched the source as it stood after turn 4: turn 4, 12 events, Wren 12/12, the goblin 5/7.
+- The branch played its own turn 5 (16 events), and the source stayed exactly as it was.
+- The Stories list shows the branch with "Branched from Live goblin check at Day 1, afternoon" (`live-stories-main.png`, `stories-shot.mjs`), with no page errors.

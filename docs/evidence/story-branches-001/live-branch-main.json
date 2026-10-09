@@ -1,0 +1,115 @@
+{
+ "source_before": {
+  "turn": 3,
+  "events": 10,
+  "party": [
+   [
+    "Wren",
+    12,
+    12
+   ]
+  ],
+  "foes": [
+   [
+    "Goblin",
+    5,
+    7
+   ]
+  ]
+ },
+ "source_after_kept_turn": {
+  "turn": 4,
+  "events": 12,
+  "party": [
+   [
+    "Wren",
+    12,
+    12
+   ]
+  ],
+  "foes": [
+   [
+    "Goblin",
+    5,
+    7
+   ]
+  ]
+ },
+ "source_now": {
+  "turn": 5,
+  "events": 15,
+  "party": [
+   [
+    "Wren",
+    12,
+    12
+   ]
+  ],
+  "foes": [
+   [
+    "Goblin",
+    5,
+    7
+   ]
+  ]
+ },
+ "branch_points": {
+  "story_id": "c29532dc-20cd-4c7d-9900-72d2915aeb1d",
+  "turns": [
+   4,
+   5
+  ]
+ },
+ "branch_status": 200,
+ "branch": {
+  "story_id": "3877a686-1476-43ca-9c26-fc98f9b44e90",
+  "world_id": "3877a686-1476-43ca-9c26-fc98f9b44e90",
+  "title": "Live goblin check \u2014 from Day 1, afternoon",
+  "role": "player",
+  "character_id": "f3d9124f-9aa9-466f-bb25-13e00aeb2352",
+  "absolute_index": 4,
+  "replayed": false
+ },
+ "branch_at_start": {
+  "turn": 4,
+  "events": 12,
+  "party": [
+   [
+    "Wren",
+    12,
+    12
+   ]
+  ],
+  "foes": [
+   [
+    "Goblin",
+    5,
+    7
+   ]
+  ]
+ },
+ "branch_after_turn": {
+  "turn": 5,
+  "events": 16,
+  "party": [
+   [
+    "Wren",
+    12,
+    12
+   ]
+  ],
+  "foes": [
+   [
+    "Goblin",
+    5,
+    7
+   ]
+  ]
+ },
+ "source_untouched": true,
+ "turn_codes": [
+  200,
+  200,
+  200
+ ]
+}
