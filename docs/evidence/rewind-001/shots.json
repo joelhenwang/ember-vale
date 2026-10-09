@@ -1,0 +1,14 @@
+{
+ "offeredBack": 4,
+ "offeredBranch": 5,
+ "confirmText": "GO BACK TO THIS TURN\n\nGo back to Day 1 · Morning\nThe Ledger continues from the end of this turn: everyone where they were, with what they carried, what they knew and the rumours as they stood then.\nThe 3 later turns are removed from this story. They aren't lost: they are kept as a separate story you can open from Stories.\nPictures still being painted for the later turns are dropped.\n\nThe later turns will be called The Ledger — the path not taken (Day 1, sunset)\n\nCancel\nGo back to this turn",
+ "doneText": "GONE BACK\n\nThe story continues from Day 1 · Morning\nEveryone is where they were at the end of that turn. Your next turn starts here.\nThe turns you left are kept as The Ledger — the path not taken (Day 1, sunset). Open it any time from Stories.\nOpen the path not taken\nCarry on here",
+ "url": "http://localhost:5183/stories/c162f946-0bae-47b0-91dc-df368d6780bb/adventure",
+ "headings": [
+  "DAY 1 · SUNRISE",
+  "DAY 1 · MORNING"
+ ],
+ "cardText": "The Ledger — the path not taken (Day 1, sunset)\n\nEmber Vale\nYou play\n\nDay 1 · Evening\nPlayed just now\n\nBranched from The Ledger at Day 1, sunset\n\nA sheltered vale of hearths, markets, and old roads.\n\nContinue\nHow it began\nStory settings\nView story & saves",
+ "feedBack": 1,
+ "errors": []
+}
