@@ -78,7 +78,9 @@ def looks_like_deed(text: str) -> bool:
 
 
 def _named(text: str, name: str) -> bool:
-    return re.search(rf"\b{re.escape(name.lower())}s?\b", text.lower()) is not None
+    """The text names this (one of them, or several: "wolf", "wolves")."""
+    forms = {re.escape(name.lower()) + "s?", re.escape(_plural(name))}
+    return re.search(rf"\b(?:{'|'.join(forms)})\b", text.lower()) is not None
 
 
 def _carrier(order: list[Sheet], loadout: str, index: str) -> Sheet | None:
@@ -87,23 +89,45 @@ def _carrier(order: list[Sheet], loadout: str, index: str) -> Sheet | None:
     )
 
 
+def line_actor(prose: str, order: list[Sheet]) -> Sheet | None:
+    """The party member a tag line's prose names first ("ATTACK[longsword at
+    goblin]: Ash lunges" is Ash's blow): two fighters both carry longswords,
+    and the weapon alone gave Wren's blows to Ash (companions-001)."""
+    low = prose.lower()
+    found = [
+        (hit.start(), sheet)
+        for sheet in order
+        if (hit := re.search(rf"\b{re.escape(sheet.name.lower())}\b", low))
+    ]
+    return min(found, key=lambda pair: pair[0])[1] if found else None
+
+
+def tag_actor(prose: str, order: list[Sheet], index: str, *, spell: bool) -> Sheet | None:
+    """Who a tag line means: the party member its prose names, when they
+    carry the weapon or spell; else the first who carries it."""
+    named = line_actor(prose, order)
+    if named is not None and index in (named.spells if spell else named.weapons):
+        return named
+    return _carrier(order, "spell" if spell else "weapon", index)
+
+
 def tagged_members(text: str, order: list[Sheet], tables: DataTables) -> set[str]:
     """Names of the party members the storyteller already tagged acting."""
     acted: set[str] = set()
     for match in _SHEET_TAG_RE.finditer(text):
         kind, inner = match.group(1).upper(), match.group(2)
+        end = text.find("\n", match.end())
+        prose = text[match.end() : end if end >= 0 else len(text)]
         if kind == "ATTACK":
             tag = parse_attack_tag(inner, tables)
-            if tag is not None and tag.index:
-                sheet = _carrier(order, "weapon", tag.index)
-                if sheet is not None:
-                    acted.add(sheet.name)
+            index = tag.index if tag is not None else None
         else:
-            tag = parse_cast_tag(inner, tables)
-            if tag is not None and tag.index:
-                sheet = _carrier(order, "spell", tag.index)
-                if sheet is not None:
-                    acted.add(sheet.name)
+            cast_tag = parse_cast_tag(inner, tables)
+            index = cast_tag.index if cast_tag is not None else None
+        if index:
+            sheet = tag_actor(prose, order, index, spell=kind == "CAST")
+            if sheet is not None:
+                acted.add(sheet.name)
     return acted
 
 
@@ -162,6 +186,101 @@ def _creature_named(text: str, prose: str, tables: DataTables) -> tuple[str, str
             if best is None or len(name) > len(best[1]):
                 best = (index, name)
     return best
+
+
+_COUNT_WORDS = {
+    "a": 1,
+    "an": 1,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "a pair of": 2,
+    "a couple of": 2,
+    "both": 2,
+}
+_MAX_OPENED = 6
+
+
+def _plural(name: str) -> str:
+    low = name.lower()
+    if low.endswith("f"):
+        return low[:-1] + "ves"
+    if low.endswith("y") and low[-2:-1] not in "aeiou":
+        return low[:-1] + "ies"
+    if low.endswith(("s", "x", "ch", "sh")):
+        return low + "es"
+    return low + "s"
+
+
+def group_size(texts: list[str], name: str) -> int:
+    """How many of a creature the words count ("two goblins", "a pair of
+    wolves", "3 bandits"); 1 when they do not say."""
+    counted = "|".join(sorted((re.escape(w) for w in _COUNT_WORDS), key=len, reverse=True))
+    pattern = re.compile(
+        rf"\b({counted}|\d+)\s+(?:[a-z'-]+\s+){{0,2}}?{re.escape(_plural(name))}\b", re.IGNORECASE
+    )
+    best = 1
+    for text in texts:
+        for found in pattern.finditer(text):
+            word = found.group(1).lower()
+            size = int(word) if word.isdigit() else _COUNT_WORDS.get(word, 1)
+            best = max(best, min(size, _MAX_OPENED))
+    return best
+
+
+def opening_lines(
+    text: str,
+    deeds: list[Deed],
+    order: list[Sheet],
+    tables: DataTables,
+    fallen: set[str],
+) -> list[str]:
+    """ENCOUNTER lines for a fight the scene starts without one: no fight is
+    on and no ENCOUNTER was written, yet the storyteller's tags strike a
+    creature, or a party member's words attack one the prose names. The
+    group is as large as the words count ("two goblins": Goblin 1 and 2), so
+    "the second goblin" is a real foe. A kind already slain opens nothing."""
+    if _ENCOUNTER_RE.search(text):
+        return []
+    monsters = table(tables, "monsters")
+    party = {sheet.name.lower() for sheet in order}
+    kinds: list[tuple[str, str]] = []
+    #: Kinds the storyteller struck: a lone one needs no opening (the engine
+    #: meets it as it is struck), a group does.
+    struck: set[str] = set()
+    for match in _SHEET_TAG_RE.finditer(text):
+        kind_word, inner = match.group(1).upper(), match.group(2)
+        tag = parse_attack_tag(inner, tables) if kind_word == "ATTACK" else None
+        target = tag.target if tag is not None else None
+        if kind_word == "CAST":
+            cast_tag = parse_cast_tag(inner, tables)
+            target = cast_tag.target if cast_tag is not None else None
+        if not target or target.strip().lower() in party:
+            continue
+        found = find_entry(monsters, re.sub(r"\s*(?:#|no\.?\s*)?\d+$", "", target))
+        if found is not None:
+            kinds.append((found.index, str_field(found.entry, "name") or found.index))
+            struck.add(found.index)
+    for deed in deeds:
+        if _ATTACK_RE.search(deed.text) and not _STAND_DOWN_RE.search(deed.text):
+            named = _creature_named(deed.text, text, tables)
+            if named is not None:
+                kinds.append(named)
+                struck.discard(named[0])
+    words = [text, *(deed.text for deed in deeds)]
+    lines: list[str] = []
+    for kind, name in dict.fromkeys(kinds):
+        if kind in fallen:
+            continue
+        size = group_size(words, name)
+        if size == 1 and kind in struck:
+            continue
+        count = f"{size}x " if size > 1 else ""
+        lines.append(f"ENCOUNTER[{count}{name}]: {name} turns on the party.")
+    return lines
 
 
 def deed_lines(
@@ -233,3 +352,57 @@ def deed_lines(
     cut = first.end()
     head = text[:cut] if text[:cut].endswith("\n") else text[:cut] + "\n"
     return head + block + text[cut:], len(lines)
+
+
+def after_encounter(text: str, lines: list[str]) -> str:
+    """The narration with tag lines put right after its first ENCOUNTER line
+    (else at the start), where the scene's fight begins."""
+    if not lines:
+        return text
+    block = "\n".join(lines) + "\n"
+    first = _ENCOUNTER_RE.search(text)
+    if first is None:
+        return block + text
+    cut = first.end()
+    head = text[:cut] if text[:cut].endswith("\n") else text[:cut] + "\n"
+    return head + block + text[cut:]
+
+
+def helper_lines(
+    text: str,
+    order: list[Sheet],
+    keys: list[str],
+    helpers: set[str],
+    deed_keys: set[str],
+    foes: list[tuple[str, str]],
+    tables: DataTables,
+) -> list[str]:
+    """Companions here fight beside the party (companions-001): each one
+    standing whom neither the storyteller nor their own words had act
+    strikes the first foe standing, with their first weapon (a caster
+    without one, their first damaging cantrip)."""
+    if not foes or not helpers:
+        return []
+    acted = tagged_members(text, order, tables)
+    spells = table(tables, "spells")
+    target = foes[0][1]
+    lines: list[str] = []
+    for key in keys:
+        sheet = order[keys.index(key)]
+        down = sheet.hp is not None and sheet.hp.current <= 0
+        if key not in helpers or key in deed_keys or down or sheet.name in acted:
+            continue
+        if sheet.weapons:
+            lines.append(f"ATTACK[{sheet.weapons[0]} at {target}]: {sheet.name} fights on.")
+            continue
+        cantrip = next(
+            (
+                spell
+                for spell in sheet.spells
+                if (row := entry(spells, spell)).get("damage") and not row.get("level")
+            ),
+            None,
+        )
+        if cantrip is not None:
+            lines.append(f"CAST[{cantrip} at {target}]: {sheet.name} fights on.")
+    return lines

@@ -45,7 +45,14 @@ from worldsim.domain.rules.dnd.data import (
     str_field,
     table,
 )
-from worldsim.domain.rules.dnd.deeds import Deed, deed_lines
+from worldsim.domain.rules.dnd.deeds import (
+    Deed,
+    after_encounter,
+    deed_lines,
+    helper_lines,
+    line_actor,
+    opening_lines,
+)
 from worldsim.domain.rules.dnd.progress import (
     LevelGain,
     free_slot,
@@ -63,6 +70,7 @@ from worldsim.domain.rules.dnd.sheets import (
     spell_attack_bonus,
     spellcasting_ability,
     weapon_attack_bonus,
+    weapon_damage,
 )
 from worldsim.domain.rules.dnd.spells import resolve_spell
 from worldsim.domain.rules.dnd.tags import (
@@ -158,6 +166,8 @@ class CombatReport:
     levels: list[LevelGain] = field(default_factory=list)
     #: Tag lines added from the party's own words (``deeds``), not the storyteller's.
     deeds: int = 0
+    #: Blows companions struck beside the party with nothing else making them act.
+    helped: int = 0
 
 
 @dataclass
@@ -293,6 +303,7 @@ def resolve_narration_tags(
     deeds: list[Deed] | None = None,
     chooses: set[str] | None = None,
     strike_back: bool = False,
+    present: set[str] | None = None,
 ) -> CombatReport:
     """Resolve every combat tag in narration order. Inputs are never mutated.
 
@@ -313,9 +324,13 @@ def resolve_narration_tags(
 
     ``deeds`` are what party members tried this scene in their own words:
     a plain attack or spell the storyteller did not tag rolls anyway.
-    ``strike_back``: when the party fought here and the storyteller tagged
-    no foe's blow, each foe still standing strikes once (at the one who
-    acted, else the first party member standing).
+    ``strike_back``: the party is in this scene. When it fought here and
+    the storyteller tagged no foe's blow, each foe still standing strikes
+    once (at the one who acted, else the first party member standing). And
+    once no fight is on (or this scene ends it), whoever was down gets back
+    up with 1 hit point: there is no death and dying.
+    ``present`` are the party members in this scene: companions among them
+    (not in ``chooses``) whom nothing had act fight beside the party.
     """
     if not sheets or not (text or deeds):
         return CombatReport()
@@ -357,6 +372,28 @@ def resolve_narration_tags(
             for ref in parse_encounter_tag(match.group(2), tables):
                 standing_kinds.append((ref.index, ref.name))
     fallen_kinds = {monster_kind(key, monsters) for key, hp in monster_hp.items() if hp <= 0}
+    if not on_now:
+        # A fight begun without an ENCOUNTER: open it, as large as the words
+        # count ("two goblins"), so the second goblin is a real foe.
+        opened = opening_lines(text, deeds or [], order, tables, fallen_kinds)
+        if opened:
+            text = "\n".join([*opened, text])
+            for line in opened:
+                inner = line[line.index("[") + 1 : line.index("]")]
+                for ref in parse_encounter_tag(inner, tables):
+                    standing_kinds.append((ref.index, ref.name))
+    helped = 0
+    if strike_back:
+        extra = helper_lines(
+            text,
+            order,
+            keys,
+            (present or set()) - (chooses or set()),
+            {deed.key for deed in deeds or []},
+            list(dict.fromkeys(standing_kinds)),
+            tables,
+        )
+        text, helped = after_encounter(text, extra), len(extra)
     text, deed_count = deed_lines(
         text,
         deeds or [],
@@ -534,8 +571,40 @@ def resolve_narration_tags(
         )
         return True
 
+    def carrier(key: str, *, spell: bool, named: Sheet | None = None) -> Sheet | None:
+        """Who a loadout tag means: the party member its line names, when they
+        carry it; else the first carrier still standing, else the first."""
+        having = [s for s in order if key in (s.spells if spell else s.weapons)]
+        if named is not None and named in having:
+            return named
+        return next((s for s in having if currents[id(s)] > 0), having[0] if having else None)
+
+    def come_to() -> None:
+        """Everyone down gets back up with 1 hit point (the fight is over)."""
+        for pos, sheet in enumerate(order):
+            if sheet.hp is not None and currents[id(sheet)] <= 0:
+                before, after = mend_party(pos, 1)
+                outcomes.append(
+                    TagOutcome(
+                        kind="recover",
+                        attacker_key=keys[pos],
+                        text=f"{sheet.name} gets back up ({before}->{after} HP).",
+                        actor=sheet.name,
+                        hp_before=before,
+                        hp_after=after,
+                    )
+                )
+                beats.append(
+                    CombatBeat(text=f"{sheet.name} gets back up, battered.", cited=cite(keys[pos]))
+                )
+
+    if strike_back and not on_now:
+        come_to()
+
     for match in _TAG_RE.finditer(text):
         kind, inner = match.group(1).upper(), match.group(2).strip()
+        line_end = text.find("\n", match.end())
+        voiced = line_actor(text[match.end() : line_end if line_end >= 0 else len(text)], order)
         if kind == "ENCOUNTER":
             refs = parse_encounter_tag(inner, tables)
             if not refs:
@@ -598,9 +667,9 @@ def resolve_narration_tags(
             tag = parse_attack_tag(inner, tables)
             attacker = None
             if tag is not None:
-                attacker = next((s for s in order if tag.index and tag.index in s.weapons), None)
+                attacker = carrier(tag.index, spell=False, named=voiced) if tag.index else None
                 if attacker is None and tag.index is None:
-                    attacker = next((s for s in order if tag.name in s.weapons), None)
+                    attacker = carrier(tag.name, spell=False, named=voiced)
             if tag is not None and attacker is None:
                 # ``ATTACK[goblin at Wren]``: a foe strikes back with its own weapon.
                 if not foe_strike(inner, tag.target):
@@ -657,7 +726,8 @@ def resolve_narration_tags(
             damage = dict_field(weapon, "damage")
             dice = str_field(damage, "dice")
             dtype = str_field(damage, "type") or "damage"
-            rolled = roll_damage(dice, rng, attack.crit)
+            # The weapon's ability adds to its damage as to its aim (5e).
+            rolled = weapon_damage(tables, attacker, weapon, roll_damage(dice, rng, attack.crit))
             if pos is not None:
                 before, after = hurt_party(pos, rolled)
             else:
@@ -690,7 +760,7 @@ def resolve_narration_tags(
             tag = parse_cast_tag(inner, tables)
             attacker = None
             if tag is not None and tag.index:
-                attacker = next((s for s in order if tag.index in s.spells), None)
+                attacker = carrier(tag.index, spell=True, named=voiced)
             if (
                 tag is None
                 or attacker is None
@@ -948,6 +1018,15 @@ def resolve_narration_tags(
             if currents[id(order[keys.index(slugify(aim_at))])] <= 0:
                 aim_at = next((s.name for s in order if currents[id(s)] > 0), None)
 
+    # The fight ended here (its foes all down): the fallen get back up.
+    in_fight = list(dict.fromkeys([*foes, *on_now]))
+    if (
+        strike_back
+        and in_fight
+        and all(monster_hp.get(key, 0) <= 0 for key in in_fight if key in monster_meta)
+    ):
+        come_to()
+
     # Foes that fell give their XP to the whole party, shared evenly.
     working = {key_of[id(sheet)]: casting[id(sheet)] for sheet in order}
     for sheet in order:
@@ -1036,6 +1115,7 @@ def resolve_narration_tags(
         defeated=defeated,
         levels=gains,
         deeds=deed_count,
+        helped=helped,
     )
 
 

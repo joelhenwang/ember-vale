@@ -1,0 +1,98 @@
+[
+ {
+  "run": 1,
+  "world_id": "271e2ed4-e49a-4090-8ea2-b80c1bbe9908",
+  "joined": false,
+  "turns": [
+   {
+    "turn": 1,
+    "words": "Ash, the roads are getting dangerous. Will you join me as my companion and fight at my side?",
+    "status": 200,
+    "seconds": 16.6,
+    "party": [
+     [
+      "Wren",
+      "fighter",
+      12,
+      12
+     ]
+    ],
+    "foes": [],
+    "roll_lines": [],
+    "companion_rolls": 0,
+    "hero_rolls": 0,
+    "unresolved": 0,
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow over the wooden benches and tables. Ash and Wren sit across from each other, the scent of roasting meat lingering in the air. Ash leans forward, their voice low as they speak of the market news, while Wren's eyes reflect a mix of concern and determination. Wren's voice is steady as they share their thoughts on the roads, the danger that lurks beyond the village. They extend an offer to Ash, a chance to stand together against the threats that await. I've heard the tales of the roads, Wren. I'll consider your offer, but I need to think on it."
+   },
+   {
+    "turn": 2,
+    "words": "I offer Ash my hand: travel with me, share the road and the fights to come.",
+    "status": 200,
+    "seconds": 13.9,
+    "party": [
+     [
+      "Wren",
+      "fighter",
+      12,
+      12
+     ]
+    ],
+    "foes": [],
+    "roll_lines": [],
+    "companion_rolls": 0,
+    "hero_rolls": 0,
+    "unresolved": 0,
+    "prose": "Wren leans forward, their eyes reflecting a mix of concern and determination as they attempt to communicate with Ash, offering a hand in partnership for the road ahead. Ash waits, their expression unreadable, as they consider Wren's offer. I appreciate your offer, Wren. I'll take some time to think it over."
+   }
+  ],
+  "spend_usd": 0.00738
+ },
+ {
+  "run": 2,
+  "world_id": "48a26768-b1bd-47b2-9bb5-53352c7f69a2",
+  "joined": false,
+  "turns": [
+   {
+    "turn": 1,
+    "words": "Ash, the roads are getting dangerous. Will you join me as my companion and fight at my side?",
+    "status": 200,
+    "seconds": 14.4,
+    "party": [
+     [
+      "Wren",
+      "fighter",
+      12,
+      12
+     ]
+    ],
+    "foes": [],
+    "roll_lines": [],
+    "companion_rolls": 0,
+    "hero_rolls": 0,
+    "unresolved": 0,
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow over the wooden benches and tables. Wren, a human fighter, stands by the fire, their longsword at their side. Ash, another fighter, is about to leave for the market, their handaxe ready. Wren turns to Ash, their voice steady and serious. I'll consider your offer, Wren. Let's discuss this further at the market."
+   },
+   {
+    "turn": 2,
+    "words": "I offer Ash my hand: travel with me, share the road and the fights to come.",
+    "status": 200,
+    "seconds": 11.7,
+    "party": [
+     [
+      "Wren",
+      "fighter",
+      12,
+      12
+     ]
+    ],
+    "foes": [],
+    "roll_lines": [],
+    "companion_rolls": 0,
+    "hero_rolls": 0,
+    "unresolved": 0,
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow over the wooden benches and tables. Wren stands by the fire, their longsword at their side, as Ash prepares to leave for the market. Wren turns to Ash, their voice steady and serious, offering a hand in companionship. \"I appreciate your offer, Wren. Let's meet at the market to discuss it further.\" Ash lingers for a moment, considering Wren's proposal, before nodding and stepping out into the bustling market."
+   }
+  ],
+  "spend_usd": 0.00731
+ }
+]

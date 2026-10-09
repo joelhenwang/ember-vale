@@ -9,6 +9,7 @@ slots mutate through version-guarded saves; joins are inserts.
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from typing import cast
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -150,3 +151,38 @@ def down_line(names: list[str]) -> str | None:
         f"{who} {verb} down (no hit points left): conscious only enough to lie still, unable to "
         "fight or cast until healed or until a night's rest."
     )
+
+
+def chooser_keys(roster: list[PartyMember], played: CharacterId | None) -> set[str]:
+    """Who makes their own level-up choices: the played hero. A companion is
+    linked to their own character too (companions-001) but does not choose.
+    Without a played character (a party begun by hand), every linked member."""
+    linked = [m for m in roster if m.character_id is not None]
+    if played is not None:
+        return {m.name_key for m in linked if m.character_id == played}
+    return {m.name_key for m in linked}
+
+
+def present_keys(
+    roster: list[PartyMember],
+    choosers: set[str],
+    participants: set[str],
+    places: Mapping[str, str],
+) -> set[str]:
+    """The party beside the played hero in this scene: empty unless the hero
+    is in it. Linked companions count when they stand where the hero stands
+    (a companion who only waits gets a scene of their own, and once struck
+    alone there, ahead of the hero, companions-001); the unlinked travel
+    with the hero. ``places`` maps linked characters to their location."""
+    heroes = [m for m in roster if m.name_key in choosers and m.character_id is not None]
+    here = [m for m in heroes if str(m.character_id) in participants]
+    if not here:
+        return set()
+    spot = places.get(str(here[0].character_id))
+    return {
+        m.name_key
+        for m in roster
+        if m.character_id is None
+        or str(m.character_id) in participants
+        or (spot is not None and places.get(str(m.character_id)) == spot)
+    }

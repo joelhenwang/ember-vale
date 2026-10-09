@@ -411,7 +411,7 @@ def test_foes_the_storyteller_left_silent_strike_back() -> None:
         [_wren()],
         DATA,
         _rng(0.5),
-        live=_goblins(7),
+        live=[MonsterState(key="goblin-1", name="Goblin 1", hp_current=30, hp_max=30, ac=15)],
         fighting=["goblin-1"],
         deeds=[Deed(key="wren", text="I attack the goblin")],
         strike_back=True,
@@ -568,3 +568,91 @@ def test_the_storyteller_hears_a_fight_is_over_and_who_is_down() -> None:
     assert down_line([]) is None
     line = down_line(["Wren"])
     assert line is not None and line.startswith("Wren is down")
+
+
+def test_the_fallen_get_back_up_once_the_fight_is_over() -> None:
+    mate = Sheet(
+        name="Ash",
+        character_class="fighter",
+        stats={"str": 16, "dex": 12, "con": 14, "int": 10, "wis": 10, "cha": 10},
+        hp=HitPoints(current=12, max=12),
+        weapons=["longsword"],
+    )
+    # Ash finishes the last goblin while Wren lies down: Wren gets back up.
+    ended = resolve_narration_tags(
+        "ATTACK[longsword at goblin]: Ash swings.",
+        [_wren(hp=0), mate],
+        DATA,
+        _rng(0.95, 0.5),
+        live=_goblins(1),
+        fighting=["goblin-1"],
+        strike_back=True,
+    )
+    assert ("recover", "Wren", 0, 1) in [
+        (o.kind, o.actor, o.hp_before, o.hp_after) for o in ended.outcomes
+    ]
+    assert ended.hp["wren"] == 1
+    # No fight on: whoever was down is up at the start of the scene.
+    calm = resolve_narration_tags(
+        "Wren stirs by the hearth.", [_wren(hp=0)], DATA, _rng(0.5), strike_back=True
+    )
+    assert [o.kind for o in calm.outcomes] == ["recover"] and calm.hp == {"wren": 1}
+    # A foe still standing: Wren stays down; elsewhere (no party here) too.
+    on = resolve_narration_tags(
+        "The goblin circles.",
+        [_wren(hp=0)],
+        DATA,
+        _rng(0.5),
+        live=_goblins(7),
+        fighting=["goblin-1"],
+        strike_back=True,
+    )
+    assert on.outcomes == []
+    away = resolve_narration_tags("Ash sells apples.", [_wren(hp=0)], DATA, _rng(0.5))
+    assert away.outcomes == []
+
+
+def test_a_fight_begun_without_an_encounter_is_as_large_as_the_words_say() -> None:
+    from worldsim.domain.rules.dnd.deeds import group_size
+
+    assert group_size(["Two goblins rush in."], "Goblin") == 2
+    assert group_size(["A pair of grey wolves circle."], "Wolf") == 2
+    assert group_size(["3 bandits block the road", "the bandit"], "Bandit") == 3
+    assert group_size(["The goblin snarls."], "Goblin") == 1
+    # The storyteller strikes without opening the fight: two goblins, not one.
+    tagged = resolve_narration_tags(
+        "Two goblins burst in.\nATTACK[longsword at goblin]: Wren lunges.",
+        [_wren()],
+        DATA,
+        _rng(0.0),
+    )
+    assert tagged.outcomes[0].kind == "encounter"
+    assert tagged.outcomes[0].target == "Goblin 1, Goblin 2"
+    assert tagged.foes == ["goblin-1", "goblin-2"]
+    # The player's "second goblin" is a real foe.
+    second = resolve_narration_tags(
+        "Two goblins burst in through the back door.",
+        [_wren()],
+        DATA,
+        _rng(0.5),
+        deeds=[Deed(key="wren", text="I attack the second goblin")],
+    )
+    (swing,) = [o for o in second.outcomes if o.kind == "attack"]
+    assert swing.target == "Goblin 2"
+    wolves = resolve_narration_tags(
+        "A pair of grey wolves slink in.",
+        [_wren()],
+        DATA,
+        _rng(0.0),
+        deeds=[Deed(key="wren", text="I attack the wolves")],
+    )
+    assert wolves.outcomes[0].target == "Wolf 1, Wolf 2"
+    # A kind already slain opens nothing, even from the storyteller's tag.
+    slain = resolve_narration_tags(
+        "ATTACK[longsword at goblin]: Wren strikes the body.",
+        [_wren()],
+        DATA,
+        _rng(0.5),
+        live=[MonsterState(key="goblin", name="Goblin", hp_current=0, hp_max=7, ac=15)],
+    )
+    assert slain.outcomes == []

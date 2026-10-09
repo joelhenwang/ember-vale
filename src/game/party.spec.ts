@@ -8,6 +8,7 @@ import {
   improvementReady,
   hpTone,
   levelledUp,
+  onlyExperience,
   partyHurt,
   partyOrder,
   sayRoll,
@@ -203,6 +204,41 @@ describe('combat depth', () => {
   })
 })
 
+describe('a settled rumour', () => {
+  it('says the matter is settled and what each gained', () => {
+    const all = sayRoll({
+      kind: 'xp',
+      result: 'settled',
+      text: '',
+      target: 'The missing flour',
+      amount: 100,
+      share: 50
+    })
+    expect([all.lead, all.outcome, all.tone]).toEqual([
+      'The missing flour is settled',
+      '50 XP each',
+      'info'
+    ])
+    const some = sayRoll({
+      kind: 'xp',
+      result: 'settled',
+      text: '',
+      target: 'The cart',
+      actor: 'Elara',
+      share: 150
+    })
+    expect(some.outcome).toBe('Elara: 150 XP each')
+  })
+
+  it('knows experience with no dice', () => {
+    const earned = { kind: 'xp', result: 'settled', text: '', share: 50 }
+    const up = { kind: 'level', text: '', actor: 'Wren', level: 2 }
+    expect(onlyExperience([earned, up])).toBe(true)
+    expect(onlyExperience([earned, { kind: 'attack', text: '' }])).toBe(false)
+    expect(onlyExperience([])).toBe(false)
+  })
+})
+
 describe('level-up choices', () => {
   const scores = { str: 16, dex: 12, con: 19, int: 8, wis: 10, cha: 10 }
 
@@ -240,5 +276,14 @@ describe('level-up choices', () => {
       choose: 'ability'
     })
     expect(said.outcome).toBe('+7 hit points · choose a better ability in Character details')
+  })
+})
+
+describe('getting back up', () => {
+  it('says the fallen hero is up again', () => {
+    const said = sayRoll({ kind: 'recover', text: 'x', actor: 'Wren', hp_before: 0, hp_after: 1 })
+    expect(said.lead).toBe('Wren gets back up')
+    expect(said.hp).toBe('Wren 0 → 1')
+    expect(said.tone).toBe('heal')
   })
 })

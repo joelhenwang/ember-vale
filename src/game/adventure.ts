@@ -90,10 +90,13 @@ export function buildLog({ entries, beats, me, hereId, pictures = [] }: LogInput
     .sort((a, b) => a.sequence - b.sequence)
   // A fight's rolls are their own event; they show under their scene.
   const scenes = new Set(shown.map((e) => e.event_id))
-  const fought = new Map<string, ChronicleEntry>()
+  // A scene may hold a fight's dice and a settled rumour's experience.
+  const fought = new Map<string, ChronicleEntry[]>()
   for (const e of shown) {
     const of = e.combat?.scene_event_id
-    if (of && scenes.has(of) && e.combat?.rolls?.length) fought.set(of, e)
+    if (of && scenes.has(of) && e.combat?.rolls?.length) {
+      fought.set(of, [...(fought.get(of) ?? []), e])
+    }
   }
   const out: LogLine[] = []
   let lastIndex: number | null = null
@@ -126,13 +129,12 @@ export function buildLog({ entries, beats, me, hereId, pictures = [] }: LogInput
       const lines = linesFor(entry, entry.scene_id ? beats[entry.scene_id] : undefined, me)
       const sceneId = entry.scene_id ?? null
       out.push(...lines)
-      const fight = fought.get(entry.event_id)
-      if (fight?.combat?.rolls?.length) {
+      for (const fight of fought.get(entry.event_id) ?? []) {
         out.push({
           key: `rolls:${fight.event_id}`,
           kind: 'rolls',
           text: '',
-          rolls: fight.combat.rolls
+          rolls: fight.combat?.rolls ?? []
         })
       }
       const told = lines.every((l) => l.kind !== 'pending')
