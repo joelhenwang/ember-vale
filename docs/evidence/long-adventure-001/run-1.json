@@ -1,0 +1,2611 @@
+[
+ {
+  "run": 1,
+  "world_id": "5d17bea3-6b1f-4f98-a383-b10f6f467287",
+  "turns": [
+   {
+    "turn": 1,
+    "kind": "say",
+    "words": "Ash, the roads are getting dangerous. Will you join me as my companion?",
+    "status": 200,
+    "error": null,
+    "seconds": 12.9,
+    "day": 1,
+    "phase": "sunrise",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "bcb28484-c452-4765-9bb5-3f936adbfccb",
+     "Wren": "bcb28484-c452-4765-9bb5-3f936adbfccb"
+    },
+    "rumours": [
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow over the wooden benches and tables. Ash, a human ranger, sits by the fire, their eyes reflecting the dancing flames. Wren, a human fighter, stands nearby, their hand resting on the hilt of their longsword. Wren turns to Ash, their voice steady and serious. \"Ash, the roads are getting dangerous. Will you join me as my companion?\" Ash nods, their expression thoughtful. \"Yes, I will come. The roads are indeed treacherous, and I believe in the value of companionship on such journeys.\" Ash leans forward, their voice low. \"I've heard some news from the market. There's talk of bandits on the roads, and we should be cautious.\"",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      1,
+      "communicate",
+      "market news"
+     ]
+    ]
+   },
+   {
+    "turn": 2,
+    "kind": "do",
+    "words": "I look around the Hearth and listen for news of trouble.",
+    "status": 200,
+    "error": null,
+    "seconds": 10.2,
+    "day": 1,
+    "phase": "morning",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "bcb28484-c452-4765-9bb5-3f936adbfccb",
+     "Wren": "bcb28484-c452-4765-9bb5-3f936adbfccb"
+    },
+    "rumours": [
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow over the wooden benches and tables. Ash, a human ranger, sits by the fire, their eyes reflecting the dancing flames. Wren, a human fighter, stands nearby, their hand resting on the hilt of their longsword. Wren glances around the Hearth, listening intently for any news of trouble, but the atmosphere remains quiet. Ash waits patiently, their gaze fixed on the fire, as if seeking answers in the flickering embers.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      2,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 3,
+    "kind": "do",
+    "words": "I ask the people here whether anyone has been attacked on the roads.",
+    "status": 200,
+    "error": null,
+    "seconds": 8.9,
+    "day": 1,
+    "phase": "noon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "bcb28484-c452-4765-9bb5-3f936adbfccb",
+     "Wren": "bcb28484-c452-4765-9bb5-3f936adbfccb"
+    },
+    "rumours": [
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow over the wooden benches and tables. Ash, the ranger, sits by the fire, their eyes reflecting the dancing flames. Wren, the fighter, stands nearby, their hand resting on the hilt of their longsword. Wren glances around the Hearth, listening intently as they try to ask the people here whether anyone has been attacked on the roads. Ash waits, their gaze steady and watchful, as the conversation unfolds.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      3,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 4,
+    "kind": "go",
+    "words": "Market",
+    "status": 200,
+    "error": null,
+    "seconds": 8.4,
+    "day": 1,
+    "phase": "afternoon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "c478fcc6-b54e-4ac2-978b-85b0cd471b70"
+    },
+    "rumours": [
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "The warmth of Hearth fades as Ash and Wren step into the bustling Market, the scent of fresh bread and the clatter of merchants' carts filling the air.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      4,
+      "move",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 5,
+    "kind": "do",
+    "words": "I ask the traders about the raiders troubling their carts.",
+    "status": 200,
+    "error": null,
+    "seconds": 9.2,
+    "day": 1,
+    "phase": "sunset",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "c478fcc6-b54e-4ac2-978b-85b0cd471b70"
+    },
+    "rumours": [
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "The Market hums with activity, the scent of fresh bread mingling with the clatter of merchants' carts. Ash lingers by the edge, their eyes scanning the crowd, while Wren steps forward, their voice cutting through the noise as they ask a trader about the raiders troubling their carts.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      5,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 6,
+    "kind": "do",
+    "words": "I go looking for the goblins that raid the carts near the market.",
+    "status": 200,
+    "error": null,
+    "seconds": 9.4,
+    "day": 1,
+    "phase": "dusk",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "c478fcc6-b54e-4ac2-978b-85b0cd471b70"
+    },
+    "rumours": [
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "The Market hums with the same activity as before, the scent of fresh bread still lingering in the air. Ash stands by the edge, their eyes scanning the crowd, while Wren steps forward, their voice cutting through the noise as they ask a trader about the raiders troubling their carts. Wren tries to find the goblins that raid the carts near the market, but their efforts are only half successful. Ash waits patiently, their gaze fixed on the crowd, as if expecting something to happen.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      6,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 7,
+    "kind": "do",
+    "words": "If goblins are here, I draw my sword and attack the nearest one.",
+    "status": 200,
+    "error": null,
+    "seconds": 9.9,
+    "day": 1,
+    "phase": "evening",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 7,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [
+     [
+      "Goblin",
+      7
+     ]
+    ],
+    "places": {
+     "Ash": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "c478fcc6-b54e-4ac2-978b-85b0cd471b70"
+    },
+    "rumours": [
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "Wren's hand hovers over their longsword, ready to draw at the first sign of goblins. Ash remains still, waiting, their gaze alert and watchful.",
+    "rolls": [
+     "Encounter: Goblin (easy, 50 adjusted XP).",
+     "Wren misses Goblin (12 vs AC 15).",
+     "Ash misses Goblin (14 vs AC 15).",
+     "Goblin hits Wren for 5 slashing. (12->7 HP)"
+    ],
+    "fight": [
+     {
+      "foes": "[\"goblin\"]",
+      "tags": "4",
+      "deeds": "1",
+      "helped": "1",
+      "unresolved": "0",
+      "scene_event_id": "f570b569-e840-4653-92b6-e3d37e69933d"
+     }
+    ],
+    "ash_chose": [
+     [
+      7,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 8,
+    "kind": "do",
+    "words": "I attack the nearest enemy.",
+    "status": 200,
+    "error": null,
+    "seconds": 10.0,
+    "day": 1,
+    "phase": "night",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 7,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [
+     [
+      "Goblin",
+      7
+     ]
+    ],
+    "places": {
+     "Ash": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "c478fcc6-b54e-4ac2-978b-85b0cd471b70"
+    },
+    "rumours": [
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "The Market is alive with the clamor of the evening crowd, the scent of fresh bread mingling with the damp earth. Wren and Ash stand ready, their hands hovering near their longswords, eyes scanning the throng for any sign of danger. The previous tension lingers, a silent promise of the fight to come. Ash's eyes narrow as they spot the goblin, their longsword glinting in the fading light. They take a step forward, their stance shifting into a battle-ready posture. Ash lunges at the goblin, their blade slicing through the air with a swift, deadly precision. Wren's grip tightens on their longsword, their body tensing as they prepare to strike. They move with a fighter's grace, their eyes locked on the nearest enemy. Wren charges, their sword a blur as it arcs towards the goblin's chest.",
+    "rolls": [
+     "Ash misses Goblin (10 vs AC 15).",
+     "Wren misses Goblin (12 vs AC 15).",
+     "Goblin misses Ash (9 vs AC 14)."
+    ],
+    "fight": [
+     {
+      "foes": "[\"goblin\"]",
+      "tags": "3",
+      "deeds": "0",
+      "helped": "0",
+      "unresolved": "0",
+      "scene_event_id": "6247781e-af06-4fe5-a9aa-8f1b59dea6c6"
+     }
+    ],
+    "ash_chose": [
+     [
+      8,
+      "interact",
+      "I attack Goblin with my longsword"
+     ]
+    ]
+   },
+   {
+    "turn": 9,
+    "kind": "do",
+    "words": "I keep fighting beside Ash.",
+    "status": 200,
+    "error": null,
+    "seconds": 9.7,
+    "day": 1,
+    "phase": "midnight",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 7,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "c478fcc6-b54e-4ac2-978b-85b0cd471b70"
+    },
+    "rumours": [
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "The Market hums with the clamor of the evening crowd, the scent of fresh bread mingling with the damp earth. Wren and Ash stand ready, their hands near their longswords, eyes scanning the throng. Ash's eyes narrow as they spot the Goblin, and with a swift motion, Ash raises their longsword, ready to strike. Wren, determined to keep fighting beside Ash, moves to flank the Goblin, their longsword at the ready. Ash lunges forward, their longsword flashing in the dim light of the Market. Wren, not to be outdone, steps forward, their longsword gleaming as they prepare to strike.",
+    "rolls": [
+     "Wren hits Goblin for 4 slashing. (7->3 HP)",
+     "Ash hits Goblin for 9 slashing. (3->0 HP)",
+     "Defeated Goblin: 50 XP, 25 each."
+    ],
+    "fight": [
+     {
+      "foes": "[\"goblin\"]",
+      "tags": "3",
+      "deeds": "1",
+      "helped": "0",
+      "unresolved": "0",
+      "scene_event_id": "aaa1953c-0e67-4abd-bece-22eecbe7492b"
+     }
+    ],
+    "ash_chose": [
+     [
+      9,
+      "interact",
+      "I attack Goblin with my longsword"
+     ]
+    ]
+   },
+   {
+    "turn": 10,
+    "kind": "rest",
+    "words": "",
+    "status": 200,
+    "error": null,
+    "seconds": 11.4,
+    "day": 2,
+    "phase": "dawn",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Messenger": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "c478fcc6-b54e-4ac2-978b-85b0cd471b70"
+    },
+    "rumours": [
+     "The Keep's Call",
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "The Market is quiet now, the evening crowd long gone, leaving behind the scent of damp earth and the faint echo of the day's bustle. Wren leans against a stall, their longsword sheathed, eyes closed as they take a moment to rest. Ash stands nearby, their longsword at their side, watching the empty streets with a vigilant gaze. The Market is quiet now, the evening crowd long gone, leaving behind the scent of damp earth and the faint echo of laughter. Ash stands by the mill, their longsword at their side, eyes scanning the shadows. Wren lingers nearby, their hand resting on their own blade, ready for whatever comes next. Ash waits, their breath steady, as the night deepens around them.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      10,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 11,
+    "kind": "say",
+    "words": "Ash, are you hurt? We did well.",
+    "status": 200,
+    "error": null,
+    "seconds": 15.4,
+    "day": 2,
+    "phase": "sunrise",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Messenger": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "c478fcc6-b54e-4ac2-978b-85b0cd471b70"
+    },
+    "rumours": [
+     "The Keep's Call",
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "The Market is quiet, the scent of damp earth lingering in the air. Ash stands by the mill, their longsword at their side, eyes scanning the shadows. Wren lingers nearby, hand resting on their blade, ready for whatever comes next. Wren turns to Ash, concern etched on their face, and asks, \"Ash, are you hurt? We did well.\" Ash nods, their expression calm, and replies, \"I am unharmed, Wren. We fought well together, and I am glad to have stood by your side.\" The Messenger approaches, their voice firm as they speak to Wren, \"Wren, your efforts are commendable. The Keep needs your strength and courage. Will you join us?\" Ash listens, their gaze steady, as they consider the Messenger's words about recruiting help for the Keep's defenses.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      11,
+      "wait",
+      ""
+     ],
+     [
+      11,
+      "communicate",
+      "recruiting help for the Keep's defenses"
+     ]
+    ]
+   },
+   {
+    "turn": 12,
+    "kind": "go",
+    "words": "Hearth",
+    "status": 200,
+    "error": null,
+    "seconds": 11.5,
+    "day": 2,
+    "phase": "morning",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "bcb28484-c452-4765-9bb5-3f936adbfccb",
+     "Messenger": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "bcb28484-c452-4765-9bb5-3f936adbfccb"
+    },
+    "rumours": [
+     "The Keep's Call",
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "The Market is quiet, the scent of damp earth lingering in the air. Ash stands by the mill, their longsword at their side, eyes scanning the shadows. Wren lingers nearby, hand resting on their blade, ready for whatever comes next. The Messenger approaches, their voice steady and urgent. Messenger attempts to communicate with Ash, their voice low and serious. \"Ash, the Keep needs your help. Will you join us?\" Ash listens, their expression thoughtful, and then nods. \"I will consider it,\" they reply, their voice firm. Wren turns to Messenger, their eyes reflecting a mix of determination and concern. \"I will join you,\" Wren says, their voice resolute. Wren and Ash exchange a glance, a silent understanding passing between them. They both know the path ahead is uncertain, but they are ready to face it together.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      12,
+      "communicate",
+      "recruiting help for the Keep's defenses"
+     ],
+     [
+      12,
+      "move",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 13,
+    "kind": "do",
+    "words": "I share a meal by the fire and tend to my wounds.",
+    "status": 200,
+    "error": null,
+    "seconds": 12.2,
+    "day": 2,
+    "phase": "noon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "bcb28484-c452-4765-9bb5-3f936adbfccb",
+     "Messenger": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "bcb28484-c452-4765-9bb5-3f936adbfccb"
+    },
+    "rumours": [
+     "The Well's Secret",
+     "The Keep's Call",
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "The mill at Hearth stands quiet, the scent of damp earth still lingering in the air. Ash, their longsword at their side, waits by the door, eyes scanning the shadows. Wren, hand resting on their blade, lingers nearby, ready for whatever comes next. Wren turns to Ash, their voice steady and urgent, \"Let's share a meal by the fire and tend to our wounds.\" The Market is quiet, the scent of damp earth lingering in the air. Ash stands by the mill, their longsword at their side, eyes scanning the shadows. Wren lingers nearby, hand resting on their blade, ready for whatever comes next. The Messenger, their voice steady and urgent, waits by the mill, their gaze fixed on the horizon.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      13,
+      "wait",
+      ""
+     ],
+     [
+      13,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 14,
+    "kind": "rest",
+    "words": "",
+    "status": 200,
+    "error": null,
+    "seconds": 13.0,
+    "day": 2,
+    "phase": "afternoon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "bcb28484-c452-4765-9bb5-3f936adbfccb",
+     "Messenger": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "bcb28484-c452-4765-9bb5-3f936adbfccb"
+    },
+    "rumours": [
+     "The Well's Secret",
+     "The Keep's Call",
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "The Messenger's patience is unwavering, their stance firm and resolute, as they continue to wait by the mill, their eyes never leaving the distant path. Ash waits, their gaze fixed on the shadows, a silent sentinel in the quiet mill. Wren rests, their body needing a moment to recover from the day's exertions.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      14,
+      "wait",
+      ""
+     ],
+     [
+      14,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 15,
+    "kind": "do",
+    "words": "I ask around about where the raiders make their camp.",
+    "status": 200,
+    "error": null,
+    "seconds": 12.6,
+    "day": 2,
+    "phase": "sunset",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "bcb28484-c452-4765-9bb5-3f936adbfccb",
+     "Messenger": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "bcb28484-c452-4765-9bb5-3f936adbfccb"
+    },
+    "rumours": [
+     "The Well's Secret",
+     "The Keep's Call",
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "The mill stands quiet in the afternoon light, its stone walls warm under the sun. The Messenger, resolute, remains by the door, eyes fixed on the distant path, waiting. The hearth crackles in the center of Hearth, casting a warm glow over the worn wooden benches. Wren, still catching their breath, leans against a post, while Ash stands nearby, waiting patiently. The scent of burning wood fills the air, and the sound of the fire's crackling is a comforting rhythm. Wren, with a determined look, begins to ask around about the raiders' camp, but their inquiries only yield partial answers. Ash, with a thoughtful expression, speaks to Wren about the raider camps, offering their insights and observations. Ash stands quietly, their eyes scanning the room, as if waiting for something to happen.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      15,
+      "wait",
+      ""
+     ],
+     [
+      15,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 16,
+    "kind": "do",
+    "words": "I set out with Ash to find the goblin camp.",
+    "status": 200,
+    "error": null,
+    "seconds": 15.9,
+    "day": 2,
+    "phase": "dusk",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "bcb28484-c452-4765-9bb5-3f936adbfccb",
+     "Messenger": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "bcb28484-c452-4765-9bb5-3f936adbfccb"
+    },
+    "rumours": [
+     "The Well's Secret",
+     "The Keep's Call",
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "Ash begins to discuss the raider camps, their voice low and serious, as they share their concerns with Wren. Wren listens intently, their eyes focused on Ash, ready to set out on their mission. Wren nods, their resolve firm, and they move to the door, signaling their readiness to embark on their journey with Ash. Together, they prepare to face the challenges ahead, their determination unwavering. The Messenger lingers, their gaze unwavering, as the sun dips lower, casting long shadows across the path.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      16,
+      "communicate",
+      "raider camps"
+     ],
+     [
+      16,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 17,
+    "kind": "do",
+    "words": "I attack the first goblin I see.",
+    "status": 200,
+    "error": null,
+    "seconds": 14.0,
+    "day": 2,
+    "phase": "evening",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "bcb28484-c452-4765-9bb5-3f936adbfccb",
+     "Messenger": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "bcb28484-c452-4765-9bb5-3f936adbfccb"
+    },
+    "rumours": [
+     "The Well's Secret",
+     "The Keep's Call",
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "The hearth crackles in the corner of the cozy Hearth, casting a warm glow over the wooden beams. Ash stands by the door, their eyes scanning the horizon, while Wren paces, their hand resting on the hilt of their longsword. Wren's eyes gleam with determination as they stride forward, their voice firm. \"I attack the first goblin I see,\" they declare, their resolve unshaken. Ash watches Wren's departure, their stance relaxed but alert, as they wait for the right moment to join the fray. Market is quiet at dusk, the air thick with the scent of hay and the distant murmur of the river. The Messenger stands by the path, their gaze fixed on the horizon, as the sun's last light stretches the shadows long and thin.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      17,
+      "wait",
+      ""
+     ],
+     [
+      17,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 18,
+    "kind": "say",
+    "words": "Ash, take the biggest one!",
+    "status": 200,
+    "error": null,
+    "seconds": 10.9,
+    "day": 2,
+    "phase": "night",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "bcb28484-c452-4765-9bb5-3f936adbfccb",
+     "Messenger": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "bcb28484-c452-4765-9bb5-3f936adbfccb"
+    },
+    "rumours": [
+     "The Well's Secret",
+     "The Keep's Call",
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "They linger, waiting for something, perhaps someone, to break the stillness. The Hearth is warm and inviting, the hearth crackling in the corner, casting a soft glow over the wooden beams. Ash stands by the door, their eyes scanning the horizon, while Wren paces, their hand resting on the hilt of their longsword. Wren turns to Ash, their voice firm, and says, \"Ash, take the biggest one!\" Ash waits, their gaze steady, as Wren's words hang in the air, the tension palpable.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      18,
+      "wait",
+      ""
+     ],
+     [
+      18,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 19,
+    "kind": "do",
+    "words": "I attack the nearest enemy.",
+    "status": 200,
+    "error": null,
+    "seconds": 12.7,
+    "day": 2,
+    "phase": "midnight",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "bcb28484-c452-4765-9bb5-3f936adbfccb",
+     "Messenger": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "bcb28484-c452-4765-9bb5-3f936adbfccb"
+    },
+    "rumours": [
+     "The Well's Secret",
+     "The Keep's Call",
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "Market is quiet, the lanterns casting a soft glow on the cobblestones. The air is cool, and the scent of fresh bread lingers from the day's market. Messenger stands by the fountain, their eyes scanning the empty square, waiting for a sign of life to break the stillness. Wren's eyes narrow as they spot the nearest enemy, their longsword gleaming in the firelight. They take a deep breath, steeling themselves for the battle to come. Ash, meanwhile, remains by the door, their gaze fixed on the horizon, waiting for the right moment to strike. Wren lunges forward, their longsword slicing through the air with a swift and deadly precision.",
+    "rolls": [
+     "Wren hits enemy for 9 slashing. (0->0 HP)"
+    ],
+    "fight": [
+     {
+      "tags": "1",
+      "deeds": "0",
+      "helped": "0",
+      "unresolved": "0",
+      "scene_event_id": "677585a6-9730-4437-a9d7-b5080a7b652a"
+     }
+    ],
+    "ash_chose": [
+     [
+      19,
+      "wait",
+      ""
+     ],
+     [
+      19,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 20,
+    "kind": "do",
+    "words": "I fight on until they are beaten.",
+    "status": 200,
+    "error": null,
+    "seconds": 18.8,
+    "day": 3,
+    "phase": "dawn",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "bcb28484-c452-4765-9bb5-3f936adbfccb",
+     "Messenger": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "bcb28484-c452-4765-9bb5-3f936adbfccb"
+    },
+    "rumours": [
+     "The Well's Secret",
+     "The Keep's Call",
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "Messenger lingers by the fountain, their gaze fixed on the empty square, as if willing the night to stir with activity. The firelight flickers in the Hearth, casting long shadows on the walls. Wren's longsword gleams as they prepare to fight, while Ash stands by the door, waiting for the right moment to strike. Wren tries to fight on until they are beaten, their longsword a blur of motion as they press the attack. Ash waits, their eyes scanning the horizon, ready to act when the time is right.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      20,
+      "wait",
+      ""
+     ],
+     [
+      20,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 21,
+    "kind": "do",
+    "words": "I search the area for anything the raiders left behind.",
+    "status": 200,
+    "error": null,
+    "seconds": 13.1,
+    "day": 3,
+    "phase": "sunrise",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "bcb28484-c452-4765-9bb5-3f936adbfccb",
+     "Messenger": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "bcb28484-c452-4765-9bb5-3f936adbfccb"
+    },
+    "rumours": [
+     "The Well's Secret",
+     "The Keep's Call",
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "The fountain's water trickles in the early light, the square still quiet as Messenger lingers, their gaze fixed on the empty space, as if waiting for the day to begin. Messenger stands still, their breath steady, as they wait for the first signs of life to break the dawn's silence. The Hearth is quiet, the firelight casting long shadows on the walls. Wren, their longsword gleaming, searches the area for any remnants the raiders might have left behind, while Ash stands by the door, waiting patiently.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      21,
+      "wait",
+      ""
+     ],
+     [
+      21,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 22,
+    "kind": "rest",
+    "words": "",
+    "status": 200,
+    "error": null,
+    "seconds": 8.6,
+    "day": 3,
+    "phase": "morning",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "bcb28484-c452-4765-9bb5-3f936adbfccb",
+     "Messenger": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "bcb28484-c452-4765-9bb5-3f936adbfccb"
+    },
+    "rumours": [
+     "The Well's Secret",
+     "The Keep's Call",
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "Messenger remains at the fountain, their eyes scanning the square, anticipating the day's first stirrings. The Hearth is quiet, the firelight casting long shadows on the walls. Wren, their longsword gleaming, searches the area for any remnants the raiders might have left behind, while Ash stands by the door, waiting patiently. Wren takes a moment to rest, their eyes scanning the room with a weary but determined gaze. Ash lingers by the door, their eyes scanning the surroundings, as they wait for any sign of danger.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      22,
+      "wait",
+      ""
+     ],
+     [
+      22,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 23,
+    "kind": "go",
+    "words": "Market",
+    "status": 200,
+    "error": null,
+    "seconds": 10.7,
+    "day": 3,
+    "phase": "noon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Messenger": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "c478fcc6-b54e-4ac2-978b-85b0cd471b70"
+    },
+    "rumours": [
+     "The Well's Secret",
+     "The Keep's Call",
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "The bustling Market square is alive with the chatter of merchants and the clatter of carts, the scent of fresh bread mingling with the earthy aroma of the soil. Ash, their eyes still scanning the surroundings, steps into the square, followed closely by Wren, their presence a comforting shadow. Messenger stands by the door, their gaze fixed on the horizon, waiting. Messenger turns to Wren, their voice steady and urgent, \"Wren, your return is timely. The Keep's defenses are in dire need of your strength and courage. Will you join us in this crucial endeavor?\" \"Ash, I see you've returned. The Keep still needs your strength. Will you join us in fortifying the defenses?\"",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      23,
+      "move",
+      ""
+     ],
+     [
+      23,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 24,
+    "kind": "do",
+    "words": "I tell the traders the raiders are dealt with.",
+    "status": 200,
+    "error": null,
+    "seconds": 13.1,
+    "day": 3,
+    "phase": "afternoon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Messenger": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "c478fcc6-b54e-4ac2-978b-85b0cd471b70"
+    },
+    "rumours": [
+     "The Well's Secret",
+     "The Keep's Call",
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "The Market square hums with the usual bustle, the scent of fresh bread and earthy soil filling the air. Ash and Wren, having just arrived, stand amidst the chatter and clatter, their eyes scanning the surroundings. Messenger, standing nearby, turns to Ash, their expression hopeful. Messenger approaches Ash, their voice low and urgent. \"Ash, the Keep's defenses are in dire need of your strength. Will you join us in fortifying them?\" Ash listens, their gaze steady, considering the request. They turn to Wren, who nods subtly, understanding the gravity of the situation. Wren, with a determined look, steps forward. \"I'll inform the traders that the raiders are dealt with. It will ease their minds and strengthen our position.\" Ash turns back to Messenger, their decision made. \"We will help. The Keep's safety is as important as our own.\" Messenger's face lights up with relief. \"Thank you, Ash. Your strength and Wren's news will be invaluable in fortifying the Keep's defenses.\"",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      24,
+      "communicate",
+      "recruiting help for the Keep's defenses"
+     ],
+     [
+      24,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 25,
+    "kind": "wait",
+    "words": "",
+    "status": 200,
+    "error": null,
+    "seconds": 13.6,
+    "day": 3,
+    "phase": "sunset",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Messenger": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "c478fcc6-b54e-4ac2-978b-85b0cd471b70"
+    },
+    "rumours": [
+     "The Well's Secret",
+     "The Keep's Call",
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "The Market square, alive with the usual afternoon bustle, greets Ash and Wren as they step into the scene. The air is thick with the scent of fresh bread and earthy soil, a symphony of chatter and clatter filling their ears. Messenger, standing nearby, turns to Ash with a hopeful expression, their eyes meeting in a silent exchange. Messenger approaches Wren, their voice low and urgent, \"Wren, your news about the raiders is welcome. The Keep's defenses will be stronger with this knowledge.\" Wren listens intently, their gaze steady, as they absorb the gravity of the situation. Ash, standing nearby, waits patiently, their hand resting on the hilt of their longsword, a silent promise of readiness. Ash speaks to Messenger, their voice firm, \"We need to recruit help for the Keep's defenses. The threat is real, and we must prepare.\"",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      25,
+      "communicate",
+      "Wren, your news about the raiders is welcome. The Keep's defenses will be stronger with this knowledge."
+     ],
+     [
+      25,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 26,
+    "kind": "do",
+    "words": "I look around for new trouble.",
+    "status": 200,
+    "error": null,
+    "seconds": 14.1,
+    "day": 3,
+    "phase": "dusk",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Messenger": "c478fcc6-b54e-4ac2-978b-85b0cd471b70",
+     "Wren": "c478fcc6-b54e-4ac2-978b-85b0cd471b70"
+    },
+    "rumours": [
+     "The Well's Secret",
+     "The Keep's Call",
+     "The Hearth's Morning Chores"
+    ],
+    "settled": [],
+    "prose": "Wren's eyes dart across the market, taking in the faces and movements of the crowd. They pause, their gaze lingering on a particular stall, as if something has caught their attention. Messenger, noticing Wren's focus, waits patiently, their expression a mix of curiosity and anticipation. Ash stands still, their posture relaxed but alert, as they wait for Wren to make the next move. The ranger's eyes are sharp, scanning the surroundings with a practiced eye, ready to react to any sign of danger. Messenger remains motionless, their eyes fixed on Ash, waiting for a signal or a word. The messenger's presence is a silent promise of support, a steadfast companion in the face of whatever may come.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      26,
+      "wait",
+      ""
+     ],
+     [
+      26,
+      "wait",
+      ""
+     ]
+    ]
+   }
+  ],
+  "spend_usd": 0.15719
+ },
+ {
+  "run": 2,
+  "world_id": "d11e8efa-8d86-4b13-862c-8866a0b15cb1",
+  "turns": [
+   {
+    "turn": 1,
+    "kind": "say",
+    "words": "Ash, the roads are getting dangerous. Will you join me as my companion?",
+    "status": 200,
+    "error": null,
+    "seconds": 11.3,
+    "day": 1,
+    "phase": "sunrise",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "3975acff-ffb9-485a-863f-6383fe556701",
+     "Wren": "3975acff-ffb9-485a-863f-6383fe556701"
+    },
+    "rumours": [
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow on the wooden walls. Ash and Wren stand near the fire, their faces illuminated by the flickering flames. Ash, a human ranger, and Wren, a human fighter, are deep in conversation, their voices low and serious. Ash turns to Wren, their expression thoughtful. \"The market is bustling, but the roads are getting dangerous. Will you join me as my companion?\" they ask, their voice steady and determined. Wren nods, their eyes meeting Ash's. \"Yes, I will come. The roads are indeed treacherous, and I believe we can watch each other's backs,\" they reply, their voice firm and resolute. \"Yes, I will come. The roads are indeed treacherous, and I believe we can watch each other's backs.\"",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      1,
+      "communicate",
+      "market"
+     ]
+    ]
+   },
+   {
+    "turn": 2,
+    "kind": "do",
+    "words": "I look around the Hearth and listen for news of trouble.",
+    "status": 200,
+    "error": null,
+    "seconds": 11.5,
+    "day": 1,
+    "phase": "morning",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "3975acff-ffb9-485a-863f-6383fe556701",
+     "Wren": "3975acff-ffb9-485a-863f-6383fe556701"
+    },
+    "rumours": [
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow on the wooden walls. Ash lingers by the door, counting the bells, while Wren scans the room, their eyes sharp and alert.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      2,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 3,
+    "kind": "do",
+    "words": "I ask the people here whether anyone has been attacked on the roads.",
+    "status": 200,
+    "error": null,
+    "seconds": 10.3,
+    "day": 1,
+    "phase": "noon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "3975acff-ffb9-485a-863f-6383fe556701",
+     "Wren": "3975acff-ffb9-485a-863f-6383fe556701"
+    },
+    "rumours": [
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "Wren turns to the gathered people, their voice steady as they ask, \"Has anyone been attacked on the roads?\" Ash nods, their gaze fixed on the door, \"I'll keep an eye out for any signs of trouble as we travel to the market.\" Ash remains by the door, their posture relaxed but alert, waiting for the right moment to set off.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      3,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 4,
+    "kind": "go",
+    "words": "Market",
+    "status": 200,
+    "error": null,
+    "seconds": 7.7,
+    "day": 1,
+    "phase": "afternoon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "e6d26ea2-a629-46ac-801f-8da2300a7b0b",
+     "Wren": "e6d26ea2-a629-46ac-801f-8da2300a7b0b"
+    },
+    "rumours": [
+     "Market Day Preparations",
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "The market bustles with activity, the scent of fresh bread and the clatter of carts filling the air. Ash and Wren, having left the gathering, step into the lively scene, their eyes scanning the crowd. Ash's gaze lingers on the distant horizon, a silent promise to keep watch.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      4,
+      "move",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 5,
+    "kind": "do",
+    "words": "I ask the traders about the raiders troubling their carts.",
+    "status": 200,
+    "error": null,
+    "seconds": 9.0,
+    "day": 1,
+    "phase": "sunset",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "e6d26ea2-a629-46ac-801f-8da2300a7b0b",
+     "Wren": "e6d26ea2-a629-46ac-801f-8da2300a7b0b"
+    },
+    "rumours": [
+     "Market Day Preparations",
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "The Market bustles with the scent of fresh bread and the clatter of carts, a lively scene that Ash and Wren step into, their eyes scanning the crowd. Ash's gaze lingers on the distant horizon, a silent promise to keep watch. Wren approaches a trader, asking about the raiders troubling their carts. Ash, standing by, speaks to Wren, \"I'll keep an eye out for any signs of trouble as we travel to the market.\" Ash waits, their posture alert, as Wren continues to gather information from the traders.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      5,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 6,
+    "kind": "do",
+    "words": "I go looking for the goblins that raid the carts near the market.",
+    "status": 200,
+    "error": null,
+    "seconds": 12.6,
+    "day": 1,
+    "phase": "dusk",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "e6d26ea2-a629-46ac-801f-8da2300a7b0b",
+     "Wren": "e6d26ea2-a629-46ac-801f-8da2300a7b0b"
+    },
+    "rumours": [
+     "Market Day Preparations",
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "Wren turns to Ash, their eyes meeting in a shared resolve. \"I'll join you in looking for the goblins, Wren. We'll keep each other safe,\" Ash says, their voice steady and determined. Wren nods, and together, they set off, leaving the bustling Market behind. Ash waits, their hand resting on the hilt of their longsword, eyes scanning the horizon for any sign of the goblins. The sun dips lower, casting long shadows across the market's edge. Wren tries to find the goblins, their steps quick and purposeful as they move toward the outskirts of the Market. The scent of fresh bread fades, replaced by the earthy smell of the forest beyond.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      6,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 7,
+    "kind": "do",
+    "words": "If goblins are here, I draw my sword and attack the nearest one.",
+    "status": 200,
+    "error": null,
+    "seconds": 9.3,
+    "day": 1,
+    "phase": "evening",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 5,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [
+     [
+      "Goblin",
+      7
+     ]
+    ],
+    "places": {
+     "Ash": "e6d26ea2-a629-46ac-801f-8da2300a7b0b",
+     "Wren": "e6d26ea2-a629-46ac-801f-8da2300a7b0b"
+    },
+    "rumours": [
+     "Market Day Preparations",
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "The Market is quiet, the last light of dusk casting long shadows across the cobblestones. Wren and Ash stand at the edge, their eyes scanning the area, the air thick with anticipation. Wren's hand hovers over their longsword, ready to draw at the first sign of danger. Wren's grip tightens on their sword, their gaze sharp and focused. They are prepared to strike if goblins are near. Ash remains vigilant, their hand resting on the hilt of their longsword, ready to defend or attack as needed.",
+    "rolls": [
+     "Encounter: Goblin (easy, 50 adjusted XP).",
+     "Wren misses Goblin (14 vs AC 15).",
+     "Ash misses Goblin (13 vs AC 15).",
+     "Goblin hits Wren for 7 slashing. (12->5 HP)"
+    ],
+    "fight": [
+     {
+      "foes": "[\"goblin\"]",
+      "tags": "4",
+      "deeds": "1",
+      "helped": "1",
+      "unresolved": "0",
+      "scene_event_id": "44fbbb4c-dafb-43ac-a1a5-62449e0491b9"
+     }
+    ],
+    "ash_chose": [
+     [
+      7,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 8,
+    "kind": "do",
+    "words": "I attack the nearest enemy.",
+    "status": 200,
+    "error": null,
+    "seconds": 10.5,
+    "day": 1,
+    "phase": "night",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 5,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "e6d26ea2-a629-46ac-801f-8da2300a7b0b",
+     "Wren": "e6d26ea2-a629-46ac-801f-8da2300a7b0b"
+    },
+    "rumours": [
+     "Market Day Preparations",
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "The Market, once quiet, now echoes with the clash of steel as the last light of dusk fades. Wren and Ash stand their ground, their eyes locked on the goblin that has emerged from the shadows. The cobblestones beneath their feet are slick with the anticipation of battle. Ash raises their longsword, the blade glinting in the dim light, and lunges forward with a determined cry. Ash's blade slices through the air, aiming for the goblin's chest. Wren, not to be outdone, swings their longsword with a powerful arc, targeting the nearest enemy with a fierce determination. Wren's sword flashes as it descends, seeking to strike the goblin down.",
+    "rolls": [
+     "Ash misses Goblin (9 vs AC 15).",
+     "Wren hits Goblin for 13 slashing. Critical! (7->0 HP)",
+     "Defeated Goblin: 50 XP, 25 each."
+    ],
+    "fight": [
+     {
+      "foes": "[\"goblin\"]",
+      "tags": "3",
+      "deeds": "0",
+      "helped": "0",
+      "unresolved": "0",
+      "scene_event_id": "3daf38f7-1c31-44a9-a598-7d421458b2ca"
+     }
+    ],
+    "ash_chose": [
+     [
+      8,
+      "interact",
+      "I attack Goblin with my longsword"
+     ]
+    ]
+   },
+   {
+    "turn": 9,
+    "kind": "do",
+    "words": "I keep fighting beside Ash.",
+    "status": 200,
+    "error": null,
+    "seconds": 12.1,
+    "day": 1,
+    "phase": "midnight",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 5,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "e6d26ea2-a629-46ac-801f-8da2300a7b0b",
+     "Wren": "e6d26ea2-a629-46ac-801f-8da2300a7b0b"
+    },
+    "rumours": [
+     "Market Day Preparations",
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "The Market, once quiet, now echoes with the clash of steel as the last light of dusk fades. Wren and Ash stand their ground, their eyes locked on the defeated goblin at their feet. The cobblestones are slick with the remnants of battle, and the air is thick with tension. Wren tries to keep fighting beside Ash, their longsword at the ready, but Ash waits, their longsword lowered, as they assess the situation.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      9,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 10,
+    "kind": "rest",
+    "words": "",
+    "status": 200,
+    "error": null,
+    "seconds": 14.4,
+    "day": 2,
+    "phase": "dawn",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "e6d26ea2-a629-46ac-801f-8da2300a7b0b",
+     "Wren": "e6d26ea2-a629-46ac-801f-8da2300a7b0b"
+    },
+    "rumours": [
+     "Market Day Preparations",
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "The Market's cobblestones, slick with the remnants of battle, reflect the fading light of dusk. Wren, their breath steadying, leans on their longsword, eyes still locked on the defeated goblin at their feet. Ash, the ranger, stands nearby, longbow slung across their back, watching the shadows for any sign of movement. Wren's muscles ache from the skirmish, but they find a moment of respite, their body seeking the rest it desperately needs. The Market, once a bustling hub, now lies in a tense silence, the cobblestones slick with the remnants of battle. The last light of dusk fades, casting long shadows across the scene. Wren and Ash stand over the defeated goblin, their weapons at the ready, the air thick with the scent of iron and the echo of their recent struggle. Ash, the human ranger, pauses, their eyes scanning the area, the longsword in their grip a silent promise of readiness. They wait, their breath steady, the tension in their stance a testament to their vigilance.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      10,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 11,
+    "kind": "say",
+    "words": "Ash, are you hurt? We did well.",
+    "status": 200,
+    "error": null,
+    "seconds": 10.9,
+    "day": 2,
+    "phase": "sunrise",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "e6d26ea2-a629-46ac-801f-8da2300a7b0b",
+     "Wren": "e6d26ea2-a629-46ac-801f-8da2300a7b0b"
+    },
+    "rumours": [
+     "Market Day Preparations",
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "The Market, once a bustling hub, now lies in a tense silence, the cobblestones slick with the remnants of battle. The last light of dusk fades, casting long shadows across the scene. Wren and Ash stand over the defeated goblin, their weapons at the ready, the air thick with the scent of iron. Wren turns to Ash, concern etched on their face. Wren attempts to communicate with Ash, their voice barely above a whisper, 'Ash, are you hurt? We did well.' \"I'm fine, Wren. We did indeed. Let's rest and prepare for what's ahead.\" Ash nods, their eyes scanning the area, a sense of vigilance never leaving their stance.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      11,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 12,
+    "kind": "go",
+    "words": "Hearth",
+    "status": 200,
+    "error": null,
+    "seconds": 8.7,
+    "day": 2,
+    "phase": "morning",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "3975acff-ffb9-485a-863f-6383fe556701",
+     "Wren": "3975acff-ffb9-485a-863f-6383fe556701"
+    },
+    "rumours": [
+     "Market Day Preparations",
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "The cobblestones of Hearth are damp underfoot, the scent of hearth smoke lingering in the air. Wren and Ash, their weapons sheathed, step into the quiet of the village, leaving the tense silence of the Market behind.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      12,
+      "move",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 13,
+    "kind": "do",
+    "words": "I share a meal by the fire and tend to my wounds.",
+    "status": 200,
+    "error": null,
+    "seconds": 11.1,
+    "day": 2,
+    "phase": "noon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "3975acff-ffb9-485a-863f-6383fe556701",
+     "Wren": "3975acff-ffb9-485a-863f-6383fe556701"
+    },
+    "rumours": [
+     "The Keep's Request",
+     "Market Day Preparations",
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "The damp cobblestones of Hearth crunch underfoot as Wren and Ash step into the village, the scent of hearth smoke still lingering in the air. Wren moves towards a warm fire, their eyes scanning for a place to rest and tend to their wounds, while Ash lingers, waiting for a moment to join them. Ash approaches Wren, their voice steady as they offer, \"I'll join you by the fire, Wren. Let's share a meal and rest.\"",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      13,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 14,
+    "kind": "rest",
+    "words": "",
+    "status": 200,
+    "error": null,
+    "seconds": 8.3,
+    "day": 2,
+    "phase": "afternoon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "3975acff-ffb9-485a-863f-6383fe556701",
+     "Wren": "3975acff-ffb9-485a-863f-6383fe556701"
+    },
+    "rumours": [
+     "The Keep's Request",
+     "Market Day Preparations",
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "Ash waits, their gaze fixed on the distance, as if searching for something beyond the village's edge. Wren finds a spot by the fire and settles down, their body language signaling a need for rest. Ash, after a moment, approaches and stands nearby, keeping a watchful eye on the surroundings.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      14,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 15,
+    "kind": "do",
+    "words": "I ask around about where the raiders make their camp.",
+    "status": 200,
+    "error": null,
+    "seconds": 13.2,
+    "day": 2,
+    "phase": "sunset",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "3975acff-ffb9-485a-863f-6383fe556701",
+     "Wren": "3975acff-ffb9-485a-863f-6383fe556701"
+    },
+    "rumours": [
+     "The Keep's Request",
+     "Market Day Preparations",
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow over the worn wooden benches. Wren, still weary from their earlier exertions, sits by the fire, their eyes reflecting the dance of the flames. Ash stands nearby, their gaze scanning the room, ever watchful. Wren turns to Ash, their voice low and curious, \"I've been trying to find out where the raiders are hiding, but I haven't had much luck.\" Ash nods, their expression determined, \"I'll help you ask around, Wren. We should find out where those raiders are hiding.\" Ash remains still, their eyes never leaving the door, as if waiting for something or someone.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      15,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 16,
+    "kind": "do",
+    "words": "I set out with Ash to find the goblin camp.",
+    "status": 200,
+    "error": null,
+    "seconds": 13.9,
+    "day": 2,
+    "phase": "dusk",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "3975acff-ffb9-485a-863f-6383fe556701",
+     "Wren": "3975acff-ffb9-485a-863f-6383fe556701"
+    },
+    "rumours": [
+     "The Keep's Request",
+     "Market Day Preparations",
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "Wren rises from their seat, a determined look in their eyes, and turns to Ash. \"Let's set out, Ash. We'll find that camp and deal with the goblins,\" Wren says, their voice steady and resolute. \"Let's set out, Wren. We'll find that camp and deal with the goblins.\" Ash nods, a silent agreement passing between them, and they both prepare to leave the warmth of Hearth behind.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      16,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 17,
+    "kind": "do",
+    "words": "I attack the first goblin I see.",
+    "status": 200,
+    "error": null,
+    "seconds": 12.0,
+    "day": 2,
+    "phase": "evening",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "3975acff-ffb9-485a-863f-6383fe556701",
+     "Wren": "3975acff-ffb9-485a-863f-6383fe556701"
+    },
+    "rumours": [
+     "The Keep's Request",
+     "Market Day Preparations",
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "The hearth crackles in the dimming light of Hearth, its warmth a stark contrast to the chill of the evening air. Wren, their eyes alight with determination, stands ready, longsword in hand. Ash lingers by the door, their gaze fixed on the path ahead, longbow at the ready. Wren's heart pounds as they step forward, their eyes scanning the shadows for the first sign of a goblin. They raise their sword, the steel glinting in the fading light, and prepare to strike. Ash remains still, their breath steady, as they wait for the right moment to act. Their fingers tighten around the longbow, ready to unleash an arrow at a moment's notice.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      17,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 18,
+    "kind": "say",
+    "words": "Ash, take the biggest one!",
+    "status": 200,
+    "error": null,
+    "seconds": 12.5,
+    "day": 2,
+    "phase": "night",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "3975acff-ffb9-485a-863f-6383fe556701",
+     "Wren": "3975acff-ffb9-485a-863f-6383fe556701"
+    },
+    "rumours": [
+     "The Keep's Request",
+     "Market Day Preparations",
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "The hearth crackles in the dimming light of Hearth, its warmth a stark contrast to the chill of the evening air. Wren, their eyes alight with determination, stands ready, longsword in hand. Ash lingers by the door, their gaze fixed on the path ahead, longbow at the ready. Wren turns to Ash, their voice firm, \"Ash, take the biggest one!\" Ash nods, their grip tightening on the longbow, as they prepare to face whatever lies ahead.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      18,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 19,
+    "kind": "do",
+    "words": "I attack the nearest enemy.",
+    "status": 200,
+    "error": null,
+    "seconds": 11.2,
+    "day": 2,
+    "phase": "midnight",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "3975acff-ffb9-485a-863f-6383fe556701",
+     "Wren": "3975acff-ffb9-485a-863f-6383fe556701"
+    },
+    "rumours": [
+     "The Keep's Request",
+     "Market Day Preparations",
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "Wren steps forward, their grip tightening on the longsword, ready to strike the nearest enemy. Ash remains by the door, their eyes scanning the darkness, waiting for the right moment to act.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      19,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 20,
+    "kind": "do",
+    "words": "I fight on until they are beaten.",
+    "status": 200,
+    "error": null,
+    "seconds": 21.8,
+    "day": 3,
+    "phase": "dawn",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "3975acff-ffb9-485a-863f-6383fe556701",
+     "Wren": "3975acff-ffb9-485a-863f-6383fe556701"
+    },
+    "rumours": [
+     "The Keep's Request",
+     "Market Day Preparations",
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "The hearth crackles in the corner of the Hearth, casting flickering shadows on the walls. Wren, their longsword gripped tightly, stands ready, their eyes scanning the room. Ash lingers by the door, their gaze fixed on the darkness beyond. Wren's stance is firm, their muscles coiled like a spring, ready to unleash a flurry of blows. They are determined to fight on, to stand their ground until the last breath. Ash, on the other hand, remains still, their body tense with anticipation. They are waiting, their senses heightened, ready to strike at the opportune moment.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      20,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 21,
+    "kind": "do",
+    "words": "I search the area for anything the raiders left behind.",
+    "status": 200,
+    "error": null,
+    "seconds": 10.6,
+    "day": 3,
+    "phase": "sunrise",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "3975acff-ffb9-485a-863f-6383fe556701",
+     "Wren": "3975acff-ffb9-485a-863f-6383fe556701"
+    },
+    "rumours": [
+     "The Keep's Request",
+     "Market Day Preparations",
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "The Hearth is quiet, the hearth crackling softly in the corner, casting a warm glow on the walls. Wren, their longsword in hand, scans the room, while Ash lingers by the door, their gaze fixed on the darkness outside. Wren begins to search the area, looking for any signs of the raiders' presence. Ash remains by the door, their hand resting on the hilt of their longsword, ready for any sign of danger.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      21,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 22,
+    "kind": "rest",
+    "words": "",
+    "status": 500,
+    "error": "{\"error\":{\"code\":\"INVARIANT_VIOLATED\",\"message\":\"projection left bounds: stamina=110\",\"request_id\":\"req-3ab2db245521\",\"details\":{\"resource\":\"stamina\",\"value\":110}}}",
+    "seconds": 10.9,
+    "day": 3,
+    "phase": "morning",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 25,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "3975acff-ffb9-485a-863f-6383fe556701",
+     "Wren": "3975acff-ffb9-485a-863f-6383fe556701"
+    },
+    "rumours": [
+     "The Keep's Request",
+     "Market Day Preparations",
+     "Market Day"
+    ],
+    "settled": [],
+    "prose": "",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": []
+   }
+  ],
+  "spend_usd": 0.09129
+ }
+]
