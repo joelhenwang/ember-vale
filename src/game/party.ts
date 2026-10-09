@@ -175,7 +175,10 @@ export function sayRoll(r: CombatRollView): RollSay {
       using: null,
       check: null,
       natural: null,
-      outcome: r.amount ? `+${r.amount} hit points` : null,
+      outcome:
+        [r.amount ? `+${r.amount} hit points` : '', choiceWaiting(r.choose)]
+          .filter(Boolean)
+          .join(' · ') || null,
       hp: null,
       tone: 'level'
     }
@@ -309,5 +312,65 @@ export function slotsLeftLine(m: PartyMemberView): string {
 export function partyHurt(rolls: CombatRollView[], name: string): boolean {
   return rolls.some(
     (r) => r.target === name && !r.target_foe && (r.amount ?? 0) > 0 && r.result !== 'healed'
+  )
+}
+
+/** The six abilities, in sheet order, with their names. */
+export const ABILITIES: { key: string; name: string }[] = [
+  { key: 'str', name: 'Strength' },
+  { key: 'dex', name: 'Dexterity' },
+  { key: 'con', name: 'Constitution' },
+  { key: 'int', name: 'Intelligence' },
+  { key: 'wis', name: 'Wisdom' },
+  { key: 'cha', name: 'Charisma' }
+]
+
+/** The highest an ability can go. */
+export const ABILITY_CAP = 20
+
+/** "+2" / "-1": the modifier an ability score gives. */
+export function abilityMod(score: number): string {
+  const mod = Math.floor((score - 10) / 2)
+  return mod >= 0 ? `+${mod}` : `${mod}`
+}
+
+/** What a level-up roll left to choose, in words ('' when nothing). */
+export function choiceWaiting(choose: string | null | undefined): string {
+  const kinds = (choose ?? '').split(',').filter(Boolean)
+  if (!kinds.length) return ''
+  const words = kinds.map((k) => (k === 'ability' ? 'a better ability' : 'new spells'))
+  return `choose ${words.join(' and ')} in Character details`
+}
+
+/**
+ * One more point toward an Ability Score Improvement: +2 to one ability or
+ * +1 to two, never above the cap. Returns the new picks (unchanged when the
+ * point does not fit); picking an ability already at +2 clears it.
+ */
+export function addAbilityPoint(
+  picks: Record<string, number>,
+  key: string,
+  scores: Record<string, number>
+): Record<string, number> {
+  const now = picks[key] ?? 0
+  const spent = Object.values(picks).reduce((a, b) => a + b, 0)
+  if (now === 2 || (now === 1 && spent === 2)) {
+    const rest = { ...picks }
+    delete rest[key]
+    return rest
+  }
+  if ((scores[key] ?? 10) + now + 1 > ABILITY_CAP) return picks
+  if (spent < 2) return { ...picks, [key]: now + 1 }
+  // Full already: a fresh ability takes the place of the other picks.
+  return { [key]: 1 }
+}
+
+/** The picks make a whole improvement (+2 to one, or +1 to two). */
+export function improvementReady(picks: Record<string, number>): boolean {
+  const steps = Object.values(picks)
+    .filter((v) => v > 0)
+    .sort()
+  return (
+    (steps.length === 1 && steps[0] === 2) || (steps.length === 2 && steps.every((v) => v === 1))
   )
 }

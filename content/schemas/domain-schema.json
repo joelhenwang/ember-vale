@@ -5960,6 +5960,44 @@
           "title": "HitPoints",
           "type": "object"
         },
+        "LevelChoice": {
+          "additionalProperties": false,
+          "description": "A choice a level-up leaves to the player (combat-depth-002).\n\n``ability``: +2 to one ability or +1 to two (5e Ability Score\nImprovement), not applied until chosen. ``spells``: the spells the\nlevel brought were picked for the player (``picked``, already known);\nthey may swap them for others from ``options`` (the same count).",
+          "properties": {
+            "kind": {
+              "enum": [
+                "ability",
+                "spells"
+              ],
+              "title": "Kind",
+              "type": "string"
+            },
+            "level": {
+              "title": "Level",
+              "type": "integer"
+            },
+            "options": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Options",
+              "type": "array"
+            },
+            "picked": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Picked",
+              "type": "array"
+            }
+          },
+          "required": [
+            "kind",
+            "level"
+          ],
+          "title": "LevelChoice",
+          "type": "object"
+        },
         "Sheet": {
           "additionalProperties": false,
           "description": "One adventurer. Mirrors the monolith's sheet object field for field.",
@@ -6004,6 +6042,13 @@
               "default": "fighter",
               "title": "Character Class",
               "type": "string"
+            },
+            "choices": {
+              "items": {
+                "$ref": "#/$defs/LevelChoice"
+              },
+              "title": "Choices",
+              "type": "array"
             },
             "conditions": {
               "items": {
@@ -6058,6 +6103,18 @@
               ],
               "default": null,
               "title": "Race"
+            },
+            "rest_day": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Rest Day"
             },
             "shield": {
               "default": false,
@@ -10168,6 +10225,44 @@
           ],
           "title": "HitPoints",
           "type": "object"
+        },
+        "LevelChoice": {
+          "additionalProperties": false,
+          "description": "A choice a level-up leaves to the player (combat-depth-002).\n\n``ability``: +2 to one ability or +1 to two (5e Ability Score\nImprovement), not applied until chosen. ``spells``: the spells the\nlevel brought were picked for the player (``picked``, already known);\nthey may swap them for others from ``options`` (the same count).",
+          "properties": {
+            "kind": {
+              "enum": [
+                "ability",
+                "spells"
+              ],
+              "title": "Kind",
+              "type": "string"
+            },
+            "level": {
+              "title": "Level",
+              "type": "integer"
+            },
+            "options": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Options",
+              "type": "array"
+            },
+            "picked": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Picked",
+              "type": "array"
+            }
+          },
+          "required": [
+            "kind",
+            "level"
+          ],
+          "title": "LevelChoice",
+          "type": "object"
         }
       },
       "additionalProperties": false,
@@ -10213,6 +10308,13 @@
           "default": "fighter",
           "title": "Character Class",
           "type": "string"
+        },
+        "choices": {
+          "items": {
+            "$ref": "#/$defs/LevelChoice"
+          },
+          "title": "Choices",
+          "type": "array"
         },
         "conditions": {
           "items": {
@@ -10267,6 +10369,18 @@
           ],
           "default": null,
           "title": "Race"
+        },
+        "rest_day": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rest Day"
         },
         "shield": {
           "default": false,

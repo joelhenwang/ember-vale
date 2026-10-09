@@ -9,7 +9,7 @@ as ``+-1`` in summaries.
 
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -36,6 +36,27 @@ class HitPoints(BaseModel):
 
     current: int
     max: int
+
+
+class LevelChoice(BaseModel):
+    """A choice a level-up leaves to the player (combat-depth-002).
+
+    ``ability``: +2 to one ability or +1 to two (5e Ability Score
+    Improvement), not applied until chosen. ``spells``: the spells the
+    level brought were picked for the player (``picked``, already known);
+    they may swap them for others from ``options`` (the same count).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["ability", "spells"]
+    level: int
+    picked: list[str] = Field(default_factory=list)
+    options: list[str] = Field(default_factory=list)
+
+    @property
+    def id(self) -> str:
+        return f"{self.kind}-{self.level}"
 
 
 class Sheet(BaseModel):
@@ -73,6 +94,11 @@ class Sheet(BaseModel):
     #: a new story day is the long rest that gives them back.
     slots_used: list[int] = Field(default_factory=list)
     slots_day: int | None = None
+    #: The story day the sheet last woke on: a later day is the night's long
+    #: rest (full health, conditions gone, slots back). ``None``: not yet known.
+    rest_day: int | None = None
+    #: Level-up choices the player has not made yet.
+    choices: list[LevelChoice] = Field(default_factory=list)
 
 
 def sheet_mod(sheet: Sheet, ability: str) -> int:

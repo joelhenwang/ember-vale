@@ -80,7 +80,9 @@ import type {
   JobView,
   WritingSampleView,
   TerrainView,
-  PartyRosterResponse
+  PartyRosterResponse,
+  PartyMemberView,
+  LevelChoiceRequest
 } from '../../content/clients/worldsim'
 import { apiFetch, type Role } from './http'
 
@@ -566,6 +568,20 @@ export function getParty(worldId: string, opts: CallOptions = {}): Promise<Party
   return apiFetch<PartyRosterResponse>(`/stage1/party?world_id=${worldId}`, {
     ...opts,
     method: 'GET'
+  })
+}
+
+/** Make a level-up choice for a hero: +2 to one ability or +1 to two
+ *  (`abilities`), or the spells to learn (`spells`). */
+export function chooseLevelOption(
+  memberId: string,
+  body: LevelChoiceRequest,
+  opts: CallOptions = {}
+): Promise<PartyMemberView> {
+  return apiFetch<PartyMemberView>(`/stage1/party/${memberId}/choices`, {
+    ...opts,
+    method: 'POST',
+    body
   })
 }
 

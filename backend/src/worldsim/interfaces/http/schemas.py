@@ -355,6 +355,32 @@ class PartyMemberView(BaseModel):
     xp: int = 0
     xp_level_start: int = 0
     xp_next_level: int | None = None
+    #: Ability scores by short name ("str": 16).
+    abilities: dict[str, int] = Field(default_factory=dict)
+    #: Level-up choices not made yet (only a player's hero has any).
+    choices: list[LevelChoiceView] = Field(default_factory=list)
+
+
+class SpellOption(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    key: str
+    name: str
+    #: Spell level (0 = a cantrip).
+    level: int
+
+
+class LevelChoiceView(BaseModel):
+    """A level-up choice left to the player: ``ability`` (+2 to one ability
+    or +1 to two) or ``spells`` (keep the picked spells or swap them)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    id: str
+    kind: str
+    level: int
+    picked: list[SpellOption] = Field(default_factory=list)
+    options: list[SpellOption] = Field(default_factory=list)
 
 
 class FoeView(BaseModel):
@@ -900,6 +926,19 @@ class CharacterCreateRequest(BaseModel):
     pronouns: str = Field(default="", max_length=40)
 
 
+class LevelChoiceRequest(BaseModel):
+    """Make one level-up choice: ``abilities`` ({"str": 2} or two at +1)
+    or ``spells`` (spell keys, as many as were picked)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    world_id: UUID
+    choice_id: str = Field(min_length=1, max_length=32)
+    expected_version: int = Field(ge=0)
+    abilities: dict[str, int] | None = None
+    spells: list[str] | None = Field(default=None, max_length=12)
+
+
 class PartyLinkRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -956,6 +995,8 @@ class CombatRollView(BaseModel):
     #: ``xp``: what each party member got; ``level``: the level reached.
     share: int | None = None
     level: int | None = None
+    #: ``level``: choices it left to the player (``ability``, ``spells``, comma-joined).
+    choose: str | None = None
 
 
 class CombatLogView(BaseModel):

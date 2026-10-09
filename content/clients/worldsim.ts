@@ -140,9 +140,11 @@ export interface PartyBeginRequest {
 }
 
 export interface PartyMemberView {
+  abilities?: Record<string, number>;
   armor_class?: number | null;
   character_class: string;
   character_id?: string | null;
+  choices?: LevelChoiceView[];
   conditions?: string[];
   hp_current?: number | null;
   hp_max?: number | null;
@@ -176,11 +178,34 @@ export interface FoeView {
   name: string;
 }
 
+export interface LevelChoiceView {
+  id: string;
+  kind: string;
+  level: number;
+  options?: SpellOption[];
+  picked?: SpellOption[];
+}
+
+export interface SpellOption {
+  key: string;
+  level: number;
+  name: string;
+}
+
+export interface LevelChoiceRequest {
+  abilities?: Record<string, number> | null;
+  choice_id: string;
+  expected_version: number;
+  spells?: string[] | null;
+  world_id: string;
+}
+
 export interface CombatRollView {
   ac?: number | null;
   actor?: string | null;
   actor_foe?: boolean;
   amount?: number | null;
+  choose?: string | null;
   damage_type?: string | null;
   dc?: number | null;
   hp_after?: number | null;
@@ -1520,6 +1545,7 @@ export const ROUTES = {
   listParty: "GET /api/v1/stage1/party",
   createCharacter: "POST /api/v1/stage1/characters",
   linkPartyMember: "POST /api/v1/stage1/party/{member_id}/link",
+  chooseLevelOption: "POST /api/v1/stage1/party/{member_id}/choices",
   startActivity: "POST /api/v1/stage2/activities",
   interruptActivity: "POST /api/v1/stage2/activities/{activity_id}/interrupt",
   resumeActivity: "POST /api/v1/stage2/activities/{activity_id}/resume",
