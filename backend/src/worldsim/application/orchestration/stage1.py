@@ -232,7 +232,7 @@ from worldsim.domain.memory import (
 )
 from worldsim.domain.narration import NarrationBeat
 from worldsim.domain.narrative import NarrativeHook
-from worldsim.domain.party import Monster, party_name_key
+from worldsim.domain.party import Monster, fight_keys, foes_line, foes_on, party_name_key
 from worldsim.domain.perception import (
     Disclosure,
     FactChannel,
@@ -4367,6 +4367,18 @@ class Stage1Orchestrator:
                 str(p.character_id) for p in (await uow.scenes.get_scene(scene.id)).participants
             ]
             roster = await uow.party.list_for_world(world_id)
+            # A fight that is on: the narrator strikes its foes, never respawns them.
+            fight = await uow.events.latest_fight(world_id) if roster else None
+            foes = (
+                foes_on(
+                    fight.absolute_index,
+                    (await uow.phases.get_run(run_id)).absolute_index,
+                    fight_keys(fight.summary),
+                    await uow.monsters.list_for_world(world_id),
+                )
+                if fight is not None
+                else []
+            )
             config = await uow.worlds.get_config(world_id)
             scene_place = await _event_place(uow, event_id)
             place_name = scene_place.name if scene_place is not None else None
@@ -4449,6 +4461,8 @@ class Stage1Orchestrator:
             facts.extend(
                 {"key": f"dnd-sheet:{key}", "value": summary} for key, summary in summaries.items()
             )
+            if foes:
+                facts.append({"key": "dnd-foes", "value": foes_line(foes)})
             dnd_context = (
                 dnd_party_prompt([m.sheet for m in roster], tables) + "\n" + dnd_story_rules_text()
             )

@@ -24,7 +24,7 @@ from worldsim.application.stories.guards import require_unarchived
 from worldsim.domain.commands import ActionIntent
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.ids import derive_attempt_id
-from worldsim.domain.party import PartyMember
+from worldsim.domain.party import PartyMember, fight_keys, foes_on
 from worldsim.domain.rules.dnd import DataTables, Sheet, armor_ac, strip_combat_tags
 from worldsim.domain.rules.dnd.data import dict_field, entry, list_field, table
 from worldsim.domain.scenes import Intent, Reaction
@@ -80,10 +80,6 @@ def _party_view(member: PartyMember, tables: DataTables | None = None) -> api.Pa
     )
 
 
-#: A fight shows its foes this many turns after its last roll.
-FIGHT_LINGERS = 2
-
-
 async def _foes(uow: Any, world_id: UUID) -> tuple[list[api.FoeView], int | None]:
     """The latest fight's foes with live hit points, while it is on: rolled
     within the last turns and someone still standing."""
@@ -91,27 +87,22 @@ async def _foes(uow: Any, world_id: UUID) -> tuple[list[api.FoeView], int | None
     if fight is None:
         return [], None
     world = await uow.worlds.get(world_id)
-    if absolute_index(world.day, world.phase) - fight.absolute_index > FIGHT_LINGERS:
-        return [], fight.absolute_index
-    try:
-        keys = [str(k) for k in json.loads(fight.summary.get("foes", "[]"))]
-    except (ValueError, TypeError):
-        keys = []
-    pools = {m.name_key: m for m in await uow.monsters.list_for_world(world_id)}
-    foes = [
+    foes = foes_on(
+        fight.absolute_index,
+        absolute_index(world.day, world.phase),
+        fight_keys(fight.summary),
+        await uow.monsters.list_for_world(world_id),
+    )
+    return [
         api.FoeView(
-            key=key,
-            name=pools[key].name,
-            hp_current=pools[key].hp_current,
-            hp_max=pools[key].hp_max,
-            armor_class=pools[key].ac,
+            key=foe.name_key,
+            name=foe.name,
+            hp_current=foe.hp_current,
+            hp_max=foe.hp_max,
+            armor_class=foe.ac,
         )
-        for key in keys
-        if key in pools
-    ]
-    if not any(foe.hp_current > 0 for foe in foes):
-        return [], fight.absolute_index
-    return foes, fight.absolute_index
+        for foe in foes
+    ], fight.absolute_index
 
 
 async def _perspective(request: Request, world_id: UUID | None = None) -> tuple[str, UUID | None]:

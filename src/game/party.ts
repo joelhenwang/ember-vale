@@ -181,18 +181,12 @@ export function sayRoll(r: CombatRollView): RollSay {
     }
   }
   const healing = r.result === 'healed'
-  const verb = healing
-    ? 'heals'
-    : kind === 'cast'
-      ? 'casts at'
-      : kind === 'spar'
-        ? 'spars with'
-        : 'attacks'
+  const spell = r.using ?? 'a spell'
   const lead = healing
     ? `${actor} heals ${target || 'no one'}`
-    : kind === 'cast' && !r.result
-      ? `${actor} casts ${r.using ?? 'a spell'}`
-      : `${actor} ${verb} ${target}`
+    : kind === 'cast'
+      ? `${actor} casts ${spell}${target ? ` at ${target}` : ''}`
+      : `${actor} ${kind === 'spar' ? 'spars with' : 'attacks'} ${target}`
   const check =
     r.roll != null && r.ac != null
       ? `${r.roll} vs AC ${r.ac}`
@@ -208,9 +202,15 @@ export function sayRoll(r: CombatRollView): RollSay {
     ? `Healed ${r.amount ?? 0}`
     : [said, harm].filter(Boolean).join(' · ') || null
   const hp =
-    r.hp_before != null && r.hp_after != null && target
-      ? `${target} ${r.hp_before} → ${r.hp_after}`
-      : null
+    r.hp_before == null || r.hp_after == null || !target
+      ? null
+      : r.hp_before !== r.hp_after
+        ? `${target} ${r.hp_before} → ${r.hp_after}`
+        : r.hp_after === 0 && !healing
+          ? `${target} was already down`
+          : healing
+            ? `${target} was already at full health`
+            : null
   const tone: RollTone = healing
     ? 'heal'
     : r.result === 'miss' || r.result === 'saved'
@@ -224,7 +224,7 @@ export function sayRoll(r: CombatRollView): RollSay {
             : 'info'
   return {
     lead,
-    using: kind === 'cast' && !r.result ? null : r.using ? `with ${r.using}` : null,
+    using: kind === 'cast' && !healing ? null : r.using ? `with ${r.using}` : null,
     check,
     natural: r.natural ?? null,
     outcome,

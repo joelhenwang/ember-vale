@@ -47,9 +47,7 @@ onMounted(() => {
         >
         <span v-else class="roll__die roll__die--none" aria-hidden="true">•</span>
         <span class="roll__body">
-          <span class="roll__lead"
-            >{{ l.say.lead }}<template v-if="l.say.using"> {{ l.say.using }}</template></span
-          >
+          <span class="roll__lead">{{ [l.say.lead, l.say.using].filter(Boolean).join(' ') }}</span>
           <span class="roll__facts">
             <span v-if="l.say.check" class="roll__check">{{ l.say.check }}</span>
             <b v-if="l.say.outcome" class="roll__outcome">{{ l.say.outcome }}</b>
@@ -134,8 +132,9 @@ onMounted(() => {
   background: var(--ember);
 }
 .roll__die--1 {
-  color: var(--muted);
-  text-decoration: line-through;
+  border-style: dashed;
+  border-color: #a8402a;
+  color: #a8402a;
 }
 .roll__die--none {
   border-style: dashed;

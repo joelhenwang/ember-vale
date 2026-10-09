@@ -65,6 +65,40 @@ describe('party', () => {
     })
   })
 
+  it('says a blow on a foe already down plainly', () => {
+    const late = sayRoll({
+      kind: 'attack',
+      text: '',
+      actor: 'Wren',
+      target: 'Goblin',
+      result: 'hit',
+      amount: 5,
+      hp_before: 0,
+      hp_after: 0
+    })
+    expect(late.hp).toBe('Goblin was already down')
+    const shrug = sayRoll({
+      kind: 'cast',
+      text: '',
+      actor: 'Ash',
+      target: 'Goblin',
+      hp_before: 6,
+      hp_after: 6
+    })
+    expect(shrug.hp).toBeNull()
+    const topped = sayRoll({
+      kind: 'cast',
+      text: '',
+      actor: 'Ash',
+      target: 'Wren',
+      result: 'healed',
+      amount: 3,
+      hp_before: 12,
+      hp_after: 12
+    })
+    expect(topped.hp).toBe('Wren was already at full health')
+  })
+
   it('says saves, heals, foes that land and recruits', () => {
     const save = sayRoll({
       kind: 'cast',
@@ -79,6 +113,7 @@ describe('party', () => {
       amount: 8,
       damage_type: 'fire'
     })
+    expect([save.lead, save.using]).toEqual(['Ash casts Fireball at Goblin', null])
     expect(save.check).toBe('Goblin rolls 9 vs DC 13')
     expect(save.outcome).toBe('Fails the save · 8 fire')
     const heal = sayRoll({

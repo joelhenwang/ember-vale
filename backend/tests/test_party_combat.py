@@ -188,11 +188,14 @@ def test_combat_story_rolls_show_under_their_scene(
     ).json()["cast"]
     ids = {c["name"]: c["character_id"] for c in cast}
 
+    told: list[str] = []
+
     def route(request: Any) -> str | None:
         system, prompt = request.system or "", request.prompt
         if "You narrate" in system:
             if "Hearth" not in prompt:
                 return None
+            told.append(prompt)
             return json.dumps(
                 [{"text": FIGHT, "cited_fact_keys": ["attempt:wait", "dnd-sheet:wren"]}]
             )
@@ -230,17 +233,20 @@ def test_combat_story_rolls_show_under_their_scene(
     assert "[" not in (scene["text"] or "") and "Wren swings her blade" in scene["text"]
 
     kinds = [(r["kind"], r.get("actor"), r.get("target")) for r in log["rolls"]]
+    strike = log["rolls"][1]
+    felled = strike.get("hp_after") == 0  # a fallen goblin does not strike back
     assert kinds == [
         ("encounter", None, "Goblin"),
         ("attack", "Wren", "Goblin"),
-        ("attack", "Goblin", "Wren"),
+        *([] if felled else [("attack", "Goblin", "Wren")]),
     ]
-    strike, back = log["rolls"][1], log["rolls"][2]
     assert strike["using"] == "Longsword" and strike["target_foe"] is True
     assert strike["result"] in ("hit", "miss", "crit") and strike["ac"] == 15
     assert strike["roll"] - strike["natural"] == 5  # +3 Str, +2 proficiency
-    assert back["actor_foe"] is True and back["using"] == "Scimitar"
-    assert back["ac"] == hero["armor_class"]
+    back = {} if felled else log["rolls"][2]
+    if back:
+        assert back["actor_foe"] is True and back["using"] == "Scimitar"
+        assert back["ac"] == hero["armor_class"]
 
     narration = client.get(
         f"/api/v1/stage1/scenes/{scene['scene_id']}/narration", headers=headers
@@ -251,10 +257,54 @@ def test_combat_story_rolls_show_under_their_scene(
         "/api/v1/stage1/party", params={"world_id": str(world_id)}, headers=headers
     ).json()
     goblin_hp = _pools(world_id)["goblin"]
-    if back["result"] in ("hit", "crit"):
+    if back.get("result") in ("hit", "crit"):
         assert after["members"][0]["hp_current"] == back["hp_after"] < hero["hp_max"]
     if goblin_hp > 0:
         assert [(f["key"], f["hp_current"]) for f in after["foes"]] == [("goblin", goblin_hp)]
         assert after["fight_index"] == 1
     else:
         assert after["foes"] == []
+
+    # The next turn's storyteller hears the fight that is on, in words.
+    assert all("A fight is on" not in prompt for prompt in told)
+    again = client.post(
+        "/api/v1/stage1/advance",
+        json={
+            "world_id": str(world_id),
+            "absolute_index": 2,
+            "player_intents": {
+                wren: {"family": "wait", "character_id": wren, "snapshot_id": NIL_SNAPSHOT}
+            },
+        },
+        headers=headers,
+    )
+    assert again.status_code == 200, again.text
+    on = "A fight is on with: Goblin" in told[-1]
+    assert on == (goblin_hp > 0)
+
+
+def test_a_fight_that_is_on_is_told_in_words() -> None:
+    from worldsim.domain.ids import new_monster_id, new_world_id
+    from worldsim.domain.party import Monster, fight_keys, foes_line, foes_on
+
+    world = new_world_id()
+
+    def goblin(hp: int) -> Monster:
+        return Monster(
+            id=new_monster_id(),
+            world_id=world,
+            name_key="goblin",
+            name="Goblin",
+            hp_current=hp,
+            hp_max=7,
+            ac=15,
+        )
+
+    keys = fight_keys({"foes": '["goblin", "wolf"]'})
+    assert keys == ["goblin", "wolf"] and fight_keys({"foes": "nope"}) == []
+    assert [f.hp_current for f in foes_on(3, 5, keys, [goblin(3)])] == [3]
+    assert foes_on(3, 6, keys, [goblin(3)]) == []  # three turns on: over
+    assert foes_on(3, 4, keys, [goblin(0)]) == []  # nobody standing
+    line = foes_line([goblin(3)])
+    assert line.startswith("A fight is on with: Goblin (badly wounded).")
+    assert not any(ch.isdigit() for ch in line)
