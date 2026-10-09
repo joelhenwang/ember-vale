@@ -17,3 +17,6 @@ content/assets/generated/
 launcher/target/
 launcher/launcher.toml
 launcher/bin/
+
+# Database and picture backups (compose `backup` service)
+/backups/

@@ -68,6 +68,31 @@ services:
       retries: 12
       start_period: 30s
 
+  # Backups of the database and the painted pictures into ./backups on this
+  # disk, outside Docker's volumes: at start when the newest is a day old,
+  # then daily; the newest 7 are kept (backend/docker/backup/backup.sh).
+  # Restore with scripts/restore-backup.sh or the launcher.
+  backup:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-embervale}
+      POSTGRES_USER: ${POSTGRES_USER:-embervale}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme-local-only}
+      PGHOST: db
+    entrypoint: ["sh", "/backup.sh"]
+    command: ["loop"]
+    volumes:
+      - ./backend/docker/backup/backup.sh:/backup.sh:ro
+      - ./backups:/backups
+      - generated-embervale:/generated
+
   # Opt-in (`docker compose --profile scale up -d`): autoplay, painting and
   # local-model indexing in their own process. Pair it with
   # WORLDSIM_APP__BACKGROUND_LOOPS=false and WORLDSIM_APP__WORKERS=N on the
