@@ -38,12 +38,12 @@ def _borin(hp: int = 13) -> Sheet:
     )
 
 
-def _elara() -> Sheet:
+def _elara(level: int = 3) -> Sheet:
     return Sheet(
         name="Elara",
         race="elf",
         character_class="wizard",
-        level=3,
+        level=level,
         stats={"str": 8, "dex": 14, "con": 12, "int": 16, "wis": 10, "cha": 10},
         hp=HitPoints(current=17, max=17),
         weapons=["dagger"],
@@ -99,14 +99,14 @@ def test_cantrip_attack_roll() -> None:
 
 def test_save_for_half_damage() -> None:
     failed = resolve_narration_tags(
-        "CAST[fireball at goblin]", [_elara()], DATA, _rng(0.0, *[0.0] * 8)
+        "CAST[fireball at goblin]", [_elara(5)], DATA, _rng(0.0, *[0.0] * 8)
     )
-    assert failed.outcomes[0].text == ("Fireball Goblin fails (3 vs DC 13) for 8 fire. (7->0 HP)")
+    assert failed.outcomes[0].text == ("Fireball Goblin fails (3 vs DC 14) for 8 fire. (7->0 HP)")
     saved = resolve_narration_tags(
-        "CAST[fireball at goblin]", [_elara()], DATA, _rng(0.9999, *[0.5] * 8)
+        "CAST[fireball at goblin]", [_elara(5)], DATA, _rng(0.9999, *[0.5] * 8)
     )
     assert saved.outcomes[0].text == (
-        "Fireball Goblin saves (22 vs DC 13), half damage for 16 fire. (7->0 HP)"
+        "Fireball Goblin saves (22 vs DC 14), half damage for 16 fire. (7->0 HP)"
     )
 
 
@@ -246,15 +246,15 @@ def test_fallen_or_unknown_foes_do_not_strike() -> None:
 def test_rolls_carry_their_parts() -> None:
     report = resolve_narration_tags(
         "ATTACK[longsword at goblin]\nCAST[fireball at goblin]",
-        [_borin(), _elara()],
+        [_borin(), _elara(5)],
         DATA,
         _rng(0.0, *[0.0] * 9),
     )
-    miss, burn = report.outcomes
+    miss, burn, *_ = report.outcomes
     assert (miss.result, miss.roll, miss.ac, miss.target_foe) == ("miss", 6, 15, True)
     assert (burn.result, burn.dc, burn.using, burn.damage_type) == (
         "failed",
-        13,
+        14,
         "Fireball",
         "fire",
     )
@@ -274,3 +274,147 @@ def test_rolls_carry_their_parts() -> None:
         "target_foe": True,
     }
     assert rows[-1] == {"kind": "recruit", "text": "Lyra joins the party.", "actor": "Lyra"}
+
+
+# --- combat-depth-001: each foe its own health, XP and levels, slots spent ---
+
+
+def test_group_foes_get_their_own_pools_and_numbers() -> None:
+    report = resolve_narration_tags(
+        "ENCOUNTER[2x goblin]\nATTACK[longsword at Goblin 2]\nATTACK[longsword at goblin]",
+        [_borin()],
+        DATA,
+        _rng(0.5, 0.5),
+    )
+    encounter, second, first = report.outcomes[:3]
+    assert encounter.target == "Goblin 1, Goblin 2"
+    assert report.beats[0].text.startswith("Goblin 1, Goblin 2 bar the way")
+    # A number aims at that one; a plain name is the first still standing.
+    assert (second.target, second.hp_before, second.hp_after) == ("Goblin 2", 7, 2)
+    assert (first.target, first.hp_before, first.hp_after) == ("Goblin 1", 7, 2)
+    assert report.foes == ["goblin-1", "goblin-2"]
+    assert {k: (m.name, m.hp_current) for k, m in report.monsters.items()} == {
+        "goblin-1": ("Goblin 1", 2),
+        "goblin-2": ("Goblin 2", 2),
+    }
+
+
+def test_foe_name_parts_reads_every_way_of_numbering() -> None:
+    from worldsim.domain.rules.dnd.combat_resolve import foe_name_parts
+
+    assert foe_name_parts("Goblin 2") == ("Goblin", 2)
+    assert foe_name_parts("the second goblin") == ("goblin", 2)
+    assert foe_name_parts("2nd goblin") == ("goblin", 2)
+    assert foe_name_parts("goblin #3") == ("goblin", 3)
+    assert foe_name_parts("the goblin") == ("goblin", None)
+
+
+def _pack(*hps: int) -> list[MonsterState]:
+    return [
+        MonsterState(key=f"goblin-{n}", name=f"Goblin {n}", hp_current=hp, hp_max=7, ac=15)
+        for n, hp in enumerate(hps, start=1)
+    ]
+
+
+def test_plain_target_skips_the_fallen_and_strikes_come_from_the_standing() -> None:
+    report = resolve_narration_tags(
+        "ATTACK[longsword at the goblin]\nATTACK[goblin at Borin]",
+        [_borin()],
+        DATA,
+        _rng(0.5, 0.5, 0.9, 0.5),
+        live=_pack(0, 4),
+        fighting=["goblin-1", "goblin-2"],
+    )
+    hit, strike = report.outcomes[:2]
+    assert (hit.target, hit.hp_before, hit.hp_after) == ("Goblin 2", 4, 0)
+    # Both have fallen now: nobody strikes back.
+    assert strike.kind == "xp" and report.unresolved == ["ATTACK[goblin at Borin]"]
+
+
+def test_fresh_encounter_after_a_finished_fight_starts_fresh() -> None:
+    report = resolve_narration_tags(
+        "ENCOUNTER[2x goblin]", [_borin()], DATA, _rng(), live=_pack(0, 0), fighting=[]
+    )
+    assert report.foes == ["goblin-1", "goblin-2"]
+    assert all(m.hp_current == 7 and m.spawned for m in report.monsters.values())
+
+
+def test_reinforcements_join_a_fight_that_is_on() -> None:
+    report = resolve_narration_tags(
+        "ENCOUNTER[goblin]",
+        [_borin()],
+        DATA,
+        _rng(),
+        live=_pack(0, 5),
+        fighting=["goblin-1", "goblin-2"],
+    )
+    assert report.foes == ["goblin-3"]
+    assert report.monsters["goblin-3"].name == "Goblin 3"
+    assert "goblin-2" not in report.monsters  # the standing one is untouched
+
+
+def test_defeated_foes_give_shared_xp() -> None:
+    report = resolve_narration_tags(
+        "ATTACK[longsword at goblin]",
+        [_borin(), _elara()],
+        DATA,
+        _rng(0.5, 0.5),
+        live=_pack(2),
+    )
+    xp = report.outcomes[-1]
+    assert (xp.kind, xp.amount, xp.share, xp.target) == ("xp", 50, 25, "Goblin 1")
+    assert report.defeated == ["goblin-1"]
+    assert report.sheets["borin"].xp == 25 and report.sheets["elara"].xp == 25
+    assert report.levels == []
+
+
+def test_crossing_a_threshold_levels_up() -> None:
+    veteran = _borin()
+    veteran.xp = 290
+    report = resolve_narration_tags(
+        "ATTACK[longsword at goblin]", [veteran], DATA, _rng(0.5, 0.5), live=_pack(2)
+    )
+    sheet = report.sheets["borin"]
+    assert (sheet.xp, sheet.level) == (340, 2)
+    # Fighter d10 average 6 + CON +2; current and max both rise.
+    assert sheet.hp is not None and (sheet.hp.current, sheet.hp.max) == (21, 21)
+    level = report.outcomes[-1]
+    assert (level.kind, level.actor, level.level, level.amount) == ("level", "Borin", 2, 8)
+    assert level.text == "Borin reaches level 2: +8 hit points."
+    rows = combat_rolls(report.outcomes, [])
+    assert rows[-1]["kind"] == "level" and rows[-2]["share"] == 50
+    assert veteran.level == 1 and veteran.xp == 290  # inputs untouched
+
+
+def test_levelled_spells_spend_slots_and_fail_without_one() -> None:
+    elara = _elara()  # level 3 wizard: 4 first-level, 2 second-level slots
+    text = "\n".join(["CAST[magic missile at goblin]"] * 7)
+    if "magic-missile" not in elara.spells:
+        elara.spells.append("magic-missile")
+    report = resolve_narration_tags(text, [elara], DATA, _rng(0.5), live=_pack(99), day=1)
+    results = [o.result for o in report.outcomes if o.kind == "cast"]
+    # 4 first-level slots, then 2 second-level (upcast), then none.
+    assert results.count("no-slot") == 1 and results[-1] == "no-slot"
+    assert report.outcomes[-1].text == (
+        "Elara has no 1st-level spell slot left: Magic Missile fails."
+    )
+    assert report.sheets["elara"].slots_used == [4, 2]
+    assert report.sheets["elara"].slots_day == 1
+    # A new day is the long rest: the slots are back.
+    rested = resolve_narration_tags(
+        "CAST[magic missile at goblin]",
+        [report.sheets["elara"]],
+        DATA,
+        _rng(0.5),
+        live=_pack(99),
+        day=2,
+    )
+    assert rested.sheets["elara"].slots_used == [1]
+
+
+def test_cantrips_are_free() -> None:
+    report = resolve_narration_tags(
+        "CAST[fire bolt at goblin]\n" * 6, [_elara()], DATA, _rng(0.5), live=_pack(99), day=1
+    )
+    assert all(o.result != "no-slot" for o in report.outcomes)
+    assert report.sheets["elara"].slots_used == []  # changed only by the XP

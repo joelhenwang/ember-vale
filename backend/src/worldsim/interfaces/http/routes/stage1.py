@@ -10,7 +10,7 @@ orchestrator's idempotent keys: repeats return stored reports.
 from __future__ import annotations
 
 import json
-from typing import Any, cast
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Request, Response
@@ -25,8 +25,9 @@ from worldsim.domain.commands import ActionIntent
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.ids import derive_attempt_id
 from worldsim.domain.party import PartyMember, fight_keys, foes_on
-from worldsim.domain.rules.dnd import DataTables, Sheet, armor_ac, strip_combat_tags
-from worldsim.domain.rules.dnd.data import dict_field, entry, list_field, table
+from worldsim.domain.rules.dnd import DataTables, armor_ac, strip_combat_tags, xp_for_level
+from worldsim.domain.rules.dnd.data import entry, table
+from worldsim.domain.rules.dnd.progress import class_slots, slots_left
 from worldsim.domain.scenes import Intent, Reaction
 from worldsim.domain.time import absolute_index
 from worldsim.interfaces.http import schemas as api
@@ -39,25 +40,15 @@ router = APIRouter(tags=["stage1"])
 _ACTION_ADAPTER: TypeAdapter[ActionIntent] = TypeAdapter(ActionIntent)
 
 
-def _spell_slots(tables: DataTables, sheet: Sheet) -> list[int]:
-    """Slots per day by spell level at the sheet's level ([] for non-casters)."""
-    levels = list_field(entry(table(tables, "classes"), sheet.character_class), "levels")
-    at = min(max(sheet.level, 1), 20) - 1
-    raw: object = levels[at] if len(levels) > at else None
-    row = cast("dict[str, Any]", raw) if isinstance(raw, dict) else {}
-    casting = dict_field(row, "spellcasting")
-    slots = [n if isinstance(n, int) else 0 for n in list_field(casting, "slots")]
-    while slots and slots[-1] == 0:
-        slots.pop()
-    return slots
-
-
 def _named(rows: dict[str, Any], keys: list[str]) -> list[str]:
     return [str(entry(rows, key).get("name", key)) for key in keys]
 
 
-def _party_view(member: PartyMember, tables: DataTables | None = None) -> api.PartyMemberView:
-    """Project one roster row; sheets are shared party knowledge."""
+def _party_view(
+    member: PartyMember, tables: DataTables | None = None, day: int | None = None
+) -> api.PartyMemberView:
+    """Project one roster row; sheets are shared party knowledge. ``day`` is
+    the story day the free slots are counted for (None: as stored)."""
     hit_points = member.sheet.hp
     tables = tables if tables is not None else dnd_tables()
     sheet = member.sheet
@@ -76,7 +67,11 @@ def _party_view(member: PartyMember, tables: DataTables | None = None) -> api.Pa
         armor_class=armor_ac(tables, sheet),
         weapons=_named(table(tables, "weapons"), sheet.weapons),
         spells=_named(table(tables, "spells"), sheet.spells),
-        spell_slots=_spell_slots(tables, sheet),
+        spell_slots=class_slots(tables, sheet),
+        spell_slots_left=slots_left(tables, sheet, day),
+        xp=sheet.xp,
+        xp_level_start=xp_for_level(sheet.level),
+        xp_next_level=None if sheet.level >= 20 else xp_for_level(sheet.level + 1),
     )
 
 
@@ -550,10 +545,11 @@ async def party_roster(world_id: UUID, request: Request) -> api.PartyRosterRespo
     async with state.uow_factory()() as uow:
         members = await uow.party.list_for_world(world_id)
         foes, fought = await _foes(uow, world_id) if members else ([], None)
+        today = (await uow.worlds.get(world_id)).day if members else None
     tables = dnd_tables()
     return api.PartyRosterResponse(
         world_id=world_id,
-        members=[_party_view(member, tables) for member in members],
+        members=[_party_view(member, tables, today) for member in members],
         foes=foes,
         fight_index=fought,
     )

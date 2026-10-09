@@ -273,12 +273,14 @@ def dnd_rules_text() -> str:
     return path.read_text(encoding="utf-8")
 
 
-STORY_RULES_PROMPT_VERSION = "dnd-rules.v2"
+STORY_RULES_PROMPT_VERSION = "dnd-rules.v3"
 
 
 @functools.cache
 def dnd_story_rules_text() -> str:
-    """DM instructions the story narrator gets: v1 plus who-at-whom tags and
-    foes that strike back (v1 stays the monolith's text, for parity)."""
+    """DM instructions the story narrator gets: v1 plus who-at-whom tags, foes
+    that strike back (v2), and numbered foes of a group, spell slots and
+    experience (v3). Older versions stay as files; v1 is the monolith's text,
+    for parity."""
     path = Path(__file__).resolve().parents[5] / "prompts" / f"{STORY_RULES_PROMPT_VERSION}.md"
     return path.read_text(encoding="utf-8")

@@ -15,7 +15,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from worldsim.domain.enums import FocusSlot
 from worldsim.domain.ids import CharacterId, MonsterId, PartyMemberId, WorldId
-from worldsim.domain.rules.dnd import Sheet, slugify
+from worldsim.domain.rules.dnd import DataTables, Sheet, slugify
+from worldsim.domain.rules.dnd.progress import slots_left
 
 
 class PartyMember(BaseModel):
@@ -95,3 +96,16 @@ def foes_line(foes: list[Monster]) -> str:
         "fresh ones); strike them by name, and let those still standing strike back. "
         "The down stay down."
     )
+
+
+_SLOT_WORDS = ("first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth")
+
+
+def slots_line(tables: DataTables, sheet: Sheet, day: int | None) -> str:
+    """The narrator's line of spell slots still free today ("" for non-casters),
+    so it does not describe a spell the engine will refuse."""
+    left = slots_left(tables, sheet, day)
+    if not left:
+        return ""
+    shown = ", ".join(f"{n} {_SLOT_WORDS[pos]}-level" for pos, n in enumerate(left))
+    return f"\nSpell slots left today: {shown} (cantrips are free)"

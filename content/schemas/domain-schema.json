@@ -6064,6 +6064,25 @@
               "title": "Shield",
               "type": "boolean"
             },
+            "slots_day": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Slots Day"
+            },
+            "slots_used": {
+              "items": {
+                "type": "integer"
+              },
+              "title": "Slots Used",
+              "type": "array"
+            },
             "spells": {
               "items": {
                 "type": "string"
@@ -10253,6 +10272,25 @@
           "default": false,
           "title": "Shield",
           "type": "boolean"
+        },
+        "slots_day": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Slots Day"
+        },
+        "slots_used": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Slots Used",
+          "type": "array"
         },
         "spells": {
           "items": {
