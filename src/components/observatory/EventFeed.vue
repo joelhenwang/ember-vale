@@ -13,6 +13,7 @@ import IconImage from '../icons/IconImage.vue'
 import IconBranch from '../icons/IconBranch.vue'
 import IconRewind from '../icons/IconRewind.vue'
 import { canBranch, canRewind } from '../../game/branches'
+import { onlyExperience } from '../../game/party'
 
 const props = defineProps<{
   beats: FeedBeat[]
@@ -161,7 +162,10 @@ function body(entry: ChronicleEntry): string {
                 <IconImage :size="13" />
               </span>
               <span
-                v-if="fought?.has(entry.event_id) || entry.combat?.rolls?.length"
+                v-if="
+                  fought?.has(entry.event_id) ||
+                  (entry.combat?.rolls?.length && !onlyExperience(entry.combat.rolls))
+                "
                 class="ef__dice"
                 role="img"
                 aria-label="Has dice rolls"

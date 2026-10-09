@@ -158,6 +158,18 @@ export function sayRoll(r: CombatRollView): RollSay {
       tone: 'info'
     }
   }
+  if (kind === 'xp' && r.result === 'settled') {
+    // A rumour settled: everyone named (or the whole party) gains in full.
+    return {
+      lead: `${target || 'A rumour'} is settled`,
+      using: null,
+      check: null,
+      natural: null,
+      outcome: `${actor ? `${actor}: ` : ''}${r.share ?? r.amount ?? 0} XP each`,
+      hp: null,
+      tone: 'info'
+    }
+  }
   if (kind === 'xp') {
     return {
       lead: `${target || 'The foe'} ${target.includes(',') ? 'are' : 'is'} defeated`,
@@ -281,6 +293,11 @@ export function sayRoll(r: CombatRollView): RollSay {
     hp,
     tone
   }
+}
+
+/** Rolls that are only experience and levels (a settled rumour): no dice to show. */
+export function onlyExperience(rolls: CombatRollView[] | undefined): boolean {
+  return !!rolls?.length && rolls.every((r) => r.kind === 'xp' || r.kind === 'level')
 }
 
 /** Names of party members who reached a new level in these rolls. */

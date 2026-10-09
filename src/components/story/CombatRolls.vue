@@ -7,12 +7,14 @@
 import { computed, onMounted, ref } from 'vue'
 import type { CombatRollView } from '../../../content/clients/worldsim'
 import { burst, shake } from '../../composables/useEffects'
-import { sayRoll } from '../../game/party'
+import { onlyExperience, sayRoll } from '../../game/party'
 
 const props = defineProps<{ rolls: CombatRollView[]; fresh?: boolean }>()
 
 const lines = computed(() => props.rolls.map((r) => ({ roll: r, say: sayRoll(r) })))
 const open = ref(true)
+// A settled rumour brings experience with no dice: say so plainly.
+const earned = computed(() => onlyExperience(props.rolls))
 const root = ref<HTMLElement | null>(null)
 
 // A fight that just landed answers once: sparks for a critical hit and for
@@ -29,11 +31,16 @@ onMounted(() => {
 </script>
 
 <template>
-  <section ref="root" class="rolls ev-rise" aria-label="The dice for this fight">
+  <section
+    ref="root"
+    class="rolls ev-rise"
+    :aria-label="earned ? 'Experience gained' : 'The dice for this fight'">
     <button type="button" class="rolls__head" :aria-expanded="open" @click="open = !open">
-      <span class="rolls__icon" aria-hidden="true">⚄</span>
-      The dice
-      <span class="rolls__count">{{ rolls.length }} roll{{ rolls.length === 1 ? '' : 's' }}</span>
+      <span class="rolls__icon" aria-hidden="true">{{ earned ? '✦' : '⚄' }}</span>
+      {{ earned ? 'Experience' : 'The dice' }}
+      <span v-if="!earned" class="rolls__count"
+        >{{ rolls.length }} roll{{ rolls.length === 1 ? '' : 's' }}</span
+      >
       <span class="rolls__chev" :class="{ 'rolls__chev--open': open }" aria-hidden="true">›</span>
     </button>
     <ol v-if="open" class="rolls__list">

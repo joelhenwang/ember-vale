@@ -19,6 +19,7 @@ import MomentDialog from '../components/story/MomentDialog.vue'
 import PaintSceneDialog from '../components/story/PaintSceneDialog.vue'
 import { assetUrl } from '../api/worldsim'
 import { readyMoments, type Speaker } from '../game/moments'
+import { onlyExperience } from '../game/party'
 import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
 import IconPlay from '../components/icons/IconPlay.vue'
 import IconArrowRight from '../components/icons/IconArrowRight.vue'
@@ -126,7 +127,10 @@ const speakers = computed(() => {
 /** The scene's newest picture that did not fail (ready, or still being painted). */
 /** Each scene's dice (combat stories): a mark in the feed, the rolls in the event view. */
 const sceneRolls = computed(() => rollsByScene(obs.entries.value))
-const fought = computed(() => new Set(sceneRolls.value.keys()))
+const fought = computed(
+  () =>
+    new Set([...sceneRolls.value].filter(([, rolls]) => !onlyExperience(rolls)).map(([key]) => key))
+)
 
 function pictureFor(entry: ChronicleEntry): SceneArtView | null {
   const mine = (view.value?.scene_art ?? []).filter(
