@@ -498,6 +498,26 @@ def whereabouts(
     }
 
 
+def scene_location(
+    scene: Scene, starts: Mapping[UUID, UUID], effects: Sequence[DomainEffect]
+) -> UUID | None:
+    """Where a scene happened: where everyone ends up when that is one place.
+
+    It was the first participant's starting place, so a traveller (sorted
+    first) who walked to a friend recorded the scene, and its painting, at
+    the place they left (the narrator already set it where they met).
+    """
+    ends = dict(starts)
+    for effect in effects:
+        if isinstance(effect, MoveEntityEffect):
+            for moved in effect.affected_ids:
+                ends[moved] = effect.to_location_id
+    places = {ends.get(p.character_id) for p in scene.participants}
+    if len(places) == 1 and None not in places:
+        return places.pop()
+    return starts.get(scene.participants[0].character_id) if scene.participants else None
+
+
 def scene_place_facts(start: str | None, ends: Mapping[str, str]) -> list[tuple[str, str]]:
     """The scene's setting for the narrator: one place, or where it ends up.
 
@@ -3678,7 +3698,7 @@ class Stage1Orchestrator:
                 absolute_index=index,
                 observations=observations,
                 memories=memories,
-                location_id=sealed.locations.get(scene.participants[0].character_id),
+                location_id=scene_location(scene, sealed.locations, effects),
             )
         )
         # A directed attempt is completed only now that its execution is
