@@ -1128,6 +1128,7 @@ export interface ConditionsResponse {
 export interface StorySummary {
   absolute_index: number;
   archived?: boolean;
+  branched_from?: StoryOrigin | null;
   day: number;
   last_played_at?: string | null;
   mode: string;
@@ -1142,6 +1143,7 @@ export interface StorySummary {
 export interface StoryDetail {
   absolute_index: number;
   archived_at?: string | null;
+  branched_from?: StoryOrigin | null;
   cover_asset_id?: string | null;
   cover_frame?: unknown[] | null;
   day: number;
@@ -1228,6 +1230,33 @@ export interface StoryCreateResponse {
   role: string;
   story_id: string;
   world_id: string;
+}
+
+export interface StoryOrigin {
+  absolute_index: number;
+  story_id: string;
+  time_label: string;
+  title: string;
+}
+
+export interface StoryBranchRequest {
+  absolute_index: number;
+  title?: string | null;
+}
+
+export interface StoryBranchResponse {
+  absolute_index: number;
+  character_id?: string | null;
+  replayed?: boolean;
+  role: string;
+  story_id: string;
+  title: string;
+  world_id: string;
+}
+
+export interface StoryBranchPoints {
+  story_id: string;
+  turns: number[];
 }
 
 export interface PresetSummary {

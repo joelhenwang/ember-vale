@@ -12,6 +12,9 @@ import WorldMap from '../components/observatory/WorldMap.vue'
 import PlaceMap from '../components/observatory/PlaceMap.vue'
 import EventFeed from '../components/observatory/EventFeed.vue'
 import EventModal from '../components/observatory/EventModal.vue'
+import BranchDialog from '../components/story/BranchDialog.vue'
+import { useBranchPoints } from '../composables/useBranchPoints'
+import { canBranch } from '../game/branches'
 import MomentDialog from '../components/story/MomentDialog.vue'
 import PaintSceneDialog from '../components/story/PaintSceneDialog.vue'
 import { assetUrl } from '../api/worldsim'
@@ -26,6 +29,15 @@ import { BEAT_LIMITS, SPEEDS, autoplayStatus, beatTimeLabel, speedFor } from '..
 const route = useRoute()
 const storyId = computed(() => String(route.params.storyId ?? ''))
 const obs = useObservatory(storyId)
+const branchNow = computed(() => obs.presentation.value?.absolute_index ?? 0)
+const branches = useBranchPoints(storyId, branchNow)
+/** The turn whose "Branch from here" was chosen (the confirmation is open). */
+const branchingTurn = ref<number | null>(null)
+function branchFrom(index: number): void {
+  // The event view is a native dialog on the top layer: close it first.
+  opened.value = null
+  branchingTurn.value = index
+}
 
 const speed = ref(SPEEDS[0].delaySeconds)
 const beatLimit = ref(BEAT_LIMITS[1])
@@ -282,6 +294,8 @@ onUnmounted(() => {
         :name-of="nameOf"
         :place-of="placeOf"
         :pictured="pictured"
+        :branchable="branches.kept.value"
+        @branch="branchFrom"
         @open="opened = $event"
         @focus="focusId = $event" />
     </div>
@@ -295,6 +309,8 @@ onUnmounted(() => {
       :name-of="nameOf"
       :place-of="placeOf"
       :picture="pictureFor(opened)"
+      :branchable="canBranch(branches.kept.value, opened.absolute_index)"
+      @branch="branchFrom"
       @moment="openMoment"
       @paint="paint"
       @close="opened = null" />
@@ -314,6 +330,12 @@ onUnmounted(() => {
       :opts="callOpts"
       @close="paintingScene = null"
       @painted="obs.refresh()" />
+    <BranchDialog
+      :open="branchingTurn !== null"
+      :story-id="storyId"
+      :story-title="obs.title.value ?? 'Story'"
+      :turn="branchingTurn"
+      @close="branchingTurn = null" />
   </main>
 </template>
 

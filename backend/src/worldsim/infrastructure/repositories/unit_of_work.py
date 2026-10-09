@@ -17,6 +17,7 @@ from worldsim.infrastructure.repositories.autoplay import SqlAlchemyAutoplayRepo
 from worldsim.infrastructure.repositories.characters import (
     SqlAlchemyCharacterRepository,
 )
+from worldsim.infrastructure.repositories.checkpoints import SqlAlchemyCheckpointRepository
 from worldsim.infrastructure.repositories.commands import SqlAlchemyCommandRepository
 from worldsim.infrastructure.repositories.conditions import SqlAlchemyConditionRepository
 from worldsim.infrastructure.repositories.costs import SqlAlchemyCostRepository
@@ -98,6 +99,7 @@ class SqlAlchemyUnitOfWork:
         self._mentions: SqlAlchemyMentionRepository | None = None
         self._pictures: SqlAlchemyPictureRepository | None = None
         self._story_prompts: SqlAlchemyStoryPromptRepository | None = None
+        self._checkpoints: SqlAlchemyCheckpointRepository | None = None
         self._summaries: SqlAlchemySummaryRepository | None = None
         self._roles: SqlAlchemyRoleRepository | None = None
         self._autoplay: SqlAlchemyAutoplayRepository | None = None
@@ -299,6 +301,12 @@ class SqlAlchemyUnitOfWork:
         if self._story_prompts is None:
             self._story_prompts = SqlAlchemyStoryPromptRepository(self._require_session())
         return self._story_prompts
+
+    @property
+    def checkpoints(self) -> SqlAlchemyCheckpointRepository:
+        if self._checkpoints is None:
+            self._checkpoints = SqlAlchemyCheckpointRepository(self._require_session())
+        return self._checkpoints
 
     @property
     def roles(self) -> SqlAlchemyRoleRepository:

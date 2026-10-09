@@ -38,6 +38,8 @@ export interface LogLine {
   picture?: SceneArtView
   /** Rolls lines: a fight's dice, under the scene they were rolled in. */
   rolls?: CombatRollView[]
+  /** Time lines: the turn (absolute index) the heading opens. */
+  turn?: number
 }
 
 export interface LogInput {
@@ -116,7 +118,8 @@ export function buildLog({ entries, beats, me, hereId, pictures = [] }: LogInput
       out.push({
         key: `t:${entry.absolute_index}`,
         kind: 'time',
-        text: beatTimeLabel(entry.absolute_index)
+        text: beatTimeLabel(entry.absolute_index),
+        turn: entry.absolute_index
       })
     }
     if (near) {

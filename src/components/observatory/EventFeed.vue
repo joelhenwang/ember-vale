@@ -10,6 +10,8 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import type { ChronicleEntry } from '../../../content/clients/worldsim'
 import type { FeedBeat } from '../../game/observatory'
 import IconImage from '../icons/IconImage.vue'
+import IconBranch from '../icons/IconBranch.vue'
+import { canBranch } from '../../game/branches'
 
 const props = defineProps<{
   beats: FeedBeat[]
@@ -17,11 +19,14 @@ const props = defineProps<{
   placeOf: (id: string | null | undefined) => string | null
   /** Scenes with a painted picture: their entries carry a small mark. */
   pictured?: ReadonlySet<string>
+  /** Turns whose end state was kept: they offer "Branch from here". */
+  branchable?: ReadonlySet<number>
 }>()
 
 const emit = defineEmits<{
   open: [entry: ChronicleEntry]
   focus: [characterId: string | null]
+  branch: [index: number]
 }>()
 
 const list = ref<HTMLElement | null>(null)
@@ -102,7 +107,17 @@ function body(entry: ChronicleEntry): string {
           :key="beat.index"
           class="ef__beat"
           :style="{ '--i': Math.min(i, 6) }">
-          <h3>{{ beat.label }}</h3>
+          <h3>
+            <span>{{ beat.label }}</span>
+            <button
+              v-if="branchable && canBranch(branchable, beat.index)"
+              type="button"
+              class="ef__branch ev-press"
+              :title="`Start a new story from the end of ${beat.label}`"
+              @click="emit('branch', beat.index)">
+              <IconBranch :size="12" /> Branch from here
+            </button>
+          </h3>
           <p v-if="beat.quiet" class="ef__quiet">
             A quiet stretch: everyone waited or rested{{
               beat.quiet.beats > 1 ? ` (${beat.quiet.beats} beats)` : ''
@@ -213,7 +228,34 @@ function body(entry: ChronicleEntry): string {
   padding: 16px 4px;
   color: var(--ink-3);
 }
+.ef__branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 500 12px var(--font-ui);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--teal-ink);
+  background: none;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  padding: 1px 9px;
+  cursor: pointer;
+  opacity: 0.8;
+  transition:
+    opacity 0.2s ease,
+    border-color 0.2s ease;
+}
+.ef__branch:hover,
+.ef__branch:focus-visible {
+  opacity: 1;
+  border-color: var(--teal-ink);
+}
 .ef__beat h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   position: sticky;
   top: -6px;
   margin: 10px 0 4px;

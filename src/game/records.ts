@@ -12,6 +12,7 @@ import { assetUrl } from '../api/worldsim'
 import { frameFromList } from './framing'
 import type { CurrentStory, FramedCover, StorySummary } from './model'
 import type { StoryRecord } from './stories'
+import { originLine } from './branches'
 
 export interface ResolvedWorld {
   name: string
@@ -42,7 +43,8 @@ export function toStoryRecord(detail: StoryDetail, world: ResolvedWorld): StoryR
     cast: [],
     lastPlayedAt: playedAtMinutes(detail.last_played_at),
     lastPlayedLabel: lastPlayedLabel(detail.last_played_at),
-    version: detail.metadata_version
+    version: detail.metadata_version,
+    origin: originLine(detail.branched_from)
   }
 }
 

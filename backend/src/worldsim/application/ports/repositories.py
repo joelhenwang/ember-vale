@@ -6,14 +6,15 @@ compares an expected optimistic version and bumps on success.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import datetime
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import UUID
 
 from worldsim.domain.activities import Activity, TravelRoute
 from worldsim.domain.assets import AssetRecord, ImageJob
 from worldsim.domain.autoplay import AutoplayState
+from worldsim.domain.branches import BranchCopy, CheckpointHead, StoryBranchOrigin
 from worldsim.domain.characters import Character, CharacterCard
 from worldsim.domain.conditions import WorldCondition
 from worldsim.domain.costs import ModelCost
@@ -292,6 +293,24 @@ class PictureRepository(Protocol):
     async def list_for_world(self, world_id: UUID) -> list[ScenePicture]: ...
     async def list_recent_for_world(self, world_id: UUID, limit: int) -> list[ScenePicture]: ...
     async def latest_moment_index(self, world_id: UUID) -> int | None: ...
+
+
+class CheckpointRepository(Protocol):
+    async def capture(self, world_id: UUID, absolute_index: int) -> int: ...
+    async def heads(self, world_id: UUID) -> list[CheckpointHead]: ...
+    async def head(self, world_id: UUID, absolute_index: int) -> CheckpointHead | None: ...
+    async def state(self, world_id: UUID, absolute_index: int) -> dict[str, Any] | None: ...
+    async def unnarrated_scenes(self, world_id: UUID, absolute_index: int) -> int: ...
+    async def add_origin(self, origin: StoryBranchOrigin) -> None: ...
+    async def origins(self, world_ids: Iterable[UUID]) -> dict[UUID, StoryBranchOrigin]: ...
+    async def copy_branch(
+        self,
+        source_id: UUID,
+        absolute_index: int,
+        head: CheckpointHead,
+        state: Mapping[str, Any],
+        new_world_id: UUID,
+    ) -> BranchCopy: ...
 
 
 class StoryPromptRepository(Protocol):

@@ -41,6 +41,10 @@ class BackgroundNarration:
         task.add_done_callback(_done)
         return task
 
+    def busy(self, world_id: UUID) -> bool:
+        """Whether this story still has words (or day-end work) being written."""
+        return any(not task.done() for task in self._tasks.get(world_id, ()))
+
     async def settle(self, world_id: UUID) -> None:
         """Wait for this story's narration still running (errors already logged)."""
         running = list(self._tasks.get(world_id, ()))
