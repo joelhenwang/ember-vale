@@ -45,10 +45,12 @@ from worldsim.domain.rules.dnd.data import (
     str_field,
     table,
 )
+from worldsim.domain.rules.dnd.deeds import Deed, deed_lines
 from worldsim.domain.rules.dnd.progress import (
     LevelGain,
     free_slot,
     gain_xp,
+    long_rest,
     monster_kind,
     pool_number,
     spend_slot,
@@ -111,6 +113,8 @@ class TagOutcome:
     #: XP each party member got (kind ``xp``) or the level reached (``level``).
     share: int | None = None
     level: int | None = None
+    #: Choices a level left to its player: ``ability``, ``spells`` (comma-joined).
+    choose: str | None = None
 
 
 @dataclass(frozen=True)
@@ -152,6 +156,8 @@ class CombatReport:
     #: Foes that fell in this scene, and the levels the party gained.
     defeated: list[str] = field(default_factory=list)
     levels: list[LevelGain] = field(default_factory=list)
+    #: Tag lines added from the party's own words (``deeds``), not the storyteller's.
+    deeds: int = 0
 
 
 @dataclass
@@ -284,6 +290,8 @@ def resolve_narration_tags(
     *,
     day: int | None = None,
     fighting: list[str] | None = None,
+    deeds: list[Deed] | None = None,
+    chooses: set[str] | None = None,
 ) -> CombatReport:
     """Resolve every combat tag in narration order. Inputs are never mutated.
 
@@ -297,11 +305,20 @@ def resolve_narration_tags(
 
     ``day`` is the story day: levelled spells spend a slot of the day
     (slots spent on an earlier day are back). Foes that fall give their
-    XP to the party, shared evenly, and a crossed threshold levels up.
+    XP to the party, shared evenly, and a crossed threshold levels up;
+    members in ``chooses`` (name keys: the player's hero) make that level's
+    choices themselves. A sheet that wakes on a later day has had the
+    night's long rest first.
+
+    ``deeds`` are what party members tried this scene in their own words:
+    a plain attack or spell the storyteller did not tag rolls anyway.
     """
     if not text or not sheets:
         return CombatReport()
-    order = list(sheets)
+    order = [long_rest(sheet, day) for sheet in sheets]
+    woke = {
+        slugify(sheet.name) for sheet, was in zip(order, sheets, strict=True) if sheet is not was
+    }
     currents = {id(sheet): (sheet.hp.current if sheet.hp else 0) for sheet in order}
     maxima = {id(sheet): (sheet.hp.max if sheet.hp else 0) for sheet in order}
     keys = [slugify(sheet.name) for sheet in order]
@@ -325,6 +342,19 @@ def resolve_narration_tags(
     cast_keys: set[str] = set()
     defeated: list[str] = []
     on_now = [key for key in fighting or [] if key in monster_meta]
+    # The party's own words: a plain attack or spell rolls even untagged.
+    standing_kinds: list[tuple[str, str]] = []
+    for key in on_now:
+        kind = monster_kind(key, monsters)
+        if monster_hp.get(key, 0) > 0 and kind in monsters:
+            standing_kinds.append((kind, str(entry(monsters, kind).get("name", kind))))
+    for match in _TAG_RE.finditer(text):
+        if match.group(1).upper() == "ENCOUNTER":
+            for ref in parse_encounter_tag(match.group(2), tables):
+                standing_kinds.append((ref.index, ref.name))
+    text, deed_count = deed_lines(
+        text, deeds or [], order, keys, tables, list(dict.fromkeys(standing_kinds))
+    )
 
     def cite(*members: str | None) -> list[str]:
         return [_sheet_key(key) for key in members if key]
@@ -875,7 +905,7 @@ def resolve_narration_tags(
         key = key_of[id(sheet)]
         if key in new_conditions:
             book.conditions = list(new_conditions[key])
-    changed: set[str] = set(hp_updates) | set(new_conditions) | cast_keys
+    changed: set[str] = set(hp_updates) | set(new_conditions) | cast_keys | woke
     gains: list[LevelGain] = []
     total_xp = sum(
         int_field(entry(monsters, monster_kind(key, monsters)), "xp") for key in defeated
@@ -900,9 +930,16 @@ def resolve_narration_tags(
         )
         if share > 0:
             for key in keys:
-                for gained in gain_xp(tables, working[key], share):
+                for gained in gain_xp(
+                    tables, working[key], share, chooses=key in (chooses or set())
+                ):
                     gains.append(gained)
                     trail = f", proficiency +{gained.prof_bonus}" if gained.prof_changed else ""
+                    if gained.improved:
+                        trail += ", " + ", ".join(
+                            f"{ability.upper()} +{step}"
+                            for ability, step in gained.improved.items()
+                        )
                     outcomes.append(
                         TagOutcome(
                             kind="level",
@@ -912,6 +949,7 @@ def resolve_narration_tags(
                             actor=gained.name,
                             amount=gained.hp_gain,
                             level=gained.level,
+                            choose=",".join(gained.choices) or None,
                         )
                     )
                     beats.append(
@@ -945,6 +983,7 @@ def resolve_narration_tags(
         sheets={key: working[key] for key in keys if key in changed},
         defeated=defeated,
         levels=gains,
+        deeds=deed_count,
     )
 
 
@@ -968,6 +1007,7 @@ _ROLL_FIELDS = (
     "actor_foe",
     "share",
     "level",
+    "choose",
 )
 
 

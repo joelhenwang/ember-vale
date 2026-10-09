@@ -271,6 +271,8 @@ from worldsim.domain.rules.dnd import (
     weapon_attack_bonus,
 )
 from worldsim.domain.rules.dnd.data import dict_field, entry, str_field, table
+from worldsim.domain.rules.dnd.deeds import Deed
+from worldsim.domain.rules.dnd.progress import long_rest
 from worldsim.domain.rules.grounding import grounded_move
 from worldsim.domain.rules.meetups import resolve_meetups
 from worldsim.domain.rules.mentions import MENTION_MODEL, unmapped_places
@@ -3933,18 +3935,19 @@ class Stage1Orchestrator:
         defender = by_name.get(party_name_key(target.name))
         if attacker is None or defender is None:
             raise DomainError(ErrorCode.PRECONDITION_FAILED, "bouts need seated sheets")
-        if attacker.sheet.hp is None or defender.sheet.hp is None:
+        # Sheets as they woke today: a new story day was the night's rest.
+        day = split_absolute(index)[0]
+        striker, struck = long_rest(attacker.sheet, day), long_rest(defender.sheet, day)
+        if striker.hp is None or struck.hp is None:
             raise DomainError(ErrorCode.PRECONDITION_FAILED, "bouts need tracked vitals")
-        weapon_key = action.weapon or (
-            attacker.sheet.weapons[0] if attacker.sheet.weapons else None
-        )
-        if weapon_key is None or weapon_key not in attacker.sheet.weapons:
+        weapon_key = action.weapon or (striker.weapons[0] if striker.weapons else None)
+        if weapon_key is None or weapon_key not in striker.weapons:
             raise DomainError(ErrorCode.VALIDATION_FAILED, "sparring needs a carried weapon")
         tables = self._dnd_tables()
         weapons = table(tables, "weapons")
         weapon = entry(weapons, weapon_key)
-        bonus = weapon_attack_bonus(tables, attacker.sheet, weapon)
-        target_ac = armor_ac(tables, defender.sheet)
+        bonus = weapon_attack_bonus(tables, striker, weapon)
+        target_ac = armor_ac(tables, struck)
         digest = hashlib.sha256(str(event_id).encode()).digest()[:8]
         seed = int.from_bytes(digest, "big") & ((1 << 63) - 1)
         rng = random.Random(seed).random
@@ -3953,17 +3956,17 @@ class Stage1Orchestrator:
         dtype = str_field(damage, "type") or "damage"
         if attack.hit:
             rolled = roll_damage(str_field(damage, "dice"), rng, attack.crit)
-            after = max(0, defender.sheet.hp.current - rolled)
-            before_hp = defender.sheet.hp.current
+            after = max(0, struck.hp.current - rolled)
+            before_hp = struck.hp.current
             outcome = (
                 f"{attacker.name} hits {defender.name} for {rolled} {dtype} "
                 f"({before_hp}->{after} HP)"
             )
         else:
             rolled = 0
-            after = defender.sheet.hp.current
+            after = struck.hp.current
             outcome = f"{attacker.name} misses {defender.name} ({attack.total} vs AC {target_ac})"
-        defender_sheet = defender.sheet.model_copy(deep=True)
+        defender_sheet = struck.model_copy(deep=True)
         assert defender_sheet.hp is not None
         defender_sheet.hp.current = after
         await uow.party.save_sheet(defender.id, defender_sheet, defender.version)
@@ -3997,7 +4000,7 @@ class Stage1Orchestrator:
                                 result=("crit" if attack.crit else "hit") if attack.hit else "miss",
                                 amount=rolled if attack.hit else None,
                                 damage_type=dtype if attack.hit else None,
-                                hp_before=defender.sheet.hp.current if attack.hit else None,
+                                hp_before=struck.hp.current if attack.hit else None,
                                 hp_after=after if attack.hit else None,
                             )
                         ],
@@ -4551,8 +4554,8 @@ class Stage1Orchestrator:
             tables = self._dnd_tables()
             today = split_absolute(scene_index)[0]
             summaries = {
-                member.name_key: build_sheet_summary(tables, member.sheet)
-                + slots_line(tables, member.sheet, today)
+                member.name_key: build_sheet_summary(tables, long_rest(member.sheet, today))
+                + slots_line(tables, long_rest(member.sheet, today), today)
                 for member in roster
             }
             facts.extend(
@@ -4561,7 +4564,9 @@ class Stage1Orchestrator:
             if foes:
                 facts.append({"key": "dnd-foes", "value": foes_line(foes)})
             dnd_context = (
-                dnd_party_prompt([m.sheet for m in roster], tables) + "\n" + dnd_story_rules_text()
+                dnd_party_prompt([long_rest(m.sheet, today) for m in roster], tables)
+                + "\n"
+                + dnd_story_rules_text()
             )
             dnd_sources = [
                 ManifestSource(
@@ -4728,6 +4733,20 @@ class Stage1Orchestrator:
                 return "no-party"
             live_monsters = await uow.monsters.list_for_world(world_id)
             run = await uow.phases.get_run(run_id)
+            # What the linked heroes tried this scene, in their own words: a
+            # plain attack or spell rolls even when the storyteller did not
+            # tag it (combat-depth-002).
+            heroes = {
+                member.character_id: member.name_key
+                for member in roster
+                if member.character_id is not None
+            }
+            deeds: list[Deed] = []
+            for intent_id in scene.intent_ids:
+                intent = await uow.scenes.get_intent(intent_id)
+                action = intent.action
+                if isinstance(action, InteractAction) and intent.author_character_id in heroes:
+                    deeds.append(Deed(key=heroes[intent.author_character_id], text=action.attempt))
             # The fight that is on (before this scene): newcomers of a kind
             # still standing join it instead of replacing it.
             fight = await uow.events.latest_fight(world_id)
@@ -4767,6 +4786,8 @@ class Stage1Orchestrator:
                     ],
                     day=story_day,
                     fighting=fighting,
+                    deeds=deeds,
+                    chooses=set(heroes.values()),
                 )
                 if not report.outcomes and not report.unresolved and not joined:
                     return "no-tags"
@@ -4822,6 +4843,7 @@ class Stage1Orchestrator:
                                 summary={
                                     "tags": str(len(report.outcomes)),
                                     "unresolved": str(len(report.unresolved)),
+                                    "deeds": str(report.deeds),
                                     "scene_event_id": str(event_id),
                                     "rolls": combat_rolls_json(report.outcomes, joined or []),
                                     # The fight that is on goes on: its foes

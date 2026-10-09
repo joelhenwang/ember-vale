@@ -17,7 +17,12 @@ from fastapi import APIRouter, Request, Response
 from pydantic import TypeAdapter
 
 from worldsim.application.capabilities import Capability, parse_role, require_capability
-from worldsim.application.commands.party import begin_adventure, create_character, link_member
+from worldsim.application.commands.party import (
+    begin_adventure,
+    choose_level_option,
+    create_character,
+    link_member,
+)
 from worldsim.application.orchestration.stage1 import Stage1Orchestrator
 from worldsim.application.queries.suggestions import suggestions_for
 from worldsim.application.stories.guards import require_unarchived
@@ -27,7 +32,8 @@ from worldsim.domain.ids import derive_attempt_id
 from worldsim.domain.party import PartyMember, fight_keys, foes_on
 from worldsim.domain.rules.dnd import DataTables, armor_ac, strip_combat_tags, xp_for_level
 from worldsim.domain.rules.dnd.data import entry, table
-from worldsim.domain.rules.dnd.progress import class_slots, slots_left
+from worldsim.domain.rules.dnd.progress import class_slots, long_rest, slots_left
+from worldsim.domain.rules.dnd.sheets import Sheet
 from worldsim.domain.scenes import Intent, Reaction
 from worldsim.domain.time import absolute_index
 from worldsim.interfaces.http import schemas as api
@@ -44,23 +50,50 @@ def _named(rows: dict[str, Any], keys: list[str]) -> list[str]:
     return [str(entry(rows, key).get("name", key)) for key in keys]
 
 
+def _spell_options(tables: DataTables, keys: list[str]) -> list[api.SpellOption]:
+    spells = table(tables, "spells")
+    rows = [
+        api.SpellOption(
+            key=key,
+            name=str(entry(spells, key).get("name", key)),
+            level=int(entry(spells, key).get("level", 0) or 0),
+        )
+        for key in keys
+    ]
+    return sorted(rows, key=lambda row: (row.level, row.name))
+
+
+def _choices(tables: DataTables, sheet: Sheet) -> list[api.LevelChoiceView]:
+    return [
+        api.LevelChoiceView(
+            id=choice.id,
+            kind=choice.kind,
+            level=choice.level,
+            picked=_spell_options(tables, choice.picked),
+            options=_spell_options(tables, choice.options),
+        )
+        for choice in sheet.choices
+    ]
+
+
 def _party_view(
     member: PartyMember, tables: DataTables | None = None, day: int | None = None
 ) -> api.PartyMemberView:
     """Project one roster row; sheets are shared party knowledge. ``day`` is
     the story day the free slots are counted for (None: as stored)."""
-    hit_points = member.sheet.hp
     tables = tables if tables is not None else dnd_tables()
-    sheet = member.sheet
+    # As the sheet woke today: a new story day was the night's long rest.
+    sheet = long_rest(member.sheet, day)
+    hit_points = sheet.hp
     return api.PartyMemberView(
         id=member.id,
         world_id=member.world_id,
         name=member.name,
-        level=member.sheet.level,
-        character_class=member.sheet.character_class,
+        level=sheet.level,
+        character_class=sheet.character_class,
         hp_current=hit_points.current if hit_points else None,
         hp_max=hit_points.max if hit_points else None,
-        conditions=list(member.sheet.conditions),
+        conditions=list(sheet.conditions),
         character_id=member.character_id,
         version=member.version,
         race=sheet.race,
@@ -72,6 +105,8 @@ def _party_view(
         xp=sheet.xp,
         xp_level_start=xp_for_level(sheet.level),
         xp_next_level=None if sheet.level >= 20 else xp_for_level(sheet.level + 1),
+        abilities=dict(sheet.stats),
+        choices=_choices(tables, sheet),
     )
 
 
@@ -535,6 +570,33 @@ async def link_party_member(
             uow, body.world_id, member_id, body.character_id, body.expected_version
         )
     return _party_view(member)
+
+
+@router.post("/stage1/party/{member_id}/choices", response_model=api.PartyMemberView)
+async def choose_party_level_option(
+    member_id: UUID, body: api.LevelChoiceRequest, request: Request
+) -> api.PartyMemberView:
+    """Make a level-up choice: the hero's own player (or a Director or God)."""
+    role, viewer = await _perspective(request, body.world_id)
+    state = request.app.state.app_state
+    async with state.uow_factory()() as uow:
+        await require_unarchived(uow, body.world_id)
+        member = await uow.party.get(member_id)
+        if role == "player" and (viewer is None or member.character_id != viewer):
+            raise DomainError(ErrorCode.FORBIDDEN, "only this hero's player chooses")
+        if role not in ("player", "director", "deity"):
+            raise DomainError(ErrorCode.FORBIDDEN, "watchers do not choose for heroes")
+        member = await choose_level_option(
+            uow,
+            body.world_id,
+            member_id,
+            body.choice_id,
+            body.expected_version,
+            abilities=body.abilities,
+            spells=body.spells,
+        )
+        today = (await uow.worlds.get(body.world_id)).day
+    return _party_view(member, dnd_tables(), today)
 
 
 @router.get("/stage1/party", response_model=api.PartyRosterResponse)

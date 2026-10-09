@@ -31,6 +31,7 @@ from worldsim.domain.rules.dnd import (
     auto_sheet,
     recruit_sheet,
 )
+from worldsim.domain.rules.dnd.progress import make_choice
 from worldsim.domain.rules.dnd.sheets import ensure_hp, max_hp
 
 
@@ -182,3 +183,26 @@ async def link_member(
     linked = await uow.party.save_link(member_id, character_id, expected_version)
     await uow.commit()
     return linked
+
+
+async def choose_level_option(
+    uow: UnitOfWork,
+    world_id: WorldId,
+    member_id: PartyMemberId,
+    choice_id: str,
+    expected_version: int,
+    *,
+    abilities: dict[str, int] | None = None,
+    spells: list[str] | None = None,
+) -> PartyMember:
+    """Make one level-up choice on a hero's sheet, version-checked."""
+    member = await uow.party.get(member_id)
+    if member.world_id != world_id:
+        raise DomainError(ErrorCode.NOT_FOUND, "party member is not in this world")
+    try:
+        sheet = make_choice(member.sheet, choice_id, abilities=abilities, spells=spells)
+    except ValueError as exc:
+        raise DomainError(ErrorCode.VALIDATION_FAILED, str(exc)) from exc
+    saved = await uow.party.save_sheet(member_id, sheet, expected_version)
+    await uow.commit()
+    return saved

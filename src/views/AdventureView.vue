@@ -24,6 +24,8 @@ import IconGear from '../components/icons/IconGear.vue'
 import IconChevronRight from '../components/icons/IconChevronRight.vue'
 import MomentDialog from '../components/story/MomentDialog.vue'
 import PartyPanel from '../components/story/PartyPanel.vue'
+import type { PartyMemberView } from '../../content/clients/worldsim'
+import LevelChoices from '../components/story/LevelChoices.vue'
 import CombatRolls from '../components/story/CombatRolls.vue'
 import { hpFraction, hpTone, levelledUp } from '../game/party'
 import { momentTitle, readyMoments, type Speaker } from '../game/moments'
@@ -203,6 +205,15 @@ const party = computed(() =>
 const hero = computed(
   () => party.value?.members?.find((m) => m.character_id === adv.me.value) ?? null
 )
+/** The hero's level-up choices made: the sheet comes back at once. */
+function choiceMade(made: PartyMemberView) {
+  const roster = adv.party.value
+  if (!roster) return
+  adv.party.value = {
+    ...roster,
+    members: (roster.members ?? []).map((m) => (m.id === made.id ? made : m))
+  }
+}
 /** Who reached a new level in the newest fight (the party panel says so). */
 const levelled = computed(() => {
   const fights = adv.log.value.filter((l) => l.kind === 'rolls')
@@ -745,6 +756,13 @@ onMounted(() => {
                 :party="party"
                 :me="adv.me.value ?? null"
                 :levelled="levelled" />
+              <button
+                v-if="hero?.choices?.length"
+                type="button"
+                class="lead__choose ev-press ev-pop-once"
+                @click="detailsOpen = true">
+                A level-up choice is waiting <IconChevronRight :size="14" />
+              </button>
               <h3 class="panel__title"><IconDoc :size="16" /> Current story lead</h3>
               <Transition name="ev-swap" mode="out-in">
                 <div v-if="mainLead" :key="mainLead.hook_id">
@@ -1158,6 +1176,13 @@ onMounted(() => {
               :me="adv.me.value ?? null"
               :levelled="levelled"
               full />
+            <LevelChoices
+              v-if="hero?.choices?.length"
+              class="sheet__choices"
+              :member="hero"
+              :world-id="storyId"
+              :opts="adv.opts.value"
+              @made="choiceMade" />
             <p v-if="!adv.alive.value" class="sheet__fallen">
               {{ myName }} has fallen. The story goes on without you.
             </p>
@@ -2841,6 +2866,23 @@ button.log__picture:hover .log__thumb img {
 .bar--hp-low i,
 .bar--hp-down i {
   background: linear-gradient(90deg, #a8402a, #d0603a);
+}
+.lead__choose {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  justify-self: start;
+  margin: 0 0 10px;
+  padding: 4px 12px;
+  border: 1px solid var(--ember);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ember);
+  font-family: var(--font-ui);
+  cursor: pointer;
+}
+.sheet__choices {
+  margin-top: 12px;
 }
 .lead__party {
   margin-bottom: 12px;

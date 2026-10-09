@@ -1271,6 +1271,17 @@
             ],
             "title": "Amount"
           },
+          "choose": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Choose"
+          },
           "damage_type": {
             "anyOf": [
               {
@@ -3423,6 +3434,103 @@
         "title": "JourneyView",
         "type": "object"
       },
+      "LevelChoiceRequest": {
+        "additionalProperties": false,
+        "description": "Make one level-up choice: ``abilities`` ({\"str\": 2} or two at +1)\nor ``spells`` (spell keys, as many as were picked).",
+        "properties": {
+          "abilities": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Abilities"
+          },
+          "choice_id": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Choice Id",
+            "type": "string"
+          },
+          "expected_version": {
+            "minimum": 0.0,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "spells": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 12,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spells"
+          },
+          "world_id": {
+            "format": "uuid",
+            "title": "World Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "world_id",
+          "choice_id",
+          "expected_version"
+        ],
+        "title": "LevelChoiceRequest",
+        "type": "object"
+      },
+      "LevelChoiceView": {
+        "additionalProperties": false,
+        "description": "A level-up choice left to the player: ``ability`` (+2 to one ability\nor +1 to two) or ``spells`` (keep the picked spells or swap them).",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/SpellOption"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "picked": {
+            "items": {
+              "$ref": "#/components/schemas/SpellOption"
+            },
+            "title": "Picked",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "level"
+        ],
+        "title": "LevelChoiceView",
+        "type": "object"
+      },
       "LineageLinkView": {
         "additionalProperties": false,
         "properties": {
@@ -4623,6 +4731,13 @@
       "PartyMemberView": {
         "additionalProperties": false,
         "properties": {
+          "abilities": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Abilities",
+            "type": "object"
+          },
           "armor_class": {
             "anyOf": [
               {
@@ -4649,6 +4764,13 @@
               }
             ],
             "title": "Character Id"
+          },
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/LevelChoiceView"
+            },
+            "title": "Choices",
+            "type": "array"
           },
           "conditions": {
             "items": {
@@ -6898,6 +7020,30 @@
           "version"
         ],
         "title": "SkillView",
+        "type": "object"
+      },
+      "SpellOption": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "level"
+        ],
+        "title": "SpellOption",
         "type": "object"
       },
       "Stage1AdvanceRequest": {
@@ -12676,6 +12822,60 @@
           }
         },
         "summary": "Begin Party Member",
+        "tags": [
+          "stage1"
+        ]
+      }
+    },
+    "/api/v1/stage1/party/{member_id}/choices": {
+      "post": {
+        "description": "Make a level-up choice: the hero's own player (or a Director or God).",
+        "operationId": "choose_party_level_option_api_v1_stage1_party__member_id__choices_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "member_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Member Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LevelChoiceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartyMemberView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Choose Party Level Option",
         "tags": [
           "stage1"
         ]

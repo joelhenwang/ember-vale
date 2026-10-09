@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { PartyMemberView } from '../../content/clients/worldsim'
 import {
+  abilityMod,
+  addAbilityPoint,
+  choiceWaiting,
   heroLine,
+  improvementReady,
   hpTone,
   levelledUp,
   partyHurt,
@@ -196,5 +200,45 @@ describe('combat depth', () => {
     expect(xpProgress(wren)).toEqual({ fraction: 0.4 / 6, label: '340 / 900 XP' })
     expect(xpProgress({ ...wren, xp_next_level: null }).fraction).toBe(1)
     expect(slotsLeftLine(wren)).toBe('1 of 3 first-level')
+  })
+})
+
+describe('level-up choices', () => {
+  const scores = { str: 16, dex: 12, con: 19, int: 8, wis: 10, cha: 10 }
+
+  it('builds +2 to one or +1 to two, within the cap', () => {
+    let picks = addAbilityPoint({}, 'str', scores)
+    expect(improvementReady(picks)).toBe(false)
+    picks = addAbilityPoint(picks, 'str', scores)
+    expect(picks).toEqual({ str: 2 })
+    expect(improvementReady(picks)).toBe(true)
+    // a third press on the same ability clears it
+    expect(addAbilityPoint(picks, 'str', scores)).toEqual({})
+    // +1 and +1
+    picks = addAbilityPoint(addAbilityPoint({}, 'str', scores), 'dex', scores)
+    expect(picks).toEqual({ str: 1, dex: 1 })
+    expect(improvementReady(picks)).toBe(true)
+    // con 19 takes one point, not two
+    expect(addAbilityPoint({ con: 1 }, 'con', scores)).toEqual({ con: 1 })
+    // full already: a new ability starts over
+    expect(addAbilityPoint({ str: 2 }, 'wis', scores)).toEqual({ wis: 1 })
+  })
+
+  it('says the modifier and what waits', () => {
+    expect(abilityMod(16)).toBe('+3')
+    expect(abilityMod(8)).toBe('-1')
+    expect(choiceWaiting('ability,spells')).toBe(
+      'choose a better ability and new spells in Character details'
+    )
+    expect(choiceWaiting(null)).toBe('')
+    const said = sayRoll({
+      kind: 'level',
+      text: 'x',
+      actor: 'Wren',
+      level: 4,
+      amount: 7,
+      choose: 'ability'
+    })
+    expect(said.outcome).toBe('+7 hit points · choose a better ability in Character details')
   })
 })
