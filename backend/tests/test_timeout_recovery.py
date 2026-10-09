@@ -300,11 +300,16 @@ def test_room_recovers_timed_out_beat(migrated_db: None, monkeypatch: pytest.Mon
             assert stranded["open_run_state"] != "completed"
 
             # Busy: the dead owner's lease is still live, so admission
-            # refuses without starting a second executor.
+            # refuses without starting a second executor. The stranded beat
+            # may have reached the gateway more than once before it was
+            # cancelled (its characters decide in parallel; CI saw 2), so
+            # the proof is that the refused request adds no call.
+            calls_before = gateway.calls
+            assert calls_before >= 1
             busy = await client.post("/api/v1/stage1/advance", json=body, headers=headers)
             assert busy.status_code == 409, busy.text
             assert busy.json()["error"]["code"] == "VERSION_CONFLICT"
-            assert gateway.calls == 1
+            assert gateway.calls == calls_before
             still = await client.get(
                 "/api/v1/simulation/status",
                 params={"world_id": str(ids["world"])},
