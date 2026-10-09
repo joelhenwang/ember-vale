@@ -146,6 +146,17 @@ def weapon_attack_bonus(data: DataTables, sheet: Sheet, weapon: dict[str, Any]) 
     return bonus + ability_mod(sheet.stats.get("str", 10))
 
 
+def weapon_damage_bonus(data: DataTables, sheet: Sheet, weapon: dict[str, Any]) -> int:
+    """The ability a weapon swings with adds to its damage as to its aim (5e):
+    Str, Dex for ranged, the better of the two for finesse. No proficiency."""
+    return weapon_attack_bonus(data, sheet, weapon) - sheet_prof(sheet)
+
+
+def weapon_damage(data: DataTables, sheet: Sheet, weapon: dict[str, Any], rolled: int) -> int:
+    """A weapon hit's damage: the dice plus the ability, never below 1."""
+    return max(1, rolled + weapon_damage_bonus(data, sheet, weapon))
+
+
 def armor_ac(data: DataTables, sheet: Sheet) -> int:
     """Armor class. Missing-but-named armor skips Dex entirely (kept quirk)."""
     armor = sheet.base_ac or 10

@@ -242,3 +242,12 @@ describe('level-up choices', () => {
     expect(said.outcome).toBe('+7 hit points · choose a better ability in Character details')
   })
 })
+
+describe('getting back up', () => {
+  it('says the fallen hero is up again', () => {
+    const said = sayRoll({ kind: 'recover', text: 'x', actor: 'Wren', hp_before: 0, hp_after: 1 })
+    expect(said.lead).toBe('Wren gets back up')
+    expect(said.hp).toBe('Wren 0 → 1')
+    expect(said.tone).toBe('heal')
+  })
+})

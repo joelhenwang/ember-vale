@@ -65,9 +65,10 @@ def _rng(*seq: float) -> Callable[[], float]:
 
 def test_melee_hit_and_miss() -> None:
     report = resolve_narration_tags("ATTACK[longsword at goblin]", [_borin()], DATA, _rng(0.5, 0.5))
-    assert len(report.outcomes) == 1
-    assert report.outcomes[0].text == "Borin hits Goblin for 5 slashing. (7->2 HP)"
-    assert report.beats[0].text == "Borin's Longsword hits Goblin for 5 slashing."
+    # 1d8 (5) plus Str +3: the weapon's ability adds to its damage (5e).
+    assert [o.kind for o in report.outcomes] == ["attack", "xp"]
+    assert report.outcomes[0].text == "Borin hits Goblin for 8 slashing. (7->0 HP)"
+    assert report.beats[0].text == "Borin's Longsword hits Goblin for 8 slashing."
     assert report.beats[0].cited == ["dnd-sheet:borin"]
     assert report.hp == {} and report.unresolved == []
 
@@ -79,15 +80,15 @@ def test_melee_crit_doubles_dice() -> None:
     report = resolve_narration_tags(
         "ATTACK[longsword at goblin]", [_borin()], DATA, _rng(0.9999, 0.5, 0.5)
     )
-    assert report.outcomes[0].text == ("Borin hits Goblin for 10 slashing. Critical! (7->0 HP)")
+    assert report.outcomes[0].text == ("Borin hits Goblin for 13 slashing. Critical! (7->0 HP)")
 
 
 def test_party_target_takes_hp_delta() -> None:
     sheets = [_borin(), _elara()]
     before = [s.model_dump() for s in sheets]
     report = resolve_narration_tags("ATTACK[longsword at Elara]", sheets, DATA, _rng(0.5, 0.25))
-    assert report.outcomes[0].text == "Borin hits Elara for 3 slashing. (17->14 HP)"
-    assert report.hp == {"elara": 14}
+    assert report.outcomes[0].text == "Borin hits Elara for 6 slashing. (17->11 HP)"
+    assert report.hp == {"elara": 11}
     assert report.beats[0].cited == ["dnd-sheet:borin", "dnd-sheet:elara"]
     assert [s.model_dump() for s in sheets] == before
 
@@ -178,7 +179,7 @@ def test_carried_pool_continues_across_scenes() -> None:
         _rng(0.5, 0.5),
         live=[_goblin(2)],
     )
-    assert report.outcomes[0].text == "Borin hits Goblin for 5 slashing. (2->0 HP)"
+    assert report.outcomes[0].text == "Borin hits Goblin for 8 slashing. (2->0 HP)"
     pool = report.monsters["goblin"]
     assert (pool.hp_current, pool.hp_max, pool.spawned) == (0, 7, False)
 
@@ -191,9 +192,9 @@ def test_fresh_encounter_respawns_pool() -> None:
         _rng(0.5, 0.5),
         live=[_goblin(2)],
     )
-    assert report.outcomes[1].text == "Borin hits Goblin for 5 slashing. (7->2 HP)"
+    assert report.outcomes[1].text == "Borin hits Goblin for 8 slashing. (7->0 HP)"
     pool = report.monsters["goblin"]
-    assert (pool.hp_current, pool.spawned) == (2, True)
+    assert (pool.hp_current, pool.spawned) == (0, True)
 
 
 def test_untouched_pool_not_persisted() -> None:
@@ -292,12 +293,12 @@ def test_group_foes_get_their_own_pools_and_numbers() -> None:
     assert encounter.target == "Goblin 1, Goblin 2"
     assert report.beats[0].text.startswith("Goblin 1, Goblin 2 bar the way")
     # A number aims at that one; a plain name is the first still standing.
-    assert (second.target, second.hp_before, second.hp_after) == ("Goblin 2", 7, 2)
-    assert (first.target, first.hp_before, first.hp_after) == ("Goblin 1", 7, 2)
+    assert (second.target, second.hp_before, second.hp_after) == ("Goblin 2", 7, 0)
+    assert (first.target, first.hp_before, first.hp_after) == ("Goblin 1", 7, 0)
     assert report.foes == ["goblin-1", "goblin-2"]
     assert {k: (m.name, m.hp_current) for k, m in report.monsters.items()} == {
-        "goblin-1": ("Goblin 1", 2),
-        "goblin-2": ("Goblin 2", 2),
+        "goblin-1": ("Goblin 1", 0),
+        "goblin-2": ("Goblin 2", 0),
     }
 
 

@@ -275,6 +275,7 @@ from worldsim.domain.rules.dnd import (
 from worldsim.domain.rules.dnd.data import dict_field, entry, str_field, table
 from worldsim.domain.rules.dnd.deeds import Deed, looks_like_deed
 from worldsim.domain.rules.dnd.progress import long_rest
+from worldsim.domain.rules.dnd.sheets import weapon_damage
 from worldsim.domain.rules.grounding import grounded_move
 from worldsim.domain.rules.meetups import resolve_meetups
 from worldsim.domain.rules.mentions import MENTION_MODEL, unmapped_places
@@ -3959,7 +3960,9 @@ class Stage1Orchestrator:
         damage = dict_field(weapon, "damage")
         dtype = str_field(damage, "type") or "damage"
         if attack.hit:
-            rolled = roll_damage(str_field(damage, "dice"), rng, attack.crit)
+            rolled = weapon_damage(
+                tables, striker, weapon, roll_damage(str_field(damage, "dice"), rng, attack.crit)
+            )
             after = max(0, struck.hp.current - rolled)
             before_hp = struck.hp.current
             outcome = (

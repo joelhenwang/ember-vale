@@ -194,6 +194,20 @@ export function sayRoll(r: CombatRollView): RollSay {
       tone: 'miss'
     }
   }
+  if (kind === 'recover') {
+    return {
+      lead: `${actor} gets back up`,
+      using: null,
+      check: null,
+      natural: null,
+      outcome: 'the fight is over',
+      hp:
+        r.hp_before != null && r.hp_after != null
+          ? `${actor} ${r.hp_before} → ${r.hp_after}`
+          : null,
+      tone: 'heal'
+    }
+  }
   if (kind === 'recruit') {
     return {
       lead: `${actor} joins the party`,
