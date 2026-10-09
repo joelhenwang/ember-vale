@@ -4,10 +4,13 @@
  * armour, level and calling, and the foes of the fight that is on.
  * `full` adds what each one fights with (the Character details drawer).
  * A blow that lands shakes the card it hurt; healing makes it glow.
+ * Each one shows their experience toward the next level and, for casters,
+ * the spell slots still free today; a level gained throws sparks and a
+ * "Level up!" badge (combat level, not the journey renown in the status bar).
  */
 import { computed, nextTick, ref, watch } from 'vue'
 import type { PartyRosterResponse } from '../../../content/clients/worldsim'
-import { flash, shake } from '../../composables/useEffects'
+import { burst, flash, shake } from '../../composables/useEffects'
 import {
   HERO_CLASSES,
   HERO_RACES,
@@ -16,13 +19,17 @@ import {
   hpFraction,
   hpTone,
   partyOrder,
-  slotLine
+  slotLine,
+  slotsLeftLine,
+  xpProgress
 } from '../../game/party'
 
 const props = defineProps<{
   party: PartyRosterResponse
   me: string | null
   full?: boolean
+  /** Names who reached a new level in the newest fight (their badge shows). */
+  levelled?: string[]
 }>()
 
 const members = computed(() => partyOrder(props.party.members ?? [], props.me))
@@ -55,6 +62,20 @@ watch(
   }
 )
 
+// A level gained while watching throws sparks from the card.
+watch(
+  () => members.value.map((m) => [m.id, m.level] as [string, number]),
+  async (now, before) => {
+    if (!before?.length) return
+    const was = new Map(before)
+    await nextTick()
+    for (const [id, level] of now) {
+      const old = was.get(id)
+      if (old != null && level > old) burst(rows.value[id], { count: 18, spread: 60 })
+    }
+  }
+)
+
 function calling(cls: string, race?: string | null): string {
   const c = choiceName(HERO_CLASSES, cls)
   return race ? `${choiceName(HERO_RACES, race)} ${c.toLowerCase()}` : c
@@ -76,6 +97,7 @@ function calling(cls: string, race?: string | null): string {
         :class="[`pm--${hpTone(m.hp_current, m.hp_max)}`, { 'pm--me': m.character_id === me }]">
         <div class="pm__head">
           <b class="pm__name">{{ m.name }}</b>
+          <span v-if="levelled?.includes(m.name)" class="pm__up ev-pop-once">Level up!</span>
           <span class="pm__meta"
             >Level {{ m.level }} {{ calling(m.character_class, full ? m.race : null) }}</span
           >
@@ -89,6 +111,18 @@ function calling(cls: string, race?: string | null): string {
           </div>
           <span class="hp__num">{{ m.hp_current ?? '–' }}/{{ m.hp_max ?? '–' }}</span>
         </div>
+        <div
+          class="xp"
+          :title="`Experience toward level ${m.level + 1}`"
+          :aria-label="`Experience: ${xpProgress(m).label}`">
+          <div class="xp__track">
+            <i :style="{ transform: `scaleX(${xpProgress(m).fraction})` }" />
+          </div>
+          <span class="xp__num">{{ xpProgress(m).label }}</span>
+        </div>
+        <p v-if="m.spell_slots?.length" class="pm__slots">
+          <span>Spell slots today</span> {{ slotsLeftLine(m) }}
+        </p>
         <p v-if="(m.hp_current ?? 1) <= 0" class="pm__down">Down</p>
         <p v-if="m.conditions?.length" class="pm__conds">
           <span v-for="c in m.conditions" :key="c" class="pm__cond">{{ c }}</span>
@@ -243,6 +277,49 @@ function calling(cls: string, race?: string | null): string {
   font-variant-numeric: tabular-nums;
   color: var(--ink-3);
 }
+.pm__up {
+  padding: 0 7px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff7ec;
+  background: linear-gradient(160deg, var(--ember), #c98a2c);
+}
+.xp {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+}
+.xp__track {
+  height: 4px;
+  border-radius: 99px;
+  background: var(--line-soft);
+  overflow: hidden;
+}
+.xp__track i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  transform-origin: left center;
+  transition: transform 0.6s var(--ease-settle, ease-out);
+  background: linear-gradient(90deg, #c98a2c, var(--ember));
+}
+.xp__num {
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.pm__slots {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.pm__slots span {
+  color: var(--muted);
+  margin-right: 4px;
+}
 .pm__down {
   margin: 3px 0 0;
   font-size: 13px;
@@ -281,11 +358,13 @@ function calling(cls: string, race?: string | null): string {
   font-weight: 600;
   color: var(--ember);
 }
-:root[data-motion='reduced'] .hp__track i {
+:root[data-motion='reduced'] .hp__track i,
+:root[data-motion='reduced'] .xp__track i {
   transition: none;
 }
 @media (prefers-reduced-motion: reduce) {
-  :root:not([data-motion='full']) .hp__track i {
+  :root:not([data-motion='full']) .hp__track i,
+  :root:not([data-motion='full']) .xp__track i {
     transition: none;
   }
 }

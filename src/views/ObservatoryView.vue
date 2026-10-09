@@ -24,7 +24,15 @@ import IconPlay from '../components/icons/IconPlay.vue'
 import IconArrowRight from '../components/icons/IconArrowRight.vue'
 import { useObservatory } from '../composables/useObservatory'
 import { vRipple } from '../composables/useEffects'
-import { BEAT_LIMITS, SPEEDS, autoplayStatus, beatTimeLabel, speedFor } from '../game/observatory'
+import {
+  BEAT_LIMITS,
+  SPEEDS,
+  autoplayStatus,
+  beatTimeLabel,
+  rollsByScene,
+  rollsFor,
+  speedFor
+} from '../game/observatory'
 
 const route = useRoute()
 const storyId = computed(() => String(route.params.storyId ?? ''))
@@ -106,6 +114,10 @@ const speakers = computed(() => {
   return out
 })
 /** The scene's newest picture that did not fail (ready, or still being painted). */
+/** Each scene's dice (combat stories): a mark in the feed, the rolls in the event view. */
+const sceneRolls = computed(() => rollsByScene(obs.entries.value))
+const fought = computed(() => new Set(sceneRolls.value.keys()))
+
 function pictureFor(entry: ChronicleEntry): SceneArtView | null {
   const mine = (view.value?.scene_art ?? []).filter(
     (a) => a.scene_id === entry.scene_id && a.status !== 'failed'
@@ -294,6 +306,7 @@ onUnmounted(() => {
         :name-of="nameOf"
         :place-of="placeOf"
         :pictured="pictured"
+        :fought="fought"
         :branchable="branches.kept.value"
         @branch="branchFrom"
         @open="opened = $event"
@@ -309,6 +322,7 @@ onUnmounted(() => {
       :name-of="nameOf"
       :place-of="placeOf"
       :picture="pictureFor(opened)"
+      :rolls="rollsFor(sceneRolls, opened)"
       :branchable="canBranch(branches.kept.value, opened.absolute_index)"
       @branch="branchFrom"
       @moment="openMoment"

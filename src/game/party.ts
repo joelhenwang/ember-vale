@@ -103,7 +103,7 @@ export function foesStanding(foes: FoeView[] | undefined): number {
   return (foes ?? []).filter((f) => f.hp_current > 0).length
 }
 
-export type RollTone = 'hit' | 'crit' | 'miss' | 'heal' | 'save' | 'info' | 'hurt'
+export type RollTone = 'hit' | 'crit' | 'miss' | 'heal' | 'save' | 'info' | 'hurt' | 'level'
 
 export interface RollSay {
   /** "Wren attacks the Goblin" */
@@ -156,6 +156,39 @@ export function sayRoll(r: CombatRollView): RollSay {
       outcome: null,
       hp: null,
       tone: 'info'
+    }
+  }
+  if (kind === 'xp') {
+    return {
+      lead: `${target || 'The foe'} ${target.includes(',') ? 'are' : 'is'} defeated`,
+      using: null,
+      check: null,
+      natural: null,
+      outcome: `${r.amount ?? 0} XP${r.share != null && r.share !== r.amount ? ` · ${r.share} each` : ''}`,
+      hp: null,
+      tone: 'info'
+    }
+  }
+  if (kind === 'level') {
+    return {
+      lead: `Level up! ${actor} reaches level ${r.level ?? '?'}`,
+      using: null,
+      check: null,
+      natural: null,
+      outcome: r.amount ? `+${r.amount} hit points` : null,
+      hp: null,
+      tone: 'level'
+    }
+  }
+  if (r.result === 'no-slot') {
+    return {
+      lead: `${actor} tries ${r.using ?? 'a spell'}`,
+      using: null,
+      check: null,
+      natural: null,
+      outcome: 'No spell slot left · it fails',
+      hp: null,
+      tone: 'miss'
     }
   }
   if (kind === 'recruit') {
@@ -231,6 +264,45 @@ export function sayRoll(r: CombatRollView): RollSay {
     hp,
     tone
   }
+}
+
+/** Names of party members who reached a new level in these rolls. */
+export function levelledUp(rolls: CombatRollView[] | undefined): string[] {
+  return (rolls ?? []).filter((r) => r.kind === 'level' && r.actor).map((r) => r.actor as string)
+}
+
+/** Experience toward the next level, 0…1, and the words for it. */
+export function xpProgress(m: PartyMemberView): { fraction: number; label: string } {
+  const xp = m.xp ?? 0
+  const start = m.xp_level_start ?? 0
+  const next = m.xp_next_level
+  if (next == null) return { fraction: 1, label: `${xp} XP · highest level` }
+  const span = Math.max(1, next - start)
+  return {
+    fraction: Math.min(1, Math.max(0, (xp - start) / span)),
+    label: `${xp} / ${next} XP`
+  }
+}
+
+/** "1 of 3 first-level" — the slots still free today. */
+export function slotsLeftLine(m: PartyMemberView): string {
+  const names = [
+    'first',
+    'second',
+    'third',
+    'fourth',
+    'fifth',
+    'sixth',
+    'seventh',
+    'eighth',
+    'ninth'
+  ]
+  const per = m.spell_slots ?? []
+  const left = m.spell_slots_left ?? per
+  return per
+    .map((n, i) => (n > 0 ? `${left[i] ?? n} of ${n} ${names[i] ?? `${i + 1}th`}-level` : ''))
+    .filter(Boolean)
+    .join(', ')
 }
 
 /** A hit that hurt someone in the party (the view shakes their card). */

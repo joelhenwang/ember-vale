@@ -12,6 +12,7 @@ import type {
   AutoplayView,
   CastEntry,
   ChronicleEntry,
+  CombatRollView,
   MapAnchorView,
   MapRoadLineView
 } from '../../content/clients/worldsim'
@@ -285,8 +286,12 @@ function isIdle(beat: FeedBeat): boolean {
  */
 export function groupFeed(entries: ChronicleEntry[]): FeedBeat[] {
   const groups = new Map<number, ChronicleEntry[]>()
+  // A fight's rolls are their own event; they show with their scene.
+  const scenes = new Set(entries.map((e) => e.event_id))
   for (const entry of entries) {
     if (QUIET_TYPES.has(entry.event_type)) continue
+    const of = entry.combat?.scene_event_id
+    if (of && scenes.has(of)) continue
     const list = groups.get(entry.absolute_index) ?? []
     list.push(entry)
     groups.set(entry.absolute_index, list)
@@ -313,6 +318,30 @@ export function groupFeed(entries: ChronicleEntry[]): FeedBeat[] {
     folded.push(beat)
   }
   return folded
+}
+
+/**
+ * The dice of each scene, by the scene's event id (a combat story rolls them
+ * in an event of their own that names its scene). A fight whose scene is not
+ * loaded keeps its rolls under its own id.
+ */
+export function rollsByScene(entries: ChronicleEntry[]): Map<string, CombatRollView[]> {
+  const out = new Map<string, CombatRollView[]>()
+  for (const e of entries) {
+    const rolls = e.combat?.rolls
+    if (!rolls?.length) continue
+    const key = e.combat?.scene_event_id ?? e.event_id
+    out.set(key, [...(out.get(key) ?? []), ...rolls])
+  }
+  return out
+}
+
+/** The rolls an opened entry shows: its scene's, or its own (a lone fight). */
+export function rollsFor(
+  byScene: Map<string, CombatRollView[]>,
+  entry: ChronicleEntry
+): CombatRollView[] {
+  return byScene.get(entry.event_id) ?? entry.combat?.rolls ?? []
 }
 
 /** Merge a new chronicle page into what is shown, by event id. */

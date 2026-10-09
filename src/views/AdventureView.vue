@@ -25,7 +25,7 @@ import IconChevronRight from '../components/icons/IconChevronRight.vue'
 import MomentDialog from '../components/story/MomentDialog.vue'
 import PartyPanel from '../components/story/PartyPanel.vue'
 import CombatRolls from '../components/story/CombatRolls.vue'
-import { hpFraction, hpTone } from '../game/party'
+import { hpFraction, hpTone, levelledUp } from '../game/party'
 import { momentTitle, readyMoments, type Speaker } from '../game/moments'
 import PaintSceneDialog from '../components/story/PaintSceneDialog.vue'
 import BranchDialog from '../components/story/BranchDialog.vue'
@@ -196,6 +196,11 @@ const party = computed(() =>
 const hero = computed(
   () => party.value?.members?.find((m) => m.character_id === adv.me.value) ?? null
 )
+/** Who reached a new level in the newest fight (the party panel says so). */
+const levelled = computed(() => {
+  const fights = adv.log.value.filter((l) => l.kind === 'rolls')
+  return levelledUp(fights[fights.length - 1]?.rolls)
+})
 const mana = computed(() => statOf('mana'))
 const staminaShown = useTweened(computed(() => stamina.value ?? 0))
 const manaShown = useTweened(computed(() => mana.value ?? 0))
@@ -731,7 +736,8 @@ onMounted(() => {
                 v-if="party"
                 class="lead__party"
                 :party="party"
-                :me="adv.me.value ?? null" />
+                :me="adv.me.value ?? null"
+                :levelled="levelled" />
               <h3 class="panel__title"><IconDoc :size="16" /> Current story lead</h3>
               <Transition name="ev-swap" mode="out-in">
                 <div v-if="mainLead" :key="mainLead.hook_id">
@@ -1135,6 +1141,7 @@ onMounted(() => {
               class="sheet__party"
               :party="party"
               :me="adv.me.value ?? null"
+              :levelled="levelled"
               full />
             <p v-if="!adv.alive.value" class="sheet__fallen">
               {{ myName }} has fallen. The story goes on without you.
