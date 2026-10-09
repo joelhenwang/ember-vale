@@ -19,6 +19,8 @@ from pydantic import TypeAdapter
 from worldsim.application.capabilities import Capability, parse_role, require_capability
 from worldsim.application.commands.party import (
     begin_adventure,
+    calling_state,
+    change_calling,
     choose_level_option,
     create_character,
     link_member,
@@ -77,10 +79,14 @@ def _choices(tables: DataTables, sheet: Sheet) -> list[api.LevelChoiceView]:
 
 
 def _party_view(
-    member: PartyMember, tables: DataTables | None = None, day: int | None = None
+    member: PartyMember,
+    tables: DataTables | None = None,
+    day: int | None = None,
+    changeable: bool = False,
 ) -> api.PartyMemberView:
     """Project one roster row; sheets are shared party knowledge. ``day`` is
-    the story day the free slots are counted for (None: as stored)."""
+    the story day the free slots are counted for (None: as stored);
+    ``changeable``: a companion whose calling may still change."""
     tables = tables if tables is not None else dnd_tables()
     # As the sheet woke today: a new story day was the night's long rest.
     sheet = long_rest(member.sheet, day)
@@ -107,6 +113,7 @@ def _party_view(
         xp_next_level=None if sheet.level >= 20 else xp_for_level(sheet.level + 1),
         abilities=dict(sheet.stats),
         choices=_choices(tables, sheet),
+        calling_changeable=changeable,
     )
 
 
@@ -599,6 +606,37 @@ async def choose_party_level_option(
     return _party_view(member, dnd_tables(), today)
 
 
+@router.post("/stage1/party/{member_id}/calling", response_model=api.PartyMemberView)
+async def change_party_calling(
+    member_id: UUID, body: api.PartyCallingRequest, request: Request
+) -> api.PartyMemberView:
+    """Another people and calling for a companion who has not fought yet: the
+    hero's own player (or a Director or God)."""
+    role, viewer = await _perspective(request, body.world_id)
+    if role not in ("player", "director", "deity"):
+        raise DomainError(ErrorCode.FORBIDDEN, "watchers do not change the party")
+    state = request.app.state.app_state
+    tables = dnd_tables()
+    async with state.uow_factory()() as uow:
+        await require_unarchived(uow, body.world_id)
+        if role == "player":
+            grant = await uow.roles.get_for_world(body.world_id)
+            if viewer is None or grant is None or grant.character_id != viewer:
+                raise DomainError(ErrorCode.FORBIDDEN, "only the hero's player changes callings")
+        member = await change_calling(
+            uow,
+            tables,
+            body.world_id,
+            member_id,
+            body.race,
+            body.character_class,
+            body.expected_version,
+        )
+        today = (await uow.worlds.get(body.world_id)).day
+        changeable = (await calling_state(uow, body.world_id)).changeable(member)
+    return _party_view(member, tables, today, changeable)
+
+
 @router.get("/stage1/party", response_model=api.PartyRosterResponse)
 async def party_roster(world_id: UUID, request: Request) -> api.PartyRosterResponse:
     """Party sheets are shared party knowledge: full roster for both roles."""
@@ -608,10 +646,14 @@ async def party_roster(world_id: UUID, request: Request) -> api.PartyRosterRespo
         members = await uow.party.list_for_world(world_id)
         foes, fought = await _foes(uow, world_id) if members else ([], None)
         today = (await uow.worlds.get(world_id)).day if members else None
+        callings = await calling_state(uow, world_id) if members else None
     tables = dnd_tables()
     return api.PartyRosterResponse(
         world_id=world_id,
-        members=[_party_view(member, tables, today) for member in members],
+        members=[
+            _party_view(member, tables, today, callings is not None and callings.changeable(member))
+            for member in members
+        ],
         foes=foes,
         fight_index=fought,
     )

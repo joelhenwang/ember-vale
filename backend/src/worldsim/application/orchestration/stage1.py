@@ -40,6 +40,7 @@ from uuid import UUID, uuid4, uuid5
 
 from sqlalchemy.exc import IntegrityError
 
+from worldsim.application.callings import suggest_calling
 from worldsim.application.commands.director import accept_decision, open_place
 from worldsim.application.commands.inventory import move_item
 from worldsim.application.commands.knowledge import fold_claim
@@ -281,7 +282,6 @@ from worldsim.domain.rules.dnd.data import dict_field, entry, str_field, table
 from worldsim.domain.rules.dnd.deeds import Deed, looks_like_deed
 from worldsim.domain.rules.dnd.invites import (
     accepts,
-    companion_description,
     invitation_note,
     is_invitation,
 )
@@ -4329,14 +4329,15 @@ class Stage1Orchestrator:
                     continue
                 who = await uow.characters.get(reaction.reactor_character_id)
                 card = await _card_of(uow, who, self._cards)
-            words = " ".join([card.appearance, card.personality, card.background])
+            # Race and calling: the writing model's choice, else the card's words.
+            described = await suggest_calling(self._moment_writer, card, roster, self._dnd_tables())
             async with self._factory() as uow:
                 result = await recruit_companion(
                     uow,
                     self._dnd_tables(),
                     world_id,
                     who.name,
-                    companion_description(words, self._dnd_tables()),
+                    described,
                     character_id=who.id,
                 )
             if result.joined:

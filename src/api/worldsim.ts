@@ -82,7 +82,8 @@ import type {
   TerrainView,
   PartyRosterResponse,
   PartyMemberView,
-  LevelChoiceRequest
+  LevelChoiceRequest,
+  PartyCallingRequest
 } from '../../content/clients/worldsim'
 import { apiFetch, type Role } from './http'
 
@@ -579,6 +580,19 @@ export function chooseLevelOption(
   opts: CallOptions = {}
 ): Promise<PartyMemberView> {
   return apiFetch<PartyMemberView>(`/stage1/party/${memberId}/choices`, {
+    ...opts,
+    method: 'POST',
+    body
+  })
+}
+
+/** Another people and calling for a companion who has not fought yet. */
+export function changeCalling(
+  memberId: string,
+  body: PartyCallingRequest,
+  opts: CallOptions = {}
+): Promise<PartyMemberView> {
+  return apiFetch<PartyMemberView>(`/stage1/party/${memberId}/calling`, {
     ...opts,
     method: 'POST',
     body

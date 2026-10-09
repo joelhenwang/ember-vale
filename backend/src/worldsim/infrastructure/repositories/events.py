@@ -149,6 +149,20 @@ class SqlAlchemyEventRepository:
         ).scalar_one_or_none()
         return self._to_domain(row) if row is not None else None
 
+    async def list_rolled(self, world_id: UUID) -> list[WorldEvent]:
+        """Every event that rolled dice (fights, spars, settled rumours)."""
+        rows = (
+            await self._session.execute(
+                select(WorldEventRow)
+                .where(
+                    WorldEventRow.world_id == world_id,
+                    WorldEventRow.summary.has_key("rolls"),
+                )
+                .order_by(WorldEventRow.sequence)
+            )
+        ).scalars()
+        return [self._to_domain(row) for row in rows]
+
     async def list_by_absolute(
         self, world_id: UUID, start_absolute: int, end_absolute: int
     ) -> list[WorldEvent]:

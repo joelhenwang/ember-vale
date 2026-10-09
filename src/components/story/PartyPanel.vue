@@ -7,9 +7,12 @@
  * Each one shows their experience toward the next level and, for casters,
  * the spell slots still free today; a level gained throws sparks and a
  * "Level up!" badge (combat level, not the journey renown in the status bar).
+ * Given `worldId`, a companion who has not fought yet can change their people
+ * and calling (CallingPicker); `changed` hands back their new sheet.
  */
 import { computed, nextTick, ref, watch } from 'vue'
-import type { PartyRosterResponse } from '../../../content/clients/worldsim'
+import type { PartyMemberView, PartyRosterResponse } from '../../../content/clients/worldsim'
+import type { CallOptions } from '../../api/worldsim'
 import { burst, flash, shake } from '../../composables/useEffects'
 import {
   HERO_CLASSES,
@@ -23,6 +26,7 @@ import {
   slotsLeftLine,
   xpProgress
 } from '../../game/party'
+import CallingPicker from './CallingPicker.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -33,9 +37,13 @@ const props = withDefaults(
     levelled?: string[]
     /** "The party" for the Director and God seats, who play no one in it. */
     title?: string
+    /** The story, for changing a new companion's calling (none: read only). */
+    worldId?: string
+    opts?: CallOptions
   }>(),
-  { title: 'Your party', levelled: undefined }
+  { title: 'Your party', levelled: undefined, worldId: undefined, opts: undefined }
 )
+const emit = defineEmits<{ changed: [member: PartyMemberView] }>()
 
 const members = computed(() => partyOrder(props.party.members ?? [], props.me))
 const foes = computed(() => props.party.foes ?? [])
@@ -125,6 +133,13 @@ function calling(cls: string, race?: string | null): string {
           </div>
           <span class="xp__num">{{ xpProgress(m).label }}</span>
         </div>
+        <CallingPicker
+          v-if="worldId && m.calling_changeable && m.character_id !== me"
+          :key="`${m.id}-${m.version}`"
+          :member="m"
+          :world-id="worldId"
+          :opts="opts"
+          @changed="(made) => emit('changed', made)" />
         <p v-if="m.spell_slots?.length" class="pm__slots">
           <span>Spell slots today</span> {{ slotsLeftLine(m) }}
         </p>

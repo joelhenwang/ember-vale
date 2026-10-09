@@ -56,6 +56,14 @@ export function heroLine(race: string | null | undefined, cls: string, level = 1
   return `${people ? `${people} ${calling}` : choiceName(HERO_CLASSES, cls)}, level ${level}`
 }
 
+/** "Ash joined as a human ranger": a companion whose calling may still change. */
+export function joinedAs(name: string, race: string | null | undefined, cls: string): string {
+  const people = race ? choiceName(HERO_RACES, race).toLowerCase() : ''
+  const calling = choiceName(HERO_CLASSES, cls).toLowerCase()
+  const words = people ? `${people} ${calling}` : calling
+  return `${name} joined as ${/^[aeiou]/.test(words) ? 'an' : 'a'} ${words}`
+}
+
 /** 0…1 for a hit-point bar; an unknown maximum reads as full. */
 export function hpFraction(
   current: number | null | undefined,

@@ -8,6 +8,7 @@ is what makes the monolith's streaming-tolerant scan safe to replay.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.activities import focus_for_seat
@@ -23,7 +24,7 @@ from worldsim.domain.ids import (
     new_character_id,
     new_party_member_id,
 )
-from worldsim.domain.party import PartyMember, party_name_key
+from worldsim.domain.party import PartyMember, fight_keys, foes_on, party_name_key
 from worldsim.domain.rules.dnd import (
     MAX_PARTY_SIZE,
     DataTables,
@@ -31,8 +32,15 @@ from worldsim.domain.rules.dnd import (
     auto_sheet,
     recruit_sheet,
 )
+from worldsim.domain.rules.dnd.callings import (
+    calling_changeable,
+    has_fought,
+    rebuild_calling,
+    valid_calling,
+)
 from worldsim.domain.rules.dnd.progress import make_choice
 from worldsim.domain.rules.dnd.sheets import ensure_hp, max_hp
+from worldsim.domain.time import absolute_index
 
 
 @dataclass(frozen=True)
@@ -207,6 +215,101 @@ async def choose_level_option(
         sheet = make_choice(member.sheet, choice_id, abilities=abilities, spells=spells)
     except ValueError as exc:
         raise DomainError(ErrorCode.VALIDATION_FAILED, str(exc)) from exc
+    saved = await uow.party.save_sheet(member_id, sheet, expected_version)
+    await uow.commit()
+    return saved
+
+
+@dataclass(frozen=True)
+class CallingState:
+    """What decides whether companions may still change calling."""
+
+    played: CharacterId | None
+    fought: frozenset[str]
+    fight_on: bool
+
+    def changeable(self, member: PartyMember) -> bool:
+        return calling_changeable(
+            member, self.played, party_name_key(member.name) in self.fought, self.fight_on
+        )
+
+
+async def calling_state(uow: UnitOfWork, world_id: WorldId) -> CallingState:
+    """The played hero, who has fought (by the kept dice) and whether a fight is on."""
+    roster = await uow.party.list_for_world(world_id)
+    summaries = [event.summary for event in await uow.events.list_rolled(world_id)]
+    fought = frozenset(
+        party_name_key(m.name)
+        for m in roster
+        if has_fought(m.name, summaries) or has_fought(m.sheet.name, summaries)
+    )
+    fight_on = False
+    fight = await uow.events.latest_fight(world_id)
+    if fight is not None:
+        world = await uow.worlds.get(world_id)
+        fight_on = bool(
+            foes_on(
+                fight.absolute_index,
+                absolute_index(world.day, world.phase),
+                fight_keys(fight.summary),
+                await uow.monsters.list_for_world(world_id),
+            )
+        )
+    return CallingState(played=await _played(uow, world_id), fought=fought, fight_on=fight_on)
+
+
+async def _played(uow: UnitOfWork, world_id: WorldId) -> CharacterId | None:
+    """The played hero: the seat's character, else (a Director or God seat
+    taken later) the character the story was created to be played as."""
+    grant = await uow.roles.get_for_world(world_id)
+    if grant is not None and grant.character_id is not None:
+        return grant.character_id
+    try:
+        mode: object = (await uow.stories.get_setup(world_id)).payload.get("mode")
+    except DomainError:
+        return None
+    raw = (
+        cast("dict[str, object]", mode).get("controlled_character_id")
+        if isinstance(mode, dict)
+        else None
+    )
+    try:
+        return CharacterId(str(raw)) if raw else None
+    except ValueError:
+        return None
+
+
+async def change_calling(
+    uow: UnitOfWork,
+    data: DataTables,
+    world_id: WorldId,
+    member_id: PartyMemberId,
+    race: str,
+    character_class: str,
+    expected_version: int,
+) -> PartyMember:
+    """Give a companion who has not fought yet another people and calling,
+    keeping their name, level and experience; version-checked."""
+    member = await uow.party.get(member_id)
+    if member.world_id != world_id:
+        raise DomainError(ErrorCode.NOT_FOUND, "party member is not in this world")
+    if not valid_calling(race, character_class, data):
+        raise DomainError(
+            ErrorCode.VALIDATION_FAILED,
+            "unknown people or calling",
+            {"race": race, "character_class": character_class},
+        )
+    state = await calling_state(uow, world_id)
+    if state.played is None or member.character_id == state.played:
+        raise DomainError(
+            ErrorCode.PRECONDITION_FAILED, "the hero's calling is chosen at the start"
+        )
+    if not state.changeable(member):
+        raise DomainError(
+            ErrorCode.PRECONDITION_FAILED,
+            f"{member.name} has fought already, so their calling stays",
+        )
+    sheet = rebuild_calling(member.sheet, race, character_class, data)
     saved = await uow.party.save_sheet(member_id, sheet, expected_version)
     await uow.commit()
     return saved

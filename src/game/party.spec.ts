@@ -5,6 +5,7 @@ import {
   addAbilityPoint,
   choiceWaiting,
   heroLine,
+  joinedAs,
   improvementReady,
   hpTone,
   levelledUp,
@@ -33,6 +34,12 @@ describe('party', () => {
   it('names the hero in plain words', () => {
     expect(heroLine('half-elf', 'wizard')).toBe('Half-elf wizard, level 1')
     expect(heroLine(null, 'rogue', 3)).toBe('Rogue, level 3')
+  })
+
+  it('says what a companion joined as', () => {
+    expect(joinedAs('Ash', 'human', 'ranger')).toBe('Ash joined as a human ranger')
+    expect(joinedAs('Lyra', 'elf', 'cleric')).toBe('Lyra joined as an elf cleric')
+    expect(joinedAs('Bo', null, 'fighter')).toBe('Bo joined as a fighter')
   })
 
   it('puts the hero first, companions after', () => {
