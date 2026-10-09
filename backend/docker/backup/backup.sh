@@ -16,8 +16,10 @@
 #                               replace the database and pictures with that
 #                               backup (stop the api first: scripts/restore-backup.sh)
 #
-# The database is dumped first, then the pictures: pictures only ever
-# accumulate, so the archive covers every picture the dump refers to.
+# The database is dumped first, then the pictures, so the archive covers
+# every picture the dump refers to: the picture sweep deletes only files
+# that were already unused one sweep (6 hours) earlier, never one that a
+# row referred to a moment ago.
 # Pruning never removes the newest backup that holds any story, so a wiped
 # database followed by a week of empty backups cannot rotate the last good
 # one away (the 2026-10-08 wipe had no backup at all).

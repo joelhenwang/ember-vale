@@ -253,6 +253,12 @@ class ImageSettings(BaseModel):
     krea_style: str = "kreanima-lora-r32"
     krea_pixel: Literal["32", "64", "128"] = "64"
     poll_seconds: float = Field(default=2.0, gt=0, le=60)
+    #: Delete stored picture files no asset row refers to any more (after a
+    #: rewind, say). A file goes only when it is older than the grace AND was
+    #: already unused one sweep earlier (infrastructure/images/sweep.py).
+    sweep_unused: bool = True
+    sweep_every_hours: float = Field(default=6.0, gt=0, le=24 * 7)
+    sweep_grace_hours: float = Field(default=1.0, ge=0.1, le=24 * 7)
 
 
 class LocalModelSettings(BaseModel):

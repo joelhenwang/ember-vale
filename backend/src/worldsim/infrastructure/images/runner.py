@@ -15,6 +15,8 @@ from pathlib import Path
 from typing import cast
 from uuid import UUID
 
+from sqlalchemy.orm.exc import StaleDataError
+
 from worldsim.application.images import (
     compose_prompt,
     image_additions,
@@ -34,7 +36,7 @@ from worldsim.application.ports.storage import StoragePort
 from worldsim.application.stories.create import PORTRAIT_FRAMES
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.assets import AssetKind, AssetRecord, ImageJob, JobStatus
-from worldsim.domain.errors import DomainError
+from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.framing import Frame, as_list, framed_face
 from worldsim.domain.geography import MAP_SPAN
 from worldsim.domain.settings import ImagePrefs
@@ -99,6 +101,17 @@ async def frame_face(
     return frames.face
 
 
+def _job_gone(exc: Exception) -> bool:
+    """True when finishing failed because the job was removed or changed meanwhile."""
+    if isinstance(exc, StaleDataError):
+        return True  # its row was deleted between reading and saving
+    return isinstance(exc, DomainError) and exc.code in (
+        ErrorCode.NOT_FOUND,
+        ErrorCode.PRECONDITION_FAILED,
+        ErrorCode.VERSION_CONFLICT,
+    )
+
+
 #: How long a claimed job is this runner's (a paint takes ~14 s; a runner
 #: that dies mid-paint frees it after this).
 CLAIM_LEASE_S = 600
@@ -156,7 +169,12 @@ class ImageJobRunner:
             image = await self._generator.generate(request)
         except (ImageGenerationError, ValueError, OSError, DomainError) as exc:
             _log.warning("image job %s failed: %s", job.id, exc)
-            await self._jobs.note_attempt(job.id, str(exc)[:1000])
+            try:
+                await self._jobs.note_attempt(job.id, str(exc)[:1000])
+            except (DomainError, StaleDataError) as gone:
+                if not _job_gone(gone):
+                    raise
+                _log.info("image job %s was removed while it was being painted", job.id)
             return
         # Decode, resize and WebP-encode off the event loop: 80-220 ms of CPU
         # that otherwise stalled every request and beat in the process.
@@ -164,14 +182,27 @@ class ImageJobRunner:
         extension = "webp" if image.mime == "image/webp" else "png"
         ref = f"generated/{job.world_id or 'shared'}/{job.kind.value}-{job.id}.{extension}"
         await self._storage.write(ref, image.data, image.mime)
-        asset = await self._jobs.complete(
-            job.id, self._storage, ref, image.mime, image.width, image.height
-        )
+        try:
+            asset = await self._jobs.complete(
+                job.id, self._storage, ref, image.mime, image.width, image.height
+            )
+        except (DomainError, StaleDataError) as exc:
+            if not _job_gone(exc):
+                raise
+            # Removed while painting (going back to a turn, say): nothing is
+            # recorded, and the file no row refers to is left for the sweep.
+            _log.info("image job %s was removed while painting; %s left unused", job.id, ref)
+            return
         if job.kind == AssetKind.PORTRAIT and self._faces is not None:
             await frame_face(self._factory, self._faces, asset, image.data)
         if job.kind == AssetKind.SCENE and job.subject_id is not None:
             async with self._factory() as uow:
-                picture = await uow.pictures.get(job.subject_id)
+                try:
+                    picture = await uow.pictures.get(job.subject_id)
+                except DomainError as exc:
+                    if exc.code != ErrorCode.NOT_FOUND:
+                        raise
+                    return  # the picture went (a rewind) just as it was painted
                 if picture.repaint_job_id == job.id:
                     await uow.pictures.update(
                         picture.model_copy(update={"job_id": job.id, "repaint_job_id": None})
