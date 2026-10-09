@@ -411,7 +411,7 @@ def test_a_companion_follows_the_hero_and_keeps_the_party_in_mind(
     assert where["Ash"] == where["Wren"] == places["Market"], where
 
 
-def test_a_spar_chosen_while_a_fight_is_on_is_waiting(
+def test_a_companions_spar_while_a_fight_is_on_is_a_blow(
     wired: tuple[ApiClient, FakeGateway],
 ) -> None:
     from test_combat_depth_2 import _families
@@ -481,7 +481,9 @@ def test_a_spar_chosen_while_a_fight_is_on_is_waiting(
         "/api/v1/stage1/party", params={"world_id": str(world_id)}, headers=headers
     ).json()["foes"]
     assert foes  # a fight was on
-    assert "spar" not in _families(world_id)
+    # A companion's spar mid-fight is their blow at a foe instead.
+    families = _families(world_id)
+    assert "spar" not in families and "interact" in families
 
 
 def test_the_prose_count_and_last_turns_foes_make_the_fight() -> None:

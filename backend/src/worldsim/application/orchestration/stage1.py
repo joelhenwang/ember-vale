@@ -3193,12 +3193,13 @@ class Stage1Orchestrator:
             # (companions-002 run-1), so the walk away becomes staying put.
             stay = WaitAction(character_id=character.id, snapshot_id=sealed.snapshot_id)
             intent = intent.model_copy(update={"action": stay})
-        elif isinstance(intent.action, (WaitAction, ObserveAction, RestAction)) and (
+        elif isinstance(intent.action, (WaitAction, ObserveAction, RestAction, SparAction)) and (
             attack := await self._companion_attack(world_id, character.id)
         ):
             # In a fight a companion fights: Ash, told so, still chose to wait
-            # (companions-002), so the prose showed him idle while the dice
-            # had him strike. Now his own attempt is the blow, told and rolled.
+            # or spar the hero (companions-002; live, spar every fight turn),
+            # so the prose showed him idle while the dice had him strike. Now
+            # his own attempt is the blow, told and rolled.
             fight = InteractAction(
                 character_id=character.id, snapshot_id=sealed.snapshot_id, attempt=attack
             )
