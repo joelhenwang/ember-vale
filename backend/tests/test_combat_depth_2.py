@@ -656,3 +656,102 @@ def test_a_fight_begun_without_an_encounter_is_as_large_as_the_words_say() -> No
         live=[MonsterState(key="goblin", name="Goblin", hp_current=0, hp_max=7, ac=15)],
     )
     assert slain.outcomes == []
+
+
+def test_a_fight_turn_returns_before_its_words_and_dice_and_keeps_them(
+    migrated_db: None,
+) -> None:
+    """Fight turns used to narrate scene by scene inside the turn. Now the
+    words and dice land behind it (background narration), the next turn
+    waits for them, and the turn's checkpoint holds the fight."""
+    from fastapi.testclient import TestClient
+    from sqlalchemy import text
+    from test_party_combat import FIGHT, MIGRATIONS, SEED_DIR
+
+    from worldsim.infrastructure.model_gateway.profiles import FAKE_TEST_PROFILE
+    from worldsim.interfaces.http.app import create_app
+
+    gateway = FakeGateway(profile=FAKE_TEST_PROFILE)
+    settings = Settings()
+    settings = settings.model_copy(
+        update={"app": settings.app.model_copy(update={"background_narration": True})}
+    )
+    app = create_app(
+        settings, seed_dir=SEED_DIR, migrations_dir=MIGRATIONS, gateway_factory=lambda: gateway
+    )
+    with TestClient(app) as raw:
+        client = ApiClient(raw)
+        created = _create(client, FIGHTER, "background-fight")
+        assert created.status_code == 200, created.text
+        world_id = UUID(created.json()["world_id"])
+        wren = created.json()["character_id"]
+        headers = {"X-Worldsim-Role": "player", "X-Worldsim-Character": wren}
+        cast = client.get(
+            "/api/v1/world/presentation", params={"world_id": str(world_id)}, headers=headers
+        ).json()["cast"]
+        ids = {c["name"]: c["character_id"] for c in cast}
+
+        def route(request: Any) -> str | None:
+            system, prompt = request.system or "", request.prompt
+            if "You narrate" in system:
+                if "Hearth" not in prompt:
+                    return None
+                return json.dumps([{"text": FIGHT, "cited_fact_keys": ["dnd-sheet:wren"]}])
+            who = ids["Wren"] if "Wren" in prompt else ids["Ash"]
+            if "You decide" in system or "You react" in system:
+                return json.dumps({"family": "wait", "character_id": who, "snapshot_id": who})
+            if "You resolve" in system:
+                return json.dumps({"outcome": "success", "effects": [], "rationale": "Waiting."})
+            return None
+
+        gateway.route = route
+        first = client.post(
+            "/api/v1/stage1/advance",
+            json={
+                "world_id": str(world_id),
+                "absolute_index": 1,
+                "player_intents": {
+                    wren: {"family": "wait", "character_id": wren, "snapshot_id": NIL_SNAPSHOT}
+                },
+            },
+            headers=headers,
+        )
+        assert first.status_code == 200, first.text
+        assert all(s["narration"] == "pending" for s in first.json()["scenes"])
+        second = client.post(
+            "/api/v1/stage1/advance",
+            json={
+                "world_id": str(world_id),
+                "absolute_index": 2,
+                "player_intents": {
+                    wren: {"family": "wait", "character_id": wren, "snapshot_id": NIL_SNAPSHOT}
+                },
+            },
+            headers=headers,
+        )
+        assert second.status_code == 200, second.text
+        entries = client.get(
+            "/api/v1/world/chronicle",
+            params={"world_id": str(world_id), "after": 0, "limit": 80},
+            headers=headers,
+        ).json()["entries"]
+        assert any(
+            r["kind"] == "encounter" for e in entries if e["combat"] for r in e["combat"]["rolls"]
+        )
+
+    async def kept() -> str:
+        engine = create_engine(Settings())
+        try:
+            async with engine.connect() as conn:
+                row = await conn.execute(
+                    text(
+                        "SELECT state::text FROM story_checkpoint "
+                        "WHERE world_id = :w AND absolute_index = 1"
+                    ),
+                    {"w": world_id},
+                )
+                return str(row.scalar_one())
+        finally:
+            await engine.dispose()
+
+    assert "goblin" in asyncio.run(kept()).lower()  # turn 1's checkpoint holds its fight
