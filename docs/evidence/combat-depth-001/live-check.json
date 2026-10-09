@@ -1,0 +1,40 @@
+{
+ "world_id": "06b9a920-3bd8-42d7-ba6b-bd7c89c3a1ea",
+ "turns": [
+  {
+   "turn": 1,
+   "status": 200,
+   "seconds": 9.7
+  },
+  {
+   "turn": 2,
+   "status": 200,
+   "seconds": 7.7
+  },
+  {
+   "turn": 3,
+   "status": 200,
+   "seconds": 8.7
+  }
+ ],
+ "scenes": [
+  "The Hearth's back door bursts open, and two goblin raiders storm in, knives glinting. Wren, mace in hand, steps forward to meet the threat.",
+  "The Hearth's back door stands ajar, the morning light spilling in as Wren, mace in hand, braces for another attack. The air is thick with tension, the scent of damp earth and old wood lingering. Wren's eyes are fixed on the second goblin, their mace raised, ready to strike. Wren's hand glows with divine energy as they cast guiding bolt at the second goblin, the light piercing through the dim inter",
+  "The back door of Hearth stands ajar, the morning light spilling in, as Wren, mace in hand, braces for another attack. The air is thick with tension, the scent of damp earth and old wood lingering. Wren's eyes are fixed on the second goblin, their mace raised, ready to strike. Wren's hand glows with divine energy as they attempt to swing their mace at the goblin, but the attack does not land."
+ ],
+ "tags_in_prose": false,
+ "rolls": [],
+ "party": [
+  {
+   "name": "Wren",
+   "level": 1,
+   "hp_current": 10,
+   "hp_max": 10,
+   "xp": 0,
+   "spell_slots_left": [
+    2
+   ]
+  }
+ ],
+ "foes": []
+}
