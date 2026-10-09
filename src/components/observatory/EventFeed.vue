@@ -21,6 +21,8 @@ const props = defineProps<{
   pictured?: ReadonlySet<string>
   /** Turns whose end state was kept: they offer "Branch from here". */
   branchable?: ReadonlySet<number>
+  /** Scenes (by event id) with dice rolled in them: a small die marks them. */
+  fought?: ReadonlySet<string>
 }>()
 
 const emit = defineEmits<{
@@ -146,6 +148,14 @@ function body(entry: ChronicleEntry): string {
                 title="This scene has a picture">
                 <IconImage :size="13" />
               </span>
+              <span
+                v-if="fought?.has(entry.event_id) || entry.combat?.rolls?.length"
+                class="ef__dice"
+                role="img"
+                aria-label="Has dice rolls"
+                title="Dice were rolled in this scene"
+                >⚄</span
+              >
             </span>
             <span class="ef__text">{{ body(entry) }}</span>
           </button>
@@ -370,5 +380,14 @@ function body(entry: ChronicleEntry): string {
   font-size: 15px;
   line-height: 1.45;
   color: var(--ink-2);
+}
+.ef__dice {
+  display: inline-grid;
+  place-items: center;
+  margin-left: 6px;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--ember);
+  vertical-align: -1px;
 }
 </style>

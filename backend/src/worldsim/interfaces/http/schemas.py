@@ -348,6 +348,13 @@ class PartyMemberView(BaseModel):
     spells: list[str] = Field(default_factory=list)
     #: Spell slots per day by spell level (index 0 = first level), if a caster.
     spell_slots: list[int] = Field(default_factory=list)
+    #: Of those, the ones still free today (a new story day gives them back).
+    spell_slots_left: list[int] = Field(default_factory=list)
+    #: Experience: the total, where this level began and where the next begins
+    #: (``None`` at level 20).
+    xp: int = 0
+    xp_level_start: int = 0
+    xp_next_level: int | None = None
 
 
 class FoeView(BaseModel):
@@ -928,7 +935,7 @@ class CombatRollView(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    #: encounter, attack, cast, condition, spar, recruit or note.
+    #: encounter, attack, cast, condition, spar, recruit, xp, level or note.
     kind: str
     text: str
     actor: str | None = None
@@ -938,7 +945,7 @@ class CombatRollView(BaseModel):
     natural: int | None = None
     ac: int | None = None
     dc: int | None = None
-    #: hit, miss, crit, saved, half, failed or healed (encounters: how hard).
+    #: hit, miss, crit, saved, half, failed, healed or no-slot (encounters: how hard).
     result: str | None = None
     amount: int | None = None
     damage_type: str | None = None
@@ -946,6 +953,9 @@ class CombatRollView(BaseModel):
     hp_after: int | None = None
     target_foe: bool = False
     actor_foe: bool = False
+    #: ``xp``: what each party member got; ``level``: the level reached.
+    share: int | None = None
+    level: int | None = None
 
 
 class CombatLogView(BaseModel):

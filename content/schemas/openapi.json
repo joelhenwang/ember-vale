@@ -1319,6 +1319,17 @@
             "title": "Kind",
             "type": "string"
           },
+          "level": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level"
+          },
           "natural": {
             "anyOf": [
               {
@@ -1351,6 +1362,17 @@
               }
             ],
             "title": "Roll"
+          },
+          "share": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share"
           },
           "target": {
             "anyOf": [
@@ -4688,6 +4710,13 @@
             "title": "Spell Slots",
             "type": "array"
           },
+          "spell_slots_left": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Spell Slots Left",
+            "type": "array"
+          },
           "spells": {
             "items": {
               "type": "string"
@@ -4710,6 +4739,27 @@
             "format": "uuid",
             "title": "World Id",
             "type": "string"
+          },
+          "xp": {
+            "default": 0,
+            "title": "Xp",
+            "type": "integer"
+          },
+          "xp_level_start": {
+            "default": 0,
+            "title": "Xp Level Start",
+            "type": "integer"
+          },
+          "xp_next_level": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Xp Next Level"
           }
         },
         "required": [

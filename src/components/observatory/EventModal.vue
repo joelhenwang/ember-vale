@@ -8,7 +8,12 @@
  * inside and closes on Escape.
  */
 import { computed, onMounted, ref, watch } from 'vue'
-import type { BeatView, ChronicleEntry, SceneArtView } from '../../../content/clients/worldsim'
+import type {
+  BeatView,
+  ChronicleEntry,
+  CombatRollView,
+  SceneArtView
+} from '../../../content/clients/worldsim'
 import { assetUrl, getSceneNarration, type CallOptions } from '../../api/worldsim'
 import { beatTimeLabel } from '../../game/observatory'
 import { momentTitle } from '../../game/moments'
@@ -16,6 +21,7 @@ import { moves } from '../../composables/useMotion'
 import IconX from '../icons/IconX.vue'
 import IconImage from '../icons/IconImage.vue'
 import IconBranch from '../icons/IconBranch.vue'
+import CombatRolls from '../story/CombatRolls.vue'
 
 const props = defineProps<{
   worldId: string
@@ -28,6 +34,8 @@ const props = defineProps<{
   picture?: SceneArtView | null
   /** This entry's turn was kept: offer "Branch from here". */
   branchable?: boolean
+  /** The dice rolled in this scene (a combat story), shown under its text. */
+  rolls?: CombatRollView[]
 }>()
 
 const emit = defineEmits<{
@@ -173,6 +181,7 @@ function onBackdrop(event: MouseEvent): void {
           </template>
           <p v-else class="em__narration">{{ entry.text ?? entry.title }}</p>
           <p v-if="failed" class="em__note">Could not load the scene's dialogue lines.</p>
+          <CombatRolls v-if="rolls?.length" :key="entry.event_id" :rolls="rolls" />
         </div>
         <footer v-if="branchable" class="em__foot">
           <button

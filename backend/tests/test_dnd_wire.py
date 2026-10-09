@@ -227,13 +227,23 @@ def test_combat_tags_resolve_to_hp_events_and_beats(wire: tuple[ApiClient, FakeG
     scene_ids = [UUID(entry["event_id"]) for entry in response.json()["scenes"]]
     assert scene_ids[0] == scene_event
     live_states: list[MonsterStateModel] = []
+    # The latest fight's foes; it is "on" while one of them stands (the
+    # applier passes these, so a second ENCOUNTER brings newcomers).
+    fight: list[str] = []
+
+    def _on() -> list[str]:
+        hp = {state.key: state.hp_current for state in live_states}
+        return fight if any(hp.get(key, 0) > 0 for key in fight) else []
+
     for scene_id in scene_ids:
+        on = _on()
         rep = resolve_narration_tags(
             combat_text,
             [borin_sheet],
             tables,
             random.Random(_seed_for(scene_id)).random,
             live=live_states,
+            fighting=on,
         )
         scene_records = asyncio.run(_combat_records_for(scene_id))
         assert scene_records["beats"] == [b.text for b in rep.beats]
@@ -247,6 +257,8 @@ def test_combat_tags_resolve_to_hp_events_and_beats(wire: tuple[ApiClient, FakeG
                 result.ac,
             )
         live_states = sorted(merged.values(), key=lambda state: state.key)
+        # The fight goes on: its foes plus whoever this scene brought in.
+        fight = list(dict.fromkeys(on + rep.foes)) if rep.foes else fight
     seed = _seed_for(scene_event)
     expected = resolve_narration_tags(
         combat_text,
@@ -286,9 +298,11 @@ def test_combat_tags_resolve_to_hp_events_and_beats(wire: tuple[ApiClient, FakeG
             await engine.dispose()
 
     pools = asyncio.run(_live_monsters())
-    assert [p["name_key"] for p in pools] == ["goblin"]
-    assert pools[0]["hp_current"] == live_states[0].hp_current
-    assert pools[0]["hp_max"] == live_states[0].hp_max
+    # Each goblin of the group keeps its own pool.
+    assert {p["name_key"] for p in pools} >= {"goblin-1", "goblin-2"}
+    assert {p["name_key"]: (p["hp_current"], p["hp_max"]) for p in pools} == {
+        state.key: (state.hp_current, state.hp_max) for state in live_states
+    }
 
     narration_texts.pop(0)
     second = client.post(
@@ -300,12 +314,14 @@ def test_combat_tags_resolve_to_hp_events_and_beats(wire: tuple[ApiClient, FakeG
     second_borin = SheetModel.model_validate(asyncio.run(_roster_sheets())["borin"])
     for entry in second.json()["scenes"]:
         scene_id = UUID(entry["event_id"])
+        on = _on()
         rep = resolve_narration_tags(
             narration_texts[0],
             [second_borin],
             tables,
             random.Random(_seed_for(scene_id)).random,
             live=live_states,
+            fighting=on,
         )
         scene_records = asyncio.run(_combat_records_for(scene_id))
         assert scene_records["beats"] == [b.text for b in rep.beats]
@@ -319,8 +335,12 @@ def test_combat_tags_resolve_to_hp_events_and_beats(wire: tuple[ApiClient, FakeG
                 result.ac,
             )
         live_states = sorted(merged.values(), key=lambda state: state.key)
+        # The fight goes on: its foes plus whoever this scene brought in.
+        fight = list(dict.fromkeys(on + rep.foes)) if rep.foes else fight
     pools_after = asyncio.run(_live_monsters())
-    assert pools_after[0]["hp_current"] == live_states[0].hp_current
+    assert {p["name_key"]: p["hp_current"] for p in pools_after} == {
+        state.key: state.hp_current for state in live_states
+    }
 
 
 def test_party_context_and_recruit_flow(wire: tuple[ApiClient, FakeGateway]) -> None:

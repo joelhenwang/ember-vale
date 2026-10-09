@@ -273,12 +273,19 @@ def dnd_rules_text() -> str:
     return path.read_text(encoding="utf-8")
 
 
+#: v2, not v3: v3 taught the narrator foe numbers, spell slots and
+#: experience, and live it then wrote no combat tags at all (0 rolls in 3
+#: fights against 2/0/3 with v2, combat-depth-001 rules-ab.json). The engine
+#: numbers groups, aims a plain name at the first foe standing, spends slots
+#: and counts experience by itself, so the narrator needs none of it.
 STORY_RULES_PROMPT_VERSION = "dnd-rules.v2"
 
 
 @functools.cache
 def dnd_story_rules_text() -> str:
-    """DM instructions the story narrator gets: v1 plus who-at-whom tags and
-    foes that strike back (v1 stays the monolith's text, for parity)."""
+    """DM instructions the story narrator gets: v1 plus who-at-whom tags, foes
+    that strike back (v2), and numbered foes of a group, spell slots and
+    experience (v3). Older versions stay as files; v1 is the monolith's text,
+    for parity."""
     path = Path(__file__).resolve().parents[5] / "prompts" / f"{STORY_RULES_PROMPT_VERSION}.md"
     return path.read_text(encoding="utf-8")

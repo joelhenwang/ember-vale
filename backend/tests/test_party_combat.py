@@ -308,3 +308,166 @@ def test_a_fight_that_is_on_is_told_in_words() -> None:
     line = foes_line([goblin(3)])
     assert line.startswith("A fight is on with: Goblin (badly wounded).")
     assert not any(ch.isdigit() for ch in line)
+
+
+CLERIC = {
+    "role": "player",
+    "controlled_cast_key": "cast-wren",
+    "adventure": {"race": "human", "character_class": "cleric"},
+}
+
+
+def _set_state(world_id: UUID, *, hero_xp: int, pools: dict[str, int]) -> None:
+    """Put the story where the next turn's dice can only finish the job."""
+
+    async def inner() -> None:
+        engine = create_engine(Settings())
+        try:
+            async with create_unit_of_work(engine) as uow:
+                (hero,) = await uow.party.list_for_world(world_id)
+                sheet = hero.sheet.model_copy(deep=True)
+                sheet.xp = hero_xp
+                await uow.party.save_sheet(hero.id, sheet, hero.version)
+                for monster in await uow.monsters.list_for_world(world_id):
+                    if monster.name_key in pools:
+                        await uow.monsters.save_hp(
+                            monster.id, pools[monster.name_key], monster.version
+                        )
+                await uow.commit()
+        finally:
+            await engine.dispose()
+
+    asyncio.run(inner())
+
+
+def test_group_foes_xp_levels_and_spent_slots(
+    wired: tuple[ApiClient, FakeGateway],
+) -> None:
+    """combat-depth-001 end to end: Goblin 1 and Goblin 2 with their own
+    health, a cleric's slots spent (the third cure fails plainly), and the
+    goblin that falls gives XP that levels the hero up."""
+    client, gateway = wired
+    created = _create(client, CLERIC, "group-fight")
+    assert created.status_code == 200, created.text
+    world_id = UUID(created.json()["world_id"])
+    wren = created.json()["character_id"]
+    headers = {"X-Worldsim-Role": "player", "X-Worldsim-Character": wren}
+    roster = client.get(
+        "/api/v1/stage1/party", params={"world_id": str(world_id)}, headers=headers
+    ).json()
+    (hero,) = roster["members"]
+    assert hero["spell_slots"] == [2] and hero["spell_slots_left"] == [2]
+    assert (hero["xp"], hero["xp_level_start"], hero["xp_next_level"]) == (0, 0, 300)
+    cast = client.get(
+        "/api/v1/world/presentation", params={"world_id": str(world_id)}, headers=headers
+    ).json()["cast"]
+    ids = {c["name"]: c["character_id"] for c in cast}
+
+    scripts = [
+        "ENCOUNTER[2x goblin]: Two goblins spill out of the smoke.\n"
+        + "CAST[cure wounds on Wren]: Wren whispers a prayer.\n" * 3,
+        "ATTACK[mace at Goblin 2]: Wren swings at the second goblin.\n" * 20,
+    ]
+
+    def route(request: Any) -> str | None:
+        system, prompt = request.system or "", request.prompt
+        if "You narrate" in system:
+            if "Hearth" not in prompt:
+                return None
+            return json.dumps(
+                [{"text": scripts[0], "cited_fact_keys": ["attempt:wait", "dnd-sheet:wren"]}]
+            )
+        who = ids["Wren"] if "Wren" in prompt else ids["Ash"]
+        if "You decide" in system or "You react" in system:
+            return json.dumps({"family": "wait", "character_id": who, "snapshot_id": who})
+        if "You resolve" in system:
+            return json.dumps({"outcome": "success", "effects": [], "rationale": "Waiting."})
+        return None
+
+    gateway.route = route
+
+    def advance(index: int) -> list[dict[str, Any]]:
+        moved = client.post(
+            "/api/v1/stage1/advance",
+            json={
+                "world_id": str(world_id),
+                "absolute_index": index,
+                "player_intents": {
+                    wren: {"family": "wait", "character_id": wren, "snapshot_id": NIL_SNAPSHOT}
+                },
+            },
+            headers=headers,
+        )
+        assert moved.status_code == 200, moved.text
+        chronicle = client.get(
+            "/api/v1/world/chronicle",
+            params={"world_id": str(world_id), "after": 0, "limit": 80},
+            headers=headers,
+        ).json()
+        # Ash, waiting at the market away from the fight, is told without
+        # the party's sheets (they once leaked into fallback narration).
+        assert all("D&D" not in (e["text"] or "") for e in chronicle["entries"])
+        fights = [e for e in chronicle["entries"] if e["combat"]]
+        return fights[-1]["combat"]["rolls"]
+
+    first = advance(1)
+    assert first[0]["kind"] == "encounter" and first[0]["target"] == "Goblin 1, Goblin 2"
+    cures = [r for r in first if r["kind"] == "cast"]
+    assert [r.get("result") for r in cures] == ["healed", "healed", "no-slot"]
+    assert cures[-1]["text"] == "Wren has no 1st-level spell slot left: Cure Wounds fails."
+    assert _pools(world_id) == {"goblin-1": 7, "goblin-2": 7}
+    party = client.get(
+        "/api/v1/stage1/party", params={"world_id": str(world_id)}, headers=headers
+    ).json()
+    assert party["members"][0]["spell_slots_left"] == [0]
+    assert [(f["key"], f["name"], f["hp_current"]) for f in party["foes"]] == [
+        ("goblin-1", "Goblin 1", 7),
+        ("goblin-2", "Goblin 2", 7),
+    ]
+
+    _set_state(world_id, hero_xp=290, pools={"goblin-2": 1})
+    scripts.pop(0)
+    second = advance(2)
+    struck = {r["target"] for r in second if r["kind"] == "attack"}
+    assert struck == {"Goblin 2"}
+    xp = next(r for r in second if r["kind"] == "xp")
+    assert (xp["amount"], xp["share"], xp["target"]) == (50, 50, "Goblin 2")
+    level = next(r for r in second if r["kind"] == "level")
+    assert (level["actor"], level["level"]) == ("Wren", 2)
+    assert _pools(world_id) == {"goblin-1": 7, "goblin-2": 0}
+    after = client.get(
+        "/api/v1/stage1/party", params={"world_id": str(world_id)}, headers=headers
+    ).json()
+    (wren_now,) = after["members"]
+    assert (wren_now["level"], wren_now["xp"], wren_now["xp_next_level"]) == (2, 340, 900)
+    assert wren_now["hp_max"] == hero["hp_max"] + level["amount"]
+    # Level 2 brings a third first-level slot; two were spent today.
+    assert wren_now["spell_slots"] == [3] and wren_now["spell_slots_left"] == [1]
+    assert [(f["name"], f["hp_current"]) for f in after["foes"]] == [
+        ("Goblin 1", 7),
+        ("Goblin 2", 0),
+    ]
+
+
+def test_the_party_is_only_in_its_own_scenes() -> None:
+    from worldsim.domain.ids import new_character_id, new_party_member_id, new_world_id
+    from worldsim.domain.party import PartyMember, party_in_scene
+    from worldsim.domain.rules.dnd import Sheet
+
+    world, hero = new_world_id(), new_character_id()
+
+    def member(character: UUID | None) -> PartyMember:
+        return PartyMember(
+            id=new_party_member_id(),
+            world_id=world,
+            name="Wren",
+            name_key="wren",
+            character_id=character,
+            sheet=Sheet(name="Wren"),
+        )
+
+    linked = [member(hero)]
+    assert party_in_scene(linked, [str(hero)]) == linked
+    assert party_in_scene(linked, [str(new_character_id())]) == []
+    unlinked = [member(None)]  # a party begun by hand counts everywhere
+    assert party_in_scene(unlinked, []) == unlinked

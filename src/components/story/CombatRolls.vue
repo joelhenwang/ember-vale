@@ -15,12 +15,15 @@ const lines = computed(() => props.rolls.map((r) => ({ roll: r, say: sayRoll(r) 
 const open = ref(true)
 const root = ref<HTMLElement | null>(null)
 
-// A fight that just landed answers once: sparks for a critical hit, a jolt
-// when the party was hurt.
+// A fight that just landed answers once: sparks for a critical hit and for
+// a level gained, a jolt when the party was hurt.
 onMounted(() => {
   if (!props.fresh || !root.value) return
   const crit = root.value.querySelector('.roll--crit .roll__die')
   if (crit) burst(crit, { count: 12, spread: 46 })
+  for (const up of root.value.querySelectorAll('.roll--level .roll__die')) {
+    burst(up, { count: 16, spread: 56 })
+  }
   if (root.value.querySelector('.roll--hurt')) shake(root.value)
 })
 </script>
@@ -34,7 +37,11 @@ onMounted(() => {
       <span class="rolls__chev" :class="{ 'rolls__chev--open': open }" aria-hidden="true">›</span>
     </button>
     <ol v-if="open" class="rolls__list">
-      <li v-for="(l, i) in lines" :key="i" class="roll" :class="`roll--${l.say.tone}`">
+      <li
+        v-for="(l, i) in lines"
+        :key="i"
+        class="roll"
+        :class="[`roll--${l.say.tone}`, { 'ev-pop-once': l.say.tone === 'level' && fresh }]">
         <span
           v-if="l.say.natural != null"
           class="roll__die"
@@ -44,6 +51,15 @@ onMounted(() => {
           }"
           :title="`The die showed ${l.say.natural}`"
           >{{ l.say.natural }}</span
+        >
+        <span
+          v-else-if="l.say.tone === 'level'"
+          class="roll__die roll__die--level"
+          aria-hidden="true"
+          >↑</span
+        >
+        <span v-else-if="l.roll.kind === 'xp'" class="roll__die roll__die--xp" aria-hidden="true"
+          >✦</span
         >
         <span v-else class="roll__die roll__die--none" aria-hidden="true">•</span>
         <span class="roll__body">
@@ -172,6 +188,28 @@ onMounted(() => {
 }
 .roll--heal .roll__outcome,
 .roll--heal .roll__lead {
+  color: #3f7a3a;
+}
+.roll__die--xp {
+  color: var(--ember);
+  border-color: var(--gold-soft, var(--line));
+}
+.roll__die--level {
+  color: #fff7ec;
+  border-color: var(--ember);
+  background: linear-gradient(160deg, var(--ember), #c98a2c);
+}
+.roll--level {
+  padding: 3px 4px;
+  margin: 0 -4px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ember) 10%, transparent);
+}
+.roll--level .roll__lead {
+  font-weight: 700;
+  color: var(--ember);
+}
+.roll--level .roll__outcome {
   color: #3f7a3a;
 }
 :root[data-motion='reduced'] .rolls__chev {

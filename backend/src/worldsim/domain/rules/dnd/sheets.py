@@ -69,6 +69,10 @@ class Sheet(BaseModel):
     prepared: list[str] = Field(default_factory=list)
     equipment: list[str] = Field(default_factory=list)
     xp: int = 0
+    #: Spell slots spent by spell level (index 0 = first level) on ``slots_day``;
+    #: a new story day is the long rest that gives them back.
+    slots_used: list[int] = Field(default_factory=list)
+    slots_day: int | None = None
 
 
 def sheet_mod(sheet: Sheet, ability: str) -> int:

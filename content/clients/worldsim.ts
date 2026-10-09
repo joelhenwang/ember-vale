@@ -151,10 +151,14 @@ export interface PartyMemberView {
   name: string;
   race?: string | null;
   spell_slots?: number[];
+  spell_slots_left?: number[];
   spells?: string[];
   version: number;
   weapons?: string[];
   world_id: string;
+  xp?: number;
+  xp_level_start?: number;
+  xp_next_level?: number | null;
 }
 
 export interface PartyRosterResponse {
@@ -182,9 +186,11 @@ export interface CombatRollView {
   hp_after?: number | null;
   hp_before?: number | null;
   kind: string;
+  level?: number | null;
   natural?: number | null;
   result?: string | null;
   roll?: number | null;
+  share?: number | null;
   target?: string | null;
   target_foe?: boolean;
   text: string;

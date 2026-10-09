@@ -10,6 +10,8 @@ import {
   autoplayStatus,
   beatTimeLabel,
   groupFeed,
+  rollsByScene,
+  rollsFor,
   layoutTokens,
   mergeChronicle,
   speedFor
@@ -233,5 +235,41 @@ describe('speedFor', () => {
   it('falls back to back-to-back for unknown delays', () => {
     expect(speedFor(15).key).toBe('short')
     expect(speedFor(7).key).toBe('back-to-back')
+  })
+})
+
+describe('the dice in Watch', () => {
+  const scene = entry(1, 4)
+  const fight: ChronicleEntry = {
+    ...entry(2, 4),
+    combat: {
+      scene_event_id: 'e1',
+      rolls: [{ kind: 'attack', text: 'Wren hits Goblin 2', actor: 'Wren', target: 'Goblin 2' }]
+    }
+  }
+  const lone: ChronicleEntry = {
+    ...entry(3, 5),
+    combat: { scene_event_id: 'gone', rolls: [{ kind: 'note', text: 'Old fight' }] }
+  }
+
+  it('shows a fight with its scene and keeps a lone fight on its own', () => {
+    const beats = groupFeed([scene, fight, lone])
+    expect(beats.flatMap((b) => b.entries.map((e) => e.event_id))).toEqual(['e3', 'e1'])
+  })
+
+  it('never folds a turn with dice into a quiet stretch', () => {
+    const waited = { ...scene, idle: true }
+    const beats = groupFeed([waited, fight, { ...entry(4, 3), idle: true }])
+    expect(beats.map((b) => [b.index, !!b.quiet])).toEqual([
+      [4, false],
+      [3, true]
+    ])
+  })
+
+  it('gives each scene its rolls', () => {
+    const byScene = rollsByScene([scene, fight, lone])
+    expect(rollsFor(byScene, scene).map((r) => r.target)).toEqual(['Goblin 2'])
+    expect(rollsFor(byScene, lone).map((r) => r.text)).toEqual(['Old fight'])
+    expect(rollsFor(byScene, entry(9, 6))).toEqual([])
   })
 })

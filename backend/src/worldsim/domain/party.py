@@ -15,7 +15,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from worldsim.domain.enums import FocusSlot
 from worldsim.domain.ids import CharacterId, MonsterId, PartyMemberId, WorldId
-from worldsim.domain.rules.dnd import Sheet, slugify
+from worldsim.domain.rules.dnd import DataTables, Sheet, slugify
+from worldsim.domain.rules.dnd.progress import slots_left
 
 
 class PartyMember(BaseModel):
@@ -29,6 +30,19 @@ class PartyMember(BaseModel):
     focus_slot: FocusSlot = FocusSlot.COMPANION
     sheet: Sheet
     version: int = Field(default=0, ge=0)
+
+
+def party_in_scene(roster: list[PartyMember], participants: list[str]) -> list[PartyMember]:
+    """The roster when the party is in this scene, else nobody.
+
+    The party travels with its linked hero, so a scene without them has no
+    party. A roster with no linked member at all (a party begun by hand)
+    counts everywhere, as before.
+    """
+    linked = [m for m in roster if m.character_id is not None]
+    if not linked or any(str(m.character_id) in participants for m in linked):
+        return roster
+    return []
 
 
 def party_name_key(name: str) -> str:
@@ -95,3 +109,16 @@ def foes_line(foes: list[Monster]) -> str:
         "fresh ones); strike them by name, and let those still standing strike back. "
         "The down stay down."
     )
+
+
+_SLOT_WORDS = ("first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth")
+
+
+def slots_line(tables: DataTables, sheet: Sheet, day: int | None) -> str:
+    """The narrator's line of spell slots still free today ("" for non-casters),
+    so it does not describe a spell the engine will refuse."""
+    left = slots_left(tables, sheet, day)
+    if not left:
+        return ""
+    shown = ", ".join(f"{n} {_SLOT_WORDS[pos]}-level" for pos, n in enumerate(left))
+    return f"\nSpell slots left today: {shown} (cantrips are free)"

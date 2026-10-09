@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import type { PartyMemberView } from '../../content/clients/worldsim'
-import { heroLine, hpTone, partyHurt, partyOrder, sayRoll, slotLine } from './party'
+import {
+  heroLine,
+  hpTone,
+  levelledUp,
+  partyHurt,
+  partyOrder,
+  sayRoll,
+  slotLine,
+  slotsLeftLine,
+  xpProgress
+} from './party'
 
 function member(id: string, character: string | null): PartyMemberView {
   return {
@@ -139,5 +149,52 @@ describe('party', () => {
     expect(sayRoll(foe).tone).toBe('hurt')
     expect(partyHurt([foe], 'Wren')).toBe(true)
     expect(sayRoll({ kind: 'recruit', text: '', actor: 'Lyra' }).lead).toBe('Lyra joins the party')
+  })
+})
+
+describe('combat depth', () => {
+  const wren = {
+    id: 'w',
+    world_id: 'x',
+    name: 'Wren',
+    level: 2,
+    character_class: 'cleric',
+    version: 1,
+    xp: 340,
+    xp_level_start: 300,
+    xp_next_level: 900,
+    spell_slots: [3],
+    spell_slots_left: [1]
+  }
+
+  it('says XP, a level gained and a spell with no slot left', () => {
+    const xp = sayRoll({ kind: 'xp', text: '', target: 'Goblin 2', amount: 50, share: 25 })
+    expect([xp.lead, xp.outcome]).toEqual(['Goblin 2 is defeated', '50 XP · 25 each'])
+    const up = sayRoll({ kind: 'level', text: '', actor: 'Wren', level: 2, amount: 8 })
+    expect([up.lead, up.outcome, up.tone]).toEqual([
+      'Level up! Wren reaches level 2',
+      '+8 hit points',
+      'level'
+    ])
+    const dry = sayRoll({
+      kind: 'cast',
+      text: '',
+      actor: 'Wren',
+      using: 'Cure Wounds',
+      result: 'no-slot'
+    })
+    expect([dry.lead, dry.outcome, dry.tone]).toEqual([
+      'Wren tries Cure Wounds',
+      'No spell slot left · it fails',
+      'miss'
+    ])
+    expect(levelledUp([{ kind: 'level', text: '', actor: 'Wren', level: 2 }])).toEqual(['Wren'])
+    expect(levelledUp(undefined)).toEqual([])
+  })
+
+  it('measures XP toward the next level and the slots left today', () => {
+    expect(xpProgress(wren)).toEqual({ fraction: 0.4 / 6, label: '340 / 900 XP' })
+    expect(xpProgress({ ...wren, xp_next_level: null }).fraction).toBe(1)
+    expect(slotsLeftLine(wren)).toBe('1 of 3 first-level')
   })
 })

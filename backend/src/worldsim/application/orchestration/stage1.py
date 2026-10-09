@@ -232,7 +232,15 @@ from worldsim.domain.memory import (
 )
 from worldsim.domain.narration import NarrationBeat
 from worldsim.domain.narrative import NarrativeHook
-from worldsim.domain.party import Monster, fight_keys, foes_line, foes_on, party_name_key
+from worldsim.domain.party import (
+    Monster,
+    fight_keys,
+    foes_line,
+    foes_on,
+    party_in_scene,
+    party_name_key,
+    slots_line,
+)
 from worldsim.domain.perception import (
     Disclosure,
     FactChannel,
@@ -283,7 +291,13 @@ from worldsim.domain.scenes import Attempt, Intent, Reaction, Resolution, Scene
 from worldsim.domain.settings import LOCAL_OPERATOR
 from worldsim.domain.summaries import DailySummary, day_range, fallback_text
 from worldsim.domain.tasks import Lease
-from worldsim.domain.time import PHASES_PER_DAY, absolute_index, phase_label, utcnow
+from worldsim.domain.time import (
+    PHASES_PER_DAY,
+    absolute_index,
+    phase_label,
+    split_absolute,
+    utcnow,
+)
 from worldsim.domain.tracing import ManifestSource
 from worldsim.domain.world import Location, Route
 
@@ -4392,10 +4406,6 @@ class Stage1Orchestrator:
             self._dnd_data = load_data(DND_DATA_DIR)
         return self._dnd_data
 
-    async def _roster_present(self, world_id: UUID) -> bool:
-        async with self._factory() as uow:
-            return bool(await uow.party.list_for_world(world_id))
-
     async def _narrate_scene(
         self,
         world_id: UUID,
@@ -4434,13 +4444,17 @@ class Stage1Orchestrator:
             participants = [
                 str(p.character_id) for p in (await uow.scenes.get_scene(scene.id)).participants
             ]
-            roster = await uow.party.list_for_world(world_id)
+            # The party's sheets and rules go only to a scene the party is in:
+            # someone waiting at the market far from the fight gets plain
+            # narration, as in a story without fights.
+            roster = party_in_scene(await uow.party.list_for_world(world_id), participants)
             # A fight that is on: the narrator strikes its foes, never respawns them.
             fight = await uow.events.latest_fight(world_id) if roster else None
+            scene_index = (await uow.phases.get_run(run_id)).absolute_index if roster else 0
             foes = (
                 foes_on(
                     fight.absolute_index,
-                    (await uow.phases.get_run(run_id)).absolute_index,
+                    scene_index,
                     fight_keys(fight.summary),
                     await uow.monsters.list_for_world(world_id),
                 )
@@ -4523,8 +4537,11 @@ class Stage1Orchestrator:
         dnd_sources: list[ManifestSource] = []
         if roster:
             tables = self._dnd_tables()
+            today = split_absolute(scene_index)[0]
             summaries = {
-                member.name_key: build_sheet_summary(tables, member.sheet) for member in roster
+                member.name_key: build_sheet_summary(tables, member.sheet)
+                + slots_line(tables, member.sheet, today)
+                for member in roster
             }
             facts.extend(
                 {"key": f"dnd-sheet:{key}", "value": summary} for key, summary in summaries.items()
@@ -4579,7 +4596,7 @@ class Stage1Orchestrator:
                 "dnd_context": dnd_context,
             },
         )
-        roster_pre = await self._roster_present(world_id)
+        roster_pre = bool(roster)
         if over_budget or (quiet and not roster_pre):
             await self._save_fallback_beats(world_id, scene, event_id, facts, source="fallback")
             return "fallback"
@@ -4699,7 +4716,24 @@ class Stage1Orchestrator:
                 return "no-party"
             live_monsters = await uow.monsters.list_for_world(world_id)
             run = await uow.phases.get_run(run_id)
+            # The fight that is on (before this scene): newcomers of a kind
+            # still standing join it instead of replacing it.
+            fight = await uow.events.latest_fight(world_id)
+            fighting = (
+                [
+                    foe.name_key
+                    for foe in foes_on(
+                        fight.absolute_index,
+                        run.absolute_index,
+                        fight_keys(fight.summary),
+                        live_monsters,
+                    )
+                ]
+                if fight is not None
+                else []
+            )
         tables = self._dnd_tables()
+        story_day = split_absolute(run.absolute_index)[0]
         digest = hashlib.sha256(str(event_id).encode()).digest()[:8]
         seed = int.from_bytes(digest, "big") & ((1 << 63) - 1)
         try:
@@ -4719,26 +4753,20 @@ class Stage1Orchestrator:
                         )
                         for monster in live_monsters
                     ],
+                    day=story_day,
+                    fighting=fighting,
                 )
                 if not report.outcomes and not report.unresolved and not joined:
                     return "no-tags"
                 try:
                     async with self._factory() as uow:
                         by_key = {member.name_key: member for member in roster}
-                        working = {
-                            key: member.sheet.model_copy(deep=True)
-                            for key, member in by_key.items()
-                        }
-                        for key, current in report.hp.items():
-                            hit_points = working[key].hp
-                            if hit_points is not None:
-                                hit_points.current = current
-                        for key, conditions in report.conditions.items():
-                            working[key].conditions = list(conditions)
-                        touched = set(report.hp) | set(report.conditions)
-                        for key in sorted(touched):
+                        # HP, conditions, spent slots, XP and levels in one save each.
+                        for key in sorted(report.sheets):
                             member = by_key[key]
-                            await uow.party.save_sheet(member.id, working[key], member.version)
+                            await uow.party.save_sheet(
+                                member.id, report.sheets[key], member.version
+                            )
                         pools = {monster.name_key: monster for monster in live_monsters}
                         for key in sorted(report.monsters):
                             result = report.monsters[key]
@@ -4784,7 +4812,17 @@ class Stage1Orchestrator:
                                     "unresolved": str(len(report.unresolved)),
                                     "scene_event_id": str(event_id),
                                     "rolls": combat_rolls_json(report.outcomes, joined or []),
-                                    **({"foes": json.dumps(report.foes)} if report.foes else {}),
+                                    # The fight that is on goes on: its foes
+                                    # plus whoever this scene brought in.
+                                    **(
+                                        {
+                                            "foes": json.dumps(
+                                                list(dict.fromkeys(fighting + report.foes))
+                                            )
+                                        }
+                                        if report.foes
+                                        else {}
+                                    ),
                                 },
                                 random_seed=seed,
                                 random_algorithm="seeded-d20-v1",
