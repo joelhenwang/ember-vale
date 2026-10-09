@@ -49,6 +49,7 @@ from worldsim.domain.rules.dnd.deeds import (
     Deed,
     after_encounter,
     deed_lines,
+    group_size,
     helper_lines,
     line_actor,
     opening_lines,
@@ -305,6 +306,7 @@ def resolve_narration_tags(
     strike_back: bool = False,
     present: set[str] | None = None,
     orders: dict[str, str] | None = None,
+    recent: str = "",
 ) -> CombatReport:
     """Resolve every combat tag in narration order. Inputs are never mutated.
 
@@ -378,7 +380,7 @@ def resolve_narration_tags(
     if not on_now:
         # A fight begun without an ENCOUNTER: open it, as large as the words
         # count ("two goblins"), so the second goblin is a real foe.
-        opened = opening_lines(text, deeds or [], order, tables, fallen_kinds)
+        opened = opening_lines(text, deeds or [], order, tables, fallen_kinds, recent)
         if opened:
             text = "\n".join([*opened, text])
             for line in opened:
@@ -624,6 +626,12 @@ def resolve_narration_tags(
             if not refs:
                 unresolved.append(match.group(0))
                 continue
+            # The tag counts fewer than the prose tells ("Two goblins burst in"
+            # under ENCOUNTER[goblin]): the prose is what the reader saw.
+            refs = [
+                ref.model_copy(update={"count": max(ref.count, group_size([text], ref.name))})
+                for ref in refs
+            ]
             diff = encounter_difficulty(
                 [s.level for s in order],
                 [MonsterRef(index=r.index, count=r.count) for r in refs],

@@ -143,6 +143,8 @@ from worldsim.domain.commands import (
     CommunicateAction,
     InteractAction,
     MoveAction,
+    ObserveAction,
+    RestAction,
     SparAction,
     TakeAction,
     TransferAction,
@@ -279,12 +281,14 @@ from worldsim.domain.rules.dnd import (
     resolve_narration_tags,
     roll_attack,
     roll_damage,
+    strip_combat_tags,
     weapon_attack_bonus,
 )
 from worldsim.domain.rules.dnd.data import dict_field, entry, str_field, table
 from worldsim.domain.rules.dnd.deeds import Deed, looks_like_deed
 from worldsim.domain.rules.dnd.invites import (
     accepts,
+    companion_attack,
     invitation_note,
     is_invitation,
 )
@@ -3189,6 +3193,16 @@ class Stage1Orchestrator:
             # (companions-002 run-1), so the walk away becomes staying put.
             stay = WaitAction(character_id=character.id, snapshot_id=sealed.snapshot_id)
             intent = intent.model_copy(update={"action": stay})
+        elif isinstance(intent.action, (WaitAction, ObserveAction, RestAction)) and (
+            attack := await self._companion_attack(world_id, character.id)
+        ):
+            # In a fight a companion fights: Ash, told so, still chose to wait
+            # (companions-002), so the prose showed him idle while the dice
+            # had him strike. Now his own attempt is the blow, told and rolled.
+            fight = InteractAction(
+                character_id=character.id, snapshot_id=sealed.snapshot_id, attempt=attack
+            )
+            intent = intent.model_copy(update={"action": fight})
         elif isinstance(intent.action, SparAction) and await self._foes_now(world_id):
             # No friendly bout while a fight is on (none is rolled), so none
             # is told either: the storyteller narrated Ash sparring Wren with
@@ -3643,6 +3657,18 @@ class Stage1Orchestrator:
         if hero is None:
             return None
         return companion_note(hero.name, await self._foes_now(world_id))
+
+    async def _companion_attack(self, world_id: UUID, character_id: UUID) -> str | None:
+        """A companion's blow while a fight is on, at the most wounded foe."""
+        foes = [foe for foe in await self._foes_now(world_id) if foe.hp_current > 0]
+        if not foes or not await self._is_companion(world_id, character_id):
+            return None
+        roster, _played = await self._companions(world_id)
+        member = next((m for m in roster if m.character_id == character_id), None)
+        if member is None:
+            return None
+        foe = min(foes, key=lambda f: f.hp_current / max(1, f.hp_max))
+        return companion_attack(member.sheet, foe.name, self._dnd_tables())
 
     async def _foes_now(self, world_id: UUID) -> list[Monster]:
         """The foes of the fight that is on (one read per phase)."""
@@ -5010,6 +5036,21 @@ class Stage1Orchestrator:
             }
             deeds: list[Deed] = []
             orders: dict[str, str] = {}
+            # The prose of the last two turns the party was in: goblins that
+            # burst in last turn are still there to fight this one.
+            run_now = await uow.phases.get_run(run_id)
+            linked = {m.character_id for m in roster if m.character_id is not None}
+            earlier = [
+                e.id
+                for e in await uow.events.list_by_absolute(
+                    world_id, max(0, run_now.absolute_index - 2), run_now.absolute_index
+                )
+                if linked & set(e.participant_ids)
+            ]
+            told = await uow.scenes.narrations_for_events(earlier) if earlier else {}
+            recent = "\n".join(
+                strip_combat_tags(beat.text) for beats in told.values() for beat in beats
+            )
             hero_here = False
             grant = await uow.roles.get_for_world(world_id)
             chooses = chooser_keys(roster, grant.character_id if grant is not None else None)
@@ -5078,6 +5119,7 @@ class Stage1Orchestrator:
                     strike_back=hero_here,
                     present=present_keys(roster, chooses, participants, places),
                     orders=orders,
+                    recent=recent,
                 )
                 if not report.outcomes and not report.unresolved and not joined:
                     return "no-tags"

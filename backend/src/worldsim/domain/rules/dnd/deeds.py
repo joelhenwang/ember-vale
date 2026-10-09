@@ -237,12 +237,15 @@ def opening_lines(
     order: list[Sheet],
     tables: DataTables,
     fallen: set[str],
+    recent: str = "",
 ) -> list[str]:
     """ENCOUNTER lines for a fight the scene starts without one: no fight is
     on and no ENCOUNTER was written, yet the storyteller's tags strike a
     creature, or a party member's words attack one the prose names. The
     group is as large as the words count ("two goblins": Goblin 1 and 2), so
-    "the second goblin" is a real foe. A kind already slain opens nothing."""
+    "the second goblin" is a real foe. A kind already slain opens nothing.
+    ``recent`` is the prose of the last turns: goblins seen bursting in last
+    turn are still there to attack this one, as many as were told."""
     if _ENCOUNTER_RE.search(text):
         return []
     monsters = table(tables, "monsters")
@@ -266,11 +269,11 @@ def opening_lines(
             struck.add(found.index)
     for deed in deeds:
         if _ATTACK_RE.search(deed.text) and not _STAND_DOWN_RE.search(deed.text):
-            named = _creature_named(deed.text, text, tables)
+            named = _creature_named(deed.text, f"{text}\n{recent}", tables)
             if named is not None:
                 kinds.append(named)
                 struck.discard(named[0])
-    words = [text, *(deed.text for deed in deeds)]
+    words = [text, recent, *(deed.text for deed in deeds)]
     lines: list[str] = []
     for kind, name in dict.fromkeys(kinds):
         if kind in fallen:

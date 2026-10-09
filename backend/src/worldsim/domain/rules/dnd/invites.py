@@ -12,7 +12,8 @@ from __future__ import annotations
 
 import re
 
-from worldsim.domain.rules.dnd.data import DataTables, table
+from worldsim.domain.rules.dnd.data import DataTables, entry, table
+from worldsim.domain.rules.dnd.sheets import Sheet
 
 _INVITE_RE = re.compile(
     r"\b(?:join (?:me|us|my party|our party|the party|my company|my side)|"
@@ -87,3 +88,19 @@ def companion_description(card_text: str, tables: DataTables) -> str:
         "fighter",
     )
     return f"{race} {calling}"
+
+
+def companion_attack(sheet: Sheet, foe: str, tables: DataTables) -> str | None:
+    """A companion's own attempt in a fight, in their words: "I attack Goblin 2
+    with my longsword" (or a damaging cantrip for a caster without a weapon)."""
+    if sheet.hp is not None and sheet.hp.current <= 0:
+        return None
+    weapons, spells = table(tables, "weapons"), table(tables, "spells")
+    if sheet.weapons:
+        name = str(entry(weapons, sheet.weapons[0]).get("name", sheet.weapons[0]))
+        return f"I attack {foe} with my {name.lower()}"
+    for key in sheet.spells:
+        row = entry(spells, key)
+        if row.get("damage") and not row.get("level"):
+            return f"I cast {str(row.get('name', key)).lower()} at {foe}"
+    return None

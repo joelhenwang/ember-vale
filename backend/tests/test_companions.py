@@ -480,5 +480,115 @@ def test_a_spar_chosen_while_a_fight_is_on_is_waiting(
     foes = client.get(
         "/api/v1/stage1/party", params={"world_id": str(world_id)}, headers=headers
     ).json()["foes"]
-    assert foes and all(f["hp_current"] > 0 for f in foes)  # the fight is on
+    assert foes  # a fight was on
     assert "spar" not in _families(world_id)
+
+
+def test_the_prose_count_and_last_turns_foes_make_the_fight() -> None:
+    larger = resolve_narration_tags(
+        "ENCOUNTER[goblin]: Two goblins burst in through the door.",
+        [_wren()],
+        DATA,
+        _rng(0.0),
+    )
+    assert larger.outcomes[0].target == "Goblin 1, Goblin 2"
+    # Goblins seen last turn, attacked this turn with no fight on yet.
+    later = resolve_narration_tags(
+        "Wren steps forward, blade raised.",
+        [_wren()],
+        DATA,
+        _rng(0.5),
+        deeds=[Deed(key="wren", text="I attack the second goblin")],
+        recent="Two goblins burst in through the Hearth's back door.",
+    )
+    kinds = [(o.kind, o.target) for o in later.outcomes]
+    assert kinds[0] == ("encounter", "Goblin 1, Goblin 2")
+    assert ("attack", "Goblin 2") in kinds
+
+
+def test_a_companions_own_blow_in_their_words() -> None:
+    from worldsim.domain.rules.dnd.invites import companion_attack
+
+    assert companion_attack(_ash(), "Goblin 2", DATA) == "I attack Goblin 2 with my handaxe"
+    assert companion_attack(_ash(hp=0), "Goblin 2", DATA) is None
+    sage = Sheet(name="Lyra", character_class="wizard", spells=["fire-bolt"], weapons=[])
+    assert companion_attack(sage, "Goblin 1", DATA) == "I cast fire bolt at Goblin 1"
+
+
+def test_a_waiting_companion_fights_while_a_fight_is_on(
+    wired: tuple[ApiClient, FakeGateway],
+) -> None:
+    from test_combat_depth_2 import _families
+
+    client, gateway = wired
+    created = _create(client, FIGHTER, "companion-fights", ash_at="hearth")
+    assert created.status_code == 200, created.text
+    world_id = UUID(created.json()["world_id"])
+    wren = created.json()["character_id"]
+    headers = {"X-Worldsim-Role": "player", "X-Worldsim-Character": wren}
+    cast = client.get(
+        "/api/v1/world/presentation", params={"world_id": str(world_id)}, headers=headers
+    ).json()["cast"]
+    ash = next(c["character_id"] for c in cast if c["name"] == "Ash")
+    turn = {"n": 0}
+
+    def route(request: Any) -> str | None:
+        system, prompt = request.system or "", request.prompt
+        if "You narrate" in system:
+            if turn["n"] == 2 and "Hearth" in prompt:
+                text = "ENCOUNTER[orc]: An orc kicks in the door."
+                return json.dumps([{"text": text, "cited_fact_keys": ["dnd-sheet:wren"]}])
+            return None
+        if "You react" in system and "join their party" in prompt:
+            reply = {
+                "family": "communicate",
+                "target_character_id": wren,
+                "topic": "Yes, I will come.",
+            }
+            return json.dumps({**reply, "character_id": ash, "snapshot_id": ash})
+        if "You decide" in system or "You react" in system:
+            return json.dumps({"family": "wait", "character_id": ash, "snapshot_id": ash})
+        if "You resolve" in system:
+            return json.dumps({"outcome": "success", "effects": [], "rationale": "Fine."})
+        return None
+
+    gateway.route = route
+    for index, intent in (
+        (
+            1,
+            {
+                "family": "communicate",
+                "target_character_id": ash,
+                "topic": "Will you join me as my companion?",
+            },
+        ),
+        (2, {"family": "wait"}),
+        (3, {"family": "wait"}),
+    ):
+        turn["n"] = index
+        moved = client.post(
+            "/api/v1/stage1/advance",
+            json={
+                "world_id": str(world_id),
+                "absolute_index": index,
+                "player_intents": {
+                    wren: {**intent, "character_id": wren, "snapshot_id": NIL_SNAPSHOT}
+                },
+            },
+            headers=headers,
+        )
+        assert moved.status_code == 200, moved.text
+    assert "interact" in _families(world_id)
+    entries = client.get(
+        "/api/v1/world/chronicle",
+        params={"world_id": str(world_id), "after": 0, "limit": 80},
+        headers=headers,
+    ).json()["entries"]
+    ash_blows = [
+        r
+        for e in entries
+        if e["combat"]
+        for r in e["combat"]["rolls"]
+        if r["kind"] == "attack" and r.get("actor") == "Ash"
+    ]
+    assert ash_blows and all(r["target"].startswith("Orc") for r in ash_blows)
