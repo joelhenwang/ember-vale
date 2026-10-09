@@ -1,0 +1,11 @@
+{
+ "offered": 4,
+ "confirmText": "BRANCH FROM HERE\n\nStart a new story from Day 1 · Morning\nThe new story begins at the end of this turn: everyone where they were, with what they carried, what they knew and the rumours as they stood then.\nThe Lantern Ledger stays exactly as it is. You can go back to it any time from Stories.\nPictures still being painted stay with the original story.\n\nIt will be called The Lantern Ledger — from Day 1, morning\n\nCancel\nStart the new story",
+ "branchUrl": "http://localhost:5183/stories/0b5c0628-72a7-4deb-80e5-ed03653a1104/adventure",
+ "originText": "Branched from The Lantern Ledger at Day 1, morning",
+ "feedOffers": 4,
+ "modalOffers": 1,
+ "errors": [
+  "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+ ]
+}
