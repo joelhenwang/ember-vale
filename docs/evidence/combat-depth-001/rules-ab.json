@@ -1,0 +1,85 @@
+{
+ "dnd-rules.v2": [
+  {
+   "rolls": 2,
+   "roll_lines": [
+    "Wren hits Goblin for 4 slashing. (7->3 HP)",
+    "Wren misses Goblin (6 vs AC 15)."
+   ],
+   "tags_in_prose": false,
+   "foes": [
+    [
+     "Goblin",
+     3,
+     7
+    ]
+   ],
+   "turn_status": [
+    200,
+    200,
+    200
+   ]
+  },
+  {
+   "rolls": 0,
+   "roll_lines": [],
+   "tags_in_prose": false,
+   "foes": [],
+   "turn_status": [
+    200,
+    200,
+    200
+   ]
+  },
+  {
+   "rolls": 3,
+   "roll_lines": [
+    "Wren hits Goblin for 7 slashing. (7->0 HP)",
+    "Defeated Goblin: 50 XP, 50 each.",
+    "Wren hits Goblin for 7 slashing. (0->0 HP)"
+   ],
+   "tags_in_prose": false,
+   "foes": [],
+   "turn_status": [
+    200,
+    200,
+    200
+   ]
+  }
+ ],
+ "dnd-rules.v3": [
+  {
+   "rolls": 0,
+   "roll_lines": [],
+   "tags_in_prose": false,
+   "foes": [],
+   "turn_status": [
+    200,
+    200,
+    200
+   ]
+  },
+  {
+   "rolls": 0,
+   "roll_lines": [],
+   "tags_in_prose": false,
+   "foes": [],
+   "turn_status": [
+    200,
+    200,
+    200
+   ]
+  },
+  {
+   "rolls": 0,
+   "roll_lines": [],
+   "tags_in_prose": false,
+   "foes": [],
+   "turn_status": [
+    200,
+    200,
+    409
+   ]
+  }
+ ]
+}
