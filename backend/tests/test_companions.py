@@ -147,3 +147,25 @@ def test_asked_to_join_and_saying_yes_makes_a_linked_companion(
     members = {m["name"]: m for m in party["members"]}
     assert set(members) == {"Wren", "Ash"}
     assert members["Ash"]["character_id"] == ash and members["Ash"]["level"] == 1
+
+
+def test_two_fighters_with_longswords_each_swing_their_own() -> None:
+    ash = _ash()
+    ash.weapons = ["longsword"]
+    report = resolve_narration_tags(
+        "ATTACK[longsword at goblin]: Ash lunges at the first goblin.",
+        [ash, _wren()],
+        DATA,
+        _rng(0.5),
+        live=_goblins(30, 30),
+        fighting=["goblin-1", "goblin-2"],
+        deeds=[Deed(key="wren", text="I attack the second goblin with my longsword")],
+        chooses={"wren"},
+        strike_back=True,
+        present={"wren", "ash"},
+    )
+    swings = [
+        (o.actor, o.target) for o in report.outcomes if o.kind == "attack" and not o.actor_foe
+    ]
+    assert ("Ash", "Goblin 1") in swings and ("Wren", "Goblin 2") in swings
+    assert report.deeds == 1 and report.helped == 0

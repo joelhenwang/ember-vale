@@ -89,23 +89,45 @@ def _carrier(order: list[Sheet], loadout: str, index: str) -> Sheet | None:
     )
 
 
+def line_actor(prose: str, order: list[Sheet]) -> Sheet | None:
+    """The party member a tag line's prose names first ("ATTACK[longsword at
+    goblin]: Ash lunges" is Ash's blow): two fighters both carry longswords,
+    and the weapon alone gave Wren's blows to Ash (companions-001)."""
+    low = prose.lower()
+    found = [
+        (hit.start(), sheet)
+        for sheet in order
+        if (hit := re.search(rf"\b{re.escape(sheet.name.lower())}\b", low))
+    ]
+    return min(found, key=lambda pair: pair[0])[1] if found else None
+
+
+def tag_actor(prose: str, order: list[Sheet], index: str, *, spell: bool) -> Sheet | None:
+    """Who a tag line means: the party member its prose names, when they
+    carry the weapon or spell; else the first who carries it."""
+    named = line_actor(prose, order)
+    if named is not None and index in (named.spells if spell else named.weapons):
+        return named
+    return _carrier(order, "spell" if spell else "weapon", index)
+
+
 def tagged_members(text: str, order: list[Sheet], tables: DataTables) -> set[str]:
     """Names of the party members the storyteller already tagged acting."""
     acted: set[str] = set()
     for match in _SHEET_TAG_RE.finditer(text):
         kind, inner = match.group(1).upper(), match.group(2)
+        end = text.find("\n", match.end())
+        prose = text[match.end() : end if end >= 0 else len(text)]
         if kind == "ATTACK":
             tag = parse_attack_tag(inner, tables)
-            if tag is not None and tag.index:
-                sheet = _carrier(order, "weapon", tag.index)
-                if sheet is not None:
-                    acted.add(sheet.name)
+            index = tag.index if tag is not None else None
         else:
-            tag = parse_cast_tag(inner, tables)
-            if tag is not None and tag.index:
-                sheet = _carrier(order, "spell", tag.index)
-                if sheet is not None:
-                    acted.add(sheet.name)
+            cast_tag = parse_cast_tag(inner, tables)
+            index = cast_tag.index if cast_tag is not None else None
+        if index:
+            sheet = tag_actor(prose, order, index, spell=kind == "CAST")
+            if sheet is not None:
+                acted.add(sheet.name)
     return acted
 
 

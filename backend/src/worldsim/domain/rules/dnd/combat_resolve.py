@@ -50,6 +50,7 @@ from worldsim.domain.rules.dnd.deeds import (
     after_encounter,
     deed_lines,
     helper_lines,
+    line_actor,
     opening_lines,
 )
 from worldsim.domain.rules.dnd.progress import (
@@ -570,9 +571,12 @@ def resolve_narration_tags(
         )
         return True
 
-    def carrier(key: str, *, spell: bool) -> Sheet | None:
-        """Who a loadout tag means: the first carrier still standing, else the first."""
+    def carrier(key: str, *, spell: bool, named: Sheet | None = None) -> Sheet | None:
+        """Who a loadout tag means: the party member its line names, when they
+        carry it; else the first carrier still standing, else the first."""
         having = [s for s in order if key in (s.spells if spell else s.weapons)]
+        if named is not None and named in having:
+            return named
         return next((s for s in having if currents[id(s)] > 0), having[0] if having else None)
 
     def come_to() -> None:
@@ -599,6 +603,8 @@ def resolve_narration_tags(
 
     for match in _TAG_RE.finditer(text):
         kind, inner = match.group(1).upper(), match.group(2).strip()
+        line_end = text.find("\n", match.end())
+        voiced = line_actor(text[match.end() : line_end if line_end >= 0 else len(text)], order)
         if kind == "ENCOUNTER":
             refs = parse_encounter_tag(inner, tables)
             if not refs:
@@ -661,9 +667,9 @@ def resolve_narration_tags(
             tag = parse_attack_tag(inner, tables)
             attacker = None
             if tag is not None:
-                attacker = carrier(tag.index, spell=False) if tag.index else None
+                attacker = carrier(tag.index, spell=False, named=voiced) if tag.index else None
                 if attacker is None and tag.index is None:
-                    attacker = carrier(tag.name, spell=False)
+                    attacker = carrier(tag.name, spell=False, named=voiced)
             if tag is not None and attacker is None:
                 # ``ATTACK[goblin at Wren]``: a foe strikes back with its own weapon.
                 if not foe_strike(inner, tag.target):
@@ -754,7 +760,7 @@ def resolve_narration_tags(
             tag = parse_cast_tag(inner, tables)
             attacker = None
             if tag is not None and tag.index:
-                attacker = carrier(tag.index, spell=True)
+                attacker = carrier(tag.index, spell=True, named=voiced)
             if (
                 tag is None
                 or attacker is None
