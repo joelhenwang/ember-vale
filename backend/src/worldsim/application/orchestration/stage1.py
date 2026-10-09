@@ -236,6 +236,7 @@ from worldsim.domain.narration import NarrationBeat
 from worldsim.domain.narrative import NarrativeHook
 from worldsim.domain.party import (
     Monster,
+    chooser_keys,
     down_line,
     fight_keys,
     fight_over_line,
@@ -243,6 +244,7 @@ from worldsim.domain.party import (
     foes_on,
     party_in_scene,
     party_name_key,
+    present_keys,
     slots_line,
 )
 from worldsim.domain.perception import (
@@ -276,6 +278,13 @@ from worldsim.domain.rules.dnd import (
 )
 from worldsim.domain.rules.dnd.data import dict_field, entry, str_field, table
 from worldsim.domain.rules.dnd.deeds import Deed, looks_like_deed
+from worldsim.domain.rules.dnd.invites import (
+    accepts,
+    companion_description,
+    invitation_note,
+    is_invitation,
+)
+from worldsim.domain.rules.dnd.party import MAX_PARTY_SIZE
 from worldsim.domain.rules.dnd.progress import long_rest
 from worldsim.domain.rules.dnd.sheets import weapon_damage
 from worldsim.domain.rules.grounding import grounded_move
@@ -3796,6 +3805,11 @@ class Stage1Orchestrator:
             )
         if resolution.outcome == ResolutionOutcome.SUCCESS:
             await self._settle_scene_verbs(world_id, run_id, index, scene, members, result.event_id)
+        try:
+            await self._join_invited(world_id, attempts, reactions)
+        except DomainError:
+            # A join that fails (a full party, a race) never fails the turn.
+            _phase_log.warning("joining the party failed", exc_info=True)
         return SceneOutcome(
             scene_id=scene.id,
             event_id=result.event_id,
@@ -4232,10 +4246,12 @@ class Stage1Orchestrator:
             )
             return await invoke(graph, invocation)
 
+        # Asked to join the party: answer it plainly (companions-001).
+        invite = await self._invitation(world_id, attempt, reactor_id, names)
         # One task (and graph thread) per attempt and reactor, so a reactor's
         # replies to several attempts run side by side and resume apart.
         result = await _attempt(
-            derive_task_id(run_id, f"reaction:{attempt.id.hex}", reactor_id), None
+            derive_task_id(run_id, f"reaction:{attempt.id.hex}", reactor_id), invite
         )
         if result["proposal"]["reacted"]:
             first = Reaction.model_validate(result["proposal"]["reaction"])
@@ -4244,7 +4260,7 @@ class Stage1Orchestrator:
                 # The second answer stands, repeat or not.
                 result = await _attempt(
                     derive_task_id(run_id, f"reaction:again:{attempt.id.hex}", reactor_id),
-                    again,
+                    again if invite is None else f"{invite} {again}",
                 )
         await self._remember_intention(world_id, reactor_id, result.get("raw_response"))
         if not result["proposal"]["reacted"]:
@@ -4254,6 +4270,67 @@ class Stage1Orchestrator:
         return reaction.model_copy(
             update={"action": with_route(reaction.action, sealed.locations.get(reactor_id), places)}
         )
+
+    async def _invitation(
+        self, world_id: UUID, attempt: Attempt, reactor_id: UUID, names: Mapping[UUID, str]
+    ) -> str | None:
+        """The note for a character a party hero asks to join (None otherwise):
+        a hero of a combat story, a party with room, someone not in it yet."""
+        if not is_invitation(attempt.observable_summary):
+            return None
+        async with self._factory() as uow:
+            roster = await uow.party.list_for_world(world_id)
+        linked = {m.character_id for m in roster if m.character_id is not None}
+        if attempt.actor_character_id not in linked or reactor_id in linked:
+            return None
+        if len(roster) >= MAX_PARTY_SIZE or party_name_key(names.get(reactor_id, "")) in {
+            m.name_key for m in roster
+        }:
+            return None
+        return invitation_note(names.get(attempt.actor_character_id, "The hero"))
+
+    async def _join_invited(
+        self,
+        world_id: UUID,
+        attempts: Sequence[Attempt],
+        reactions: Sequence[Reaction],
+    ) -> list[str]:
+        """Characters who said a plain yes to a party hero's invitation join
+        the party, linked to themselves (their own deeds then roll)."""
+        by_id = {a.id: a for a in attempts}
+        joined: list[str] = []
+        for reaction in reactions:
+            attempt = by_id.get(reaction.attempt_id)
+            action = reaction.action
+            if (
+                attempt is None
+                or not isinstance(action, CommunicateAction)
+                or not is_invitation(attempt.observable_summary)
+                or not accepts(action.topic)
+            ):
+                continue
+            async with self._factory() as uow:
+                roster = await uow.party.list_for_world(world_id)
+                linked = {m.character_id for m in roster if m.character_id is not None}
+                if attempt.actor_character_id not in linked:
+                    continue
+                if reaction.reactor_character_id in linked or len(roster) >= MAX_PARTY_SIZE:
+                    continue
+                who = await uow.characters.get(reaction.reactor_character_id)
+                card = await _card_of(uow, who, self._cards)
+            words = " ".join([card.appearance, card.personality, card.background])
+            async with self._factory() as uow:
+                result = await recruit_companion(
+                    uow,
+                    self._dnd_tables(),
+                    world_id,
+                    who.name,
+                    companion_description(words, self._dnd_tables()),
+                    character_id=who.id,
+                )
+            if result.joined:
+                joined.append(result.member.name)
+        return joined
 
     async def _resolve_scene(
         self,
@@ -4802,6 +4879,11 @@ class Stage1Orchestrator:
             }
             deeds: list[Deed] = []
             hero_here = False
+            grant = await uow.roles.get_for_world(world_id)
+            chooses = chooser_keys(roster, grant.character_id if grant is not None else None)
+            participants = {
+                str(p.character_id) for p in (await uow.scenes.get_scene(scene.id)).participants
+            }
             for intent_id in scene.intent_ids:
                 intent = await uow.scenes.get_intent(intent_id)
                 hero_here = hero_here or intent.author_character_id in heroes
@@ -4848,8 +4930,9 @@ class Stage1Orchestrator:
                     day=story_day,
                     fighting=fighting,
                     deeds=deeds,
-                    chooses=set(heroes.values()),
+                    chooses=chooses,
                     strike_back=hero_here,
+                    present=present_keys(roster, participants, hero_here),
                 )
                 if not report.outcomes and not report.unresolved and not joined:
                     return "no-tags"
@@ -4906,6 +4989,7 @@ class Stage1Orchestrator:
                                     "tags": str(len(report.outcomes)),
                                     "unresolved": str(len(report.unresolved)),
                                     "deeds": str(report.deeds),
+                                    "helped": str(report.helped),
                                     "scene_event_id": str(event_id),
                                     "rolls": combat_rolls_json(report.outcomes, joined or []),
                                     # The fight that is on goes on: its foes

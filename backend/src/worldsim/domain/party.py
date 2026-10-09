@@ -150,3 +150,23 @@ def down_line(names: list[str]) -> str | None:
         f"{who} {verb} down (no hit points left): conscious only enough to lie still, unable to "
         "fight or cast until healed or until a night's rest."
     )
+
+
+def chooser_keys(roster: list[PartyMember], played: CharacterId | None) -> set[str]:
+    """Who makes their own level-up choices: the played hero. A companion is
+    linked to their own character too (companions-001) but does not choose.
+    Without a played character (a party begun by hand), every linked member."""
+    linked = [m for m in roster if m.character_id is not None]
+    if played is not None:
+        return {m.name_key for m in linked if m.character_id == played}
+    return {m.name_key for m in linked}
+
+
+def present_keys(roster: list[PartyMember], participants: set[str], hero_here: bool) -> set[str]:
+    """Party members in a scene: linked ones by their character, the unlinked
+    (who travel with the hero) whenever the party is here."""
+    return {
+        m.name_key
+        for m in roster
+        if (str(m.character_id) in participants if m.character_id is not None else hero_here)
+    }

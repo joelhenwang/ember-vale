@@ -330,3 +330,57 @@ def deed_lines(
     cut = first.end()
     head = text[:cut] if text[:cut].endswith("\n") else text[:cut] + "\n"
     return head + block + text[cut:], len(lines)
+
+
+def after_encounter(text: str, lines: list[str]) -> str:
+    """The narration with tag lines put right after its first ENCOUNTER line
+    (else at the start), where the scene's fight begins."""
+    if not lines:
+        return text
+    block = "\n".join(lines) + "\n"
+    first = _ENCOUNTER_RE.search(text)
+    if first is None:
+        return block + text
+    cut = first.end()
+    head = text[:cut] if text[:cut].endswith("\n") else text[:cut] + "\n"
+    return head + block + text[cut:]
+
+
+def helper_lines(
+    text: str,
+    order: list[Sheet],
+    keys: list[str],
+    helpers: set[str],
+    deed_keys: set[str],
+    foes: list[tuple[str, str]],
+    tables: DataTables,
+) -> list[str]:
+    """Companions here fight beside the party (companions-001): each one
+    standing whom neither the storyteller nor their own words had act
+    strikes the first foe standing, with their first weapon (a caster
+    without one, their first damaging cantrip)."""
+    if not foes or not helpers:
+        return []
+    acted = tagged_members(text, order, tables)
+    spells = table(tables, "spells")
+    target = foes[0][1]
+    lines: list[str] = []
+    for key in keys:
+        sheet = order[keys.index(key)]
+        down = sheet.hp is not None and sheet.hp.current <= 0
+        if key not in helpers or key in deed_keys or down or sheet.name in acted:
+            continue
+        if sheet.weapons:
+            lines.append(f"ATTACK[{sheet.weapons[0]} at {target}]: {sheet.name} fights on.")
+            continue
+        cantrip = next(
+            (
+                spell
+                for spell in sheet.spells
+                if (row := entry(spells, spell)).get("damage") and not row.get("level")
+            ),
+            None,
+        )
+        if cantrip is not None:
+            lines.append(f"CAST[{cantrip} at {target}]: {sheet.name} fights on.")
+    return lines

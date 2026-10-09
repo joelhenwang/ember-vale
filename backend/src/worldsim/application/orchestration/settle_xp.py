@@ -19,6 +19,7 @@ from worldsim.domain.enums import EventType, NarrativeStatus
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.events import WorldEvent
 from worldsim.domain.ids import derive_settle_xp_event_id
+from worldsim.domain.party import chooser_keys
 from worldsim.domain.rules.dnd.data import DataTables
 from worldsim.domain.rules.dnd.quests import award_settled
 from worldsim.domain.time import split_absolute
@@ -77,7 +78,9 @@ async def _award_one(
                 tables(),
                 hook.title,
                 [(member.name_key, member.sheet) for member in roster],
-                chooses={m.name_key for m in roster if m.character_id is not None},
+                chooses=chooser_keys(
+                    roster, getattr(await uow.roles.get_for_world(world_id), "character_id", None)
+                ),
                 day=split_absolute(absolute_index)[0],
             )
             try:

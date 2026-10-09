@@ -45,7 +45,13 @@ from worldsim.domain.rules.dnd.data import (
     str_field,
     table,
 )
-from worldsim.domain.rules.dnd.deeds import Deed, deed_lines, opening_lines
+from worldsim.domain.rules.dnd.deeds import (
+    Deed,
+    after_encounter,
+    deed_lines,
+    helper_lines,
+    opening_lines,
+)
 from worldsim.domain.rules.dnd.progress import (
     LevelGain,
     free_slot,
@@ -159,6 +165,8 @@ class CombatReport:
     levels: list[LevelGain] = field(default_factory=list)
     #: Tag lines added from the party's own words (``deeds``), not the storyteller's.
     deeds: int = 0
+    #: Blows companions struck beside the party with nothing else making them act.
+    helped: int = 0
 
 
 @dataclass
@@ -294,6 +302,7 @@ def resolve_narration_tags(
     deeds: list[Deed] | None = None,
     chooses: set[str] | None = None,
     strike_back: bool = False,
+    present: set[str] | None = None,
 ) -> CombatReport:
     """Resolve every combat tag in narration order. Inputs are never mutated.
 
@@ -319,6 +328,8 @@ def resolve_narration_tags(
     once (at the one who acted, else the first party member standing). And
     once no fight is on (or this scene ends it), whoever was down gets back
     up with 1 hit point: there is no death and dying.
+    ``present`` are the party members in this scene: companions among them
+    (not in ``chooses``) whom nothing had act fight beside the party.
     """
     if not sheets or not (text or deeds):
         return CombatReport()
@@ -370,6 +381,18 @@ def resolve_narration_tags(
                 inner = line[line.index("[") + 1 : line.index("]")]
                 for ref in parse_encounter_tag(inner, tables):
                     standing_kinds.append((ref.index, ref.name))
+    helped = 0
+    if strike_back:
+        extra = helper_lines(
+            text,
+            order,
+            keys,
+            (present or set()) - (chooses or set()),
+            {deed.key for deed in deeds or []},
+            list(dict.fromkeys(standing_kinds)),
+            tables,
+        )
+        text, helped = after_encounter(text, extra), len(extra)
     text, deed_count = deed_lines(
         text,
         deeds or [],
@@ -1086,6 +1109,7 @@ def resolve_narration_tags(
         defeated=defeated,
         levels=gains,
         deeds=deed_count,
+        helped=helped,
     )
 
 

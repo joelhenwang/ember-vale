@@ -100,8 +100,11 @@ async def recruit_companion(
     world_id: WorldId,
     tag_name: str,
     desc: str,
+    *,
+    character_id: CharacterId | None = None,
 ) -> RecruitResult:
-    """Resolve one RECRUIT tag; replays for known names are no-ops."""
+    """Resolve one RECRUIT tag; replays for known names are no-ops. A
+    companion who is a character of the story is linked to them."""
     key = party_name_key(tag_name)
     existing = await uow.party.find_by_name(world_id, key)
     if existing is not None:
@@ -114,6 +117,7 @@ async def recruit_companion(
         world_id=world_id,
         name=tag_name.strip(),
         name_key=key,
+        character_id=character_id,
         focus_slot=focus_for_seat(len(roster)),
         sheet=sheet,
     )
