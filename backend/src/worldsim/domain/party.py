@@ -122,3 +122,30 @@ def slots_line(tables: DataTables, sheet: Sheet, day: int | None) -> str:
         return ""
     shown = ", ".join(f"{n} {_SLOT_WORDS[pos]}-level" for pos, n in enumerate(left))
     return f"\nSpell slots left today: {shown} (cantrips are free)"
+
+
+def fight_over_line(
+    fight_index: int, now: int, keys: list[str], pools: list[Monster]
+) -> str | None:
+    """A fight that just ended (recent, every foe down), for the narrator: the
+    slain kept appearing in later prose, growling from the corner."""
+    if now - fight_index > FIGHT_LINGERS:
+        return None
+    by_key = {pool.name_key: pool for pool in pools}
+    foes = [by_key[key] for key in keys if key in by_key]
+    if not foes or any(foe.hp_current > 0 for foe in foes):
+        return None
+    shown = ", ".join(foe.name for foe in foes)
+    return f"The fight is over: {shown} lie defeated. They do not rise, growl or strike again."
+
+
+def down_line(names: list[str]) -> str | None:
+    """Party members at 0 hit points, for the narrator: they cannot act."""
+    if not names:
+        return None
+    who = ", ".join(names)
+    verb = "is" if len(names) == 1 else "are"
+    return (
+        f"{who} {verb} down (no hit points left): conscious only enough to lie still, unable to "
+        "fight or cast until healed or until a night's rest."
+    )

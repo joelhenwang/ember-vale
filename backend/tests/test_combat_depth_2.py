@@ -542,3 +542,29 @@ def _families(world_id: UUID) -> list[str]:
             await engine.dispose()
 
     return asyncio.run(inner())
+
+
+def test_the_storyteller_hears_a_fight_is_over_and_who_is_down() -> None:
+    from uuid import uuid4
+
+    from worldsim.domain.party import Monster, down_line, fight_over_line
+
+    def wolf(hp: int) -> Monster:
+        return Monster(
+            id=uuid4(),
+            world_id=uuid4(),
+            name_key="wolf",
+            name="Wolf",
+            hp_current=hp,
+            hp_max=11,
+            ac=13,
+        )
+
+    assert fight_over_line(3, 4, ["wolf"], [wolf(0)]) == (
+        "The fight is over: Wolf lie defeated. They do not rise, growl or strike again."
+    )
+    assert fight_over_line(3, 4, ["wolf"], [wolf(4)]) is None  # still on
+    assert fight_over_line(3, 9, ["wolf"], [wolf(0)]) is None  # long ago
+    assert down_line([]) is None
+    line = down_line(["Wren"])
+    assert line is not None and line.startswith("Wren is down")

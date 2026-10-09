@@ -234,7 +234,9 @@ from worldsim.domain.narration import NarrationBeat
 from worldsim.domain.narrative import NarrativeHook
 from worldsim.domain.party import (
     Monster,
+    down_line,
     fight_keys,
+    fight_over_line,
     foes_line,
     foes_on,
     party_in_scene,
@@ -4468,15 +4470,16 @@ class Stage1Orchestrator:
             # A fight that is on: the narrator strikes its foes, never respawns them.
             fight = await uow.events.latest_fight(world_id) if roster else None
             scene_index = (await uow.phases.get_run(run_id)).absolute_index if roster else 0
+            pools = await uow.monsters.list_for_world(world_id) if fight is not None else []
             foes = (
-                foes_on(
-                    fight.absolute_index,
-                    scene_index,
-                    fight_keys(fight.summary),
-                    await uow.monsters.list_for_world(world_id),
-                )
+                foes_on(fight.absolute_index, scene_index, fight_keys(fight.summary), pools)
                 if fight is not None
                 else []
+            )
+            fight_over = (
+                fight_over_line(fight.absolute_index, scene_index, fight_keys(fight.summary), pools)
+                if fight is not None
+                else None
             )
             config = await uow.worlds.get_config(world_id)
             scene_place = await _event_place(uow, event_id)
@@ -4576,6 +4579,17 @@ class Stage1Orchestrator:
             )
             if foes:
                 facts.append({"key": "dnd-foes", "value": foes_line(foes)})
+            elif fight_over is not None:
+                facts.append({"key": "dnd-foes", "value": fight_over})
+            fallen = down_line(
+                [
+                    m.name
+                    for m in roster
+                    if (woke := long_rest(m.sheet, today).hp) is not None and woke.current <= 0
+                ]
+            )
+            if fallen is not None:
+                facts.append({"key": "dnd-down", "value": fallen})
             dnd_context = (
                 dnd_party_prompt([long_rest(m.sheet, today) for m in roster], tables)
                 + "\n"
