@@ -41,4 +41,12 @@ The test also caught a bug before it shipped: `dropdb`/`createdb` take `--mainte
 
 **Pruning test.** With 9 empty backups, one older backup holding 5 stories and today's backup: the newest 7 were kept, the 3 oldest empty ones were pruned, and the older 5-story backup survived.
 
-**Not yet verified live: the compose service itself.** Since Docker Desktop restarted on 2026-10-09 at 12:05, every bind mount hangs at "Creating", for compose and for `docker run` alike, even for folders outside the repo. Named volumes and networking work. The `backup` service and `restore-backup.sh` need bind mounts, which worked the day before. Once Docker Desktop is restarted, `docker compose up -d backup` starts the daily backups; `docker compose logs backup` shows the first one.
+**Live, after the file-sharing fix** (later on 2026-10-09). Docker Desktop had dropped the project folder from Settings → Resources → File Sharing, so every bind mount hung and later failed with "not shared from the host". With the folder shared again:
+- `docker compose up -d backup` started the service, and it saved `20261009-082318` (2 stories, 1.9 MB) at once.
+- `scripts/restore-backup.sh latest` ran the real path:
+  1. it backed up the current state (`20261009-082350`);
+  2. it stopped the API;
+  3. it restored the database and pictures;
+  4. it started the API, which came back healthy.
+- Before and after: 2 stories, 32 events, 5 pictures.
+- `scripts/restore-backup.sh` with no argument lists both backups.
