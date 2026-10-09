@@ -1,9 +1,10 @@
 [package]
 name = "ember-vale-launcher"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 [dependencies]
+chrono = { version = "0.4.42", default-features = false, features = ["clock"] }
 fastrand = "2.5.0"
 ratatui = "0.30"
 serde = { version = "1.0.229", features = ["derive"] }

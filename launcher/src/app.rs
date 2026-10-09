@@ -10,6 +10,7 @@ use std::time::{Duration, Instant};
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
+use crate::backups::{self, Backup};
 use crate::checks::{self, CheckId, Fix, Outcome, Status};
 use crate::config::{self, EnvFile, Prefs, Storyteller};
 use crate::services::{self, Health, Msg, Owned, Plan, Source, Step, StepState};
@@ -28,6 +29,7 @@ pub enum Screen {
     Settings,
     Launch,
     Playing,
+    Backups,
     Closing,
 }
 
@@ -194,12 +196,29 @@ pub struct App {
     pub log_filter: Option<Source>,
     pub log_full: bool,
     pub log_scroll: usize,
+
+    /// None while the list is being read.
+    pub backups: Option<Result<Vec<Backup>, String>>,
+    pub backup_sel: usize,
+    /// What a backup or restore is doing right now.
+    pub backup_busy: Option<String>,
+    /// How the last backup or restore ended.
+    pub backup_note: Option<(Tone, String)>,
+    /// The "put this backup back?" question is open.
+    pub confirm_restore: bool,
 }
 
 impl App {
     pub fn new(root: PathBuf) -> Self {
+        let mut app = Self::quiet(root);
+        app.recheck();
+        app
+    }
+
+    /// The launcher's state without starting any background work.
+    fn quiet(root: PathBuf) -> Self {
         let (tx, rx) = channel();
-        let mut app = Self {
+        Self {
             prefs: Prefs::load(&root),
             env: EnvFile::load(&root),
             root,
@@ -232,9 +251,12 @@ impl App {
             log_filter: None,
             log_full: false,
             log_scroll: 0,
-        };
-        app.recheck();
-        app
+            backups: None,
+            backup_sel: 0,
+            backup_busy: None,
+            backup_note: None,
+            confirm_restore: false,
+        }
     }
 
     // ---- background work -------------------------------------------------
@@ -320,6 +342,19 @@ impl App {
             }
             Msg::Health(health) => self.health = health,
             Msg::Stopped => self.quit = true,
+            Msg::BackupList(list) => {
+                let count = list.as_ref().map_or(0, Vec::len);
+                self.backup_sel = self.backup_sel.min(count.saturating_sub(1));
+                self.backups = Some(list);
+            }
+            Msg::BackupBusy(what) => self.backup_busy = Some(what),
+            Msg::BackupDone(result) => {
+                self.backup_busy = None;
+                self.backup_note = Some(match result {
+                    Ok(text) => (Tone::Good, text),
+                    Err(text) => (Tone::Bad, text),
+                });
+            }
         }
     }
 
@@ -370,10 +405,14 @@ impl App {
         if self.editing.is_some() {
             return self.on_edit_key(key);
         }
+        if self.confirm_restore {
+            return self.on_confirm_key(key.code);
+        }
         match self.screen {
             Screen::Checks => self.on_checks_key(key.code),
             Screen::Settings => self.on_settings_key(key.code),
             Screen::Launch | Screen::Playing => self.on_running_key(key.code),
+            Screen::Backups => self.on_backups_key(key.code),
             Screen::Closing => {}
         }
     }
@@ -439,27 +478,11 @@ impl App {
                     self.say("Opened the game in your browser.", Tone::Good);
                 }
             }
-            KeyCode::Char('l' | 'L') => self.log_full = !self.log_full,
-            KeyCode::Tab => {
-                let order = [
-                    None,
-                    Some(Source::Server),
-                    Some(Source::Memory),
-                    Some(Source::Screen),
-                    Some(Source::Launcher),
-                ];
-                let at = order
-                    .iter()
-                    .position(|f| *f == self.log_filter)
-                    .unwrap_or(0);
-                self.log_filter = order[(at + 1) % order.len()];
-                self.log_scroll = 0;
-            }
             KeyCode::Up => self.log_scroll = self.log_scroll.saturating_add(1),
             KeyCode::Down => self.log_scroll = self.log_scroll.saturating_sub(1),
-            KeyCode::PageUp => self.log_scroll = self.log_scroll.saturating_add(10),
-            KeyCode::PageDown => self.log_scroll = self.log_scroll.saturating_sub(10),
-            KeyCode::End => self.log_scroll = 0,
+            KeyCode::Char('r' | 'R') if self.backup_busy.is_some() => {
+                self.wait_for_backups("restarting")
+            }
             KeyCode::Char('r' | 'R') if failed || self.screen == Screen::Playing => {
                 self.stop_owned();
                 self.start();
@@ -469,7 +492,129 @@ impl App {
                 self.screen = Screen::Checks;
                 self.recheck();
             }
+            KeyCode::Char('b' | 'B') if self.screen == Screen::Playing => self.open_backups(),
             KeyCode::Char('q' | 'Q') | KeyCode::Esc => self.leave(),
+            code => {
+                self.on_log_key(code);
+            }
+        }
+    }
+
+    /// Keys that move around the log; true when `code` was one of them.
+    fn on_log_key(&mut self, code: KeyCode) -> bool {
+        match code {
+            KeyCode::Char('l' | 'L') => self.log_full = !self.log_full,
+            KeyCode::Tab => {
+                let order = [
+                    None,
+                    Some(Source::Server),
+                    Some(Source::Memory),
+                    Some(Source::Screen),
+                    Some(Source::Backups),
+                    Some(Source::Launcher),
+                ];
+                let at = order
+                    .iter()
+                    .position(|f| *f == self.log_filter)
+                    .unwrap_or(0);
+                self.log_filter = order[(at + 1) % order.len()];
+                self.log_scroll = 0;
+            }
+            KeyCode::PageUp => self.log_scroll = self.log_scroll.saturating_add(10),
+            KeyCode::PageDown => self.log_scroll = self.log_scroll.saturating_sub(10),
+            KeyCode::End => self.log_scroll = 0,
+            _ => return false,
+        }
+        true
+    }
+
+    // ---- backups -------------------------------------------------------------
+
+    fn open_backups(&mut self) {
+        self.screen = Screen::Backups;
+        self.log_full = false;
+        self.refresh_backups();
+    }
+
+    fn refresh_backups(&mut self) {
+        if self.backup_busy.is_some() {
+            return;
+        }
+        self.backups = None;
+        backups::refresh(self.root.clone(), self.tx.clone());
+    }
+
+    pub fn chosen_backup(&self) -> Option<&Backup> {
+        match &self.backups {
+            Some(Ok(list)) => list.get(self.backup_sel),
+            _ => None,
+        }
+    }
+
+    fn on_backups_key(&mut self, code: KeyCode) {
+        let count = match &self.backups {
+            Some(Ok(list)) => list.len(),
+            _ => 0,
+        };
+        let busy = self.backup_busy.is_some();
+        match code {
+            KeyCode::Up | KeyCode::Char('k') => self.backup_sel = self.backup_sel.saturating_sub(1),
+            KeyCode::Down | KeyCode::Char('j') => {
+                self.backup_sel = (self.backup_sel + 1).min(count.saturating_sub(1))
+            }
+            KeyCode::Char('n' | 'N' | 'r' | 'R') | KeyCode::Enter if busy => {
+                self.say("One moment, the last one is still running.", Tone::Info)
+            }
+            KeyCode::Char('n' | 'N') => {
+                self.backup_note = None;
+                self.backup_busy = Some("Backing up your game…".into());
+                backups::back_up_now(self.root.clone(), self.tx.clone());
+            }
+            KeyCode::Enter => match self.chosen_backup() {
+                Some(_) => self.confirm_restore = true,
+                None => self.say("There's no backup to put back yet.", Tone::Info),
+            },
+            KeyCode::Char('r' | 'R') => self.refresh_backups(),
+            KeyCode::Esc | KeyCode::Char('b' | 'B') => self.screen = Screen::Playing,
+            KeyCode::Char('q' | 'Q') => self.leave(),
+            code => {
+                self.on_log_key(code);
+            }
+        }
+    }
+
+    /// Shows the backup work under way and asks the player to let it finish.
+    fn wait_for_backups(&mut self, doing: &str) {
+        self.screen = Screen::Backups;
+        self.say(
+            format!("Please wait for this to finish before {doing}."),
+            Tone::Bad,
+        );
+    }
+
+    fn on_confirm_key(&mut self, code: KeyCode) {
+        match code {
+            KeyCode::Char('y' | 'Y') => {
+                self.confirm_restore = false;
+                let Some(backup) = self.chosen_backup().cloned() else {
+                    return;
+                };
+                let api_port = self
+                    .plan
+                    .as_ref()
+                    .map_or_else(|| self.env.api_port(), |p| p.api_port);
+                self.backup_note = None;
+                self.backup_busy = Some("Starting the restore…".into());
+                self.log(
+                    Source::Backups,
+                    format!("Putting back the backup from {}…", backup.when()),
+                );
+                backups::restore(self.root.clone(), api_port, backup, self.tx.clone());
+            }
+            KeyCode::Esc | KeyCode::Char('n' | 'N') => {
+                self.confirm_restore = false;
+                self.say("Nothing was changed.", Tone::Info);
+            }
             _ => {}
         }
     }
@@ -763,6 +908,9 @@ impl App {
 
     /// Quit: right away when nothing runs, otherwise via the closing screen.
     fn leave(&mut self) {
+        if self.backup_busy.is_some() {
+            return self.wait_for_backups("quitting");
+        }
         if matches!(self.screen, Screen::Checks | Screen::Settings)
             || self.screen == Screen::Closing
         {
@@ -796,5 +944,89 @@ impl App {
 impl Drop for App {
     fn drop(&mut self) {
         self.owned.stop(None);
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use ratatui::crossterm::event::KeyEvent;
+
+    use super::*;
+
+    /// A launcher that starts no background work, rooted in an empty folder.
+    pub fn quiet_app() -> App {
+        App::quiet(std::env::temp_dir().join("ev-launcher-tests-no-root"))
+    }
+
+    pub fn two_backups() -> Vec<Backup> {
+        backups::parse_list("20261009-081800  3 stories  1.9M\n20261008-030000  1 stories  812K\n")
+    }
+
+    fn press(app: &mut App, code: KeyCode) {
+        app.on_key(KeyEvent::from(code));
+    }
+
+    #[test]
+    fn restoring_asks_first_and_can_be_called_off() {
+        let mut app = quiet_app();
+        app.screen = Screen::Backups;
+        app.backups = Some(Ok(two_backups()));
+        press(&mut app, KeyCode::Down);
+        assert_eq!(app.chosen_backup().unwrap().stamp, "20261008-030000");
+        press(&mut app, KeyCode::Enter);
+        assert!(app.confirm_restore);
+        // Other keys do nothing while the question is open.
+        press(&mut app, KeyCode::Char('q'));
+        assert!(app.confirm_restore && !app.quit);
+        press(&mut app, KeyCode::Esc);
+        assert!(!app.confirm_restore);
+        assert!(app.backup_busy.is_none());
+        press(&mut app, KeyCode::Esc);
+        assert_eq!(app.screen, Screen::Playing);
+    }
+
+    #[test]
+    fn nothing_to_restore_without_backups() {
+        let mut app = quiet_app();
+        app.screen = Screen::Backups;
+        app.backups = Some(Ok(vec![]));
+        press(&mut app, KeyCode::Enter);
+        assert!(!app.confirm_restore);
+        app.backups = Some(Err("Docker Desktop isn't running".into()));
+        press(&mut app, KeyCode::Enter);
+        assert!(!app.confirm_restore);
+    }
+
+    #[test]
+    fn no_quitting_halfway_through_a_restore() {
+        let mut app = quiet_app();
+        app.screen = Screen::Backups;
+        app.backup_busy = Some("Step 3 of 4".into());
+        press(&mut app, KeyCode::Char('q'));
+        assert!(!app.quit);
+        assert_eq!(app.screen, Screen::Backups);
+        // Nor restarting the game server from the main screen.
+        app.screen = Screen::Playing;
+        press(&mut app, KeyCode::Char('r'));
+        assert_eq!(app.screen, Screen::Backups);
+        assert!(!app.launching);
+        // Nor starting another one.
+        press(&mut app, KeyCode::Char('n'));
+        press(&mut app, KeyCode::Enter);
+        assert!(!app.confirm_restore);
+        assert_eq!(app.backup_busy.as_deref(), Some("Step 3 of 4"));
+        app.apply(Msg::BackupDone(Err("Step 3 of 4 failed".into())));
+        assert!(app.backup_busy.is_none());
+        assert_eq!(app.backup_note.as_ref().unwrap().0, Tone::Bad);
+    }
+
+    #[test]
+    fn the_list_keeps_the_choice_in_range() {
+        let mut app = quiet_app();
+        app.backup_sel = 5;
+        app.apply(Msg::BackupList(Ok(two_backups())));
+        assert_eq!(app.backup_sel, 1);
+        app.apply(Msg::BackupList(Ok(vec![])));
+        assert_eq!(app.backup_sel, 0);
     }
 }

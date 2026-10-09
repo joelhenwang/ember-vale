@@ -19,6 +19,7 @@ pub enum Source {
     Server,
     Memory,
     Screen,
+    Backups,
 }
 
 impl Source {
@@ -28,6 +29,7 @@ impl Source {
             Self::Server => "server",
             Self::Memory => "memory",
             Self::Screen => "screen",
+            Self::Backups => "backups",
         }
     }
 }
@@ -89,6 +91,12 @@ pub enum Msg {
     Fixed(Result<String, String>),
     Health(Health),
     Stopped,
+    /// The backups on disk, newest first (or why they couldn't be read).
+    BackupList(Result<Vec<crate::backups::Backup>, String>),
+    /// What a backup or restore is doing right now.
+    BackupBusy(String),
+    /// A backup or restore ended: what to tell the player.
+    BackupDone(Result<String, String>),
 }
 
 /// Processes this launcher started (and so must stop).

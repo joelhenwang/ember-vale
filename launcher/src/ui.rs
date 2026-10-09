@@ -7,6 +7,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap};
 
 use crate::app::{App, Item, SECTIONS, Screen, Tone};
+use crate::backups::{self, Backup};
 use crate::checks::Status;
 use crate::config::{self, Storyteller};
 use crate::services::{Source, StepState};
@@ -42,6 +43,7 @@ pub fn draw(frame: &mut Frame, app: &App) {
         Screen::Settings => settings_screen(frame, app, body),
         Screen::Launch => launch_screen(frame, app, body),
         Screen::Playing => playing_screen(frame, app, body),
+        Screen::Backups => backups_screen(frame, app, body),
         Screen::Closing => closing_screen(frame, app, body),
     }
     footer(frame, app, foot);
@@ -78,6 +80,7 @@ fn header(frame: &mut Frame, app: &App, area: Rect) {
         Screen::Settings => "~ settings ~",
         Screen::Launch => "~ lighting the hearth ~",
         Screen::Playing => "~ the vale is awake ~",
+        Screen::Backups => "~ backups of your stories ~",
         Screen::Closing => "~ banking the fire ~",
     };
     let mut lines = vec![Line::from(""), Line::from("")];
@@ -703,6 +706,168 @@ fn playing_screen(frame: &mut Frame, app: &App, area: Rect) {
     logs(frame, app, log_area);
 }
 
+// ---- backups -----------------------------------------------------------------
+
+fn backups_screen(frame: &mut Frame, app: &App, area: Rect) {
+    if app.log_full {
+        return logs(frame, app, area);
+    }
+    let rows = match &app.backups {
+        Some(Ok(list)) => list.len().max(1) as u16,
+        _ => 1,
+    };
+    let [list_area, status_area, log_area] = Layout::vertical([
+        Constraint::Length((rows + 5).min(14)),
+        Constraint::Length(5),
+        Constraint::Min(3),
+    ])
+    .areas(area);
+
+    let inner_w = list_area.width.saturating_sub(2) as usize;
+    let mut lines = vec![Line::from(vec![
+        "     ".into(),
+        format!("{:<24}{:<16}{}", "Taken", "Stories", "Size")
+            .fg(GOLD)
+            .bold(),
+    ])];
+    match &app.backups {
+        None => lines.push(Line::from(vec![
+            "   ".into(),
+            theme::spinner(app.tick).fg(EMBER),
+            "  Looking for your backups…".fg(ASH),
+        ])),
+        Some(Err(why)) => lines.push(Line::from(vec![
+            "   ".into(),
+            "✖  ".fg(BLOOD).bold(),
+            why.clone().fg(BLOOD),
+        ])),
+        Some(Ok(list)) if list.is_empty() => lines.push(Line::from(
+            "   No backups yet. Press N to make the first one.".fg(ASH),
+        )),
+        Some(Ok(list)) => {
+            for (i, backup) in list.iter().enumerate() {
+                let selected = i == app.backup_sel;
+                let text = format!(
+                    "{:<24}{:<16}{:<10}",
+                    backup.when(),
+                    backups::stories_label(backup.stories),
+                    backups::size_label(&backup.size),
+                );
+                let tag = if i == 0 { "newest" } else { "" };
+                let used = 5 + text.chars().count() + tag.chars().count();
+                let mut line = Line::from(vec![
+                    Span::styled(if selected { " ▶ " } else { "   " }, Style::new().fg(EMBER)),
+                    "  ".into(),
+                    Span::styled(
+                        text,
+                        Style::new().fg(if selected { FLAME } else { PARCHMENT }),
+                    ),
+                    Span::styled(tag, Style::new().fg(SMOKE).italic()),
+                    " ".repeat(inner_w.saturating_sub(used)).into(),
+                ]);
+                if selected {
+                    line = line.style(Style::new().bg(SELECTED));
+                }
+                lines.push(line);
+            }
+        }
+    }
+    frame.render_widget(
+        Paragraph::new(lines)
+            .block(panel("Backups", true).padding(ratatui::widgets::Padding::vertical(1))),
+        list_area,
+    );
+
+    let (icon, headline, color, sub) = if let Some(busy) = &app.backup_busy {
+        (
+            theme::spinner(app.tick),
+            busy.clone(),
+            EMBER,
+            "This can take a few minutes. Each step shows in the log below.",
+        )
+    } else {
+        match &app.backup_note {
+            Some((Tone::Bad, text)) => ("✖", text.clone(), BLOOD, "The log below has the details."),
+            Some((_, text)) => ("✔", text.clone(), MOSS, ""),
+            None => (
+                "✦",
+                "Your game is backed up every day, and the newest 7 backups are kept.".into(),
+                GOLD,
+                "Choose one and press Enter to put it back, or N to back up now.",
+            ),
+        }
+    };
+    let sub_line = match &app.toast {
+        Some(toast) => Line::from(toast.text.clone().fg(match toast.tone {
+            Tone::Good => MOSS,
+            Tone::Info => SKY,
+            Tone::Bad => BLOOD,
+        })),
+        None => Line::from(sub.fg(ASH)),
+    };
+    let text = vec![
+        Line::from(vec![
+            Span::styled(format!("{icon}  "), Style::new().fg(color).bold()),
+            headline.fg(color).bold(),
+        ]),
+        sub_line,
+    ];
+    frame.render_widget(
+        Paragraph::new(text)
+            .alignment(Alignment::Center)
+            .wrap(Wrap { trim: true }),
+        status_area.inner(Margin::new(1, 1)),
+    );
+    logs(frame, app, log_area);
+
+    if app.confirm_restore
+        && let Some(backup) = app.chosen_backup()
+    {
+        confirm_popup(frame, backup, area);
+    }
+}
+
+fn confirm_popup(frame: &mut Frame, backup: &Backup, area: Rect) {
+    let width = area.width.min(76);
+    let height = 14.min(area.height);
+    let popup = Rect {
+        x: area.x + (area.width - width) / 2,
+        y: area.y + area.height.saturating_sub(height) / 2,
+        width,
+        height,
+    };
+    let text = vec![
+        Line::from(backup.summary().fg(GOLD).bold()),
+        Line::from(""),
+        Line::from(
+            "Your game goes back to how it was then. Everything since is replaced: \
+             stories, characters, worlds and pictures."
+                .fg(PARCHMENT),
+        ),
+        Line::from(""),
+        Line::from(
+            "Your game as it is now is backed up first, so you can undo this here.".fg(MOSS),
+        ),
+        Line::from("The game server stops for a minute or two and starts again by itself.".fg(ASH)),
+        Line::from(""),
+        Line::from(
+            [
+                theme::key("Y", "yes, put it back"),
+                theme::key("Esc", "no, keep my game as it is"),
+            ]
+            .concat(),
+        ),
+    ];
+    frame.render_widget(Clear, popup);
+    frame.render_widget(
+        Paragraph::new(text).wrap(Wrap { trim: true }).block(
+            panel("Put this backup back?", true)
+                .padding(ratatui::widgets::Padding::new(2, 2, 1, 0)),
+        ),
+        popup,
+    );
+}
+
 fn closing_screen(frame: &mut Frame, app: &App, area: Rect) {
     let [message, log_area] =
         Layout::vertical([Constraint::Length(7), Constraint::Min(3)]).areas(area);
@@ -737,6 +902,7 @@ fn logs(frame: &mut Frame, app: &App, area: Rect) {
         (Some(Source::Server), "server"),
         (Some(Source::Memory), "memory"),
         (Some(Source::Screen), "screen"),
+        (Some(Source::Backups), "backups"),
         (Some(Source::Launcher), "launcher"),
     ];
     let mut title = vec![
@@ -774,6 +940,7 @@ fn logs(frame: &mut Frame, app: &App, area: Rect) {
                 Source::Server => SKY,
                 Source::Memory => MOSS,
                 Source::Screen => EMBER,
+                Source::Backups => PARCHMENT,
             };
             Line::from(vec![
                 Span::styled(format!("{:>8} │ ", source.label()), Style::new().fg(color)),
@@ -795,6 +962,11 @@ fn footer(frame: &mut Frame, app: &App, area: Rect) {
     let mut spans: Vec<Span> = vec!["  ".into()];
     let keys: Vec<(&str, &str)> = if app.editing.is_some() {
         vec![("Enter", "save"), ("Esc", "cancel")]
+    } else if app.confirm_restore {
+        vec![
+            ("Y", "yes, put it back"),
+            ("Esc", "no, keep my game as it is"),
+        ]
     } else {
         match app.screen {
             Screen::Checks => vec![
@@ -836,11 +1008,24 @@ fn footer(frame: &mut Frame, app: &App, area: Rect) {
                 vec![
                     ("O", "open game"),
                     ("R", "restart"),
+                    ("B", "backups"),
                     ("L", "big log"),
                     ("Tab", "filter log"),
                     ("Q", quit),
                 ]
             }
+            Screen::Backups if app.backup_busy.is_some() => {
+                vec![("L", "big log"), ("Tab", "filter log"), ("↑↓", "choose")]
+            }
+            Screen::Backups => vec![
+                ("Enter", "put this one back"),
+                ("N", "back up now"),
+                ("Esc", "back"),
+                ("R", "look again"),
+                ("↑↓", "choose"),
+                ("L", "big log"),
+                ("Q", "quit"),
+            ],
             Screen::Closing => vec![],
         }
     };
@@ -997,8 +1182,100 @@ mod snapshots {
         app.logs
             .push_back((Source::Screen, "VITE v5.4 ready in 412 ms".into()));
         shoot(&app, "4-playing", 120, 36);
+        app.screen = Screen::Backups;
+        app.backups = Some(Ok(crate::app::tests::two_backups()));
+        shoot(&app, "4b-backups", 120, 36);
+        app.confirm_restore = true;
+        shoot(&app, "4c-backups-restore", 120, 36);
+        app.confirm_restore = false;
         app.screen = Screen::Closing;
         shoot(&app, "5-closing", 120, 36);
         shoot(&app, "6-too-small", 50, 16);
+    }
+}
+
+#[cfg(test)]
+mod backups_render {
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+
+    use super::*;
+    use crate::app::tests::{quiet_app, two_backups};
+
+    fn screen_text(app: &App, w: u16, h: u16) -> String {
+        let mut terminal = Terminal::new(TestBackend::new(w, h)).unwrap();
+        terminal.draw(|f| draw(f, app)).unwrap();
+        let buf = terminal.backend().buffer();
+        (0..buf.area.height)
+            .map(|y| {
+                (0..buf.area.width)
+                    .map(|x| buf[(x, y)].symbol())
+                    .collect::<String>()
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    #[test]
+    fn the_playing_footer_offers_backups() {
+        let mut app = quiet_app();
+        app.screen = Screen::Playing;
+        assert!(screen_text(&app, 120, 36).contains(" B  backups"));
+    }
+
+    #[test]
+    fn backups_are_listed_in_plain_words() {
+        let mut app = quiet_app();
+        app.screen = Screen::Backups;
+        app.backups = Some(Ok(two_backups()));
+        let text = screen_text(&app, 120, 36);
+        let newest = &two_backups()[0];
+        assert!(text.contains(&newest.when()), "{text}");
+        for words in [
+            "3 stories",
+            "1.9 MB",
+            "1 story",
+            "812 KB",
+            "newest",
+            "backed up every day",
+            "Enter  put this one back",
+            "N  back up now",
+        ] {
+            assert!(text.contains(words), "missing {words:?} in\n{text}");
+        }
+        assert!(!text.contains("20261009"), "no raw stamps on screen");
+    }
+
+    #[test]
+    fn the_restore_question_says_what_is_replaced() {
+        let mut app = quiet_app();
+        app.screen = Screen::Backups;
+        app.backups = Some(Ok(two_backups()));
+        app.confirm_restore = true;
+        let text = screen_text(&app, 120, 36);
+        for words in [
+            "Put this backup back?",
+            "Everything since is replaced",
+            "backed up first",
+            "starts again by itself",
+            "Y  yes, put it back",
+        ] {
+            assert!(text.contains(words), "missing {words:?} in\n{text}");
+        }
+    }
+
+    #[test]
+    fn failures_and_progress_are_said_plainly() {
+        let mut app = quiet_app();
+        app.screen = Screen::Backups;
+        app.backups = Some(Err("Docker Desktop isn't running.".into()));
+        assert!(screen_text(&app, 120, 36).contains("Docker Desktop isn't running."));
+        app.backups = Some(Ok(vec![]));
+        assert!(screen_text(&app, 120, 36).contains("No backups yet"));
+        app.backup_busy = Some("Step 3 of 4: Putting back the backup…".into());
+        assert!(screen_text(&app, 120, 36).contains("Step 3 of 4: Putting back"));
+        app.backup_busy = None;
+        app.backup_note = Some((Tone::Bad, "Step 1 of 4 failed. Nothing was changed.".into()));
+        assert!(screen_text(&app, 120, 36).contains("Nothing was changed."));
     }
 }

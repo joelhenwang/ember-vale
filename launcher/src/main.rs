@@ -3,6 +3,7 @@
 //! screen (Vite), and stops them again on quit.
 
 mod app;
+mod backups;
 mod checks;
 mod config;
 mod services;
