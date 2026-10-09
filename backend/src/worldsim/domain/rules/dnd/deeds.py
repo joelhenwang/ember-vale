@@ -368,6 +368,18 @@ def after_encounter(text: str, lines: list[str]) -> str:
     return head + block + text[cut:]
 
 
+def order_target(words: str, foes: list[tuple[str, str]]) -> str | None:
+    """The foe a hero's words tell a companion to take ("take the second
+    goblin", "Ash, hit Goblin 2"), or None."""
+    if not words:
+        return None
+    for kind, label in foes:
+        phrase = _foe_phrase(words, kind, label)
+        if phrase:
+            return phrase
+    return None
+
+
 def helper_lines(
     text: str,
     order: list[Sheet],
@@ -376,22 +388,27 @@ def helper_lines(
     deed_keys: set[str],
     foes: list[tuple[str, str]],
     tables: DataTables,
+    aim: str | None = None,
+    orders: dict[str, str] | None = None,
 ) -> list[str]:
     """Companions here fight beside the party (companions-001): each one
     standing whom neither the storyteller nor their own words had act
-    strikes the first foe standing, with their first weapon (a caster
-    without one, their first damaging cantrip)."""
+    strikes, with their first weapon (a caster without one, their first
+    damaging cantrip). The target: the foe the hero told them to take
+    ("Ash, take the second goblin": ``orders``, their words by key), else
+    ``aim`` (the most wounded foe standing), else the first foe."""
     if not foes or not helpers:
         return []
     acted = tagged_members(text, order, tables)
     spells = table(tables, "spells")
-    target = foes[0][1]
+    default = aim or foes[0][1]
     lines: list[str] = []
     for key in keys:
         sheet = order[keys.index(key)]
         down = sheet.hp is not None and sheet.hp.current <= 0
         if key not in helpers or key in deed_keys or down or sheet.name in acted:
             continue
+        target = order_target((orders or {}).get(key, ""), foes) or default
         if sheet.weapons:
             lines.append(f"ATTACK[{sheet.weapons[0]} at {target}]: {sheet.name} fights on.")
             continue
