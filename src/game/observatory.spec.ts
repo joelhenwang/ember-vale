@@ -257,6 +257,15 @@ describe('the dice in Watch', () => {
     expect(beats.flatMap((b) => b.entries.map((e) => e.event_id))).toEqual(['e3', 'e1'])
   })
 
+  it('never folds a turn with dice into a quiet stretch', () => {
+    const waited = { ...scene, idle: true }
+    const beats = groupFeed([waited, fight, { ...entry(4, 3), idle: true }])
+    expect(beats.map((b) => [b.index, !!b.quiet])).toEqual([
+      [4, false],
+      [3, true]
+    ])
+  })
+
   it('gives each scene its rolls', () => {
     const byScene = rollsByScene([scene, fight, lone])
     expect(rollsFor(byScene, scene).map((r) => r.target)).toEqual(['Goblin 2'])

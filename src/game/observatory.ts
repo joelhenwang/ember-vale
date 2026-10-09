@@ -274,9 +274,14 @@ export interface FeedBeat {
   quiet?: { from: number; to: number; beats: number }
 }
 
-/** A beat in which every scene was idle (waiting or resting only). */
-function isIdle(beat: FeedBeat): boolean {
-  return beat.entries.length > 0 && beat.entries.every((e) => e.idle === true)
+/**
+ * A beat in which every scene was idle (waiting or resting only). A beat
+ * where dice were rolled is never quiet, even if everyone "waited".
+ */
+function isIdle(beat: FeedBeat, fought: ReadonlySet<number>): boolean {
+  return (
+    !fought.has(beat.index) && beat.entries.length > 0 && beat.entries.every((e) => e.idle === true)
+  )
 }
 
 /**
@@ -288,6 +293,9 @@ export function groupFeed(entries: ChronicleEntry[]): FeedBeat[] {
   const groups = new Map<number, ChronicleEntry[]>()
   // A fight's rolls are their own event; they show with their scene.
   const scenes = new Set(entries.map((e) => e.event_id))
+  const fought = new Set(
+    entries.filter((e) => e.combat?.rolls?.length).map((e) => e.absolute_index)
+  )
   for (const entry of entries) {
     if (QUIET_TYPES.has(entry.event_type)) continue
     const of = entry.combat?.scene_event_id
@@ -306,12 +314,12 @@ export function groupFeed(entries: ChronicleEntry[]): FeedBeat[] {
   const folded: FeedBeat[] = []
   for (const beat of beats) {
     const last = folded[folded.length - 1]
-    if (isIdle(beat) && last?.quiet && last.quiet.from === beat.index + 1) {
+    if (isIdle(beat, fought) && last?.quiet && last.quiet.from === beat.index + 1) {
       last.quiet = { from: beat.index, to: last.quiet.to, beats: last.quiet.beats + 1 }
       last.label = `${beatTimeLabel(beat.index)} – ${beatTimeLabel(last.quiet.to)}`
       continue
     }
-    if (isIdle(beat)) {
+    if (isIdle(beat, fought)) {
       folded.push({ ...beat, entries: [], quiet: { from: beat.index, to: beat.index, beats: 1 } })
       continue
     }
