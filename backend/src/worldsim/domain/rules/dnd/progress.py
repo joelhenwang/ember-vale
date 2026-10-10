@@ -189,7 +189,15 @@ def level_up(tables: DataTables, sheet: Sheet, *, chooses: bool = False) -> Leve
             improved = auto_improve(sheet)
     if chooses and learned:
         pool = spell_limits(tables, sheet.character_class, sheet.level, sheet.stats).pool
-        options = [spell for spell in pool if spell not in known_before]
+        # Swaps of the same spell level only: a first-level spell is not traded
+        # for a cantrip (live, the panel offered Mending in place of Bane).
+        spell_rows = table(tables, "spells")
+        levels = {int_field(entry(spell_rows, spell), "level") for spell in learned}
+        options = [
+            spell
+            for spell in pool
+            if spell not in known_before and int_field(entry(spell_rows, spell), "level") in levels
+        ]
         if len(options) > len(learned):
             sheet.choices = [
                 *sheet.choices,

@@ -808,3 +808,14 @@ def test_a_fight_opened_too_easy_grows_to_a_fair_size() -> None:
     # Already fair (an orc for a level-1 pair) or mixed groups stay as written.
     orc = resolve_narration_tags("ENCOUNTER[orc]: An orc.", pair, DATA, _rng(0.0), fair_fights=True)
     assert orc.outcomes[0].target == "Orc"
+
+
+def test_a_levels_spell_swaps_are_of_the_same_spell_level() -> None:
+    sage = Sheet(name="Lyra", character_class="cleric", stats={"wis": 16}, spells=["sacred-flame"])
+    gain_xp(DATA, sage, 300, chooses=True)
+    for choice in sage.choices:
+        if choice.kind != "spells":
+            continue
+        picked = {int(DATA["spells"][s].get("level", 0)) for s in choice.picked}
+        offered = {int(DATA["spells"][s].get("level", 0)) for s in choice.options}
+        assert offered <= picked, (picked, offered)

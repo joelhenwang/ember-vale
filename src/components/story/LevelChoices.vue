@@ -125,7 +125,12 @@ async function make(choice: LevelChoiceView) {
             (choice.picked ?? []).length === 1
               ? 'a spell'
               : `${(choice.picked ?? []).length} spells`
-          }}. Keep them, or pick others.
+          }}.
+          {{
+            (choice.picked ?? []).length === 1
+              ? 'Keep it, or pick another'
+              : 'Keep them, or pick others'
+          }}.
         </p>
         <ul class="lc__spells">
           <li v-for="s in spellRows(choice)" :key="s.key">
