@@ -1,0 +1,689 @@
+{
+ "world_id": "b347902a-df58-42b2-836c-a0dd12199e63",
+ "spend_usd": 0.06554130000000001,
+ "party": [
+  {
+   "id": "294b44ee-1ddc-4246-9c1a-62d5092bd2b0",
+   "world_id": "b347902a-df58-42b2-836c-a0dd12199e63",
+   "name": "Ash",
+   "level": 1,
+   "character_class": "fighter",
+   "hp_current": 12,
+   "hp_max": 12,
+   "conditions": [],
+   "character_id": "bd3681b8-8712-4c91-89df-69763840d320",
+   "version": 0,
+   "race": "human",
+   "armor_class": 18,
+   "weapons": [
+    "Longsword",
+    "Handaxe"
+   ],
+   "spells": [],
+   "spell_slots": [],
+   "spell_slots_left": [],
+   "xp": 0,
+   "xp_level_start": 0,
+   "xp_next_level": 300,
+   "abilities": {
+    "cha": 11,
+    "con": 15,
+    "dex": 14,
+    "int": 9,
+    "str": 16,
+    "wis": 13
+   },
+   "choices": [],
+   "calling_changeable": false
+  },
+  {
+   "id": "fab9da47-a3a7-4d5b-90fa-d5ec32304d00",
+   "world_id": "b347902a-df58-42b2-836c-a0dd12199e63",
+   "name": "Wren",
+   "level": 1,
+   "character_class": "bard",
+   "hp_current": 10,
+   "hp_max": 10,
+   "conditions": [],
+   "character_id": "9dea0fd0-7f64-46c3-af20-0c8bd1d17868",
+   "version": 1,
+   "race": "human",
+   "armor_class": 13,
+   "weapons": [
+    "Rapier",
+    "Dagger"
+   ],
+   "spells": [
+    "Vicious Mockery",
+    "Dancing Lights",
+    "Sleep",
+    "Thunderwave",
+    "Cure Wounds",
+    "Healing Word"
+   ],
+   "spell_slots": [
+    2
+   ],
+   "spell_slots_left": [
+    2
+   ],
+   "xp": 0,
+   "xp_level_start": 0,
+   "xp_next_level": 300,
+   "abilities": {
+    "cha": 16,
+    "con": 14,
+    "dex": 15,
+    "int": 13,
+    "str": 9,
+    "wis": 11
+   },
+   "choices": [],
+   "calling_changeable": false
+  }
+ ],
+ "turns": [
+  {
+   "turn": 1,
+   "status": 200,
+   "error": null,
+   "seconds": 7.9,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "0fd28e38-983e-4344-b818-e928a1dd00bb",
+    "Wren": "0fd28e38-983e-4344-b818-e928a1dd00bb"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "communicate",
+     "What's our plan for the day?"
+    ],
+    [
+     "communicate",
+     "What's our plan for the day?"
+    ]
+   ],
+   "prose": "The morning sun filters through the trees at Hearth, casting dappled light on the ground. Wren and Ash stand together, the scent of pine and earth in the air. Wren turns to Ash, a plan forming in their mind. Let's head to the Market and see what we can find. Maybe we'll discover something interesting or useful. We'll head to the market, see what's on offer, and keep an eye out for any interesting opportunities."
+  },
+  {
+   "turn": 2,
+   "status": 200,
+   "error": null,
+   "seconds": 10.4,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "1b23a25a-bd01-46af-8c25-693b1fceb516",
+    "Wren": "1b23a25a-bd01-46af-8c25-693b1fceb516"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "move",
+     ""
+    ],
+    [
+     "move",
+     ""
+    ]
+   ],
+   "prose": "The morning sun filters through the trees at Market, casting dappled light on the ground. The scent of pine and earth lingers in the air. Ash and Wren, having left Hearth, step into the bustling market square, their eyes scanning the crowd. Ash, with a determined stride, moves through the market, their longsword at their side. Wren, with a more casual gait, follows closely, their rapier glinting in the sunlight."
+  },
+  {
+   "turn": 3,
+   "status": 200,
+   "error": null,
+   "seconds": 9.2,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "1b23a25a-bd01-46af-8c25-693b1fceb516",
+    "Wren": "1b23a25a-bd01-46af-8c25-693b1fceb516"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "wait",
+     ""
+    ],
+    [
+     "wait",
+     ""
+    ]
+   ],
+   "prose": "The market square at Market is alive with the hum of activity, the scent of pine and earth still lingering in the air. Ash, with a determined stride, moves through the crowd, their longsword at their side, while Wren follows, eyes scanning the bustling scene. Ash pauses, waiting for something or someone, their gaze fixed on the horizon. The morning sun filters through the trees at Market, casting dappled light on the ground. The scent of pine and earth lingers in the air. Ash and Wren, having left Hearth, step into the bustling market square, their eyes scanning the crowd. Wren pauses, waiting for Ash to lead the way."
+  },
+  {
+   "turn": 4,
+   "status": 200,
+   "error": null,
+   "seconds": 9.6,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "1b23a25a-bd01-46af-8c25-693b1fceb516",
+    "Wren": "1b23a25a-bd01-46af-8c25-693b1fceb516"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "wait",
+     ""
+    ],
+    [
+     "wait",
+     ""
+    ]
+   ],
+   "prose": "The market square at Market is alive with the hum of activity, the scent of pine and earth still lingering in the air. Ash, with a determined stride, stands in the midst of the crowd, their longsword at their side, while Wren lingers nearby, eyes scanning the bustling scene. Ash waits, their gaze fixed on the horizon, as if expecting something or someone. Wren lingers by the edge of the market, their gaze fixed on the crowd, as if searching for something or someone. Ash, with a determined stride, moves forward, ready to navigate the bustling square."
+  },
+  {
+   "turn": 5,
+   "status": 200,
+   "error": null,
+   "seconds": 8.7,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "1b23a25a-bd01-46af-8c25-693b1fceb516",
+    "Wren": "1b23a25a-bd01-46af-8c25-693b1fceb516"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "wait",
+     ""
+    ],
+    [
+     "wait",
+     ""
+    ]
+   ],
+   "prose": "The market hums with the chatter of merchants and the clatter of carts, the scent of fresh bread mingling with the earthy aroma of the square. Wren lingers by the edge, their gaze scanning the crowd, while Ash strides forward, ready to navigate the bustling scene. Wren pauses, their eyes lingering on the crowd, as if waiting for someone to appear. The market square at Market is alive with the hum of activity, the scent of pine and earth still lingering in the air. Ash, with a determined stride, stands in the midst of the crowd, their longsword at their side, while Wren lingers nearby, eyes scanning the bustling scene. Ash waits, their gaze fixed on the horizon, as if expecting something or someone."
+  },
+  {
+   "turn": 6,
+   "status": 200,
+   "error": null,
+   "seconds": 9.5,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "1b23a25a-bd01-46af-8c25-693b1fceb516",
+    "Wren": "1b23a25a-bd01-46af-8c25-693b1fceb516"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "wait",
+     ""
+    ],
+    [
+     "wait",
+     ""
+    ]
+   ],
+   "prose": "The market square at Market is alive with the fading light of sunset, the air thick with the scent of fresh bread and the earthy aroma of the square. The hum of merchants and the clatter of carts fill the air, a symphony of commerce and community. Wren stands at the edge, their gaze scanning the crowd, a picture of patience and anticipation. Wren waits, their eyes lingering on the crowd, as if searching for something or someone. The bard's presence is a quiet contrast to the bustling activity around them, a still point in the swirling chaos of the market. The market square at Market is alive with the hum of activity, the scent of pine and earth still lingering in the air. Ash, with a determined stride, stands in the midst of the crowd, their longsword at their side, while Wren lingers nearby, eyes scanning the bustling scene. Ash waits, their gaze fixed on the horizon, as if expecting something or someone."
+  },
+  {
+   "turn": 7,
+   "status": 200,
+   "error": null,
+   "seconds": 12.2,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "1b23a25a-bd01-46af-8c25-693b1fceb516",
+    "Wren": "1b23a25a-bd01-46af-8c25-693b1fceb516"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "wait",
+     ""
+    ],
+    [
+     "wait",
+     ""
+    ]
+   ],
+   "prose": "The market square at Market is alive with the fading light of sunset, the air thick with the scent of fresh bread and the earthy aroma of the square. The hum of merchants and the clatter of carts fill the air, a symphony of commerce and community. Wren stands at the edge, their gaze scanning the crowd, a picture of patience as they wait. The market square at Market is alive with the hum of activity, the scent of pine and earth still lingering in the air. Ash, with a determined stride, stands in the midst of the crowd, their longsword at their side, while Wren lingers nearby, eyes scanning the bustling scene. Ash waits, their gaze fixed on the horizon, as if expecting something or someone."
+  },
+  {
+   "turn": 8,
+   "status": 200,
+   "error": null,
+   "seconds": 9.9,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "1b23a25a-bd01-46af-8c25-693b1fceb516",
+    "Wren": "1b23a25a-bd01-46af-8c25-693b1fceb516"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "wait",
+     ""
+    ],
+    [
+     "wait",
+     ""
+    ]
+   ],
+   "prose": "The market square at Market is alive with the fading light of sunset, the air thick with the scent of fresh bread and the earthy aroma of the square. The hum of merchants and the clatter of carts fill the air, a symphony of commerce and community. Wren stands at the edge, their gaze scanning the crowd, a picture of patience and anticipation. Wren lingers by the edge of the market, their eyes scanning the crowd as if waiting for someone or something. The bard's fingers tap a silent rhythm on their rapier, a sign of their restless energy. The market square at Market is alive with the hum of activity, the scent of pine and earth still lingering in the air. Ash, with a determined stride, stands in the midst of the crowd, their longsword at their side, while Wren lingers nearby, eyes scanning the bustling scene. Ash waits, their gaze fixed on the horizon, as if expecting something or someone."
+  },
+  {
+   "turn": 9,
+   "status": 200,
+   "error": null,
+   "seconds": 9.5,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "1b23a25a-bd01-46af-8c25-693b1fceb516",
+    "Wren": "1b23a25a-bd01-46af-8c25-693b1fceb516"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "wait",
+     ""
+    ],
+    [
+     "wait",
+     ""
+    ]
+   ],
+   "prose": "Wren lingers by the edge of the market, their eyes scanning the crowd as if waiting for someone or something. The bard's fingers tap a silent rhythm on their rapier, a sign of their restless energy. The market square at Market is alive with the hum of activity, the scent of pine and earth still lingering in the air. Ash, with a determined stride, stands in the midst of the crowd, their longsword at their side, while Wren lingers nearby, eyes scanning the bustling scene. Ash waits, their gaze fixed on the horizon, as if expecting something or someone."
+  },
+  {
+   "turn": 10,
+   "status": 200,
+   "error": null,
+   "seconds": 13.6,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "1b23a25a-bd01-46af-8c25-693b1fceb516",
+    "Wren": "1b23a25a-bd01-46af-8c25-693b1fceb516"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "wait",
+     ""
+    ],
+    [
+     "wait",
+     ""
+    ]
+   ],
+   "prose": "The market square is alive with the hum of late-night commerce, the scent of roasted nuts and the distant sound of a lute. Wren, their fingers tapping a restless rhythm on their rapier, lingers by the edge of the crowd, eyes scanning the faces as if waiting for someone. Wren's gaze is fixed on the crowd, their body tense with anticipation, as they wait for a sign or a signal that might reveal what they're looking for. The market square at Market is alive with the hum of activity, the scent of pine and earth still lingering in the air. Ash, with a determined stride, stands in the midst of the crowd, their longsword at their side, while Wren lingers nearby, eyes scanning the bustling scene. Ash waits, their gaze fixed on the horizon, as if expecting something or someone."
+  },
+  {
+   "turn": 11,
+   "status": 200,
+   "error": null,
+   "seconds": 22.2,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "1b23a25a-bd01-46af-8c25-693b1fceb516",
+    "Wren": "1b23a25a-bd01-46af-8c25-693b1fceb516"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "wait",
+     ""
+    ],
+    [
+     "wait",
+     ""
+    ]
+   ],
+   "prose": "The market square at Market is alive with the hum of activity, the scent of pine and earth still lingering in the air. Ash, with a determined stride, stands in the midst of the crowd, their longsword at their side, while Wren lingers nearby, eyes scanning the bustling scene. Ash waits, their gaze fixed on the horizon, as if expecting something or someone. Wren's gaze is fixed on the crowd, their body tense with anticipation, as they wait for an unknown purpose."
+  },
+  {
+   "turn": 12,
+   "status": 200,
+   "error": null,
+   "seconds": 12.7,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "1b23a25a-bd01-46af-8c25-693b1fceb516",
+    "Wren": "1b23a25a-bd01-46af-8c25-693b1fceb516"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "communicate",
+     "What's on the agenda for today?"
+    ],
+    [
+     "wait",
+     ""
+    ]
+   ],
+   "prose": "The bustling Market Square is alive with the sounds of merchants hawking their wares and the scent of fresh bread wafting through the air. Wren, their eyes still fixed on the crowd, turns to Ash, who stands nearby, waiting patiently. The sun casts a warm glow over the scene, highlighting the vibrant colors of the market stalls. Wren leans in, their voice low, asking Ash about the day's plans. We'll continue exploring the market, keeping an eye out for any opportunities or interesting items."
+  },
+  {
+   "turn": 13,
+   "status": 200,
+   "error": null,
+   "seconds": 12.6,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "1b23a25a-bd01-46af-8c25-693b1fceb516",
+    "Wren": "1b23a25a-bd01-46af-8c25-693b1fceb516"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "observe",
+     ""
+    ],
+    [
+     "wait",
+     ""
+    ]
+   ],
+   "prose": "The Market Square hums with activity, the scent of fresh bread mingling with the chatter of merchants. Wren, their eyes scanning the crowd, stands near Ash, who waits patiently, the sun casting a warm glow over the scene. Wren's gaze lingers on the bustling market, taking in the vibrant colors and the lively atmosphere, while Ash remains still, their presence a steady anchor amidst the chaos."
+  },
+  {
+   "turn": 14,
+   "status": 200,
+   "error": null,
+   "seconds": 8.7,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "1b23a25a-bd01-46af-8c25-693b1fceb516",
+    "Wren": "1b23a25a-bd01-46af-8c25-693b1fceb516"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "observe",
+     ""
+    ],
+    [
+     "wait",
+     ""
+    ]
+   ],
+   "prose": "Wren observes the market, their eyes catching every detail, while Ash stands by, their presence steady and unyielding."
+  }
+ ]
+}

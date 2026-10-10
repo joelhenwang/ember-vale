@@ -1,0 +1,775 @@
+{
+ "world_id": "67f22029-0e93-4afe-96c1-cd046597b115",
+ "spend_usd": 0.16476119999999994,
+ "party": [
+  {
+   "id": "e0e9a38a-f672-42e8-a73c-badd95806844",
+   "world_id": "67f22029-0e93-4afe-96c1-cd046597b115",
+   "name": "Ash",
+   "level": 1,
+   "character_class": "fighter",
+   "hp_current": 12,
+   "hp_max": 12,
+   "conditions": [],
+   "character_id": "d3331ae2-e5e0-493e-968d-275fd83d0803",
+   "version": 0,
+   "race": "human",
+   "armor_class": 18,
+   "weapons": [
+    "Longsword",
+    "Handaxe"
+   ],
+   "spells": [],
+   "spell_slots": [],
+   "spell_slots_left": [],
+   "xp": 0,
+   "xp_level_start": 0,
+   "xp_next_level": 300,
+   "abilities": {
+    "cha": 11,
+    "con": 15,
+    "dex": 14,
+    "int": 9,
+    "str": 16,
+    "wis": 13
+   },
+   "choices": [],
+   "calling_changeable": false
+  },
+  {
+   "id": "8e3c37cd-3a0f-4aae-af46-c1da1e27c602",
+   "world_id": "67f22029-0e93-4afe-96c1-cd046597b115",
+   "name": "Wren",
+   "level": 1,
+   "character_class": "bard",
+   "hp_current": 10,
+   "hp_max": 10,
+   "conditions": [],
+   "character_id": "493a33be-fcc6-40a7-a916-3f936de28356",
+   "version": 1,
+   "race": "human",
+   "armor_class": 13,
+   "weapons": [
+    "Rapier",
+    "Dagger"
+   ],
+   "spells": [
+    "Vicious Mockery",
+    "Dancing Lights",
+    "Sleep",
+    "Thunderwave",
+    "Cure Wounds",
+    "Healing Word"
+   ],
+   "spell_slots": [
+    2
+   ],
+   "spell_slots_left": [
+    2
+   ],
+   "xp": 0,
+   "xp_level_start": 0,
+   "xp_next_level": 300,
+   "abilities": {
+    "cha": 16,
+    "con": 14,
+    "dex": 15,
+    "int": 13,
+    "str": 9,
+    "wis": 11
+   },
+   "choices": [],
+   "calling_changeable": false
+  }
+ ],
+ "turns": [
+  {
+   "turn": 1,
+   "status": 200,
+   "error": null,
+   "seconds": 7.1,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "2c854435-14e7-414b-a334-2aa0bac44e11",
+    "Wren": "2c854435-14e7-414b-a334-2aa0bac44e11"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "communicate",
+     "What's our plan for the day?"
+    ],
+    [
+     "communicate",
+     "adventure plans"
+    ]
+   ],
+   "prose": "The morning sun casts a warm glow over Hearth, where the scent of fresh bread wafts from the bakery. Ash and Wren stand in the village square, their eyes meeting with a shared sense of purpose. Ash turns to Wren, their voice steady and determined. \"We should head to the market and see what's happening there. Maybe we can find some adventure or help someone in need.\" Wren nods, their eyes reflecting a mix of excitement and curiosity. \"That sounds like a plan. Let's see what the day brings.\""
+  },
+  {
+   "turn": 2,
+   "status": 200,
+   "error": null,
+   "seconds": 10.5,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "52279d24-cdfc-40a7-8ebc-416ddc351380",
+    "Wren": "52279d24-cdfc-40a7-8ebc-416ddc351380"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "move",
+     ""
+    ],
+    [
+     "move",
+     ""
+    ]
+   ],
+   "prose": "The warm glow of the morning sun still lingers over Market, where the scent of fresh bread from the bakery fills the air. Ash and Wren, having left the village square, stride purposefully through the bustling market, their eyes scanning the crowd. The market is alive with the sounds of vendors calling out their wares and the clatter of carts being pushed along the cobblestone paths. Ash, with a determined look, leads the way, their longsword at their side, while Wren follows closely, their rapier glinting in the sunlight. They move with a shared sense of purpose, their steps synchronized as they navigate through the market's labyrinth of stalls and people."
+  },
+  {
+   "turn": 3,
+   "status": 200,
+   "error": null,
+   "seconds": 13.0,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "52279d24-cdfc-40a7-8ebc-416ddc351380",
+    "Wren": "52279d24-cdfc-40a7-8ebc-416ddc351380"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "wait",
+     ""
+    ],
+    [
+     "communicate",
+     "market stalls"
+    ]
+   ],
+   "prose": "The market stalls are empty, but the air is still thick with the scent of fresh bread. Ash and Wren stand in the middle of the bustling Market, the sun casting a warm glow over the cobblestones. Wren's eyes scan the crowd, a hint of concern in their gaze. Ash turns to Wren, their expression serious. \"The market stalls are indeed empty, but the potential for adventure is there. What do you think we should do to help?\" \"The market stalls are indeed empty, but the potential for adventure is there. What do you think we should do to help?\" Wren pauses, considering Ash's words, before nodding in agreement. \"We should explore the market, see if we can find any clues or help those in need.\""
+  },
+  {
+   "turn": 4,
+   "status": 200,
+   "error": null,
+   "seconds": 14.7,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "52279d24-cdfc-40a7-8ebc-416ddc351380",
+    "Wren": "52279d24-cdfc-40a7-8ebc-416ddc351380"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "communicate",
+     "market stalls"
+    ],
+    [
+     "communicate",
+     "how to find adventure in the vale"
+    ]
+   ],
+   "prose": "The Market is quiet, the cobblestones cool underfoot, the scent of fresh bread lingering in the air. Ash and Wren stand in the middle of the empty stalls, the sun casting long shadows. Wren's eyes dart around, a hint of concern in their gaze. Wren turns to Ash, their expression serious, and attempts to communicate, their voice low. \"Finding adventure in the vale could start with helping the market stalls get set up. What do you think, Ash?\" Finding adventure in the vale could start with helping the market stalls get set up. What do you think, Ash? Ash nods, their eyes scanning the empty stalls, and attempts to communicate, their voice steady. \"Let's start by asking around the market to see if anyone knows why the stalls are empty. Maybe we can find a way to help get things moving.\" Let's start by asking around the market to see if anyone knows why the stalls are empty. Maybe we can find a way to help get things moving."
+  },
+  {
+   "turn": 5,
+   "status": 200,
+   "error": null,
+   "seconds": 17.3,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "52279d24-cdfc-40a7-8ebc-416ddc351380",
+    "Wren": "52279d24-cdfc-40a7-8ebc-416ddc351380"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "communicate",
+     "helping the market stalls"
+    ],
+    [
+     "communicate",
+     "asking around the market about the empty stalls"
+    ]
+   ],
+   "prose": "The Market is quiet, the cobblestones cool underfoot, the scent of fresh bread lingering in the air. Ash and Wren stand in the middle of the empty stalls, the sun casting long shadows. Ash turns to Wren, their expression serious, and attempts to communicate about the empty stalls. That's a good idea, Wren. Let's start by asking the townsfolk what's keeping the stalls empty. Maybe we can help them get things moving. Let's start by asking the stall owners why their stalls are empty and see if we can help get things moving. Wren nods, their eyes darting around the empty stalls, a hint of concern in their gaze. They both decide to start their investigation by asking the townsfolk about the empty stalls."
+  },
+  {
+   "turn": 6,
+   "status": 200,
+   "error": null,
+   "seconds": 17.5,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "52279d24-cdfc-40a7-8ebc-416ddc351380",
+    "Wren": "52279d24-cdfc-40a7-8ebc-416ddc351380"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "communicate",
+     "asking the townsfolk about the empty stalls"
+    ],
+    [
+     "communicate",
+     "asking the townsfolk about the empty stalls"
+    ]
+   ],
+   "prose": "Let's start by asking the townsfolk what's keeping the stalls empty. Maybe we can help them get things moving. Let's start by asking the townsfolk about the empty stalls and see if we can find out what's going on."
+  },
+  {
+   "turn": 7,
+   "status": 200,
+   "error": null,
+   "seconds": 12.5,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "2c854435-14e7-414b-a334-2aa0bac44e11",
+    "Wren": "2c854435-14e7-414b-a334-2aa0bac44e11"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "move",
+     ""
+    ],
+    [
+     "move",
+     ""
+    ]
+   ],
+   "prose": "The sun dips low over Hearth, casting long shadows across the empty market stalls. Ash and Wren, having arrived from their previous discussion, stand in the quiet square, the air thick with the scent of dust and the distant sound of a lone bell tolling. The town's usual bustle is absent, leaving an eerie calm."
+  },
+  {
+   "turn": 8,
+   "status": 200,
+   "error": null,
+   "seconds": 14.2,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "2c854435-14e7-414b-a334-2aa0bac44e11",
+    "Wren": "2c854435-14e7-414b-a334-2aa0bac44e11"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "communicate",
+     "asking the townsfolk about the empty stalls"
+    ],
+    [
+     "communicate",
+     "asking the townsfolk about the empty stalls"
+    ]
+   ],
+   "prose": "The quiet square of Hearth is bathed in the golden light of the setting sun, the air thick with the scent of dust and the distant tolling of a lone bell. Ash and Wren, having arrived from their previous discussion, stand amidst the empty market stalls, the usual bustle of the town replaced by an eerie calm. Wren turns to Ash, a determined look in their eyes, and suggests, \"Let's start by asking the townsfolk what's keeping the stalls empty. Maybe we can help them get things moving.\" Ash nods in agreement, their gaze scanning the empty stalls, and adds, \"Let's start by asking the townsfolk about the empty stalls and see if we can find out what's going on.\" \"Let's start by asking the townsfolk what's keeping the stalls empty. Maybe we can help them get things moving.\" \"Let's start by asking the townsfolk about the empty stalls and see if we can find out what's going on.\""
+  },
+  {
+   "turn": 9,
+   "status": 200,
+   "error": null,
+   "seconds": 17.6,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "2c854435-14e7-414b-a334-2aa0bac44e11",
+    "Wren": "2c854435-14e7-414b-a334-2aa0bac44e11"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "communicate",
+     "What do you think we should do to help the market stalls?"
+    ],
+    [
+     "communicate",
+     "What do you think we should do next to help the market stalls?"
+    ]
+   ],
+   "prose": "Ash attempts to communicate with Wren, their voice low and concerned. \"I think we should start by asking the stall owners why their stalls are empty. Maybe we can help them get things moving.\" I think we should start by asking the stall owners why their stalls are empty. Maybe we can help them get things moving. Wren nods in agreement, their eyes scanning the empty stalls. \"I think we should start by asking the townsfolk why their stalls are empty and see if we can help get things moving.\" I think we should start by asking the townsfolk why their stalls are empty and see if we can help get things moving."
+  },
+  {
+   "turn": 10,
+   "status": 200,
+   "error": null,
+   "seconds": 16.3,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "52279d24-cdfc-40a7-8ebc-416ddc351380",
+    "Wren": "52279d24-cdfc-40a7-8ebc-416ddc351380"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "move",
+     ""
+    ],
+    [
+     "move",
+     ""
+    ]
+   ],
+   "prose": "The Market is quiet, the stalls empty, the air thick with the scent of old hay. Ash and Wren, having arrived from their previous conversation, stand at the edge of the square, their eyes scanning the deserted stalls."
+  },
+  {
+   "turn": 11,
+   "status": 200,
+   "error": null,
+   "seconds": 15.4,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "52279d24-cdfc-40a7-8ebc-416ddc351380",
+    "Wren": "52279d24-cdfc-40a7-8ebc-416ddc351380"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "communicate",
+     "asking the townsfolk about the empty stalls"
+    ],
+    [
+     "communicate",
+     "asking the townsfolk about the empty stalls"
+    ]
+   ],
+   "prose": "The Market is still quiet, the air thick with the scent of old hay. Ash and Wren stand at the edge of the square, their eyes scanning the deserted stalls. Wren turns to Ash, a determined look in their eyes. \"Let's start by asking the townsfolk about the empty stalls and see if we can find out what's going on.\" \"Let's start by asking the townsfolk what's keeping the stalls empty. Maybe we can help them get things moving.\""
+  },
+  {
+   "turn": 12,
+   "status": 200,
+   "error": null,
+   "seconds": 19.5,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "52279d24-cdfc-40a7-8ebc-416ddc351380",
+    "Wren": "52279d24-cdfc-40a7-8ebc-416ddc351380"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "communicate",
+     "What do you think we should do next to help the market stalls?"
+    ],
+    [
+     "communicate",
+     "asking the townsfolk about the empty stalls"
+    ]
+   ],
+   "prose": "The Market is still quiet, the air thick with the scent of old hay. Ash and Wren stand at the edge of the square, their eyes scanning the deserted stalls. The sun rises, casting a soft glow over the empty market. Let's start by asking the townsfolk about the empty stalls and see if we can find out what's going on. I think we should start by asking the townsfolk why their stalls are empty. Maybe we can help them get things moving. Wren nods, a determined look in their eyes, and they both set off to find the townsfolk."
+  },
+  {
+   "turn": 13,
+   "status": 200,
+   "error": null,
+   "seconds": 17.9,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "52279d24-cdfc-40a7-8ebc-416ddc351380",
+    "Wren": "52279d24-cdfc-40a7-8ebc-416ddc351380"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "communicate",
+     "What have you heard about the empty market stalls?"
+    ],
+    [
+     "communicate",
+     "asking the townsfolk about the empty stalls"
+    ]
+   ],
+   "prose": "The Market is still quiet, the air thick with the scent of old hay. Ash and Wren stand at the edge of the square, their eyes scanning the deserted stalls. The sun rises, casting a soft glow over the empty market. Wren turns to Ash, a determined look in their eyes, and suggests, \"Let's start by asking the townsfolk about the empty stalls and see if we can find out what's going on.\" Ash nods, considering Wren's words, and replies, \"I've heard that the market stalls are empty because the traders are waiting for a sign that it's safe to bring in their goods. There's been some talk of bandits on the roads, so they're being cautious.\" \"Let's start by asking the townsfolk about the empty stalls and see if we can find out what's going on.\" \"I've heard that the market stalls are empty because the traders are waiting for a sign that it's safe to bring in their goods. There's been some talk of bandits on the roads, so they're being cautious.\""
+  },
+  {
+   "turn": 14,
+   "status": 200,
+   "error": null,
+   "seconds": 18.2,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "52279d24-cdfc-40a7-8ebc-416ddc351380",
+    "Wren": "52279d24-cdfc-40a7-8ebc-416ddc351380"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "communicate",
+     "bandits on the roads"
+    ],
+    [
+     "communicate",
+     "bandits on the roads"
+    ]
+   ],
+   "prose": "The Market square is still quiet, the air thick with the scent of old hay. Ash and Wren stand at the edge, their eyes scanning the deserted stalls. The sun rises, casting a soft glow over the empty market. Ash turns to Wren, a determined look in their eyes, and begins to speak about the bandits on the roads. Wren nods, their expression serious, and adds their own thoughts on the matter, their voice steady and clear."
+  },
+  {
+   "turn": 15,
+   "status": 200,
+   "error": null,
+   "seconds": 14.7,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "52279d24-cdfc-40a7-8ebc-416ddc351380",
+    "Wren": "52279d24-cdfc-40a7-8ebc-416ddc351380"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "communicate",
+     "What can we do to help the market stalls?"
+    ],
+    [
+     "communicate",
+     "What do you think we should do next to help the market stalls?"
+    ]
+   ],
+   "prose": "The Market square is still quiet, the air thick with the scent of old hay. Ash and Wren stand at the edge, their eyes scanning the deserted stalls. The sun rises, casting a soft glow over the empty market. Ash turns to Wren, a determined look in their eyes, and begins to discuss what they can do to help the market stalls. Wren nods, considering the situation, and suggests they start by asking the townsfolk about the empty stalls. I think we should start by asking the townsfolk about the empty stalls and see if we can find out what's going on. We could start by asking the townsfolk why the stalls are empty and see if there's anything we can do to help."
+  },
+  {
+   "turn": 16,
+   "status": 200,
+   "error": null,
+   "seconds": 20.5,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "52279d24-cdfc-40a7-8ebc-416ddc351380",
+    "Wren": "52279d24-cdfc-40a7-8ebc-416ddc351380"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "communicate",
+     "How can we help the market stalls get their goods back?"
+    ],
+    [
+     "communicate",
+     "bandits on the roads"
+    ]
+   ],
+   "prose": "The Market square is bathed in the soft glow of the rising sun, the air still thick with the scent of old hay. Ash and Wren stand at the edge, their eyes scanning the deserted stalls, a determined look in their eyes. Ash turns to Wren, their voice steady as they speak of the bandits on the roads, a plan forming in their mind. We could start by asking the townsfolk about the bandits on the roads and see if we can help clear them out. Wren nods, their eyes reflecting the same determination as they consider the challenge ahead. Bandits on the roads are a serious issue. We should find out more and see how we can help."
+  }
+ ]
+}

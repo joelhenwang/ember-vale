@@ -1,0 +1,746 @@
+{
+ "world_id": "c7fab955-1d26-4eb0-8e4f-589f115ced1d",
+ "spend_usd": 0.08503600000000001,
+ "party": [
+  {
+   "id": "d19d2b3c-c94a-4ffb-b71f-d38b6fdd3043",
+   "world_id": "c7fab955-1d26-4eb0-8e4f-589f115ced1d",
+   "name": "Ash",
+   "level": 1,
+   "character_class": "fighter",
+   "hp_current": 12,
+   "hp_max": 12,
+   "conditions": [],
+   "character_id": "e1d72508-934b-4590-959d-a01f99d25a95",
+   "version": 0,
+   "race": "human",
+   "armor_class": 18,
+   "weapons": [
+    "Longsword",
+    "Handaxe"
+   ],
+   "spells": [],
+   "spell_slots": [],
+   "spell_slots_left": [],
+   "xp": 0,
+   "xp_level_start": 0,
+   "xp_next_level": 300,
+   "abilities": {
+    "cha": 11,
+    "con": 15,
+    "dex": 14,
+    "int": 9,
+    "str": 16,
+    "wis": 13
+   },
+   "choices": [],
+   "calling_changeable": false
+  },
+  {
+   "id": "c8f7732d-a125-411a-b3e1-b71c3e66234d",
+   "world_id": "c7fab955-1d26-4eb0-8e4f-589f115ced1d",
+   "name": "Wren",
+   "level": 1,
+   "character_class": "bard",
+   "hp_current": 10,
+   "hp_max": 10,
+   "conditions": [],
+   "character_id": "66ef0266-d074-48b3-8769-06d4c6f22dfd",
+   "version": 1,
+   "race": "human",
+   "armor_class": 13,
+   "weapons": [
+    "Rapier",
+    "Dagger"
+   ],
+   "spells": [
+    "Vicious Mockery",
+    "Dancing Lights",
+    "Sleep",
+    "Thunderwave",
+    "Cure Wounds",
+    "Healing Word"
+   ],
+   "spell_slots": [
+    2
+   ],
+   "spell_slots_left": [
+    2
+   ],
+   "xp": 0,
+   "xp_level_start": 0,
+   "xp_next_level": 300,
+   "abilities": {
+    "cha": 16,
+    "con": 14,
+    "dex": 15,
+    "int": 13,
+    "str": 9,
+    "wis": 11
+   },
+   "choices": [],
+   "calling_changeable": false
+  }
+ ],
+ "turns": [
+  {
+   "turn": 1,
+   "status": 200,
+   "error": null,
+   "seconds": 10.3,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "6cbcc09c-6158-4454-a790-a9210f9bfce2",
+    "Wren": "6cbcc09c-6158-4454-a790-a9210f9bfce2"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "communicate",
+     "What's our plan for today?"
+    ],
+    [
+     "communicate",
+     "our next adventure"
+    ]
+   ],
+   "prose": "The hearth crackles in the center of Hearth, its warmth a comforting presence as Ash and Wren gather around it. The morning light filters through the windows, casting a soft glow on the wooden beams and the tools of their trade. Ash, with a determined look, turns to Wren, ready to discuss their plans. Ash attempts to communicate with Wren, eager to share their thoughts on their next adventure. Wren, equally enthusiastic, seeks to understand the plan for the day. \"We should start by tending the Hearth. It's the first task of the day, and it'll set a good tone for our adventures.\" Wren nods, acknowledging Ash's suggestion, and speaks about their readiness to hear about their next adventure, asking Ash for the plan."
+  },
+  {
+   "turn": 2,
+   "status": 200,
+   "error": null,
+   "seconds": 14.9,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "6cbcc09c-6158-4454-a790-a9210f9bfce2",
+    "Wren": "6cbcc09c-6158-4454-a790-a9210f9bfce2"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "interact",
+     "sweep the hearth"
+    ],
+    [
+     "communicate",
+     "tending the Hearth"
+    ]
+   ],
+   "prose": "Ash catches Wren's sleeve and asks about tending the Hearth, their voices low and thoughtful. Wren nods, picking up a broom and beginning to sweep the hearth, the bristles whispering against the stone. Wren speaks to Ash about the importance of keeping the Hearth clean and well-tended, their words echoing the rhythm of the broom."
+  },
+  {
+   "turn": 3,
+   "status": 200,
+   "error": null,
+   "seconds": 12.7,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "6cbcc09c-6158-4454-a790-a9210f9bfce2",
+    "Wren": "6cbcc09c-6158-4454-a790-a9210f9bfce2"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "interact",
+     "light the fire in the hearth"
+    ],
+    [
+     "communicate",
+     "the tasks we need to complete today"
+    ]
+   ],
+   "prose": "The hearth at Hearth is quiet, the morning light filtering through the window, casting a warm glow on the stone floor. Ash and Wren are already here, their voices a soft murmur as they discuss the tasks ahead. Wren, with a broom in hand, sweeps the hearth, the bristles whispering against the stone. Ash, with a thoughtful expression, attempts to communicate with Wren about the tasks they need to complete today, their eyes meeting in a silent understanding. Wren, with a determined look, tries to light the fire in the hearth, the kindling crackling as it catches. I'm ready to hear about the tasks we need to complete today, Ash. What are they?"
+  },
+  {
+   "turn": 4,
+   "status": 200,
+   "error": null,
+   "seconds": 11.4,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "6cbcc09c-6158-4454-a790-a9210f9bfce2",
+    "Wren": "6cbcc09c-6158-4454-a790-a9210f9bfce2"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "interact",
+     "prepare the morning meal"
+    ],
+    [
+     "interact",
+     "help Wren prepare the morning meal"
+    ]
+   ],
+   "prose": "The hearth at Hearth is quiet, the morning light filtering through the window, casting a warm glow on the stone floor. Ash and Wren are already here, their voices a soft murmur as they discuss the tasks ahead. Wren, with a broom in hand, sweeps the hearth, the bristles whispering against the stone. Ash, with a thought, moves to help Wren prepare the morning meal."
+  },
+  {
+   "turn": 5,
+   "status": 200,
+   "error": null,
+   "seconds": 16.2,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "6cbcc09c-6158-4454-a790-a9210f9bfce2",
+    "Wren": "6cbcc09c-6158-4454-a790-a9210f9bfce2"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "communicate",
+     "the tasks we need to complete today"
+    ],
+    [
+     "interact",
+     "help Wren prepare the morning meal"
+    ]
+   ],
+   "prose": "Wren attempts to communicate with Ash, outlining the tasks they need to complete today: tending the Hearth, lighting the fire, and preparing the morning meal. Ash, with a thought, tries to help Wren prepare the morning meal, and it works. \"The tasks we need to complete today are tending the Hearth, lighting the fire, and preparing the morning meal.\""
+  },
+  {
+   "turn": 6,
+   "status": 200,
+   "error": null,
+   "seconds": 8.8,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "6cbcc09c-6158-4454-a790-a9210f9bfce2",
+    "Wren": "6cbcc09c-6158-4454-a790-a9210f9bfce2"
+   },
+   "rolls": [
+    "Encounter: 2x Wolf (hard, 150 adjusted XP).",
+    "Ash hits Wolf 1 for 11 slashing. (11->0 HP)",
+    "Wren hits Wolf 2 for 9 piercing. (11->2 HP)",
+    "Wolf 2 hits Ash for 4 piercing. (12->8 HP)",
+    "Defeated Wolf 1: 200 XP, 100 each.",
+    "Encounter: 2x Wolf (hard, 150 adjusted XP).",
+    "Ash hits Wolf 2 for 7 slashing. (2->0 HP)",
+    "Wren hits Wolf 3 for 10 piercing. (11->1 HP)",
+    "Wolf 3 misses Ash (8 vs AC 18).",
+    "Wolf 4 misses Ash (15 vs AC 18).",
+    "Defeated Wolf 2: 200 XP, 100 each.",
+    "Wolf 2 left a wolf pelt."
+   ],
+   "acts": [
+    [
+     "wait",
+     ""
+    ],
+    [
+     "wait",
+     ""
+    ]
+   ],
+   "prose": "The Hearth, where the embers of the previous day's fire still glow, is quiet as Wren lingers, waiting. The air is cool, and the scent of woodsmoke lingers. Ash, with a thought, tries to help Wren prepare the morning meal, and it works. The tasks they need to complete today are tending the Hearth, lighting the fire, and preparing the morning meal. Two wolves emerge from the shadows, their eyes gleaming with hunger. The fight begins. The Hearth is quiet, the embers of the previous day's fire still glowing softly. Ash stands by the door, waiting, their eyes scanning the horizon. Wren, with a thoughtful expression, is near the hearth, preparing for the day's tasks. Two wolves emerge from the forest, their eyes gleaming with hunger. The fight begins as they charge towards the Hearth."
+  },
+  {
+   "turn": 7,
+   "status": 200,
+   "error": null,
+   "seconds": 20.9,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 200,
+     "hp_current": 8,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 200,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [
+    [
+     "Wolf 1",
+     0
+    ],
+    [
+     "Wolf 2",
+     0
+    ],
+    [
+     "Wolf 3",
+     1
+    ],
+    [
+     "Wolf 4",
+     11
+    ]
+   ],
+   "places": {
+    "Ash": "6cbcc09c-6158-4454-a790-a9210f9bfce2",
+    "Wren": "6cbcc09c-6158-4454-a790-a9210f9bfce2"
+   },
+   "rolls": [
+    "Ash hits Wolf 3 for 10 slashing. (1->0 HP)",
+    "Wren misses Wolf 4 (7 vs AC 13).",
+    "Wolf 4 misses Wren (10 vs AC 13).",
+    "Defeated Wolf 3: 200 XP, 100 each.",
+    "Ash reaches level 2: +8 hit points.",
+    "Wren reaches level 2: +7 hit points.",
+    "Wolf 3 left a wolf pelt."
+   ],
+   "acts": [
+    [
+     "interact",
+     "I attack Wolf 3 with my rapier"
+    ],
+    [
+     "communicate",
+     "our next adventure"
+    ]
+   ],
+   "prose": "The Hearth is quiet, the embers of the previous day's fire still glowing softly. Ash stands by the door, their eyes scanning the horizon, while Wren, with a thoughtful expression, is near the hearth, preparing for the day's tasks. The air is still, and the scent of woodsmoke lingers. Ash turns to Wren, their voice steady as they begin to speak about their next adventure. I'm ready to hear about our next adventure, Ash. What's the plan? Wren's eyes gleam with anticipation as they prepare to face the challenges ahead. Wren raises their rapier, their stance firm as they prepare to strike. Wren lunges forward, their rapier flashing in the dim light."
+  },
+  {
+   "turn": 8,
+   "status": 200,
+   "error": null,
+   "seconds": 11.9,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 2,
+     "xp": 300,
+     "hp_current": 16,
+     "hp_max": 20,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 2,
+     "xp": 300,
+     "hp_current": 17,
+     "hp_max": 17,
+     "choices": []
+    }
+   ],
+   "foes": [
+    [
+     "Wolf 1",
+     0
+    ],
+    [
+     "Wolf 2",
+     0
+    ],
+    [
+     "Wolf 3",
+     0
+    ],
+    [
+     "Wolf 4",
+     11
+    ]
+   ],
+   "places": {
+    "Ash": "6cbcc09c-6158-4454-a790-a9210f9bfce2",
+    "Wren": "6cbcc09c-6158-4454-a790-a9210f9bfce2"
+   },
+   "rolls": [
+    "Ash misses Wolf 4 (12 vs AC 13).",
+    "Wren misses Wolf 4 (8 vs AC 13).",
+    "Wolf 4 hits Ash for 7 piercing. (16->9 HP)"
+   ],
+   "acts": [
+    [
+     "interact",
+     "I attack Wolf 4 with my rapier."
+    ],
+    [
+     "interact",
+     "I attack Wolf 4 with my longsword"
+    ]
+   ],
+   "prose": "The Hearth is quiet, the embers of the previous day's fire still glowing softly. Ash stands by the door, their eyes scanning the horizon, while Wren, with a thoughtful expression, is near the hearth. The air is still, and the scent of woodsmoke lingers. Ash raises their longsword, aiming at Wolf 4. Wren, with a swift motion, draws their rapier and points it at Wolf 4, ready to strike. Ash lunges forward, their longsword gleaming in the dim light. Wren's rapier flashes as they dart in, aiming for the wolf's flank."
+  },
+  {
+   "turn": 9,
+   "status": 200,
+   "error": null,
+   "seconds": 9.7,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 2,
+     "xp": 300,
+     "hp_current": 9,
+     "hp_max": 20,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 2,
+     "xp": 300,
+     "hp_current": 17,
+     "hp_max": 17,
+     "choices": []
+    }
+   ],
+   "foes": [
+    [
+     "Wolf 1",
+     0
+    ],
+    [
+     "Wolf 2",
+     0
+    ],
+    [
+     "Wolf 3",
+     0
+    ],
+    [
+     "Wolf 4",
+     11
+    ]
+   ],
+   "places": {
+    "Ash": "6cbcc09c-6158-4454-a790-a9210f9bfce2",
+    "Wren": "6cbcc09c-6158-4454-a790-a9210f9bfce2"
+   },
+   "rolls": [
+    "Ash misses Wolf 4 (11 vs AC 13).",
+    "Wren misses Wolf 4 (10 vs AC 13).",
+    "Wolf 4 misses Ash (12 vs AC 18)."
+   ],
+   "acts": [
+    [
+     "interact",
+     "I attack Wolf 4 with my rapier"
+    ],
+    [
+     "interact",
+     "I attack Wolf 4 with my longsword"
+    ]
+   ],
+   "prose": "Ash lunges forward, their longsword flashing in the dim light as they aim for Wolf 4. Wren's rapier glints as they strike out, aiming to pierce the wolf's hide."
+  },
+  {
+   "turn": 10,
+   "status": 200,
+   "error": null,
+   "seconds": 24.9,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 2,
+     "xp": 300,
+     "hp_current": 20,
+     "hp_max": 20,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 2,
+     "xp": 300,
+     "hp_current": 17,
+     "hp_max": 17,
+     "choices": []
+    }
+   ],
+   "foes": [
+    [
+     "Wolf 1",
+     0
+    ],
+    [
+     "Wolf 2",
+     0
+    ],
+    [
+     "Wolf 3",
+     0
+    ],
+    [
+     "Wolf 4",
+     11
+    ]
+   ],
+   "places": {
+    "Ash": "6cbcc09c-6158-4454-a790-a9210f9bfce2",
+    "Wren": "6cbcc09c-6158-4454-a790-a9210f9bfce2"
+   },
+   "rolls": [
+    "Ash misses Wolf 4 (12 vs AC 13).",
+    "Wren misses Wolf 4 (8 vs AC 13).",
+    "Wolf 4 hits Ash for 6 piercing. (20->14 HP)"
+   ],
+   "acts": [
+    [
+     "interact",
+     "I attack Wolf 4 with my rapier"
+    ],
+    [
+     "interact",
+     "I attack Wolf 4 with my longsword"
+    ]
+   ],
+   "prose": "The dim light of Hearth flickers as Ash and Wren stand ready, their weapons gleaming. The scent of damp earth and the distant howl of wolves fill the air. Ash's longsword and Wren's rapier are poised, their eyes locked on the last standing wolf, Wolf 4. Ash lunges forward, their longsword flashing as they aim for Wolf 4. Wren's rapier glints as they strike out, aiming to pierce the wolf's hide."
+  },
+  {
+   "turn": 11,
+   "status": 200,
+   "error": null,
+   "seconds": 13.5,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 2,
+     "xp": 300,
+     "hp_current": 14,
+     "hp_max": 20,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 2,
+     "xp": 300,
+     "hp_current": 17,
+     "hp_max": 17,
+     "choices": []
+    }
+   ],
+   "foes": [
+    [
+     "Wolf 1",
+     0
+    ],
+    [
+     "Wolf 2",
+     0
+    ],
+    [
+     "Wolf 3",
+     0
+    ],
+    [
+     "Wolf 4",
+     11
+    ]
+   ],
+   "places": {
+    "Ash": "6cbcc09c-6158-4454-a790-a9210f9bfce2",
+    "Wren": "6cbcc09c-6158-4454-a790-a9210f9bfce2"
+   },
+   "rolls": [
+    "Wren misses Wolf 4 (10 vs AC 13).",
+    "Ash misses Wolf 4 (8 vs AC 13).",
+    "Wolf 4 hits Wren for 9 piercing. (17->8 HP)"
+   ],
+   "acts": [
+    [
+     "interact",
+     "I attack Wolf 4 with my rapier"
+    ],
+    [
+     "interact",
+     "I attack Wolf 4 with my longsword"
+    ]
+   ],
+   "prose": "Ash lunges forward, their longsword flashing as they aim for Wolf 4. Wren follows suit, their rapier slicing through the air towards the same target."
+  },
+  {
+   "turn": 12,
+   "status": 200,
+   "error": null,
+   "seconds": 14.8,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 2,
+     "xp": 300,
+     "hp_current": 14,
+     "hp_max": 20,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 2,
+     "xp": 300,
+     "hp_current": 8,
+     "hp_max": 17,
+     "choices": []
+    }
+   ],
+   "foes": [
+    [
+     "Wolf 1",
+     0
+    ],
+    [
+     "Wolf 2",
+     0
+    ],
+    [
+     "Wolf 3",
+     0
+    ],
+    [
+     "Wolf 4",
+     11
+    ]
+   ],
+   "places": {
+    "Ash": "6cbcc09c-6158-4454-a790-a9210f9bfce2",
+    "Wren": "6cbcc09c-6158-4454-a790-a9210f9bfce2"
+   },
+   "rolls": [
+    "Ash misses Wolf 4 (8 vs AC 13).",
+    "Wren hits Wolf 4 for 3 piercing. (11->8 HP)",
+    "Wolf 4 hits Ash for 6 piercing. (14->8 HP)"
+   ],
+   "acts": [
+    [
+     "interact",
+     "I attack Wolf 4 with my rapier"
+    ],
+    [
+     "interact",
+     "I attack Wolf 4 with my longsword"
+    ]
+   ],
+   "prose": "The morning sun casts long shadows across Hearth, where the scent of damp earth lingers. Ash and Wren, their weapons drawn, stand ready, the echoes of their previous clash with the wolves still fresh in the air. Ash raises their longsword, the steel glinting, as they prepare to strike at Wolf 4. Ash lunges forward, their blade slicing through the air. Wren, not to be outdone, steps forward with a swift motion, their rapier aimed at the same target. Wren's blade flashes as they attack."
+  }
+ ]
+}
