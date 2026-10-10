@@ -140,8 +140,9 @@ class Cast:
     market: UUID | None = None
 
 
-def _script(cast: Cast):
-    calls = {"decide": 0, "director": 0}
+def _script(cast: Cast, calls: dict[str, int] | None = None):
+    """The scripted model; ``calls`` carries on the counts of a story played before."""
+    calls = calls if calls is not None else {"decide": 0, "director": 0}
 
     def route(request: CompletionRequest) -> str | None:
         system, prompt = request.system or "", request.prompt
@@ -276,23 +277,68 @@ def _advance(client: ApiClient, world_id: UUID, index: int, cast: Cast) -> None:
     assert response.status_code == 200, response.text
 
 
-@pytest.fixture
-def played(migrated_db: None) -> Iterator[Played]:
+#: What a test needs to know about the played Ledger story.
+@dataclass
+class Ledger:
+    world: UUID
+    cast: Cast
+    calls: dict[str, int]
+    #: the story's changeable state (LEDGER_STATE) after each turn
+    after_turn: dict[int, dict[str, list[str]]]
+
+
+#: Changeable state, plus the rows whose salience a day's end moves.
+LEDGER_STATE = [
+    *STATE_TABLES,
+    ("world_config", "t.world_id = :w"),
+    ("observation", "t.world_id = :w"),
+    ("recent_memory", "t.world_id = :w"),
+]
+
+
+def _play_ledger(turns: int = 5) -> Ledger:
+    """The Ledger: Wren and Ash, played ``turns`` turns with the scripted model."""
     gateway = FakeGateway(profile=FAKE_TEST_PROFILE)
     app = create_app(
         Settings(), seed_dir=SEED_DIR, migrations_dir=MIGRATIONS, gateway_factory=lambda: gateway
     )
     with TestClient(app) as raw:
         client = ApiClient(raw)
-        story = _create(client, "The Ledger", "branch-source")
-        source = UUID(story["world_id"])
-        cast = _run(_cast(source))
-        gateway.route = _script(cast)
+        story = _create(client, "The Ledger", "ledger")
+        world = UUID(story["world_id"])
+        cast = _run(_cast(world))
+        calls = {"decide": 0, "director": 0}
+        gateway.route = _script(cast, calls)
         after: dict[int, dict[str, list[str]]] = {}
-        for index in range(1, 6):
-            _advance(client, source, index, cast)
-            after[index] = _run(_dump(source, [*STATE_TABLES, ("world_config", "t.world_id = :w")]))
-        yield Played(client, source, cast, after)
+        for index in range(1, turns + 1):
+            _advance(client, world, index, cast)
+            after[index] = _run(_dump(world, LEDGER_STATE))
+    return Ledger(world, cast, dict(calls), after)
+
+
+def ledger_client(ledger: Ledger) -> tuple[ApiClient, TestClient, FakeGateway]:
+    """An app over a copy of the Ledger whose model carries on where it stopped."""
+    gateway = FakeGateway(profile=FAKE_TEST_PROFILE)
+    gateway.route = _script(ledger.cast, dict(ledger.calls))
+    app = create_app(
+        Settings(), seed_dir=SEED_DIR, migrations_dir=MIGRATIONS, gateway_factory=lambda: gateway
+    )
+    raw = TestClient(app)
+    return ApiClient(raw), raw, gateway
+
+
+@pytest.fixture
+def played(snapshot_db: Any) -> Iterator[Played]:
+    """The Ledger after five turns: played once per worker, copied per test."""
+    ledger: Ledger = snapshot_db("ledger-5", _play_ledger)
+    client, raw, _ = ledger_client(ledger)
+    branch_state = {t for t, _ in STATE_TABLES} | {"world_config"}
+    after = {
+        index: {table: rows for table, rows in dump.items() if table in branch_state}
+        for index, dump in ledger.after_turn.items()
+    }
+    with raw:
+        yield Played(client, ledger.world, ledger.cast, after)
 
 
 def _unmap(value: str, inverse: dict[str, str]) -> str:

@@ -25,21 +25,19 @@ from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
-from fastapi.testclient import TestClient
 from test_stage1_api import ApiClient
 from test_story_branches import (
     _ROWS_OF,
-    MIGRATIONS,
-    SEED_DIR,
+    LEDGER_STATE,
     Cast,
+    Ledger,
     _advance,
-    _cast,
-    _create,
     _dump,
+    _play_ledger,
     _run,
-    _script,
     _sql,
     _unmap,
+    ledger_client,
 )
 
 from worldsim.application.execution import admit, new_owner, phase_scope
@@ -56,8 +54,6 @@ from worldsim.domain import branches
 from worldsim.domain.branches import keeps_turn, path_not_taken_title
 from worldsim.domain.time import PHASES_PER_DAY
 from worldsim.infrastructure.db.engine import create_engine
-from worldsim.infrastructure.model_gateway.fake import FakeGateway
-from worldsim.infrastructure.model_gateway.profiles import FAKE_TEST_PROFILE
 from worldsim.infrastructure.repositories.checkpoints import (
     EXTRA_TABLES,
     HISTORY_TABLES,
@@ -65,15 +61,9 @@ from worldsim.infrastructure.repositories.checkpoints import (
 )
 from worldsim.infrastructure.repositories.unit_of_work import create_unit_of_work
 from worldsim.infrastructure.settings import Settings
-from worldsim.interfaces.http.app import create_app
 
 #: Changeable state, plus the rows whose salience a day's end moves.
-_STATE = [
-    *STATE_TABLES,
-    ("world_config", "t.world_id = :w"),
-    ("observation", "t.world_id = :w"),
-    ("recent_memory", "t.world_id = :w"),
-]
+_STATE = LEDGER_STATE
 
 
 @dataclass
@@ -84,29 +74,13 @@ class Story:
     after_turn: dict[int, dict[str, list[str]]]
 
 
-def _app(gateway: FakeGateway) -> Any:
-    return create_app(
-        Settings(), seed_dir=SEED_DIR, migrations_dir=MIGRATIONS, gateway_factory=lambda: gateway
-    )
-
-
-def _play(client: ApiClient, gateway: FakeGateway, turns: int, title: str) -> Story:
-    story = _create(client, title, f"rewind-{title}")
-    world = UUID(story["world_id"])
-    cast = _run(_cast(world))
-    gateway.route = _script(cast)
-    after: dict[int, dict[str, list[str]]] = {}
-    for index in range(1, turns + 1):
-        _advance(client, world, index, cast)
-        after[index] = _run(_dump(world, _STATE))
-    return Story(client, world, cast, after)
-
-
 @pytest.fixture
-def story(migrated_db: None) -> Iterator[Story]:
-    gateway = FakeGateway(profile=FAKE_TEST_PROFILE)
-    with TestClient(_app(gateway)) as raw:
-        yield _play(ApiClient(raw), gateway, 5, "The Ledger")
+def story(snapshot_db: Any) -> Iterator[Story]:
+    """The Ledger after five turns (played once per worker, copied per test)."""
+    ledger: Ledger = snapshot_db("ledger-5", _play_ledger)
+    client, raw, _ = ledger_client(ledger)
+    with raw:
+        yield Story(client, ledger.world, ledger.cast, ledger.after_turn)
 
 
 def _rewind(world: UUID, index: int, key: str, *, writing: bool = False) -> RewindResult:
@@ -450,17 +424,22 @@ def test_retention_rule() -> None:
 
 
 def test_retention_keeps_the_newest_turns_and_older_day_ends(
-    migrated_db: None, monkeypatch: pytest.MonkeyPatch
+    snapshot_db: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A small window stands in for 200 so a long run fits in a test."""
-    monkeypatch.setattr(branches, "KEEP_RECENT_TURNS", 6)
-    gateway = FakeGateway(profile=FAKE_TEST_PROFILE)
-    with TestClient(_app(gateway)) as raw:
-        played = _play(ApiClient(raw), gateway, 32, "Long Road")
-        client, world = played.client, played.world
+    """A window of two turns stands in for 200 so two older days fit in a test."""
+    monkeypatch.setattr(branches, "KEEP_RECENT_TURNS", 2)
+    ledger: Ledger = snapshot_db("ledger-5", _play_ledger)
+    client, raw, _ = ledger_client(ledger)
+    with raw:
+        world = ledger.world
+        after_19: dict[str, list[str]] = {}
+        for index in range(6, 23):
+            _advance(client, world, index, ledger.cast)
+            if index == 19:
+                after_19 = _run(_dump(world, _STATE))
         turns = client.get(f"/api/v1/stories/{world}/branch-points", headers={}).json()["turns"]
-        assert turns == [i for i in range(1, 33) if keeps_turn(i, 32, 6)]
-        assert turns == [9, 19, 27, 28, 29, 30, 31, 32]
+        assert turns == [i for i in range(1, 23) if keeps_turn(i, 22, 2)]
+        assert turns == [9, 19, 21, 22]
 
         # A branch from a kept day end still matches that turn.
         branched = client.post(
@@ -479,8 +458,8 @@ def test_retention_keeps_the_newest_turns_and_older_day_ends(
 
         # Going back to a kept day end restores it exactly; history after it goes.
         result = _rewind(world, 19, "back-to-19")
-        assert _run(_dump(world, _STATE)) == played.after_turn[19]
-        assert result.removed_turns == 13
+        assert _run(_dump(world, _STATE)) == after_19
+        assert result.removed_turns == 3
         assert _one("SELECT max(absolute_index) FROM phase_run WHERE world_id = :w", w=world) == 19
         assert _one("SELECT max(day) FROM daily_summary WHERE world_id = :w", w=world) == 2
         # The saved story is the long road, with its own retained turns.
