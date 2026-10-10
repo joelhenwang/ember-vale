@@ -18,6 +18,8 @@ os.environ.setdefault("WORLDSIM_AUTOPLAY__ENABLED", "false")
 # Nor a picture sweep: test databases are scratch copies that know none of
 # the files under content/assets/generated. Sweep tests drive it directly.
 os.environ.setdefault("WORLDSIM_IMAGES__SWEEP_UNUSED", "false")
+# Fights as written: tests check tags and dice; fair sizing has its own test.
+os.environ.setdefault("WORLDSIM_APP__FAIR_FIGHTS", "false")
 
 
 @pytest.fixture(autouse=True)

@@ -656,3 +656,166 @@ def test_a_fight_begun_without_an_encounter_is_as_large_as_the_words_say() -> No
         live=[MonsterState(key="goblin", name="Goblin", hp_current=0, hp_max=7, ac=15)],
     )
     assert slain.outcomes == []
+
+
+def test_a_fight_turn_returns_before_its_words_and_dice_and_keeps_them(
+    migrated_db: None,
+) -> None:
+    """Fight turns used to narrate scene by scene inside the turn. Now the
+    words and dice land behind it (background narration), the next turn
+    waits for them, and the turn's checkpoint holds the fight."""
+    from fastapi.testclient import TestClient
+    from sqlalchemy import text
+    from test_party_combat import FIGHT, MIGRATIONS, SEED_DIR
+
+    from worldsim.infrastructure.model_gateway.profiles import FAKE_TEST_PROFILE
+    from worldsim.interfaces.http.app import create_app
+
+    gateway = FakeGateway(profile=FAKE_TEST_PROFILE)
+    settings = Settings()
+    settings = settings.model_copy(
+        update={"app": settings.app.model_copy(update={"background_narration": True})}
+    )
+    app = create_app(
+        settings, seed_dir=SEED_DIR, migrations_dir=MIGRATIONS, gateway_factory=lambda: gateway
+    )
+    with TestClient(app) as raw:
+        client = ApiClient(raw)
+        created = _create(client, FIGHTER, "background-fight")
+        assert created.status_code == 200, created.text
+        world_id = UUID(created.json()["world_id"])
+        wren = created.json()["character_id"]
+        headers = {"X-Worldsim-Role": "player", "X-Worldsim-Character": wren}
+        cast = client.get(
+            "/api/v1/world/presentation", params={"world_id": str(world_id)}, headers=headers
+        ).json()["cast"]
+        ids = {c["name"]: c["character_id"] for c in cast}
+
+        def route(request: Any) -> str | None:
+            system, prompt = request.system or "", request.prompt
+            if "You narrate" in system:
+                if "Hearth" not in prompt:
+                    return None
+                return json.dumps([{"text": FIGHT, "cited_fact_keys": ["dnd-sheet:wren"]}])
+            who = ids["Wren"] if "Wren" in prompt else ids["Ash"]
+            if "You decide" in system or "You react" in system:
+                return json.dumps({"family": "wait", "character_id": who, "snapshot_id": who})
+            if "You resolve" in system:
+                return json.dumps({"outcome": "success", "effects": [], "rationale": "Waiting."})
+            return None
+
+        gateway.route = route
+        first = client.post(
+            "/api/v1/stage1/advance",
+            json={
+                "world_id": str(world_id),
+                "absolute_index": 1,
+                "player_intents": {
+                    wren: {"family": "wait", "character_id": wren, "snapshot_id": NIL_SNAPSHOT}
+                },
+            },
+            headers=headers,
+        )
+        assert first.status_code == 200, first.text
+        assert all(s["narration"] == "pending" for s in first.json()["scenes"])
+        second = client.post(
+            "/api/v1/stage1/advance",
+            json={
+                "world_id": str(world_id),
+                "absolute_index": 2,
+                "player_intents": {
+                    wren: {"family": "wait", "character_id": wren, "snapshot_id": NIL_SNAPSHOT}
+                },
+            },
+            headers=headers,
+        )
+        assert second.status_code == 200, second.text
+        entries = client.get(
+            "/api/v1/world/chronicle",
+            params={"world_id": str(world_id), "after": 0, "limit": 80},
+            headers=headers,
+        ).json()["entries"]
+        assert any(
+            r["kind"] == "encounter" for e in entries if e["combat"] for r in e["combat"]["rolls"]
+        )
+
+    async def kept() -> str:
+        engine = create_engine(Settings())
+        try:
+            async with engine.connect() as conn:
+                row = await conn.execute(
+                    text(
+                        "SELECT state::text FROM story_checkpoint "
+                        "WHERE world_id = :w AND absolute_index = 1"
+                    ),
+                    {"w": world_id},
+                )
+                return str(row.scalar_one())
+        finally:
+            await engine.dispose()
+
+    assert "goblin" in asyncio.run(kept()).lower()  # turn 1's checkpoint holds its fight
+
+
+def test_a_fair_fight_is_sized_for_the_party() -> None:
+    from worldsim.domain.rules.dnd.deeds import fair_counts, fair_fight_line
+
+    # A level-1 pair: two goblins are a hard fight, one is easy, three overwhelm.
+    assert dict(fair_counts([1, 1], ["goblin", "orc"], DATA)) == {"goblin": 2, "orc": 1}
+    line = fair_fight_line([1, 1], DATA)
+    assert "two at level 1" in line and "two goblins" in line and "ENCOUNTER[2x goblin]" in line
+    assert "two wolves" in line
+
+
+def test_the_fallen_leave_spoils_by_chance_and_at_most_two() -> None:
+    from worldsim.domain.rules.dnd.combat_resolve import spoil_rows, spoils_of
+
+    fallen = [("goblin-1", "Goblin 1"), ("wolf", "Wolf"), ("goblin-2", "Goblin 2")]
+    left = spoils_of(fallen, DATA, _rng(0.0))
+    assert [(s.foe, s.item_key, s.name) for s in left] == [
+        ("Goblin 1", "scimitar", "scimitar"),
+        ("Wolf", "wolf-pelt", "wolf pelt"),
+    ]
+    assert spoils_of(fallen, DATA, _rng(0.9)) == []
+    assert [r.text for r in spoil_rows(left)] == [
+        "Goblin 1 left a scimitar.",
+        "Wolf left a wolf pelt.",
+    ]
+    # A fight where a goblin falls reports what it left.
+    report = resolve_narration_tags(
+        "ATTACK[longsword at goblin]: Wren strikes.",
+        [_wren()],
+        DATA,
+        _rng(0.95, 0.5, 0.0),
+        live=[MonsterState(key="goblin", name="Goblin", hp_current=1, hp_max=7, ac=15)],
+        fighting=["goblin"],
+    )
+    assert report.defeated == ["goblin"]
+    assert [(s.foe, s.name) for s in report.spoils] in ([("Goblin", "scimitar")], [])
+
+
+def test_a_fight_opened_too_easy_grows_to_a_fair_size() -> None:
+    pair = [_wren(), _elara()]
+    pair[1].level = 1
+    lone = resolve_narration_tags(
+        "ENCOUNTER[goblin]: A goblin bursts in.", pair, DATA, _rng(0.0), fair_fights=True
+    )
+    assert lone.outcomes[0].target == "Goblin 1, Goblin 2"  # easy alone, hard as two
+    as_written = resolve_narration_tags(
+        "ENCOUNTER[goblin]: A goblin bursts in.", pair, DATA, _rng(0.0)
+    )
+    assert as_written.outcomes[0].target == "Goblin"
+    # Already fair (an orc for a level-1 pair) or mixed groups stay as written.
+    orc = resolve_narration_tags("ENCOUNTER[orc]: An orc.", pair, DATA, _rng(0.0), fair_fights=True)
+    assert orc.outcomes[0].target == "Orc"
+
+
+def test_a_levels_spell_swaps_are_of_the_same_spell_level() -> None:
+    sage = Sheet(name="Lyra", character_class="cleric", stats={"wis": 16}, spells=["sacred-flame"])
+    gain_xp(DATA, sage, 300, chooses=True)
+    for choice in sage.choices:
+        if choice.kind != "spells":
+            continue
+        picked = {int(DATA["spells"][s].get("level", 0)) for s in choice.picked}
+        offered = {int(DATA["spells"][s].get("level", 0)) for s in choice.options}
+        assert offered <= picked, (picked, offered)

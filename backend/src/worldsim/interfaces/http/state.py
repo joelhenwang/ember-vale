@@ -142,6 +142,7 @@ class AppState:
             max_parallel_calls=self.settings.app.parallel_model_calls,
             reacting_bystanders=self.settings.app.reacting_bystanders,
             xp_scale=self.settings.app.xp_scale,
+            fair_fights=self.settings.app.fair_fights,
         )
 
     def local_models(self) -> LocalModelsClient | None:

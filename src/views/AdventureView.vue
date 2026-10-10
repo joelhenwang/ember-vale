@@ -1085,7 +1085,7 @@ onMounted(() => {
           class="status__level"
           :class="{ 'ev-stamp': levelBump > 0 }"
           :title="`${journey.renown} renown`"
-          >Level {{ journey.level }} · {{ journey.title }}</span
+          >{{ party ? 'Renown' : 'Level' }} {{ journey.level }} · {{ journey.title }}</span
         >
         <div
           v-if="hero"
@@ -1151,7 +1151,7 @@ onMounted(() => {
             <div v-if="journey" class="renown" :title="`${journey.renown} renown`">
               <div class="renown__head">
                 <b>{{ journey.title }}</b>
-                <span>Level {{ journey.level }}</span>
+                <span>{{ party ? 'Renown' : 'Level' }} {{ journey.level }}</span>
               </div>
               <div class="renown__bar">
                 <i :style="{ transform: `scaleX(${levelShown})` }" />

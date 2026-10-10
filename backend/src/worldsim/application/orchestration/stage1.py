@@ -289,8 +289,15 @@ from worldsim.domain.rules.dnd import (
     strip_combat_tags,
     weapon_attack_bonus,
 )
+from worldsim.domain.rules.dnd.combat_resolve import spoil_rows
 from worldsim.domain.rules.dnd.data import dict_field, entry, str_field, table
-from worldsim.domain.rules.dnd.deeds import ORDINAL_WORDS, Deed, looks_like_deed, order_target
+from worldsim.domain.rules.dnd.deeds import (
+    ORDINAL_WORDS,
+    Deed,
+    fair_fight_line,
+    looks_like_deed,
+    order_target,
+)
 from worldsim.domain.rules.dnd.invites import (
     accepts,
     companion_attack,
@@ -1274,12 +1281,15 @@ class Stage1Orchestrator:
         max_parallel_calls: int = 12,
         reacting_bystanders: int | None = None,
         xp_scale: int = 1,
+        fair_fights: bool = False,
     ) -> None:
         self._factory = uow_factory
         #: Crowd cap on who answers an attempt (None: everyone present).
         self._reacting_bystanders = reacting_bystanders
         #: Story pacing: experience is this many times the 5e XP.
         self._xp_scale = xp_scale
+        #: Fights opened too easy for the party grow to a fair size.
+        self._fair_fights = fair_fights
         #: Model-backed tasks (decisions, reactions, summaries) a beat runs at
         #: once, per event loop; see _bounded.
         self._max_parallel = max_parallel_calls
@@ -1580,6 +1590,8 @@ class Stage1Orchestrator:
         budgets: list[bool] = []
         #: Narration still being written behind the beat, if any.
         narrated: asyncio.Future[Any] | None = None
+        #: A party story's words and dice, behind the turn (see before_narration).
+        party_words: asyncio.Future[Any] | None = None
         with _timed(timings, "scenes"):
             # Scenes commit one after another (event sequence numbers and
             # version checks are ordered); their narration, written after
@@ -1653,13 +1665,41 @@ class Stage1Orchestrator:
                             )
                         )
             self._fire("before_narration")
+            # A party story's scenes are told side by side too; only their dice
+            # (and recruits) wait, rolled in scene order after all the words,
+            # since they change the shared party sheets and foes. One by one,
+            # and never behind the turn, they made fight turns the slowest.
+            afters: list[list[Callable[[], Awaitable[object]]]] = [[] for _ in scenes]
             jobs = [
-                self._narrate_outcome(world_id, run_id, scene, outcome, quiet, budget, runtime)
-                for scene, outcome, budget in zip(scenes, outcomes, budgets, strict=True)
+                self._narrate_outcome(
+                    world_id,
+                    run_id,
+                    scene,
+                    outcome,
+                    quiet,
+                    budget,
+                    runtime,
+                    combat_after=afters[n] if party else None,
+                )
+                for n, (scene, outcome, budget) in enumerate(
+                    zip(scenes, outcomes, budgets, strict=True)
+                )
             ]
+
+            async def _party_words() -> list[SceneOutcome]:
+                told = list(await asyncio.gather(*jobs))
+                for later in afters:
+                    for step in later:
+                        await step()
+                return told
+
             with _timed(timings, "narrate"):
-                if party:
-                    outcomes = [await job for job in jobs]
+                if party and self._narration is not None:
+                    narrated = self._narration.start(world_id, _party_words())
+                    party_words = narrated
+                    outcomes = [replace(o, narration="pending") for o in outcomes]
+                elif party:
+                    outcomes = await _party_words()
                 elif self._narration is not None:
                     narrated = self._narration.start(world_id, asyncio.gather(*jobs))
                     outcomes = [replace(o, narration="pending") for o in outcomes]
@@ -1685,6 +1725,9 @@ class Stage1Orchestrator:
 
             async def _day_end() -> None:
                 day = index // PHASES_PER_DAY + 1
+                if party_words is not None:
+                    # The day ends after its fights are rolled.
+                    await asyncio.gather(party_words, return_exceptions=True)
                 try:
                     await self._summarize_day(world_id, run_id, index, day, runtime)
                     await self._promote_memories(world_id, run_id, index, day, runtime)
@@ -1700,6 +1743,15 @@ class Stage1Orchestrator:
             else:
                 with _timed(timings, "day_end"):
                     await _day_end()
+        elif party_words is not None and self._narration is not None:
+            # The turn's checkpoint holds its fights: keep it once they roll.
+            words = party_words
+
+            async def _keep_after_words() -> None:
+                await asyncio.gather(words, return_exceptions=True)
+                await self._keep_turn(world_id, index)
+
+            self._narration.start(world_id, _keep_after_words())
         else:
             with _timed(timings, "checkpoint"):
                 await self._keep_turn(world_id, index)
@@ -4045,10 +4097,18 @@ class Stage1Orchestrator:
         quiet: bool,
         over_budget: bool,
         runtime: PhaseRuntime,
+        combat_after: list[Callable[[], Awaitable[object]]] | None = None,
     ) -> SceneOutcome:
         """Narrate one committed scene and report how its words were made."""
         narration = await self._narrate_scene(
-            world_id, run_id, scene, outcome.event_id, quiet, over_budget, runtime=runtime
+            world_id,
+            run_id,
+            scene,
+            outcome.event_id,
+            quiet,
+            over_budget,
+            runtime=runtime,
+            combat_after=combat_after,
         )
         # The narration source is persisted atomically with its beats
         # inside _narrate_scene; "skipped" writes nothing. When beats
@@ -4718,8 +4778,12 @@ class Stage1Orchestrator:
         over_budget: bool = False,
         *,
         runtime: PhaseRuntime,
+        combat_after: list[Callable[[], Awaitable[object]]] | None = None,
     ) -> str:
         """Narrate one committed scene; failures never fail the phase.
+
+        ``combat_after``: the scene's dice (and recruits) are queued there to
+        run later, in scene order, instead of right after its words.
 
         Quiet non-party phases and over-budget phases skip the model
         and store structured fallback beats directly: same canon, no
@@ -4874,6 +4938,13 @@ class Stage1Orchestrator:
                 )
                 if seeking is not None:
                     facts.append({"key": "dnd-seek", "value": seeking})
+                # How large a fight should be for this party, should one come.
+                facts.append(
+                    {
+                        "key": "dnd-fair",
+                        "value": fair_fight_line([m.sheet.level for m in roster], tables),
+                    }
+                )
             fallen = down_line(
                 [
                     m.name
@@ -4938,7 +5009,10 @@ class Stage1Orchestrator:
             await self._save_fallback_beats(world_id, scene, event_id, facts, source="fallback")
             if roster_pre:
                 # The party's own blows still roll without the storyteller.
-                await self._resolve_combat_tags(world_id, run_id, scene, event_id, [])
+                await self._then(
+                    combat_after,
+                    lambda: self._resolve_combat_tags(world_id, run_id, scene, event_id, []),
+                )
             return "fallback"
         if structured and not roster_pre:
             # Configured structured narration, not a provider outcome:
@@ -4973,7 +5047,10 @@ class Stage1Orchestrator:
                 pass
             if roster_pre:
                 # The storyteller failed, but the party's own blows still roll.
-                await self._resolve_combat_tags(world_id, run_id, scene, event_id, [])
+                await self._then(
+                    combat_after,
+                    lambda: self._resolve_combat_tags(world_id, run_id, scene, event_id, []),
+                )
             return "failed"
         source = "narrated" if not result["proposal"]["fallback"] else "fallback"
         async with self._factory() as uow:
@@ -4984,11 +5061,26 @@ class Stage1Orchestrator:
             beat_texts = [
                 str(beat_json.get("text", "")) for beat_json in result["proposal"]["beats"]
             ]
-        joined = await self._recruit_from_narration(world_id, "\n".join(beat_texts))
-        await self._resolve_combat_tags(
-            world_id, run_id, scene, event_id, beat_texts, joined=joined
-        )
+
+        async def _dice() -> None:
+            joined = await self._recruit_from_narration(world_id, "\n".join(beat_texts))
+            await self._resolve_combat_tags(
+                world_id, run_id, scene, event_id, beat_texts, joined=joined
+            )
+
+        await self._then(combat_after, _dice)
         return source
+
+    @staticmethod
+    async def _then(
+        later: list[Callable[[], Awaitable[object]]] | None,
+        step: Callable[[], Awaitable[object]],
+    ) -> None:
+        """Run ``step`` now, or queue it on ``later`` to run after the turn's words."""
+        if later is None:
+            await step()
+        else:
+            later.append(step)
 
     async def _save_fallback_beats(
         self,
@@ -5165,6 +5257,7 @@ class Stage1Orchestrator:
                     fighting=fighting,
                     slain_lately=slain_lately,
                     xp_scale=self._xp_scale,
+                    fair_fights=self._fair_fights,
                     deeds=deeds,
                     chooses=chooses,
                     strike_back=hero_here,
@@ -5212,6 +5305,20 @@ class Stage1Orchestrator:
                                 PARTY_ORDERS_KEY,
                                 orders_record(orders, fighting + report.foes),
                             )
+                        # What the fallen left lies where they fell, to be picked up.
+                        place = await _event_place(uow, event_id) if report.spoils else None
+                        spoils = report.spoils if place is not None else []
+                        for spoil in spoils:
+                            await uow.inventory.add_item(
+                                ItemInstance(
+                                    id=uuid5(combat_id, f"spoil:{spoil.key}"),
+                                    world_id=world_id,
+                                    item_key=spoil.item_key,
+                                    location_id=place.id if place is not None else None,
+                                    name=spoil.name,
+                                    description=spoil.description,
+                                )
+                            )
                         sequence = await uow.events.max_sequence(world_id) + 1
                         involved = {
                             by_key[key].id
@@ -5235,7 +5342,9 @@ class Stage1Orchestrator:
                                     "deeds": str(report.deeds),
                                     "helped": str(report.helped),
                                     "scene_event_id": str(event_id),
-                                    "rolls": combat_rolls_json(report.outcomes, joined or []),
+                                    "rolls": combat_rolls_json(
+                                        [*report.outcomes, *spoil_rows(spoils)], joined or []
+                                    ),
                                     # The fight that is on goes on: its foes
                                     # plus whoever this scene brought in.
                                     **(

@@ -66,6 +66,10 @@ class ApplicationSettings(BaseModel):
     #: had 25-50 XP against 300 for level 2 (docs/evidence/long-adventure-001).
     #: WORLDSIM_APP__XP_SCALE=1 is plain 5e.
     xp_scale: int = Field(default=4, ge=1, le=20)
+    #: A fight the storyteller opens too easy for the party (a lone goblin
+    #: against two) grows to a fair size by 5e (medium or hard). Told what a
+    #: fair fight was, it still opened lone goblins (long-adventure-002).
+    fair_fights: bool = True
     #: API processes (`serve`). More than one needs background_loops=false
     #: and a separate worker: each process would otherwise run every loop.
     workers: int = Field(default=1, ge=1, le=32)

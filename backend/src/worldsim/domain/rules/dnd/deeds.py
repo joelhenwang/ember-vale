@@ -428,3 +428,59 @@ def helper_lines(
         if cantrip is not None:
             lines.append(f"CAST[{cantrip} at {target}]: {sheet.name} fights on.")
     return lines
+
+
+#: Foes a storyteller reaches for first, to size a fair fight in.
+COMMON_FOES = ("goblin", "wolf", "bandit", "skeleton", "orc")
+_NUMBER_WORDS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six"}
+_FAIR = ("medium", "hard")
+
+
+def fair_counts(levels: list[int], kinds: list[str], tables: DataTables) -> list[tuple[str, int]]:
+    """How many of each kind make a fair fight (medium or hard by 5e) for a
+    party of these levels: the largest such number, up to six. Kinds no
+    number makes fair (too strong alone, or too weak even six) are left out."""
+    from worldsim.domain.rules.dnd.core import MonsterRef, encounter_difficulty
+
+    monsters = table(tables, "monsters")
+    fair: list[tuple[str, int]] = []
+    for kind in kinds:
+        if kind not in monsters:
+            continue
+        counts = [
+            n
+            for n in range(1, 7)
+            if encounter_difficulty(levels, [MonsterRef(index=kind, count=n)], tables).difficulty
+            in _FAIR
+        ]
+        if counts:
+            fair.append((kind, max(counts)))
+    return fair
+
+
+def fair_fight_line(levels: list[int], tables: DataTables, kinds: list[str] | None = None) -> str:
+    """The storyteller's sizing note: a fair fight for this party, in words.
+    Live it reached for one lone goblin every time (long-adventure-001), a
+    fight over in a blow; two goblins are a fair fight for a level-1 pair."""
+    monsters = table(tables, "monsters")
+    wanted: list[str] = list(dict.fromkeys([*(kinds or []), *COMMON_FOES]))
+    sized = fair_counts(levels, wanted, tables)[:4]
+    party = f"{_NUMBER_WORDS.get(len(levels), str(len(levels)))} at level {max(levels or [1])}"
+    named = [
+        f"{_NUMBER_WORDS.get(n, str(n))} "
+        + (
+            _plural(str(entry(monsters, k).get("name", k)))
+            if n > 1
+            else str(entry(monsters, k).get("name", k)).lower()
+        )
+        for k, n in sized
+    ]
+    if not named:
+        return f"A fair fight for this party ({party}) is a medium or hard one by 5e."
+    choices = named[0] if len(named) == 1 else ", ".join(named[:-1]) + f" or {named[-1]}"
+    first, count = sized[0]
+    example = f"ENCOUNTER[{count}x {first}]" if count > 1 else f"ENCOUNTER[{first}]"
+    return (
+        f"A fair fight for this party ({party}) is about {choices}: open fights that size "
+        f"({example}). A lone weak foe is over in a blow; far more would overwhelm them."
+    )

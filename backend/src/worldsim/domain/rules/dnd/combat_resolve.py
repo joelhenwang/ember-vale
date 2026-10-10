@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import math
+import random
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -49,6 +50,7 @@ from worldsim.domain.rules.dnd.deeds import (
     Deed,
     after_encounter,
     deed_lines,
+    fair_counts,
     group_size,
     helper_lines,
     line_actor,
@@ -151,6 +153,85 @@ class MonsterResult:
 
 
 @dataclass(frozen=True)
+class Spoil:
+    """Something a fallen foe left: ``key`` its pool, ``item_key`` what it is."""
+
+    key: str
+    foe: str
+    item_key: str
+    name: str
+    description: str
+
+
+#: Spoils a scene's fallen leave at most, and the chance each one does.
+MAX_SPOILS = 2
+SPOIL_CHANCE = 0.5
+
+
+def spoils_of(
+    defeated: list[tuple[str, str]], tables: DataTables, rng: Callable[[], float]
+) -> list[Spoil]:
+    """What the fallen leave, as (pool key, label) in falling order: its
+    weapon when it fought with one the tables know ("a scimitar"), a pelt
+    for a beast, else a few coins; each by chance, at most two a scene."""
+    monsters = table(tables, "monsters")
+    weapons = table(tables, "weapons")
+    left: list[Spoil] = []
+    for key, label in defeated:
+        if len(left) >= MAX_SPOILS:
+            break
+        if rng() >= SPOIL_CHANCE:
+            continue
+        kind = monster_kind(key, monsters)
+        row = entry(monsters, kind)
+        kind_name = str(row.get("name", kind))
+        strike = _first_strike(row)
+        found = find_entry(weapons, strike[0]) if strike else None
+        if found is not None:
+            weapon = str(found.entry.get("name", found.index)).lower()
+            left.append(
+                Spoil(
+                    key,
+                    label,
+                    found.index,
+                    weapon,
+                    f"{kind_name}'s {weapon}, dropped where it fell.",
+                )
+            )
+        elif str(row.get("type", "")).lower() == "beast":
+            left.append(
+                Spoil(
+                    key,
+                    label,
+                    f"{kind}-pelt",
+                    f"{kind_name.lower()} pelt",
+                    f"Taken from the fallen {kind_name.lower()}.",
+                )
+            )
+        else:
+            left.append(
+                Spoil(
+                    key, label, "coins", "a few coins", f"Found on the fallen {kind_name.lower()}."
+                )
+            )
+    return left
+
+
+def spoil_rows(spoils: list[Spoil]) -> list[TagOutcome]:
+    """The story log's line for each spoil ("Goblin 2 left a scimitar")."""
+    return [
+        TagOutcome(
+            kind="loot",
+            text=f"{s.foe} left {s.name if s.name.startswith(('a ', 'an ')) else 'a ' + s.name}.",
+            actor=s.foe,
+            using=s.name,
+            actor_foe=True,
+        )
+        for s in spoils
+    ]
+
+
+@dataclass(frozen=True)
 class CombatReport:
     outcomes: list[TagOutcome] = field(default_factory=list)
     hp: dict[str, int] = field(default_factory=dict)
@@ -166,6 +247,8 @@ class CombatReport:
     #: Foes that fell in this scene, and the levels the party gained.
     defeated: list[str] = field(default_factory=list)
     levels: list[LevelGain] = field(default_factory=list)
+    #: What fallen foes left lying where they fell (at most two a scene).
+    spoils: list[Spoil] = field(default_factory=list)
     #: Tag lines added from the party's own words (``deeds``), not the storyteller's.
     deeds: int = 0
     #: Blows companions struck beside the party with nothing else making them act.
@@ -310,6 +393,7 @@ def resolve_narration_tags(
     recent: str = "",
     slain_lately: set[str] | None = None,
     xp_scale: int = 1,
+    fair_fights: bool = False,
 ) -> CombatReport:
     """Resolve every combat tag in narration order. Inputs are never mutated.
 
@@ -670,6 +754,18 @@ def resolve_narration_tags(
                 ref.model_copy(update={"count": max(ref.count, group_size([text], ref.name))})
                 for ref in refs
             ]
+            if fair_fights and len(refs) == 1:
+                # Too easy for this party (a lone goblin against two): the
+                # group grows to a fair size; the next scene is told of them.
+                # The storyteller opened lone goblins every time, even told
+                # what a fair fight was (long-adventure-002).
+                levels = [s.level for s in order]
+                too_easy = encounter_difficulty(
+                    levels, [MonsterRef(index=refs[0].index, count=refs[0].count)], tables
+                ).difficulty in ("trivial", "easy")
+                fair = dict(fair_counts(levels, [refs[0].index], tables)).get(refs[0].index)
+                if too_easy and fair is not None and fair > refs[0].count:
+                    refs = [refs[0].model_copy(update={"count": fair})]
             diff = encounter_difficulty(
                 [s.level for s in order],
                 [MonsterRef(index=r.index, count=r.count) for r in refs],
@@ -1195,6 +1291,11 @@ def resolve_narration_tags(
         levels=gains,
         deeds=deed_count,
         helped=helped,
+        spoils=spoils_of(
+            [(key, monster_meta[key].label) for key in defeated if key in monster_meta],
+            tables,
+            rng or random.random,
+        ),
     )
 
 
