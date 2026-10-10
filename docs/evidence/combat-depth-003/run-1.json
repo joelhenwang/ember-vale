@@ -1,0 +1,365 @@
+{
+ "world_id": "84dee7e1-ad35-47e4-9072-4ba89a3666be",
+ "spend_usd": 0.0617313,
+ "turns": [
+  {
+   "turn": 1,
+   "kind": "do",
+   "words": "I climb the steep wall of the old granary to look out over the vale.",
+   "status": 200,
+   "error": null,
+   "seconds": 9.6,
+   "party": [
+    {
+     "name": "Wren",
+     "level": 1,
+     "xp": 2690,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": [],
+     "abilities": {
+      "cha": 11,
+      "con": 15,
+      "dex": 14,
+      "int": 9,
+      "str": 16,
+      "wis": 13
+     }
+    }
+   ],
+   "foes": [],
+   "held": [],
+   "rolls": [
+    "Wren's Athletics check: 5 against DC 15, failure."
+   ],
+   "prose": "The morning sun glints off the cobblestones of Hearth, where Wren stands by the old granary, its weathered stones rising steeply. Wren tries to climb the wall, but the rough surface offers no foothold. Ash, meanwhile, sets off toward Market, leaving Wren behind."
+  },
+  {
+   "turn": 2,
+   "kind": "do",
+   "words": "I search the hearth's woodpile for anything hidden there.",
+   "status": 200,
+   "error": null,
+   "seconds": 8.2,
+   "party": [
+    {
+     "name": "Wren",
+     "level": 1,
+     "xp": 2690,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": [],
+     "abilities": {
+      "cha": 11,
+      "con": 15,
+      "dex": 14,
+      "int": 9,
+      "str": 16,
+      "wis": 13
+     }
+    }
+   ],
+   "foes": [],
+   "held": [],
+   "rolls": [
+    "Wren's Perception check: 20 against DC 12, success."
+   ],
+   "prose": "The air is crisp, and the scent of fresh bread wafts from a nearby bakery. Ash stands still, eyes scanning the bustling market, waiting for something or someone, their presence a quiet contrast to the lively chatter around them. The morning sun still glints off the cobblestones of Hearth, where Wren stands by the old granary, its weathered stones rising steeply. Wren, a level 1 human fighter, searches the hearth's woodpile, their hands sifting through the logs with a determined focus."
+  },
+  {
+   "turn": 3,
+   "kind": "do",
+   "words": "I go looking for the goblins that raid the carts near the hearth.",
+   "status": 200,
+   "error": null,
+   "seconds": 8.7,
+   "party": [
+    {
+     "name": "Wren",
+     "level": 1,
+     "xp": 2690,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": [],
+     "abilities": {
+      "cha": 11,
+      "con": 15,
+      "dex": 14,
+      "int": 9,
+      "str": 16,
+      "wis": 13
+     }
+    }
+   ],
+   "foes": [],
+   "held": [],
+   "rolls": [],
+   "prose": "The morning sun still glints off the cobblestones of Hearth, where Wren stands by the old granary, its weathered stones rising steeply. The air is crisp, and the scent of damp earth lingers. Wren, a level 1 human fighter, searches the hearth's woodpile, their hands sifting through the logs with a determined focus. Wren pauses, their gaze shifting from the woodpile to the path leading out of Hearth. They take a deep breath, steeling themselves for the task ahead. The market is alive with the scent of fresh bread and the hum of morning chatter, but Ash stands apart, eyes scanning the crowd, waiting in the crisp air. Ash lingers by the bakery, their gaze fixed on the bustling stalls, as if searching for a familiar face or a sign of what they're waiting for."
+  },
+  {
+   "turn": 4,
+   "kind": "do",
+   "words": "If goblins are here, I draw my sword and attack the nearest one.",
+   "status": 200,
+   "error": null,
+   "seconds": 8.3,
+   "party": [
+    {
+     "name": "Wren",
+     "level": 1,
+     "xp": 2690,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": [],
+     "abilities": {
+      "cha": 11,
+      "con": 15,
+      "dex": 14,
+      "int": 9,
+      "str": 16,
+      "wis": 13
+     }
+    }
+   ],
+   "foes": [],
+   "held": [],
+   "rolls": [
+    "Encounter: Goblin (medium, 50 adjusted XP).",
+    "Wren misses Goblin (6 vs AC 15).",
+    "Goblin misses Wren (17 vs AC 18)."
+   ],
+   "prose": "Ash stands apart, their gaze scanning the crowd, waiting by the bakery. The familiar hum of chatter fills the air, but Ash lingers, eyes fixed on the bustling stalls, as if searching for something unseen. The morning sun still glints off the cobblestones of Hearth, where Wren stands by the old granary, its weathered stones rising steeply. The air is crisp, and the scent of damp earth lingers. Wren, a level 1 human fighter, searches the hearth's woodpile, their hands sifting through the logs with a determined focus. Wren's eyes narrow as they scan the area, their grip tightening on the hilt of their longsword. They are ready for a fight, their body tense and alert. Wren lunges forward, their longsword flashing in the sunlight as they strike at the nearest goblin."
+  },
+  {
+   "turn": 5,
+   "kind": "do",
+   "words": "I attack the nearest enemy.",
+   "status": 200,
+   "error": null,
+   "seconds": 15.3,
+   "party": [
+    {
+     "name": "Wren",
+     "level": 1,
+     "xp": 2690,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": [],
+     "abilities": {
+      "cha": 11,
+      "con": 15,
+      "dex": 14,
+      "int": 9,
+      "str": 16,
+      "wis": 13
+     }
+    }
+   ],
+   "foes": [
+    [
+     "Goblin",
+     7
+    ]
+   ],
+   "held": [],
+   "rolls": [
+    "Wren misses Goblin (9 vs AC 15).",
+    "Goblin misses Wren (17 vs AC 18)."
+   ],
+   "prose": "The old granary of Hearth stands tall, its stones weathered by time, as Wren, a level 1 human fighter, steps forward, their longsword gleaming in the afternoon light. The scent of damp earth still lingers, but the air is charged with the tension of battle. Wren's eyes lock onto the goblin, their grip tightening on the hilt of their weapon. Wren lunges at the goblin, their blade slicing through the air with a swift and determined strike. The bustling Market hums with the chatter of vendors and shoppers, the scent of fresh bread wafting from the bakery. Ash, standing apart, scans the crowd, their eyes lingering on the stalls. The familiar scene is interrupted by the urgency in Baker's voice. Ash turns to Baker, their expression shifting from curiosity to concern as they hear the desperation in the baker's words. I'm desperate to find it before the market closes. Baker's plea hangs in the air, a palpable tension between the two as they both realize the gravity of the situation. I haven't seen your ledger, but I'll keep an eye out for it. Ash's promise offers a glimmer of hope, their gaze steady and reassuring as they both stand in the midst of the Market's chaos."
+  },
+  {
+   "turn": 6,
+   "kind": "do",
+   "words": "I attack the nearest enemy.",
+   "status": 200,
+   "error": null,
+   "seconds": 12.0,
+   "party": [
+    {
+     "name": "Wren",
+     "level": 1,
+     "xp": 2690,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": [],
+     "abilities": {
+      "cha": 11,
+      "con": 15,
+      "dex": 14,
+      "int": 9,
+      "str": 16,
+      "wis": 13
+     }
+    }
+   ],
+   "foes": [
+    [
+     "Goblin",
+     7
+    ]
+   ],
+   "held": [],
+   "rolls": [
+    "Wren hits Goblin for 5 slashing. (7->2 HP)",
+    "Goblin hits Wren for 7 slashing. (12->5 HP)"
+   ],
+   "prose": "The Market is alive with the usual evening bustle, the scent of fresh bread still lingering in the air. I'm really worried about my ledger. It's crucial for my business, and I can't afford to lose it. I need to find it as soon as possible. Baker's voice is urgent, their eyes searching Ash's face for understanding. Baker lingers by the bakery, their fingers tapping anxiously on the counter. Wren raises their longsword, the blade catching the last rays of the setting sun, and lunges forward with a determined cry. Wren lunges at the goblin."
+  },
+  {
+   "turn": 7,
+   "kind": "do",
+   "words": "I fight on until they are beaten.",
+   "status": 200,
+   "error": null,
+   "seconds": 12.8,
+   "party": [
+    {
+     "name": "Wren",
+     "level": 1,
+     "xp": 2690,
+     "hp_current": 5,
+     "hp_max": 12,
+     "choices": [],
+     "abilities": {
+      "cha": 11,
+      "con": 15,
+      "dex": 14,
+      "int": 9,
+      "str": 16,
+      "wis": 13
+     }
+    }
+   ],
+   "foes": [
+    [
+     "Goblin",
+     2
+    ]
+   ],
+   "held": [],
+   "rolls": [
+    "Wren hits Goblin for 6 slashing. (2->0 HP)",
+    "Defeated Goblin: 200 XP, 200 each.",
+    "Wren reaches level 2: +8 hit points.",
+    "Wren reaches level 3: +8 hit points.",
+    "Wren reaches level 4: +8 hit points."
+   ],
+   "prose": "Baker, their eyes searching Ash's face, is visibly worried. Ash, observing the scene, seems ready to assist. I'm really worried about my ledger. It's crucial for my business, and I can't afford to lose it. I need to find it as soon as possible. I'll help you look for it, Baker. Let's start by checking the stalls. The last light of dusk lingers in the air of Hearth, casting long shadows across the cobblestones. Wren, their longsword gleaming, stands ready, the echoes of their previous attack still ringing in the air. The goblin, badly wounded, staggers but remains standing, its eyes fixed on Wren with a mix of fear and defiance. Wren's determination is palpable as they try to fight on, their muscles tensed and ready for the next strike. The longsword, a trusted companion, is held high, its edge catching the fading light. Wren lunges forward, their longsword slicing through the air with a swift, precise motion, aimed at the goblin's vulnerable spot."
+  },
+  {
+   "turn": 8,
+   "kind": "take",
+   "words": "(nothing lying here)",
+   "status": 200,
+   "error": null,
+   "seconds": 13.1,
+   "party": [
+    {
+     "name": "Wren",
+     "level": 4,
+     "xp": 2890,
+     "hp_current": 29,
+     "hp_max": 36,
+     "choices": [
+      {
+       "id": "ability-4",
+       "kind": "ability",
+       "level": 4,
+       "picked": [],
+       "options": []
+      }
+     ],
+     "abilities": {
+      "cha": 11,
+      "con": 15,
+      "dex": 14,
+      "int": 9,
+      "str": 16,
+      "wis": 13
+     }
+    }
+   ],
+   "foes": [],
+   "held": [],
+   "rolls": [],
+   "prose": "The market is quiet, the stalls closed for the evening, but the air still carries the scent of fresh bread. Baker's eyes are wide with worry, their hands fidgeting as they look at Ash. Ash, standing nearby, nods reassuringly, ready to help. Together, they move through the market, Baker's anxiety palpable, Ash's presence a steady support. The last light of dusk still lingers in the air of Hearth, casting long shadows across the cobblestones. Wren stands ready, their longsword gleaming, the echoes of their previous attack still ringing in the air. The goblin, defeated, lies motionless on the ground, its eyes closed in final surrender. Wren waits, their breath steady, the tension in the air palpable as they assess the aftermath of the battle."
+  },
+  {
+   "turn": 9,
+   "kind": "take",
+   "words": "(nothing lying here)",
+   "status": 200,
+   "error": null,
+   "seconds": 12.2,
+   "party": [
+    {
+     "name": "Wren",
+     "level": 4,
+     "xp": 2890,
+     "hp_current": 29,
+     "hp_max": 36,
+     "choices": [
+      {
+       "id": "ability-4",
+       "kind": "ability",
+       "level": 4,
+       "picked": [],
+       "options": []
+      }
+     ],
+     "abilities": {
+      "cha": 11,
+      "con": 15,
+      "dex": 14,
+      "int": 9,
+      "str": 16,
+      "wis": 13
+     }
+    }
+   ],
+   "foes": [],
+   "held": [],
+   "rolls": [],
+   "prose": "The last light of dusk still lingers in the air of Hearth, casting long shadows across the cobblestones. Wren stands ready, their longsword gleaming, the echoes of their previous attack still ringing in the air. The goblin, defeated, lies motionless on the ground, its eyes closed in final surrender. Wren waits, their gaze fixed on the fallen foe, as the silence of the night settles around them. Baker catches Ash's sleeve and asks if they've checked the stalls for the ledger. Ash nods and moves to the nearest stall, their eyes scanning the shelves. Baker suggests, 'Let's check the stalls together, Ash. I'm sure we'll find it.'"
+  },
+  {
+   "turn": 10,
+   "kind": "pay",
+   "words": "I pay Ash 2 gold coins for watching my back.",
+   "status": 200,
+   "error": null,
+   "seconds": 13.5,
+   "party": [
+    {
+     "name": "Wren",
+     "level": 4,
+     "xp": 2890,
+     "hp_current": 36,
+     "hp_max": 36,
+     "choices": [
+      {
+       "id": "ability-4",
+       "kind": "ability",
+       "level": 4,
+       "picked": [],
+       "options": []
+      }
+     ],
+     "abilities": {
+      "cha": 11,
+      "con": 15,
+      "dex": 14,
+      "int": 9,
+      "str": 16,
+      "wis": 13
+     }
+    }
+   ],
+   "foes": [],
+   "held": [],
+   "rolls": [],
+   "prose": "The Market bustles with the morning light, the scent of fresh bread mingling with the chatter of merchants and shoppers. Ash and Baker are already at the stalls, their eyes scanning the shelves, while Wren stands nearby, a glint of determination in their eyes. Ash tries to search the stalls for the ledger, their hands moving through the items with a sense of urgency. Baker does the same, their eyes narrowing as they focus on the task at hand. Wren approaches Ash, their voice steady as they say, 'I'll keep an eye out for your back, Wren, but I'm also helping Baker with his ledger.' Wren tries to pay Ash 2 gold coins for watching their back, the coins glinting in their hand as they offer them to Ash."
+  }
+ ]
+}
