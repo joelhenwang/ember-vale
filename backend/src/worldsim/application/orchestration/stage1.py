@@ -30,7 +30,7 @@ import random
 import time
 import weakref
 from collections import Counter
-from collections.abc import Awaitable, Callable, Generator, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Collection, Generator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from datetime import timedelta
@@ -42,7 +42,7 @@ from sqlalchemy.exc import IntegrityError
 
 from worldsim.application.callings import suggest_calling
 from worldsim.application.commands.director import accept_decision, open_place
-from worldsim.application.commands.inventory import buy_good, move_item, pay_coins
+from worldsim.application.commands.inventory import buy_good, move_item, pay_coins, sell_item
 from worldsim.application.commands.knowledge import fold_claim
 from worldsim.application.commands.party import recruit_companion
 from worldsim.application.conditions import tick_conditions
@@ -281,6 +281,7 @@ from worldsim.domain.relationships import Relationship, describe
 from worldsim.domain.rules.coins import COINS_KEY, coins_paid
 from worldsim.domain.rules.dnd import (
     DataTables,
+    HitPoints,
     MonsterState,
     TagOutcome,
     armor_ac,
@@ -334,12 +335,18 @@ from worldsim.domain.rules.routes import with_route
 from worldsim.domain.rules.scenes import assemble_scenes
 from worldsim.domain.rules.shop import (
     Good,
+    buyback_line,
     drinks_potion,
+    equip_bought,
     for_sale,
     good_named,
     load_goods,
     roll_heal,
     sale_line,
+    sell_price,
+    seller_kind,
+    sells,
+    sold_item,
 )
 from worldsim.domain.rules.views import WorldView
 from worldsim.domain.scenes import Attempt, Intent, Reaction, Resolution, Scene
@@ -491,9 +498,11 @@ def shop_notes(
     characters: Sequence[Character],
     locations: Sequence[Location],
     items: Sequence[ItemInstance],
+    weapon_keys: Collection[str] = (),
 ) -> list[str]:
-    """What is for sale where the actors stand, and a buyer who cannot pay:
-    told to the resolver in combat stories only (shops-001)."""
+    """What is for sale where the actors stand and what it buys back, a
+    buyer who cannot pay, and what a sale fetches: told to the resolver in
+    combat stories only (shops-001, shops-002)."""
     names = {loc.id: loc.name for loc in locations}
     where = {c.id: c.location_id for c in characters}
     who = {c.id: c.name for c in characters}
@@ -505,12 +514,35 @@ def shop_notes(
         line = sale_line(place, for_sale(place, shop_goods()))
         if line is not None:
             notes.append(line)
+            back = buyback_line(place, seller_kind(place))
+            if back is not None:
+                notes.append(back)
     for intent in members:
         action = intent.action
         if not isinstance(action, InteractAction):
             continue
         place_id = where.get(intent.author_character_id)
         place = names.get(place_id, "") if place_id is not None else ""
+        if sells(action.attempt):
+            mine = [
+                i
+                for i in items
+                if i.owner_id == intent.author_character_id and i.item_key != COINS_KEY
+            ]
+            chosen = sold_item(action.attempt, [(str(i.id), item_label(i)) for i in mine])
+            item = next((i for i in mine if str(i.id) == chosen), None)
+            seller = who.get(intent.author_character_id, "They")
+            if item is None:
+                notes.append(f"{seller} carries nothing like that to sell.")
+                continue
+            price = sell_price(item.item_key, seller_kind(place), shop_goods(), weapon_keys)
+            notes.append(
+                f"{place or 'Here'} pays {price} gold coin{'s' if price != 1 else ''} "
+                f"for {seller}'s {item_label(item)}."
+                if price
+                else f"Nobody at {place or 'this place'} buys {seller}'s {item_label(item)}."
+            )
+            continue
         good = good_named(action.attempt, for_sale(place, shop_goods()))
         if good is None:
             continue
@@ -4455,6 +4487,7 @@ class Stage1Orchestrator:
             trading = isinstance(action, InteractAction) and (
                 good_named(action.attempt, list(shop_goods().values())) is not None
                 or drinks_potion(action.attempt)
+                or sells(action.attempt)
             )
             if (
                 paying is None
@@ -4640,8 +4673,8 @@ class Stage1Orchestrator:
         event_id: UUID,
         paying: int | None,
     ) -> bool:
-        """A successful buy or a healing potion drunk, in a combat story
-        (shops-001); False when the words were neither here."""
+        """A successful buy, sale or healing potion drunk, in a combat story
+        (shops-001, shops-002); False when the words were none of these here."""
         roster = await uow.party.list_for_world(world_id)
         if not roster:
             return False
@@ -4650,20 +4683,155 @@ class Stage1Orchestrator:
             return await self._drink_potion(uow, world_id, run_id, index, intent, member, event_id)
         buyer = await uow.characters.get(intent.author_character_id)
         place = await uow.locations.get(buyer.location_id)
+        weapons = table(self._dnd_tables(), "weapons")
+        if sells(action.attempt):
+            return await self._sell(
+                uow, world_id, run_id, index, intent, action.attempt, place.name, weapons, event_id
+            )
         good = good_named(action.attempt, for_sale(place.name, shop_goods()))
         if good is None:
             return False
         bought = await buy_good(
             uow, world_id, buyer.id, good, paying or 0, action.target_character_id
         )
-        weapons = table(self._dnd_tables(), "weapons")
-        if bought is not None and member is not None and good.key in weapons:
-            # A bought weapon is one the buyer can fight with.
-            if good.key not in member.sheet.weapons:
-                sheet = member.sheet.model_copy(deep=True)
-                sheet.weapons.append(good.key)
-                await uow.party.save_sheet(member.id, sheet, member.version)
+        if bought is None or member is None:
+            return True
+        sheet = member.sheet.model_copy(deep=True)
+        if equip_bought(sheet, good.key, weapons):
+            await uow.party.save_sheet(member.id, sheet, member.version)
+        if good.rests:
+            await self._sleep(uow, world_id, run_id, index, intent, member, buyer, event_id)
         return True
+
+    async def _sleep(
+        self,
+        uow: Any,
+        world_id: UUID,
+        run_id: UUID,
+        index: int,
+        intent: Intent,
+        member: PartyMember,
+        sleeper: Character,
+        event_id: UUID,
+    ) -> None:
+        """A night in a bought room: the sleeper wakes rested (full health,
+        conditions gone, spell slots back, stamina and mana full), kept as
+        the scene's dice. The story day's own long rest still comes."""
+        today = split_absolute(index)[0]
+        woke = long_rest(member.sheet, today).model_copy(deep=True)
+        before = woke.hp.current if woke.hp is not None else None
+        if woke.hp is not None:
+            woke.hp = HitPoints(current=woke.hp.max, max=woke.hp.max)
+        woke.conditions = []
+        woke.slots_used = []
+        woke.slots_day = None
+        await uow.party.save_sheet(member.id, woke, member.version)
+        await uow.characters.save_state(
+            sleeper.model_copy(update={"stamina": 100, "mana": 100}), sleeper.version
+        )
+        after = woke.hp.current if woke.hp is not None else None
+        text = f"{member.name} sleeps in a room for the night and wakes rested."
+        if before is not None and after is not None and after > before:
+            text = f"{member.name} sleeps in a room for the night: {before}->{after} HP."
+        await self._trade_roll(
+            uow,
+            world_id,
+            run_id,
+            index,
+            intent,
+            event_id,
+            "rest",
+            TagOutcome(
+                kind="rest",
+                text=text,
+                actor=member.name,
+                target=member.name,
+                using="room for the night",
+                result="healed" if after != before else None,
+                amount=(after - before) if before is not None and after is not None else None,
+                hp_before=before,
+                hp_after=after,
+            ),
+        )
+
+    async def _sell(
+        self,
+        uow: Any,
+        world_id: UUID,
+        run_id: UUID,
+        index: int,
+        intent: Intent,
+        words: str,
+        place_name: str,
+        weapons: Mapping[str, object],
+        event_id: UUID,
+    ) -> bool:
+        """Sell a held item where it is bought back: one of it goes, its
+        price comes into the purse, kept as the scene's dice. An item the
+        place does not buy changes nothing."""
+        held = [
+            i
+            for i in await uow.inventory.list_for_owner(world_id, intent.author_character_id)
+            if i.item_key != COINS_KEY
+        ]
+        chosen = sold_item(words, [(str(i.id), item_label(i)) for i in held])
+        item = next((i for i in held if str(i.id) == chosen), None)
+        if item is None:
+            return False
+        price = sell_price(item.item_key, seller_kind(place_name), shop_goods(), weapons)
+        if price < 1:
+            return True
+        await sell_item(uow, item, price)
+        seller = await uow.characters.get(intent.author_character_id)
+        text = f"{seller.name} sells the {item_label(item)} at {place_name} for {price} gold."
+        await self._trade_roll(
+            uow,
+            world_id,
+            run_id,
+            index,
+            intent,
+            event_id,
+            "sell",
+            TagOutcome(
+                kind="sell",
+                text=text,
+                actor=seller.name,
+                using=item_label(item),
+                amount=price,
+            ),
+        )
+        return True
+
+    async def _trade_roll(
+        self,
+        uow: Any,
+        world_id: UUID,
+        run_id: UUID,
+        index: int,
+        intent: Intent,
+        event_id: UUID,
+        tag: str,
+        outcome: TagOutcome,
+    ) -> None:
+        """Keep a trade's line (a sale, a night's rest) as the scene's dice."""
+        sequence = await uow.events.max_sequence(world_id) + 1
+        await uow.events.append_event(
+            WorldEvent(
+                id=uuid5(event_id, f"{tag}:{intent.id}"),
+                world_id=world_id,
+                sequence=sequence,
+                event_type=EventType.ACTION_RESOLVED,
+                absolute_index=index,
+                phase_run_id=run_id,
+                participant_ids=[intent.author_character_id],
+                summary={
+                    tag: outcome.text[:512],
+                    "scene_event_id": str(event_id),
+                    "rolls": combat_rolls_json([outcome], []),
+                },
+                random_result=outcome.text[:512],
+            )
+        )
 
     async def _drink_potion(
         self,
@@ -5037,7 +5205,15 @@ class Stage1Orchestrator:
         notes.extend(check_line(check) for check in checks)
         notes.extend(purse_notes(members, characters, items))
         if roster:
-            notes.extend(shop_notes(members, characters, locations, items))
+            notes.extend(
+                shop_notes(
+                    members,
+                    characters,
+                    locations,
+                    items,
+                    table(self._dnd_tables(), "weapons"),
+                )
+            )
         task_run_id = derive_task_id(run_id, "resolver", scene.id)
         spec = ManifestSpec(
             role="resolver",

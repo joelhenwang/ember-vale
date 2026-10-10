@@ -26,18 +26,19 @@ from worldsim.application.commands.party import (
     create_character,
     link_member,
 )
-from worldsim.application.orchestration.stage1 import Stage1Orchestrator, shop_goods
+from worldsim.application.orchestration.stage1 import Stage1Orchestrator, item_label, shop_goods
 from worldsim.application.queries.suggestions import suggestions_for
 from worldsim.application.stories.guards import require_unarchived
 from worldsim.domain.commands import ActionIntent
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.domain.ids import derive_attempt_id
 from worldsim.domain.party import PartyMember, fight_keys, foes_on
+from worldsim.domain.rules.coins import COINS_KEY
 from worldsim.domain.rules.dnd import DataTables, armor_ac, strip_combat_tags, xp_for_level
 from worldsim.domain.rules.dnd.data import entry, table
 from worldsim.domain.rules.dnd.progress import class_slots, long_rest, slots_left
 from worldsim.domain.rules.dnd.sheets import Sheet
-from worldsim.domain.rules.shop import for_sale
+from worldsim.domain.rules.shop import for_sale, sell_price, seller_kind
 from worldsim.domain.scenes import Intent, Reaction
 from worldsim.domain.time import absolute_index
 from worldsim.interfaces.http import schemas as api
@@ -656,10 +657,20 @@ async def shop(world_id: UUID, request: Request) -> api.ShopResponse:
         character = await uow.characters.get(viewer)
         place = await uow.locations.get(character.location_id)
         purse = await purse_of(uow, world_id, viewer)
+        held = await uow.inventory.list_for_owner(world_id, viewer)
     goods = for_sale(place.name, shop_goods())
+    kind = seller_kind(place.name)
+    weapons = table(dnd_tables(), "weapons")
+    buys = [
+        api.ShopSaleView(item_id=item.id, name=item_label(item), price=price)
+        for item in held
+        if item.item_key != COINS_KEY
+        and (price := sell_price(item.item_key, kind, shop_goods(), weapons)) > 0
+    ]
     return api.ShopResponse(
         world_id=world_id,
         place=place.name if goods else None,
+        buys=buys if goods else [],
         goods=[
             api.ShopGoodView(
                 key=g.key, name=g.name, price=g.price, description=g.description, keep=g.keep

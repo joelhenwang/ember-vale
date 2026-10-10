@@ -25,6 +25,25 @@ function withArticle(name: string): string {
   return /^[aeiou]/i.test(name) ? `an ${name}` : `a ${name}`
 }
 
+export interface SellChip {
+  key: string
+  /** "Sell scimitar · 3" */
+  label: string
+  attempt: string
+  price: number
+}
+
+/** What the hero could sell here, as chips (shops-002); none elsewhere. */
+export function sellChips(shop: ShopResponse | null): SellChip[] {
+  if (!shop?.buys?.length) return []
+  return shop.buys.map((b) => ({
+    key: b.item_id,
+    label: `Sell ${b.name} · ${b.price} gold`,
+    attempt: `Sell the ${b.name} for ${coins(b.price)}`,
+    price: b.price
+  }))
+}
+
 /** The buy chips for a shop; none when nothing is sold here. */
 export function buyChips(shop: ShopResponse | null): BuyChip[] {
   if (!shop?.goods?.length) return []

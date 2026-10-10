@@ -39,6 +39,7 @@ WANTED = (
     "PartyRosterResponse",
     "ShopGoodView",
     "ShopResponse",
+    "ShopSaleView",
     "FoeView",
     "LevelChoiceView",
     "SpellOption",

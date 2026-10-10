@@ -61,7 +61,7 @@ import {
   type LogLine
 } from '../game/adventure'
 import { beatTimeLabel, layoutTokens } from '../game/observatory'
-import { buyChips } from '../game/shop'
+import { buyChips, sellChips } from '../game/shop'
 
 const route = useRoute()
 const storyId = computed(() => String(route.params.storyId ?? ''))
@@ -184,6 +184,7 @@ const leads = computed(() =>
 )
 /** What is for sale where you stand (combat stories), as buy chips. */
 const forSale = computed(() => buyChips(adv.shop.value))
+const forSell = computed(() => sellChips(adv.shop.value))
 /** A buy chip fills the composer with a plain Do attempt to send or edit. */
 function buy(attempt: string): void {
   mode.value = 'do'
@@ -1014,6 +1015,16 @@ onMounted(() => {
                     class="shop__chip ev-press"
                     :disabled="!c.affordable || adv.acting.value || !adv.alive.value"
                     :title="c.short ?? c.attempt"
+                    @click="buy(c.attempt)">
+                    {{ c.label }}
+                  </button>
+                  <button
+                    v-for="c in forSell"
+                    :key="c.key"
+                    type="button"
+                    class="shop__chip shop__chip--sell ev-press"
+                    :disabled="adv.acting.value || !adv.alive.value"
+                    :title="c.attempt"
                     @click="buy(c.attempt)">
                     {{ c.label }}
                   </button>
@@ -2650,6 +2661,11 @@ button.log__picture:hover .log__thumb img {
 }
 .shop__chip:hover:not(:disabled) {
   border-color: var(--ember);
+}
+/* Selling back: the same chip, dashed. */
+.shop__chip--sell {
+  border-style: dashed;
+  color: var(--ink-2);
 }
 .shop__chip:disabled {
   opacity: 0.5;

@@ -6967,6 +6967,13 @@
         "additionalProperties": false,
         "description": "What is for sale where the played character stands (shops-001).",
         "properties": {
+          "buys": {
+            "items": {
+              "$ref": "#/components/schemas/ShopSaleView"
+            },
+            "title": "Buys",
+            "type": "array"
+          },
           "goods": {
             "items": {
               "$ref": "#/components/schemas/ShopGoodView"
@@ -7000,6 +7007,32 @@
           "world_id"
         ],
         "title": "ShopResponse",
+        "type": "object"
+      },
+      "ShopSaleView": {
+        "additionalProperties": false,
+        "description": "Something the played character carries that this place buys back.",
+        "properties": {
+          "item_id": {
+            "format": "uuid",
+            "title": "Item Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "price": {
+            "title": "Price",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "item_id",
+          "name",
+          "price"
+        ],
+        "title": "ShopSaleView",
         "type": "object"
       },
       "SimulationStatus": {

@@ -15,9 +15,12 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from worldsim.domain.rules.dnd.sheets import Sheet
 
 #: What a place sells by what its name reads as, first match wins.
 SELLER_KINDS: tuple[tuple[str, str], ...] = (
@@ -39,6 +42,8 @@ class Good:
     words: tuple[str, ...]
     description: str
     heals: str | None = None
+    #: A night's sleep: the buyer wakes rested (a room at the inn).
+    rests: bool = False
 
     @property
     def priced(self) -> str:
@@ -60,6 +65,7 @@ def load_goods(path: str | Path) -> dict[str, Good]:
             words=tuple(str(w).lower() for w in row["words"]),
             description=str(row.get("description", "")),
             heals=row.get("heals"),
+            rests=bool(row.get("rests", False)),
         )
         if good.key in goods:
             raise ValueError(f"duplicate good: {good.key}")
@@ -141,3 +147,86 @@ def roll_heal(dice: str, rng: Any) -> int:
         raise ValueError(f"not a dice expression: {dice}")
     count, sides, bonus = int(found.group(1)), int(found.group(2)), int(found.group(3) or 0)
     return sum(int(rng.random() * sides) + 1 for _ in range(count)) + bonus
+
+
+#: Spoils a kind of seller buys besides its own goods, in gold coins: a
+#: fallen foe's weapon at a smithy (less at the market), a pelt at the market.
+SPOILS_BOUGHT: dict[str, dict[str, int]] = {
+    "smith": {"weapon": 3},
+    "market": {"weapon": 2, "pelt": 2},
+}
+
+#: The shield goes on the arm only of a calling trained with shields (5e).
+SHIELD_CALLINGS = frozenset({"barbarian", "cleric", "druid", "fighter", "paladin", "ranger"})
+
+
+def sell_price(
+    item_key: str, kind: str | None, goods: dict[str, Good], weapon_keys: Collection[str]
+) -> int:
+    """What a seller of ``kind`` pays for an item: half the price of a good it
+    sells itself (rounded down, so a one-coin good is worth nothing back),
+    a set price for spoils it takes, else nothing (0)."""
+    if kind is None:
+        return 0
+    good = goods.get(item_key)
+    if good is not None:
+        return good.price // 2 if kind in good.sellers else 0
+    bought = SPOILS_BOUGHT.get(kind, {})
+    if item_key in weapon_keys:
+        return bought.get("weapon", 0)
+    if item_key.endswith("-pelt"):
+        return bought.get("pelt", 0)
+    return 0
+
+
+def buyback_line(place_name: str, kind: str | None) -> str | None:
+    """The surroundings line: what the place buys back, and for what."""
+    if kind is None:
+        return None
+    spoils = SPOILS_BOUGHT.get(kind, {})
+    parts = ["its own goods at half price"]
+    if "weapon" in spoils:
+        parts.append(f"a fallen foe's weapon for {spoils['weapon']} gold coins")
+    if "pelt" in spoils:
+        parts.append(f"a pelt for {spoils['pelt']} gold coins")
+    return f"{place_name} buys back " + ", ".join(parts) + "."
+
+
+_SELL = re.compile(r"\b(?:sell|sells|selling|sold|pawn|pawns|trade in|trades in)\b", re.IGNORECASE)
+_NOT_SELLING = re.compile(
+    r"\b(?:don'?t|do not|won'?t|will not|refuse|pretend|if you|would you|how much|"
+    r"what would)\b",
+    re.IGNORECASE,
+)
+
+
+def sold_item(words: str, held: Sequence[tuple[str, str]]) -> str | None:
+    """Which held item the words sell, as its id: ``held`` pairs an item's id
+    with its name ("scimitar", "wolf pelt"); the longest name named wins."""
+    if not sells(words):
+        return None
+    lowered = words.lower()
+    named = [
+        (len(name), item_id)
+        for item_id, name in held
+        if name and re.search(rf"\b{re.escape(name.lower())}s?\b", lowered)
+    ]
+    return max(named)[1] if named else None
+
+
+def sells(words: str) -> bool:
+    """The words sell something ("I sell the scimitar to the smith")."""
+    return bool(_SELL.search(words)) and not _NOT_SELLING.search(words)
+
+
+def equip_bought(sheet: Sheet, good_key: str, weapon_keys: Collection[str]) -> bool:
+    """Put a bought good to use on a party sheet (in place): a weapon joins
+    those it fights with, a shield goes on the arm of a calling trained with
+    shields (+2 armour class). True when the sheet changed."""
+    if good_key in weapon_keys and good_key not in sheet.weapons:
+        sheet.weapons.append(good_key)
+        return True
+    if good_key == "shield" and not sheet.shield and sheet.character_class in SHIELD_CALLINGS:
+        sheet.shield = True
+        return True
+    return False

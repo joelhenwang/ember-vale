@@ -7,6 +7,7 @@ Every change lands beside its audit command in one transaction.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from uuid import uuid4
 
 from worldsim.application.transactions.canonical import canonical_input_hash
@@ -180,6 +181,14 @@ async def purse_of(uow: UnitOfWork, world_id: WorldId, owner_id: CharacterId) ->
     return purse.quantity if purse is not None else 0
 
 
+@dataclass(frozen=True)
+class Bought:
+    """A purchase made: what was paid, and the good in hand when it is kept."""
+
+    paid: int
+    item: ItemInstance | None
+
+
 async def buy_good(
     uow: UnitOfWork,
     world_id: WorldId,
@@ -187,17 +196,17 @@ async def buy_good(
     good: Good,
     paid: int,
     seller_id: CharacterId | None,
-) -> ItemInstance | None:
+) -> Bought | None:
     """Buy ``good`` for ``paid`` coins (at least its price): the coins go to
     the seller (or are spent), and a good one keeps lands in the buyer's
-    hands. A purse short of the price changes nothing. Without audit or
-    commit, like ``pay_coins``; returns the bought item, when one is kept."""
+    hands. A purse short of the price changes nothing (None). Without audit
+    or commit, like ``pay_coins``."""
     price = max(good.price, paid)
     if await purse_of(uow, world_id, buyer_id) < price:
         return None
     await pay_coins(uow, world_id, buyer_id, price, seller_id)
     if not good.keep:
-        return None
+        return Bought(price, None)
     item = ItemInstance(
         id=new_item_instance_id(),
         world_id=world_id,
@@ -207,4 +216,41 @@ async def buy_good(
         description=good.description,
     )
     await uow.inventory.add_item(item)
-    return item
+    return Bought(price, item)
+
+
+async def receive_coins(
+    uow: UnitOfWork, world_id: WorldId, owner_id: CharacterId, count: int
+) -> None:
+    """Add coins to someone's purse (a new one when they carry none)."""
+    if count < 1:
+        return
+    purse = await _purse(uow, world_id, owner_id)
+    if purse is None:
+        await uow.inventory.add_item(
+            ItemInstance(
+                id=new_item_instance_id(),
+                world_id=world_id,
+                item_key=COINS_KEY,
+                owner_id=owner_id,
+                quantity=count,
+                name=COINS_NAME,
+            )
+        )
+        return
+    await uow.inventory.save_item(
+        purse.model_copy(update={"quantity": purse.quantity + count}), purse.version
+    )
+
+
+async def sell_item(uow: UnitOfWork, item: ItemInstance, price: int) -> None:
+    """Sell one of ``item`` for ``price`` coins to its holder's purse: the
+    stack loses one (the last one is gone). Without audit or commit."""
+    assert item.owner_id is not None
+    if item.quantity > 1:
+        await uow.inventory.save_item(
+            item.model_copy(update={"quantity": item.quantity - 1}), item.version
+        )
+    else:
+        await uow.inventory.remove_item(item.id)
+    await receive_coins(uow, item.world_id, item.owner_id, price)

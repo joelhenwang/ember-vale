@@ -756,6 +756,17 @@ class ShopGoodView(BaseModel):
     keep: bool = True
 
 
+class ShopSaleView(BaseModel):
+    """Something the played character carries that this place buys back."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    item_id: UUID
+    name: str
+    #: Whole gold coins it fetches here.
+    price: int
+
+
 class ShopResponse(BaseModel):
     """What is for sale where the played character stands (shops-001)."""
 
@@ -765,6 +776,8 @@ class ShopResponse(BaseModel):
     #: The place's name; None when nothing is sold there or nobody is played.
     place: str | None = None
     goods: list[ShopGoodView] = Field(default_factory=list)
+    #: What the played character could sell here, and for how much (shops-002).
+    buys: list[ShopSaleView] = Field(default_factory=list)
     #: Gold coins the played character carries.
     purse: int = 0
 

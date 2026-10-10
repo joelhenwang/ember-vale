@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buyChips } from './shop'
+import { buyChips, sellChips } from './shop'
 
 const shop = {
   world_id: 'w',
@@ -34,5 +34,23 @@ describe('buy chips', () => {
   it('offers nothing where nothing is sold', () => {
     expect(buyChips(null)).toEqual([])
     expect(buyChips({ world_id: 'w', place: null, goods: [], purse: 9 })).toEqual([])
+  })
+})
+
+describe('sell chips', () => {
+  it('offers what the hero carries that the place buys back, at its price', () => {
+    const chips = sellChips({
+      ...shop,
+      buys: [
+        { item_id: 'i1', name: 'scimitar', price: 2 },
+        { item_id: 'i2', name: 'wolf pelt', price: 1 }
+      ]
+    })
+    expect(chips.map((c) => [c.label, c.attempt])).toEqual([
+      ['Sell scimitar · 2 gold', 'Sell the scimitar for 2 gold coins'],
+      ['Sell wolf pelt · 1 gold', 'Sell the wolf pelt for 1 gold coin']
+    ])
+    expect(sellChips(shop)).toEqual([])
+    expect(sellChips(null)).toEqual([])
   })
 })

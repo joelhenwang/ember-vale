@@ -4,7 +4,7 @@
   "goods": [
     {"key": "meal", "name": "hot meal", "price": 1, "sellers": ["inn"], "keep": false, "words": ["meal", "food", "supper", "dinner", "breakfast", "stew", "bowl of"], "description": "A bowl of something hot and a heel of bread."},
     {"key": "ale", "name": "mug of ale", "price": 1, "sellers": ["inn"], "keep": false, "words": ["ale", "beer", "mead", "drink for", "round of drinks", "a round"], "description": "Brown, foaming and cheap."},
-    {"key": "room", "name": "room for the night", "price": 2, "sellers": ["inn"], "keep": false, "words": ["room", "bed for the night", "night's lodging", "lodging"], "description": "A dry bed under a sound roof."},
+    {"key": "room", "name": "room for the night", "price": 2, "sellers": ["inn"], "keep": false, "rests": true, "words": ["room", "bed for the night", "night's lodging", "lodging"], "description": "A dry bed under a sound roof: you wake rested, wounds closed."},
     {"key": "ration", "name": "trail ration", "price": 1, "sellers": ["inn", "market"], "keep": true, "words": ["ration", "rations", "trail food", "provisions"], "description": "A day's worth of dried meat and hardtack."},
     {"key": "torch", "name": "torch", "price": 1, "sellers": ["market"], "keep": true, "words": ["torch", "torches"], "description": "Pitch-soaked and good for an hour of light."},
     {"key": "rope", "name": "rope", "price": 1, "sellers": ["market"], "keep": true, "words": ["rope", "coil of rope"], "description": "A coil of hempen rope, fifty feet long."},

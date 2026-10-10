@@ -155,6 +155,31 @@ export function sayRoll(r: CombatRollView): RollSay {
       tone: 'info'
     }
   }
+  if (kind === 'rest') {
+    // A bought room: "Wren sleeps in a room for the night · Rested · Wren 4 → 12".
+    const healed = r.hp_before != null && r.hp_after != null && r.hp_after > r.hp_before
+    return {
+      lead: `${actor || 'Someone'} sleeps in a ${r.using ?? 'room for the night'}`,
+      using: null,
+      check: null,
+      natural: null,
+      outcome: healed ? `Rested · healed ${r.amount ?? 0}` : 'Rested',
+      hp: healed ? `${actor} ${r.hp_before} → ${r.hp_after}` : null,
+      tone: 'heal'
+    }
+  }
+  if (kind === 'sell') {
+    // A sale: "Wren sells the scimitar · +3 gold".
+    return {
+      lead: `${actor || 'Someone'} sells the ${r.using ?? 'goods'}`,
+      using: null,
+      check: null,
+      natural: null,
+      outcome: `+${r.amount ?? 0} gold`,
+      hp: null,
+      tone: 'info'
+    }
+  }
   if (kind === 'potion') {
     // A healing potion drunk: "Wren drinks a potion of healing · Healed 7 · Wren 3 → 10".
     return {

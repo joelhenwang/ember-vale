@@ -107,6 +107,27 @@ describe('party', () => {
     ])
   })
 
+  it('says a night in a room and a sale plainly', () => {
+    const slept = sayRoll({
+      kind: 'rest',
+      text: 'Wren sleeps in a room for the night: 4->12 HP.',
+      actor: 'Wren',
+      using: 'room for the night',
+      amount: 8,
+      hp_before: 4,
+      hp_after: 12,
+      result: 'healed'
+    })
+    expect([slept.lead, slept.outcome, slept.hp, slept.tone]).toEqual([
+      'Wren sleeps in a room for the night',
+      'Rested · healed 8',
+      'Wren 4 → 12',
+      'heal'
+    ])
+    const sold = sayRoll({ kind: 'sell', text: '', actor: 'Wren', using: 'scimitar', amount: 3 })
+    expect([sold.lead, sold.outcome]).toEqual(['Wren sells the scimitar', '+3 gold'])
+  })
+
   it('says an ability check: who tried what, against how hard, how it went', () => {
     const said = sayRoll({
       kind: 'check',

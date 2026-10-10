@@ -180,10 +180,17 @@ export interface ShopGoodView {
 }
 
 export interface ShopResponse {
+  buys?: ShopSaleView[];
   goods?: ShopGoodView[];
   place?: string | null;
   purse?: number;
   world_id: string;
+}
+
+export interface ShopSaleView {
+  item_id: string;
+  name: string;
+  price: number;
 }
 
 export interface FoeView {
