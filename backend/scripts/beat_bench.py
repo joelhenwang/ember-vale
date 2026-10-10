@@ -152,6 +152,22 @@ async def seed(engine: Any, cast: int, places: int) -> Seeded:
     return Seeded(world, people, place_ids, home)
 
 
+async def seat_party(engine: Any, seeded: Seeded) -> None:
+    """A combat story's party: the first two of the cast as linked level-1
+    fighters, so every scene they share narrates and rolls as a party's."""
+    from worldsim.application.commands.party import begin_adventure
+    from worldsim.application.orchestration.stage1 import DND_DATA_DIR
+    from worldsim.domain.rules.dnd import load_data
+    from worldsim.infrastructure.repositories.unit_of_work import create_unit_of_work
+
+    data = load_data(DND_DATA_DIR)
+    for name, character_id in list(seeded.people.items())[:2]:
+        async with create_unit_of_work(engine) as uow:
+            await begin_adventure(
+                uow, data, seeded.world, name, "human", "fighter", 1, character_id=character_id
+            )
+
+
 # --- scripted model -----------------------------------------------------------
 
 
@@ -289,6 +305,44 @@ def gateways(script: Script) -> tuple[Callable[[str], Any], dict[str, Any]]:
 # --- SQL counting ---------------------------------------------------------------
 
 
+def _app_frame(frame: Any) -> str | None:
+    path = frame.f_code.co_filename.replace(chr(92), "/")
+    if "/worldsim/application/" in path or "/worldsim/interfaces/" in path:
+        return f"{Path(path).stem}.{frame.f_code.co_name}"
+    return None
+
+
+_PLUMBING = ("._bounded", ".fresh", ".load", ".get", ".invoke", "._shared")
+
+
+def _caller() -> str:
+    """The application functions that issued this statement. SQLAlchemy runs
+    the driver in a greenlet, so the async caller is the parent greenlet's
+    live stack: the running coroutine chain, innermost first."""
+    import greenlet  # pyright: ignore[reportMissingTypeStubs]
+
+    current = greenlet.getcurrent()
+    frame: Any = current.parent.gr_frame if current.parent is not None else None
+    if frame is None:
+        frame = sys._getframe(2)  # pyright: ignore[reportPrivateUsage]
+    names: list[str] = []
+    while frame is not None and len(names) < 3:
+        name = _app_frame(frame)
+        if name and not name.endswith(_PLUMBING) and name not in names:
+            names.append(name)
+        frame = frame.f_back
+    if names:
+        return " < ".join(names)
+    # No application frame: name the innermost worldsim frames instead.
+    frame = current.parent.gr_frame if current.parent is not None else sys._getframe(2)  # pyright: ignore[reportPrivateUsage]
+    while frame is not None and len(names) < 3:
+        path = frame.f_code.co_filename.replace(chr(92), "/")
+        if "/worldsim/" in path:
+            names.append(f"{Path(path).stem}.{frame.f_code.co_name}")
+        frame = frame.f_back
+    return "? " + " < ".join(names)
+
+
 @dataclass
 class SqlMeter:
     count: int = 0
@@ -297,6 +351,9 @@ class SqlMeter:
     by_table: dict[str, int] = field(default_factory=dict)
     #: statement shape (literals and parameter lists folded) -> count
     by_shape: dict[str, int] = field(default_factory=dict)
+    #: "table <- application function" -> count (only with --sql-callers)
+    by_caller: dict[str, int] = field(default_factory=dict)
+    callers: bool = False
     _started: dict[int, float] = field(default_factory=dict)
 
     def install(self, engine: Any) -> None:
@@ -324,6 +381,10 @@ class SqlMeter:
             shape = re.sub(r"\$\d+(?:::\w+(?:\[\])?)?", "?", " ".join(statement.split()))
             shape = re.sub(r"\((?:\?,\s*)+\?\)", "(?…)", shape)[:220]
             self.by_shape[shape] = self.by_shape.get(shape, 0) + 1
+            if self.callers:
+                where = _caller()
+                k = f"{key} <- {where}"
+                self.by_caller[k] = self.by_caller.get(k, 0) + 1
 
     def snapshot(self) -> tuple[int, float]:
         return self.count, self.seconds
@@ -343,9 +404,11 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
     from worldsim.infrastructure.tracing.langsmith import NullExporter
 
     engine = create_engine(Settings())
-    meter = SqlMeter()
+    meter = SqlMeter(callers=bool(args.sql_callers))
     meter.install(engine)
     seeded = await seed(engine, args.cast, args.places)
+    if args.party:
+        await seat_party(engine, seeded)
     dump = Path(args.dump) if args.dump else None
     if dump is not None:
         dump.mkdir(parents=True, exist_ok=True)
@@ -376,6 +439,7 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
         q0, s0 = meter.snapshot()
         c0 = meter.checkouts
         shapes_before = dict(meter.by_shape) if index in checkpoints else None
+        callers_before = dict(meter.by_caller) if index in checkpoints else None
         if profiler is not None and index == prof_from:
             profiler.enable()
         started = time.perf_counter()
@@ -401,6 +465,12 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
             print(f"--- beat {index}: top statements ---")
             for v, k in top:
                 print(f"{v:5d}  {k}")
+        if callers_before is not None and meter.callers:
+            delta = {k: v - callers_before.get(k, 0) for k, v in meter.by_caller.items()}
+            top = sorted(((v, k) for k, v in delta.items() if v), reverse=True)
+            print(f"--- beat {index}: statements by caller ---")
+            for v, k in top:
+                print(f"{v:5d}  {k}")
         if index in checkpoints or index == args.beats:
             window = beats[-min(10, len(beats)) :]
             print(
@@ -412,6 +482,11 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
                 f"  sessions {statistics.median(b['checkouts'] for b in window):4.0f}",
                 flush=True,
             )
+    if meter.callers:
+        print(f"--- statements per beat by caller (mean over {args.beats} beats) ---")
+        top = sorted(meter.by_caller.items(), key=lambda kv: -kv[1])[:70]
+        for key, n in top:
+            print(f"{n / args.beats:6.2f}  {key}")
     stored = await checkpoint_storage(engine, seeded.world, args.beats)
     print(f"checkpoints: {stored}")
     await engine.dispose()
@@ -422,6 +497,7 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
         "beats": beats,
         "calls": script.calls,
         "top_tables": sorted(meter.by_table.items(), key=lambda kv: -kv[1])[:25],
+        "by_caller": dict(sorted(meter.by_caller.items(), key=lambda kv: -kv[1])),
         "checkpoints": stored,
     }
     if profiler is not None:
@@ -495,6 +571,12 @@ def main() -> int:
     )
     parser.add_argument(
         "--sql-top", type=int, default=0, help="print top statements at checkpoints"
+    )
+    parser.add_argument(
+        "--sql-callers", action="store_true", help="print statements by caller at checkpoints"
+    )
+    parser.add_argument(
+        "--party", action="store_true", help="seat the first two of the cast as a party"
     )
     parser.add_argument("--no-reset", action="store_true", help="reuse the bench database")
     parser.add_argument(
