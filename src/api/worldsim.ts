@@ -83,7 +83,8 @@ import type {
   PartyRosterResponse,
   PartyMemberView,
   LevelChoiceRequest,
-  PartyCallingRequest
+  PartyCallingRequest,
+  ShopResponse
 } from '../../content/clients/worldsim'
 import { apiFetch, type Role } from './http'
 
@@ -567,6 +568,15 @@ export function listItems(
  *  its latest fight while it is on; a story without fights has no members. */
 export function getParty(worldId: string, opts: CallOptions = {}): Promise<PartyRosterResponse> {
   return apiFetch<PartyRosterResponse>(`/stage1/party?world_id=${worldId}`, {
+    ...opts,
+    method: 'GET'
+  })
+}
+
+/** What is for sale where the played character stands (a combat story's
+ *  markets, inns and smithies), with their purse; empty elsewhere. */
+export function getShop(worldId: string, opts: CallOptions = {}): Promise<ShopResponse> {
+  return apiFetch<ShopResponse>(`/stage1/shop?world_id=${worldId}`, {
     ...opts,
     method: 'GET'
   })

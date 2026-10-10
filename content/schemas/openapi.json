@@ -6929,6 +6929,79 @@
         "title": "SeedResponse",
         "type": "object"
       },
+      "ShopGoodView": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "keep": {
+            "default": true,
+            "title": "Keep",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "price": {
+            "title": "Price",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "price"
+        ],
+        "title": "ShopGoodView",
+        "type": "object"
+      },
+      "ShopResponse": {
+        "additionalProperties": false,
+        "description": "What is for sale where the played character stands (shops-001).",
+        "properties": {
+          "goods": {
+            "items": {
+              "$ref": "#/components/schemas/ShopGoodView"
+            },
+            "title": "Goods",
+            "type": "array"
+          },
+          "place": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Place"
+          },
+          "purse": {
+            "default": 0,
+            "title": "Purse",
+            "type": "integer"
+          },
+          "world_id": {
+            "format": "uuid",
+            "title": "World Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "world_id"
+        ],
+        "title": "ShopResponse",
+        "type": "object"
+      },
       "SimulationStatus": {
         "additionalProperties": false,
         "properties": {
@@ -13272,6 +13345,50 @@
           }
         },
         "summary": "Get Narration",
+        "tags": [
+          "stage1"
+        ]
+      }
+    },
+    "/api/v1/stage1/shop": {
+      "get": {
+        "description": "What is for sale where the played character stands, in a combat\nstory, and their purse (shops-001). Empty for watchers.",
+        "operationId": "shop_api_v1_stage1_shop_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "world_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "World Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Shop",
         "tags": [
           "stage1"
         ]

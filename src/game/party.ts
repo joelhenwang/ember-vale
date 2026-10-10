@@ -155,6 +155,21 @@ export function sayRoll(r: CombatRollView): RollSay {
       tone: 'info'
     }
   }
+  if (kind === 'potion') {
+    // A healing potion drunk: "Wren drinks a potion of healing · Healed 7 · Wren 3 → 10".
+    return {
+      lead: `${actor || 'Someone'} drinks ${/^(a|an) /i.test(r.using ?? '') ? r.using : `a ${r.using ?? 'potion'}`}`,
+      using: null,
+      check: null,
+      natural: null,
+      outcome: `Healed ${r.amount ?? 0}`,
+      hp:
+        r.hp_before != null && r.hp_after != null
+          ? `${actor} ${r.hp_before} → ${r.hp_after}`
+          : null,
+      tone: 'heal'
+    }
+  }
   if (kind === 'check') {
     // An ability check outside a fight: "Wren tries Athletics · 14 vs DC 12 · Success".
     const words: Record<string, string> = {

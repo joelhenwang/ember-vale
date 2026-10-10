@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "note": "Goods for sale in combat stories (shops-001). Prices are whole gold coins, priced for this story's purses (a fallen foe leaves 2 to 7): they follow the SRD's order of cost, not its numbers (a Potion of Healing is 50 gp there). Sellers are kinds of place: market, inn, smith.",
+  "goods": [
+    {"key": "meal", "name": "hot meal", "price": 1, "sellers": ["inn"], "keep": false, "words": ["meal", "food", "supper", "dinner", "breakfast", "stew", "bowl of"], "description": "A bowl of something hot and a heel of bread."},
+    {"key": "ale", "name": "mug of ale", "price": 1, "sellers": ["inn"], "keep": false, "words": ["ale", "beer", "mead", "drink for", "round of drinks", "a round"], "description": "Brown, foaming and cheap."},
+    {"key": "room", "name": "room for the night", "price": 2, "sellers": ["inn"], "keep": false, "words": ["room", "bed for the night", "night's lodging", "lodging"], "description": "A dry bed under a sound roof."},
+    {"key": "ration", "name": "trail ration", "price": 1, "sellers": ["inn", "market"], "keep": true, "words": ["ration", "rations", "trail food", "provisions"], "description": "A day's worth of dried meat and hardtack."},
+    {"key": "torch", "name": "torch", "price": 1, "sellers": ["market"], "keep": true, "words": ["torch", "torches"], "description": "Pitch-soaked and good for an hour of light."},
+    {"key": "rope", "name": "rope", "price": 1, "sellers": ["market"], "keep": true, "words": ["rope", "coil of rope"], "description": "A coil of hempen rope, fifty feet long."},
+    {"key": "waterskin", "name": "waterskin", "price": 1, "sellers": ["market"], "keep": true, "words": ["waterskin", "water skin", "flask of water"], "description": "Holds a day's water."},
+    {"key": "bedroll", "name": "bedroll", "price": 1, "sellers": ["market"], "keep": true, "words": ["bedroll", "blanket"], "description": "For nights on the road."},
+    {"key": "healers-kit", "name": "healer's kit", "price": 3, "sellers": ["market"], "keep": true, "words": ["healer's kit", "healers kit", "bandages", "healing kit"], "description": "Bandages, salves and splints."},
+    {"key": "potion-of-healing", "name": "potion of healing", "price": 6, "sellers": ["market"], "keep": true, "heals": "2d4+2", "words": ["potion of healing", "healing potion", "healing draught", "potion"], "description": "Red liquid that glimmers when shaken. Drunk, it heals 2d4+2."},
+    {"key": "dagger", "name": "dagger", "price": 2, "sellers": ["market", "smith"], "keep": true, "words": ["dagger", "knife"], "description": "A plain, sharp blade."},
+    {"key": "handaxe", "name": "handaxe", "price": 3, "sellers": ["smith"], "keep": true, "words": ["handaxe", "hand axe", "hatchet"], "description": "A light axe, good for throwing."},
+    {"key": "spear", "name": "spear", "price": 2, "sellers": ["smith"], "keep": true, "words": ["spear"], "description": "Ash shaft, iron head."},
+    {"key": "shortsword", "name": "shortsword", "price": 8, "sellers": ["smith"], "keep": true, "words": ["shortsword", "short sword"], "description": "A soldier's sidearm."},
+    {"key": "shield", "name": "shield", "price": 8, "sellers": ["smith"], "keep": true, "words": ["shield"], "description": "Oak, rimmed in iron."}
+  ]
+}

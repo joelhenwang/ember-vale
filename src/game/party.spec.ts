@@ -87,6 +87,26 @@ describe('party', () => {
     })
   })
 
+  it('says a healing potion drunk', () => {
+    const said = sayRoll({
+      kind: 'potion',
+      text: 'Wren drinks a potion of healing: 7 hit points (3->10 HP).',
+      actor: 'Wren',
+      target: 'Wren',
+      using: 'potion of healing',
+      result: 'healed',
+      amount: 7,
+      hp_before: 3,
+      hp_after: 10
+    })
+    expect([said.lead, said.outcome, said.hp, said.tone]).toEqual([
+      'Wren drinks a potion of healing',
+      'Healed 7',
+      'Wren 3 → 10',
+      'heal'
+    ])
+  })
+
   it('says an ability check: who tried what, against how hard, how it went', () => {
     const said = sayRoll({
       kind: 'check',

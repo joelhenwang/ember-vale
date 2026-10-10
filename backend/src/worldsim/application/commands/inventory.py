@@ -21,6 +21,7 @@ from worldsim.domain.ids import (
 from worldsim.domain.items import ItemDefinition
 from worldsim.domain.progress import ItemInstance
 from worldsim.domain.rules.coins import COINS_KEY, COINS_NAME
+from worldsim.domain.rules.shop import Good
 
 
 async def give_item(
@@ -171,3 +172,39 @@ async def pay_coins(
             theirs.model_copy(update={"quantity": theirs.quantity + paid}), theirs.version
         )
     return paid
+
+
+async def purse_of(uow: UnitOfWork, world_id: WorldId, owner_id: CharacterId) -> int:
+    """How many gold coins someone carries."""
+    purse = await _purse(uow, world_id, owner_id)
+    return purse.quantity if purse is not None else 0
+
+
+async def buy_good(
+    uow: UnitOfWork,
+    world_id: WorldId,
+    buyer_id: CharacterId,
+    good: Good,
+    paid: int,
+    seller_id: CharacterId | None,
+) -> ItemInstance | None:
+    """Buy ``good`` for ``paid`` coins (at least its price): the coins go to
+    the seller (or are spent), and a good one keeps lands in the buyer's
+    hands. A purse short of the price changes nothing. Without audit or
+    commit, like ``pay_coins``; returns the bought item, when one is kept."""
+    price = max(good.price, paid)
+    if await purse_of(uow, world_id, buyer_id) < price:
+        return None
+    await pay_coins(uow, world_id, buyer_id, price, seller_id)
+    if not good.keep:
+        return None
+    item = ItemInstance(
+        id=new_item_instance_id(),
+        world_id=world_id,
+        item_key=good.key,
+        owner_id=buyer_id,
+        name=good.name,
+        description=good.description,
+    )
+    await uow.inventory.add_item(item)
+    return item
