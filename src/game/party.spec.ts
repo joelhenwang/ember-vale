@@ -294,3 +294,14 @@ describe('getting back up', () => {
     expect(said.tone).toBe('heal')
   })
 })
+
+describe('spoils', () => {
+  it('says what a fallen foe left', () => {
+    expect(sayRoll({ kind: 'loot', text: 'x', actor: 'Goblin 2', using: 'scimitar' }).lead).toBe(
+      'Goblin 2 left a scimitar'
+    )
+    expect(sayRoll({ kind: 'loot', text: 'x', actor: 'Goblin', using: 'a few coins' }).lead).toBe(
+      'Goblin left a few coins'
+    )
+  })
+})

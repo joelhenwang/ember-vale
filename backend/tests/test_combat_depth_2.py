@@ -765,3 +765,30 @@ def test_a_fair_fight_is_sized_for_the_party() -> None:
     line = fair_fight_line([1, 1], DATA)
     assert "two at level 1" in line and "two goblins" in line and "ENCOUNTER[2x goblin]" in line
     assert "two wolves" in line
+
+
+def test_the_fallen_leave_spoils_by_chance_and_at_most_two() -> None:
+    from worldsim.domain.rules.dnd.combat_resolve import spoil_rows, spoils_of
+
+    fallen = [("goblin-1", "Goblin 1"), ("wolf", "Wolf"), ("goblin-2", "Goblin 2")]
+    left = spoils_of(fallen, DATA, _rng(0.0))
+    assert [(s.foe, s.item_key, s.name) for s in left] == [
+        ("Goblin 1", "scimitar", "scimitar"),
+        ("Wolf", "wolf-pelt", "wolf pelt"),
+    ]
+    assert spoils_of(fallen, DATA, _rng(0.9)) == []
+    assert [r.text for r in spoil_rows(left)] == [
+        "Goblin 1 left a scimitar.",
+        "Wolf left a wolf pelt.",
+    ]
+    # A fight where a goblin falls reports what it left.
+    report = resolve_narration_tags(
+        "ATTACK[longsword at goblin]: Wren strikes.",
+        [_wren()],
+        DATA,
+        _rng(0.95, 0.5, 0.0),
+        live=[MonsterState(key="goblin", name="Goblin", hp_current=1, hp_max=7, ac=15)],
+        fighting=["goblin"],
+    )
+    assert report.defeated == ["goblin"]
+    assert [(s.foe, s.name) for s in report.spoils] in ([("Goblin", "scimitar")], [])

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import math
+import random
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -151,6 +152,85 @@ class MonsterResult:
 
 
 @dataclass(frozen=True)
+class Spoil:
+    """Something a fallen foe left: ``key`` its pool, ``item_key`` what it is."""
+
+    key: str
+    foe: str
+    item_key: str
+    name: str
+    description: str
+
+
+#: Spoils a scene's fallen leave at most, and the chance each one does.
+MAX_SPOILS = 2
+SPOIL_CHANCE = 0.5
+
+
+def spoils_of(
+    defeated: list[tuple[str, str]], tables: DataTables, rng: Callable[[], float]
+) -> list[Spoil]:
+    """What the fallen leave, as (pool key, label) in falling order: its
+    weapon when it fought with one the tables know ("a scimitar"), a pelt
+    for a beast, else a few coins; each by chance, at most two a scene."""
+    monsters = table(tables, "monsters")
+    weapons = table(tables, "weapons")
+    left: list[Spoil] = []
+    for key, label in defeated:
+        if len(left) >= MAX_SPOILS:
+            break
+        if rng() >= SPOIL_CHANCE:
+            continue
+        kind = monster_kind(key, monsters)
+        row = entry(monsters, kind)
+        kind_name = str(row.get("name", kind))
+        strike = _first_strike(row)
+        found = find_entry(weapons, strike[0]) if strike else None
+        if found is not None:
+            weapon = str(found.entry.get("name", found.index)).lower()
+            left.append(
+                Spoil(
+                    key,
+                    label,
+                    found.index,
+                    weapon,
+                    f"{kind_name}'s {weapon}, dropped where it fell.",
+                )
+            )
+        elif str(row.get("type", "")).lower() == "beast":
+            left.append(
+                Spoil(
+                    key,
+                    label,
+                    f"{kind}-pelt",
+                    f"{kind_name.lower()} pelt",
+                    f"Taken from the fallen {kind_name.lower()}.",
+                )
+            )
+        else:
+            left.append(
+                Spoil(
+                    key, label, "coins", "a few coins", f"Found on the fallen {kind_name.lower()}."
+                )
+            )
+    return left
+
+
+def spoil_rows(spoils: list[Spoil]) -> list[TagOutcome]:
+    """The story log's line for each spoil ("Goblin 2 left a scimitar")."""
+    return [
+        TagOutcome(
+            kind="loot",
+            text=f"{s.foe} left {s.name if s.name.startswith(('a ', 'an ')) else 'a ' + s.name}.",
+            actor=s.foe,
+            using=s.name,
+            actor_foe=True,
+        )
+        for s in spoils
+    ]
+
+
+@dataclass(frozen=True)
 class CombatReport:
     outcomes: list[TagOutcome] = field(default_factory=list)
     hp: dict[str, int] = field(default_factory=dict)
@@ -166,6 +246,8 @@ class CombatReport:
     #: Foes that fell in this scene, and the levels the party gained.
     defeated: list[str] = field(default_factory=list)
     levels: list[LevelGain] = field(default_factory=list)
+    #: What fallen foes left lying where they fell (at most two a scene).
+    spoils: list[Spoil] = field(default_factory=list)
     #: Tag lines added from the party's own words (``deeds``), not the storyteller's.
     deeds: int = 0
     #: Blows companions struck beside the party with nothing else making them act.
@@ -1195,6 +1277,11 @@ def resolve_narration_tags(
         levels=gains,
         deeds=deed_count,
         helped=helped,
+        spoils=spoils_of(
+            [(key, monster_meta[key].label) for key in defeated if key in monster_meta],
+            tables,
+            rng or random.random,
+        ),
     )
 
 

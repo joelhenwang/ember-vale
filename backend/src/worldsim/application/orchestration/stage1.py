@@ -289,6 +289,7 @@ from worldsim.domain.rules.dnd import (
     strip_combat_tags,
     weapon_attack_bonus,
 )
+from worldsim.domain.rules.dnd.combat_resolve import spoil_rows
 from worldsim.domain.rules.dnd.data import dict_field, entry, str_field, table
 from worldsim.domain.rules.dnd.deeds import (
     ORDINAL_WORDS,
@@ -5300,6 +5301,20 @@ class Stage1Orchestrator:
                                 PARTY_ORDERS_KEY,
                                 orders_record(orders, fighting + report.foes),
                             )
+                        # What the fallen left lies where they fell, to be picked up.
+                        place = await _event_place(uow, event_id) if report.spoils else None
+                        spoils = report.spoils if place is not None else []
+                        for spoil in spoils:
+                            await uow.inventory.add_item(
+                                ItemInstance(
+                                    id=uuid5(combat_id, f"spoil:{spoil.key}"),
+                                    world_id=world_id,
+                                    item_key=spoil.item_key,
+                                    location_id=place.id if place is not None else None,
+                                    name=spoil.name,
+                                    description=spoil.description,
+                                )
+                            )
                         sequence = await uow.events.max_sequence(world_id) + 1
                         involved = {
                             by_key[key].id
@@ -5323,7 +5338,9 @@ class Stage1Orchestrator:
                                     "deeds": str(report.deeds),
                                     "helped": str(report.helped),
                                     "scene_event_id": str(event_id),
-                                    "rolls": combat_rolls_json(report.outcomes, joined or []),
+                                    "rolls": combat_rolls_json(
+                                        [*report.outcomes, *spoil_rows(spoils)], joined or []
+                                    ),
                                     # The fight that is on goes on: its foes
                                     # plus whoever this scene brought in.
                                     **(

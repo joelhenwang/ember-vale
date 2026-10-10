@@ -214,6 +214,18 @@ export function sayRoll(r: CombatRollView): RollSay {
       tone: 'miss'
     }
   }
+  if (kind === 'loot') {
+    const thing = r.using ?? 'something'
+    return {
+      lead: `${actor || 'The foe'} left ${/^(a|an) /i.test(thing) ? thing : `a ${thing}`}`,
+      using: null,
+      check: null,
+      natural: null,
+      outcome: 'it lies where they fell',
+      hp: null,
+      tone: 'info'
+    }
+  }
   if (kind === 'recover') {
     return {
       lead: `${actor} gets back up`,
