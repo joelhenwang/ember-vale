@@ -1,0 +1,51 @@
+{
+ "world_id": "b61e2f27-363b-42eb-bdb9-9a66bc4d9227",
+ "turns": [
+  {
+   "turn": 6,
+   "words": "I buy a potion of healing.",
+   "status": 200,
+   "purse_before": 8,
+   "held_after": [
+    [
+     "gold coins",
+     2
+    ],
+    [
+     "potion of healing",
+     1
+    ]
+   ],
+   "hp_after": [
+    [
+     "Wren",
+     4,
+     12
+    ]
+   ],
+   "rolls": []
+  },
+  {
+   "turn": 7,
+   "words": "I drink the potion of healing.",
+   "status": 200,
+   "purse_before": 2,
+   "held_after": [
+    [
+     "gold coins",
+     2
+    ]
+   ],
+   "hp_after": [
+    [
+     "Wren",
+     8,
+     12
+    ]
+   ],
+   "rolls": [
+    "Wren drinks a potion of healing: 4 hit points (4->8 HP)."
+   ]
+  }
+ ]
+}

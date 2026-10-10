@@ -1,0 +1,342 @@
+{
+ "world_id": "b61e2f27-363b-42eb-bdb9-9a66bc4d9227",
+ "spend_usd": 0.0171967,
+ "turns": [
+  {
+   "turn": 1,
+   "words": "I buy a hot meal from the innkeeper.",
+   "status": 200,
+   "error": null,
+   "seconds": 10.5,
+   "shop_before": {
+    "world_id": "b61e2f27-363b-42eb-bdb9-9a66bc4d9227",
+    "place": "Hearth",
+    "goods": [
+     {
+      "key": "meal",
+      "name": "hot meal",
+      "price": 1,
+      "description": "A bowl of something hot and a heel of bread.",
+      "keep": false
+     },
+     {
+      "key": "ale",
+      "name": "mug of ale",
+      "price": 1,
+      "description": "Brown, foaming and cheap.",
+      "keep": false
+     },
+     {
+      "key": "ration",
+      "name": "trail ration",
+      "price": 1,
+      "description": "A day's worth of dried meat and hardtack.",
+      "keep": true
+     },
+     {
+      "key": "room",
+      "name": "room for the night",
+      "price": 2,
+      "description": "A dry bed under a sound roof.",
+      "keep": false
+     }
+    ],
+    "purse": 8
+   },
+   "held_after": [
+    [
+     "gold coins",
+     7
+    ]
+   ],
+   "hp_after": [
+    [
+     "Wren",
+     4,
+     12
+    ]
+   ],
+   "rolls": []
+  },
+  {
+   "turn": 2,
+   "words": "I rent a room for the night.",
+   "status": 200,
+   "error": null,
+   "seconds": 11.8,
+   "shop_before": {
+    "world_id": "b61e2f27-363b-42eb-bdb9-9a66bc4d9227",
+    "place": "Hearth",
+    "goods": [
+     {
+      "key": "meal",
+      "name": "hot meal",
+      "price": 1,
+      "description": "A bowl of something hot and a heel of bread.",
+      "keep": false
+     },
+     {
+      "key": "ale",
+      "name": "mug of ale",
+      "price": 1,
+      "description": "Brown, foaming and cheap.",
+      "keep": false
+     },
+     {
+      "key": "ration",
+      "name": "trail ration",
+      "price": 1,
+      "description": "A day's worth of dried meat and hardtack.",
+      "keep": true
+     },
+     {
+      "key": "room",
+      "name": "room for the night",
+      "price": 2,
+      "description": "A dry bed under a sound roof.",
+      "keep": false
+     }
+    ],
+    "purse": 7
+   },
+   "held_after": [
+    [
+     "gold coins",
+     5
+    ]
+   ],
+   "hp_after": [
+    [
+     "Wren",
+     4,
+     12
+    ]
+   ],
+   "rolls": []
+  },
+  {
+   "turn": 3,
+   "words": "Market",
+   "status": 200,
+   "error": null,
+   "seconds": 10.6,
+   "shop_before": {
+    "world_id": "b61e2f27-363b-42eb-bdb9-9a66bc4d9227",
+    "place": "Hearth",
+    "goods": [
+     {
+      "key": "meal",
+      "name": "hot meal",
+      "price": 1,
+      "description": "A bowl of something hot and a heel of bread.",
+      "keep": false
+     },
+     {
+      "key": "ale",
+      "name": "mug of ale",
+      "price": 1,
+      "description": "Brown, foaming and cheap.",
+      "keep": false
+     },
+     {
+      "key": "ration",
+      "name": "trail ration",
+      "price": 1,
+      "description": "A day's worth of dried meat and hardtack.",
+      "keep": true
+     },
+     {
+      "key": "room",
+      "name": "room for the night",
+      "price": 2,
+      "description": "A dry bed under a sound roof.",
+      "keep": false
+     }
+    ],
+    "purse": 5
+   },
+   "held_after": [
+    [
+     "gold coins",
+     5
+    ]
+   ],
+   "hp_after": [
+    [
+     "Wren",
+     4,
+     12
+    ]
+   ],
+   "rolls": []
+  },
+  {
+   "turn": 4,
+   "words": "I buy a potion of healing.",
+   "status": 200,
+   "error": null,
+   "seconds": 11.8,
+   "shop_before": {
+    "world_id": "b61e2f27-363b-42eb-bdb9-9a66bc4d9227",
+    "place": "Market",
+    "goods": [
+     {
+      "key": "bedroll",
+      "name": "bedroll",
+      "price": 1,
+      "description": "For nights on the road.",
+      "keep": true
+     },
+     {
+      "key": "rope",
+      "name": "rope",
+      "price": 1,
+      "description": "A coil of hempen rope, fifty feet long.",
+      "keep": true
+     },
+     {
+      "key": "torch",
+      "name": "torch",
+      "price": 1,
+      "description": "Pitch-soaked and good for an hour of light.",
+      "keep": true
+     },
+     {
+      "key": "ration",
+      "name": "trail ration",
+      "price": 1,
+      "description": "A day's worth of dried meat and hardtack.",
+      "keep": true
+     },
+     {
+      "key": "waterskin",
+      "name": "waterskin",
+      "price": 1,
+      "description": "Holds a day's water.",
+      "keep": true
+     },
+     {
+      "key": "dagger",
+      "name": "dagger",
+      "price": 2,
+      "description": "A plain, sharp blade.",
+      "keep": true
+     },
+     {
+      "key": "healers-kit",
+      "name": "healer's kit",
+      "price": 3,
+      "description": "Bandages, salves and splints.",
+      "keep": true
+     },
+     {
+      "key": "potion-of-healing",
+      "name": "potion of healing",
+      "price": 6,
+      "description": "Red liquid that glimmers when shaken. Drunk, it heals 2d4+2.",
+      "keep": true
+     }
+    ],
+    "purse": 5
+   },
+   "held_after": [
+    [
+     "gold coins",
+     5
+    ]
+   ],
+   "hp_after": [
+    [
+     "Wren",
+     4,
+     12
+    ]
+   ],
+   "rolls": []
+  },
+  {
+   "turn": 5,
+   "words": "I drink the potion of healing.",
+   "status": 200,
+   "error": null,
+   "seconds": 15.0,
+   "shop_before": {
+    "world_id": "b61e2f27-363b-42eb-bdb9-9a66bc4d9227",
+    "place": "Market",
+    "goods": [
+     {
+      "key": "bedroll",
+      "name": "bedroll",
+      "price": 1,
+      "description": "For nights on the road.",
+      "keep": true
+     },
+     {
+      "key": "rope",
+      "name": "rope",
+      "price": 1,
+      "description": "A coil of hempen rope, fifty feet long.",
+      "keep": true
+     },
+     {
+      "key": "torch",
+      "name": "torch",
+      "price": 1,
+      "description": "Pitch-soaked and good for an hour of light.",
+      "keep": true
+     },
+     {
+      "key": "ration",
+      "name": "trail ration",
+      "price": 1,
+      "description": "A day's worth of dried meat and hardtack.",
+      "keep": true
+     },
+     {
+      "key": "waterskin",
+      "name": "waterskin",
+      "price": 1,
+      "description": "Holds a day's water.",
+      "keep": true
+     },
+     {
+      "key": "dagger",
+      "name": "dagger",
+      "price": 2,
+      "description": "A plain, sharp blade.",
+      "keep": true
+     },
+     {
+      "key": "healers-kit",
+      "name": "healer's kit",
+      "price": 3,
+      "description": "Bandages, salves and splints.",
+      "keep": true
+     },
+     {
+      "key": "potion-of-healing",
+      "name": "potion of healing",
+      "price": 6,
+      "description": "Red liquid that glimmers when shaken. Drunk, it heals 2d4+2.",
+      "keep": true
+     }
+    ],
+    "purse": 5
+   },
+   "held_after": [
+    [
+     "gold coins",
+     5
+    ]
+   ],
+   "hp_after": [
+    [
+     "Wren",
+     4,
+     12
+    ]
+   ],
+   "rolls": []
+  }
+ ]
+}
