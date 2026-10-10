@@ -1,0 +1,516 @@
+{
+  "meta": {
+    "commit": "2069700",
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "beats": 12,
+    "reacting_bystanders": 2,
+    "at": "2026-10-10T02:23:06+00:00",
+    "wall_seconds": 220,
+    "est_usd_total": 0.34713398100000004,
+    "scenarios": [
+      "strangers",
+      "lost_item",
+      "stuck_task",
+      "meet_up",
+      "named_place"
+    ]
+  },
+  "results": {
+    "strangers": {
+      "ids": {
+        "world": "b82f9738-64c2-43e2-97fd-04c357c46301",
+        "place:Hearth": "206a022b-114f-46c2-b8f0-910d92819efe",
+        "place:Market": "a4d55658-c062-482d-95fc-27422f214b6f",
+        "wren": "a0b9aa70-3188-4cfb-a399-6bd46863c5c7",
+        "ash": "f485c2ea-00a7-4ff2-812b-e53d8170400d"
+      },
+      "beat_seconds": [
+        15.187000000005355,
+        11.59399999998277,
+        7.562000000005355,
+        5.312999999994645,
+        12.921999999991385,
+        6.10899999999674,
+        15.905999999988126,
+        8.921999999991385,
+        17.905999999988126,
+        11.187000000005355,
+        5.39100000000326,
+        11.687000000005355
+      ],
+      "error": null,
+      "score": {
+        "calls": 79,
+        "calls_by_role": {
+          "director": 6,
+          "reaction": 25,
+          "narrator": 12,
+          "character_decision": 26,
+          "resolver": 8,
+          "daily_summary": 2
+        },
+        "summaries": 2,
+        "summaries_cut_off": 0,
+        "speakers": 2,
+        "failed_calls": 0,
+        "repairs": 0,
+        "repairs_by_role": {},
+        "repair_rate": 0.0,
+        "est_usd": 0.04625488,
+        "action_mix": {
+          "communicate": 11,
+          "move": 2,
+          "wait": 1,
+          "observe": 9,
+          "interact": 1
+        },
+        "repetition_rate": 0.0,
+        "replies": 13,
+        "reply_repetition_rate": 0.0,
+        "reply_retries": 1,
+        "longest_idle_streak": 2,
+        "longest_talk_streak": 3,
+        "moves_tried": 2,
+        "moves_done": 2,
+        "interact_success": 1,
+        "hooks": [
+          {
+            "title": "The Old Mill's Broken Wheel",
+            "powers": "new_location",
+            "status": "proposed",
+            "ending": ""
+          },
+          {
+            "title": "The Swollen Ford",
+            "powers": "new_location",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 0,
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Carpenter's Shed",
+          "Ford"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "repeated questions 0% (pass \u2264 20%)"
+      }
+    },
+    "lost_item": {
+      "ids": {
+        "world": "01421427-e6a6-4e24-8d01-499603511d59",
+        "place:Hearth": "d4c88851-fa2f-4924-bfa7-cae7d3d7f076",
+        "place:Market": "2a057bfe-f32c-4e5d-b295-cf8e850a579e",
+        "wren": "a9ec2a4c-7125-4dc5-8bcc-2fc3d03de6e6",
+        "ash": "848d821a-612d-47fe-925a-53a5a3116808",
+        "item:purse": "ca07283e-004c-4d1a-8c8f-940a2058522d"
+      },
+      "beat_seconds": [
+        13.64100000000326,
+        19.296999999991385,
+        15.953999999997905,
+        18.687999999994645,
+        17.0,
+        20.405999999988126,
+        13.875,
+        17.203000000008615,
+        17.937000000005355,
+        14.187000000005355,
+        12.875,
+        10.202999999979511
+      ],
+      "error": null,
+      "score": {
+        "calls": 118,
+        "calls_by_role": {
+          "narrator": 18,
+          "reaction": 47,
+          "character_decision": 35,
+          "director": 4,
+          "resolver": 11,
+          "daily_summary": 3
+        },
+        "summaries": 3,
+        "summaries_cut_off": 0,
+        "speakers": 3,
+        "failed_calls": 0,
+        "repairs": 2,
+        "repairs_by_role": {
+          "resolver": 2
+        },
+        "repair_rate": 0.01694915254237288,
+        "est_usd": 0.07387066999999999,
+        "action_mix": {
+          "take": 2,
+          "wait": 6,
+          "observe": 10,
+          "communicate": 11,
+          "move": 3,
+          "interact": 3
+        },
+        "repetition_rate": 0.0,
+        "replies": 28,
+        "reply_repetition_rate": 0.0,
+        "reply_retries": 1,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 3,
+        "moves_done": 3,
+        "interact_success": 3,
+        "hooks": [
+          {
+            "title": "A Strange Lantern at the Market",
+            "powers": "place_item,spawn_npc",
+            "status": "proposed",
+            "ending": ""
+          },
+          {
+            "title": "The Lantern's Cold Touch",
+            "powers": "new_location",
+            "status": "proposed",
+            "ending": ""
+          },
+          {
+            "title": "A Cold Trail in the Ruins",
+            "powers": "",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 0,
+        "final_places": {
+          "Wren": "Ruins",
+          "Ash": "Ruins",
+          "Peddler Sel": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Ruins"
+        ],
+        "items": {
+          "Lost purse": {
+            "holder": "Ash",
+            "place": null
+          },
+          "The Blue Lantern": {
+            "holder": "Peddler Sel",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "purse held by Ash"
+      }
+    },
+    "stuck_task": {
+      "ids": {
+        "world": "c2aab8e6-a9bd-4782-8115-9fa2433fe38d",
+        "place:Hearth": "3ab2be73-cf04-4df3-b94a-efa408bf1cfb",
+        "place:Market": "c410183b-1593-4415-973b-d7b16a09362b",
+        "wren": "19d33373-2035-4993-8657-cce8033d7e90",
+        "ash": "334de8d2-e4ed-4f0c-90a4-48f142bd66a5",
+        "marg": "6740229a-dbba-4e5f-9810-87b7eb445dc7"
+      },
+      "beat_seconds": [
+        19.312999999994645,
+        20.51600000000326,
+        10.51600000000326,
+        20.937000000005355,
+        12.296999999991385,
+        21.296999999991385,
+        16.375,
+        17.062999999994645,
+        17.187999999994645,
+        12.344000000011874,
+        27.437000000005355,
+        23.25
+      ],
+      "error": null,
+      "score": {
+        "calls": 193,
+        "calls_by_role": {
+          "director": 4,
+          "character_decision": 51,
+          "reaction": 98,
+          "resolver": 14,
+          "narrator": 22,
+          "daily_summary": 4
+        },
+        "summaries": 4,
+        "summaries_cut_off": 0,
+        "speakers": 4,
+        "failed_calls": 0,
+        "repairs": 7,
+        "repairs_by_role": {
+          "narrator": 3,
+          "resolver": 3,
+          "character_decision": 1
+        },
+        "repair_rate": 0.03626943005181347,
+        "est_usd": 0.12492488099999995,
+        "action_mix": {
+          "wait": 9,
+          "interact": 3,
+          "communicate": 26,
+          "move": 3,
+          "take": 2,
+          "transfer": 1,
+          "observe": 5
+        },
+        "repetition_rate": 0.0,
+        "replies": 72,
+        "reply_repetition_rate": 0.013888888888888888,
+        "reply_retries": 0,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 3,
+        "moves_tried": 3,
+        "moves_done": 3,
+        "interact_success": 3,
+        "hooks": [
+          {
+            "title": "A Wagon Stuck at the Market Gate",
+            "powers": "spawn_npc",
+            "status": "closed",
+            "ending": "With Wren's strength and Ash's market know-how added to Old Marg's heave, the cart lurched free of the rut, the axle was mended, and the gate stood open again."
+          },
+          {
+            "title": "The Merchant's Missing Ledger",
+            "powers": "place_item",
+            "status": "proposed",
+            "ending": ""
+          },
+          {
+            "title": "Two ledgers, one merchant",
+            "powers": "spawn_npc",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 1,
+        "final_places": {
+          "Wren": "Gate",
+          "Ash": "Gate",
+          "Old Marg": "Market",
+          "Mira": "Gate",
+          "Pip": "Gate"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Gate"
+        ],
+        "items": {
+          "Merchant's ledger": {
+            "holder": "Mira",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "3 successful physical attempt(s)"
+      }
+    },
+    "meet_up": {
+      "ids": {
+        "world": "7075977c-fcc7-4904-9fff-87dea5d9dce5",
+        "place:Hearth": "a9e65514-c1c0-46ec-8a84-7cce7b3e1823",
+        "place:Market": "af735316-3a5b-426b-b6be-e30a9e6a16ca",
+        "wren": "69867eaf-cc83-4a9c-8f5d-d3d6fc24c8d1",
+        "ash": "a96c0fd2-9ccf-409e-8db0-be9fc3e1758a"
+      },
+      "beat_seconds": [
+        9.437000000005355,
+        11.65700000000652,
+        10.59399999998277,
+        17.625,
+        12.187999999994645,
+        6.594000000011874,
+        10.39100000000326,
+        10.562999999994645,
+        14.65700000000652,
+        18.625,
+        21.75,
+        12.235000000015134
+      ],
+      "error": null,
+      "score": {
+        "calls": 113,
+        "calls_by_role": {
+          "director": 4,
+          "character_decision": 35,
+          "reaction": 41,
+          "narrator": 19,
+          "resolver": 11,
+          "daily_summary": 3
+        },
+        "summaries": 3,
+        "summaries_cut_off": 0,
+        "speakers": 3,
+        "failed_calls": 0,
+        "repairs": 2,
+        "repairs_by_role": {
+          "resolver": 1,
+          "reaction": 1
+        },
+        "repair_rate": 0.017699115044247787,
+        "est_usd": 0.07132363000000001,
+        "action_mix": {
+          "wait": 11,
+          "move": 4,
+          "communicate": 15,
+          "observe": 4,
+          "interact": 1
+        },
+        "repetition_rate": 0.0,
+        "replies": 28,
+        "reply_repetition_rate": 0.0,
+        "reply_retries": 0,
+        "longest_idle_streak": 1,
+        "longest_talk_streak": 2,
+        "moves_tried": 4,
+        "moves_done": 4,
+        "interact_success": 1,
+        "hooks": [
+          {
+            "title": "A stranger's plea at the Market",
+            "powers": "spawn_npc",
+            "status": "proposed",
+            "ending": ""
+          },
+          {
+            "title": "The pale traveler's plea",
+            "powers": "",
+            "status": "closed",
+            "ending": "Sera's fingers close around the silver locket in the crack, and the pale traveler's plea is answered before the noon bell."
+          },
+          {
+            "title": "The miller's overdue sack",
+            "powers": "new_location",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 1,
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market",
+          "Sera": "Hearth"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Mill"
+        ],
+        "items": {
+          "Silver locket": {
+            "holder": "Sera",
+            "place": null
+          }
+        },
+        "goal_passed": true,
+        "goal_detail": "Wren at Market, Ash at Market"
+      }
+    },
+    "named_place": {
+      "ids": {
+        "world": "0d787a49-c796-43d7-9ef7-dab299c6459e",
+        "place:Hearth": "2c990396-1672-4798-b8dc-064d8cdbcc69",
+        "place:Market": "ee80e104-0213-417b-b11e-edfcecebe07c",
+        "wren": "b2ff5b6d-7c9f-4627-88b2-ef1828911d6b",
+        "ash": "d2bfe59d-12a0-4157-a297-08b0e2943876"
+      },
+      "beat_seconds": [
+        12.969000000011874,
+        10.062999999994645,
+        5.375,
+        3.264999999984866,
+        1.7650000000139698,
+        1.687000000005355,
+        11.71799999999348,
+        16.437000000005355,
+        9.562999999994645,
+        8.844000000011874,
+        19.187999999994645,
+        13.51600000000326
+      ],
+      "error": null,
+      "score": {
+        "calls": 60,
+        "calls_by_role": {
+          "director": 4,
+          "character_decision": 23,
+          "reaction": 12,
+          "resolver": 6,
+          "narrator": 13,
+          "daily_summary": 2
+        },
+        "summaries": 2,
+        "summaries_cut_off": 0,
+        "speakers": 2,
+        "failed_calls": 0,
+        "repairs": 2,
+        "repairs_by_role": {
+          "resolver": 2
+        },
+        "repair_rate": 0.03333333333333333,
+        "est_usd": 0.03075992,
+        "action_mix": {
+          "wait": 9,
+          "communicate": 2,
+          "move": 4,
+          "observe": 6,
+          "interact": 2
+        },
+        "repetition_rate": 0.0,
+        "replies": 5,
+        "reply_repetition_rate": 0.0,
+        "reply_retries": 0,
+        "longest_idle_streak": 3,
+        "longest_talk_streak": 1,
+        "moves_tried": 4,
+        "moves_done": 2,
+        "interact_success": 2,
+        "hooks": [
+          {
+            "title": "Uncle's errand at the Old Mill",
+            "powers": "new_location",
+            "status": "proposed",
+            "ending": ""
+          },
+          {
+            "title": "The Millstone's Lament",
+            "powers": "",
+            "status": "proposed",
+            "ending": ""
+          },
+          {
+            "title": "The Millstone's Lament",
+            "powers": "",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 0,
+        "final_places": {
+          "Wren": "Old Mill",
+          "Ash": "Old Mill"
+        },
+        "all_places": [
+          "Hearth",
+          "Market",
+          "Old Mill"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "added Old Mill; there at the end: Wren, Ash"
+      }
+    }
+  }
+}
