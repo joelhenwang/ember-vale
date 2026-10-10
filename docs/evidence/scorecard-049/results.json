@@ -1,0 +1,263 @@
+{
+  "meta": {
+    "commit": "54dfb96",
+    "provider": "venice",
+    "model": "venice-uncensored-1-2",
+    "beats": 12,
+    "reacting_bystanders": 2,
+    "at": "2026-10-10T12:21:18+00:00",
+    "wall_seconds": 124,
+    "est_usd_total": 0.2630564,
+    "scenarios": [
+      "strangers",
+      "stuck_task",
+      "meet_up"
+    ]
+  },
+  "results": {
+    "strangers": {
+      "ids": {
+        "world": "f326c706-1cec-4de5-bdda-14399dd0aa51",
+        "place:Hearth": "76a376e4-ae92-4a65-9743-60e75c65c68c",
+        "place:Market": "44ed8190-2868-447e-ab51-a84b3be6ddf7",
+        "wren": "53817db9-43c4-4a81-bee5-7c4951197f23",
+        "ash": "80af7908-bc9a-4a81-8762-a256112c76a4"
+      },
+      "beat_seconds": [
+        11.687999999994645,
+        10.125,
+        8.0,
+        12.875,
+        13.796999999991385,
+        14.812999999994645,
+        14.187000000005355,
+        8.905999999988126,
+        20.812000000005355
+      ],
+      "error": "stopped before beat 10: spend cap reached",
+      "score": {
+        "calls": 72,
+        "calls_by_role": {
+          "director": 3,
+          "reaction": 26,
+          "character_decision": 24,
+          "narrator": 9,
+          "resolver": 8,
+          "daily_summary": 2
+        },
+        "summaries": 2,
+        "summaries_cut_off": 0,
+        "speakers": 2,
+        "failed_calls": 0,
+        "repairs": 0,
+        "repairs_by_role": {},
+        "repair_rate": 0.0,
+        "est_usd": 0.0709383,
+        "action_mix": {
+          "communicate": 12,
+          "move": 3,
+          "observe": 1,
+          "wait": 2
+        },
+        "repetition_rate": 0.08333333333333333,
+        "replies": 12,
+        "reply_repetition_rate": 0.5833333333333334,
+        "reply_retries": 8,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 5,
+        "moves_tried": 3,
+        "moves_done": 3,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "Market Day",
+            "powers": "",
+            "status": "proposed",
+            "ending": ""
+          },
+          {
+            "title": "The Baker's Special Offer",
+            "powers": "",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 0,
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "repeated questions 8% (pass \u2264 20%)"
+      }
+    },
+    "stuck_task": {
+      "ids": {
+        "world": "d194cf9c-cc92-4905-a907-4dd45c40d62c",
+        "place:Hearth": "9ddaf9e8-af8c-499b-a98b-0936a33dbeab",
+        "place:Market": "569e99ed-f32f-4408-808e-6a929be989c1",
+        "wren": "bb21e88b-500e-436f-b70a-d86da07933cb",
+        "ash": "7f8b0f5b-e840-402c-a795-20c03054609c",
+        "marg": "f32b8dcc-0377-4636-b730-02a975ff551f"
+      },
+      "beat_seconds": [
+        12.10899999999674,
+        12.01600000000326,
+        16.0,
+        12.671999999991385,
+        14.03100000001723,
+        13.828000000008615,
+        13.530999999988126,
+        11.094000000011874,
+        18.328999999997905
+      ],
+      "error": "stopped before beat 10: spend cap reached",
+      "score": {
+        "calls": 112,
+        "calls_by_role": {
+          "character_decision": 33,
+          "reaction": 54,
+          "director": 3,
+          "narrator": 10,
+          "resolver": 9,
+          "daily_summary": 3
+        },
+        "summaries": 3,
+        "summaries_cut_off": 0,
+        "speakers": 2,
+        "failed_calls": 0,
+        "repairs": 0,
+        "repairs_by_role": {},
+        "repair_rate": 0.0,
+        "est_usd": 0.12371299999999996,
+        "action_mix": {
+          "communicate": 9,
+          "interact": 10,
+          "wait": 4,
+          "move": 3,
+          "observe": 1
+        },
+        "repetition_rate": 0.3333333333333333,
+        "replies": 21,
+        "reply_repetition_rate": 0.38095238095238093,
+        "reply_retries": 4,
+        "longest_idle_streak": 0,
+        "longest_talk_streak": 1,
+        "moves_tried": 3,
+        "moves_done": 2,
+        "interact_success": 8,
+        "hooks": [
+          {
+            "title": "The Baker's Missing Flour",
+            "powers": "",
+            "status": "closed",
+            "ending": "With the cart wheel freed, Old Marg and the others manage to deliver the flour to the baker, resolving the shortage."
+          },
+          {
+            "title": "The Baker's New Order",
+            "powers": "",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 1,
+        "final_places": {
+          "Wren": "Hearth",
+          "Ash": "Hearth",
+          "Old Marg": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "8 successful physical attempt(s)"
+      }
+    },
+    "meet_up": {
+      "ids": {
+        "world": "a366af74-a806-4b03-8ffe-2a13a3c522db",
+        "place:Hearth": "0a8267ef-f168-45de-87ab-7cceea58e50d",
+        "place:Market": "49216a70-e831-42a6-877c-a65f900d568f",
+        "wren": "1c741166-a955-44b5-ac12-2877dc39cc63",
+        "ash": "cc64ffbb-7ee0-4dde-a116-23aee9509639"
+      },
+      "beat_seconds": [
+        8.578000000008615,
+        10.703000000008615,
+        11.562999999994645,
+        10.562000000005355,
+        2.437000000005355,
+        2.514999999984866,
+        4.687000000005355,
+        12.687000000005355,
+        15.5,
+        13.078000000008615,
+        12.219000000011874,
+        2.562999999994645
+      ],
+      "error": null,
+      "score": {
+        "calls": 73,
+        "calls_by_role": {
+          "reaction": 21,
+          "character_decision": 29,
+          "resolver": 7,
+          "narrator": 8,
+          "director": 6,
+          "daily_summary": 2
+        },
+        "summaries": 2,
+        "summaries_cut_off": 0,
+        "speakers": 2,
+        "failed_calls": 0,
+        "repairs": 2,
+        "repairs_by_role": {
+          "director": 2
+        },
+        "repair_rate": 0.0273972602739726,
+        "est_usd": 0.06840509999999998,
+        "action_mix": {
+          "wait": 15,
+          "move": 1,
+          "communicate": 8
+        },
+        "repetition_rate": 0.125,
+        "replies": 12,
+        "reply_repetition_rate": 0.5,
+        "reply_retries": 5,
+        "longest_idle_streak": 3,
+        "longest_talk_streak": 4,
+        "moves_tried": 1,
+        "moves_done": 1,
+        "interact_success": 0,
+        "hooks": [
+          {
+            "title": "Wren's Delayed Arrival",
+            "powers": "",
+            "status": "proposed",
+            "ending": ""
+          }
+        ],
+        "settled": 0,
+        "final_places": {
+          "Wren": "Market",
+          "Ash": "Market"
+        },
+        "all_places": [
+          "Hearth",
+          "Market"
+        ],
+        "items": {},
+        "goal_passed": true,
+        "goal_detail": "Wren at Market, Ash at Market"
+      }
+    }
+  }
+}

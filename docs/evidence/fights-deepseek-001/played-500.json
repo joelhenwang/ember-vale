@@ -1,0 +1,958 @@
+[
+ {
+  "run": 1,
+  "world_id": "e9626ac6-7d68-43d9-bbe8-346da19bd43d",
+  "turns": [
+   {
+    "turn": 1,
+    "kind": "say",
+    "words": "Ash, the roads are getting dangerous. Will you join me as my companion?",
+    "status": 200,
+    "error": null,
+    "seconds": 17.0,
+    "day": 1,
+    "phase": "sunrise",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "rogue",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Mira": "fe4abd8c-8b1d-4a52-9e40-0d7fc709066e",
+     "Wren": "dd38b4ae-887c-438a-9be9-f08e13d6d975"
+    },
+    "rumours": [
+     "A stranger asks for directions to the Hearth"
+    ],
+    "settled": [],
+    "prose": "Firelight flickers across the worn tables of the Hearth, casting long shadows that dance with the draft from the door. Wren steps closer to Ash, voice low over the muttered talk of other patrons. Ash's fingers wrap around their tankard, eyes fixed on the flames for a long moment. Then they look up at Wren \u2014 steady, certain. 'Yes, I will come. I've seen enough bad roads to know a good companion when one's offered.' Wren's shoulders ease, a small nod of acknowledgment passing between them as the weight of the road ahead settles in the silence.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      1,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 2,
+    "kind": "do",
+    "words": "I look around the Hearth and listen for news of trouble.",
+    "status": 200,
+    "error": null,
+    "seconds": 12.2,
+    "day": 1,
+    "phase": "morning",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "rogue",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Mira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Wren": "dd38b4ae-887c-438a-9be9-f08e13d6d975"
+    },
+    "rumours": [
+     "A stranger asks for directions to the Hearth"
+    ],
+    "settled": [],
+    "prose": "At the Hearth, the fire snaps low as Wren scans the room, catching fragments of talk about road trouble near the old mill. Wren turns to Ash, voice dropping under the murmur. \"You hear that too?\" Ash lifts their gaze from the tankard, eyes tracing the crowd before settling on Wren, a slow nod of acknowledgment. The door creaks open and Mira steps inside, shaking the chill from their shoulders as they cross the worn floor toward the pair. Mira slides onto the bench, glancing between Ash and Wren. \"Whatever's coming, we'd best be ready.\"",
+    "rolls": [
+     "Wren's Perception check: 16 against DC 12, success."
+    ],
+    "fight": [
+     {
+      "check": "Wren's Perception check: 16 against DC 12, success.",
+      "scene_event_id": "5855039c-89ab-4ea6-8c69-90b34a481d32"
+     }
+    ],
+    "ash_chose": [
+     [
+      2,
+      "observe",
+      ""
+     ],
+     [
+      2,
+      "move",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 3,
+    "kind": "do",
+    "words": "I ask the people here whether anyone has been attacked on the roads.",
+    "status": 200,
+    "error": null,
+    "seconds": 13.8,
+    "day": 1,
+    "phase": "noon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "rogue",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Mira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Wren": "dd38b4ae-887c-438a-9be9-f08e13d6d975"
+    },
+    "rumours": [
+     "A stranger asks for directions to the Hearth"
+    ],
+    "settled": [],
+    "prose": "The fire snaps low at the Hearth, morning light slanting through smoke as Wren scans the room, catching fragments of talk about road trouble near the old mill. \"Ash, I've a sealed letter for someone at the Hearth\u2014before noon. Do you know who's expected to receive it?\" \"No letter for me \u2014 I'm market ward, not hearth-bound. If it's urgent news, Wren here is our leader in this vale; best give it to them.\" Ash lifts their gaze from the tankard, eyes settling on Wren with a slow nod, before Mira turns to Wren, the sealed letter held close. \"I haven't been attacked, but I came in with a sealed letter that feels heavy with bad news. Have you heard of anyone hurt on the roads \u2014 I need to know if trouble's ahead before I head back out.\" Wren's hand rests on the longsword's pommel as they cast a glance around the room, then lean in\u2014asking the gathered folk whether anyone has been attacked on the roads. \"I've heard worse talk than that this morning \u2014 a courier with a sealed letter headed for the Hearth, looking like the news weighs more than the paper. Might be worth hearing what she carries.\" The hearth's embers flare as murmurs fade; no one here claims road harm, only nodding heads and lowered voices\u2014Wren's question hangs unanswered, the promise of trouble still distant.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      3,
+      "wait",
+      ""
+     ],
+     [
+      3,
+      "communicate",
+      "I carry a sealed letter meant for someone at the Hearth before noon; I need to know if you are that person or who I shou"
+     ]
+    ]
+   },
+   {
+    "turn": 4,
+    "kind": "go",
+    "words": "Market",
+    "status": 200,
+    "error": null,
+    "seconds": 17.9,
+    "day": 1,
+    "phase": "afternoon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "rogue",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Lira": "fe4abd8c-8b1d-4a52-9e40-0d7fc709066e",
+     "Mira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Wren": "dd38b4ae-887c-438a-9be9-f08e13d6d975"
+    },
+    "rumours": [
+     "The courier's letter carries a warning of road trouble",
+     "A stranger asks for directions to the Hearth"
+    ],
+    "settled": [],
+    "prose": "The fire snaps low at the Hearth, morning light slanting through smoke as Mira holds the sealed letter, looking from Wren to the door where Ash is already moving toward the Market. \"Wren, Ash is off to the Market \u2014 but the letter is for someone at the Hearth and time's wearing thin. If you're the one to take it, say the word and it's yours; otherwise tell me who I should hand it to before noon slips away.\" \"Aye, that's the way of it\u2014Wren's the one to take that letter. I'm just the market ward along for the road; but if it's road trouble near the old mill, I'd hear that before dusk. You've done well bringing it here.\" Mira steps closer to Wren, the letter resting in her open palm, her gaze steady as she waits for a word\u2014or a name\u2014before the deadline slips away.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      4,
+      "communicate",
+      "Wren, here is the sealed letter\u2014it's for the Hearth's leader, and Ash says that's you. Take it."
+     ],
+     [
+      4,
+      "move",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 5,
+    "kind": "do",
+    "words": "I ask the traders about the raiders troubling their carts.",
+    "status": 200,
+    "error": null,
+    "seconds": 16.3,
+    "day": 1,
+    "phase": "sunset",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "rogue",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Lira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Mira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Wren": "dd38b4ae-887c-438a-9be9-f08e13d6d975"
+    },
+    "rumours": [
+     "A stranger asks for directions to the Hearth"
+    ],
+    "settled": [
+     "The courier's letter carries a warning of road trouble"
+    ],
+    "prose": "The Hearth's fire has sunk to a bed of coals as the light shifts from morning to a long, amber dusk, the smoke curling toward the rafters. Wren stands near the low table, Lira at the threshold with the sealed letter pressed to her chest, and Ash steps forward to catch Wren's eye. Wren, if she's still holding that letter at dusk, take it yourself \u2014 a sealed warning is no good sitting in a courier's satchel overnight. I'll stand by you at the Hearth if that's where this is headed. Wren straightens, glancing from the letter in Lira's hands to the dying firelight, then turns as Lira takes a half-step into the room, her voice tight. Please, you must take this letter to the Hearth keeper now \u2014 the warning about the road trouble won't wait for full dark. Across the Hearth, Mira looks from Lira to Wren with a drawn brow, pressing for an answer before the last light slips under the door. Wren, you heard Ash\u2014the letter is still looking for a home. Did you take it? If not, I can carry it to the Hearth keeper myself before dusk, as Ash offered. As the silence stretches, Ash's thumb taps the hilt of a rapier, then gestures toward the east gate and adds, under the wheeze of the chimney draft, a quieter counsel for the raiders' trail. Ask the wheelwright by the east gate \u2014 his carts were hit twice last tenday, and he keeps a tally of what they took. That'll tell you more than the traders' gossip.",
+    "rolls": [
+     "Settled: The courier's letter carries a warning of road trouble \u00b7 200 XP each."
+    ],
+    "fight": [
+     {
+      "settled": "03171f91-3836-44f5-85d3-82ed079875fd",
+      "scene_event_id": "ec0b8603-8f67-40c5-a761-fcdffd750a16"
+     }
+    ],
+    "ash_chose": [
+     [
+      5,
+      "communicate",
+      "Mira's letter still needs a home \u2014 ask Wren if they took it, and if not, offer to carry it to the Hearth keeper myself b"
+     ],
+     [
+      5,
+      "move",
+      ""
+     ],
+     [
+      5,
+      "communicate",
+      "Wren, it's sunset now \u2014 are you the one to take the sealed letter, or is there a hearth-keeper who must receive it befor"
+     ]
+    ]
+   },
+   {
+    "turn": 6,
+    "kind": "do",
+    "words": "I go looking for the goblins that raid the carts near the market.",
+    "status": 200,
+    "error": null,
+    "seconds": 25.0,
+    "day": 1,
+    "phase": "dusk",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "rogue",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Lira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Mira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Wren": "dd38b4ae-887c-438a-9be9-f08e13d6d975"
+    },
+    "rumours": [
+     "A stranger asks for directions to the Hearth"
+    ],
+    "settled": [
+     "The courier's letter carries a warning of road trouble"
+    ],
+    "prose": "The Hearth's fire has sunk to a bed of coals, the last of the amber dusk spilling through the rafters as smoke curls upward. Lira stands at the threshold, the sealed letter pressed to her chest, while Wren steps forward from the low table and Ash cuts between them, catching Wren's eye. \"Wren, wait \u2014 the goblins can wait, but this letter can't. Please take it to the Hearth keeper, or tell me where to find them, before the sun is fully gone.\" \"Lira, hold steady. I'm market ward, not hearth keeper \u2014 but the Hearth sits a short walk yonder, and I know the keeper's door. If Mira's letter is meant for them, I'll take you both there now before dark.\" \"Wren, going after the goblins alone is a fool's errand. If we're to do this, we do it together \u2014 I know the old mill paths. Wait for me.\" \"Lira, I'm not the keeper \u2014 I'm the courier who brought that letter. But Ash said Wren leads this vale, and Wren's still around. If you carry the letter, I'll walk you to the Hearth keeper myself now \u2014 we're out of daylight.\" \"No, I'm not the Hearth keeper \u2014 I'm just the courier carrying this warning. But since you're offering, please take it from me and get it to them before dusk. I've been trying to find someone who can.\" \"Mira's the courier \u2014 if her letter names the hearth-keeper, that's the hand it belongs to. I trust you to see it through to the right door before the light goes.\" Wren's gaze drags from the darkening doorway back to the letter, then to the two couriers, and a breath of resignatio",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      6,
+      "observe",
+      ""
+     ],
+     [
+      6,
+      "communicate",
+      "Please, Mira, I carry a sealed letter that must reach the Hearth keeper before dusk \u2014 are you the keeper, or can you tak"
+     ],
+     [
+      6,
+      "communicate",
+      "Lira says she has the letter \u2014 is she the Hearth keeper? I'll hand it to her now."
+     ]
+    ]
+   },
+   {
+    "turn": 7,
+    "kind": "do",
+    "words": "If goblins are here, I draw my sword and attack the nearest one.",
+    "status": 200,
+    "error": null,
+    "seconds": 21.9,
+    "day": 1,
+    "phase": "evening",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "rogue",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Lira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Mira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Wren": "dd38b4ae-887c-438a-9be9-f08e13d6d975"
+    },
+    "rumours": [
+     "Creaking wheel at the Old Mill",
+     "A stranger asks for directions to the Hearth"
+    ],
+    "settled": [
+     "The courier's letter carries a warning of road trouble"
+    ],
+    "prose": "At the threshold of Hearth, the fire's last coals cast a dim orange glow across the packed floor, and the amber dusk fades to grey through the rafters as smoke curls toward the night sky. Lira presses the sealed letter hard against her chest, looking from Mira to Ash, while Wren shifts toward the door, hand hovering near the sword at their hip. \"Yes \u2014 take it now. Then lead us to the keeper's door before the light dies.\" \"Wren, hold! You don't know how many there are or where they hide. A blade in the dark gets you killed. We move together, I know the mill paths \u2014 let me lead, and we'll find them before they find us.\" \"Lira, take my hand\u2014I'll walk with you to the Hearth keeper now. It's near dark, but I know the door. Let's go together.\" \"Yes \u2014 let's go together. Which way to the keeper's door?\" Ash steps toward the pair, jaw tight, and lays a hand on Wren's shoulder to keep them from the door. \"Lira, Mira's right\u2014you're both holding the same warning. Come on, I'll walk you both to the keeper's door myself. This letter's been chasing daylight long enough.\" Wren hesitates, fingers still curled near the sword's hilt, scanning the dark between the rafters for any sign of goblin eyes \u2014 but the Hearth holds only the quiet breath of coals and the shuffle of three people about to leave. Mira reaches toward Lira, palm open, and nods toward the inner door. \"Wren, stop! There are no goblins right now \u2014 you're swinging at nothing. The letter is the urgent thing, it must reach the keeper",
+    "rolls": [
+     "Encounter: 2x Goblin (hard, 150 adjusted XP).",
+     "Wren hits Goblin 1 for 7 slashing. (7->0 HP)",
+     "Ash hits Goblin 2 for 6 piercing. (7->1 HP)",
+     "Goblin 2 misses Wren (13 vs AC 18).",
+     "Defeated Goblin 1: 200 XP, 100 each.",
+     "Ash reaches level 2: +7 hit points.",
+     "Wren reaches level 2: +8 hit points."
+    ],
+    "fight": [
+     {
+      "foes": "[\"goblin-1\", \"goblin-2\"]",
+      "tags": "7",
+      "deeds": "1",
+      "helped": "1",
+      "unresolved": "0",
+      "scene_event_id": "0367fd9d-ba39-410c-a4e4-d10c878d32ea"
+     }
+    ],
+    "ash_chose": [
+     [
+      7,
+      "communicate",
+      "Lira, we're both couriers with the same warning \u2014 you have your letter, I have mine. The keeper is at the Hearth, and we"
+     ],
+     [
+      7,
+      "communicate",
+      "If you're not the keeper, put the letter in Mira's hands \u2014 she knows the Hearth door and we're out of daylight. I'll wal"
+     ],
+     [
+      7,
+      "communicate",
+      "Please take the letter to the Hearth keeper now\u2014I'm still holding it, and it's nearly dark."
+     ]
+    ]
+   },
+   {
+    "turn": 8,
+    "kind": "do",
+    "words": "I attack the nearest enemy.",
+    "status": 200,
+    "error": null,
+    "seconds": 24.2,
+    "day": 1,
+    "phase": "night",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "rogue",
+      "level": 2,
+      "xp": 300,
+      "hp_current": 17,
+      "hp_max": 17,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 300,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [
+     [
+      "Goblin 1",
+      0
+     ],
+     [
+      "Goblin 2",
+      1
+     ]
+    ],
+    "places": {
+     "Ash": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Lira": "9506f7bb-82c7-5e11-a962-39f3e93cfd67",
+     "Mira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Wren": "dd38b4ae-887c-438a-9be9-f08e13d6d975"
+    },
+    "rumours": [
+     "Creaking wheel at the Old Mill",
+     "A stranger asks for directions to the Hearth"
+    ],
+    "settled": [
+     "The courier's letter carries a warning of road trouble"
+    ],
+    "prose": "Inside Hearth, the last coals throw a faint orange shimmer across the packed floor as smoke threads upward into the grey dusk. The amber glow catches the edge of Lira's sealed letter pressed against her chest, while Wren's hand hovers near the door, and Ash shifts restlessly, scanning the shadows between the rafters. \"Lira, ignore the blades\u2014there are no goblins here to strike. Your letter still needs the keeper's hand. Come with me now, I know the door.\" \"Lira, the keeper's door is at the Hearth, not the mill \u2014 double back this way.\" \"Ash, stop! There are no goblins here yet \u2014 you're striking at shadows. The letters are what matter, and we're wasting the last of the light! Let Mira and I reach the keeper's door first \u2014 come with us, not after some imagined raiders.\" Wren pivots toward the darkened doorway, sword half-lifted, eyes fixed on a shifting patch of gloom near the threshold, ready to strike at the nearest enemy. \"Wren, there's no enemy \u2014 you're swinging at air. The letter must get to the keeper before dark. Mira's taking me now; come with us, don't go chasing shadows.\" \"Mira, we've circled this enough. Follow me\u2014my hand's steady and the keeper's door is yonder. Lira, you mark my words, we go now, all three of us, before the dark takes the path.\" Lira turns toward the mill path, the letter still pressed tight, while Ash lingers by the Hearth door, hand on rapier hilt, watching the shadows between them.",
+    "rolls": [
+     "Wren hits Goblin 2 for 4 slashing. (1->0 HP)",
+     "Defeated Goblin 2: 200 XP, 100 each."
+    ],
+    "fight": [
+     {
+      "foes": "[\"goblin-1\", \"goblin-2\"]",
+      "tags": "2",
+      "deeds": "2",
+      "helped": "0",
+      "unresolved": "1",
+      "scene_event_id": "f454e912-dfa2-4b68-ae94-0740aace227d"
+     }
+    ],
+    "ash_chose": [
+     [
+      8,
+      "interact",
+      "I attack Goblin 2 with my rapier"
+     ],
+     [
+      8,
+      "move",
+      ""
+     ],
+     [
+      8,
+      "observe",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 9,
+    "kind": "do",
+    "words": "I keep fighting beside Ash.",
+    "status": 200,
+    "error": null,
+    "seconds": 16.7,
+    "day": 1,
+    "phase": "midnight",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "rogue",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 17,
+      "hp_max": 17,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Lira": "9506f7bb-82c7-5e11-a962-39f3e93cfd67",
+     "Mira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Wren": "dd38b4ae-887c-438a-9be9-f08e13d6d975"
+    },
+    "rumours": [
+     "Creaking wheel at the Old Mill",
+     "A stranger asks for directions to the Hearth"
+    ],
+    "settled": [
+     "The courier's letter carries a warning of road trouble"
+    ],
+    "prose": "Ash's eyes track the last red ember in the hearth while Wren's knuckles hover pale against the doorframe\u2014and Lira, the letter pressed to their chest like a second heartbeat, turns and slips out into the fading dusk, boots scuffing the packed-earth floor. The road ahead stretches grey and empty, the mill's dark silhouette behind them, and Lira's hand closes tighter around the letter as the light leaks out of the sky. Lira's breath fogs in the cooling air, and the first stars prickle into view, faint as unspoken words, as they walk toward Hearth with the letter still pressed close. Behind them, Wren's hand finally drops from the door, and Ash turns back to the dying coals with a quiet sigh. The road under Lira's boots is cold and uneven, and each step puts more grey dusk between them and the safety of the mill's warm walls. Half a league on, Lira pauses and looks back\u2014the mill is a dark smudge against the horizon, and Hearth still lies ahead, unseen. The letter crinkles softly as Lira's fingers shift over it, and they resume walking, chin set toward the dark road. Night deepens around them, the wind carrying the mill's scent of old grain and dust, and Lira's footsteps are a lonely rhythm on the empty path. Inside Hearth, the last coals cast a faint orange shimmer across the packed floor, smoke threading upward into the grey dusk. Ash plants their feet between Wren and the mill path, arms wide, blocking the way before Wren can go chasing goblins alone. Wren, Ash is right\u2014don't g",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      9,
+      "move",
+      ""
+     ],
+     [
+      9,
+      "interact",
+      "I stand between Wren and the mill path, arms wide, blocking the way before they can go chasing goblins alone."
+     ],
+     [
+      9,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 10,
+    "kind": "rest",
+    "words": "",
+    "status": 200,
+    "error": null,
+    "seconds": 19.0,
+    "day": 2,
+    "phase": "dawn",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "rogue",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 17,
+      "hp_max": 17,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Lira": "9506f7bb-82c7-5e11-a962-39f3e93cfd67",
+     "Mira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Wren": "dd38b4ae-887c-438a-9be9-f08e13d6d975"
+    },
+    "rumours": [
+     "Creaking wheel at the Old Mill",
+     "A stranger asks for directions to the Hearth"
+    ],
+    "settled": [
+     "The courier's letter carries a warning of road trouble"
+    ],
+    "prose": "Inside Hearth, the last coals pulse faint orange across the packed floor as smoke curls into the grey before dawn. Mira plants their feet between Ash and Wren, arms crossed, voice low and steady in the dim. Mira steps closer to Ash, jaw tight, and speaks the words they've held back all night \u2014 the keeper's door is here, and it's time to stop circling and walk through it together. \"Mira, you're right. We've circled enough. I know the keeper's door is right here \u2014 let's go together now, before the morning slips away.\" Ash's shoulders drop, the fight draining out of them, and they finally turn toward the shadowed wall where the door waits. Wren lets out a long breath and sinks onto a low bench by the cooling hearth, letting the quiet settle before the next step. The coals hiss softly as Wren shifts, and Mira glances at the two of them \u2014 the keeper's door close enough to touch, the morning almost here.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      10,
+      "wait",
+      ""
+     ],
+     [
+      10,
+      "communicate",
+      "Ash, we've circled this long enough. The keeper's door is here\u2014lead us to it now, all of us together, before we lose the"
+     ]
+    ]
+   },
+   {
+    "turn": 11,
+    "kind": "say",
+    "words": "Ash, are you hurt? We did well.",
+    "status": 200,
+    "error": null,
+    "seconds": 18.6,
+    "day": 2,
+    "phase": "sunrise",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "rogue",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 17,
+      "hp_max": 17,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Lira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Mira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Wren": "dd38b4ae-887c-438a-9be9-f08e13d6d975"
+    },
+    "rumours": [
+     "Creaking wheel at the Old Mill",
+     "A stranger asks for directions to the Hearth"
+    ],
+    "settled": [
+     "The courier's letter carries a warning of road trouble"
+    ],
+    "prose": "Lira arrives at Hearth. Dawn bleeds grey through the smoke-hole of Hearth, the last coals pulsing faint orange across the packed floor as Mira plants their feet between Ash and Wren, arms crossed. Wren turns to Ash, breath still short from the night's work, and asks if they're hurt, adding that they did well. \"Wren, not a scratch\u2014thanks to you holding the line. We did well indeed. Now let's see the keeper about that letter and get the miller's wheel looked at before it jams.\" Lira steps forward, the letter still in hand, and presses Ash to come to the keeper's door now, before anything else waylays them. \"Wren's asking after you, Ash \u2014 but more than that, I still hold this letter and the keeper's door is right here. Will you come with me to it now, before anything else waylays us?\" Mira catches Ash's sleeve, jaw tight, and tells them to stop waiting and open the keeper's door \u2014 the morning's young and they're all here. \"Ash, you said the door is right here\u2014so stop waiting and open it. We're all here, the morning's young, and I'm tired of circling. Lead us in.\" Mira turns to Wren, dismissing the fight talk, and asks plainly whether it's Wren or Ash who holds the keeper's claim \u2014 the letters have waited all night, and the door stands open before them.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      11,
+      "wait",
+      ""
+     ],
+     [
+      11,
+      "wait",
+      ""
+     ],
+     [
+      11,
+      "communicate",
+      "Come with us to the keeper's door now \u2014 it's dawn, we're all here at the Hearth, and the letter has waited long enough."
+     ]
+    ]
+   },
+   {
+    "turn": 12,
+    "kind": "go",
+    "words": "Hearth",
+    "status": 200,
+    "error": null,
+    "seconds": 22.8,
+    "day": 2,
+    "phase": "morning",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "rogue",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 17,
+      "hp_max": 17,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Lira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Mira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Wren": "dd38b4ae-887c-438a-9be9-f08e13d6d975"
+    },
+    "rumours": [
+     "Creaking wheel at the Old Mill",
+     "A stranger asks for directions to the Hearth"
+    ],
+    "settled": [
+     "The courier's letter carries a warning of road trouble"
+    ],
+    "prose": "At Hearth, the last coals pulse faint orange across the packed floor as Lira stands by the door, letter in hand, while Mira plants their feet between Ash and Wren, arms crossed. \"Ash, Mira's right \u2014 the door is here and the morning's slipping. I'm done circling. Open it, and I'll hand the letter to whoever's inside.\" Wren steps closer to Ash, breath still short from the night's work, while Ash nods once and turns to Mira. \"Right, Mira \u2014 no more circling. The morning's ours. Let's open that door together and hand the letter to the keeper.\" \"Ash, there you are \u2014 we're already at the Hearth. Stop pacing and let's find the keeper's door together. The letter's waited all night; let's not make it wait for noon.\" \"Wren, good \u2014 you're here with us at the Hearth at last. The letter's still in Lira's hand and the morning's fresh. Let's not waste it standing around \u2014 keep beside me and we'll see the keeper together, then look at the miller's wheel.\" \"Lira, stop waiting \u2014 the door's right here. Give me your hand, we walk in together now, and your letter finds its keeper before the morning slips away.\" Lira grips the letter tighter, the parchment crinkling in the grey dawn light, and steps toward the door with Ash and Mira, Wren close behind.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      12,
+      "move",
+      ""
+     ],
+     [
+      12,
+      "wait",
+      ""
+     ],
+     [
+      12,
+      "communicate",
+      "Ash, the morning's wasting and we're all here \u2014 open the keeper's door now and let's end this."
+     ]
+    ]
+   },
+   {
+    "turn": 13,
+    "kind": "do",
+    "words": "I share a meal by the fire and tend to my wounds.",
+    "status": 200,
+    "error": null,
+    "seconds": 16.6,
+    "day": 2,
+    "phase": "noon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "rogue",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 17,
+      "hp_max": 17,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Lira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Mira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Wren": "dd38b4ae-887c-438a-9be9-f08e13d6d975"
+    },
+    "rumours": [
+     "Creaking wheel at the Old Mill",
+     "A stranger asks for directions to the Hearth"
+    ],
+    "settled": [
+     "The courier's letter carries a warning of road trouble"
+    ],
+    "prose": "Morning light filters through the high windows of Hearth, dust motes drifting over the packed floor as the last coals pulse faint orange. Lira steps toward Mira, hand extended, letter still clutched in the other, while Ash grips the keeper's door handle and heaves \u2014 the wood shudders but holds. \"Ash, push hard! The morning's getting away from us\u2014get that door open and we'll hand the letter to the keeper.\" \"Ash, push it open\u2014the keeper's inside, I'm ready. This letter's been waiting all night for that door.\" \"Yes\u2014knock, Mira! I'm right behind you with the letter.\" \"Lira, my hand's yours \u2014 let's walk to the keeper's door together now, no more circling.\" Mira reaches for the front door, knuckles rapping hard against the wood. The sound echoes through the empty hall, unanswered. Wren settles by the dying coals, pulling off a glove to inspect a cut, letting the warmth ease the ache. The keeper's door remains shut, no steps from beyond it; only the soft crackle of embers answers the knocking.",
+    "rolls": [
+     "Ash's Athletics check: 7 against DC 12, failure."
+    ],
+    "fight": [
+     {
+      "check": "Ash's Athletics check: 7 against DC 12, failure.",
+      "scene_event_id": "b269fd5a-a512-4e56-9812-6a4968a60e2e"
+     }
+    ],
+    "ash_chose": [
+     [
+      13,
+      "interact",
+      "Push open the keeper's door at the Hearth, grasping the handle firmly and heaving it inward."
+     ],
+     [
+      13,
+      "communicate",
+      "Mira, we're all here at the Hearth and the morning is half gone \u2014 enough circling. Take my hand and we'll find the keepe"
+     ],
+     [
+      13,
+      "interact",
+      "Walk to the Hearth's front door and knock firmly, calling for the keeper to receive the letter."
+     ]
+    ]
+   },
+   {
+    "turn": 14,
+    "kind": "rest",
+    "words": "",
+    "status": 500,
+    "error": "{\"error\":{\"code\":\"INVARIANT_VIOLATED\",\"message\":\"projection left bounds: stamina=103\",\"request_id\":\"req-dd000148d1d3\",\"details\":{\"resource\":\"stamina\",\"value\":103}}}",
+    "seconds": 17.2,
+    "day": 2,
+    "phase": "afternoon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "rogue",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 17,
+      "hp_max": 17,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Lira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Mira": "dd38b4ae-887c-438a-9be9-f08e13d6d975",
+     "Wren": "dd38b4ae-887c-438a-9be9-f08e13d6d975"
+    },
+    "rumours": [
+     "Creaking wheel at the Old Mill",
+     "A stranger asks for directions to the Hearth"
+    ],
+    "settled": [
+     "The courier's letter carries a warning of road trouble"
+    ],
+    "prose": "",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": []
+   }
+  ],
+  "spend_usd": 0.1678
+ }
+]

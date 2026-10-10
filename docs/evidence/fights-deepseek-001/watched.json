@@ -1,0 +1,806 @@
+{
+ "world_id": "bc0649cf-9d26-41da-9761-85eb2f53008b",
+ "spend_usd": 0.15757879400000016,
+ "party": [
+  {
+   "id": "d5617032-1e18-43c8-81d6-6181ba192002",
+   "world_id": "bc0649cf-9d26-41da-9761-85eb2f53008b",
+   "name": "Ash",
+   "level": 1,
+   "character_class": "fighter",
+   "hp_current": 12,
+   "hp_max": 12,
+   "conditions": [],
+   "character_id": "1c101025-e240-48f3-8b55-79d94e0e08cd",
+   "version": 0,
+   "race": "human",
+   "armor_class": 18,
+   "weapons": [
+    "Longsword",
+    "Handaxe"
+   ],
+   "spells": [],
+   "spell_slots": [],
+   "spell_slots_left": [],
+   "xp": 0,
+   "xp_level_start": 0,
+   "xp_next_level": 300,
+   "abilities": {
+    "cha": 11,
+    "con": 15,
+    "dex": 14,
+    "int": 9,
+    "str": 16,
+    "wis": 13
+   },
+   "choices": [],
+   "calling_changeable": false
+  },
+  {
+   "id": "3c3609a1-a324-408f-ac2a-262e20b046b7",
+   "world_id": "bc0649cf-9d26-41da-9761-85eb2f53008b",
+   "name": "Wren",
+   "level": 1,
+   "character_class": "bard",
+   "hp_current": 10,
+   "hp_max": 10,
+   "conditions": [],
+   "character_id": "d666409d-5036-488f-95ce-74f69d480c18",
+   "version": 1,
+   "race": "human",
+   "armor_class": 13,
+   "weapons": [
+    "Rapier",
+    "Dagger"
+   ],
+   "spells": [
+    "Vicious Mockery",
+    "Dancing Lights",
+    "Sleep",
+    "Thunderwave",
+    "Cure Wounds",
+    "Healing Word"
+   ],
+   "spell_slots": [
+    2
+   ],
+   "spell_slots_left": [
+    2
+   ],
+   "xp": 0,
+   "xp_level_start": 0,
+   "xp_next_level": 300,
+   "abilities": {
+    "cha": 16,
+    "con": 14,
+    "dex": 15,
+    "int": 13,
+    "str": 9,
+    "wis": 11
+   },
+   "choices": [],
+   "calling_changeable": false
+  }
+ ],
+ "turns": [
+  {
+   "turn": 1,
+   "status": 200,
+   "error": null,
+   "seconds": 11.2,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "422b6bea-3b74-4ce1-96d0-1c6411073917",
+    "Etta": "090abddb-38b8-4c01-9fcf-c0415b178009",
+    "Wren": "422b6bea-3b74-4ce1-96d0-1c6411073917"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "communicate",
+     "Heading to Market \u2014 any rumour of trouble on the road worth chasing today?"
+    ],
+    [
+     "communicate",
+     "What should we do first \u2014 walk the Market stalls at sunrise before folks are about, or is there somewhere else you've go"
+    ]
+   ],
+   "prose": "The Hearth's common room is still waking; the fire pops low and a single shaft of pale dawn light cuts across the sawdust floor. Ash stands by the door, turning a handaxe over, and Wren leans against the mantel, lacing their boots. Ash tilts their head toward the Market, asking Wren whether the morning roads carry any rumour of trouble worth chasing today. Wren meets Ash's gaze and shrugs, wondering aloud whether to walk the stalls before the crowd settles in, or whether Ash has another plan in mind. \"Not much trouble \u2014 but Old Marta's flour cart stands empty. Her granddaughter Etta needs strong hands at the mill. That's the loose thread worth tugging this morning.\" \"Let's go to the market first \u2014 Marta's cart is empty and Etta's looking for help with the flour sacks. That's work worth doing before the crowds hit.\" Ash shoulders their pack and sets off down the lane toward the Market, the first bell of the morning just beginning to ring over the rooftops, Wren falling in step beside them."
+  },
+  {
+   "turn": 2,
+   "status": 200,
+   "error": null,
+   "seconds": 9.2,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 0,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "090abddb-38b8-4c01-9fcf-c0415b178009",
+    "Etta": "090abddb-38b8-4c01-9fcf-c0415b178009",
+    "Wren": "090abddb-38b8-4c01-9fcf-c0415b178009"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "move",
+     ""
+    ],
+    [
+     "wait",
+     ""
+    ],
+    [
+     "move",
+     ""
+    ]
+   ],
+   "prose": "Pale dawn light spills across the market square, where wooden stalls still slumber and a few carters are already hitching their horses. Ash cuts through the thin crowd toward Etta's cart, and Wren follows close behind, boots scuffing the cobbles. \"Wren! Over here! I could use a strong back before the crowds come \u2014 help me haul the flour sacks from the mill to Gran's cart?\" Etta waves from beside the cart, arms already dusted with flour, the morning air carrying a faint smell of fresh bread from nearby ovens. \"Right then \u2014 Market it is. I'll race you to Etta's cart and see who gets the first sack.\" Wren grins at Ash, already leaning forward as if to spring, the challenge hanging in the cool air between them. Ash's hand closes around the handaxe at their belt, knuckles white for just a moment before they relax and give Wren a slow, easy nod. Etta waits by the cart, tapping a flour-dusted finger on the wooden frame, watching the two of them with patient expectation as the morning stirs around them."
+  },
+  {
+   "turn": 3,
+   "status": 200,
+   "error": null,
+   "seconds": 15.5,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 200,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 200,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "090abddb-38b8-4c01-9fcf-c0415b178009",
+    "Etta": "090abddb-38b8-4c01-9fcf-c0415b178009",
+    "Wren": "090abddb-38b8-4c01-9fcf-c0415b178009"
+   },
+   "rolls": [
+    "Settled: Breakfast stall at the Market \u00b7 200 XP each."
+   ],
+   "acts": [
+    [
+     "interact",
+     "Heft a flour sack onto the cart alongside Ash"
+    ],
+    [
+     "communicate",
+     "Flour sacks \u2014 point me at the heaviest and I'll get them loaded before the crowds."
+    ],
+    [
+     "interact",
+     "Grab one of the flour sacks from the mill cart and start hauling it toward Gran's empty cart"
+    ]
+   ],
+   "prose": "Pale dawn light spills across the market square, wooden stalls still slumbering, and a few carters hitch their horses. Ash cuts through the thin crowd toward Etta's cart while Wren follows close, boots scuffing the cobbles. \"Ash, right over here \u2014 the big one by the mill cart's tail. Grab the bottom, we'll swing it between us.\" Etta bends low, seizing a flour sack from the mill cart's tail and hauling it toward Gran's empty cart, the rough cloth creaking under her grip. \"Beat you to that heaviest sack, Ash \u2014 I'll take the one on the mill cart's far side and see if I can't outdo you.\" Wren trots to the mill cart's far side, lays hands on a dusty sack, and hoists it onto the cart beside Ash with a grunt of effort. Ash points to the heaviest sack among the pile, answering Etta's call and sizing up the load before the crowds arrive."
+  },
+  {
+   "turn": 4,
+   "status": 200,
+   "error": null,
+   "seconds": 16.7,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 1,
+     "xp": 200,
+     "hp_current": 12,
+     "hp_max": 12,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 1,
+     "xp": 200,
+     "hp_current": 10,
+     "hp_max": 10,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "090abddb-38b8-4c01-9fcf-c0415b178009",
+    "Etta": "090abddb-38b8-4c01-9fcf-c0415b178009",
+    "Wren": "090abddb-38b8-4c01-9fcf-c0415b178009"
+   },
+   "rolls": [
+    "Encounter: 2x Goblin (hard, 150 adjusted XP).",
+    "Ash hits Goblin 1 for 11 slashing. (7->0 HP)",
+    "Wren misses Goblin 2 (5 vs AC 15).",
+    "Goblin 2 misses Ash (13 vs AC 18).",
+    "Defeated Goblin 1: 200 XP, 100 each.",
+    "Ash reaches level 2: +8 hit points.",
+    "Wren reaches level 2: +7 hit points.",
+    "Goblin 1 left a scimitar."
+   ],
+   "acts": [
+    [
+     "interact",
+     "Grab the bottom of the heaviest sack with Etta and swing it up onto the cart together"
+    ],
+    [
+     "observe",
+     ""
+    ],
+    [
+     "interact",
+     "Swing the sack with Etta onto the tail of Gran's cart, then reach for the next one to keep the line moving."
+    ]
+   ],
+   "prose": "Noon light hardens across the market square, the carters' horses stamping frost from their hooves as Ash and Wren close on Etta's cart by the mill tail. Ash plants both hands on the heaviest sack's coarse burlap, braced low, while Wren sidles to the other side and nods \u2014 the two of them heave together, the weight shifting as they swing it up onto the cart's tail with a solid thump. Etta leans on the cart's rail, eyes tracking the pair's rhythm \u2014 measuring, the way one eyes a horse before buying it. Wren doesn't wait for a breather; already reaching for the next sack, knuckles white on the hem, keeping the line moving while Ash wipes a palm on their thigh and steps in to match the pace. From the shadows between two stalls, a pair of lean, green-skinned shapes uncurl \u2014 goblins, one gnawing a stolen apple core, the other hefting a rusted shortsword, eyes fixed on the cart's untended load. The nearer goblin bares a yellow grin and stalks forward, blade low, while the other scuttles around the cart's far side to cut off the escape."
+  },
+  {
+   "turn": 5,
+   "status": 200,
+   "error": null,
+   "seconds": 13.2,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 2,
+     "xp": 300,
+     "hp_current": 20,
+     "hp_max": 20,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 2,
+     "xp": 300,
+     "hp_current": 17,
+     "hp_max": 17,
+     "choices": []
+    }
+   ],
+   "foes": [
+    [
+     "Goblin 1",
+     0
+    ],
+    [
+     "Goblin 2",
+     7
+    ]
+   ],
+   "places": {
+    "Ash": "090abddb-38b8-4c01-9fcf-c0415b178009",
+    "Etta": "090abddb-38b8-4c01-9fcf-c0415b178009",
+    "Wren": "090abddb-38b8-4c01-9fcf-c0415b178009"
+   },
+   "rolls": [
+    "Wren hits Goblin 2 for 8 piercing. (7->0 HP)",
+    "Defeated Goblin 2: 200 XP, 100 each.",
+    "Goblin 2 left a scimitar."
+   ],
+   "acts": [
+    [
+     "interact",
+     "I attack Goblin 2 with my rapier"
+    ],
+    [
+     "observe",
+     ""
+    ],
+    [
+     "interact",
+     "Dust flour from my hands and look over the loaded cart; nod to Etta that the line's done."
+    ]
+   ],
+   "prose": "The mill tail's frosted stones catch the noon glare as Wren's hand darts from the last flour sack to the rapier at their hip, eyes snapping toward a scuttling shape between the crates. \"Goblin? Wren, what Goblin? You're supposed to be hauling flour, not fighting!\" Etta's gaze flicks from Wren's blade to the cart, then to the shadows under the awnings, one hand half-raised as if to count what's been loaded. Ash dusts flour from their palms, gives the loaded cart a last scanning look, and nods to Etta \u2014 the line's done, every sack settled. \"That's the last of them \u2014 Gran's cart's full as a tick. Good work, Ash; Etta, you'll have the bread out before noon at this rate.\" \"That's the last of them \u2014 thank you, Ash. Gran'll have her bread out before the first bell.\" A rustle answers from behind the stacked crates \u2014 a low, wet snicker \u2014 and Wren's rapier clears the scabbard with a whisper of steel. Wren's blade darts toward the second goblin as it breaks from the shadow, while the first lies crumpled by the cart wheel, unmoving."
+  },
+  {
+   "turn": 6,
+   "status": 200,
+   "error": null,
+   "seconds": 17.2,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 2,
+     "xp": 400,
+     "hp_current": 20,
+     "hp_max": 20,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 2,
+     "xp": 400,
+     "hp_current": 17,
+     "hp_max": 17,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "090abddb-38b8-4c01-9fcf-c0415b178009",
+    "Etta": "090abddb-38b8-4c01-9fcf-c0415b178009",
+    "Wren": "090abddb-38b8-4c01-9fcf-c0415b178009"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "wait",
+     ""
+    ],
+    [
+     "communicate",
+     "Goblins came for the flour \u2014 grab a scimitar, we've got to clear them out before they wreck the cart."
+    ],
+    [
+     "observe",
+     ""
+    ]
+   ],
+   "prose": "The Market's torchlight flickers across the cobbles as the last goblin crumples, its blade skittering into the shadow of a grain cart. Ash strides toward Wren, flour dust still settling on both of them, and jabs a thumb at the cart's listing axle. 'Goblins came for the flour\u2014grab a scimitar, we've got to clear them out before they wreck the cart,' Ash says, already scanning the crates for more movement. Wren's hand stays on the rapier hilt, eyes tracking a shadow that slips between two sacks before going still. The cart groans under its own weight, a loose strap flapping in the evening breeze. Etta watches from beside the cart, arms crossed, weighing the two of them\u2014the fighter's squared shoulders, the bard's coiled stillness\u2014before her gaze drifts to the dark gap between the stalls."
+  },
+  {
+   "turn": 7,
+   "status": 200,
+   "error": null,
+   "seconds": 22.2,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 2,
+     "xp": 400,
+     "hp_current": 20,
+     "hp_max": 20,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 2,
+     "xp": 400,
+     "hp_current": 17,
+     "hp_max": 17,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "090abddb-38b8-4c01-9fcf-c0415b178009",
+    "Etta": "090abddb-38b8-4c01-9fcf-c0415b178009",
+    "Wren": "090abddb-38b8-4c01-9fcf-c0415b178009"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "observe",
+     ""
+    ],
+    [
+     "take",
+     ""
+    ],
+    [
+     "interact",
+     "Swing the scimitar low at Goblin 2's legs to break its stance and drive it back from the cart"
+    ]
+   ],
+   "prose": "Torchlight dances across the Market's cobbles, catching the glint of fallen blades near a grain cart with a listing axle. Ash steps over the crumpled goblin and stoops, fingers closing around the hilt of a scimitar lying in the shadow of the cart. Ash! Careful with that scimitar \u2014 those sacks aren't worth a blade through Gran's cart. Just keep the goblins away from the flour! Etta's gaze sweeps the torchlit stalls, searching the shadows between the crates for any further movement. Wren swings the scimitar low at the goblin's legs, the blade whistling through the air to break the creature's stance and drive it back from the cart."
+  },
+  {
+   "turn": 8,
+   "status": 200,
+   "error": null,
+   "seconds": 18.0,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 2,
+     "xp": 800,
+     "hp_current": 20,
+     "hp_max": 20,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 2,
+     "xp": 800,
+     "hp_current": 17,
+     "hp_max": 17,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "090abddb-38b8-4c01-9fcf-c0415b178009",
+    "Etta": "090abddb-38b8-4c01-9fcf-c0415b178009",
+    "Wren": "090abddb-38b8-4c01-9fcf-c0415b178009"
+   },
+   "rolls": [
+    "Settled: Goblins in the flour sacks \u00b7 400 XP each.",
+    "Encounter: 3x Goblin (hard, 300 adjusted XP).",
+    "Wren hits Goblin 1 for 7 piercing. (7->0 HP)",
+    "Ash hits Goblin 2 for 10 slashing. (7->0 HP)",
+    "Goblin 3 misses Wren (6 vs AC 13).",
+    "Defeated Goblin 1, Goblin 2: 400 XP, 200 each.",
+    "Ash reaches level 3: +8 hit points.",
+    "Wren reaches level 3: +7 hit points.",
+    "Goblin 1 left a scimitar."
+   ],
+   "acts": [
+    [
+     "spar",
+     ""
+    ],
+    [
+     "observe",
+     ""
+    ],
+    [
+     "interact",
+     "Kick the goblin's knee and thrust the scimitar into its side to drive it from the cart"
+    ]
+   ],
+   "prose": "Torchlight flickers across the Market's cobbles as Wren drives a boot toward the goblin's knee, then thrusts the scimitar at its side to shove it from the listing grain cart. Etta pulls back a step, arms folded, watching the scimitar's arc with narrowed eyes as Ash spins it in a loose grip, testing its weight. \"Ash! Put that blade down \u2014 I haul flour, I don't duel. If you want to swing that thing, keep it pointed at the goblins, not at me.\" The goblin scrabbles at the cart's axle, snarling as it tries to find footing against Wren's shove. \"Etta's keeping watch \u2014 you and I have blades now, so let's push these goblins off the flour and out of the market before they call for friends.\" Two more goblins slip from the shadows between the stalls, blades glinting, closing on the cart. Wren's scimitar scrapes against the cart's timber as the goblin twists, spittle flying as it snaps at Wren's wrist. Ash plants a foot, blade held low between the cart and the oncoming goblins, watching Etta's gaze sweep the market's edge."
+  },
+  {
+   "turn": 9,
+   "status": 200,
+   "error": null,
+   "seconds": 14.1,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 3,
+     "xp": 1000,
+     "hp_current": 28,
+     "hp_max": 28,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 3,
+     "xp": 1000,
+     "hp_current": 24,
+     "hp_max": 24,
+     "choices": []
+    }
+   ],
+   "foes": [
+    [
+     "Goblin 1",
+     0
+    ],
+    [
+     "Goblin 2",
+     0
+    ],
+    [
+     "Goblin 3",
+     7
+    ]
+   ],
+   "places": {
+    "Ash": "090abddb-38b8-4c01-9fcf-c0415b178009",
+    "Etta": "090abddb-38b8-4c01-9fcf-c0415b178009",
+    "Wren": "090abddb-38b8-4c01-9fcf-c0415b178009"
+   },
+   "rolls": [
+    "Ash's Athletics check: 12 against DC 12, success.",
+    "Wren hits Goblin 3 for 10 piercing. (7->0 HP)",
+    "Defeated Goblin 3: 200 XP, 100 each."
+   ],
+   "acts": [
+    [
+     "interact",
+     "I attack Goblin 3 with my rapier"
+    ],
+    [
+     "interact",
+     "I drive my scimitar at the nearest goblin's flank, pushing it away from the cart and toward Wren's blade."
+    ],
+    [
+     "communicate",
+     "Steel down \u2014 goblins are gone now, don't turn a blade on your own side."
+    ]
+   ],
+   "prose": "In the guttering torchlight, the last goblin stumbles back from the cart, and Ash's scimitar hangs mid-air, torn between pressing the advantage and Etta's cold stare across the cobbles. Etta steps forward, arms still folded, and tells Ash plainly that the goblins are gone, steel goes down, and there's no need to turn a blade on their own side. \"Etta's right \u2014 blades go down. Goblin's gone, cart's loaded; let's not make a new fight out of an old one.\" Wren's rapier tip drops to the cobbles with a soft click, and Ash slowly lowers the scimitar, letting the goblin slip away into the dark between the stalls. The torch flame settles, shadows steadying across the loaded grain cart, and the three of them stand in the sudden quiet, breath visible in the cold night air."
+  },
+  {
+   "turn": 10,
+   "status": 200,
+   "error": null,
+   "seconds": 21.5,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 3,
+     "xp": 1100,
+     "hp_current": 28,
+     "hp_max": 28,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 3,
+     "xp": 1100,
+     "hp_current": 24,
+     "hp_max": 24,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "090abddb-38b8-4c01-9fcf-c0415b178009",
+    "Etta": "090abddb-38b8-4c01-9fcf-c0415b178009",
+    "Wren": "090abddb-38b8-4c01-9fcf-c0415b178009"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "observe",
+     ""
+    ],
+    [
+     "take",
+     ""
+    ],
+    [
+     "communicate",
+     "The goblins are gone and the flour's safe \u2014 should we scout the Market edge for any sign they left a trail, or head to t"
+    ]
+   ],
+   "prose": "At the Market edge, torchlight gutters over the cobbles as the last goblin staggers back from Gran's cart, breath fogging in the midnight air. Ash's scimitar hangs mid-swing, knuckles white on the hilt, while Etta's cold stare cuts across the square like a blade of its own. Wren steps between them, one hand raised, glancing from the blade to the flour sacks piled high in the cart, then out toward the dark gaps between the stalls where the goblins slipped away. \"Ash, that scimitar's got a mind of its own \u2014 keep the edge pointed at the ground, not at Etta's feet. Goblins gone; let's not scratch the day's peace.\" \"Ash, put that steel away \u2014 the goblins are gone and Gran's cart is safe. No more swinging blades around the flour.\" Ash's shoulders drop a fraction, the scimitar's point dipping toward the cobbles as Wren's words land. Etta folds her arms a little tighter, scanning the market's shadowed edges as if expecting another pair of yellow eyes to blink back. \"Scout the edge first \u2014 a trail means more trouble later. Miller can wait till we've got something worth telling.\" \"The miller'll want the news straight from us, not from a trail. Let's get to the Hearth while the morning's stil"
+  },
+  {
+   "turn": 11,
+   "status": 200,
+   "error": null,
+   "seconds": 14.5,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 3,
+     "xp": 1100,
+     "hp_current": 28,
+     "hp_max": 28,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 3,
+     "xp": 1100,
+     "hp_current": 24,
+     "hp_max": 24,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "422b6bea-3b74-4ce1-96d0-1c6411073917",
+    "Etta": "422b6bea-3b74-4ce1-96d0-1c6411073917",
+    "Wren": "422b6bea-3b74-4ce1-96d0-1c6411073917"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "move",
+     ""
+    ],
+    [
+     "move",
+     ""
+    ],
+    [
+     "move",
+     ""
+    ]
+   ],
+   "prose": "Morning light spills across the market square as the last goblin slumps still, breaths ragged and fading. Ash sheathes the scimitar with a click, scanning the cobbles for tracks that might lead somewhere useful\u2014but the dust holds nothing. \"Ash is off to the Hearth \u2014 looks like the trail's for another day. We'd best follow before the flour sits too long in the sun. Coming?\" \"Wren, Ash is off to the Hearth \u2014 reckons he'll tell the miller himself. Let's not dawdle; I'll help you finish checking the cart, then we follow and make sure the story's told straight.\" Etta and Wren hurry through the cart's last bundles, securing straps and pulling the tarp tight against the climbing sun. Ash's silhouette shrinks down the lane toward the Hearth, dust kicking at their heels. The cart creaks as the two set off after them, past the defeated goblins lying in the straw, not even a twitch from their claws. Wren casts one glance back at the market's quiet stalls, then hurries to catch Ash's pace. At the Hearth's wide door, Ash pauses, hand on the frame, looking back to see both of them closing the gap. The smell of warm bread drifts out over the trio as they step inside."
+  },
+  {
+   "turn": 12,
+   "status": 200,
+   "error": null,
+   "seconds": 19.5,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 3,
+     "xp": 1100,
+     "hp_current": 28,
+     "hp_max": 28,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 3,
+     "xp": 1100,
+     "hp_current": 24,
+     "hp_max": 24,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "422b6bea-3b74-4ce1-96d0-1c6411073917",
+    "Etta": "422b6bea-3b74-4ce1-96d0-1c6411073917",
+    "Wren": "422b6bea-3b74-4ce1-96d0-1c6411073917"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "wait",
+     ""
+    ],
+    [
+     "observe",
+     ""
+    ],
+    [
+     "communicate",
+     "We're all here at the Hearth \u2014 let's tell the miller together what happened, so he hears it straight and once."
+    ]
+   ],
+   "prose": "Inside the Hearth's shadowed storeroom, dust motes hang in the slanted light from the high window as Etta pushes a sack of flour toward the cart, her boots scuffing the planks. Etta glances at Ash, who stands still near the stacked sacks, gaze drifting to the rafters where a cobweb trembles. \"Good plan, Etta \u2014 one voice from all of us, and the miller gets the whole story: the trap, the fight, and the flour sitting safe.\" \"Aye, together, straight and once \u2014 but I want the miller to know the trail of trouble may still be out there, so he's not surprised when we go hunting after breakfast.\" Wren waits by the door, knuckles resting on the frame, listening to the morning crowd begin to stir in the market square beyond. \"Ash, stop gawking at the rafters and help me shift these sacks before the morning crowd finds us. The miller's waiting to hear the whole tale, and I'd rather we told it with the flour safe and the cart ready.\""
+  },
+  {
+   "turn": 13,
+   "status": 200,
+   "error": null,
+   "seconds": 18.1,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 3,
+     "xp": 1100,
+     "hp_current": 28,
+     "hp_max": 28,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 3,
+     "xp": 1100,
+     "hp_current": 24,
+     "hp_max": 24,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "422b6bea-3b74-4ce1-96d0-1c6411073917",
+    "Etta": "422b6bea-3b74-4ce1-96d0-1c6411073917",
+    "Wren": "422b6bea-3b74-4ce1-96d0-1c6411073917"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "communicate",
+     "Wren, after we tell the miller straight, I say we head back to the Market edge and pick up the goblins' trail \u2014 catch th"
+    ],
+    [
+     "interact",
+     "Heave one of the flour sacks toward Gran's cart, setting it down by the axle"
+    ],
+    [
+     "communicate",
+     "Tell the miller together about the goblin fight and the flour, making sure Ash doesn't rush off scouting before we do."
+    ]
+   ],
+   "prose": "Inside the Hearth's shadowed storeroom, dust motes drift in the morning light as Etta heaves a flour sack, thumping it down by Gran's cart axle with a soft puff of grain dust. Ash shifts by the stacked sacks, gaze fixed on the high window, and lays out the plan: tell the miller straight, then head back to the Market edge and pick up the goblins' trail before they regroup. \"Good plan, Ash \u2014 the miller hears it straight, then we hunt the trail before it cools. I'll keep the scimitar handy and watch for sign.\" Wren turns from Ash to Etta, proposing they all tell the miller together about the goblin fight and the flour \u2014 and that Ash not rush off scouting before they do. \"Aye, Wren \u2014 that's the plan. Ash'll fidget but he won't bolt if we keep moving. Let's get to the miller now, before the sun does.\" \"Tell the miller together \u2014 but I'll still scout the edge after, and I won't have the tale held up by my boots.\" \"Ash, the trail can wait till the flour's safe and the miller's heard us. Gran's bread won't bake itself.\" Etta brushes flour dust from her hands and nods toward the door, the morning sun creeping across the planks toward their boots."
+  },
+  {
+   "turn": 14,
+   "status": 200,
+   "error": null,
+   "seconds": 18.1,
+   "party": [
+    {
+     "name": "Ash",
+     "character_class": "fighter",
+     "level": 3,
+     "xp": 1100,
+     "hp_current": 28,
+     "hp_max": 28,
+     "choices": []
+    },
+    {
+     "name": "Wren",
+     "character_class": "bard",
+     "level": 3,
+     "xp": 1100,
+     "hp_current": 24,
+     "hp_max": 24,
+     "choices": []
+    }
+   ],
+   "foes": [],
+   "places": {
+    "Ash": "4c0e202e-b5fb-534d-bf2f-095dbf282813",
+    "Etta": "4c0e202e-b5fb-534d-bf2f-095dbf282813",
+    "Wren": "4c0e202e-b5fb-534d-bf2f-095dbf282813"
+   },
+   "rolls": [],
+   "acts": [
+    [
+     "move",
+     ""
+    ],
+    [
+     "move",
+     ""
+    ],
+    [
+     "move",
+     ""
+    ]
+   ],
+   "prose": "The mill's great wheel groans in the midday light, water sluicing over its mossy paddles, as Ash strides through the open door, flour dust hanging thick in the warm air. Wren, wait! The miller's not at the mill\u2014he's here at the Hearth, waiting for the tale. Let's not go haring off and leave Ash to tell it alone. There he goes\u2014off to the Mill without us. Wren, let's not let him talk to the miller first and spin it his way. Come on, we follow now. Ash pauses at the grain bins, scanning the dusty shadows for the miller, while Wren hurries through the door after them, boots scuffing on the worn planks, Etta close behind, her jaw set. The wheel's steady rhythm fills the silence as the three of them stand amid the stacked sacks, the air prickling with what comes next."
+  }
+ ]
+}

@@ -1,0 +1,1820 @@
+[
+ {
+  "run": 1,
+  "world_id": "50bc5972-62aa-45be-ad13-4f5a85ff6ead",
+  "turns": [
+   {
+    "turn": 1,
+    "kind": "say",
+    "words": "Ash, the roads are getting dangerous. Will you join me as my companion?",
+    "status": 200,
+    "error": null,
+    "seconds": 10.7,
+    "day": 1,
+    "phase": "sunrise",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "9588a762-56d5-43f0-ba08-59f797a5fbc3",
+     "Wren": "9588a762-56d5-43f0-ba08-59f797a5fbc3"
+    },
+    "rumours": [
+     "The Locked Chest at the Market"
+    ],
+    "settled": [],
+    "prose": "The fire in the Hearth's great stone pit throws long shadows across the common room, and the smell of woodsmoke hangs thick and warm. Wren leans against the doorframe, arms crossed, eyes on the dark road beyond the threshold. Ash steps closer, boots scuffing the packed earth floor, and asks Wren if she's ready to head to the Market with them. Wren turns from the door, jaw set, and tells Ash the roads are getting dangerous\u2014asks whether Ash will join her as her companion. \"Yes, I will come. The road's been calling for a while, and I'd rather walk it with someone who knows how to keep pace.\" Wren's shoulders ease, and she gives a short nod, reaching for the pack by the door. The two of them stand together at the threshold, the firelight at their backs and the open road stretching out into the dark.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      1,
+      "communicate",
+      "Ask Wren if she's ready to head to the Market with me."
+     ]
+    ]
+   },
+   {
+    "turn": 2,
+    "kind": "do",
+    "words": "I look around the Hearth and listen for news of trouble.",
+    "status": 200,
+    "error": null,
+    "seconds": 11.7,
+    "day": 1,
+    "phase": "morning",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "9588a762-56d5-43f0-ba08-59f797a5fbc3",
+     "Wren": "9588a762-56d5-43f0-ba08-59f797a5fbc3"
+    },
+    "rumours": [
+     "The Locked Chest at the Market"
+    ],
+    "settled": [],
+    "prose": "Inside the Hearth, the fire's glow has faded to ember-red as the morning light creeps through the shutters, and the common room lies quiet but for the crackle of settling logs. Wren pushes off the doorframe and paces a slow circle, scanning the empty benches and shadowed corners, but the place holds no whispers of trouble \u2014 only the hush of a road not yet stirring. Ash lingers by the hearth, one hand resting on the warm stone, watching the road through the open door as if waiting for something to move in the gray light.",
+    "rolls": [
+     "Wren's Perception check: 3 against DC 12, failure."
+    ],
+    "fight": [
+     {
+      "check": "Wren's Perception check: 3 against DC 12, failure.",
+      "scene_event_id": "ceedbf24-b261-484b-b621-a9e34c2bca93"
+     }
+    ],
+    "ash_chose": [
+     [
+      2,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 3,
+    "kind": "do",
+    "words": "I ask the people here whether anyone has been attacked on the roads.",
+    "status": 200,
+    "error": null,
+    "seconds": 22.9,
+    "day": 1,
+    "phase": "noon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "9588a762-56d5-43f0-ba08-59f797a5fbc3",
+     "Wren": "9588a762-56d5-43f0-ba08-59f797a5fbc3"
+    },
+    "rumours": [
+     "The Locked Chest at the Market"
+    ],
+    "settled": [],
+    "prose": "The embers in the Hearth's great fireplace settle with a soft hiss, casting long shadows across the worn floorboards as morning light filters through the shutters. Wren pushes off the doorframe and paces a slow circle, scanning the empty benches and shadowed corners. Wren steps toward the few patrons hunched over their mugs near the bar, asking in a low voice whether anyone has been set upon while traveling the roads lately. \"Ask around if you like, but I've heard the same talk at the Market \u2014 roads are getting rough. I'll keep an eye out while you gather what you can.\" Ash leans against the doorframe, arms crossed, gaze drifting from the windows to the road beyond, watchful and still. The patrons exchange glances, muttering vague rumors of bandits and wolves along the northern trail, but no one here has fresh wounds or a firsthand tale to tell. Wren finishes the round of questions and returns to Ash's side, shaking their head slightly \u2014 the inn holds only whispers, not answers.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      3,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 4,
+    "kind": "go",
+    "words": "Market",
+    "status": 200,
+    "error": null,
+    "seconds": 15.9,
+    "day": 1,
+    "phase": "afternoon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Wren": "97e73a2e-5112-4323-ae5e-fe44a8d20323"
+    },
+    "rumours": [
+     "The Stallkeeper's Fret",
+     "The Locked Chest at the Market"
+    ],
+    "settled": [],
+    "prose": "The market sprawls under a hazy noon sun, stalls of dyed cloth and iron pots rattling as traders call out prices. Ash weaves between the crowds, scanning the rows of vegetables and secondhand tools, while Wren follows a few paces behind, hand resting on a sword hilt. At a corner stall stacked with turnips, Ash pauses and turns, catching Wren's eye, then jerks a chin toward a narrow alley where a hunched figure in a patched cloak is unloading crates \u2014 the contact they were told to find here. Wren steps up beside Ash, boots scuffing the dirt, and calls out to the cloaked figure, asking if he trades in rumors as well as root vegetables.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      4,
+      "move",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 5,
+    "kind": "do",
+    "words": "I ask the traders about the raiders troubling their carts.",
+    "status": 200,
+    "error": null,
+    "seconds": 15.3,
+    "day": 1,
+    "phase": "sunset",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Wren": "97e73a2e-5112-4323-ae5e-fe44a8d20323"
+    },
+    "rumours": [
+     "The Stallkeeper's Fret",
+     "The Locked Chest at the Market"
+    ],
+    "settled": [],
+    "prose": "Under the hazy noon sun, the market sprawls with stalls of dyed cloth and iron pots, traders calling out prices. Ash weaves between the crowds, scanning rows of vegetables and secondhand tools, while Wren follows a few paces behind, hand resting on a sword hilt. At a corner stall stacked with turnips, Wren steps up to the trader, asking about the raiders troubling their carts. The stallkeeper shakes his head, turning away to weigh a sack of potatoes for a customer, and Wren's question hangs unanswered in the dusty air. \"The traders here won't say much more than I've heard already \u2014 carts hit near the ford, never the same crew twice. But that chest under the table's been humming all afternoon. I'll give the stallkeeper a hand with it before dusk, if you want to keep asking around.\" Ash kneels beside the locked chest beneath the table, pressing an ear to its lid. A low, steady hum vibrates through the wood, and Ash's fingers trace the iron bands, hunting for a seam or catch \u2014 but the bands sit flush, no give, no latch revealed.",
+    "rolls": [
+     "Ash's Perception check: 6 against DC 15, failure."
+    ],
+    "fight": [
+     {
+      "check": "Ash's Perception check: 6 against DC 15, failure.",
+      "scene_event_id": "820f532f-3939-446f-8f0e-e05ca43cbf84"
+     }
+    ],
+    "ash_chose": [
+     [
+      5,
+      "interact",
+      "Kneel by the locked chest and press an ear to it, listening for the source of the humming and tracing the iron bands for"
+     ]
+    ]
+   },
+   {
+    "turn": 6,
+    "kind": "do",
+    "words": "I go looking for the goblins that raid the carts near the market.",
+    "status": 200,
+    "error": null,
+    "seconds": 19.3,
+    "day": 1,
+    "phase": "dusk",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Wren": "97e73a2e-5112-4323-ae5e-fe44a8d20323"
+    },
+    "rumours": [
+     "The Stallkeeper's Fret",
+     "The Locked Chest at the Market"
+    ],
+    "settled": [],
+    "prose": "The market is a sprawl of dyed cloth and iron pots under a hazy noon sun, traders shouting prices over the clatter of carts. Ash crouches at a locked chest, running fingers along its iron bands, pressing the edges and listening for a hidden latch\u2014nothing gives. \"Wren, hold up \u2014 the goblins won't be waiting around the market stalls. If you're set on hunting them, we'd best go together, and not leave that humming chest for the elder to snatch. Give me a hand with it first, then we'll track the raiders before dusk.\" Wren spares the chest a glance, jaw set, then turns to scan the market's edge where the stalls thin into scrub\u2014already hunting, the goblins' trail cold in their mind.",
+    "rolls": [
+     "Ash's Perception check: 8 against DC 15, failure."
+    ],
+    "fight": [
+     {
+      "check": "Ash's Perception check: 8 against DC 15, failure.",
+      "scene_event_id": "36920cdd-642b-4ea0-aad3-3658b35ab7a0"
+     }
+    ],
+    "ash_chose": [
+     [
+      6,
+      "interact",
+      "Kneel by the locked chest, run fingers along the iron bands, and try pressing the edges while listening for any give or "
+     ]
+    ]
+   },
+   {
+    "turn": 7,
+    "kind": "do",
+    "words": "If goblins are here, I draw my sword and attack the nearest one.",
+    "status": 200,
+    "error": null,
+    "seconds": 17.3,
+    "day": 1,
+    "phase": "evening",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Wren": "97e73a2e-5112-4323-ae5e-fe44a8d20323"
+    },
+    "rumours": [
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "The hazy noon light has begun to amber over the market's sprawl of dyed cloth and iron pots. Ash presses both palms against the chest's lid, leaning in as their fingers trace the iron bands, searching for a hidden seam. With a creak and a groan, the lid gives way under Ash's push, the bands sliding aside to reveal whatever lies within. Nearby, Wren shifts their weight, hand hovering near their sword hilt, eyes scanning the crowded stalls for any sign of green skin or pointed ears. Traders shout prices and carts rattle past, but no goblin lurks between the bolts of fabric or crouches behind the stacked pots. The market hums with ordinary commerce, not ambush. Ash runs a hand along the opened chest's edge, the wood smooth and warm, before glancing up at Wren and nodding\u2014no foes here, just the day's honest trade.",
+    "rolls": [
+     "Ash's Athletics check: 21 against DC 15, success.",
+     "Settled: The Locked Chest at the Market \u00b7 200 XP each.",
+     "Encounter: 2x Goblin (hard, 150 adjusted XP).",
+     "Wren hits Goblin 1 for 8 slashing. (7->0 HP)",
+     "Goblin 2 misses Wren (9 vs AC 18).",
+     "Defeated Goblin 1: 200 XP, 100 each.",
+     "Ash reaches level 2: +8 hit points.",
+     "Wren reaches level 2: +8 hit points.",
+     "Goblin 1 left a scimitar."
+    ],
+    "fight": [
+     {
+      "check": "Ash's Athletics check: 21 against DC 15, success.",
+      "scene_event_id": "93513856-deca-41d8-ba1d-8462f97cc2da"
+     },
+     {
+      "settled": "9fceb402-0aae-4d0c-8ccb-95c6c46e73bb",
+      "scene_event_id": "93513856-deca-41d8-ba1d-8462f97cc2da"
+     },
+     {
+      "foes": "[\"goblin-1\", \"goblin-2\"]",
+      "tags": "6",
+      "deeds": "1",
+      "helped": "0",
+      "unresolved": "0",
+      "scene_event_id": "93513856-deca-41d8-ba1d-8462f97cc2da"
+     }
+    ],
+    "ash_chose": [
+     [
+      7,
+      "interact",
+      "Try lifting the chest's lid edge with both hands while pressing the iron bands, feeling for a hidden catch or seam that "
+     ]
+    ]
+   },
+   {
+    "turn": 8,
+    "kind": "do",
+    "words": "I attack the nearest enemy.",
+    "status": 200,
+    "error": null,
+    "seconds": 28.8,
+    "day": 1,
+    "phase": "night",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 2,
+      "xp": 300,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Cure Wounds",
+       "Alarm"
+      ]
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 300,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [
+     [
+      "Goblin 1",
+      0
+     ],
+     [
+      "Goblin 2",
+      7
+     ]
+    ],
+    "places": {
+     "Ash": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Wren": "97e73a2e-5112-4323-ae5e-fe44a8d20323"
+    },
+    "rumours": [
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "The evening light turns the market's canvas stalls to gold as Wren's blade whistles toward a hulking crate of turnips, splinters flying from the wood. \"Wren, ease up \u2014 I already told you, that's no goblin. You're swinging at a turnip crate. If raiders are coming, we'll face them together, but don't waste your blade on the stallkeeper's stock.\" Ash steps past the ruined crate, longsword cutting a low arc toward the goblin that crouches among the scattered melons. Wren draws a handaxe from their belt and hurls it at the shape that shifts behind a stack of clay pots, the blade spinning through the amber haze.",
+    "rolls": [
+     "Ash hits Goblin 2 for 8 slashing. (7->0 HP)",
+     "Defeated Goblin 2: 200 XP, 100 each."
+    ],
+    "fight": [
+     {
+      "foes": "[\"goblin-1\", \"goblin-2\"]",
+      "tags": "2",
+      "deeds": "0",
+      "helped": "0",
+      "unresolved": "1",
+      "scene_event_id": "397083fb-9951-47b9-9fc9-45733982c284"
+     }
+    ],
+    "ash_chose": [
+     [
+      8,
+      "interact",
+      "I attack Goblin 2 with my longsword"
+     ]
+    ]
+   },
+   {
+    "turn": 9,
+    "kind": "do",
+    "words": "I keep fighting beside Ash.",
+    "status": 200,
+    "error": null,
+    "seconds": 16.1,
+    "day": 1,
+    "phase": "midnight",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Cure Wounds",
+       "Alarm"
+      ]
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Wren": "97e73a2e-5112-4323-ae5e-fe44a8d20323"
+    },
+    "rumours": [
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "The market square is quiet now, the canvas stalls painted amber by an evening sun that has begun to sink behind the rooftops. Wren stands over a splintered turnip crate, sword still raised, the last echoes of the fight fading into the settling dust. \"Wren, there's no one left to fight \u2014 that was a turnip crate, and the goblins are long gone. Lower your sword and help me finish lashing this chest shut before the elder takes it.\" Wren's shoulders slump, the point of the blade dipping toward the cobbles before they sheathe it with a grunt. Across the stall, Ash's hands work the rope over the chest's iron bindings, tugging the knots taut. Ash pauses mid-lash, scanning the empty lanes between the stalls \u2014 the overturned barrels, the trampled straw, no movement but their own shadows. A single loose shutter bangs somewhere down the row. Wren steps close to the chest, one hand resting on the lid, and gives Ash a long look \u2014 still hungry for a fight that isn't here. The quiet between them stretches like the ropes across the box.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      9,
+      "observe",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 10,
+    "kind": "rest",
+    "words": "",
+    "status": 200,
+    "error": null,
+    "seconds": 18.2,
+    "day": 2,
+    "phase": "dawn",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Cure Wounds",
+       "Alarm"
+      ]
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Wren": "97e73a2e-5112-4323-ae5e-fe44a8d20323"
+    },
+    "rumours": [
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "The last light drains from the canvas stalls, leaving the market square in amber shadow, and Ash steps over the splintered crate to stand beside Wren, who leans on their sword with a slow, weary breath. Ash nods toward the open chest, then gestures into the darkening lanes beyond the square. \"The chest is opened \u2014 the elder won't take it now. What's our next move? The goblins are still out there,\" Ash says, voice low and measured. Wren straightens slowly, sword tip scraping the packed earth, and looks across the square where the two goblins lie still among the scattered turnips. The wind picks up, rattling the loose canvas overhead, and the shadows between the stalls seem to lengthen as Wren shifts their weight, waiting for the answer to hang in the cooling air.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      10,
+      "communicate",
+      "The chest is opened \u2014 the elder won't take it now. What's our next move? The goblins are still out there."
+     ]
+    ]
+   },
+   {
+    "turn": 11,
+    "kind": "say",
+    "words": "Ash, are you hurt? We did well.",
+    "status": 200,
+    "error": null,
+    "seconds": 13.9,
+    "day": 2,
+    "phase": "sunrise",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Cure Wounds",
+       "Alarm"
+      ]
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Wren": "97e73a2e-5112-4323-ae5e-fe44a8d20323"
+    },
+    "rumours": [
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "In the amber haze of the market square, Wren straightens from their sword and studies Ash with a glint of worry in their eyes, the splintered crate still lying at their feet. \"A few bruises, nothing worse \u2014 I've been through rougher market days than that. We did well enough, though I'd rather we hadn't spent the night swinging at turnips. The chest's open, so the elder won't take it; the goblins are still about. What do you say we track them together, before they trouble another cart?\" Ash glances past Wren's shoulder into the dimming lanes, scanning the shadows where the goblins slipped away, their breath coming steady despite the long night.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      11,
+      "observe",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 12,
+    "kind": "go",
+    "words": "Hearth",
+    "status": 200,
+    "error": null,
+    "seconds": 9.0,
+    "day": 2,
+    "phase": "morning",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Cure Wounds",
+       "Alarm"
+      ]
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "9588a762-56d5-43f0-ba08-59f797a5fbc3",
+     "Wren": "9588a762-56d5-43f0-ba08-59f797a5fbc3"
+    },
+    "rumours": [
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "By the time Ash and Wren reach the Hearth, the waking inn smells of woodsmoke and last night's herbs; the common room is all warm lanterns and quiet shuffling. Ash hesitates at the threshold, then steps inside, Wren close behind, the splintered crate still a splinter in both their minds. Wren moves to a corner table, sets a hand on the worn oak, and glances at the door they just came through, as if measuring how far they've come from the market square.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      12,
+      "move",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 13,
+    "kind": "do",
+    "words": "I share a meal by the fire and tend to my wounds.",
+    "status": 200,
+    "error": null,
+    "seconds": 15.1,
+    "day": 2,
+    "phase": "noon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Cure Wounds",
+       "Alarm"
+      ]
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "9588a762-56d5-43f0-ba08-59f797a5fbc3",
+     "Elder Maren": "1354a39a-1947-54ca-9f18-d6ebb262bc8d",
+     "Wren": "9588a762-56d5-43f0-ba08-59f797a5fbc3"
+    },
+    "rumours": [
+     "The Keeper's Summons",
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "The common room at Hearth glows with warm lantern light, the fire crackling low in the hearth as Ash and Wren settle into the corner table, the splintered crate still heavy in their minds. Ash leans forward, hands flat on the worn wood, and tells Wren they've rested enough \u2014 time to head back to the Market and pick up the goblins' trail before the elder comes for the chest. \"Aye, fire and food'll do us both good. Save some strength though \u2014 after we eat, we ought to decide about the goblins. I'd rather track them than wait for the next cart to get hit.\" Wren gestures toward the fire, hand resting on a fresh cut, asking silently to share a meal and tend to wounds before any talk of trails. Wren's gaze flickers to the hearth, then back to Ash, unspoken hope in the pause between them.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      13,
+      "communicate",
+      "Wren, we've rested enough. Let's head back to the Market and pick up the goblins' trail before the elder comes for the c"
+     ]
+    ]
+   },
+   {
+    "turn": 14,
+    "kind": "rest",
+    "words": "",
+    "status": 200,
+    "error": null,
+    "seconds": 13.0,
+    "day": 2,
+    "phase": "afternoon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Cure Wounds",
+       "Alarm"
+      ]
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "9588a762-56d5-43f0-ba08-59f797a5fbc3",
+     "Elder Maren": "1354a39a-1947-54ca-9f18-d6ebb262bc8d",
+     "Wren": "9588a762-56d5-43f0-ba08-59f797a5fbc3"
+    },
+    "rumours": [
+     "The Keeper's Summons",
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "The Keep's stone corridors hold the cool hush of late afternoon, dust motes drifting in a shaft of light from a high window. Elder Maren stands near the worn steps at the spot where the hall meets the shadow, still as the pillars around them. The fire in the hearth pops, sending a shower of sparks up the chimney as Ash straightens at the corner table, the splintered crate still a weight in their memory. Ash leans forward, hands flat on the worn wood, and tells Wren they've rested and eaten \u2014 the goblins are still out there, and the elder will be coming for that chest. Ash's gaze drifts toward the door, then back to Wren, who sits with shoulders eased from the meal, the lantern light catching the dents in their armor. \"Let's head to the Market now and pick up their trail before dusk,\" Ash says, already rising, one hand brushing the hilt of their longsword.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      14,
+      "communicate",
+      "Wren, we've rested and eaten. The goblins are still out there and the elder will be coming for that chest. Let's head to"
+     ],
+     [
+      14,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 15,
+    "kind": "do",
+    "words": "I ask around about where the raiders make their camp.",
+    "status": 200,
+    "error": null,
+    "seconds": 23.5,
+    "day": 2,
+    "phase": "sunset",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Cure Wounds",
+       "Alarm"
+      ]
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "9588a762-56d5-43f0-ba08-59f797a5fbc3",
+     "Elder Maren": "1354a39a-1947-54ca-9f18-d6ebb262bc8d",
+     "Wren": "9588a762-56d5-43f0-ba08-59f797a5fbc3"
+    },
+    "rumours": [
+     "The Keeper's Summons",
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "The hearth fire pops, a shower of sparks climbing the chimney as Ash straightens at the corner table, the splintered crate still a weight in their memory. Ash leans forward, hands flat on the worn wood, and tells Wren they've rested and eaten \u2014 the goblins are still out there, and the elder will be coming for the chest at the Market. Ash presses the point: the sun is setting, and if they go now, they can settle this with the elder before she takes it away. Wren turns from the fire, asking around the room about where the raiders make their camp \u2014 the answers come half-formed, bits and pieces that don't quite fit together. Wren catches a few half-whispered mentions of a trail heading west, but no one seems sure, and the words trail off into the crackle of the fire. Ash glances toward the door, the last light of the afternoon slanting across the floorboards, and waits for Wren to decide. The Keep's stone corridor is dimmer now, the high window's shaft of light angled low across the flagstones, dust motes hanging still in the hush.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      15,
+      "communicate",
+      "Wren, the sun's setting and the elder will be at the Market for that chest. We've rested long enough \u2014 let's go now and "
+     ],
+     [
+      15,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 16,
+    "kind": "do",
+    "words": "I set out with Ash to find the goblin camp.",
+    "status": 200,
+    "error": null,
+    "seconds": 30.9,
+    "day": 2,
+    "phase": "dusk",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Cure Wounds",
+       "Alarm"
+      ]
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "9588a762-56d5-43f0-ba08-59f797a5fbc3",
+     "Elder Maren": "1354a39a-1947-54ca-9f18-d6ebb262bc8d",
+     "Wren": "9588a762-56d5-43f0-ba08-59f797a5fbc3"
+    },
+    "rumours": [
+     "The Keeper's Summons",
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "The hearth fire pops once more, its sparks climbing the chimney as Ash straightens at the corner table, the splintered crate still a weight in their memory. The last of the sunset bleeds through the window, casting long shadows across the worn floorboards. Ash leans forward, hands flat on the wood, and tells Wren the sun's gone and they're still at the Hearth \u2014 the elder won't wait, so it's time to move to the Market now and face the chest together. The words come quick, urgent, like a bowstring drawn taut. Wren nods, already slinging their pack, half-hearted at first \u2014 then something hardens in their jaw. They set out with Ash, the trail to the goblin camp calling them both, boots scuffing the threshold as the door swings open to the cooling dusk. \"Good \u2014 let's move before the elder gets wind of us. I'll watch the treeline; you take point on the trail.\" Ash's hand settles on their longbow, eyes already scanning the darkening treeline at the edge of the yard. Wren takes the lead, longsword loose at their hip, and the two of them step out into the gathering night. In the Keep's stone corridor, the high window's light now slants low across the flagstones, dust motes drifting in the hush, and Elder Maren stands still, their hands clasped, eyes fixed on the far shadows.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      16,
+      "wait",
+      ""
+     ],
+     [
+      16,
+      "communicate",
+      "Wren, the sun's gone and we're still at the Hearth. The elder won't wait \u2014 let's move to the Market now and face the che"
+     ]
+    ]
+   },
+   {
+    "turn": 17,
+    "kind": "do",
+    "words": "I attack the first goblin I see.",
+    "status": 200,
+    "error": null,
+    "seconds": 20.2,
+    "day": 2,
+    "phase": "evening",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Cure Wounds",
+       "Alarm"
+      ]
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "9588a762-56d5-43f0-ba08-59f797a5fbc3",
+     "Elder Maren": "1354a39a-1947-54ca-9f18-d6ebb262bc8d",
+     "Wren": "9588a762-56d5-43f0-ba08-59f797a5fbc3"
+    },
+    "rumours": [
+     "The Keeper's Summons",
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "The hearth fire snaps once, sparks climbing the chimney, as Wren spins toward the window with a blade already half-drawn \u2014 expecting goblins in the lengthening shadows of the taproom. \"Wren, hold \u2014 there's no goblin here. You're swinging at shadows again. The chest's open, the elder's coming, and the real trail's back at the Market. Sheathe that blade and let's go.\" Ash straightens at the corner table, hands flat on the worn wood, watching Wren's blade catch the last of the sunset light. In the Keep's stone corridor, the high window's light has sunk to a low amber wash across the flagstones, and Elder Maren stands motionless, hands clasped, gaze held on the far shadows where the dusk gathers thick.",
+    "rolls": [
+     "Encounter: 3x Goblin (hard, 300 adjusted XP).",
+     "Wren hits Goblin 1 for 10 slashing. Critical! (7->0 HP)",
+     "Ash misses Goblin 2 (7 vs AC 15).",
+     "Goblin 2 hits Wren for 4 slashing. (20->16 HP)",
+     "Goblin 3 hits Wren for 6 slashing. (16->10 HP)",
+     "Defeated Goblin 1: 200 XP, 100 each."
+    ],
+    "fight": [
+     {
+      "foes": "[\"goblin-1\", \"goblin-2\", \"goblin-3\"]",
+      "tags": "6",
+      "deeds": "1",
+      "helped": "1",
+      "unresolved": "0",
+      "scene_event_id": "92bf423d-fe3e-4a58-823c-1e28c20e2499"
+     }
+    ],
+    "ash_chose": [
+     [
+      17,
+      "wait",
+      ""
+     ],
+     [
+      17,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 18,
+    "kind": "say",
+    "words": "Ash, take the biggest one!",
+    "status": 200,
+    "error": null,
+    "seconds": 22.4,
+    "day": 2,
+    "phase": "night",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 2,
+      "xp": 500,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Cure Wounds",
+       "Alarm"
+      ]
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 500,
+      "hp_current": 10,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [
+     [
+      "Goblin 1",
+      0
+     ],
+     [
+      "Goblin 2",
+      7
+     ],
+     [
+      "Goblin 3",
+      7
+     ]
+    ],
+    "places": {
+     "Ash": "9588a762-56d5-43f0-ba08-59f797a5fbc3",
+     "Elder Maren": "1354a39a-1947-54ca-9f18-d6ebb262bc8d",
+     "Wren": "9588a762-56d5-43f0-ba08-59f797a5fbc3"
+    },
+    "rumours": [
+     "The Keeper's Summons",
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "The amber light from the high window has thinned to a dusty gold, pooling at Elder Maren's feet as they stand in the corridor, hands still clasped, eyes fixed on the thickening shadows at the far end. The hearth fire snaps once, sparks climbing the chimney, as Wren stands over a wooden crate near the taproom window, hand on sword hilt, eyes darting toward the lengthening shadows. Wren gestures at the crate, voice urgent, trying to get Ash to take the biggest one \u2014 but the crate holds only turnips, no goblins lurking behind it. \"Wren, there is no biggest one \u2014 the goblins are gone. That's a turnip crate, and I've told you twice. Sheathe your sword; the elder's coming for the chest and we need to move.\" Ash steps closer, voice low and steady, telling Wren the chest is open and the elder will come for it \u2014 they must go to the Market now and face her together. Wren's hand stays on the hilt a moment longer, breath short, before the blade slides home with a soft click.",
+    "rolls": [
+     "Ash hits Goblin 2 for 6 slashing. (7->1 HP)",
+     "Goblin 2 hits Ash for 7 slashing. (20->13 HP)",
+     "Goblin 3 hits Ash for 11 slashing. Critical! (13->2 HP)"
+    ],
+    "fight": [
+     {
+      "foes": "[\"goblin-1\", \"goblin-2\", \"goblin-3\"]",
+      "tags": "3",
+      "deeds": "0",
+      "helped": "1",
+      "unresolved": "0",
+      "scene_event_id": "cf66e028-0176-49c4-9eef-921924dc59a9"
+     }
+    ],
+    "ash_chose": [
+     [
+      18,
+      "communicate",
+      "Wren, the chest is open and the elder will come for it. We must go to the Market now and face her together."
+     ],
+     [
+      18,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 19,
+    "kind": "do",
+    "words": "I attack the nearest enemy.",
+    "status": 200,
+    "error": null,
+    "seconds": 26.1,
+    "day": 2,
+    "phase": "midnight",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 2,
+      "xp": 500,
+      "hp_current": 2,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Cure Wounds",
+       "Alarm"
+      ]
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 500,
+      "hp_current": 10,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [
+     [
+      "Goblin 1",
+      0
+     ],
+     [
+      "Goblin 2",
+      1
+     ],
+     [
+      "Goblin 3",
+      7
+     ]
+    ],
+    "places": {
+     "Ash": "9588a762-56d5-43f0-ba08-59f797a5fbc3",
+     "Elder Maren": "1354a39a-1947-54ca-9f18-d6ebb262bc8d",
+     "Vex": "9588a762-56d5-43f0-ba08-59f797a5fbc3",
+     "Wren": "9588a762-56d5-43f0-ba08-59f797a5fbc3"
+    },
+    "rumours": [
+     "A Goblin's Trail",
+     "The Keeper's Summons",
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "In the corridor of the Keep, the amber light from the high window has thinned to a dusty gold, pooling at Elder Maren's feet. They stand there, hands still clasped, eyes fixed on the thickening shadows at the far end, and wait. Wren's hand closes on the sword hilt, knuckles going white as the firelight catches the blade halfway from its sheath. The taproom window rattles with a gust of night wind, shadows thickening in the corners beyond the hearth's glow. Wren, put it away \u2014 there's nothing to swing at but the dark. The elder's waiting at the Market for that chest, and she won't wait past dawn. Come on, we go together, now.",
+    "rolls": [
+     "Wren hits Goblin 2 for 11 slashing. (1->0 HP)",
+     "Ash misses Goblin 3 (4 vs AC 15).",
+     "Goblin 3 hits Wren for 9 slashing. Critical! (10->1 HP)",
+     "Defeated Goblin 2: 200 XP, 100 each."
+    ],
+    "fight": [
+     {
+      "foes": "[\"goblin-1\", \"goblin-2\", \"goblin-3\"]",
+      "tags": "4",
+      "deeds": "1",
+      "helped": "1",
+      "unresolved": "0",
+      "scene_event_id": "4f332aba-6f2d-4243-ada0-605d30dad30a"
+     }
+    ],
+    "ash_chose": [
+     [
+      19,
+      "wait",
+      ""
+     ],
+     [
+      19,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 20,
+    "kind": "do",
+    "words": "I fight on until they are beaten.",
+    "status": 200,
+    "error": null,
+    "seconds": 30.8,
+    "day": 3,
+    "phase": "dawn",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 2,
+      "xp": 600,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Cure Wounds",
+       "Alarm"
+      ]
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 600,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [
+     [
+      "Goblin 1",
+      0
+     ],
+     [
+      "Goblin 2",
+      0
+     ],
+     [
+      "Goblin 3",
+      7
+     ]
+    ],
+    "places": {
+     "Ash": "9588a762-56d5-43f0-ba08-59f797a5fbc3",
+     "Elder Maren": "1354a39a-1947-54ca-9f18-d6ebb262bc8d",
+     "Vex": "9588a762-56d5-43f0-ba08-59f797a5fbc3",
+     "Wren": "9588a762-56d5-43f0-ba08-59f797a5fbc3"
+    },
+    "rumours": [
+     "A Goblin's Trail",
+     "The Keeper's Summons",
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "They do not move, breath slow, listening to the stone\u2019s silence stretch like a held note. In the taproom's amber glow, Wren's knuckles stay white on the sword hilt as shadows leap along the walls. Vex limps forward, gaze fixed on Ash, and speaks low: the camp along the old deer path \u2014 the raiders who hit the Market. 'I can take you there, but I need to know you'll help me stop them, not just watch.' \"You'll have my help, Vex. Point me at the raiders and I'll stand with you \u2014 but mind Wren, she's been swinging at shadows all night. Lead on, and we'll settle this together.\" Ash steps closer to Vex, hand resting on the longsword's pommel, gaze steady \u2014 a promise made in the firelight. Wren shifts, blade half-drawn, eyes scanning the dark corners as if expecting something to charge out of them. \"Wren, the raiders' camp \u2014 that scrap map I spilled, it marks the old deer path. If you want, I'll guide you there, but the leg's slow. Tell me what you need from me.\" Wren's grip tightens on the hilt, knuckles white, breath quick \u2014 the itch to fight boiling over. Ash steps between them, calm but firm, waiting for Wren's answer. \"Fight? You're not goin' to fight, are you? That camp's got iron and numbers. I've seen enough blood today\u2014stay here, let's think.\" Vex's words hang in the smoky air, a plea wrapped in weariness. Wren's sword hovers at the sheath's edge, firelight glinting along the steel as the night wind rattles the window again.",
+    "rolls": [
+     "Wren hits Goblin 3 for 4 slashing. (7->3 HP)",
+     "Ash misses Goblin 3 (7 vs AC 15).",
+     "Goblin 3 misses Wren (12 vs AC 18)."
+    ],
+    "fight": [
+     {
+      "foes": "[\"goblin-1\", \"goblin-2\", \"goblin-3\"]",
+      "tags": "3",
+      "deeds": "1",
+      "helped": "1",
+      "unresolved": "0",
+      "scene_event_id": "f73ec7dd-af47-4c2b-b6bf-1891ed93a5ff"
+     }
+    ],
+    "ash_chose": [
+     [
+      20,
+      "wait",
+      ""
+     ],
+     [
+      20,
+      "wait",
+      ""
+     ],
+     [
+      20,
+      "communicate",
+      "The camp along the old deer path \u2014 the raiders who hit the Market. I can take you there, but I need to know you'll help "
+     ]
+    ]
+   },
+   {
+    "turn": 21,
+    "kind": "do",
+    "words": "I search the area for anything the raiders left behind.",
+    "status": 200,
+    "error": null,
+    "seconds": 18.9,
+    "day": 3,
+    "phase": "sunrise",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 2,
+      "xp": 600,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Cure Wounds",
+       "Alarm"
+      ]
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 600,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [
+     [
+      "Goblin 1",
+      0
+     ],
+     [
+      "Goblin 2",
+      0
+     ],
+     [
+      "Goblin 3",
+      3
+     ]
+    ],
+    "places": {
+     "Ash": "9588a762-56d5-43f0-ba08-59f797a5fbc3",
+     "Elder Maren": "1354a39a-1947-54ca-9f18-d6ebb262bc8d",
+     "Vex": "9588a762-56d5-43f0-ba08-59f797a5fbc3",
+     "Wren": "9588a762-56d5-43f0-ba08-59f797a5fbc3"
+    },
+    "rumours": [
+     "A Goblin's Trail",
+     "The Keeper's Summons",
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "At the Hearth's taproom, dawn light bleeds through the shutters, catching dust motes above the tables. Vex leans toward Ash, voice low and urgent, one hand pressed to a slow-healing leg wound. \"Vex, I hear you, but Wren's one of us \u2014 I won't leave her behind. If her wound's that bad, we carry her or we wait until she's fit. We hit the camp together or not at all.\" Vex's jaw tightens, but before Wren can move, a shift in the shadows by the wall draws the ranger's eye \u2014 a hunched shape too close, a glint of steel that isn't a raider's blade. \"Ash, wait! That's not a raider\u2014Goblin 3's one of ours, the one who got cut trying to flee. Hold your sword!\" Ash jerks the longsword free and strides toward the wounded shape, blade already swinging before the words fully land. Wren ducks past both of them, scanning the ransacked floorboards and overturned benches, fingers brushing splinters and torn cloth as she hunts for anything the raiders left behind. \"Wren, while you search, keep an eye toward the Market. The elder's due for that chest, and I'd rather we meet her with the truth than with a handful of old footprints.\" The goblin on the floor gurgles, clutching its side, and for a moment the taproom holds its breath \u2014 Wren's hand frozen over a scrap of bloodied leather, Vex's hand still raised toward Ash's sword arm. Elder Maren rises from the still, silent circle of dawn, leaving the held breath of the stone behind as they turn toward the road. They walk away from the Keep, the first ",
+    "rolls": [
+     "Wren's Perception check: 20 against DC 12, success.",
+     "Ash hits Goblin 3 for 4 slashing. (3->0 HP)",
+     "Defeated Goblin 3: 200 XP, 100 each."
+    ],
+    "fight": [
+     {
+      "check": "Wren's Perception check: 20 against DC 12, success.",
+      "scene_event_id": "abf63732-0871-4c30-8e7f-d8eea8ea3052"
+     },
+     {
+      "foes": "[\"goblin-1\", \"goblin-2\", \"goblin-3\"]",
+      "tags": "2",
+      "deeds": "0",
+      "helped": "0",
+      "unresolved": "0",
+      "scene_event_id": "abf63732-0871-4c30-8e7f-d8eea8ea3052"
+     }
+    ],
+    "ash_chose": [
+     [
+      21,
+      "interact",
+      "I attack Goblin 3 with my longsword"
+     ],
+     [
+      21,
+      "communicate",
+      "Ash, the camp's two phases off and my leg's slow\u2014if we move now at dawn, we hit them before they wake ready. Wren's woun"
+     ],
+     [
+      21,
+      "move",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 22,
+    "kind": "rest",
+    "words": "",
+    "status": 200,
+    "error": null,
+    "seconds": 15.3,
+    "day": 3,
+    "phase": "morning",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 2,
+      "xp": 700,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Cure Wounds",
+       "Alarm"
+      ]
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 700,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "9588a762-56d5-43f0-ba08-59f797a5fbc3",
+     "Elder Maren": "1354a39a-1947-54ca-9f18-d6ebb262bc8d",
+     "Vex": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Wren": "9588a762-56d5-43f0-ba08-59f797a5fbc3"
+    },
+    "rumours": [
+     "A Goblin's Trail",
+     "The Keeper's Summons",
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "Dawn light creeps through the Hearth's shutters as Vex rises, buckling a pouch and casting a last glance at Wren's sleeping form before heading for the Market. Wren settles back against a bench, eyes closing as she lets out a slow breath, the day's weight easing from her shoulders. Ash stands by the table, fingers tracing the rim of a cup, watching the street where Vex's silhouette fades into the morning. \"Good, Wren's resting. That's better than her swinging at nothing. While she heals, let's move \u2014 we hit the camp now or we never do.\" \"Wren, Vex is heading to the Market. That's where the elder will come for the chest. Let's follow her \u2014 together, now, before we lose the trail for good.\" \"Vex, you're set on hitting the raiders at dawn, and Wren's too bleed out to be any use in that scrap. I've spent two days watching her swing at turnips \u2014 I'll not drag her into your fight, but I won't leave her to stumble off the edge either. You want me at the camp, say the word and I'll be there, but we settle Wren first \u2014 see her fed and set, then we move.\" \"Ash, you're waiting \u2014 but the raiders won't. Each phase we stand here talking lets them pack up and vanish. I know you won't leave Wren, and I'm not askin' that. We carry her between us if we must \u2014 the path's clear enough for two. Say the word and we move now.\" The taproom holds its breath as the morning stretches between them \u2014 Vex's foot tapping by the door, Wren's slow breathing, and Ash's hand still resting on the cup, the path ",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      22,
+      "wait",
+      ""
+     ],
+     [
+      22,
+      "move",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 23,
+    "kind": "go",
+    "words": "Market",
+    "status": 200,
+    "error": null,
+    "seconds": 22.5,
+    "day": 3,
+    "phase": "noon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 2,
+      "xp": 700,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Cure Wounds",
+       "Alarm"
+      ]
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 700,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Elder Maren": "9588a762-56d5-43f0-ba08-59f797a5fbc3",
+     "Vex": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Wren": "97e73a2e-5112-4323-ae5e-fe44a8d20323"
+    },
+    "rumours": [
+     "A Goblin's Trail",
+     "The Keeper's Summons",
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "Elder Maren arrives at Hearth. Morning light spills through the Hearth's shutters as Elder Maren leans in, catching Wren's eye with a quiet intensity that silences the room. Wren, Ash is off to the Market \u2014 likely after that humming chest. If you're willing, stay with me a moment; I want to know what you saw at the fight before we're all scattered. Ash shifts by the table, fingers trailing the wood grain, already halfway to the door before the elder's words land. Elder, I was the one who opened that chest \u2014 steady hands, no pitch change while I worked. Wren was swinging at shadows, not near the humming. What I'd rather know is who's been meddling with the mechanism since. Wren's off to the Market \u2014 the stallkeeper's fretting over that humming chest. I mean to get it explained and secured before dusk. Will you come with me to the Market and lend your sharp eyes? At the Market stalls, Vex spots Ash threading through the crowd and raises a hand, stepping toward the humming chest. There you are, Ash. Good to see you made it to the Market. Since you're here and the elder's due for that chest, let's have a look at it together while Wren rests \u2014 two pairs of ears might catch what the humming's about. Behind them, Wren steps away from the Hearth and onto the lane toward Market, dust kicking at her heels as the elder's question hangs unanswered in the morning air.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      23,
+      "move",
+      ""
+     ],
+     [
+      23,
+      "communicate",
+      "Wren, tell me plainly: what did you see when the market fight broke out, and has anyone near that chest heard it change "
+     ],
+     [
+      23,
+      "observe",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 24,
+    "kind": "do",
+    "words": "I tell the traders the raiders are dealt with.",
+    "status": 200,
+    "error": null,
+    "seconds": 20.6,
+    "day": 3,
+    "phase": "afternoon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 2,
+      "xp": 700,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Cure Wounds",
+       "Alarm"
+      ]
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 700,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Elder Maren": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Vex": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Wren": "97e73a2e-5112-4323-ae5e-fe44a8d20323"
+    },
+    "rumours": [
+     "A Goblin's Trail",
+     "The Keeper's Summons",
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "Midday sun scorches the Market's packed dirt, and the traders' stalls throw long shadows across the boards as Elder Maren steps through the crowd, their eyes fixed on the hum that vibrates from a canvas-covered crate. Wren stands at a fruit stall, their hand resting on a sack of apples as they lean in and tell the trader, voice low and steady, that the raiders who threatened the road are dealt with. \"Wren, we haven't dealt with the raiders. They're still camped along the old deer path. Don't go telling the traders it's done \u2014 that'll only spread a lie that'll bite us when they come back. Save that talk for when the camp's truly cleared.\" \"Vex, you're right that Wren's settled for now \u2014 fed and resting. But 'settled enough' isn't 'well enough to fight.' I gave you my word I'd stand with you against the raiders, and I meant it. We move now, we carry her between us; we leave her and she's a liability to herself. So say the word, we lift her up and go \u2014 together, or I'm not going.\" \"Ash, before you and Vex go chasing raiders, the chest still hums at the Market and dusk is closing in. That humming is our first danger \u2014 let's see it belled and locked before we scatter after the camp.\" Vex turns to Elder Maren, one hand gesturing toward the crate as they explain that the chest's hum has grown since blood touched the boards, and that something in its mechanism may have changed. \"Ash, you're talking about taking Wren's sword and leaving her to rest\u2014fine, but we both know the camp won'",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      24,
+      "communicate",
+      "Vex wants to move on the raider camp now, but you're not fit for that fight. I'll stand with Vex, but we're not leaving "
+     ],
+     [
+      24,
+      "move",
+      ""
+     ],
+     [
+      24,
+      "communicate",
+      "Ash, the raiders' camp won't wait \u2014 you said we settle Wren first and then we move. She's resting now; that's settled en"
+     ]
+    ]
+   },
+   {
+    "turn": 25,
+    "kind": "wait",
+    "words": "",
+    "status": 200,
+    "error": null,
+    "seconds": 27.0,
+    "day": 3,
+    "phase": "sunset",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 2,
+      "xp": 700,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Cure Wounds",
+       "Alarm"
+      ]
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 700,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Elder Maren": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Vex": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Wren": "97e73a2e-5112-4323-ae5e-fe44a8d20323"
+    },
+    "rumours": [
+     "A Goblin's Trail",
+     "The Keeper's Summons",
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "The Market's packed dirt still shimmers under the late sun, the canvas covering the humming crate shaking faintly as if something inside breathes. Vex stands at the edge of the square, scanning the stalls and the crowd, while Ash crouches low, eyes tracing the dust between their boots. Wren leans against a fruit stall, arms crossed, watching the traders pack up for the day, waiting, while the hum from the crate grows a little sharper in the quiet. \"Ash, you're staring at the dust like it'll answer for us. The camp's still out there and the trail's getting colder by the shade. You want to settle the chest first \u2014 fine, Elder's set on it. But don't make me wait past dusk to hear your word. We settle this thing, then we go \u2014 together.\" Elder Maren turns from the crate, their gaze settling on Wren, gesturing toward the canvas-covered chest with a sweep of their hand. \"Wren, you've done your part telling the traders the raiders are dealt with \u2014 but the chest still needs quieting before dusk. Since you're standing by, come lend your hands to carry it up to the Keep with me. The humming's worse by the hour, and I want it belled and locked before the light goes.\" \"Elder, the chest's open and the hum's still going at dusk. You wanted it silenced before night \u2014 I've steady hands; let's bell it and see it carried up the hill before the dark takes the trail.\" \"While you're scanning the square, Vex, keep an eye on Wren \u2014 she's been swinging at turnip crates all evening. This chest's hum i",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      25,
+      "observe",
+      ""
+     ],
+     [
+      25,
+      "observe",
+      ""
+     ],
+     [
+      25,
+      "observe",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 26,
+    "kind": "do",
+    "words": "I look around for new trouble.",
+    "status": 200,
+    "error": null,
+    "seconds": 18.3,
+    "day": 3,
+    "phase": "dusk",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "ranger",
+      "level": 2,
+      "xp": 700,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Cure Wounds",
+       "Alarm"
+      ]
+     },
+     {
+      "name": "Wren",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 700,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Elder Maren": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Vex": "97e73a2e-5112-4323-ae5e-fe44a8d20323",
+     "Wren": "97e73a2e-5112-4323-ae5e-fe44a8d20323"
+    },
+    "rumours": [
+     "A Goblin's Trail",
+     "The Keeper's Summons",
+     "The Stallkeeper's Fret"
+    ],
+    "settled": [
+     "The Locked Chest at the Market"
+    ],
+    "prose": "The canvas over the humming crate shivers in the dying light as Elder Maren braces the chest's corners, lifting it from under the stallkeeper's table; she nods to Ash and Vex to take the sides while Wren keeps watch. Ash steps close to Vex, keeping one hand on the chest's edge, and speaks low \u2014 dusk is here, the elder's set on the chest, and Ash stands by their word: settle the hum, then go together after the camp; don't strike out alone, the trail won't vanish in the time it takes to bell this thing. \"Vex, the chest's hum is silenced and the elder's settled on belling it. You've been watching the square; tell me straight \u2014 did you see anyone else near the mechanism since I opened it? Before we chase a camp that may not be there, I want to know who's been fiddling with the works.\" \"Wren, I see you scanning the square again \u2014 good habit, but the only new trouble here is that humming chest, and Elder Maren's about to carry it off. Leave the turnip crates alone; come help me keep an eye on her while she does.\" \"Wren, don't go hunting trouble\u2014we've got enough with that chest. Keep your eyes on the square; if anything moves, yell. I'll be the one checking the deer path after dusk.\" Vex scans the stalls once more \u2014 the fruit seller's shadow, the canvas ripples \u2014 then turns back to the chest, ready to take the side that Ash holds. Wren's gaze sweeps the far corners of the square for any new trouble, but the only movement is the stallkeeper's flap catching the wind.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      26,
+      "communicate",
+      "Vex, dusk is here and Elder's set on the chest. I stand by my word \u2014 we settle the hum, then we go together after the ca"
+     ],
+     [
+      26,
+      "interact",
+      "Lift the humming chest from under the stallkeeper's table to carry it up to the Keep, asking Ash and Vex to take the sid"
+     ],
+     [
+      26,
+      "observe",
+      ""
+     ]
+    ]
+   }
+  ],
+  "spend_usd": 0.14601
+ }
+]
