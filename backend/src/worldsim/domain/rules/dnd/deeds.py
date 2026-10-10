@@ -16,6 +16,7 @@ or stood-down line ("I lower my bow", "I don't attack") is no deed.
 
 from __future__ import annotations
 
+import hashlib
 import re
 from dataclasses import dataclass
 
@@ -484,3 +485,22 @@ def fair_fight_line(levels: list[int], tables: DataTables, kinds: list[str] | No
         f"A fair fight for this party ({party}) is about {choices}: open fights that size "
         f"({example}). A lone weak foe is over in a blow; far more would overwhelm them."
     )
+
+
+def foe_words(kind: str, count: int, tables: DataTables) -> str:
+    """A group of foes in words: two goblins, an orc."""
+    name = str(entry(table(tables, "monsters"), kind).get("name", kind))
+    if count > 1:
+        return f"{_NUMBER_WORDS.get(count, str(count))} {_plural(name)}"
+    return f"{'an' if name[:1].lower() in 'aeiou' else 'a'} {name.lower()}"
+
+
+def trouble_foes(levels: list[int], tables: DataTables, seed: str) -> tuple[str, int] | None:
+    """The foes that come for a quiet watched party (watched-party-001): one
+    of the common kinds at a fair size for these levels, picked by ``seed``
+    so the storyteller's note and the fight it opens agree."""
+    sized = fair_counts(levels, list(COMMON_FOES), tables)
+    if not sized:
+        return None
+    pick = int.from_bytes(hashlib.sha256(seed.encode()).digest()[:8], "big") % len(sized)
+    return sized[pick]

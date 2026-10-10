@@ -261,6 +261,9 @@ from worldsim.domain.party import (
     seeking_line,
     slots_line,
     stored_orders,
+    trouble_due,
+    trouble_line,
+    watched_leader,
 )
 from worldsim.domain.perception import (
     Disclosure,
@@ -300,8 +303,10 @@ from worldsim.domain.rules.dnd.deeds import (
     ORDINAL_WORDS,
     Deed,
     fair_fight_line,
+    foe_words,
     looks_like_deed,
     order_target,
+    trouble_foes,
 )
 from worldsim.domain.rules.dnd.invites import (
     accepts,
@@ -484,6 +489,34 @@ def item_line(item: ItemInstance) -> str:
     return f"{item_label(item)}{count}{detail} (item_id {item.id})"
 
 
+def follow_leader(
+    intents: list[Intent], leader_id: UUID | None, sealed: SealedPhase
+) -> list[Intent]:
+    """When a watched party's leader moves, each member standing with them
+    goes too (their own decision gives way); the party keeps together."""
+    if leader_id is None:
+        return intents
+    lead = next((i for i in intents if i.author_character_id == leader_id), None)
+    if lead is None or not isinstance(lead.action, MoveAction):
+        return intents
+    here = sealed.locations.get(leader_id)
+    return [
+        i.model_copy(
+            update={
+                "action": lead.action.model_copy(
+                    update={"character_id": i.author_character_id, "note": None}
+                )
+            }
+        )
+        if i.author_character_id != leader_id
+        and here is not None
+        and sealed.locations.get(i.author_character_id) == here
+        and not i.idempotency_key.startswith(("direct:", "player:"))
+        else i
+        for i in intents
+    ]
+
+
 def purse_notes(
     members: Sequence[Intent], characters: Sequence[Character], items: Sequence[ItemInstance]
 ) -> list[str]:
@@ -507,6 +540,11 @@ def purse_notes(
             purse = f"only {held} gold coin{'s' if held != 1 else ''}" if held else "no coins"
             notes.append(f"{who} carries {purse}: they cannot pay {paying}.")
     return notes
+
+
+def encounter_tag(kind: str, count: int) -> str:
+    """ENCOUNTER[2x goblin], or ENCOUNTER[orc] for one."""
+    return f"ENCOUNTER[{count}x {kind}]" if count > 1 else f"ENCOUNTER[{kind}]"
 
 
 def roll_checks(
@@ -1660,6 +1698,9 @@ class Stage1Orchestrator:
             )
             for i in intents
         ]
+        # A watched party travels with its leader: those standing with them
+        # take the leader's road (their own moves were held back above).
+        intents = follow_leader(intents, await self._watched_leader_id(world_id), sealed)
         intents = resolve_meetups(intents, sealed.locations, names)
         view = WorldView(world=live_world, characters=characters, locations=locations)
         scenes = assemble_scenes(
@@ -3330,8 +3371,9 @@ class Stage1Orchestrator:
             await self._finish_task(retry_id, owner, True)
         await self._remember_intention(world_id, character.id, result.get("raw_response"))
         await self._finish_task(task_run_id, owner, True)
-        if isinstance(intent.action, MoveAction) and await self._is_companion(
-            world_id, character.id
+        if isinstance(intent.action, MoveAction) and (
+            await self._is_companion(world_id, character.id)
+            or await self._watched_follower(world_id, character.id)
         ):
             # The party travels together: a companion leaves only with the
             # hero (following above). Told so, Ash still walked off mid-fight
@@ -3797,6 +3839,22 @@ class Stage1Orchestrator:
         roster, played = await self._companions(world_id)
         return played is None and any(m.character_id == character_id for m in roster)
 
+    async def _watched_follower(self, world_id: UUID, character_id: UUID) -> bool:
+        """A watched party's member who is not its leader."""
+        if not await self._in_watched_party(world_id, character_id):
+            return False
+        roster, _played = await self._companions(world_id)
+        leader = watched_leader(roster)
+        return leader is not None and leader.character_id != character_id
+
+    async def _watched_leader_id(self, world_id: UUID) -> UUID | None:
+        """The leader of a watched party (None in a played story or none)."""
+        roster, played = await self._companions(world_id)
+        if played is not None:
+            return None
+        leader = watched_leader(roster)
+        return leader.character_id if leader is not None else None
+
     async def _party_note(self, world_id: UUID, character: Character) -> str | None:
         """A linked companion's note: in the party, and the fight that is on."""
         roster, played = await self._companions(world_id)
@@ -3807,7 +3865,13 @@ class Stage1Orchestrator:
                 for m in roster
                 if m.character_id is not None and m.character_id != character.id
             ]
-            return party_note(fellows, await self._foes_now(world_id))
+            leader = watched_leader(roster)
+            return party_note(
+                fellows,
+                await self._foes_now(world_id),
+                leader.name if leader is not None else None,
+                leads=leader is not None and leader.character_id == character.id,
+            )
         if played is None or played == character.id:
             return None
         if not any(m.character_id == character.id for m in roster):
@@ -5006,6 +5070,7 @@ class Stage1Orchestrator:
                 if fight is not None
                 else None
             )
+            grant = await uow.roles.get_for_world(world_id) if roster else None
             config = await uow.worlds.get_config(world_id)
             scene_place = await _event_place(uow, event_id)
             place_name = scene_place.name if scene_place is not None else None
@@ -5114,6 +5179,20 @@ class Stage1Orchestrator:
                         if fact["key"] == "attempt:interact" and looks_like_deed(str(fact["value"]))
                     ]
                 )
+                watched = grant is None or grant.character_id is None
+                trouble = (
+                    self._trouble(world_id, roster, scene_index, fight)
+                    if seeking is None and watched
+                    else None
+                )
+                if trouble is not None:
+                    # Nobody plays a watched party, so nobody asks for a fight.
+                    kind, count, quiet_turns = trouble
+                    seeking = trouble_line(
+                        quiet_turns,
+                        foe_words(kind, count, self._dnd_tables()),
+                        encounter_tag(kind, count),
+                    )
                 if seeking is not None:
                     facts.append({"key": "dnd-seek", "value": seeking})
                 # How large a fight should be for this party, should one come.
@@ -5299,6 +5378,20 @@ class Stage1Orchestrator:
                     joined.append(result.member.name)
         return joined
 
+    def _trouble(
+        self, world_id: UUID, in_scene: list[PartyMember], index: int, fight: WorldEvent | None
+    ) -> tuple[str, int, int] | None:
+        """The foes that find a quiet watched party this turn (kind, count,
+        quiet turns), or None. The same for the narrator's note and the dice,
+        so the fight opens even when the prose leaves out the tag."""
+        quiet = trouble_due(index, fight.absolute_index if fight is not None else None)
+        if quiet is None or not in_scene:
+            return None
+        foes = trouble_foes(
+            [m.sheet.level for m in in_scene], self._dnd_tables(), f"{world_id}:{index}:trouble"
+        )
+        return None if foes is None else (*foes, quiet)
+
     async def _resolve_combat_tags(
         self,
         world_id: UUID,
@@ -5410,6 +5503,14 @@ class Stage1Orchestrator:
                 if fight is not None and run.absolute_index - fight.absolute_index <= FIGHT_LINGERS
                 else set[str]()
             )
+        if (grant is None or grant.character_id is None) and not fighting:
+            # A quiet watched party: the foes its storyteller was told of
+            # come whether or not the prose tagged them (watched-party-001).
+            trouble = self._trouble(
+                world_id, party_in_scene(roster, list(participants)), run.absolute_index, fight
+            )
+            if trouble is not None and "ENCOUNTER[" not in text.upper():
+                text = f"{encounter_tag(trouble[0], trouble[1])}\n{text}"
         tables = self._dnd_tables()
         story_day = split_absolute(run.absolute_index)[0]
         digest = hashlib.sha256(str(event_id).encode()).digest()[:8]

@@ -634,19 +634,18 @@ onUnmounted(() => {
   height: calc(100vh - 190px);
   min-height: 420px;
 }
-/* A combat story's party: one row above the map and feed, as in Adventure. */
+/* A combat story's party: one row above the map and feed, as in Adventure.
+   It takes the height it needs (capped, it hid the foes below a scroll),
+   and the map and feed keep a full screen under it. */
 .obs__party {
   margin-top: 12px;
-  max-height: 200px;
   padding: 10px 16px 8px;
-  overflow-y: auto;
-  scrollbar-width: thin;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--surface);
 }
 .obs__grid--party {
-  height: calc(100vh - 400px);
+  height: calc(100vh - 120px);
 }
 .obs__map {
   min-height: 0;

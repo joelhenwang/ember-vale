@@ -223,18 +223,44 @@ def companion_note(hero: str, foes: list[Monster]) -> str:
     return note
 
 
-def party_note(fellows: list[str], foes: list[Monster]) -> str:
-    """What a member of a watched party keeps in mind (no played hero): they
-    travel together as an adventuring party seeking adventure, and which
-    fight is on."""
-    if fellows:
-        together = ", ".join(fellows[:-1]) + (" and " if len(fellows) > 1 else "") + fellows[-1]
+def watched_leader(roster: list[PartyMember]) -> PartyMember | None:
+    """Who leads a watched party: its first linked member. Told only to keep
+    together, Wren and Ash each waited for the other to decide, nine turns
+    running (watched-party-001); someone has to choose."""
+    return next((m for m in roster if m.character_id is not None), None)
+
+
+def party_note(
+    fellows: list[str], foes: list[Monster], leader: str | None = None, leads: bool = False
+) -> str:
+    """What a member of a watched party keeps in mind (no played hero): who
+    leads it and what it is for, and which fight is on. The leader is told to
+    decide; the others go where the leader goes."""
+    together = (
+        ", ".join(fellows[:-1])
+        + (" and " if len(fellows) > 1 else "")
+        + (fellows[-1] if fellows else "")
+    )
+    if not fellows:
+        note = "You are an adventurer seeking adventure."
+    elif leads:
+        note = (
+            f"You lead an adventuring party ({together} with you): you choose where it goes "
+            "and what it takes on. Seek adventure: follow a rumour, look for trouble on the "
+            "roads, take on a task someone needs done. Decide and act; waiting for the others "
+            "to decide gets nobody anywhere."
+        )
+    elif leader is not None:
+        note = (
+            f"You travel with {together} as an adventuring party that {leader} leads, seeking "
+            f"adventure: go where {leader} goes and help with what the party takes on; say "
+            "what you think, but act rather than wait."
+        )
+    else:
         note = (
             f"You travel with {together} as an adventuring party, seeking adventure: "
             "keep together, go where the party goes and face what comes as one."
         )
-    else:
-        note = "You are an adventurer seeking adventure."
     standing = [foe for foe in foes if foe.hp_current > 0]
     if standing:
         shown = ", ".join(f"{foe.name} ({_shape(foe)})" for foe in standing)
@@ -264,6 +290,32 @@ def stored_orders(raw: object, foes: list[str]) -> dict[str, str]:
 def orders_record(orders: dict[str, str], foes: list[str]) -> dict[str, object]:
     """What ``stored_orders`` reads back: the orders and the fight's foes."""
     return {"orders": dict(orders), "foes": list(dict.fromkeys(foes))}
+
+
+#: Turns a watched party goes without a fight before the storyteller is told
+#: it may bring trouble (watched-party-001: none came in 14 turns).
+TROUBLE_AFTER = 6
+
+
+def trouble_due(index: int, last_fight: int | None) -> int | None:
+    """How many turns a watched party has gone without a fight, when that is
+    long enough for trouble to find them (else None)."""
+    quiet = index - (last_fight or 0)
+    return quiet if quiet >= TROUBLE_AFTER else None
+
+
+def trouble_line(quiet_turns: int, foes: str, tag: str) -> str:
+    """A watched party has gone a while without a fight: nobody plays them,
+    so nobody asks for one, and trouble comes to them. Told it *may* bring
+    foes, and then told plainly to, Venice opened none in 18 turns of being
+    told (watched-party-001 runs 3 and 4), so the engine picks the foes, the
+    storyteller is told who arrives, and the fight opens either way."""
+    return (
+        f"This party is out for adventure and has met no foes for {quiet_turns} turns: "
+        f"trouble finds them in this scene. {foes[:1].upper()}{foes[1:]} "
+        f"{'comes' if foes.startswith(('a ', 'an ')) else 'come'} at them. "
+        f"Show them arriving and the fight beginning, and open it on its own line with {tag}."
+    )
 
 
 def seeking_line(attempts: list[str]) -> str | None:

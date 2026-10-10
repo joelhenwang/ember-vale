@@ -97,6 +97,50 @@ def test_a_watched_party_member_keeps_the_party_in_mind() -> None:
     assert "A fight is on with Goblin (unhurt)" in fight and "Never spar" in fight
     assert party_note([], []) == "You are an adventurer seeking adventure."
 
+    # Someone leads: the leader decides, the others go along (watched-party-001:
+    # told only to keep together, both waited nine turns running).
+    leads = party_note(["Ash"], [], "Wren", leads=True)
+    assert leads.startswith("You lead an adventuring party (Ash with you)")
+    assert "Decide and act" in leads
+    follows = party_note(["Wren"], [], "Wren")
+    assert "that Wren leads" in follows and "go where Wren goes" in follows
+
+
+def test_the_party_goes_where_its_leader_goes() -> None:
+    from worldsim.application.orchestration.stage1 import SealedPhase, follow_leader
+    from worldsim.domain.commands import MoveAction, WaitAction
+    from worldsim.domain.scenes import Intent
+
+    world, snap = uuid4(), uuid4()
+    wren, ash, sera = uuid4(), uuid4(), uuid4()
+    hearth, market = uuid4(), uuid4()
+    sealed = SealedPhase(snap, {}, {wren: hearth, ash: hearth, sera: market})
+
+    def intent(who: UUID, action: Any, key: str = "s1char:x") -> Intent:
+        return Intent(
+            id=uuid4(),
+            world_id=world,
+            snapshot_id=snap,
+            phase_run_id=uuid4(),
+            author_character_id=who,
+            idempotency_key=key,
+            action=action,
+        )
+
+    go = MoveAction(character_id=wren, snapshot_id=snap, destination_location_id=market)
+    intents = [
+        intent(wren, go),
+        intent(ash, WaitAction(character_id=ash, snapshot_id=snap)),
+        intent(sera, WaitAction(character_id=sera, snapshot_id=snap)),
+    ]
+    led = follow_leader(intents, wren, sealed)
+    assert isinstance(led[1].action, MoveAction)
+    assert (led[1].action.character_id, led[1].action.destination_location_id) == (ash, market)
+    assert isinstance(led[2].action, WaitAction)  # not standing with the leader
+    assert follow_leader(intents, None, sealed) == intents
+    directed = [intents[0], intent(ash, intents[1].action, "direct:abc")]
+    assert follow_leader(directed, wren, sealed)[1].action == intents[1].action
+
 
 def _roster(client: ApiClient, world_id: UUID) -> list[dict[str, Any]]:
     return client.get(
@@ -263,3 +307,54 @@ def test_a_watched_party_fights_together(wired: tuple[ApiClient, FakeGateway]) -
     # own waiting became a blow.
     assert noted
     assert "interact" in _families(world_id)
+
+
+def test_a_quiet_watched_party_is_brought_trouble(wired: tuple[ApiClient, FakeGateway]) -> None:
+    from worldsim.domain.party import TROUBLE_AFTER
+
+    client, gateway = wired
+    created = _create(client, WATCHED, "watched-quiet", ash_at="hearth")
+    assert created.status_code == 200, created.text
+    world_id = UUID(created.json()["world_id"])
+    ids = _cast(client, world_id)
+    told: dict[int, bool] = {}
+    turn = {"n": 0}
+
+    def route(request: Any) -> str | None:
+        system, prompt = request.system or "", request.prompt
+        if "You narrate" in system:
+            told[turn["n"]] = told.get(turn["n"], False) or "out for adventure" in prompt
+            return None
+        who = ids["Wren"]
+        if "You decide" in system or "You react" in system:
+            return json.dumps({"family": "wait", "character_id": who, "snapshot_id": who})
+        if "You resolve" in system:
+            return json.dumps({"outcome": "success", "effects": [], "rationale": "Fine."})
+        return None
+
+    gateway.route = route
+    for index in range(1, TROUBLE_AFTER + 1):
+        turn["n"] = index
+        moved = client.post(
+            "/api/v1/stage1/advance",
+            json={"world_id": str(world_id), "absolute_index": index},
+            headers=WATCHER,
+        )
+        assert moved.status_code == 200, moved.text
+    # Watched-party-001: no foes came in 14 turns until the storyteller was
+    # told it may bring them, once the party has gone a while without.
+    assert told[TROUBLE_AFTER] and not any(told[n] for n in range(1, TROUBLE_AFTER))
+    # The storyteller here writes no tag at all, and the fight opens anyway.
+    entries = client.get(
+        "/api/v1/world/chronicle",
+        params={"world_id": str(world_id), "after": 0, "limit": 80},
+        headers=WATCHER,
+    ).json()["entries"]
+    opened = [
+        (e["absolute_index"], r["text"])
+        for e in entries
+        if e["combat"]
+        for r in e["combat"]["rolls"]
+        if r["kind"] == "encounter"
+    ]
+    assert [index for index, _text in opened] == [TROUBLE_AFTER], opened
