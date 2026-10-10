@@ -252,7 +252,7 @@ def test_combat_story_rolls_show_under_their_scene(
 
     # Experience rows follow a fallen foe (combat-depth-001); the dice decide
     # whether the opening blow fells the goblin, so they are checked apart.
-    fight = [r for r in log["rolls"] if r["kind"] not in ("xp", "level")]
+    fight = [r for r in log["rolls"] if r["kind"] not in ("xp", "level", "loot")]
     kinds = [(r["kind"], r.get("actor"), r.get("target")) for r in fight]
     strike = fight[1]
     felled = strike.get("hp_after") == 0  # a fallen goblin does not strike back

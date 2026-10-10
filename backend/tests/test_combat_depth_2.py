@@ -792,3 +792,19 @@ def test_the_fallen_leave_spoils_by_chance_and_at_most_two() -> None:
     )
     assert report.defeated == ["goblin"]
     assert [(s.foe, s.name) for s in report.spoils] in ([("Goblin", "scimitar")], [])
+
+
+def test_a_fight_opened_too_easy_grows_to_a_fair_size() -> None:
+    pair = [_wren(), _elara()]
+    pair[1].level = 1
+    lone = resolve_narration_tags(
+        "ENCOUNTER[goblin]: A goblin bursts in.", pair, DATA, _rng(0.0), fair_fights=True
+    )
+    assert lone.outcomes[0].target == "Goblin 1, Goblin 2"  # easy alone, hard as two
+    as_written = resolve_narration_tags(
+        "ENCOUNTER[goblin]: A goblin bursts in.", pair, DATA, _rng(0.0)
+    )
+    assert as_written.outcomes[0].target == "Goblin"
+    # Already fair (an orc for a level-1 pair) or mixed groups stay as written.
+    orc = resolve_narration_tags("ENCOUNTER[orc]: An orc.", pair, DATA, _rng(0.0), fair_fights=True)
+    assert orc.outcomes[0].target == "Orc"

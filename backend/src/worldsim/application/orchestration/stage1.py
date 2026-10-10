@@ -1281,12 +1281,15 @@ class Stage1Orchestrator:
         max_parallel_calls: int = 12,
         reacting_bystanders: int | None = None,
         xp_scale: int = 1,
+        fair_fights: bool = False,
     ) -> None:
         self._factory = uow_factory
         #: Crowd cap on who answers an attempt (None: everyone present).
         self._reacting_bystanders = reacting_bystanders
         #: Story pacing: experience is this many times the 5e XP.
         self._xp_scale = xp_scale
+        #: Fights opened too easy for the party grow to a fair size.
+        self._fair_fights = fair_fights
         #: Model-backed tasks (decisions, reactions, summaries) a beat runs at
         #: once, per event loop; see _bounded.
         self._max_parallel = max_parallel_calls
@@ -5254,6 +5257,7 @@ class Stage1Orchestrator:
                     fighting=fighting,
                     slain_lately=slain_lately,
                     xp_scale=self._xp_scale,
+                    fair_fights=self._fair_fights,
                     deeds=deeds,
                     chooses=chooses,
                     strike_back=hero_here,

@@ -50,6 +50,7 @@ from worldsim.domain.rules.dnd.deeds import (
     Deed,
     after_encounter,
     deed_lines,
+    fair_counts,
     group_size,
     helper_lines,
     line_actor,
@@ -392,6 +393,7 @@ def resolve_narration_tags(
     recent: str = "",
     slain_lately: set[str] | None = None,
     xp_scale: int = 1,
+    fair_fights: bool = False,
 ) -> CombatReport:
     """Resolve every combat tag in narration order. Inputs are never mutated.
 
@@ -752,6 +754,18 @@ def resolve_narration_tags(
                 ref.model_copy(update={"count": max(ref.count, group_size([text], ref.name))})
                 for ref in refs
             ]
+            if fair_fights and len(refs) == 1:
+                # Too easy for this party (a lone goblin against two): the
+                # group grows to a fair size; the next scene is told of them.
+                # The storyteller opened lone goblins every time, even told
+                # what a fair fight was (long-adventure-002).
+                levels = [s.level for s in order]
+                too_easy = encounter_difficulty(
+                    levels, [MonsterRef(index=refs[0].index, count=refs[0].count)], tables
+                ).difficulty in ("trivial", "easy")
+                fair = dict(fair_counts(levels, [refs[0].index], tables)).get(refs[0].index)
+                if too_easy and fair is not None and fair > refs[0].count:
+                    refs = [refs[0].model_copy(update={"count": fair})]
             diff = encounter_difficulty(
                 [s.level for s in order],
                 [MonsterRef(index=r.index, count=r.count) for r in refs],
