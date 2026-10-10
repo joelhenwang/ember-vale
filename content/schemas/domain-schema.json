@@ -10636,25 +10636,37 @@
       "$defs": {
         "DraftAdventure": {
           "additionalProperties": false,
-          "description": "A story you play with fights in it: your hero's people and calling.\n\nThe hero starts at level 1 with a full 5e sheet built from these two;\nthe storyteller then rolls every fight through it.",
+          "description": "A story with fights in it.\n\nPlayed: your hero's people and calling (both required); the hero starts\nat level 1 with a full 5e sheet built from these two. Watched (no played\ncharacter): neither is given; the first ``MAX_PARTY_SIZE`` cast members\nform the party, each with a calling read from their card. The\nstoryteller then rolls every fight through the sheets.",
           "properties": {
             "character_class": {
-              "maxLength": 32,
-              "minLength": 1,
-              "title": "Character Class",
-              "type": "string"
+              "anyOf": [
+                {
+                  "maxLength": 32,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Character Class"
             },
             "race": {
-              "maxLength": 32,
-              "minLength": 1,
-              "title": "Race",
-              "type": "string"
+              "anyOf": [
+                {
+                  "maxLength": 32,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Race"
             }
           },
-          "required": [
-            "race",
-            "character_class"
-          ],
           "title": "DraftAdventure",
           "type": "object"
         },

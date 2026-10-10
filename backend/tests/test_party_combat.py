@@ -133,7 +133,7 @@ def test_strip_combat_tags_keeps_the_prose() -> None:
     assert strip_combat_tags("Wren [quietly] waits.") == "Wren [quietly] waits."
 
 
-def test_only_a_played_story_with_a_known_hero_can_fight(
+def test_a_played_story_fights_with_a_known_hero(
     wired: tuple[ApiClient, FakeGateway],
 ) -> None:
     client, _ = wired
@@ -142,8 +142,9 @@ def test_only_a_played_story_with_a_known_hero_can_fight(
         {"role": "watcher", "adventure": {"race": "human", "character_class": "fighter"}},
         "fight-watcher",
     )
+    # A watched party's callings come from its cast (test_watched_party).
     assert watcher.status_code == 422, watcher.text
-    assert "only a story you play in" in watcher.text
+    assert "callings come from the cast" in watcher.text
     unknown = _create(
         client,
         {**FIGHTER, "adventure": {"race": "centaur", "character_class": "fighter"}},

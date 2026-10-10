@@ -256,6 +256,7 @@ from worldsim.domain.party import (
     orders_record,
     party_in_scene,
     party_name_key,
+    party_note,
     present_keys,
     seeking_line,
     slots_line,
@@ -3791,9 +3792,22 @@ class Stage1Orchestrator:
             and any(m.character_id == character_id for m in roster)
         )
 
+    async def _in_watched_party(self, world_id: UUID, character_id: UUID) -> bool:
+        """A linked member of a party with no played hero (a watched adventure)."""
+        roster, played = await self._companions(world_id)
+        return played is None and any(m.character_id == character_id for m in roster)
+
     async def _party_note(self, world_id: UUID, character: Character) -> str | None:
         """A linked companion's note: in the party, and the fight that is on."""
         roster, played = await self._companions(world_id)
+        if played is None and await self._in_watched_party(world_id, character.id):
+            # A watched party: the members travel and fight as one.
+            fellows = [
+                m.name
+                for m in roster
+                if m.character_id is not None and m.character_id != character.id
+            ]
+            return party_note(fellows, await self._foes_now(world_id))
         if played is None or played == character.id:
             return None
         if not any(m.character_id == character.id for m in roster):
@@ -3807,7 +3821,10 @@ class Stage1Orchestrator:
         """A companion's blow while a fight is on: at the foe the hero told
         them to take this fight, else the most wounded foe."""
         foes = [foe for foe in await self._foes_now(world_id) if foe.hp_current > 0]
-        if not foes or not await self._is_companion(world_id, character_id):
+        if not foes or not (
+            await self._is_companion(world_id, character_id)
+            or await self._in_watched_party(world_id, character_id)
+        ):
             return None
         roster, _played = await self._companions(world_id)
         member = next((m for m in roster if m.character_id == character_id), None)

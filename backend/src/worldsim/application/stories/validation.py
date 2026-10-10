@@ -45,12 +45,15 @@ def validate_draft(payload: DraftPayload) -> list[str]:
         if not member.name.strip():
             issues.append(f"cast member {member.instance_key} needs a name")
     adventure = payload.mode.adventure
-    if adventure is not None:
-        if payload.mode.role != "player":
-            issues.append("only a story you play in can have fights")
+    if adventure is not None and payload.mode.role == "player":
         races, classes = hero_choices()
         if adventure.race not in races:
             issues.append(f"unknown people for the hero: {adventure.race}")
         if adventure.character_class not in classes:
             issues.append(f"unknown calling for the hero: {adventure.character_class}")
+    elif adventure is not None and (
+        adventure.race is not None or adventure.character_class is not None
+    ):
+        # A watched party: each member's calling comes from their own card.
+        issues.append("a watched party's callings come from the cast, not the draft")
     return issues

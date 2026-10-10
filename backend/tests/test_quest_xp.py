@@ -183,7 +183,7 @@ def test_both_ways_of_settling_give_the_party_xp_once(
                     ],
                 }
             )
-        if "You resolve" in system and "heave the wheel" in prompt:
+        if "You resolve" in system and "mend the wheel" in prompt:
             return json.dumps(
                 {
                     "outcome": "success",
@@ -216,7 +216,7 @@ def test_both_ways_of_settling_give_the_party_xp_once(
                     "family": "interact",
                     "character_id": wren,
                     "snapshot_id": NIL_SNAPSHOT,
-                    "attempt": "heave the wheel out of the mud",
+                    "attempt": "mend the wheel's cracked spoke",  # no skill named: no check
                 }
             },
         },

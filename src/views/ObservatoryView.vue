@@ -5,9 +5,14 @@
  * the page only watches, so closing it never strands a beat, and autoplay
  * pauses itself once nobody is watching.
  */
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import type { ChronicleEntry, SceneArtView } from '../../content/clients/worldsim'
+import type {
+  ChronicleEntry,
+  PartyRosterResponse,
+  SceneArtView
+} from '../../content/clients/worldsim'
+import PartyPanel from '../components/story/PartyPanel.vue'
 import WorldMap from '../components/observatory/WorldMap.vue'
 import PlaceMap from '../components/observatory/PlaceMap.vue'
 import EventFeed from '../components/observatory/EventFeed.vue'
@@ -17,9 +22,9 @@ import { useBranchPoints } from '../composables/useBranchPoints'
 import { canBranch, canRewind } from '../game/branches'
 import MomentDialog from '../components/story/MomentDialog.vue'
 import PaintSceneDialog from '../components/story/PaintSceneDialog.vue'
-import { assetUrl } from '../api/worldsim'
+import { assetUrl, getParty } from '../api/worldsim'
 import { readyMoments, type Speaker } from '../game/moments'
-import { onlyExperience } from '../game/party'
+import { levelledUp, onlyExperience } from '../game/party'
 import IconArrowLeft from '../components/icons/IconArrowLeft.vue'
 import IconPlay from '../components/icons/IconPlay.vue'
 import IconArrowRight from '../components/icons/IconArrowRight.vue'
@@ -30,6 +35,7 @@ import {
   SPEEDS,
   autoplayStatus,
   beatTimeLabel,
+  newestRolls,
   rollsByScene,
   rollsFor,
   speedFor
@@ -131,6 +137,36 @@ const fought = computed(
   () =>
     new Set([...sceneRolls.value].filter(([, rolls]) => !onlyExperience(rolls)).map(([key]) => key))
 )
+
+/**
+ * A combat story's party (a watched adventure, or a played one watched
+ * here) with the foes of the fight that is on, read again whenever the
+ * story moves on: a fight's rolls land as their own event, so new entries
+ * count too. A story without fights has no members and shows nothing.
+ */
+const roster = ref<PartyRosterResponse | null>(null)
+async function loadParty(): Promise<void> {
+  const world = storyId.value
+  try {
+    const read = await getParty(world, callOpts.value)
+    if (world === storyId.value) roster.value = read
+  } catch {
+    // Not knowing the party never blocks the watch; the last read stays.
+  }
+}
+watch(
+  () =>
+    obs.loading.value
+      ? null
+      : `${storyId.value}:${view.value?.absolute_index}:${obs.entries.value.length}`,
+  (stamp) => {
+    if (stamp !== null) void loadParty()
+  },
+  { immediate: true }
+)
+const party = computed(() => (roster.value?.members?.length ? roster.value : null))
+/** Who reached a new level in the newest fight (the party panel says so). */
+const levelled = computed(() => levelledUp(newestRolls(obs.entries.value)))
 
 function pictureFor(entry: ChronicleEntry): SceneArtView | null {
   const mine = (view.value?.scene_art ?? []).filter(
@@ -275,7 +311,16 @@ onUnmounted(() => {
       </button>
     </nav>
 
-    <div class="obs__grid" :data-panel="panel">
+    <section v-if="party" class="obs__party" aria-label="The party">
+      <PartyPanel
+        :party="party"
+        :me="obs.grant.value?.character_id ?? null"
+        :levelled="levelled"
+        :title="obs.grant.value?.character_id ? 'Your party' : 'The party'"
+        row />
+    </section>
+
+    <div class="obs__grid" :class="{ 'obs__grid--party': party }" :data-panel="panel">
       <div class="obs__map">
         <Transition :name="insideMap ? 'obs-dive' : 'obs-surface'" mode="out-in">
           <PlaceMap
@@ -588,6 +633,20 @@ onUnmounted(() => {
   margin-top: 12px;
   height: calc(100vh - 190px);
   min-height: 420px;
+}
+/* A combat story's party: one row above the map and feed, as in Adventure. */
+.obs__party {
+  margin-top: 12px;
+  max-height: 200px;
+  padding: 10px 16px 8px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.obs__grid--party {
+  height: calc(100vh - 400px);
 }
 .obs__map {
   min-height: 0;

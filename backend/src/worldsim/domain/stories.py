@@ -79,16 +79,19 @@ class DraftCastMember(BaseModel):
 
 
 class DraftAdventure(BaseModel):
-    """A story you play with fights in it: your hero's people and calling.
+    """A story with fights in it.
 
-    The hero starts at level 1 with a full 5e sheet built from these two;
-    the storyteller then rolls every fight through it.
+    Played: your hero's people and calling (both required); the hero starts
+    at level 1 with a full 5e sheet built from these two. Watched (no played
+    character): neither is given; the first ``MAX_PARTY_SIZE`` cast members
+    form the party, each with a calling read from their card. The
+    storyteller then rolls every fight through the sheets.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    race: str = Field(min_length=1, max_length=32)
-    character_class: str = Field(min_length=1, max_length=32)
+    race: str | None = Field(default=None, min_length=1, max_length=32)
+    character_class: str | None = Field(default=None, min_length=1, max_length=32)
 
 
 class DraftMode(BaseModel):
@@ -96,7 +99,7 @@ class DraftMode(BaseModel):
 
     role: str = Field(min_length=1, max_length=16)
     controlled_cast_key: str | None = Field(default=None, max_length=64)
-    #: Set: a story with combat (player stories only); unset: purely narrative.
+    #: Set: a story with combat (played or watched); unset: purely narrative.
     adventure: DraftAdventure | None = None
 
 

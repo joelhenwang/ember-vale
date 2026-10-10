@@ -49,7 +49,7 @@ describe('draft payload', () => {
     expect(payload['mode']).toEqual({ role: 'player', controlled_cast_key: 'wren' })
   })
 
-  it('carries the hero of a story with fights, for players only', () => {
+  it('carries the hero of a story with fights; a watched one names no hero', () => {
     const adventure = { race: 'elf', characterClass: 'wizard' }
     const played = buildDraftPayload({
       ...BASE,
@@ -61,7 +61,10 @@ describe('draft payload', () => {
       adventure: { race: 'elf', character_class: 'wizard' }
     })
     const watched = buildDraftPayload({ ...BASE, mode: { role: 'watcher', adventure } })
-    expect(watched['mode']).toEqual({ role: 'watcher' })
+    expect(watched['mode']).toEqual({ role: 'watcher', adventure: {} })
+    expect(buildDraftPayload({ ...BASE, mode: { role: 'watcher' } })['mode']).toEqual({
+      role: 'watcher'
+    })
   })
 
   it('flags empty cast, missing title and bad controlled selection', () => {
