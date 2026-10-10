@@ -5,9 +5,10 @@ Snapshots expose no update path: the database trigger rejects mutation.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from worldsim.domain.enums import PhaseRunState
@@ -90,11 +91,19 @@ class SqlAlchemyPhaseRepository:
         return _to_run(found[0]) if found else None
 
     async def set_run_state(self, run_id: UUID, state: str) -> None:
-        row = await self._session.get(PhaseRunRow, run_id)
-        if row is None:
+        # One UPDATE (it read the row first: two statements, seven times a
+        # turn, perf-turn-001). The session's own copy, if any, follows.
+        done = (
+            await self._session.execute(
+                update(PhaseRunRow)
+                .where(PhaseRunRow.id == run_id)
+                .values(state=state, updated_at=datetime.now(UTC))
+                .returning(PhaseRunRow.id)
+                .execution_options(synchronize_session="fetch")
+            )
+        ).scalar_one_or_none()
+        if done is None:
             raise missing("phase run", run_id)
-        row.state = state
-        await self._session.flush()
 
     async def add_snapshot(self, snapshot: PhaseSnapshot) -> None:
         self._session.add(

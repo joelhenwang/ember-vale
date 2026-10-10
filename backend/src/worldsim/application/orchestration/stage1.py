@@ -1202,18 +1202,29 @@ PREVIOUSLY_CHARS = 320
 _NOTHING_OF_NOTE = "Nothing of note occurs."
 
 
-async def _previously(uow: Any, world_id: UUID, event_id: UUID) -> str | None:
+async def _recent_window(uow: Any, world_id: UUID) -> list[WorldEvent]:
+    """The world's newest 40 events, oldest first (the recap's and the last
+    spot's look-back)."""
+    high = await uow.events.max_sequence(world_id)
+    return cast("list[WorldEvent]", await uow.events.list_range(world_id, max(0, high - 40), 40))
+
+
+def _place_of(event: WorldEvent, locations: Sequence[Location]) -> Location | None:
+    """The place a scene event recorded, from the places already read."""
+    raw = event.summary.get("location_id")
+    return next((loc for loc in locations if str(loc.id) == raw), None) if raw else None
+
+
+async def _previously(uow: Any, event: WorldEvent, window: Sequence[WorldEvent]) -> str | None:
     """The last narrated scene that shared someone with this one, if recent.
 
     Gives the narrator continuity: without it every beat re-introduces
     the room ("The quiet of Hearth settles around you") as if new.
     """
-    event = await uow.events.get_event(event_id)
+    event_id = event.id
     people = set(event.participant_ids)
     if not people:
         return None
-    high = await uow.events.max_sequence(world_id)
-    window = await uow.events.list_range(world_id, max(0, high - 40), 40)
     for prior in reversed(window):
         if prior.event_type != EventType.ACTION_RESOLVED or prior.id == event_id:
             continue
@@ -1231,17 +1242,19 @@ async def _previously(uow: Any, world_id: UUID, event_id: UUID) -> str | None:
 
 
 async def _last_spot(
-    uow: Any, world_id: UUID, event_id: UUID, location_id: UUID, spots: Sequence[StorySpot]
+    uow: Any,
+    event: WorldEvent,
+    window: Sequence[WorldEvent],
+    location_id: UUID,
+    spots: Sequence[StorySpot],
 ) -> StorySpot | None:
     """The spot these people's latest scenes here were set at: the newest
     earlier scene shared with them that named one, while they stayed in
     this place."""
-    event = await uow.events.get_event(event_id)
+    event_id = event.id
     people = set(event.participant_ids)
     if not people or not spots:
         return None
-    high = await uow.events.max_sequence(world_id)
-    window = await uow.events.list_range(world_id, max(0, high - 40), 40)
     for prior in reversed(window):
         if prior.event_type != EventType.ACTION_RESOLVED or prior.id == event_id:
             continue
@@ -1571,11 +1584,8 @@ class Stage1Orchestrator:
             characters = await uow.characters.list_for_world(world_id)
             hooks = await uow.narrative.list_hooks_for_world(world_id)
             _recent, _quiet, _talk, said = await _recent_happenings(uow, world_id, with_lines=False)
-            intentions = {
-                c.id: i.text
-                for c in characters
-                if (i := await uow.intentions.get(c.id)) is not None
-            }
+            held = await uow.intentions.list_for_world(world_id)
+            intentions = {c.id: held[c.id].text for c in characters if c.id in held}
         attempts = {
             cid: action.attempt
             for cid, action in (player_intents or {}).items()
@@ -3015,11 +3025,8 @@ class Stage1Orchestrator:
             arcs = await uow.narrative.list_arcs_for_world(world_id)
             recent, quiet_streak, talk_streak, said = await _recent_happenings(uow, world_id)
             earlier = await _story_so_far(uow, world_id)
-            intentions = {
-                c.id: i.text
-                for c in characters
-                if (i := await uow.intentions.get(c.id)) is not None
-            }
+            held = await uow.intentions.list_for_world(world_id)
+            intentions = {c.id: held[c.id].text for c in characters if c.id in held}
         last_raw = config.get("director.last_absolute")
         last = int(last_raw) if isinstance(last_raw, int) else None
         cooldown_raw = config.get("director.cooldown_phases")
@@ -3360,20 +3367,8 @@ class Stage1Orchestrator:
             )
             sources, dropped = to_manifest_dict(included, excluded)
             # The same reads the context just made (shared within the phase).
-            carried_ids = [
-                str(i.id)
-                for i in await self._shared(
-                    ("carried", world_id, character.id),
-                    lambda uow: uow.inventory.list_for_owner(world_id, character.id),
-                )
-            ]
-            here_ids = [
-                str(i.id)
-                for i in await self._shared(
-                    ("items_at", world_id, character.location_id),
-                    lambda uow: uow.inventory.list_at_location(world_id, character.location_id),
-                )
-            ]
+            carried_ids = [str(i.id) for i in await self._carried(world_id, character.id)]
+            here_ids = [str(i.id) for i in await self._items_at(world_id, character.location_id)]
             spec = ManifestSpec(
                 role="character_decision",
                 profile=runtime.profiles["character"],
@@ -3520,8 +3515,21 @@ class Stage1Orchestrator:
 
     async def _track_task(self, world_id: UUID, task_id: UUID, owner: str) -> None:
         """Audit-only task row for a character decision (recovery stays with commits)."""
+        key = f"s1char:{task_id.hex}"
+        lease = Lease(
+            owner=owner,
+            claimed_at=utcnow(),
+            expires_at=utcnow() + timedelta(seconds=60),
+            attempt=1,
+            max_attempts=3,
+            input_version=1,
+            idempotency_key=key,
+        )
         async with self._factory() as uow:
-            key = f"s1char:{task_id.hex}"
+            # One statement for a new decision; a resumed turn finds its row.
+            if await uow.tasks.start_running(task_id, world_id, "character_decision", lease):
+                await uow.commit()
+                return
             existing = await uow.tasks.find_by_key(world_id, key)
             if existing is None:
                 try:
@@ -3529,19 +3537,7 @@ class Stage1Orchestrator:
                     await uow.commit()
                 except IntegrityError:
                     await uow.rollback()
-            await uow.tasks.claim(
-                task_id,
-                owner,
-                Lease(
-                    owner=owner,
-                    claimed_at=utcnow(),
-                    expires_at=utcnow() + timedelta(seconds=60),
-                    attempt=1,
-                    max_attempts=3,
-                    input_version=1,
-                    idempotency_key=f"s1char:{task_id.hex}",
-                ),
-            )
+            await uow.tasks.claim(task_id, owner, lease)
             await uow.commit()
 
     async def _finish_task(self, task_id: UUID, owner: str, ok: bool) -> None:
@@ -3584,14 +3580,8 @@ class Stage1Orchestrator:
         """
         world = await self._world_view(world_id)
         config, now_index = world.config, world.now_index
-        items_here = await self._shared(
-            ("items_at", world_id, character.location_id),
-            lambda uow: uow.inventory.list_at_location(world_id, character.location_id),
-        )
-        carried = await self._shared(
-            ("carried", world_id, character.id),
-            lambda uow: uow.inventory.list_for_owner(world_id, character.id),
-        )
+        items_here = await self._items_at(world_id, character.location_id)
+        carried = await self._carried(world_id, character.id)
         half_life = _config_int(config, HALF_LIFE_PHASES_KEY, DEFAULT_HALF_LIFE_PHASES)
         recent_phases = _config_int(config, RECENT_PHASES_KEY, DEFAULT_RECENT_PHASES)
         floor = _config_float(config, SALIENCE_FLOOR_KEY, DEFAULT_SALIENCE_FLOOR)
@@ -4033,6 +4023,23 @@ class Stage1Orchestrator:
         return move.model_copy(
             update={"character_id": character.id, "snapshot_id": sealed.snapshot_id, "note": None}
         )
+
+    async def _world_items(self, world_id: UUID) -> list[ItemInstance]:
+        """Every item of the world, by id (one read per phase: per-character
+        and per-place lists took one query each, perf-turn-001)."""
+        return await self._shared(
+            ("items", world_id), lambda uow: uow.inventory.list_for_world(world_id)
+        )
+
+    async def _carried(self, world_id: UUID, character_id: UUID) -> list[ItemInstance]:
+        """What a character holds, as ``list_for_owner`` orders it."""
+        items = await self._world_items(world_id)
+        return sorted((i for i in items if i.owner_id == character_id), key=lambda i: i.item_key)
+
+    async def _items_at(self, world_id: UUID, location_id: UUID) -> list[ItemInstance]:
+        """Unheld items lying at one place, as ``list_at_location`` orders them."""
+        items = await self._world_items(world_id)
+        return [i for i in items if i.owner_id is None and i.location_id == location_id]
 
     async def _shared[T](self, key: object, load: Callable[[Any], Awaitable[T]]) -> T:
         """One read per phase while a phase view is shared, else a fresh one."""
@@ -5246,7 +5253,11 @@ class Stage1Orchestrator:
             existing = await uow.scenes.narrations_for_event(event_id)
             observations = await uow.perception.observations_for_event(event_id)
             scene_reactions = await uow.scenes.reactions_for_scene(scene.id)
-            scene_intents = [await uow.scenes.get_intent(i) for i in scene.intent_ids]
+            by_intent = await uow.scenes.get_intents(list(scene.intent_ids))
+            scene_intents = [
+                by_intent[i] if i in by_intent else await uow.scenes.get_intent(i)
+                for i in scene.intent_ids
+            ]
             characters = await uow.characters.list_for_world(world_id)
             participants = [
                 str(p.character_id) for p in (await uow.scenes.get_scene(scene.id)).participants
@@ -5271,7 +5282,11 @@ class Stage1Orchestrator:
             )
             grant = await uow.roles.get_for_world(world_id) if roster else None
             config = await uow.worlds.get_config(world_id)
-            scene_place = await _event_place(uow, event_id)
+            # The scene's event and the recent window, read once for the
+            # place, the recap and the last spot (perf-turn-001).
+            event = await uow.events.get_event(event_id)
+            locations = await uow.locations.list_for_world(world_id)
+            scene_place = _place_of(event, locations)
             place_name = scene_place.name if scene_place is not None else None
             # Journeys this scene set out on (their travellers have not arrived).
             setting_off = [
@@ -5279,8 +5294,9 @@ class Stage1Orchestrator:
                 for a in await uow.activities.list_active_for_world(world_id)
                 if (a.direct_step_key or "").startswith(f"journey:{scene.id.hex}:")
             ]
-            place_names = {loc.id: loc.name for loc in await uow.locations.list_for_world(world_id)}
-            previously = await _previously(uow, world_id, event_id)
+            place_names = {loc.id: loc.name for loc in locations}
+            window = await _recent_window(uow, world_id)
+            previously = await _previously(uow, event, window)
         if existing:
             return "skipped"
         structured = config.get(NARRATION_MODE_KEY) == NARRATION_MODE_STRUCTURED
@@ -5304,7 +5320,7 @@ class Stage1Orchestrator:
         if scene_place is not None and set(ends.values()) <= {scene_place.name}:
             inside = story_spots(config.get(PLACE_MAPS), scene_place.id)
             async with self._factory() as uow:
-                last = await _last_spot(uow, world_id, event_id, scene_place.id, inside)
+                last = await _last_spot(uow, event, window, scene_place.id, inside)
             spots = spots_fact(inside, last)
             if spots is not None:
                 setting.append((SPOTS_FACT_KEY, spots))
@@ -5633,12 +5649,11 @@ class Stage1Orchestrator:
             orders: dict[str, str] = {}
             # The prose of the last two turns the party was in: goblins that
             # burst in last turn are still there to fight this one.
-            run_now = await uow.phases.get_run(run_id)
             linked = {m.character_id for m in roster if m.character_id is not None}
             earlier = [
                 e.id
                 for e in await uow.events.list_by_absolute(
-                    world_id, max(0, run_now.absolute_index - 2), run_now.absolute_index
+                    world_id, max(0, run.absolute_index - 2), run.absolute_index
                 )
                 if linked & set(e.participant_ids)
             ]
@@ -5652,13 +5667,17 @@ class Stage1Orchestrator:
             participants = {
                 str(p.character_id) for p in (await uow.scenes.get_scene(scene.id)).participants
             }
-            places: dict[str, str] = {}
-            for member in roster:
-                if member.character_id is not None:
-                    who = await uow.characters.get(member.character_id)
-                    places[str(member.character_id)] = str(who.location_id)
+            # One read for everyone's place and one for the scene's intents
+            # (they were read one by one, perf-turn-001).
+            where = {c.id: c.location_id for c in await uow.characters.list_for_world(world_id)}
+            places: dict[str, str] = {
+                str(member.character_id): str(where[member.character_id])
+                for member in roster
+                if member.character_id is not None and member.character_id in where
+            }
+            by_intent = await uow.scenes.get_intents(list(scene.intent_ids))
             for intent_id in scene.intent_ids:
-                intent = await uow.scenes.get_intent(intent_id)
+                intent = by_intent.get(intent_id) or await uow.scenes.get_intent(intent_id)
                 hero_here = hero_here or intent.author_character_id in heroes
                 action = intent.action
                 if isinstance(action, InteractAction) and intent.author_character_id in heroes:

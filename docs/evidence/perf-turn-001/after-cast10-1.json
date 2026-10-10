@@ -1,0 +1,409 @@
+{
+ "cast": 10,
+ "places": 6,
+ "beats": [
+  {
+   "beat": 1,
+   "wall_ms": 2470.5,
+   "sql": 706,
+   "sql_ms": 5569.3,
+   "checkouts": 258,
+   "scenes": 4,
+   "timings": {
+    "probe": 0,
+    "director": 703,
+    "decide": 812,
+    "react": 2402,
+    "resolve": 295,
+    "narrate": 171,
+    "scenes": 1187,
+    "checkpoint": 16,
+    "total": 2437
+   }
+  },
+  {
+   "beat": 2,
+   "wall_ms": 1795.2,
+   "sql": 683,
+   "sql_ms": 3745.9,
+   "checkouts": 246,
+   "scenes": 5,
+   "timings": {
+    "probe": 0,
+    "director": 62,
+    "decide": 296,
+    "react": 1610,
+    "resolve": 214,
+    "narrate": 187,
+    "scenes": 1156,
+    "checkpoint": 30,
+    "total": 1766
+   }
+  },
+  {
+   "beat": 3,
+   "wall_ms": 2019.0,
+   "sql": 651,
+   "sql_ms": 4476.7,
+   "checkouts": 276,
+   "scenes": 2,
+   "timings": {
+    "probe": 0,
+    "director": 62,
+    "decide": 531,
+    "react": 1483,
+    "resolve": 124,
+    "narrate": 125,
+    "scenes": 1094,
+    "checkpoint": 32,
+    "total": 1984
+   }
+  },
+  {
+   "beat": 4,
+   "wall_ms": 2365.8,
+   "sql": 692,
+   "sql_ms": 5323.9,
+   "checkouts": 256,
+   "scenes": 4,
+   "timings": {
+    "probe": 0,
+    "director": 265,
+    "decide": 562,
+    "react": 2718,
+    "resolve": 265,
+    "narrate": 157,
+    "scenes": 1360,
+    "checkpoint": 32,
+    "total": 2344
+   }
+  },
+  {
+   "beat": 5,
+   "wall_ms": 1610.2,
+   "sql": 632,
+   "sql_ms": 3415.5,
+   "checkouts": 250,
+   "scenes": 2,
+   "timings": {
+    "probe": 0,
+    "director": 78,
+    "decide": 312,
+    "react": 1110,
+    "resolve": 76,
+    "narrate": 78,
+    "scenes": 937,
+    "checkpoint": 30,
+    "total": 1593
+   }
+  },
+  {
+   "beat": 6,
+   "wall_ms": 1798.2,
+   "sql": 637,
+   "sql_ms": 5183.9,
+   "checkouts": 253,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 46,
+    "decide": 483,
+    "react": 1217,
+    "resolve": 141,
+    "narrate": 125,
+    "scenes": 1046,
+    "checkpoint": 15,
+    "total": 1780
+   }
+  },
+  {
+   "beat": 7,
+   "wall_ms": 2744.9,
+   "sql": 683,
+   "sql_ms": 6133.7,
+   "checkouts": 275,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 344,
+    "decide": 687,
+    "react": 2124,
+    "resolve": 312,
+    "narrate": 155,
+    "scenes": 1671,
+    "checkpoint": 31,
+    "total": 2719
+   }
+  },
+  {
+   "beat": 8,
+   "wall_ms": 1934.4,
+   "sql": 683,
+   "sql_ms": 4170.8,
+   "checkouts": 276,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 62,
+    "decide": 343,
+    "react": 1360,
+    "resolve": 281,
+    "narrate": 108,
+    "scenes": 1233,
+    "checkpoint": 16,
+    "total": 1891
+   }
+  },
+  {
+   "beat": 9,
+   "wall_ms": 2542.9,
+   "sql": 924,
+   "sql_ms": 5653.0,
+   "checkouts": 370,
+   "scenes": 4,
+   "timings": {
+    "probe": 0,
+    "director": 157,
+    "decide": 469,
+    "react": 1781,
+    "resolve": 312,
+    "narrate": 125,
+    "scenes": 1141,
+    "day_end": 484,
+    "total": 2516
+   }
+  },
+  {
+   "beat": 10,
+   "wall_ms": 2095.3,
+   "sql": 676,
+   "sql_ms": 6512.3,
+   "checkouts": 270,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 234,
+    "decide": 453,
+    "react": 1797,
+    "resolve": 122,
+    "narrate": 171,
+    "scenes": 1342,
+    "checkpoint": 30,
+    "total": 2077
+   }
+  },
+  {
+   "beat": 11,
+   "wall_ms": 2466.1,
+   "sql": 664,
+   "sql_ms": 5501.5,
+   "checkouts": 254,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 125,
+    "decide": 516,
+    "react": 1672,
+    "resolve": 185,
+    "narrate": 172,
+    "scenes": 1469,
+    "checkpoint": 31,
+    "total": 2421
+   }
+  },
+  {
+   "beat": 12,
+   "wall_ms": 2873.0,
+   "sql": 658,
+   "sql_ms": 6383.7,
+   "checkouts": 263,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 140,
+    "decide": 625,
+    "react": 2217,
+    "resolve": 295,
+    "narrate": 171,
+    "scenes": 1765,
+    "checkpoint": 31,
+    "total": 2844
+   }
+  },
+  {
+   "beat": 13,
+   "wall_ms": 2466.7,
+   "sql": 699,
+   "sql_ms": 5605.2,
+   "checkouts": 276,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 359,
+    "decide": 562,
+    "react": 1718,
+    "resolve": 263,
+    "narrate": 171,
+    "scenes": 1516,
+    "checkpoint": 30,
+    "total": 2437
+   }
+  },
+  {
+   "beat": 14,
+   "wall_ms": 2480.8,
+   "sql": 664,
+   "sql_ms": 4787.7,
+   "checkouts": 250,
+   "scenes": 4,
+   "timings": {
+    "probe": 0,
+    "director": 437,
+    "decide": 702,
+    "react": 1485,
+    "resolve": 264,
+    "narrate": 187,
+    "scenes": 1405,
+    "checkpoint": 16,
+    "total": 2453
+   }
+  },
+  {
+   "beat": 15,
+   "wall_ms": 2569.0,
+   "sql": 684,
+   "sql_ms": 6187.9,
+   "checkouts": 260,
+   "scenes": 4,
+   "timings": {
+    "probe": 0,
+    "director": 125,
+    "decide": 514,
+    "react": 1513,
+    "resolve": 217,
+    "narrate": 452,
+    "scenes": 1640,
+    "checkpoint": 32,
+    "total": 2547
+   }
+  }
+ ],
+ "calls": {
+  "director": 5,
+  "character": 176,
+  "reaction": 546,
+  "resolver": 26,
+  "narrator": 50,
+  "summary": 20
+ },
+ "top_tables": [
+  [
+   "model_call",
+   1696
+  ],
+  [
+   "context_manifest",
+   823
+  ],
+  [
+   "model_cost",
+   823
+  ],
+  [
+   "observation",
+   705
+  ],
+  [
+   "character_intention",
+   479
+  ],
+  [
+   "world_clock",
+   407
+  ],
+  [
+   "task_run",
+   397
+  ],
+  [
+   "character_intent",
+   386
+  ],
+  [
+   "world_event",
+   385
+  ],
+  [
+   "recent_memory",
+   360
+  ],
+  [
+   "long_term_memory",
+   320
+  ],
+  [
+   "relationship",
+   290
+  ],
+  [
+   "character",
+   282
+  ],
+  [
+   "user_command",
+   260
+  ],
+  [
+   "location",
+   250
+  ],
+  [
+   "attempt",
+   228
+  ],
+  [
+   "dnd_party_member",
+   212
+  ],
+  [
+   "narration",
+   210
+  ],
+  [
+   "aggregate_version",
+   207
+  ],
+  [
+   "phase_run",
+   194
+  ],
+  [
+   "scene",
+   178
+  ],
+  [
+   "world_config",
+   170
+  ],
+  [
+   "activity",
+   144
+  ],
+  [
+   "scene_participant",
+   128
+  ],
+  [
+   "narrative_hook",
+   114
+  ]
+ ],
+ "by_caller": {},
+ "checkpoints": {
+  "rows": 15,
+  "stored_bytes": 64257,
+  "json_bytes": 217045,
+  "table_bytes": 155648,
+  "prune_noop_ms_p50": 5.46
+ }
+}

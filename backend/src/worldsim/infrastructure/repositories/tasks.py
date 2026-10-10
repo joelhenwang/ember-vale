@@ -8,7 +8,8 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from worldsim.domain.enums import TaskRunState
@@ -105,6 +106,41 @@ class SqlAlchemyTaskRepository:
         await self._session.flush()
         return _to_domain(row)
 
+    async def start_running(self, task_id: UUID, world_id: UUID, kind: str, lease: Lease) -> bool:
+        """Create a task already claimed by ``lease``, in one statement.
+
+        For audit-only rows a turn writes as it goes (a character's
+        decision): create plus claim took five statements and two
+        transactions each (perf-turn-001). False when the row exists
+        already (a resumed turn); callers then claim it the usual way.
+        No archive check: admission refuses an archived story and a story
+        cannot be archived while a turn is open.
+        """
+        now = _utcnow()
+        created = (
+            await self._session.execute(
+                pg_insert(TaskRunRow)
+                .values(
+                    id=task_id,
+                    world_id=world_id,
+                    kind=kind,
+                    state="running",
+                    owner=lease.owner,
+                    claimed_at=lease.claimed_at,
+                    expires_at=lease.expires_at,
+                    attempt=lease.attempt,
+                    max_attempts=lease.max_attempts,
+                    input_version=lease.input_version,
+                    idempotency_key=lease.idempotency_key,
+                    created_at=now,
+                    updated_at=now,
+                )
+                .on_conflict_do_nothing()
+                .returning(TaskRunRow.id)
+            )
+        ).scalar_one_or_none()
+        return created is not None
+
     async def _reject_archived(self, world_id: UUID) -> None:
         catalog = (
             await self._session.execute(
@@ -151,6 +187,29 @@ class SqlAlchemyTaskRepository:
         return True
 
     async def finish(self, task_id: UUID, owner: str, state: str) -> bool:
+        # One guarded UPDATE does it when the owner still runs it (the usual
+        # case); otherwise the row is read to tell missing from not ours.
+        done = (
+            await self._session.execute(
+                update(TaskRunRow)
+                .where(
+                    TaskRunRow.id == task_id,
+                    TaskRunRow.owner == owner,
+                    TaskRunRow.state == "running",
+                )
+                .values(
+                    state=state,
+                    owner=None,
+                    claimed_at=None,
+                    expires_at=None,
+                    updated_at=_utcnow(),
+                )
+                .returning(TaskRunRow.id)
+                .execution_options(synchronize_session=False)
+            )
+        ).scalar_one_or_none()
+        if done is not None:
+            return True
         row = (
             await self._session.execute(
                 select(TaskRunRow).where(TaskRunRow.id == task_id).with_for_update()

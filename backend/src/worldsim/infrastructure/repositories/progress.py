@@ -218,7 +218,7 @@ class SqlAlchemyInventoryRepository:
                     ItemInstanceRow.world_id == world_id,
                     ItemInstanceRow.owner_id == owner_id,
                 )
-                .order_by(ItemInstanceRow.item_key)
+                .order_by(ItemInstanceRow.item_key, ItemInstanceRow.id)
             )
         ).scalars()
         return [self._to_item(row) for row in rows]
