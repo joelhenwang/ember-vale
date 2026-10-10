@@ -1,0 +1,4 @@
+beat   30: wall p50  1047.8 ms  sql    292 q  sql  686.2 ms  scenes   2  sessions   96
+checkpoints: {'rows': 30, 'stored_bytes': 83334, 'json_bytes': 242263, 'table_bytes': 172032, 'prune_noop_ms_p50': 4.8}
+calls: {'director': 10, 'character': 96, 'reaction': 84, 'resolver': 10, 'narrator': 60, 'summary': 18}
+all beats: mean 1066.5 ms, total 32.0 s

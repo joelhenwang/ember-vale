@@ -1,0 +1,5 @@
+sys:1: SAWarning: UPDATE statement has a cartesian product between FROM element(s) "user_command" and FROM element "made_event".  Apply join condition(s) between each element to resolve.
+beat   30: wall p50   733.2 ms  sql    262 q  sql  544.3 ms  scenes   3  sessions   83
+checkpoints: {'rows': 30, 'stored_bytes': 83213, 'json_bytes': 242252, 'table_bytes': 180224, 'prune_noop_ms_p50': 6.35}
+calls: {'director': 10, 'character': 92, 'reaction': 72, 'resolver': 6, 'narrator': 59, 'summary': 18}
+all beats: mean 812.1 ms, total 24.4 s

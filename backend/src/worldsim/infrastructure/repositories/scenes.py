@@ -7,10 +7,11 @@ none does. Adapters return domain models, never ORM objects.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from pydantic import TypeAdapter
-from sqlalchemy import select, text, update
+from sqlalchemy import insert, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from worldsim.domain.commands import ActionIntent
@@ -207,6 +208,34 @@ class SqlAlchemySceneRepository:
             )
         )
         await self._session.flush()
+
+    async def save_narrations(self, beats: list[NarrationBeat]) -> None:
+        """A scene's beats in one multi-row insert (perf-turn-002). Beats are
+        read back in ``created_at`` order, so each gets its own instant, a
+        microsecond apart in written order: one insert would otherwise stamp
+        them alike and the order would be left to chance."""
+        if not beats:
+            return
+        start = datetime.now(UTC)
+        await self._session.execute(
+            insert(NarrationRow),
+            [
+                {
+                    "id": beat.id,
+                    "world_id": beat.world_id,
+                    "scene_id": beat.scene_id,
+                    "event_id": beat.source_event_id,
+                    "speaker_character_id": beat.speaker_id,
+                    "kind": beat.kind.value,
+                    "text": beat.text,
+                    "emotion_hint": beat.emotion_hint,
+                    "source_effect_ids": list(beat.source_effect_ids),
+                    "cited_fact_keys": list(beat.cited_fact_keys),
+                    "created_at": start + timedelta(microseconds=position),
+                }
+                for position, beat in enumerate(beats)
+            ],
+        )
 
     async def save_narration_status(self, scene_id: UUID, status: str) -> None:
         """Record the narration outcome; overwrite only a prior failure.

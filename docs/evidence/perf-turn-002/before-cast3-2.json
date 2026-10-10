@@ -1,0 +1,694 @@
+{
+ "cast": 3,
+ "places": 6,
+ "beats": [
+  {
+   "beat": 1,
+   "wall_ms": 1379.1,
+   "sql": 293,
+   "sql_ms": 1170.8,
+   "checkouts": 98,
+   "scenes": 2,
+   "timings": {
+    "probe": 0,
+    "director": 327,
+    "decide": 344,
+    "react": 171,
+    "resolve": 61,
+    "narrate": 109,
+    "scenes": 516,
+    "checkpoint": 30,
+    "total": 1342
+   }
+  },
+  {
+   "beat": 2,
+   "wall_ms": 926.1,
+   "sql": 289,
+   "sql_ms": 741.6,
+   "checkouts": 84,
+   "scenes": 3,
+   "timings": {
+    "probe": 14,
+    "director": 78,
+    "decide": 140,
+    "react": 0,
+    "resolve": 90,
+    "narrate": 125,
+    "scenes": 344,
+    "checkpoint": 14,
+    "total": 889
+   }
+  },
+  {
+   "beat": 3,
+   "wall_ms": 837.8,
+   "sql": 288,
+   "sql_ms": 627.1,
+   "checkouts": 84,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 78,
+    "decide": 171,
+    "react": 0,
+    "resolve": 126,
+    "narrate": 109,
+    "scenes": 343,
+    "checkpoint": 16,
+    "total": 812
+   }
+  },
+  {
+   "beat": 4,
+   "wall_ms": 767.9,
+   "sql": 296,
+   "sql_ms": 607.6,
+   "checkouts": 90,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 141,
+    "decide": 155,
+    "react": 0,
+    "resolve": 90,
+    "narrate": 125,
+    "scenes": 328,
+    "checkpoint": 16,
+    "total": 750
+   }
+  },
+  {
+   "beat": 5,
+   "wall_ms": 791.0,
+   "sql": 293,
+   "sql_ms": 509.2,
+   "checkouts": 92,
+   "scenes": 2,
+   "timings": {
+    "probe": 0,
+    "director": 62,
+    "decide": 140,
+    "react": 110,
+    "resolve": 62,
+    "narrate": 78,
+    "scenes": 375,
+    "checkpoint": 16,
+    "total": 766
+   }
+  },
+  {
+   "beat": 6,
+   "wall_ms": 845.1,
+   "sql": 287,
+   "sql_ms": 556.9,
+   "checkouts": 92,
+   "scenes": 2,
+   "timings": {
+    "probe": 0,
+    "director": 46,
+    "decide": 141,
+    "react": 125,
+    "resolve": 46,
+    "narrate": 92,
+    "scenes": 390,
+    "checkpoint": 30,
+    "total": 827
+   }
+  },
+  {
+   "beat": 7,
+   "wall_ms": 761.9,
+   "sql": 297,
+   "sql_ms": 583.5,
+   "checkouts": 90,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 125,
+    "decide": 157,
+    "react": 0,
+    "resolve": 64,
+    "narrate": 108,
+    "scenes": 281,
+    "checkpoint": 14,
+    "total": 733
+   }
+  },
+  {
+   "beat": 8,
+   "wall_ms": 846.9,
+   "sql": 291,
+   "sql_ms": 537.5,
+   "checkouts": 93,
+   "scenes": 2,
+   "timings": {
+    "probe": 0,
+    "director": 94,
+    "decide": 157,
+    "react": 108,
+    "resolve": 76,
+    "narrate": 77,
+    "scenes": 359,
+    "checkpoint": 16,
+    "total": 812
+   }
+  },
+  {
+   "beat": 9,
+   "wall_ms": 898.7,
+   "sql": 333,
+   "sql_ms": 702.6,
+   "checkouts": 105,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 62,
+    "decide": 125,
+    "react": 0,
+    "resolve": 93,
+    "narrate": 77,
+    "scenes": 280,
+    "day_end": 217,
+    "total": 875
+   }
+  },
+  {
+   "beat": 10,
+   "wall_ms": 789.8,
+   "sql": 302,
+   "sql_ms": 522.0,
+   "checkouts": 99,
+   "scenes": 2,
+   "timings": {
+    "probe": 0,
+    "director": 140,
+    "decide": 155,
+    "react": 109,
+    "resolve": 30,
+    "narrate": 93,
+    "scenes": 343,
+    "checkpoint": 31,
+    "total": 781
+   }
+  },
+  {
+   "beat": 11,
+   "wall_ms": 782.8,
+   "sql": 295,
+   "sql_ms": 594.4,
+   "checkouts": 84,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 62,
+    "decide": 155,
+    "react": 0,
+    "resolve": 90,
+    "narrate": 140,
+    "scenes": 359,
+    "checkpoint": 15,
+    "total": 765
+   }
+  },
+  {
+   "beat": 12,
+   "wall_ms": 712.5,
+   "sql": 290,
+   "sql_ms": 533.4,
+   "checkouts": 84,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 62,
+    "decide": 140,
+    "react": 0,
+    "resolve": 96,
+    "narrate": 108,
+    "scenes": 296,
+    "checkpoint": 16,
+    "total": 687
+   }
+  },
+  {
+   "beat": 13,
+   "wall_ms": 808.2,
+   "sql": 310,
+   "sql_ms": 630.2,
+   "checkouts": 90,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 171,
+    "decide": 187,
+    "react": 0,
+    "resolve": 90,
+    "narrate": 109,
+    "scenes": 312,
+    "checkpoint": 16,
+    "total": 781
+   }
+  },
+  {
+   "beat": 14,
+   "wall_ms": 925.6,
+   "sql": 270,
+   "sql_ms": 745.1,
+   "checkouts": 75,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 219,
+    "decide": 141,
+    "react": 0,
+    "resolve": 93,
+    "narrate": 94,
+    "scenes": 344,
+    "checkpoint": 16,
+    "total": 905
+   }
+  },
+  {
+   "beat": 15,
+   "wall_ms": 720.2,
+   "sql": 289,
+   "sql_ms": 552.7,
+   "checkouts": 84,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 62,
+    "decide": 139,
+    "react": 0,
+    "resolve": 93,
+    "narrate": 125,
+    "scenes": 312,
+    "checkpoint": 16,
+    "total": 687
+   }
+  },
+  {
+   "beat": 16,
+   "wall_ms": 845.6,
+   "sql": 303,
+   "sql_ms": 649.1,
+   "checkouts": 90,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 156,
+    "decide": 172,
+    "react": 0,
+    "resolve": 96,
+    "narrate": 125,
+    "scenes": 359,
+    "checkpoint": 15,
+    "total": 812
+   }
+  },
+  {
+   "beat": 17,
+   "wall_ms": 710.9,
+   "sql": 289,
+   "sql_ms": 529.3,
+   "checkouts": 84,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 78,
+    "decide": 155,
+    "react": 0,
+    "resolve": 93,
+    "narrate": 108,
+    "scenes": 280,
+    "checkpoint": 15,
+    "total": 687
+   }
+  },
+  {
+   "beat": 18,
+   "wall_ms": 814.7,
+   "sql": 296,
+   "sql_ms": 611.5,
+   "checkouts": 84,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 92,
+    "decide": 187,
+    "react": 0,
+    "resolve": 122,
+    "narrate": 125,
+    "scenes": 328,
+    "checkpoint": 16,
+    "total": 797
+   }
+  },
+  {
+   "beat": 19,
+   "wall_ms": 931.5,
+   "sql": 339,
+   "sql_ms": 734.4,
+   "checkouts": 112,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 171,
+    "decide": 203,
+    "react": 0,
+    "resolve": 90,
+    "narrate": 62,
+    "scenes": 265,
+    "day_end": 203,
+    "total": 922
+   }
+  },
+  {
+   "beat": 20,
+   "wall_ms": 789.7,
+   "sql": 302,
+   "sql_ms": 610.2,
+   "checkouts": 84,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 62,
+    "decide": 141,
+    "react": 0,
+    "resolve": 90,
+    "narrate": 140,
+    "scenes": 359,
+    "checkpoint": 15,
+    "total": 765
+   }
+  },
+  {
+   "beat": 21,
+   "wall_ms": 786.8,
+   "sql": 287,
+   "sql_ms": 491.0,
+   "checkouts": 92,
+   "scenes": 2,
+   "timings": {
+    "probe": 0,
+    "director": 47,
+    "decide": 140,
+    "react": 125,
+    "resolve": 48,
+    "narrate": 94,
+    "scenes": 375,
+    "checkpoint": 14,
+    "total": 764
+   }
+  },
+  {
+   "beat": 22,
+   "wall_ms": 823.4,
+   "sql": 299,
+   "sql_ms": 535.6,
+   "checkouts": 100,
+   "scenes": 2,
+   "timings": {
+    "probe": 0,
+    "director": 140,
+    "decide": 187,
+    "react": 125,
+    "resolve": 64,
+    "narrate": 94,
+    "scenes": 359,
+    "checkpoint": 0,
+    "total": 796
+   }
+  },
+  {
+   "beat": 23,
+   "wall_ms": 804.9,
+   "sql": 288,
+   "sql_ms": 500.3,
+   "checkouts": 92,
+   "scenes": 2,
+   "timings": {
+    "probe": 0,
+    "director": 62,
+    "decide": 155,
+    "react": 108,
+    "resolve": 32,
+    "narrate": 94,
+    "scenes": 358,
+    "checkpoint": 14,
+    "total": 780
+   }
+  },
+  {
+   "beat": 24,
+   "wall_ms": 742.0,
+   "sql": 270,
+   "sql_ms": 546.3,
+   "checkouts": 75,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 78,
+    "decide": 171,
+    "react": 0,
+    "resolve": 90,
+    "narrate": 62,
+    "scenes": 250,
+    "checkpoint": 16,
+    "total": 719
+   }
+  },
+  {
+   "beat": 25,
+   "wall_ms": 853.8,
+   "sql": 302,
+   "sql_ms": 567.6,
+   "checkouts": 98,
+   "scenes": 2,
+   "timings": {
+    "probe": 0,
+    "director": 140,
+    "decide": 171,
+    "react": 125,
+    "resolve": 32,
+    "narrate": 93,
+    "scenes": 375,
+    "checkpoint": 16,
+    "total": 828
+   }
+  },
+  {
+   "beat": 26,
+   "wall_ms": 810.5,
+   "sql": 284,
+   "sql_ms": 495.1,
+   "checkouts": 94,
+   "scenes": 2,
+   "timings": {
+    "probe": 0,
+    "director": 46,
+    "decide": 140,
+    "react": 141,
+    "resolve": 77,
+    "narrate": 77,
+    "scenes": 389,
+    "checkpoint": 16,
+    "total": 796
+   }
+  },
+  {
+   "beat": 27,
+   "wall_ms": 1066.4,
+   "sql": 291,
+   "sql_ms": 884.6,
+   "checkouts": 94,
+   "scenes": 2,
+   "timings": {
+    "probe": 0,
+    "director": 62,
+    "decide": 328,
+    "react": 140,
+    "resolve": 46,
+    "narrate": 109,
+    "scenes": 421,
+    "checkpoint": 16,
+    "total": 1046
+   }
+  },
+  {
+   "beat": 28,
+   "wall_ms": 960.0,
+   "sql": 307,
+   "sql_ms": 623.1,
+   "checkouts": 105,
+   "scenes": 2,
+   "timings": {
+    "probe": 0,
+    "director": 171,
+    "decide": 296,
+    "react": 125,
+    "resolve": 32,
+    "narrate": 94,
+    "scenes": 344,
+    "checkpoint": 0,
+    "total": 922
+   }
+  },
+  {
+   "beat": 29,
+   "wall_ms": 1055.4,
+   "sql": 355,
+   "sql_ms": 695.9,
+   "checkouts": 127,
+   "scenes": 2,
+   "timings": {
+    "probe": 0,
+    "director": 77,
+    "decide": 202,
+    "react": 125,
+    "resolve": 30,
+    "narrate": 93,
+    "scenes": 358,
+    "day_end": 203,
+    "total": 1032
+   }
+  },
+  {
+   "beat": 30,
+   "wall_ms": 833.9,
+   "sql": 290,
+   "sql_ms": 685.0,
+   "checkouts": 85,
+   "scenes": 3,
+   "timings": {
+    "probe": 0,
+    "director": 155,
+    "decide": 187,
+    "react": 0,
+    "resolve": 124,
+    "narrate": 140,
+    "scenes": 375,
+    "checkpoint": 15,
+    "total": 812
+   }
+  }
+ ],
+ "calls": {
+  "director": 10,
+  "character": 92,
+  "reaction": 52,
+  "narrator": 65,
+  "resolver": 4,
+  "summary": 18
+ },
+ "top_tables": [
+  [
+   "world_event",
+   654
+  ],
+  [
+   "model_call",
+   559
+  ],
+  [
+   "character",
+   468
+  ],
+  [
+   "observation",
+   431
+  ],
+  [
+   "user_command",
+   428
+  ],
+  [
+   "location",
+   401
+  ],
+  [
+   "phase_run",
+   389
+  ],
+  [
+   "world_clock",
+   341
+  ],
+  [
+   "aggregate_version",
+   331
+  ],
+  [
+   "dnd_party_member",
+   324
+  ],
+  [
+   "narration",
+   323
+  ],
+  [
+   "character_intent",
+   316
+  ],
+  [
+   "scene",
+   289
+  ],
+  [
+   "world_config",
+   271
+  ],
+  [
+   "task_run",
+   252
+  ],
+  [
+   "activity",
+   241
+  ],
+  [
+   "context_manifest",
+   241
+  ],
+  [
+   "model_cost",
+   241
+  ],
+  [
+   "attempt",
+   225
+  ],
+  [
+   "recent_memory",
+   212
+  ],
+  [
+   "scene_participant",
+   212
+  ],
+  [
+   "world",
+   181
+  ],
+  [
+   "narrative_hook",
+   181
+  ],
+  [
+   "character_intention",
+   178
+  ],
+  [
+   "item_instance",
+   161
+  ]
+ ],
+ "by_caller": {},
+ "checkpoints": {
+  "rows": 30,
+  "stored_bytes": 83176,
+  "json_bytes": 242238,
+  "table_bytes": 163840,
+  "prune_noop_ms_p50": 5.1
+ }
+}

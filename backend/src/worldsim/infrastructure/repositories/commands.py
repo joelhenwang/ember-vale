@@ -2,15 +2,34 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import DateTime, bindparam, select, text
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.exc import IntegrityError as SqlIntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from worldsim.domain.errors import DomainError, ErrorCode
 from worldsim.infrastructure.models.commands import UserCommandRow
 from worldsim.infrastructure.repositories._common import missing
+
+# Plain SQL built once: the Core insert with ON CONFLICT is not cacheable, so
+# it compiled on every commit (perf-turn-002).
+_ADD_NEW = text(
+    "INSERT INTO user_command (id, world_id, idempotency_key, actor_role, command_type,"
+    " schema_version, expected_versions, payload, input_hash, created_at)"
+    " VALUES (:id, :world_id, :key, :actor_role, :command_type, 1, :expected_versions,"
+    " :payload, :input_hash, :created_at)"
+    " ON CONFLICT ON CONSTRAINT uq_command_world_key DO NOTHING RETURNING id"
+).bindparams(
+    bindparam("id", type_=PG_UUID(as_uuid=True)),
+    bindparam("world_id", type_=PG_UUID(as_uuid=True)),
+    bindparam("expected_versions", type_=JSONB),
+    bindparam("payload", type_=JSONB),
+    bindparam("created_at", type_=DateTime(timezone=True)),
+)
 
 
 class SqlAlchemyCommandRepository:
@@ -72,6 +91,37 @@ class SqlAlchemyCommandRepository:
                     f"duplicate command key: {key}",
                 ) from exc
             raise
+
+    async def add_new(
+        self,
+        command_id: UUID,
+        world_id: UUID,
+        key: str,
+        actor_role: str,
+        command_type: str,
+        expected_versions: dict[str, int],
+        payload: dict[str, object],
+        input_hash: str,
+    ) -> bool:
+        """Record the command unless its key is already taken: True when this
+        call recorded it. One statement where get_by_key then add took two
+        (perf-turn-002); a key taken by a transaction still open waits for it,
+        as the unique index did."""
+        recorded = await self._session.execute(
+            _ADD_NEW,
+            {
+                "id": command_id,
+                "world_id": world_id,
+                "key": key,
+                "actor_role": actor_role,
+                "command_type": command_type,
+                "expected_versions": dict(expected_versions),
+                "payload": dict(payload),
+                "input_hash": input_hash,
+                "created_at": datetime.now(UTC),
+            },
+        )
+        return recorded.first() is not None
 
     async def set_result(self, command_id: UUID, event_id: UUID) -> None:
         row = await self._session.get(UserCommandRow, command_id)

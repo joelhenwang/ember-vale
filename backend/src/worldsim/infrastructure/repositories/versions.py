@@ -19,6 +19,33 @@ from worldsim.infrastructure.models.versions import AggregateVersionRow
 class SqlAlchemyVersionStore:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
+        # Rows this store locked FOR UPDATE, and the transaction holding the
+        # locks: a bump in that same transaction needs no second read.
+        self._locked: dict[UUID, AggregateVersionRow] = {}
+        self._locked_in: object | None = None
+
+    async def _lock(self, ordered: list[UUID]) -> dict[UUID, AggregateVersionRow]:
+        """The rows, locked FOR UPDATE in canonical order. Rows this
+        transaction already locked are not read again (perf-turn-002: the
+        canonical commit checks its aggregates, then bumps some of them)."""
+        transaction = self._session.sync_session.get_transaction()
+        if transaction is not None and transaction is self._locked_in:
+            if all(aggregate_id in self._locked for aggregate_id in ordered):
+                return {aggregate_id: self._locked[aggregate_id] for aggregate_id in ordered}
+        else:
+            self._locked = {}
+            self._locked_in = transaction
+        rows = (
+            await self._session.execute(
+                select(AggregateVersionRow)
+                .where(AggregateVersionRow.aggregate_id.in_(ordered))
+                .order_by(AggregateVersionRow.aggregate_id)
+                .with_for_update()
+            )
+        ).scalars()
+        locked = {row.aggregate_id: row for row in rows}
+        self._locked.update(locked)
+        return locked
 
     async def get(self, aggregate_id: UUID) -> int | None:
         row = await self._session.get(AggregateVersionRow, aggregate_id)
@@ -35,15 +62,7 @@ class SqlAlchemyVersionStore:
 
     async def compare_and_bump(self, expected: dict[UUID, int]) -> dict[UUID, int]:
         ordered = canonical_order(list(expected))
-        rows = (
-            await self._session.execute(
-                select(AggregateVersionRow)
-                .where(AggregateVersionRow.aggregate_id.in_(ordered))
-                .order_by(AggregateVersionRow.aggregate_id)
-                .with_for_update()
-            )
-        ).scalars()
-        locked = {row.aggregate_id: row for row in rows}
+        locked = await self._lock(ordered)
         for aggregate_id in ordered:
             if aggregate_id not in locked:
                 raise DomainError(
@@ -70,15 +89,7 @@ class SqlAlchemyVersionStore:
         partners) must not drift the store ahead of their rows.
         """
         ordered = canonical_order(list(expected))
-        rows = (
-            await self._session.execute(
-                select(AggregateVersionRow)
-                .where(AggregateVersionRow.aggregate_id.in_(ordered))
-                .order_by(AggregateVersionRow.aggregate_id)
-                .with_for_update()
-            )
-        ).scalars()
-        locked = {row.aggregate_id: row for row in rows}
+        locked = await self._lock(ordered)
         for aggregate_id in ordered:
             if aggregate_id not in locked:
                 raise DomainError(

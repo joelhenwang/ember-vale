@@ -1802,7 +1802,9 @@ class Stage1Orchestrator:
             # and recruit tags (monsters, hit points), not safe side by side.
             async with self._factory() as uow:
                 party = bool(await uow.party.list_for_world(world_id))
-            budgets = [await self._over_budget(world_id, run_id) for _scene in scenes]
+            # One answer for every scene: no model call runs in between
+            # (it was asked once per scene, perf-turn-002).
+            budgets = [await self._over_budget(world_id, run_id)] * len(scenes)
             if party or len(scenes) < 2:
                 for scene in scenes:
                     outcomes.append(
@@ -2136,7 +2138,7 @@ class Stage1Orchestrator:
         """True when this run already spent its model-call budget."""
         async with self._factory() as uow:
             config = await uow.worlds.get_config(world_id)
-            spent = len(await uow.traces.list_for_phase_run(run_id))
+            spent = await uow.traces.count_for_phase_run(run_id)
         raw = config.get("model.max_calls_per_phase")
         budget = int(raw) if isinstance(raw, int) else 32
         return spent >= max(1, budget)
@@ -3470,8 +3472,14 @@ class Stage1Orchestrator:
 
     async def _answered(self, world_id: UUID, character: Character) -> list[Exchange]:
         """This character's recently answered exchanges, newest first."""
+        # The clock from the phase's shared view when there is one (it was
+        # read once per decision, perf-turn-002), else from the store.
+        shared = (await self._world_view(world_id)).now_index if phase_reads.active() else None
         async with self._factory() as uow:
-            _day, _phase, now_index = await uow.worlds.get_clock(world_id)
+            if shared is None:
+                _day, _phase, now_index = await uow.worlds.get_clock(world_id)
+            else:
+                now_index = shared
             observations = await uow.perception.observations_for_observer(
                 character.id,
                 100000,
@@ -5526,8 +5534,12 @@ class Stage1Orchestrator:
             return "failed"
         source = "narrated" if not result["proposal"]["fallback"] else "fallback"
         async with self._factory() as uow:
-            for beat_json in result["proposal"]["beats"]:
-                await uow.scenes.save_narration(NarrationBeat.model_validate(beat_json))
+            await uow.scenes.save_narrations(
+                [
+                    NarrationBeat.model_validate(beat_json)
+                    for beat_json in result["proposal"]["beats"]
+                ]
+            )
             await uow.scenes.save_narration_status(scene.id, source)
             await uow.commit()
             beat_texts = [
@@ -5565,14 +5577,15 @@ class Stage1Orchestrator:
     ) -> None:
         """Persist deterministic beats with their source, atomically."""
         async with self._factory() as uow:
-            for beat in fallback_beats(
-                world_id=world_id,
-                scene_id=scene.id,
-                event_id=event_id,
-                visible_facts=facts,
-                beats_budget=scene.beat_budget,
-            ):
-                await uow.scenes.save_narration(beat)
+            await uow.scenes.save_narrations(
+                fallback_beats(
+                    world_id=world_id,
+                    scene_id=scene.id,
+                    event_id=event_id,
+                    visible_facts=facts,
+                    beats_budget=scene.beat_budget,
+                )
+            )
             await uow.scenes.save_narration_status(scene.id, source)
             await uow.commit()
 
@@ -5860,8 +5873,8 @@ class Stage1Orchestrator:
                                 random_result=log or None,
                             )
                         )
-                        for beat in report.beats:
-                            await uow.scenes.save_narration(
+                        await uow.scenes.save_narrations(
+                            [
                                 NarrationBeat(
                                     id=new_narration_id(),
                                     world_id=world_id,
@@ -5870,7 +5883,9 @@ class Stage1Orchestrator:
                                     cited_fact_keys=list(beat.cited),
                                     text=beat.text,
                                 )
-                            )
+                                for beat in report.beats
+                            ]
+                        )
                         await uow.commit()
                     return "resolved"
                 except DomainError as exc:
