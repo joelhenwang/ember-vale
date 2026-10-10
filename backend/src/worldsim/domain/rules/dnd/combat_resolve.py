@@ -755,6 +755,7 @@ def resolve_narration_tags(
     if strike_back and not on_now:
         come_to()
 
+    opened_here: set[str] = set()
     for match in _TAG_RE.finditer(text):
         kind, inner = match.group(1).upper(), match.group(2).strip()
         line_end = text.find("\n", match.end())
@@ -764,6 +765,13 @@ def resolve_narration_tags(
             if not refs:
                 unresolved.append(match.group(0))
                 continue
+            # A kind this scene already opened is the same foes told again,
+            # not more of them: Venice wrote ENCOUNTER[2x wolf] twice in one
+            # scene and four wolves came at a level-1 pair (watched-party-001).
+            refs = [ref for ref in refs if ref.index not in opened_here]
+            if not refs:
+                continue
+            opened_here.update(ref.index for ref in refs)
             # The tag counts fewer than the prose tells ("Two goblins burst in"
             # under ENCOUNTER[goblin]): the prose is what the reader saw.
             refs = [

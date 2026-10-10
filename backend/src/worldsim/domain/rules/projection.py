@@ -28,6 +28,11 @@ def apply_character_effect(character: Character, effect: DomainEffect) -> Charac
     if isinstance(effect, ResourceAdjustedEffect):
         current = character.stamina if effect.resource is ResourceKind.STAMINA else character.mana
         rested = current + effect.delta
+        if effect.delta > 0:
+            # Recovery stops at the cap, as ``restore`` plans it: two gains in
+            # one scene (a rest and the resolver's own +stamina) summed past
+            # it and failed a live turn with 500 (fights-deepseek-001).
+            rested = min(rested, 100)
         if not 0 <= rested <= 100:
             raise DomainError(
                 ErrorCode.INVARIANT_VIOLATED,

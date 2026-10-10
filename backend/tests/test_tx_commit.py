@@ -298,13 +298,15 @@ def test_a_plan_from_an_older_row_is_a_version_conflict_not_out_of_bounds(
             await tx.commit(_tick_request(wid, cid, run_id, "tick-1"))  # character v1, 75
             # The request reads the row fresh (v1); the rest was planned at v0.
             stale = _tick_request(wid, cid, run_id, "tick-2", versions={str(wid): 1, str(cid): 1})
-            rest = ResourceAdjustedEffect(
+            # A gain past the cap now stops at it (fights-deepseek-001), so the
+            # stale plan here is a cost: fine from the older row, below 0 now.
+            cost = ResourceAdjustedEffect(
                 affected_ids=[cid],
                 expected_versions={str(cid): 0},
                 resource=ResourceKind.STAMINA,
-                delta=30,  # planned from an older 70: fine then, 105 now
+                delta=-80,  # planned from an older 100: fine then, -5 now
             )
-            stale = dataclasses.replace(stale, effects=[stale.effects[0], rest])
+            stale = dataclasses.replace(stale, effects=[stale.effects[0], cost])
             with pytest.raises(DomainError) as excinfo:
                 await tx.commit(stale)
             assert excinfo.value.code is ErrorCode.VERSION_CONFLICT

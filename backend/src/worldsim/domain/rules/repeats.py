@@ -98,15 +98,25 @@ def repeated(
     ``similarity`` maps an exchange's position to the cosine between its
     line and the new one, when local embeddings are at hand.
     """
-    best: tuple[float, Exchange] | None = None
+    found = repeats(line, exchanges, similarity)
+    return found[0] if found else None
+
+
+def repeats(
+    line: str,
+    exchanges: Sequence[Exchange],
+    similarity: Mapping[int, float] | None = None,
+) -> list[Exchange]:
+    """Every answered exchange a new line repeats, closest first: more than
+    one means the character keeps coming back to the same matter."""
+    scored: list[tuple[float, int, Exchange]] = []
     for position, exchange in enumerate(exchanges):
         score = overlap(line, exchange.said)
         cosine = (similarity or {}).get(position, 0.0)
         if score >= REPEAT_OVERLAP or cosine >= REPEAT_SIMILARITY:
-            strength = max(score, cosine)
-            if best is None or strength > best[0]:
-                best = (strength, exchange)
-    return best[1] if best else None
+            scored.append((max(score, cosine), position, exchange))
+    scored.sort(key=lambda item: (-item[0], item[1]))
+    return [exchange for _score, _position, exchange in scored]
 
 
 def settled_note(exchanges: Sequence[Exchange]) -> str:
@@ -115,10 +125,23 @@ def settled_note(exchanges: Sequence[Exchange]) -> str:
     return f"Already asked and answered (build on these, do not ask again): {items}."
 
 
-def retry_note(line: str, exchange: Exchange) -> str:
+#: Coming back to the same matter this often is a loop: talking is off the
+#: table for the turn (watched-party-001: "asking the townsfolk about the
+#: empty stalls", agreed and re-agreed eight turns running, never done).
+LOOP_TIMES = 2
+
+
+def retry_note(line: str, exchange: Exchange, times: int = 1) -> str:
     """The check: a pointed note for a second try after a repeat."""
-    return (
+    note = (
         f'You were about to say "{line}", but you already said "{exchange.said}" to '
         f"{exchange.to} and heard {exchange.answer} Say something new, act on what you "
         "heard, or do something else."
     )
+    if times >= LOOP_TIMES:
+        note += (
+            f" You have come back to this {times} times already: talking about it again "
+            "changes nothing. This turn, do not talk: do it (go somewhere, try something "
+            "with your hands, look around for what you need) or turn to something else."
+        )
+    return note

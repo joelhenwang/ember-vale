@@ -452,6 +452,15 @@ def test_long_talk_is_noticed_and_the_story_so_far_reaches_the_director(
     ids = asyncio.run(_seed_two())
     base = _route_for(ids, {})
 
+    # Always talk, each time of something new: the same line said again
+    # through its retry now goes unsaid (watched-party-001), which is not
+    # what this test is about.
+    subjects = iter(
+        f"{a} {b}"
+        for a in ("harvest", "mill", "river", "winter", "market", "forest", "bridge")
+        for b in ("songs", "prices", "weather", "rumours", "debts", "travellers")
+    )
+
     def route(request: CompletionRequest) -> str | None:
         system = request.system or ""
         if "You direct" in system:
@@ -459,8 +468,9 @@ def test_long_talk_is_noticed_and_the_story_so_far_reaches_the_director(
         if "You decide" in system:
             wren = "<<untrusted:identity>>Wren" in request.prompt
             target = ids["ash"] if wren else ids["wren"]
+            topic = next(subjects)
             return json.dumps(
-                {"family": "communicate", "target_character_id": str(target), "topic": "the tale"}
+                {"family": "communicate", "target_character_id": str(target), "topic": topic}
             )
         return base(request)
 

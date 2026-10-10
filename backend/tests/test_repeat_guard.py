@@ -183,3 +183,78 @@ def test_a_reply_that_repeats_an_answered_question_gets_one_retry(
     assert "Already asked and answered" in replies[0]
     assert 'You were about to say "What brings you to the vale?"' in replies[1]
     assert "The harvest fair, and a debt to settle." in replies[1]
+
+
+def test_coming_back_to_the_same_matter_is_called_a_loop() -> None:
+    from worldsim.domain.rules.repeats import repeats
+
+    talk = [
+        Exchange(1, "Let's ask the townsfolk about the empty stalls", "Ash", "Ash: Yes."),
+        Exchange(2, "We should ask the townsfolk why the stalls are empty", "Ash", "Ash: Agreed."),
+        Exchange(3, "Shall we walk to the mill?", "Ash", "Ash: Later."),
+    ]
+    found = repeats("asking the townsfolk about the empty stalls", talk)
+    assert [e.phase for e in found] == [1, 2]
+    once = retry_note("asking the townsfolk", found[0], 1)
+    assert "do not talk" not in once
+    looped = retry_note("asking the townsfolk", found[0], len(found))
+    assert "come back to this 2 times" in looped and "This turn, do not talk" in looped
+
+
+def test_a_repeat_said_again_after_the_retry_goes_unsaid(
+    client: tuple[ApiClient, FakeGateway],
+) -> None:
+    from sqlalchemy import text
+
+    from worldsim.infrastructure.db.engine import create_engine
+
+    api, gateway = client
+    ids = asyncio.run(_seed_two_at_hearth())
+    base = _route_for(ids, {})
+    question = "What brings you to the vale?"
+
+    def route(request: CompletionRequest) -> str | None:
+        system, prompt = request.system or "", request.prompt
+        wren = "<<untrusted:identity>>Wren" in prompt
+        if "You decide" in system and wren:
+            # Told it repeats, Wren asks again anyway (Venice did, live).
+            return json.dumps(
+                {"family": "communicate", "target_character_id": str(ids["ash"]), "topic": question}
+            )
+        if "You decide" in system:
+            return json.dumps({"family": "wait"})
+        if "You react" in system and not wren:
+            index = 1 if "Day 1, sunrise" in prompt and "Day 1, morning" not in prompt else 2
+            return json.dumps(
+                {
+                    "character_id": str(ids["ash"]),
+                    "snapshot_id": str(derive_snapshot_id(derive_run_id(ids["world"], index))),
+                    "family": "communicate",
+                    "target_character_id": str(ids["wren"]),
+                    "topic": '"The harvest fair, and a debt to settle."',
+                }
+            )
+        return base(request)
+
+    gateway.route = route
+    assert _advance(api, ids["world"], 1).status_code == 200
+    assert _advance(api, ids["world"], 2).status_code == 200
+
+    async def families() -> list[str]:
+        engine = create_engine(Settings())
+        try:
+            async with engine.connect() as conn:
+                rows = await conn.execute(
+                    text(
+                        "SELECT i.family FROM character_intent i JOIN phase_run r "
+                        "ON r.id = i.phase_run_id WHERE i.author_character_id = :who "
+                        "ORDER BY r.absolute_index"
+                    ),
+                    {"who": ids["wren"]},
+                )
+                return [str(row[0]) for row in rows]
+        finally:
+            await engine.dispose()
+
+    # Turn 1 asks; turn 2 asked again through the retry, so Wren looks around.
+    assert asyncio.run(families()) == ["communicate", "observe"]

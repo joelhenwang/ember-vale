@@ -104,3 +104,17 @@ def test_world_tick_projects_calendar() -> None:
     )
     assert (ticked.day, ticked.phase.value) == (1, "midnight")
     assert ticked.version == view.world.version + 1
+
+
+def test_a_gain_past_the_cap_stops_at_it() -> None:
+    # A rest and the resolver's own +stamina in one scene summed to 103 and
+    # failed a live turn (fights-deepseek-001); recovery stops at the cap.
+    view = make_world_view(stamina=95, mana=38)
+    wren = view.characters[0]
+    effect = ResourceAdjustedEffect(
+        affected_ids=[wren.id],
+        expected_versions={str(wren.id): wren.version},
+        resource=ResourceKind.STAMINA,
+        delta=8,
+    )
+    assert apply_character_effect(wren, effect).stamina == 100

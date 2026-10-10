@@ -824,3 +824,16 @@ def test_a_levels_spell_swaps_are_of_the_same_spell_level() -> None:
         picked = {int(DATA["spells"][s].get("level", 0)) for s in choice.picked}
         offered = {int(DATA["spells"][s].get("level", 0)) for s in choice.options}
         assert offered <= picked, (picked, offered)
+
+
+def test_a_kind_opened_twice_in_one_scene_is_the_same_foes() -> None:
+    # Venice wrote ENCOUNTER[2x wolf] twice in one scene and four wolves came
+    # at a level-1 pair (watched-party-001).
+    text = (
+        "ENCOUNTER[2x wolf]: Two wolves slink out of the trees.\n"
+        "The wolves circle, growling.\n"
+        "ENCOUNTER[2x wolf]: Two wolves close in."
+    )
+    report = resolve_narration_tags(text, [_wren()], DATA, _rng(0.5))
+    opened = [o for o in report.outcomes if o.kind == "encounter"]
+    assert len(opened) == 1 and opened[0].target == "Wolf 1, Wolf 2"

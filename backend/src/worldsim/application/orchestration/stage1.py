@@ -325,7 +325,7 @@ from worldsim.domain.rules.phases import is_quiet_phase
 from worldsim.domain.rules.repeats import (
     Exchange,
     answered_exchanges,
-    repeated,
+    repeats,
     retry_note,
     settled_note,
 )
@@ -3363,12 +3363,19 @@ class Stage1Orchestrator:
         again = await self._repeats_answered(intent, answered)
         if again is not None:
             # Said and answered already: one more try with the answer in
-            # view. The second answer stands, repeat or not.
+            # view.
             retry_id = derive_task_id(run_id, "character:again", character.id)
             await self._track_task(world_id, retry_id, owner)
             result = await _attempt(retry_id, again)
             intent = Intent.model_validate(result["proposal"]["intent"])
             await self._finish_task(retry_id, owner, True)
+            if await self._repeats_answered(intent, answered) is not None:
+                # Told so and said again: the line goes unsaid and they look
+                # around instead. Venice re-said "asking the townsfolk about
+                # the empty stalls" through the note eight turns running
+                # (watched-party-001); a second answer used to stand.
+                look = ObserveAction(character_id=character.id, snapshot_id=sealed.snapshot_id)
+                intent = intent.model_copy(update={"action": look})
         await self._remember_intention(world_id, character.id, result.get("raw_response"))
         await self._finish_task(task_run_id, owner, True)
         if isinstance(intent.action, MoveAction) and (
@@ -3441,8 +3448,8 @@ class Stage1Orchestrator:
                 }
             except LocalModelsUnavailable:
                 similarity = None
-        exchange = repeated(line, answered, similarity)
-        return None if exchange is None else retry_note(line, exchange)
+        found = repeats(line, answered, similarity)
+        return retry_note(line, found[0], len(found)) if found else None
 
     async def _track_task(self, world_id: UUID, task_id: UUID, owner: str) -> None:
         """Audit-only task row for a character decision (recovery stays with commits)."""
