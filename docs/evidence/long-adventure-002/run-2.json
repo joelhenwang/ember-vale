@@ -1,0 +1,2466 @@
+[
+ {
+  "run": 1,
+  "world_id": "b05ef5f1-301c-4ca5-abae-d3189098e492",
+  "turns": [
+   {
+    "turn": 1,
+    "kind": "say",
+    "words": "Ash, the roads are getting dangerous. Will you join me as my companion?",
+    "status": 200,
+    "error": null,
+    "seconds": 9.3,
+    "day": 1,
+    "phase": "sunrise",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "68976fca-df68-4ffa-b7f3-598e3e4f637c",
+     "Wren": "68976fca-df68-4ffa-b7f3-598e3e4f637c"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow over the wooden benches and tables. Ash and Wren sit by the fire, the scent of burning logs mingling with the earthy aroma of the room. Wren turns to Ash, their eyes reflecting the dance of the flames. Wren leans in, their voice low and earnest, \"Ash, the roads are getting dangerous. Will you join me as my companion?\" Ash nods, their expression serious, \"Yes, I will come. The roads are indeed getting more perilous, and I believe we can help each other stay safe.\" Ash's gaze shifts to the door, a hint of determination in their eyes, \"We should discuss the market and how to prepare for the journey.\"",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      1,
+      "communicate",
+      "the market"
+     ]
+    ]
+   },
+   {
+    "turn": 2,
+    "kind": "do",
+    "words": "I look around the Hearth and listen for news of trouble.",
+    "status": 200,
+    "error": null,
+    "seconds": 13.5,
+    "day": 1,
+    "phase": "morning",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "68976fca-df68-4ffa-b7f3-598e3e4f637c",
+     "Wren": "68976fca-df68-4ffa-b7f3-598e3e4f637c"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow over the wooden benches and tables. The scent of burning logs mingles with the earthy aroma of the room. Ash, a human fighter, sits quietly, their eyes reflecting the dance of the flames. Wren, a human cleric, leans in, their voice low and earnest, as they look around the Hearth, listening for news of trouble. Ash waits, their presence a steady anchor in the room, as Wren's eyes scan the area, seeking any sign of impending danger.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      2,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 3,
+    "kind": "do",
+    "words": "I ask the people here whether anyone has been attacked on the roads.",
+    "status": 200,
+    "error": null,
+    "seconds": 13.6,
+    "day": 1,
+    "phase": "noon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "68976fca-df68-4ffa-b7f3-598e3e4f637c",
+     "Wren": "68976fca-df68-4ffa-b7f3-598e3e4f637c"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "Wren tries to ask the people here whether anyone has been attacked on the roads, their voice carrying a note of concern. Ash, in response, speaks to Wren about keeping an eye out for any signs of trouble as they travel, safety being their priority. Ash lingers by the door, counting the bells, their presence a silent promise of vigilance.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      3,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 4,
+    "kind": "go",
+    "words": "Market",
+    "status": 200,
+    "error": null,
+    "seconds": 9.8,
+    "day": 1,
+    "phase": "afternoon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035",
+     "Wren": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The bustling Market is alive with the hum of activity, the scent of fresh bread wafting through the air. Wren and Ash, both seasoned adventurers, step into the scene, their eyes scanning the crowd. Wren, with a mace at their hip, and Ash, with a longsword, move with purpose, their presence a silent promise of protection.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      4,
+      "move",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 5,
+    "kind": "do",
+    "words": "I ask the traders about the raiders troubling their carts.",
+    "status": 200,
+    "error": null,
+    "seconds": 17.4,
+    "day": 1,
+    "phase": "sunset",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035",
+     "Wren": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The Market buzzes with the scent of fresh bread and the hum of voices, the afternoon sun casting long shadows across the cobblestones. Wren and Ash, their weapons at the ready, step into the throng, their eyes scanning the crowd. Wren, with a mace at their hip, approaches a trader, while Ash lingers by the market stall, waiting.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      5,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 6,
+    "kind": "do",
+    "words": "I go looking for the goblins that raid the carts near the market.",
+    "status": 200,
+    "error": null,
+    "seconds": 13.6,
+    "day": 1,
+    "phase": "dusk",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035",
+     "Wren": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The Market hums with the scent of fresh bread and the hum of voices, the afternoon sun casting long shadows across the cobblestones. Wren and Ash, their weapons at the ready, step into the throng, their eyes scanning the crowd. Wren, with a mace at their hip, approaches a trader, while Ash lingers by the market stall. Wren tries to find the goblins that raid the carts near the market, their eyes darting through the crowd, but their search is only half successful. Ash waits patiently, their gaze steady and watchful, as they stand by the market stall. I'll accompany you, Wren. We'll keep each other safe.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      6,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 7,
+    "kind": "do",
+    "words": "If goblins are here, I draw my sword and attack the nearest one.",
+    "status": 200,
+    "error": null,
+    "seconds": 11.9,
+    "day": 1,
+    "phase": "evening",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 1,
+      "xp": 0,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035",
+     "Wren": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The Market hums with the scent of fresh bread and the hum of voices, the afternoon sun casting long shadows across the cobblestones. Wren and Ash, their weapons at the ready, step into the throng, their eyes scanning the crowd. Wren, with a mace at their hip, approaches a trader, while Ash lingers by the market stall. Wren's grip tightens on their mace, their eyes darting over the crowd, searching for any sign of goblins. They are ready to draw their sword and attack if they spot any. Ash stands by the market stall, their longsword at the ready, waiting for any sign of danger. They are prepared to defend themselves and their companion.",
+    "rolls": [
+     "Encounter: 2x Goblin (hard, 150 adjusted XP).",
+     "Wren misses Goblin 1 (5 vs AC 15).",
+     "Ash hits Goblin 1 for 8 slashing. (7->0 HP)",
+     "Goblin 2 misses Wren (6 vs AC 18).",
+     "Defeated Goblin 1: 200 XP, 100 each.",
+     "Goblin 1 left a scimitar."
+    ],
+    "fight": [
+     {
+      "foes": "[\"goblin-1\", \"goblin-2\"]",
+      "tags": "5",
+      "deeds": "1",
+      "helped": "1",
+      "unresolved": "0",
+      "scene_event_id": "98868a54-da19-4842-87ed-3d2ba5ac658a"
+     }
+    ],
+    "ash_chose": [
+     [
+      7,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 8,
+    "kind": "do",
+    "words": "I attack the nearest enemy.",
+    "status": 200,
+    "error": null,
+    "seconds": 11.0,
+    "day": 1,
+    "phase": "night",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 100,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 1,
+      "xp": 100,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word"
+      ]
+     }
+    ],
+    "foes": [
+     [
+      "Goblin 1",
+      0
+     ],
+     [
+      "Goblin 2",
+      7
+     ]
+    ],
+    "places": {
+     "Ash": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035",
+     "Wren": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The Market, once bustling with the scent of fresh bread and the hum of voices, is now a battleground. The afternoon sun casts long shadows across the cobblestones as Wren and Ash, their weapons drawn, face the remaining goblin. Ash's longsword gleams, ready to strike, while Wren's mace is poised for a decisive blow. Ash tries to draw their sword and attack the nearest goblin, their muscles tensing as they prepare for the strike. Ash lunges forward, their longsword slicing through the air with a swift and deadly arc. Wren, with a determined look, tries to attack the nearest enemy, their mace raised high. Wren swings their mace with a powerful strike, aiming to bring the goblin down.",
+    "rolls": [
+     "Ash misses Goblin 2 (9 vs AC 15).",
+     "Wren misses Goblin 2 (12 vs AC 15).",
+     "Goblin 2 misses Ash (7 vs AC 18)."
+    ],
+    "fight": [
+     {
+      "foes": "[\"goblin-1\", \"goblin-2\"]",
+      "tags": "3",
+      "deeds": "0",
+      "helped": "0",
+      "unresolved": "0",
+      "scene_event_id": "22fae68d-4def-4748-b285-0dc7c7b05d39"
+     }
+    ],
+    "ash_chose": [
+     [
+      8,
+      "interact",
+      "draw my sword and attack the nearest goblin"
+     ]
+    ]
+   },
+   {
+    "turn": 9,
+    "kind": "do",
+    "words": "I keep fighting beside Ash.",
+    "status": 200,
+    "error": null,
+    "seconds": 14.7,
+    "day": 1,
+    "phase": "midnight",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 100,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 1,
+      "xp": 100,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word"
+      ]
+     }
+    ],
+    "foes": [
+     [
+      "Goblin 1",
+      0
+     ],
+     [
+      "Goblin 2",
+      7
+     ]
+    ],
+    "places": {
+     "Ash": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035",
+     "Wren": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The Market, once a hub of commerce, now echoes with the clatter of steel and the grunts of combat. The afternoon sun casts long shadows across the cobblestones, where Wren and Ash stand, weapons drawn, facing the last goblin. Ash's longsword gleams, ready to strike, while Wren's mace is poised for a decisive blow. Wren tries to keep fighting beside Ash, their eyes locked on the goblin, their weapons at the ready. Ash picks up a scimitar, its curved blade catching the light as they prepare to strike.",
+    "rolls": [
+     "Wren misses Goblin 2 (13 vs AC 15).",
+     "Ash hits Goblin 2 for 5 slashing. (7->2 HP)",
+     "Goblin 2 misses Wren (16 vs AC 18)."
+    ],
+    "fight": [
+     {
+      "foes": "[\"goblin-1\", \"goblin-2\"]",
+      "tags": "3",
+      "deeds": "1",
+      "helped": "1",
+      "unresolved": "0",
+      "scene_event_id": "56e0fef6-3541-43c6-b01f-3c7412084404"
+     }
+    ],
+    "ash_chose": [
+     [
+      9,
+      "take",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 10,
+    "kind": "rest",
+    "words": "",
+    "status": 200,
+    "error": null,
+    "seconds": 15.2,
+    "day": 2,
+    "phase": "dawn",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 100,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 1,
+      "xp": 100,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word"
+      ]
+     }
+    ],
+    "foes": [
+     [
+      "Goblin 1",
+      0
+     ],
+     [
+      "Goblin 2",
+      2
+     ]
+    ],
+    "places": {
+     "Ash": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035",
+     "Wren": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "Ash lunges forward, their longsword flashing as they attempt to strike down the goblin. Wren, however, takes a moment to rest, their mace lowered as they catch their breath.",
+    "rolls": [
+     "Ash hits Goblin 2 for 6 slashing. (2->0 HP)",
+     "Defeated Goblin 2: 200 XP, 100 each.",
+     "Goblin 2 left a scimitar."
+    ],
+    "fight": [
+     {
+      "foes": "[\"goblin-1\", \"goblin-2\"]",
+      "tags": "2",
+      "deeds": "1",
+      "helped": "0",
+      "unresolved": "0",
+      "scene_event_id": "014b061a-49a7-4fc3-ad09-2cdfebb9331d"
+     }
+    ],
+    "ash_chose": [
+     [
+      10,
+      "interact",
+      "I attack Goblin 2 with my longsword"
+     ]
+    ]
+   },
+   {
+    "turn": 11,
+    "kind": "say",
+    "words": "Ash, are you hurt? We did well.",
+    "status": 200,
+    "error": null,
+    "seconds": 10.1,
+    "day": 2,
+    "phase": "sunrise",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035",
+     "Wren": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The Market is quiet after the skirmish, the morning sun casting long shadows over the cobblestones. Ash and Wren stand amidst the aftermath, their breaths steadying. Ash's longsword is sheathed, and Wren's mace rests at their side. The defeated goblins lie still, their threat neutralized. Wren turns to Ash, concern etched on their face, and asks if they are hurt, praising their teamwork. I'm fine, Wren. Just a few scratches. We did indeed do well. The goblins won't be bothering the traders for a while. Ash pauses, their gaze lingering on the fallen foes, before nodding in agreement, a hint of pride in their stance.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      11,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 12,
+    "kind": "go",
+    "words": "Hearth",
+    "status": 200,
+    "error": null,
+    "seconds": 10.1,
+    "day": 2,
+    "phase": "morning",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "68976fca-df68-4ffa-b7f3-598e3e4f637c",
+     "Wren": "68976fca-df68-4ffa-b7f3-598e3e4f637c"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The quiet of Hearth settles over Ash and Wren as they step away from the Market's aftermath, the cobblestones cool under their boots. The sun climbs higher, casting a gentle light over the hearth's stone walls. Ash's longsword is sheathed, and Wren's mace rests at their side, both weapons silent now. Wren turns to Ash, concern etched on their face, and they begin to walk towards Hearth.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      12,
+      "move",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 13,
+    "kind": "do",
+    "words": "I share a meal by the fire and tend to my wounds.",
+    "status": 200,
+    "error": null,
+    "seconds": 11.3,
+    "day": 2,
+    "phase": "noon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "68976fca-df68-4ffa-b7f3-598e3e4f637c",
+     "Wren": "68976fca-df68-4ffa-b7f3-598e3e4f637c"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The quiet of Hearth still lingers, the cobblestones cool underfoot as Ash and Wren step away from the Market's aftermath. The sun climbs higher, casting a gentle light over the hearth's stone walls. Wren turns to Ash, their mace resting at their side, and tries to share a meal by the fire and tend to their wounds. Ash lingers by the door, counting the bells, as they wait for Wren to finish their meal and tend to their wounds. As Wren finishes their meal, they look around, but no foes are found in Hearth. The party's search for a fight goes unanswered, and they remain undisturbed.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      13,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 14,
+    "kind": "rest",
+    "words": "",
+    "status": 200,
+    "error": null,
+    "seconds": 7.3,
+    "day": 2,
+    "phase": "afternoon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "68976fca-df68-4ffa-b7f3-598e3e4f637c",
+     "Wren": "68976fca-df68-4ffa-b7f3-598e3e4f637c"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The quiet of Hearth still lingers, the cobblestones cool underfoot as Ash and Wren step away from the Market's aftermath. The sun climbs higher, casting a gentle light over the hearth's stone walls. Ash lingers by the door, counting the bells, while Wren's mace rests at their side. The quiet of Hearth still lingers, the cobblestones cool underfoot as Wren and Ash step away from the Market's aftermath. The sun climbs higher, casting a gentle light over the hearth's stone walls. Wren, their mace resting at their side, seeks a moment of rest by the fire, the gentle crackle of the flames a soothing balm to their weary spirit.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      14,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 15,
+    "kind": "do",
+    "words": "I ask around about where the raiders make their camp.",
+    "status": 200,
+    "error": null,
+    "seconds": 9.2,
+    "day": 2,
+    "phase": "sunset",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "68976fca-df68-4ffa-b7f3-598e3e4f637c",
+     "Wren": "68976fca-df68-4ffa-b7f3-598e3e4f637c"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "Wren tries to ask around about where the raiders make their camp, but their inquiries only yield half the information they seek. Ash waits patiently, their eyes scanning the surroundings, ready to act when needed. Ash speaks to Wren about the raiders' camp location, sharing what they know and discussing their next steps.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      15,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 16,
+    "kind": "do",
+    "words": "I set out with Ash to find the goblin camp.",
+    "status": 200,
+    "error": null,
+    "seconds": 13.0,
+    "day": 2,
+    "phase": "dusk",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "68976fca-df68-4ffa-b7f3-598e3e4f637c",
+     "Wren": "68976fca-df68-4ffa-b7f3-598e3e4f637c"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow over the wooden benches and tables. Wren and Ash, their faces set with determination, stand ready to embark on their quest. The air is thick with anticipation as they prepare to set out. Ash, with a steady gaze, waits by the door, their hand resting on the hilt of their longsword. They are prepared to act at a moment's notice, their eyes scanning the surroundings for any sign of danger. Wren, with a firm nod, turns to Ash and says, \"Let's find the goblin camp and put an end to their raids.\"",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      16,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 17,
+    "kind": "do",
+    "words": "I attack the first goblin I see.",
+    "status": 200,
+    "error": null,
+    "seconds": 10.4,
+    "day": 2,
+    "phase": "evening",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 10,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "68976fca-df68-4ffa-b7f3-598e3e4f637c",
+     "Wren": "68976fca-df68-4ffa-b7f3-598e3e4f637c"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The hearth crackles in Hearth, casting a warm glow over the wooden benches and tables. Wren and Ash stand ready, their faces set with determination. Ash waits by the door, hand resting on the hilt of their longsword, while Wren's eyes scan the room, eager for a fight. Wren's gaze sharpens as they spot a goblin lurking in the shadows, a wicked grin on their face. The goblin's eyes gleam with malice, and they brandish a rusty dagger. Wren's hand tightens around their mace, ready to strike. A goblin steps forward, its dagger glinting in the firelight, challenging the adventurers. Wren charges at the goblin, their mace raised high, ready to bring it down with a mighty swing.",
+    "rolls": [
+     "Encounter: 2x Goblin (hard, 150 adjusted XP).",
+     "Ash hits Goblin 1 for 4 slashing. (7->3 HP)",
+     "Wren misses Goblin 1 (10 vs AC 15).",
+     "Goblin 1 misses Wren (17 vs AC 18).",
+     "Goblin 2 hits Wren for 5 slashing. (10->5 HP)"
+    ],
+    "fight": [
+     {
+      "foes": "[\"goblin-1\", \"goblin-2\"]",
+      "tags": "5",
+      "deeds": "0",
+      "helped": "1",
+      "unresolved": "0",
+      "scene_event_id": "18efc0e3-5cac-4848-84d8-26abdc99ad12"
+     }
+    ],
+    "ash_chose": [
+     [
+      17,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 18,
+    "kind": "say",
+    "words": "Ash, take the biggest one!",
+    "status": 200,
+    "error": null,
+    "seconds": 11.8,
+    "day": 2,
+    "phase": "night",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 12,
+      "hp_max": 12,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 1,
+      "xp": 200,
+      "hp_current": 5,
+      "hp_max": 10,
+      "conditions": [],
+      "choices": [],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word"
+      ]
+     }
+    ],
+    "foes": [
+     [
+      "Goblin 1",
+      3
+     ],
+     [
+      "Goblin 2",
+      7
+     ]
+    ],
+    "places": {
+     "Ash": "68976fca-df68-4ffa-b7f3-598e3e4f637c",
+     "Wren": "68976fca-df68-4ffa-b7f3-598e3e4f637c"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The hearth crackles in Hearth, casting a warm glow over the wooden benches and tables. Wren and Ash stand ready, their faces set with determination. Ash waits by the door, hand resting on the hilt of their longsword, while Wren's eyes scan the room, eager for a fight. Wren catches Ash's sleeve and urges, \"Ash, take the biggest one!\" Ash lingers by the door, counting the bells, as Wren's gaze sharpens, spotting a goblin lurking in the shadows.",
+    "rolls": [
+     "Ash hits Goblin 1 for 7 slashing. (3->0 HP)",
+     "Goblin 2 misses Ash (10 vs AC 18).",
+     "Defeated Goblin 1: 200 XP, 100 each.",
+     "Ash reaches level 2: +8 hit points.",
+     "Wren reaches level 2: +7 hit points."
+    ],
+    "fight": [
+     {
+      "foes": "[\"goblin-1\", \"goblin-2\"]",
+      "tags": "5",
+      "deeds": "0",
+      "helped": "1",
+      "unresolved": "0",
+      "scene_event_id": "84d7ed57-abff-4c63-9ac4-ad3c8f64437d"
+     }
+    ],
+    "ash_chose": [
+     [
+      18,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 19,
+    "kind": "do",
+    "words": "I attack the nearest enemy.",
+    "status": 200,
+    "error": null,
+    "seconds": 12.7,
+    "day": 2,
+    "phase": "midnight",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 300,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 2,
+      "xp": 300,
+      "hp_current": 12,
+      "hp_max": 17,
+      "conditions": [],
+      "choices": [
+       {
+        "id": "spells-2",
+        "kind": "spells",
+        "level": 2,
+        "picked": [
+         {
+          "key": "bane",
+          "name": "Bane",
+          "level": 1
+         }
+        ],
+        "options": [
+         {
+          "key": "mending",
+          "name": "Mending",
+          "level": 0
+         },
+         {
+          "key": "resistance",
+          "name": "Resistance",
+          "level": 0
+         },
+         {
+          "key": "spare-the-dying",
+          "name": "Spare the Dying",
+          "level": 0
+         },
+         {
+          "key": "thaumaturgy",
+          "name": "Thaumaturgy",
+          "level": 0
+         },
+         {
+          "key": "bane",
+          "name": "Bane",
+          "level": 1
+         },
+         {
+          "key": "bless",
+          "name": "Bless",
+          "level": 1
+         },
+         {
+          "key": "command",
+          "name": "Command",
+          "level": 1
+         },
+         {
+          "key": "create-or-destroy-water",
+          "name": "Create or Destroy Water",
+          "level": 1
+         },
+         {
+          "key": "detect-evil-and-good",
+          "name": "Detect Evil and Good",
+          "level": 1
+         },
+         {
+          "key": "detect-magic",
+          "name": "Detect Magic",
+          "level": 1
+         },
+         {
+          "key": "detect-poison-and-disease",
+          "name": "Detect Poison and Disease",
+          "level": 1
+         },
+         {
+          "key": "protection-from-evil-and-good",
+          "name": "Protection from Evil and Good",
+          "level": 1
+         },
+         {
+          "key": "purify-food-and-drink",
+          "name": "Purify Food and Drink",
+          "level": 1
+         },
+         {
+          "key": "sanctuary",
+          "name": "Sanctuary",
+          "level": 1
+         },
+         {
+          "key": "shield-of-faith",
+          "name": "Shield of Faith",
+          "level": 1
+         }
+        ]
+       }
+      ],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word",
+       "Bane"
+      ]
+     }
+    ],
+    "foes": [
+     [
+      "Goblin 1",
+      0
+     ],
+     [
+      "Goblin 2",
+      7
+     ]
+    ],
+    "places": {
+     "Ash": "68976fca-df68-4ffa-b7f3-598e3e4f637c",
+     "Wren": "68976fca-df68-4ffa-b7f3-598e3e4f637c"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "Wren tries to attack the nearest enemy, their mace raised and ready. Ash waits, their stance firm and alert, ready to respond to any threat. Wren lunges forward, aiming a strike at Goblin 2. Ash steps forward, their longsword flashing as they join the fray.",
+    "rolls": [
+     "Wren hits Goblin 2 for 5 bludgeoning. (7->2 HP)",
+     "Ash hits Goblin 2 for 10 slashing. (2->0 HP)",
+     "Defeated Goblin 2: 200 XP, 100 each."
+    ],
+    "fight": [
+     {
+      "foes": "[\"goblin-1\", \"goblin-2\"]",
+      "tags": "3",
+      "deeds": "0",
+      "helped": "0",
+      "unresolved": "0",
+      "scene_event_id": "fe508bca-6ee5-462d-b63b-68feef4735d4"
+     }
+    ],
+    "ash_chose": [
+     [
+      19,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 20,
+    "kind": "do",
+    "words": "I fight on until they are beaten.",
+    "status": 200,
+    "error": null,
+    "seconds": 16.7,
+    "day": 3,
+    "phase": "dawn",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 17,
+      "hp_max": 17,
+      "conditions": [],
+      "choices": [
+       {
+        "id": "spells-2",
+        "kind": "spells",
+        "level": 2,
+        "picked": [
+         {
+          "key": "bane",
+          "name": "Bane",
+          "level": 1
+         }
+        ],
+        "options": [
+         {
+          "key": "mending",
+          "name": "Mending",
+          "level": 0
+         },
+         {
+          "key": "resistance",
+          "name": "Resistance",
+          "level": 0
+         },
+         {
+          "key": "spare-the-dying",
+          "name": "Spare the Dying",
+          "level": 0
+         },
+         {
+          "key": "thaumaturgy",
+          "name": "Thaumaturgy",
+          "level": 0
+         },
+         {
+          "key": "bane",
+          "name": "Bane",
+          "level": 1
+         },
+         {
+          "key": "bless",
+          "name": "Bless",
+          "level": 1
+         },
+         {
+          "key": "command",
+          "name": "Command",
+          "level": 1
+         },
+         {
+          "key": "create-or-destroy-water",
+          "name": "Create or Destroy Water",
+          "level": 1
+         },
+         {
+          "key": "detect-evil-and-good",
+          "name": "Detect Evil and Good",
+          "level": 1
+         },
+         {
+          "key": "detect-magic",
+          "name": "Detect Magic",
+          "level": 1
+         },
+         {
+          "key": "detect-poison-and-disease",
+          "name": "Detect Poison and Disease",
+          "level": 1
+         },
+         {
+          "key": "protection-from-evil-and-good",
+          "name": "Protection from Evil and Good",
+          "level": 1
+         },
+         {
+          "key": "purify-food-and-drink",
+          "name": "Purify Food and Drink",
+          "level": 1
+         },
+         {
+          "key": "sanctuary",
+          "name": "Sanctuary",
+          "level": 1
+         },
+         {
+          "key": "shield-of-faith",
+          "name": "Shield of Faith",
+          "level": 1
+         }
+        ]
+       }
+      ],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word",
+       "Bane"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "68976fca-df68-4ffa-b7f3-598e3e4f637c",
+     "Wren": "68976fca-df68-4ffa-b7f3-598e3e4f637c"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The hearth crackles in the center of Hearth, casting a warm glow over the scene. Wren and Ash stand ready, their weapons at the ready, as the echoes of their previous battle still linger in the air. The defeated goblins lie motionless, a testament to their victory. Wren, their mace gripped tightly, tries to fight on, their eyes scanning the area for any sign of further threat. Ash, their longsword steady, waits, their stance firm and alert, ready to respond to any new danger. The party, having just defeated the goblins, looks around for another fight, their hearts pounding with the thrill of battle. However, the area remains quiet, with no new foes in sight.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      20,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 21,
+    "kind": "do",
+    "words": "I search the area for anything the raiders left behind.",
+    "status": 200,
+    "error": null,
+    "seconds": 14.2,
+    "day": 3,
+    "phase": "sunrise",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 17,
+      "hp_max": 17,
+      "conditions": [],
+      "choices": [
+       {
+        "id": "spells-2",
+        "kind": "spells",
+        "level": 2,
+        "picked": [
+         {
+          "key": "bane",
+          "name": "Bane",
+          "level": 1
+         }
+        ],
+        "options": [
+         {
+          "key": "mending",
+          "name": "Mending",
+          "level": 0
+         },
+         {
+          "key": "resistance",
+          "name": "Resistance",
+          "level": 0
+         },
+         {
+          "key": "spare-the-dying",
+          "name": "Spare the Dying",
+          "level": 0
+         },
+         {
+          "key": "thaumaturgy",
+          "name": "Thaumaturgy",
+          "level": 0
+         },
+         {
+          "key": "bane",
+          "name": "Bane",
+          "level": 1
+         },
+         {
+          "key": "bless",
+          "name": "Bless",
+          "level": 1
+         },
+         {
+          "key": "command",
+          "name": "Command",
+          "level": 1
+         },
+         {
+          "key": "create-or-destroy-water",
+          "name": "Create or Destroy Water",
+          "level": 1
+         },
+         {
+          "key": "detect-evil-and-good",
+          "name": "Detect Evil and Good",
+          "level": 1
+         },
+         {
+          "key": "detect-magic",
+          "name": "Detect Magic",
+          "level": 1
+         },
+         {
+          "key": "detect-poison-and-disease",
+          "name": "Detect Poison and Disease",
+          "level": 1
+         },
+         {
+          "key": "protection-from-evil-and-good",
+          "name": "Protection from Evil and Good",
+          "level": 1
+         },
+         {
+          "key": "purify-food-and-drink",
+          "name": "Purify Food and Drink",
+          "level": 1
+         },
+         {
+          "key": "sanctuary",
+          "name": "Sanctuary",
+          "level": 1
+         },
+         {
+          "key": "shield-of-faith",
+          "name": "Shield of Faith",
+          "level": 1
+         }
+        ]
+       }
+      ],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word",
+       "Bane"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "68976fca-df68-4ffa-b7f3-598e3e4f637c",
+     "Wren": "68976fca-df68-4ffa-b7f3-598e3e4f637c"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "Wren, their mace gripped tightly, tries to search the area for anything the raiders left behind, but finds nothing. Ash waits, their longsword at the ready, watching the surroundings with a vigilant eye.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      21,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 22,
+    "kind": "rest",
+    "words": "",
+    "status": 200,
+    "error": null,
+    "seconds": 8.1,
+    "day": 3,
+    "phase": "morning",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 17,
+      "hp_max": 17,
+      "conditions": [],
+      "choices": [
+       {
+        "id": "spells-2",
+        "kind": "spells",
+        "level": 2,
+        "picked": [
+         {
+          "key": "bane",
+          "name": "Bane",
+          "level": 1
+         }
+        ],
+        "options": [
+         {
+          "key": "mending",
+          "name": "Mending",
+          "level": 0
+         },
+         {
+          "key": "resistance",
+          "name": "Resistance",
+          "level": 0
+         },
+         {
+          "key": "spare-the-dying",
+          "name": "Spare the Dying",
+          "level": 0
+         },
+         {
+          "key": "thaumaturgy",
+          "name": "Thaumaturgy",
+          "level": 0
+         },
+         {
+          "key": "bane",
+          "name": "Bane",
+          "level": 1
+         },
+         {
+          "key": "bless",
+          "name": "Bless",
+          "level": 1
+         },
+         {
+          "key": "command",
+          "name": "Command",
+          "level": 1
+         },
+         {
+          "key": "create-or-destroy-water",
+          "name": "Create or Destroy Water",
+          "level": 1
+         },
+         {
+          "key": "detect-evil-and-good",
+          "name": "Detect Evil and Good",
+          "level": 1
+         },
+         {
+          "key": "detect-magic",
+          "name": "Detect Magic",
+          "level": 1
+         },
+         {
+          "key": "detect-poison-and-disease",
+          "name": "Detect Poison and Disease",
+          "level": 1
+         },
+         {
+          "key": "protection-from-evil-and-good",
+          "name": "Protection from Evil and Good",
+          "level": 1
+         },
+         {
+          "key": "purify-food-and-drink",
+          "name": "Purify Food and Drink",
+          "level": 1
+         },
+         {
+          "key": "sanctuary",
+          "name": "Sanctuary",
+          "level": 1
+         },
+         {
+          "key": "shield-of-faith",
+          "name": "Shield of Faith",
+          "level": 1
+         }
+        ]
+       }
+      ],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word",
+       "Bane"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "68976fca-df68-4ffa-b7f3-598e3e4f637c",
+     "Wren": "68976fca-df68-4ffa-b7f3-598e3e4f637c"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The morning sun casts a warm glow over Hearth, where the scent of fresh bread lingers in the air. Wren, their mace still gripped tightly, leans against a sturdy oak, catching their breath. Ash stands guard, their longsword at the ready, eyes scanning the horizon for any sign of danger. Wren takes a moment to rest, their shoulders relaxing as they exhale deeply, the tension from the search for raiders' traces finally easing. The morning sun casts a golden glow over Hearth, where the scent of fresh bread lingers in the air. Wren, their mace gripped tightly, scans the area, while Ash stands vigilant, their longsword at the ready, eyes scanning the surroundings. Ash remains on guard, their stance unwavering, as they continue to watch the area with a keen eye.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      22,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 23,
+    "kind": "go",
+    "words": "Market",
+    "status": 200,
+    "error": null,
+    "seconds": 7.3,
+    "day": 3,
+    "phase": "noon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 17,
+      "hp_max": 17,
+      "conditions": [],
+      "choices": [
+       {
+        "id": "spells-2",
+        "kind": "spells",
+        "level": 2,
+        "picked": [
+         {
+          "key": "bane",
+          "name": "Bane",
+          "level": 1
+         }
+        ],
+        "options": [
+         {
+          "key": "mending",
+          "name": "Mending",
+          "level": 0
+         },
+         {
+          "key": "resistance",
+          "name": "Resistance",
+          "level": 0
+         },
+         {
+          "key": "spare-the-dying",
+          "name": "Spare the Dying",
+          "level": 0
+         },
+         {
+          "key": "thaumaturgy",
+          "name": "Thaumaturgy",
+          "level": 0
+         },
+         {
+          "key": "bane",
+          "name": "Bane",
+          "level": 1
+         },
+         {
+          "key": "bless",
+          "name": "Bless",
+          "level": 1
+         },
+         {
+          "key": "command",
+          "name": "Command",
+          "level": 1
+         },
+         {
+          "key": "create-or-destroy-water",
+          "name": "Create or Destroy Water",
+          "level": 1
+         },
+         {
+          "key": "detect-evil-and-good",
+          "name": "Detect Evil and Good",
+          "level": 1
+         },
+         {
+          "key": "detect-magic",
+          "name": "Detect Magic",
+          "level": 1
+         },
+         {
+          "key": "detect-poison-and-disease",
+          "name": "Detect Poison and Disease",
+          "level": 1
+         },
+         {
+          "key": "protection-from-evil-and-good",
+          "name": "Protection from Evil and Good",
+          "level": 1
+         },
+         {
+          "key": "purify-food-and-drink",
+          "name": "Purify Food and Drink",
+          "level": 1
+         },
+         {
+          "key": "sanctuary",
+          "name": "Sanctuary",
+          "level": 1
+         },
+         {
+          "key": "shield-of-faith",
+          "name": "Shield of Faith",
+          "level": 1
+         }
+        ]
+       }
+      ],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word",
+       "Bane"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035",
+     "Wren": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The golden glow of the morning sun still lingers over Market, where the scent of fresh bread fills the air. Wren and Ash, having left Hearth, step into the bustling square, their weapons at the ready. Wren's mace and Ash's longsword glint in the sunlight, a silent promise of their vigilance.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      23,
+      "move",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 24,
+    "kind": "do",
+    "words": "I tell the traders the raiders are dealt with.",
+    "status": 200,
+    "error": null,
+    "seconds": 15.5,
+    "day": 3,
+    "phase": "afternoon",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 17,
+      "hp_max": 17,
+      "conditions": [],
+      "choices": [
+       {
+        "id": "spells-2",
+        "kind": "spells",
+        "level": 2,
+        "picked": [
+         {
+          "key": "bane",
+          "name": "Bane",
+          "level": 1
+         }
+        ],
+        "options": [
+         {
+          "key": "mending",
+          "name": "Mending",
+          "level": 0
+         },
+         {
+          "key": "resistance",
+          "name": "Resistance",
+          "level": 0
+         },
+         {
+          "key": "spare-the-dying",
+          "name": "Spare the Dying",
+          "level": 0
+         },
+         {
+          "key": "thaumaturgy",
+          "name": "Thaumaturgy",
+          "level": 0
+         },
+         {
+          "key": "bane",
+          "name": "Bane",
+          "level": 1
+         },
+         {
+          "key": "bless",
+          "name": "Bless",
+          "level": 1
+         },
+         {
+          "key": "command",
+          "name": "Command",
+          "level": 1
+         },
+         {
+          "key": "create-or-destroy-water",
+          "name": "Create or Destroy Water",
+          "level": 1
+         },
+         {
+          "key": "detect-evil-and-good",
+          "name": "Detect Evil and Good",
+          "level": 1
+         },
+         {
+          "key": "detect-magic",
+          "name": "Detect Magic",
+          "level": 1
+         },
+         {
+          "key": "detect-poison-and-disease",
+          "name": "Detect Poison and Disease",
+          "level": 1
+         },
+         {
+          "key": "protection-from-evil-and-good",
+          "name": "Protection from Evil and Good",
+          "level": 1
+         },
+         {
+          "key": "purify-food-and-drink",
+          "name": "Purify Food and Drink",
+          "level": 1
+         },
+         {
+          "key": "sanctuary",
+          "name": "Sanctuary",
+          "level": 1
+         },
+         {
+          "key": "shield-of-faith",
+          "name": "Shield of Faith",
+          "level": 1
+         }
+        ]
+       }
+      ],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word",
+       "Bane"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035",
+     "Wren": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "Wren turns to the traders, their voice steady and reassuring. \"The raiders have been dealt with,\" they say, \"you can rest easy now.\" Ash stands by, their presence a silent guard, as they wait for any sign of further trouble. Ash nods, turning to Wren with a look of relief. \"The raiders have been dealt with, traders can rest easy,\" they confirm, their voice carrying the weight of their shared victory.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      24,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 25,
+    "kind": "wait",
+    "words": "",
+    "status": 200,
+    "error": null,
+    "seconds": 12.3,
+    "day": 3,
+    "phase": "sunset",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 17,
+      "hp_max": 17,
+      "conditions": [],
+      "choices": [
+       {
+        "id": "spells-2",
+        "kind": "spells",
+        "level": 2,
+        "picked": [
+         {
+          "key": "bane",
+          "name": "Bane",
+          "level": 1
+         }
+        ],
+        "options": [
+         {
+          "key": "mending",
+          "name": "Mending",
+          "level": 0
+         },
+         {
+          "key": "resistance",
+          "name": "Resistance",
+          "level": 0
+         },
+         {
+          "key": "spare-the-dying",
+          "name": "Spare the Dying",
+          "level": 0
+         },
+         {
+          "key": "thaumaturgy",
+          "name": "Thaumaturgy",
+          "level": 0
+         },
+         {
+          "key": "bane",
+          "name": "Bane",
+          "level": 1
+         },
+         {
+          "key": "bless",
+          "name": "Bless",
+          "level": 1
+         },
+         {
+          "key": "command",
+          "name": "Command",
+          "level": 1
+         },
+         {
+          "key": "create-or-destroy-water",
+          "name": "Create or Destroy Water",
+          "level": 1
+         },
+         {
+          "key": "detect-evil-and-good",
+          "name": "Detect Evil and Good",
+          "level": 1
+         },
+         {
+          "key": "detect-magic",
+          "name": "Detect Magic",
+          "level": 1
+         },
+         {
+          "key": "detect-poison-and-disease",
+          "name": "Detect Poison and Disease",
+          "level": 1
+         },
+         {
+          "key": "protection-from-evil-and-good",
+          "name": "Protection from Evil and Good",
+          "level": 1
+         },
+         {
+          "key": "purify-food-and-drink",
+          "name": "Purify Food and Drink",
+          "level": 1
+         },
+         {
+          "key": "sanctuary",
+          "name": "Sanctuary",
+          "level": 1
+         },
+         {
+          "key": "shield-of-faith",
+          "name": "Shield of Faith",
+          "level": 1
+         }
+        ]
+       }
+      ],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word",
+       "Bane"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035",
+     "Wren": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The bustling Market Square is alive with the hum of traders and the scent of fresh produce. Wren stands near the center, their gaze steady and reassuring, while Ash lingers nearby, a silent guardian. The sun casts a warm glow over the scene, and the distant sound of a blacksmith's hammer echoes through the air. Wren waits, their presence a beacon of calm amidst the market's activity. The traders, now at ease, continue their business, their voices a soft murmur in the background. The Market bustles with activity, the scent of fresh bread mingling with the chatter of traders. Wren stands at the center, their voice steady as they address the crowd, while Ash lingers nearby, their eyes scanning the crowd for any sign of trouble. Ash waits, their stance relaxed but alert, a silent guardian amidst the bustling market.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      25,
+      "wait",
+      ""
+     ]
+    ]
+   },
+   {
+    "turn": 26,
+    "kind": "do",
+    "words": "I look around for new trouble.",
+    "status": 200,
+    "error": null,
+    "seconds": 9.5,
+    "day": 3,
+    "phase": "dusk",
+    "party": [
+     {
+      "name": "Ash",
+      "character_class": "fighter",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 20,
+      "hp_max": 20,
+      "conditions": [],
+      "choices": [],
+      "spells": []
+     },
+     {
+      "name": "Wren",
+      "character_class": "cleric",
+      "level": 2,
+      "xp": 400,
+      "hp_current": 17,
+      "hp_max": 17,
+      "conditions": [],
+      "choices": [
+       {
+        "id": "spells-2",
+        "kind": "spells",
+        "level": 2,
+        "picked": [
+         {
+          "key": "bane",
+          "name": "Bane",
+          "level": 1
+         }
+        ],
+        "options": [
+         {
+          "key": "mending",
+          "name": "Mending",
+          "level": 0
+         },
+         {
+          "key": "resistance",
+          "name": "Resistance",
+          "level": 0
+         },
+         {
+          "key": "spare-the-dying",
+          "name": "Spare the Dying",
+          "level": 0
+         },
+         {
+          "key": "thaumaturgy",
+          "name": "Thaumaturgy",
+          "level": 0
+         },
+         {
+          "key": "bane",
+          "name": "Bane",
+          "level": 1
+         },
+         {
+          "key": "bless",
+          "name": "Bless",
+          "level": 1
+         },
+         {
+          "key": "command",
+          "name": "Command",
+          "level": 1
+         },
+         {
+          "key": "create-or-destroy-water",
+          "name": "Create or Destroy Water",
+          "level": 1
+         },
+         {
+          "key": "detect-evil-and-good",
+          "name": "Detect Evil and Good",
+          "level": 1
+         },
+         {
+          "key": "detect-magic",
+          "name": "Detect Magic",
+          "level": 1
+         },
+         {
+          "key": "detect-poison-and-disease",
+          "name": "Detect Poison and Disease",
+          "level": 1
+         },
+         {
+          "key": "protection-from-evil-and-good",
+          "name": "Protection from Evil and Good",
+          "level": 1
+         },
+         {
+          "key": "purify-food-and-drink",
+          "name": "Purify Food and Drink",
+          "level": 1
+         },
+         {
+          "key": "sanctuary",
+          "name": "Sanctuary",
+          "level": 1
+         },
+         {
+          "key": "shield-of-faith",
+          "name": "Shield of Faith",
+          "level": 1
+         }
+        ]
+       }
+      ],
+      "spells": [
+       "Sacred Flame",
+       "Guidance",
+       "Light",
+       "Inflict Wounds",
+       "Guiding Bolt",
+       "Cure Wounds",
+       "Healing Word",
+       "Bane"
+      ]
+     }
+    ],
+    "foes": [],
+    "places": {
+     "Ash": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035",
+     "Wren": "836c4f0e-8455-4c33-b2d7-4ce0f9a97035"
+    },
+    "rumours": [
+     "The Baker's Missing Flour"
+    ],
+    "settled": [],
+    "prose": "The Market, bathed in the fading light of sunset, hums with the lingering energy of the day. The scent of fresh bread still lingers in the air, mingling with the distant chatter of traders. Wren, standing at the center, looks around, their eyes scanning for any signs of trouble, while Ash, nearby, maintains a vigilant stance, their gaze alert and watchful. Wren's attempt to survey the area for potential threats is only partially successful, their focus slightly distracted. Ash, on the other hand, remains steadfast, their presence a silent promise of protection.",
+    "rolls": [],
+    "fight": [],
+    "ash_chose": [
+     [
+      26,
+      "wait",
+      ""
+     ]
+    ]
+   }
+  ],
+  "spend_usd": 0.10708
+ }
+]
