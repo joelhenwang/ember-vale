@@ -18,6 +18,7 @@ import pytest
 from fastapi.testclient import TestClient
 from test_stage1_api import ApiClient
 
+from worldsim.application.graphs.summary import DIGEST_PROMPT_VERSION
 from worldsim.application.orchestration.service import derive_run_id
 from worldsim.domain.memory import (
     MAX_SALIENCE,
@@ -182,7 +183,7 @@ def test_promotion_digests_old_salient_sources(
     assert len(digests) == 1
     digest = digests[0]
     assert digest.day == 2
-    assert digest.prompt_version == "digest.v1"
+    assert digest.prompt_version == DIGEST_PROMPT_VERSION
     assert any(s.startswith("mem:") for s in digest.source_ids)
 
     async def _sources_intact() -> bool:
