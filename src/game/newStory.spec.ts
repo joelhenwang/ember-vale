@@ -1,7 +1,25 @@
 import { describe, expect, it } from 'vitest'
-import { placesLine, searchWorlds, storytellerName, toneLabel } from './newStory'
+import {
+  namesLine,
+  placesLine,
+  searchWorlds,
+  storytellerName,
+  toneLabel,
+  watchedParty
+} from './newStory'
 
 describe('new story words', () => {
+  it('seats the first four of the cast as a watched party', () => {
+    expect(watchedParty(['Wren', 'Ash'])).toEqual({ party: ['Wren', 'Ash'], left: [] })
+    expect(watchedParty(['A', 'B', 'C', 'D', 'E'])).toEqual({
+      party: ['A', 'B', 'C', 'D'],
+      left: ['E']
+    })
+    expect(namesLine(['Wren', 'Ash', 'Lyra'])).toBe('Wren, Ash and Lyra')
+    expect(namesLine(['Wren'])).toBe('Wren')
+    expect(namesLine([])).toBe('')
+  })
+
   it('names the storyteller plainly', () => {
     expect(storytellerName('active:venice')).toBe('Venice')
     expect(storytellerName('active:openrouter')).toBe('OpenRouter')

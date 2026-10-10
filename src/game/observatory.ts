@@ -345,6 +345,16 @@ export function rollsByScene(entries: ChronicleEntry[]): Map<string, CombatRollV
   return out
 }
 
+/** The newest fight's rolls (its level-ups show on the party panel). */
+export function newestRolls(entries: ChronicleEntry[]): CombatRollView[] | undefined {
+  let newest: ChronicleEntry | undefined
+  for (const e of entries) {
+    if (!e.combat?.rolls?.length) continue
+    if (!newest || e.sequence > newest.sequence) newest = e
+  }
+  return newest?.combat?.rolls
+}
+
 /** The rolls an opened entry shows: its scene's, or its own (a lone fight). */
 export function rollsFor(
   byScene: Map<string, CombatRollView[]>,

@@ -18,10 +18,12 @@ from uuid import UUID, uuid4
 
 from sqlalchemy.exc import IntegrityError
 
+from worldsim.application.callings import suggest_calling
 from worldsim.application.geography import PLACE_MAPS
 from worldsim.application.images import queue_image
 from worldsim.application.library.builtins import WORLD_PRESET_ID
 from worldsim.application.orchestration.stage1 import UnitOfWorkFactory
+from worldsim.application.ports.writer import Writer
 from worldsim.application.stories.validation import story_dnd_tables, validate_draft
 from worldsim.application.unit_of_work import UnitOfWork
 from worldsim.domain.activities import TravelRoute, focus_for_seat
@@ -55,6 +57,9 @@ from worldsim.domain.presets import (
 from worldsim.domain.progress import ItemInstance
 from worldsim.domain.roles import RoleGrant
 from worldsim.domain.rules.dnd import auto_sheet
+from worldsim.domain.rules.dnd.callings import rebuild_calling
+from worldsim.domain.rules.dnd.invites import companion_description
+from worldsim.domain.rules.dnd.party import MAX_PARTY_SIZE, recruit_sheet
 from worldsim.domain.stories import (
     DraftCastMember,
     DraftPayload,
@@ -613,10 +618,15 @@ async def _instantiate(
         )
     )
     adventure = payload.mode.adventure
+    if adventure is not None and controlled is None:
+        # A watched adventure: the first cast members form the party, each
+        # linked to their own character, with a calling their card names.
+        await _seat_watched_party(uow, world_id, payload, cast_presets, runtime_characters)
     if adventure is not None and controlled is not None:
         # A story with fights: the hero's 5e sheet joins in the same
         # transaction, so a failure leaves no story half made.
         hero = next(m for m in payload.cast if m.instance_key == payload.mode.controlled_cast_key)
+        assert adventure.race is not None and adventure.character_class is not None
         await uow.party.add(
             PartyMember(
                 id=new_party_member_id(),
@@ -658,6 +668,91 @@ async def _instantiate(
         character_id=controlled,
         replayed=False,
     )
+
+
+def _card_words(preset: CharacterPresetPayload) -> str:
+    return " ".join([preset.appearance or "", preset.personality or "", preset.background or ""])
+
+
+async def _seat_watched_party(
+    uow: UnitOfWork,
+    world_id: UUID,
+    payload: DraftPayload,
+    cast_presets: dict[str, CharacterPresetPayload],
+    runtime_characters: dict[str, UUID],
+) -> None:
+    """The party of a watched adventure: the first ``MAX_PARTY_SIZE`` cast
+    members (in cast order, one per name), level 1, each linked to their own
+    character, with the race and calling their card names (else human
+    fighter). The writing model may suggest better ones after the commit
+    (``suggest_party_callings``)."""
+    tables = story_dnd_tables()
+    taken: set[str] = set()
+    for member in payload.cast:
+        key = party_name_key(member.name)
+        if len(taken) >= MAX_PARTY_SIZE or key in taken:
+            continue
+        taken.add(key)
+        described = companion_description(_card_words(cast_presets[member.instance_key]), tables)
+        await uow.party.add(
+            PartyMember(
+                id=new_party_member_id(),
+                world_id=world_id,
+                name=member.name,
+                name_key=key,
+                character_id=runtime_characters[member.instance_key],
+                focus_slot=focus_for_seat(len(taken) - 1),
+                sheet=recruit_sheet(member.name, described, [1], tables),
+            )
+        )
+
+
+async def suggest_party_callings(
+    uow_factory: UnitOfWorkFactory, writer: Writer | None, world_id: UUID
+) -> int:
+    """After a watched adventure is created: the writing model's people and
+    calling for each member (``suggest_calling``, the same choice a joining
+    companion gets, about $0.0001 each), asked one by one so later members
+    fill the party's gaps. Best effort, never fails the story: no writer, a
+    failed call or an unusable answer keeps the card's calling. Returns how
+    many sheets changed."""
+    if writer is None:
+        return 0
+    tables = story_dnd_tables()
+    async with uow_factory() as uow:
+        grant = await uow.roles.get_for_world(world_id)
+        if grant is None or grant.character_id is not None:
+            return 0  # a played hero chose their own calling
+        roster = await uow.party.list_for_world(world_id)
+        cards: dict[UUID, CharacterCard] = {}
+        for m in roster:
+            if m.character_id is not None:
+                who = await uow.characters.get(m.character_id)
+                cards[m.id] = await uow.characters.get_card(who.id, who.card_version)
+    changed = 0
+    settled: list[PartyMember] = []
+    for member in roster:
+        card = cards.get(member.id)
+        if card is None:
+            settled.append(member)
+            continue
+        described = await suggest_calling(writer, card, settled, tables)
+        race, _, calling = described.partition(" ")
+        if (race, calling) == (member.sheet.race, member.sheet.character_class):
+            settled.append(member)
+            continue
+        try:
+            async with uow_factory() as uow:
+                saved = await uow.party.save_sheet(
+                    member.id, rebuild_calling(member.sheet, race, calling, tables), member.version
+                )
+                await uow.commit()
+        except DomainError:
+            settled.append(member)
+            continue
+        settled.append(saved)
+        changed += 1
+    return changed
 
 
 def _validated_travel_pairs(

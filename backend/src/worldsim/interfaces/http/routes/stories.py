@@ -6,6 +6,7 @@ snapshots are immutable and read-only; drafts carry typed nonsecret JSON.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 from uuid import UUID
 
@@ -29,6 +30,8 @@ from worldsim.domain.time import absolute_index, phase_label, utcnow
 from worldsim.domain.world import World
 from worldsim.interfaces.http import schemas as api
 from worldsim.interfaces.http.routes.roles import role_from
+
+_log = logging.getLogger("worldsim.stories")
 
 router = APIRouter(tags=["stories"])
 
@@ -481,7 +484,11 @@ async def create_new_story(
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ) -> api.StoryCreateResponse:
     """Resolve one draft into a live story: atomic, idempotent, no generation."""
-    from worldsim.application.stories.create import create_story, register_curated_art
+    from worldsim.application.stories.create import (
+        create_story,
+        register_curated_art,
+        suggest_party_callings,
+    )
 
     key = idempotency_key or ""
 
@@ -491,6 +498,13 @@ async def create_new_story(
     result = await create_story(
         state.uow_factory(), draft, body.expected_draft_version, "local", key
     )
+    if not result.replayed and result.character_id is None and draft.payload.mode.adventure:
+        # A watched adventure: the writing model may give the party better
+        # callings than their cards' keywords (best effort, after the commit).
+        try:
+            await suggest_party_callings(state.uow_factory(), state.writer(), result.world_id)
+        except Exception:
+            _log.warning("party callings not suggested", exc_info=True)
     try:
         art = await register_curated_art(
             state.uow_factory(),

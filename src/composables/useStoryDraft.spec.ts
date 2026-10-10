@@ -583,6 +583,14 @@ describe('useStoryDraft guarded workflow', () => {
     })
   })
 
+  it('a watched adventure echoed with a null hero is the one the builder sent', () => {
+    expect(
+      normalizeRecoveryPayload({
+        mode: { role: 'watcher', adventure: { race: null, character_class: null } }
+      })
+    ).toEqual(normalizeRecoveryPayload({ mode: { role: 'watcher', adventure: {} } }))
+  })
+
   it('normalizeRecoveryPayload keeps empty/null/omitted distinct elsewhere', () => {
     // story.title is always emitted by the builder: '' stays distinct.
     expect(normalizeRecoveryPayload({ story: { title: '' } })).toEqual({

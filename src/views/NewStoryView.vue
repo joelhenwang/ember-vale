@@ -58,8 +58,10 @@ import {
   TONE_PRESETS,
   placesLine,
   searchWorlds,
+  namesLine,
   storytellerName,
-  toneLabel
+  toneLabel,
+  watchedParty
 } from '../game/newStory'
 import type { CharacterDef } from '../game/model'
 import { useStorytellerPin } from '../composables/useStorytellerPin'
@@ -150,7 +152,7 @@ const sel = reactive({
   }[],
   role: 'watcher' as 'watcher' | 'player',
   controlledKey: undefined as string | undefined,
-  /** A story you play with fights: your hero's people and calling. */
+  /** A story with fights: played, your hero's people and calling; watched, a party of the cast. */
   fights: false,
   race: DEFAULT_HERO.race,
   characterClass: DEFAULT_HERO.characterClass,
@@ -216,7 +218,7 @@ const selections = computed<NewStorySelections>(() => ({
             ? { adventure: { race: sel.race, characterClass: sel.characterClass } }
             : {})
         }
-      : { role: 'watcher' },
+      : { role: 'watcher', ...(sel.fights ? { adventure: {} } : {}) },
   title: sel.title,
   tone: sel.tone || undefined,
   ...(pinCtl.pin.value ? { aiPin: pinCtl.pin.value } : {})
@@ -275,6 +277,10 @@ function chooseFights(fights: boolean, event: Event): void {
 }
 const heroSummary = computed(() =>
   sel.role === 'player' && sel.fights ? heroLine(sel.race, sel.characterClass) : null
+)
+/** A watched adventure's party (the first four of the cast) and who stays out. */
+const watchedPartyNames = computed(() =>
+  sel.role === 'watcher' && sel.fights ? watchedParty(sel.cast.map(pinnedCharName)) : null
 )
 function chooseRole(role: 'watcher' | 'player', event: Event): void {
   const fresh = sel.role !== role
@@ -545,8 +551,8 @@ function applyRecoverySelections(s: NewStorySelections): void {
   sel.controlledKey = s.mode.controlledKey
   sel.fights = !!s.mode.adventure
   if (s.mode.adventure) {
-    sel.race = s.mode.adventure.race
-    sel.characterClass = s.mode.adventure.characterClass
+    sel.race = s.mode.adventure.race ?? sel.race
+    sel.characterClass = s.mode.adventure.characterClass ?? sel.characterClass
   }
   sel.title = s.title
   sel.tone = s.tone ?? 'hopeful mystery'
@@ -1295,83 +1301,103 @@ onMounted(() => {
                       </span>
                     </button>
                   </div>
-                  <h2 class="nsx__h nsx__h--gap">What kind of story?</h2>
-                  <div class="modes modes--kind">
-                    <button
-                      type="button"
-                      class="mode mode--small"
-                      :class="{ 'mode--on': !sel.fights }"
-                      :aria-pressed="!sel.fights"
-                      @click="chooseFights(false, $event)">
-                      <span class="mode__tick" aria-hidden="true">
-                        <IconCheck v-if="!sel.fights" :size="13" />
-                      </span>
-                      <IconBook :size="30" class="mode__icon" />
-                      <span class="mode__name">A tale</span>
-                      <span class="mode__desc">Talk, travel and discover. No dice, no fights.</span>
-                    </button>
-                    <button
-                      type="button"
-                      class="mode mode--small"
-                      :class="{ 'mode--on': sel.fights }"
-                      :aria-pressed="sel.fights"
-                      @click="chooseFights(true, $event)">
-                      <span class="mode__tick" aria-hidden="true">
-                        <IconCheck v-if="sel.fights" :size="13" />
-                      </span>
-                      <IconEmblem :size="30" class="mode__icon" />
-                      <span class="mode__name">An adventure with fights</span>
-                      <span class="mode__desc"
-                        >Your hero gets health, armour and weapons. The storyteller starts fights;
-                        the dice decide them.</span
-                      >
-                    </button>
-                  </div>
-                  <Transition name="ev-rise">
-                    <div v-if="sel.fights" class="hero">
-                      <h3 class="hero__h">{{ controlledDisplay || 'Your hero' }}'s people</h3>
-                      <div class="hero__picks" role="radiogroup" aria-label="People">
-                        <button
-                          v-for="r in HERO_RACES"
-                          :key="r.key"
-                          type="button"
-                          role="radio"
-                          class="hero__pick ev-press"
-                          :class="{ 'hero__pick--on': sel.race === r.key }"
-                          :aria-checked="sel.race === r.key"
-                          :title="r.blurb"
-                          @click="sel.race = r.key">
-                          {{ r.name }}
-                        </button>
-                      </div>
-                      <p class="hero__blurb">
-                        {{ HERO_RACES.find((r) => r.key === sel.race)?.blurb }}
-                      </p>
-                      <h3 class="hero__h">Calling</h3>
-                      <div class="hero__picks" role="radiogroup" aria-label="Calling">
-                        <button
-                          v-for="c in HERO_CLASSES"
-                          :key="c.key"
-                          type="button"
-                          role="radio"
-                          class="hero__pick ev-press"
-                          :class="{ 'hero__pick--on': sel.characterClass === c.key }"
-                          :aria-checked="sel.characterClass === c.key"
-                          :title="c.blurb"
-                          @click="sel.characterClass = c.key">
-                          {{ c.name }}
-                        </button>
-                      </div>
-                      <p class="hero__blurb">
-                        {{ HERO_CLASSES.find((c) => c.key === sel.characterClass)?.blurb }}
-                      </p>
-                      <p class="nsx__lead">
-                        {{ controlledDisplay || 'Your hero' }} starts as a {{ heroSummary }}.
-                        Companions can join the party along the way.
-                      </p>
-                    </div>
-                  </Transition>
                 </template>
+                <h2 class="nsx__h nsx__h--gap">What kind of story?</h2>
+                <div class="modes modes--kind">
+                  <button
+                    type="button"
+                    class="mode mode--small"
+                    :class="{ 'mode--on': !sel.fights }"
+                    :aria-pressed="!sel.fights"
+                    @click="chooseFights(false, $event)">
+                    <span class="mode__tick" aria-hidden="true">
+                      <IconCheck v-if="!sel.fights" :size="13" />
+                    </span>
+                    <IconBook :size="30" class="mode__icon" />
+                    <span class="mode__name">A tale</span>
+                    <span class="mode__desc">Talk, travel and discover. No dice, no fights.</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="mode mode--small"
+                    :class="{ 'mode--on': sel.fights }"
+                    :aria-pressed="sel.fights"
+                    @click="chooseFights(true, $event)">
+                    <span class="mode__tick" aria-hidden="true">
+                      <IconCheck v-if="sel.fights" :size="13" />
+                    </span>
+                    <IconEmblem :size="30" class="mode__icon" />
+                    <span class="mode__name">An adventure with fights</span>
+                    <span class="mode__desc"
+                      >{{
+                        sel.role === 'player'
+                          ? 'Your hero gets health, armour and weapons.'
+                          : 'The cast travels as a party with health, armour and weapons.'
+                      }}
+                      The storyteller starts fights; the dice decide them.</span
+                    >
+                  </button>
+                </div>
+                <Transition name="ev-rise">
+                  <div v-if="sel.fights && sel.role === 'player'" class="hero">
+                    <h3 class="hero__h">{{ controlledDisplay || 'Your hero' }}'s people</h3>
+                    <div class="hero__picks" role="radiogroup" aria-label="People">
+                      <button
+                        v-for="r in HERO_RACES"
+                        :key="r.key"
+                        type="button"
+                        role="radio"
+                        class="hero__pick ev-press"
+                        :class="{ 'hero__pick--on': sel.race === r.key }"
+                        :aria-checked="sel.race === r.key"
+                        :title="r.blurb"
+                        @click="sel.race = r.key">
+                        {{ r.name }}
+                      </button>
+                    </div>
+                    <p class="hero__blurb">
+                      {{ HERO_RACES.find((r) => r.key === sel.race)?.blurb }}
+                    </p>
+                    <h3 class="hero__h">Calling</h3>
+                    <div class="hero__picks" role="radiogroup" aria-label="Calling">
+                      <button
+                        v-for="c in HERO_CLASSES"
+                        :key="c.key"
+                        type="button"
+                        role="radio"
+                        class="hero__pick ev-press"
+                        :class="{ 'hero__pick--on': sel.characterClass === c.key }"
+                        :aria-checked="sel.characterClass === c.key"
+                        :title="c.blurb"
+                        @click="sel.characterClass = c.key">
+                        {{ c.name }}
+                      </button>
+                    </div>
+                    <p class="hero__blurb">
+                      {{ HERO_CLASSES.find((c) => c.key === sel.characterClass)?.blurb }}
+                    </p>
+                    <p class="nsx__lead">
+                      {{ controlledDisplay || 'Your hero' }} starts as a {{ heroSummary }}.
+                      Companions can join the party along the way.
+                    </p>
+                  </div>
+                </Transition>
+                <Transition name="ev-rise">
+                  <div v-if="watchedPartyNames" class="hero">
+                    <h3 class="hero__h">The party</h3>
+                    <p class="nsx__lead">
+                      {{ namesLine(watchedPartyNames.party) }}
+                      {{ watchedPartyNames.party.length === 1 ? 'sets' : 'set' }} out as an
+                      adventuring party. Each takes the people and calling that suit their
+                      character, and they level up as they win. You watch the dice.
+                    </p>
+                    <p v-if="watchedPartyNames.left.length" class="hero__blurb">
+                      A party is four at most: {{ namesLine(watchedPartyNames.left) }}
+                      {{ watchedPartyNames.left.length === 1 ? 'is' : 'are' }} in the story but not
+                      in the party.
+                    </p>
+                  </div>
+                </Transition>
                 <p v-if="modeNotice" class="nsv__notice" role="status">{{ modeNotice }}</p>
               </template>
 
@@ -1570,6 +1596,11 @@ onMounted(() => {
                         >An adventure with fights: {{ controlledDisplay }} is a
                         {{ heroSummary }}.</span
                       >
+                      <span v-if="watchedPartyNames"
+                        >An adventure with fights: {{ namesLine(watchedPartyNames.party) }}
+                        {{ watchedPartyNames.party.length === 1 ? 'travels' : 'travel' }} as a
+                        party.</span
+                      >
                     </span>
                     <button type="button" class="setup__edit" @click="go(3)">Edit</button>
                   </li>
@@ -1753,6 +1784,9 @@ onMounted(() => {
                   <ul class="chips chips--teal">
                     <li>{{ sel.role === 'player' ? 'Player' : 'Observer' }}</li>
                     <li v-if="heroSummary">With fights · {{ heroSummary }}</li>
+                    <li v-if="watchedPartyNames">
+                      With fights · a party of {{ watchedPartyNames.party.length }}
+                    </li>
                     <li v-if="sel.role === 'player' && playerMember">
                       Starts at {{ placeName(playerMember.location) }}
                     </li>

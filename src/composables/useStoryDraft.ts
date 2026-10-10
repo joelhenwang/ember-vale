@@ -122,6 +122,8 @@ const EMPTY_EQUIVALENT: Record<string, readonly string[]> = {
 const NULL_EQUIVALENT: Record<string, readonly string[]> = {
   world: ['description'],
   mode: ['adventure'],
+  // A watched adventure stores no hero: the server echoes nulls, the builder omits.
+  'mode.adventure': ['race', 'character_class'],
   story: ['premise', 'pacing'],
   ai: ['profile_id', 'profile_revision', 'model', 'style_pack_revision']
 }

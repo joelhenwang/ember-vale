@@ -89,3 +89,17 @@ export function placesLine(places: readonly { name: string }[], shown = 3): stri
   const names = places.slice(0, shown).map((p) => p.name)
   return [count, ...names].join(' · ')
 }
+
+/** A watched adventure's party: the first four of the cast (`MAX_PARTY_SIZE` on the server). */
+export const WATCHED_PARTY_SIZE = 4
+
+/** Who forms a watched adventure's party, and who stays out of it. */
+export function watchedParty(names: readonly string[]): { party: string[]; left: string[] } {
+  return { party: names.slice(0, WATCHED_PARTY_SIZE), left: names.slice(WATCHED_PARTY_SIZE) }
+}
+
+/** "Wren, Ash and Lyra". */
+export function namesLine(names: readonly string[]): string {
+  if (names.length < 2) return names[0] ?? ''
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+}

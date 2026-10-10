@@ -159,11 +159,12 @@ def down_line(names: list[str]) -> str | None:
 def chooser_keys(roster: list[PartyMember], played: CharacterId | None) -> set[str]:
     """Who makes their own level-up choices: the played hero. A companion is
     linked to their own character too (companions-001) but does not choose.
-    Without a played character (a party begun by hand), every linked member."""
-    linked = [m for m in roster if m.character_id is not None]
-    if played is not None:
-        return {m.name_key for m in linked if m.character_id == played}
-    return {m.name_key for m in linked}
+    Without a played character (a watched party), nobody."""
+    if played is None:
+        # A watched party (no played character): nobody waits on a choice,
+        # every level-up is made at once.
+        return set()
+    return {m.name_key for m in roster if m.character_id is not None and m.character_id == played}
 
 
 def present_keys(
@@ -176,18 +177,24 @@ def present_keys(
     is in it. Linked companions count when they stand where the hero stands
     (a companion who only waits gets a scene of their own, and once struck
     alone there, ahead of the hero, companions-001); the unlinked travel
-    with the hero. ``places`` maps linked characters to their location."""
+    with the hero. ``places`` maps linked characters to their location.
+    Without a hero (a watched party, no ``choosers``), every linked member
+    in the scene counts as one."""
     heroes = [m for m in roster if m.name_key in choosers and m.character_id is not None]
+    if not heroes:
+        # A watched party (no played hero): every linked member leads, and
+        # the party is where any of them is in this scene.
+        heroes = [m for m in roster if m.character_id is not None]
     here = [m for m in heroes if str(m.character_id) in participants]
     if not here:
         return set()
-    spot = places.get(str(here[0].character_id))
+    spots = {places.get(str(m.character_id)) for m in here} - {None}
     return {
         m.name_key
         for m in roster
         if m.character_id is None
         or str(m.character_id) in participants
-        or (spot is not None and places.get(str(m.character_id)) == spot)
+        or places.get(str(m.character_id)) in spots
     }
 
 
@@ -210,6 +217,29 @@ def companion_note(hero: str, foes: list[Monster]) -> str:
         shown = ", ".join(f"{foe.name} ({_shape(foe)})" for foe in standing)
         note += (
             f" A fight is on with {shown}. Fight beside {hero}: attack one of them and "
+            f'name it ("I swing at {standing[0].name}"). Never spar with your companions '
+            "while foes stand."
+        )
+    return note
+
+
+def party_note(fellows: list[str], foes: list[Monster]) -> str:
+    """What a member of a watched party keeps in mind (no played hero): they
+    travel together as an adventuring party seeking adventure, and which
+    fight is on."""
+    if fellows:
+        together = ", ".join(fellows[:-1]) + (" and " if len(fellows) > 1 else "") + fellows[-1]
+        note = (
+            f"You travel with {together} as an adventuring party, seeking adventure: "
+            "keep together, go where the party goes and face what comes as one."
+        )
+    else:
+        note = "You are an adventurer seeking adventure."
+    standing = [foe for foe in foes if foe.hp_current > 0]
+    if standing:
+        shown = ", ".join(f"{foe.name} ({_shape(foe)})" for foe in standing)
+        note += (
+            f" A fight is on with {shown}. Fight beside your party: attack one of them and "
             f'name it ("I swing at {standing[0].name}"). Never spar with your companions '
             "while foes stand."
         )

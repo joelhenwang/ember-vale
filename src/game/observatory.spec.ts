@@ -15,6 +15,7 @@ import {
   rollsInTurn,
   layoutTokens,
   mergeChronicle,
+  newestRolls,
   speedFor
 } from './observatory'
 
@@ -272,6 +273,13 @@ describe('the dice in Watch', () => {
     expect(rollsFor(byScene, scene).map((r) => r.target)).toEqual(['Goblin 2'])
     expect(rollsFor(byScene, lone).map((r) => r.text)).toEqual(['Old fight'])
     expect(rollsFor(byScene, entry(9, 6))).toEqual([])
+  })
+
+  it('finds the newest fight for the party panel', () => {
+    // By sequence, not by place in the list.
+    expect(newestRolls([lone, scene, fight])?.map((r) => r.text)).toEqual(['Old fight'])
+    expect(newestRolls([scene, fight])?.map((r) => r.target)).toEqual(['Goblin 2'])
+    expect(newestRolls([scene])).toBeUndefined()
   })
 
   it('keeps the dice of a turn under its scene in the story room, once', () => {
