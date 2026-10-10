@@ -26,7 +26,11 @@ from worldsim.domain.activities import Activity, effective_progress
 from worldsim.domain.enums import NarrativeStatus, UserRole, Visibility
 from worldsim.domain.errors import DomainError
 from worldsim.domain.geography import spot_named
-from worldsim.domain.ids import derive_combat_event_id, derive_spar_event_id
+from worldsim.domain.ids import (
+    derive_check_event_id,
+    derive_combat_event_id,
+    derive_spar_event_id,
+)
 from worldsim.domain.journey import Journey, level_floor, level_for, title_for
 from worldsim.domain.narrative import NarrativeHook
 from worldsim.domain.rules.dnd import strip_combat_tags
@@ -350,6 +354,7 @@ async def chronicle(
     # scene is found by the id the fight event derives from it.
     fought_in = {derive_combat_event_id(e.id): e.id for e in visible}
     fought_in |= {derive_spar_event_id(e.id): e.id for e in visible}
+    fought_in |= {derive_check_event_id(e.id): e.id for e in visible}
     for event in visible:
         beats = [
             plain for b in told.get(event.id, []) if (plain := strip_combat_tags(b.text).strip())

@@ -42,7 +42,7 @@ from sqlalchemy.exc import IntegrityError
 
 from worldsim.application.callings import suggest_calling
 from worldsim.application.commands.director import accept_decision, open_place
-from worldsim.application.commands.inventory import move_item
+from worldsim.application.commands.inventory import move_item, pay_coins
 from worldsim.application.commands.knowledge import fold_claim
 from worldsim.application.commands.party import recruit_companion
 from worldsim.application.conditions import tick_conditions
@@ -165,6 +165,7 @@ from worldsim.domain.effects import (
     AdvanceClockEffect,
     DomainEffect,
     HookSettledEffect,
+    ItemFoundEffect,
     MoveEntityEffect,
     ResourceAdjustedEffect,
     SkillProgressEffect,
@@ -188,6 +189,7 @@ from worldsim.domain.events import WorldEvent
 from worldsim.domain.geography import spot_named
 from worldsim.domain.ids import (
     derive_attempt_id,
+    derive_check_event_id,
     derive_combat_event_id,
     derive_intent_id,
     derive_spar_event_id,
@@ -272,6 +274,7 @@ from worldsim.domain.perception import (
 from worldsim.domain.phases import PhaseRun, PhaseSnapshot, SnapshotCharacter
 from worldsim.domain.progress import TRAINING_STAMINA_COST, ItemInstance
 from worldsim.domain.relationships import Relationship, describe
+from worldsim.domain.rules.coins import COINS_KEY, coins_paid
 from worldsim.domain.rules.dnd import (
     DataTables,
     MonsterState,
@@ -289,6 +292,7 @@ from worldsim.domain.rules.dnd import (
     strip_combat_tags,
     weapon_attack_bonus,
 )
+from worldsim.domain.rules.dnd.checks import Check, check_line, roll_check, scene_outcome
 from worldsim.domain.rules.dnd.combat_resolve import spoil_rows
 from worldsim.domain.rules.dnd.data import dict_field, entry, str_field, table
 from worldsim.domain.rules.dnd.deeds import (
@@ -416,6 +420,8 @@ class PreparedScene:
     live_versions: dict[str, int]
     observations: list[ObservationSpec]
     memories: list[MemorySpec]
+    #: Ability checks the party rolled for their attempts (combat-depth-003).
+    checks: tuple[Check, ...] = ()
 
 
 _phase_log = logging.getLogger("worldsim.phase")
@@ -458,6 +464,11 @@ def item_label(item: ItemInstance) -> str:
     return known.name if known is not None else item.item_key.replace("_", " ")
 
 
+def counted(item: ItemInstance) -> str:
+    """The label with its count when there are several ("6 gold coins")."""
+    return f"{item.quantity} {item_label(item)}" if item.quantity > 1 else item_label(item)
+
+
 def item_description(item: ItemInstance) -> str:
     """The item's own description, else the catalog's, else nothing."""
     known = _item_catalog().get(item.item_key)
@@ -470,6 +481,78 @@ def item_line(item: ItemInstance) -> str:
     count = f" x{item.quantity}" if item.quantity > 1 else ""
     detail = f" — {about}" if about else ""
     return f"{item_label(item)}{count}{detail} (item_id {item.id})"
+
+
+def purse_notes(
+    members: Sequence[Intent], characters: Sequence[Character], items: Sequence[ItemInstance]
+) -> list[str]:
+    """What a payer's purse holds when the attempt pays more than that: a
+    play session paid 2 coins from empty pockets, coins "glinting in their
+    hand" (coins-001)."""
+    names = {c.id: c.name for c in characters}
+    notes: list[str] = []
+    for intent in members:
+        action = intent.action
+        paying = coins_paid(action.attempt) if isinstance(action, InteractAction) else None
+        if paying is None:
+            continue
+        held = sum(
+            i.quantity
+            for i in items
+            if i.owner_id == intent.author_character_id and i.item_key == COINS_KEY
+        )
+        if held < paying:
+            who = names.get(intent.author_character_id, "They")
+            purse = f"only {held} gold coin{'s' if held != 1 else ''}" if held else "no coins"
+            notes.append(f"{who} carries {purse}: they cannot pay {paying}.")
+    return notes
+
+
+def roll_checks(
+    scene_id: UUID, members: Sequence[Intent], roster: Sequence[PartyMember]
+) -> list[Check]:
+    """The ability checks a scene's party members roll: each uncertain
+    attempt (no blow or spell, which the fight's dice decide) whose words
+    call for a skill. Seeded by scene and attempt, so a redone scene rolls
+    the same."""
+    linked = {m.character_id: m for m in roster if m.character_id is not None}
+    checks: list[Check] = []
+    for intent in sorted(members, key=lambda i: str(i.id)):
+        action = intent.action
+        member = linked.get(intent.author_character_id)
+        if member is None or not isinstance(action, InteractAction):
+            continue
+        if looks_like_deed(action.attempt):
+            continue
+        digest = hashlib.sha256(f"{scene_id}:{intent.id}".encode()).digest()[:8]
+        rng = random.Random(int.from_bytes(digest, "big")).random
+        check = roll_check(member.sheet, action.attempt, rng)
+        if check is not None:
+            checks.append(check)
+    return checks
+
+
+#: What a roll short of success takes away: a find, a rumour settled.
+_EARNED_EFFECTS = (ItemFoundEffect, HookSettledEffect)
+
+
+def follow_checks(resolution: Resolution, checks: Sequence[Check]) -> Resolution:
+    """The resolution with its outcome set by the scene's checks; a find or
+    a settled rumour needs a success."""
+    if not checks:
+        return resolution
+    outcome = ResolutionOutcome(scene_outcome(resolution.outcome.value, list(checks)))
+    effects = resolution.effects
+    if outcome != ResolutionOutcome.SUCCESS:
+        effects = [e for e in effects if not isinstance(e, _EARNED_EFFECTS)]
+    rolled = "; ".join(c.text for c in checks)
+    return resolution.model_copy(
+        update={
+            "outcome": outcome,
+            "effects": effects,
+            "rationale": f"{rolled} {resolution.rationale}"[:2000],
+        }
+    )
 
 
 def scene_surroundings(
@@ -496,7 +579,7 @@ def scene_surroundings(
             for c in characters
             if c.location_id == place_id and c.life_status == LifeStatus.ALIVE
         ]
-        lying = [item_label(i) for i in items if i.owner_id is None and i.location_id == place_id]
+        lying = [counted(i) for i in items if i.owner_id is None and i.location_id == place_id]
         held = [
             f"{item_label(i)} (held by {next(c.name for c in characters if c.id == i.owner_id)})"
             for i in items
@@ -3946,14 +4029,21 @@ class Stage1Orchestrator:
                 world_id, run_id, sealed, scene, attempts, names, runtime, aimed_at
             )
         with _timed(stage_ms, "resolve"):
-            resolution, live_versions = await self._resolve_scene(
+            resolution, live_versions, checks = await self._resolve_scene(
                 world_id, run_id, sealed, scene, members, runtime
             )
         observations, memories = self._perceive_scene(
             world_id, sealed, scene, members, names, reactions, resolution.outcome.value
         )
         return PreparedScene(
-            members, attempts, reactions, resolution, live_versions, observations, memories
+            members,
+            attempts,
+            reactions,
+            resolution,
+            live_versions,
+            observations,
+            memories,
+            tuple(checks),
         )
 
     async def _commit_prepared(
@@ -4010,6 +4100,10 @@ class Stage1Orchestrator:
         ]
         if directed_outcomes:
             await record_attempts(self._factory, directed_outcomes)
+        if prepared.checks:
+            await self._record_checks(
+                world_id, run_id, index, members, prepared.checks, result.event_id
+            )
         if journeys:
             await self._set_off(world_id, index, scene.id, journeys)
         settled = [e.hook_id for e in effects if isinstance(e, HookSettledEffect)]
@@ -4037,6 +4131,52 @@ class Stage1Orchestrator:
             resolution_outcome=resolution.outcome.value,
             narration="pending",
         )
+
+    async def _record_checks(
+        self,
+        world_id: UUID,
+        run_id: UUID,
+        index: int,
+        members: Sequence[Intent],
+        checks: Sequence[Check],
+        event_id: UUID,
+    ) -> None:
+        """Keep a scene's ability checks as its dice, beside the scene."""
+        rolls = [
+            TagOutcome(
+                kind="check",
+                text=check.text,
+                actor=check.actor,
+                using=check.skill,
+                roll=check.total,
+                natural=check.natural,
+                dc=check.dc,
+                result=check.outcome,
+            )
+            for check in checks
+        ]
+        audit = " | ".join(check.text for check in checks)[:512]
+        async with self._factory() as uow:
+            sequence = await uow.events.max_sequence(world_id) + 1
+            await uow.events.append_event(
+                WorldEvent(
+                    id=derive_check_event_id(event_id),
+                    world_id=world_id,
+                    sequence=sequence,
+                    event_type=EventType.ACTION_RESOLVED,
+                    absolute_index=index,
+                    phase_run_id=run_id,
+                    participant_ids=sorted({m.author_character_id for m in members}, key=str),
+                    summary={
+                        "check": audit,
+                        "scene_event_id": str(event_id),
+                        "rolls": combat_rolls_json(rolls, []),
+                    },
+                    random_algorithm="seeded-d20-v1",
+                    random_result=audit,
+                )
+            )
+            await uow.commit()
 
     async def _set_off(
         self,
@@ -4140,7 +4280,10 @@ class Stage1Orchestrator:
         """
         for intent in members:
             action = intent.action
-            if not isinstance(action, (SparAction, AppealAction, TransferAction, TakeAction)):
+            paying = coins_paid(action.attempt) if isinstance(action, InteractAction) else None
+            if paying is None and not isinstance(
+                action, (SparAction, AppealAction, TransferAction, TakeAction)
+            ):
                 continue
             async with self._factory() as uow:
                 try:
@@ -4180,6 +4323,16 @@ class Stage1Orchestrator:
                     )
                 elif isinstance(action, TakeAction):
                     await self._settle_take(uow, intent, action)
+                elif isinstance(action, InteractAction):
+                    # A paying attempt that worked: the coins change hands.
+                    assert paying is not None
+                    await pay_coins(
+                        uow,
+                        world_id,
+                        intent.author_character_id,
+                        paying,
+                        action.target_character_id,
+                    )
                 else:
                     assert isinstance(action, TransferAction)
                     await self._settle_transfer(uow, intent, action)
@@ -4580,16 +4733,24 @@ class Stage1Orchestrator:
         scene: Scene,
         members: list[Intent],
         runtime: PhaseRuntime,
-    ) -> tuple[Resolution, dict[str, int]]:
-        """Hybrid resolution with an audited resolver call when ambiguous."""
+    ) -> tuple[Resolution, dict[str, int], list[Check]]:
+        """Hybrid resolution with an audited resolver call when ambiguous.
+
+        A party member's uncertain attempt is rolled as an ability check
+        first: the resolver hears the roll, and the outcome follows it.
+        """
 
         async with self._factory() as uow:
             characters = await uow.characters.list_for_world(world_id)
             locations = await uow.locations.list_for_world(world_id)
             items = await uow.inventory.list_for_world(world_id)
             hooks = await uow.narrative.list_hooks_for_world(world_id)
+            roster = await uow.party.list_for_world(world_id)
         live_versions = {f"character:{c.id}": c.version for c in characters}
         notes = scene_surroundings(members, characters, locations, items, hooks)
+        checks = roll_checks(scene.id, members, roster)
+        notes.extend(check_line(check) for check in checks)
+        notes.extend(purse_notes(members, characters, items))
         task_run_id = derive_task_id(run_id, "resolver", scene.id)
         spec = ManifestSpec(
             role="resolver",
@@ -4625,8 +4786,7 @@ class Stage1Orchestrator:
                 "surroundings": notes,
                 "open_hook_ids": [str(h.id) for h in hooks if h.status != NarrativeStatus.CLOSED],
                 "carried": {
-                    str(c.id): [item_label(i) for i in items if i.owner_id == c.id]
-                    for c in characters
+                    str(c.id): [counted(i) for i in items if i.owner_id == c.id] for c in characters
                 },
             },
         )
@@ -4643,7 +4803,8 @@ class Stage1Orchestrator:
             )
         )
         result = await invoke(graph, invocation)
-        return Resolution.model_validate(result["proposal"]["resolution"]), live_versions
+        resolution = Resolution.model_validate(result["proposal"]["resolution"])
+        return follow_checks(resolution, checks), live_versions, checks
 
     def _perceive_scene(
         self,
@@ -5317,6 +5478,7 @@ class Stage1Orchestrator:
                                     location_id=place.id if place is not None else None,
                                     name=spoil.name,
                                     description=spoil.description,
+                                    quantity=spoil.quantity,
                                 )
                             )
                         sequence = await uow.events.max_sequence(world_id) + 1

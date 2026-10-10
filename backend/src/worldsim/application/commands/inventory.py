@@ -20,6 +20,7 @@ from worldsim.domain.ids import (
 )
 from worldsim.domain.items import ItemDefinition
 from worldsim.domain.progress import ItemInstance
+from worldsim.domain.rules.coins import COINS_KEY, COINS_NAME
 
 
 async def give_item(
@@ -107,9 +108,66 @@ async def transfer_item(
 async def move_item(
     uow: UnitOfWork, item: ItemInstance, to_owner_id: CharacterId | None
 ) -> ItemInstance:
-    """Version-guarded holder change without audit or commit (see fold_claim)."""
+    """Version-guarded holder change without audit or commit (see fold_claim).
+
+    Coins join the purse the new holder already carries (coins-001).
+    """
+    if to_owner_id is not None and item.item_key == COINS_KEY:
+        purse = await _purse(uow, item.world_id, to_owner_id)
+        if purse is not None and purse.id != item.id:
+            await uow.inventory.remove_item(item.id)
+            return await uow.inventory.save_item(
+                purse.model_copy(update={"quantity": purse.quantity + item.quantity}),
+                purse.version,
+            )
     # Held items are with their holder, not lying anywhere.
     update: dict[str, object] = {"owner_id": to_owner_id}
     if to_owner_id is not None:
         update["location_id"] = None
     return await uow.inventory.save_item(item.model_copy(update=update), item.version)
+
+
+async def _purse(uow: UnitOfWork, world_id: WorldId, owner_id: CharacterId) -> ItemInstance | None:
+    held = await uow.inventory.list_for_owner(world_id, owner_id)
+    return next((i for i in held if i.item_key == COINS_KEY), None)
+
+
+async def pay_coins(
+    uow: UnitOfWork,
+    world_id: WorldId,
+    payer_id: CharacterId,
+    count: int,
+    to_owner_id: CharacterId | None,
+) -> int:
+    """Take up to ``count`` coins from the payer's purse, to another's purse
+    (or spent when nobody takes them); how many changed hands. Without
+    audit or commit, like ``move_item``."""
+    purse = await _purse(uow, world_id, payer_id)
+    if purse is None or count < 1:
+        return 0
+    paid = min(count, purse.quantity)
+    if paid == purse.quantity:
+        await uow.inventory.remove_item(purse.id)
+    else:
+        await uow.inventory.save_item(
+            purse.model_copy(update={"quantity": purse.quantity - paid}), purse.version
+        )
+    if to_owner_id is None or to_owner_id == payer_id:
+        return paid
+    theirs = await _purse(uow, world_id, to_owner_id)
+    if theirs is None:
+        await uow.inventory.add_item(
+            ItemInstance(
+                id=new_item_instance_id(),
+                world_id=world_id,
+                item_key=COINS_KEY,
+                owner_id=to_owner_id,
+                quantity=paid,
+                name=COINS_NAME,
+            )
+        )
+    else:
+        await uow.inventory.save_item(
+            theirs.model_copy(update={"quantity": theirs.quantity + paid}), theirs.version
+        )
+    return paid

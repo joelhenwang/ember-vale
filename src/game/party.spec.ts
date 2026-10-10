@@ -87,6 +87,29 @@ describe('party', () => {
     })
   })
 
+  it('says an ability check: who tried what, against how hard, how it went', () => {
+    const said = sayRoll({
+      kind: 'check',
+      text: "Wren's Athletics check: 9 against DC 12, partial.",
+      actor: 'Wren',
+      using: 'Athletics',
+      roll: 9,
+      natural: 6,
+      dc: 12,
+      result: 'partial'
+    })
+    expect(said).toEqual({
+      lead: 'Wren tries Athletics',
+      using: null,
+      check: '9 vs DC 12',
+      natural: 6,
+      outcome: 'Partly',
+      hp: null,
+      tone: 'save'
+    })
+    expect(sayRoll({ kind: 'check', text: '', actor: 'Ash', result: 'failure' }).tone).toBe('miss')
+  })
+
   it('says a blow on a foe already down plainly', () => {
     const late = sayRoll({
       kind: 'attack',
@@ -299,6 +322,9 @@ describe('spoils', () => {
   it('says what a fallen foe left', () => {
     expect(sayRoll({ kind: 'loot', text: 'x', actor: 'Goblin 2', using: 'scimitar' }).lead).toBe(
       'Goblin 2 left a scimitar'
+    )
+    expect(sayRoll({ kind: 'loot', text: 'x', actor: 'Zombie', using: '5 gold coins' }).lead).toBe(
+      'Zombie left 5 gold coins'
     )
     expect(sayRoll({ kind: 'loot', text: 'x', actor: 'Goblin', using: 'a few coins' }).lead).toBe(
       'Goblin left a few coins'

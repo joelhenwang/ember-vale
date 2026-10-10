@@ -213,6 +213,11 @@ def derive_spar_event_id(source_event_id: UUID) -> EventId:
     return _derive("spar", source_event_id.hex)
 
 
+def derive_check_event_id(source_event_id: UUID) -> EventId:
+    """Stable event ID for a scene's ability checks (combat-depth-003)."""
+    return _derive("check", source_event_id.hex)
+
+
 def derive_settle_xp_event_id(hook_id: UUID) -> EventId:
     """Stable event ID for the experience a settled rumour gives: one per rumour."""
     return _derive("settle-xp", hook_id.hex)

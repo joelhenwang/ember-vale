@@ -155,6 +155,23 @@ export function sayRoll(r: CombatRollView): RollSay {
       tone: 'info'
     }
   }
+  if (kind === 'check') {
+    // An ability check outside a fight: "Wren tries Athletics · 14 vs DC 12 · Success".
+    const words: Record<string, string> = {
+      success: 'Success',
+      partial: 'Partly',
+      failure: 'Fails'
+    }
+    return {
+      lead: `${actor || 'Someone'} tries ${r.using ?? 'it'}`,
+      using: null,
+      check: r.roll != null && r.dc != null ? `${r.roll} vs DC ${r.dc}` : null,
+      natural: r.natural ?? null,
+      outcome: r.result ? (words[r.result] ?? r.result) : null,
+      hp: null,
+      tone: r.result === 'success' ? 'hit' : r.result === 'failure' ? 'miss' : 'save'
+    }
+  }
   if (kind === 'condition') {
     return {
       lead: `${target || 'Someone'} is ${String(r.using ?? 'affected').toLowerCase()}`,
@@ -217,7 +234,7 @@ export function sayRoll(r: CombatRollView): RollSay {
   if (kind === 'loot') {
     const thing = r.using ?? 'something'
     return {
-      lead: `${actor || 'The foe'} left ${/^(a|an) /i.test(thing) ? thing : `a ${thing}`}`,
+      lead: `${actor || 'The foe'} left ${/^(a|an|\d+) /i.test(thing) ? thing : `a ${thing}`}`,
       using: null,
       check: null,
       natural: null,

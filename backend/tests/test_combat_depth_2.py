@@ -781,6 +781,11 @@ def test_the_fallen_leave_spoils_by_chance_and_at_most_two() -> None:
         "Goblin 1 left a scimitar.",
         "Wolf left a wolf pelt.",
     ]
+    # A foe with no weapon to drop and no pelt leaves a handful of gold coins.
+    (coins,) = spoils_of([("zombie", "Zombie")], DATA, _rng(0.0))
+    assert (coins.item_key, coins.name, coins.quantity) == ("gold-coins", "gold coins", 2)
+    (said,) = spoil_rows([coins])
+    assert (said.text, said.amount) == ("Zombie left 2 gold coins.", 2)
     # A fight where a goblin falls reports what it left.
     report = resolve_narration_tags(
         "ATTACK[longsword at goblin]: Wren strikes.",

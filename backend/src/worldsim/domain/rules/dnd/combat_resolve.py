@@ -23,6 +23,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, cast
 
+from worldsim.domain.rules.coins import COINS_KEY, COINS_NAME
 from worldsim.domain.rules.dnd.combat import (
     roll_attack,
     roll_damage,
@@ -161,6 +162,8 @@ class Spoil:
     item_key: str
     name: str
     description: str
+    #: How many (coins come as a counted stack).
+    quantity: int = 1
 
 
 #: Spoils a scene's fallen leave at most, and the chance each one does.
@@ -173,7 +176,7 @@ def spoils_of(
 ) -> list[Spoil]:
     """What the fallen leave, as (pool key, label) in falling order: its
     weapon when it fought with one the tables know ("a scimitar"), a pelt
-    for a beast, else a few coins; each by chance, at most two a scene."""
+    for a beast, else 2 to 7 gold coins; each by chance, at most two a scene."""
     monsters = table(tables, "monsters")
     weapons = table(tables, "weapons")
     left: list[Spoil] = []
@@ -211,7 +214,12 @@ def spoils_of(
         else:
             left.append(
                 Spoil(
-                    key, label, "coins", "a few coins", f"Found on the fallen {kind_name.lower()}."
+                    key,
+                    label,
+                    COINS_KEY,
+                    COINS_NAME,
+                    f"Found on the fallen {kind_name.lower()}.",
+                    quantity=1 + min(6, int(rng() * 6) + 1),
                 )
             )
     return left
@@ -222,13 +230,21 @@ def spoil_rows(spoils: list[Spoil]) -> list[TagOutcome]:
     return [
         TagOutcome(
             kind="loot",
-            text=f"{s.foe} left {s.name if s.name.startswith(('a ', 'an ')) else 'a ' + s.name}.",
+            text=f"{s.foe} left {_spoil_words(s)}.",
             actor=s.foe,
-            using=s.name,
+            using=_spoil_words(s),
+            amount=s.quantity if s.quantity > 1 else None,
             actor_foe=True,
         )
         for s in spoils
     ]
+
+
+def _spoil_words(spoil: Spoil) -> str:
+    """The spoil in words: 5 gold coins, a scimitar, a wolf pelt."""
+    if spoil.quantity > 1:
+        return f"{spoil.quantity} {spoil.name}"
+    return spoil.name if spoil.name.startswith(("a ", "an ")) else f"a {spoil.name}"
 
 
 @dataclass(frozen=True)
