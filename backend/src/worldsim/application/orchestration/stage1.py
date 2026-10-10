@@ -290,7 +290,13 @@ from worldsim.domain.rules.dnd import (
     weapon_attack_bonus,
 )
 from worldsim.domain.rules.dnd.data import dict_field, entry, str_field, table
-from worldsim.domain.rules.dnd.deeds import ORDINAL_WORDS, Deed, looks_like_deed, order_target
+from worldsim.domain.rules.dnd.deeds import (
+    ORDINAL_WORDS,
+    Deed,
+    fair_fight_line,
+    looks_like_deed,
+    order_target,
+)
 from worldsim.domain.rules.dnd.invites import (
     accepts,
     companion_attack,
@@ -4928,6 +4934,13 @@ class Stage1Orchestrator:
                 )
                 if seeking is not None:
                     facts.append({"key": "dnd-seek", "value": seeking})
+                # How large a fight should be for this party, should one come.
+                facts.append(
+                    {
+                        "key": "dnd-fair",
+                        "value": fair_fight_line([m.sheet.level for m in roster], tables),
+                    }
+                )
             fallen = down_line(
                 [
                     m.name

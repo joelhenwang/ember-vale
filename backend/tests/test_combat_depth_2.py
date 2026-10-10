@@ -755,3 +755,13 @@ def test_a_fight_turn_returns_before_its_words_and_dice_and_keeps_them(
             await engine.dispose()
 
     assert "goblin" in asyncio.run(kept()).lower()  # turn 1's checkpoint holds its fight
+
+
+def test_a_fair_fight_is_sized_for_the_party() -> None:
+    from worldsim.domain.rules.dnd.deeds import fair_counts, fair_fight_line
+
+    # A level-1 pair: two goblins are a hard fight, one is easy, three overwhelm.
+    assert dict(fair_counts([1, 1], ["goblin", "orc"], DATA)) == {"goblin": 2, "orc": 1}
+    line = fair_fight_line([1, 1], DATA)
+    assert "two at level 1" in line and "two goblins" in line and "ENCOUNTER[2x goblin]" in line
+    assert "two wolves" in line
