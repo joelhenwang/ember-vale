@@ -744,6 +744,31 @@ class PartyRosterResponse(BaseModel):
     fight_index: int | None = None
 
 
+class ShopGoodView(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    key: str
+    name: str
+    #: Whole gold coins.
+    price: int
+    description: str = ""
+    #: False for what is used up at once (a meal, a room for the night).
+    keep: bool = True
+
+
+class ShopResponse(BaseModel):
+    """What is for sale where the played character stands (shops-001)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    world_id: UUID
+    #: The place's name; None when nothing is sold there or nobody is played.
+    place: str | None = None
+    goods: list[ShopGoodView] = Field(default_factory=list)
+    #: Gold coins the played character carries.
+    purse: int = 0
+
+
 class MacroEffectView(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 

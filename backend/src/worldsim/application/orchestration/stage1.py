@@ -42,7 +42,7 @@ from sqlalchemy.exc import IntegrityError
 
 from worldsim.application.callings import suggest_calling
 from worldsim.application.commands.director import accept_decision, open_place
-from worldsim.application.commands.inventory import move_item, pay_coins
+from worldsim.application.commands.inventory import buy_good, move_item, pay_coins
 from worldsim.application.commands.knowledge import fold_claim
 from worldsim.application.commands.party import recruit_companion
 from worldsim.application.conditions import tick_conditions
@@ -332,6 +332,15 @@ from worldsim.domain.rules.repeats import (
 from worldsim.domain.rules.resources import rest_recovery, restore, spend
 from worldsim.domain.rules.routes import with_route
 from worldsim.domain.rules.scenes import assemble_scenes
+from worldsim.domain.rules.shop import (
+    Good,
+    drinks_potion,
+    for_sale,
+    good_named,
+    load_goods,
+    roll_heal,
+    sale_line,
+)
 from worldsim.domain.rules.views import WorldView
 from worldsim.domain.scenes import Attempt, Intent, Reaction, Resolution, Scene
 from worldsim.domain.settings import LOCAL_OPERATOR
@@ -460,6 +469,64 @@ def _item_catalog() -> dict[str, ItemDefinition]:
         except (OSError, ValueError):
             _item_catalog_cache = {}
     return _item_catalog_cache
+
+
+SHOP_PATH = ITEM_CATALOG_PATH.parent / "shop.json"
+_goods_cache: dict[str, Good] | None = None
+
+
+def shop_goods() -> dict[str, Good]:
+    """The goods for sale in combat stories (shops-001); none if unreadable."""
+    global _goods_cache
+    if _goods_cache is None:
+        try:
+            _goods_cache = load_goods(SHOP_PATH)
+        except (OSError, ValueError, KeyError):
+            _goods_cache = {}
+    return _goods_cache
+
+
+def shop_notes(
+    members: Sequence[Intent],
+    characters: Sequence[Character],
+    locations: Sequence[Location],
+    items: Sequence[ItemInstance],
+) -> list[str]:
+    """What is for sale where the actors stand, and a buyer who cannot pay:
+    told to the resolver in combat stories only (shops-001)."""
+    names = {loc.id: loc.name for loc in locations}
+    where = {c.id: c.location_id for c in characters}
+    who = {c.id: c.name for c in characters}
+    notes: list[str] = []
+    for place_id in dict.fromkeys(where.get(m.author_character_id) for m in members):
+        if place_id is None:
+            continue
+        place = names.get(place_id, "")
+        line = sale_line(place, for_sale(place, shop_goods()))
+        if line is not None:
+            notes.append(line)
+    for intent in members:
+        action = intent.action
+        if not isinstance(action, InteractAction):
+            continue
+        place_id = where.get(intent.author_character_id)
+        place = names.get(place_id, "") if place_id is not None else ""
+        good = good_named(action.attempt, for_sale(place, shop_goods()))
+        if good is None:
+            continue
+        price = max(good.price, coins_paid(action.attempt) or 0)
+        held = sum(
+            i.quantity
+            for i in items
+            if i.owner_id == intent.author_character_id and i.item_key == COINS_KEY
+        )
+        if held < price:
+            buyer = who.get(intent.author_character_id, "They")
+            notes.append(
+                f"{buyer} carries {held} gold coin{'s' if held != 1 else ''}: "
+                f"the {good.name} costs {price}, so they cannot buy it."
+            )
+    return notes
 
 
 def item_label(item: ItemInstance) -> str:
@@ -3665,6 +3732,9 @@ class Stage1Orchestrator:
             )
         party = await self._party_note(world_id, character)
         if party is not None:
+            selling = await self._sale_here(world_id, character)
+            if selling is not None:
+                party = f"{party} {selling}"
             candidates.append(
                 SourceCandidate(
                     source_id=f"party:{character.id}",
@@ -3861,6 +3931,12 @@ class Stage1Orchestrator:
             return None
         leader = watched_leader(roster)
         return leader.character_id if leader is not None else None
+
+    async def _sale_here(self, world_id: UUID, character: Character) -> str | None:
+        """What is for sale where a party member stands (shops-001)."""
+        places = {loc.id: loc.name for loc in (await self._world_view(world_id)).locations}
+        name = places.get(character.location_id, "")
+        return sale_line(name, for_sale(name, shop_goods()))
 
     async def _party_note(self, world_id: UUID, character: Character) -> str | None:
         """A linked companion's note: in the party, and the fight that is on."""
@@ -4369,8 +4445,14 @@ class Stage1Orchestrator:
         for intent in members:
             action = intent.action
             paying = coins_paid(action.attempt) if isinstance(action, InteractAction) else None
-            if paying is None and not isinstance(
-                action, (SparAction, AppealAction, TransferAction, TakeAction)
+            trading = isinstance(action, InteractAction) and (
+                good_named(action.attempt, list(shop_goods().values())) is not None
+                or drinks_potion(action.attempt)
+            )
+            if (
+                paying is None
+                and not trading
+                and not isinstance(action, (SparAction, AppealAction, TransferAction, TakeAction))
             ):
                 continue
             async with self._factory() as uow:
@@ -4412,15 +4494,18 @@ class Stage1Orchestrator:
                 elif isinstance(action, TakeAction):
                     await self._settle_take(uow, intent, action)
                 elif isinstance(action, InteractAction):
-                    # A paying attempt that worked: the coins change hands.
-                    assert paying is not None
-                    await pay_coins(
-                        uow,
-                        world_id,
-                        intent.author_character_id,
-                        paying,
-                        action.target_character_id,
+                    traded = trading and await self._settle_trade(
+                        uow, world_id, run_id, index, intent, action, event_id, paying
                     )
+                    if not traded and paying is not None:
+                        # A paying attempt that worked: the coins change hands.
+                        await pay_coins(
+                            uow,
+                            world_id,
+                            intent.author_character_id,
+                            paying,
+                            action.target_character_id,
+                        )
                 else:
                     assert isinstance(action, TransferAction)
                     await self._settle_transfer(uow, intent, action)
@@ -4536,6 +4621,111 @@ class Stage1Orchestrator:
                 random_result=outcome[:512],
             )
         )
+
+    async def _settle_trade(
+        self,
+        uow: Any,
+        world_id: UUID,
+        run_id: UUID,
+        index: int,
+        intent: Intent,
+        action: InteractAction,
+        event_id: UUID,
+        paying: int | None,
+    ) -> bool:
+        """A successful buy or a healing potion drunk, in a combat story
+        (shops-001); False when the words were neither here."""
+        roster = await uow.party.list_for_world(world_id)
+        if not roster:
+            return False
+        member = next((m for m in roster if m.character_id == intent.author_character_id), None)
+        if drinks_potion(action.attempt):
+            return await self._drink_potion(uow, world_id, run_id, index, intent, member, event_id)
+        buyer = await uow.characters.get(intent.author_character_id)
+        place = await uow.locations.get(buyer.location_id)
+        good = good_named(action.attempt, for_sale(place.name, shop_goods()))
+        if good is None:
+            return False
+        bought = await buy_good(
+            uow, world_id, buyer.id, good, paying or 0, action.target_character_id
+        )
+        weapons = table(self._dnd_tables(), "weapons")
+        if bought is not None and member is not None and good.key in weapons:
+            # A bought weapon is one the buyer can fight with.
+            if good.key not in member.sheet.weapons:
+                sheet = member.sheet.model_copy(deep=True)
+                sheet.weapons.append(good.key)
+                await uow.party.save_sheet(member.id, sheet, member.version)
+        return True
+
+    async def _drink_potion(
+        self,
+        uow: Any,
+        world_id: UUID,
+        run_id: UUID,
+        index: int,
+        intent: Intent,
+        member: PartyMember | None,
+        event_id: UUID,
+    ) -> bool:
+        """Drink a held healing potion: it heals its dice, kept as the
+        scene's dice. Without a potion in hand nothing happens."""
+        healing = {g.key: g for g in shop_goods().values() if g.heals}
+        held = await uow.inventory.list_for_owner(world_id, intent.author_character_id)
+        potion = next((i for i in held if i.item_key in healing), None)
+        if potion is None:
+            return True
+        await uow.inventory.remove_item(potion.id)
+        if member is None or member.sheet.hp is None:
+            return True
+        good = healing[potion.item_key]
+        today = split_absolute(index)[0]
+        sheet = long_rest(member.sheet, today).model_copy(deep=True)
+        assert sheet.hp is not None and good.heals is not None
+        digest = hashlib.sha256(f"{event_id}:{intent.id}:potion".encode()).digest()[:8]
+        rolled = roll_heal(good.heals, random.Random(int.from_bytes(digest, "big")))
+        before = sheet.hp.current
+        sheet.hp.current = min(sheet.hp.max, before + rolled)
+        await uow.party.save_sheet(member.id, sheet, member.version)
+        text = (
+            f"{member.name} drinks a {good.name}: {rolled} hit points "
+            f"({before}->{sheet.hp.current} HP)."
+        )
+        sequence = await uow.events.max_sequence(world_id) + 1
+        await uow.events.append_event(
+            WorldEvent(
+                id=uuid5(event_id, f"potion:{intent.id}"),
+                world_id=world_id,
+                sequence=sequence,
+                event_type=EventType.ACTION_RESOLVED,
+                absolute_index=index,
+                phase_run_id=run_id,
+                participant_ids=[intent.author_character_id],
+                summary={
+                    "potion": text[:512],
+                    "scene_event_id": str(event_id),
+                    "rolls": combat_rolls_json(
+                        [
+                            TagOutcome(
+                                kind="potion",
+                                text=text,
+                                actor=member.name,
+                                target=member.name,
+                                using=good.name,
+                                result="healed",
+                                amount=rolled,
+                                hp_before=before,
+                                hp_after=sheet.hp.current,
+                            )
+                        ],
+                        [],
+                    ),
+                },
+                random_algorithm="seeded-dice-v1",
+                random_result=text[:512],
+            )
+        )
+        return True
 
     async def _settle_take(self, uow: Any, intent: Intent, action: TakeAction) -> None:
         """Pick up an unheld item where the taker stands; gone already is a no-op."""
@@ -4839,6 +5029,8 @@ class Stage1Orchestrator:
         checks = roll_checks(scene.id, members, roster)
         notes.extend(check_line(check) for check in checks)
         notes.extend(purse_notes(members, characters, items))
+        if roster:
+            notes.extend(shop_notes(members, characters, locations, items))
         task_run_id = derive_task_id(run_id, "resolver", scene.id)
         spec = ManifestSpec(
             role="resolver",

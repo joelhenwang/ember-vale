@@ -17,6 +17,7 @@ from fastapi import APIRouter, Request, Response
 from pydantic import TypeAdapter
 
 from worldsim.application.capabilities import Capability, parse_role, require_capability
+from worldsim.application.commands.inventory import purse_of
 from worldsim.application.commands.party import (
     begin_adventure,
     calling_state,
@@ -25,7 +26,7 @@ from worldsim.application.commands.party import (
     create_character,
     link_member,
 )
-from worldsim.application.orchestration.stage1 import Stage1Orchestrator
+from worldsim.application.orchestration.stage1 import Stage1Orchestrator, shop_goods
 from worldsim.application.queries.suggestions import suggestions_for
 from worldsim.application.stories.guards import require_unarchived
 from worldsim.domain.commands import ActionIntent
@@ -36,6 +37,7 @@ from worldsim.domain.rules.dnd import DataTables, armor_ac, strip_combat_tags, x
 from worldsim.domain.rules.dnd.data import entry, table
 from worldsim.domain.rules.dnd.progress import class_slots, long_rest, slots_left
 from worldsim.domain.rules.dnd.sheets import Sheet
+from worldsim.domain.rules.shop import for_sale
 from worldsim.domain.scenes import Intent, Reaction
 from worldsim.domain.time import absolute_index
 from worldsim.interfaces.http import schemas as api
@@ -638,6 +640,34 @@ async def change_party_calling(
         today = (await uow.worlds.get(body.world_id)).day
         changeable = (await calling_state(uow, body.world_id)).changeable(member)
     return _party_view(member, tables, today, changeable)
+
+
+@router.get("/stage1/shop", response_model=api.ShopResponse)
+async def shop(world_id: UUID, request: Request) -> api.ShopResponse:
+    """What is for sale where the played character stands, in a combat
+    story, and their purse (shops-001). Empty for watchers."""
+    _role, viewer = await _perspective(request, world_id)
+    state = request.app.state.app_state
+    if viewer is None:
+        return api.ShopResponse(world_id=world_id)
+    async with state.uow_factory()() as uow:
+        if not await uow.party.list_for_world(world_id):
+            return api.ShopResponse(world_id=world_id)
+        character = await uow.characters.get(viewer)
+        place = await uow.locations.get(character.location_id)
+        purse = await purse_of(uow, world_id, viewer)
+    goods = for_sale(place.name, shop_goods())
+    return api.ShopResponse(
+        world_id=world_id,
+        place=place.name if goods else None,
+        goods=[
+            api.ShopGoodView(
+                key=g.key, name=g.name, price=g.price, description=g.description, keep=g.keep
+            )
+            for g in goods
+        ],
+        purse=purse,
+    )
 
 
 @router.get("/stage1/party", response_model=api.PartyRosterResponse)

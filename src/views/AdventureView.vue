@@ -61,6 +61,7 @@ import {
   type LogLine
 } from '../game/adventure'
 import { beatTimeLabel, layoutTokens } from '../game/observatory'
+import { buyChips } from '../game/shop'
 
 const route = useRoute()
 const storyId = computed(() => String(route.params.storyId ?? ''))
@@ -181,6 +182,13 @@ const leads = computed(() =>
     ? leadChips(adv.me.value, rumours.value, adv.present.value, adv.places.value, adv.hereId.value)
     : []
 )
+/** What is for sale where you stand (combat stories), as buy chips. */
+const forSale = computed(() => buyChips(adv.shop.value))
+/** A buy chip fills the composer with a plain Do attempt to send or edit. */
+function buy(attempt: string): void {
+  mode.value = 'do'
+  text.value = attempt
+}
 const nowIndex = computed(() => adv.presentation.value?.absolute_index ?? 0)
 const branches = useBranchPoints(storyId, nowIndex)
 /** The turn whose "Branch from here" was chosen (the confirmation is open). */
@@ -992,6 +1000,26 @@ onMounted(() => {
           </div>
 
           <form ref="composerEl" class="composer" @submit.prevent="submit">
+            <Transition name="ev-rise">
+              <div v-if="forSale.length" class="shop" role="group" aria-label="For sale here">
+                <span class="shop__title">
+                  For sale at {{ adv.shop.value?.place }}
+                  <span class="shop__purse">· you carry {{ adv.shop.value?.purse ?? 0 }} gold</span>
+                </span>
+                <div class="shop__goods">
+                  <button
+                    v-for="c in forSale"
+                    :key="c.key"
+                    type="button"
+                    class="shop__chip ev-press"
+                    :disabled="!c.affordable || adv.acting.value || !adv.alive.value"
+                    :title="c.short ?? c.attempt"
+                    @click="buy(c.attempt)">
+                    {{ c.label }}
+                  </button>
+                </div>
+              </div>
+            </Transition>
             <div class="composer__row">
               <!-- Do or Say: one sliding switch beside the words -->
               <div class="composer__side">
@@ -2586,6 +2614,46 @@ button.log__picture:hover .log__thumb img {
   border-top: 1px solid var(--line);
   background: linear-gradient(180deg, var(--panel), var(--panel-2));
   padding: 8px 14px 10px;
+}
+/* What is for sale where you stand: chips that fill the composer (shops-001). */
+.shop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-bottom: 8px;
+}
+.shop__title {
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.shop__purse {
+  color: var(--ink-3);
+}
+.shop__goods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+.shop__chip {
+  font: inherit;
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  padding: 2px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink);
+  cursor: pointer;
+}
+.shop__chip:hover:not(:disabled) {
+  border-color: var(--ember);
+}
+.shop__chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .composer__side {
   flex: none;

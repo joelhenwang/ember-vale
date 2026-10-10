@@ -171,6 +171,21 @@ export interface PartyRosterResponse {
   world_id: string;
 }
 
+export interface ShopGoodView {
+  description?: string;
+  keep?: boolean;
+  key: string;
+  name: string;
+  price: number;
+}
+
+export interface ShopResponse {
+  goods?: ShopGoodView[];
+  place?: string | null;
+  purse?: number;
+  world_id: string;
+}
+
 export interface FoeView {
   armor_class: number;
   hp_current: number;

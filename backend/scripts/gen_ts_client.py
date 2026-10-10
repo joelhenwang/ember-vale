@@ -37,6 +37,8 @@ WANTED = (
     "PartyBeginRequest",
     "PartyMemberView",
     "PartyRosterResponse",
+    "ShopGoodView",
+    "ShopResponse",
     "FoeView",
     "LevelChoiceView",
     "SpellOption",

@@ -7,6 +7,7 @@ import {
   getParty,
   getPresentation,
   getRole,
+  getShop,
   getSceneNarration,
   getStory,
   openStory,
@@ -26,6 +27,7 @@ import type {
   PartyRosterResponse,
   PresentationResponse,
   RoleGrantView,
+  ShopResponse,
   Stage1AdvanceResponse,
   StoryDetail,
   SuggestionView
@@ -52,6 +54,8 @@ export interface AdventureApi {
   getSuggestions(characterId: string, opts: CallOptions): Promise<SuggestionView[]>
   listItems(worldId: string, ownerId: string | null, opts: CallOptions): Promise<ItemListResponse>
   getParty(worldId: string, opts: CallOptions): Promise<PartyRosterResponse>
+  /** What is for sale where the hero stands (combat stories). */
+  getShop?(worldId: string, opts: CallOptions): Promise<ShopResponse>
   advance(
     worldId: string,
     index: number,
@@ -72,6 +76,7 @@ const LIVE_API: AdventureApi = {
   getSuggestions: (id, o) => getSuggestions(id, o),
   listItems: (id, owner, o) => listItems(id, owner, o),
   getParty: (id, o) => getParty(id, o),
+  getShop: (id, o) => getShop(id, o),
   advance: (id, index, intents, o) =>
     advanceStory(id, index, intents as Parameters<typeof advanceStory>[2], o)
 }
@@ -124,6 +129,8 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
   /** A combat story's party and current foes; null until read, empty members
    *  for a story without fights. */
   const party = ref<PartyRosterResponse | null>(null)
+  /** What is for sale where the hero stands (null: nothing, or no fights). */
+  const shop = ref<ShopResponse | null>(null)
   const loading = ref(true)
   const error = ref<string | null>(null)
   const actionError = ref<string | null>(null)
@@ -213,6 +220,16 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
     if (owned.status === 'fulfilled') items.value = owned.value.members ?? []
     if (offered.status === 'fulfilled') suggestions.value = offered.value
     if (roster.status === 'fulfilled') party.value = roster.value
+    // Only a story with fights has things for sale (and gold to pay with).
+    if (party.value?.members?.length && api.getShop) {
+      try {
+        shop.value = await api.getShop(worldId.value, opts.value)
+      } catch {
+        // Not knowing the shop never blocks the story; the last read stays.
+      }
+    } else {
+      shop.value = null
+    }
   }
 
   async function refreshPlacesIfNew(view: PresentationResponse): Promise<void> {
@@ -371,6 +388,7 @@ export function useAdventure(worldId: Ref<string>, options: AdventureOptions = {
     items,
     suggestions,
     party,
+    shop,
     loading,
     error,
     actionError,
