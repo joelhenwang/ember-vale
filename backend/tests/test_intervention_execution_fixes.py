@@ -600,8 +600,11 @@ def test_overlapping_appliers_converge_on_one_activity(migrated_db: None, monkey
             service._apply_effect_step(factory, ids["world"], 1, step, item.id, chars),
         )
         # Both appliers really were inside the effect window together;
-        # anything less would not prove overlap.
-        assert calls == ["in", "in"]
+        # anything less would not prove overlap. The loser may trip the
+        # unique constraint and take its one adopt pass (a third entry):
+        # _apply_effect_step's documented retry. CI saw that interleaving
+        # once commits got faster (perf-turn-002); convergence is the point.
+        assert calls[:2] == ["in", "in"] and len(calls) <= 3
 
         (done,) = await _steps_of(factory, item.id)
         assert done.status == StepStatus.COMPLETED
