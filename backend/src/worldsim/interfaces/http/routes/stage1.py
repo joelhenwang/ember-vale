@@ -66,16 +66,19 @@ def _spell_options(tables: DataTables, keys: list[str]) -> list[api.SpellOption]
 
 
 def _choices(tables: DataTables, sheet: Sheet) -> list[api.LevelChoiceView]:
-    return [
-        api.LevelChoiceView(
-            id=choice.id,
-            kind=choice.kind,
-            level=choice.level,
-            picked=_spell_options(tables, choice.picked),
-            options=_spell_options(tables, choice.options),
+    views: list[api.LevelChoiceView] = []
+    for choice in sheet.choices:
+        picked = _spell_options(tables, choice.picked)
+        # Swaps of the picked spells' own levels (choices kept before that
+        # rule also listed cantrips for a first-level spell).
+        levels = {spell.level for spell in picked}
+        options = [o for o in _spell_options(tables, choice.options) if o.level in levels]
+        views.append(
+            api.LevelChoiceView(
+                id=choice.id, kind=choice.kind, level=choice.level, picked=picked, options=options
+            )
         )
-        for choice in sheet.choices
-    ]
+    return views
 
 
 def _party_view(
