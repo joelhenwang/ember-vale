@@ -6,16 +6,39 @@ from typing import Any
 from uuid import UUID
 
 from pydantic import TypeAdapter
-from sqlalchemy import func, select
+from sqlalchemy import func, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from worldsim.domain.effects import DomainEffect
 from worldsim.domain.enums import EventType, Visibility
 from worldsim.domain.events import CommittedEffect, WorldEvent
+from worldsim.infrastructure.models.commands import UserCommandRow
 from worldsim.infrastructure.models.events import EventEffectRow, WorldEventRow
 from worldsim.infrastructure.repositories._common import missing
 
 _effect_adapter: TypeAdapter[DomainEffect] = TypeAdapter(DomainEffect)
+
+
+def _event_values(event: WorldEvent) -> dict[str, Any]:
+    """An event's columns, as the ORM row and the one-statement insert take them."""
+    return {
+        "id": event.id,
+        "world_id": event.world_id,
+        "sequence": event.sequence,
+        "event_type": event.event_type.value,
+        "schema_version": event.schema_version,
+        "absolute_index": event.absolute_index,
+        "phase_run_id": event.phase_run_id,
+        "source_command_id": event.source_command_id,
+        "source_task_id": event.source_task_id,
+        "participant_ids": [str(item) for item in event.participant_ids],
+        "summary": dict(event.summary),
+        "visibility": event.visibility.value,
+        "random_seed": event.random_seed,
+        "random_algorithm": event.random_algorithm,
+        "random_result": event.random_result,
+        "created_at": event.created_at,
+    }
 
 
 class SqlAlchemyEventRepository:
@@ -31,27 +54,48 @@ class SqlAlchemyEventRepository:
         return value if isinstance(value, int) else 0
 
     async def append_event(self, event: WorldEvent) -> None:
-        self._session.add(
-            WorldEventRow(
-                id=event.id,
-                world_id=event.world_id,
-                sequence=event.sequence,
-                event_type=event.event_type.value,
-                schema_version=event.schema_version,
-                absolute_index=event.absolute_index,
-                phase_run_id=event.phase_run_id,
-                source_command_id=event.source_command_id,
-                source_task_id=event.source_task_id,
-                participant_ids=[str(item) for item in event.participant_ids],
-                summary=dict(event.summary),
-                visibility=event.visibility.value,
-                random_seed=event.random_seed,
-                random_algorithm=event.random_algorithm,
-                random_result=event.random_result,
-                created_at=event.created_at,
-            )
-        )
+        self._session.add(WorldEventRow(**_event_values(event)))
         await self._session.flush()
+
+    async def append_event_completing(self, event: WorldEvent, command_id: UUID) -> None:
+        """Append the event and link it as its command's result in one
+        statement (perf-turn-002): the command's ``result_event_id`` is set
+        from the event insert's RETURNING. Same rows as append_event plus
+        CommandRepository.set_result; the foreign key is checked at the end
+        of the statement, when the event is there."""
+        made = (
+            insert(WorldEventRow)
+            .values(**_event_values(event))
+            .returning(WorldEventRow.id)
+            .cte("made_event")
+        )
+        statement = (
+            update(UserCommandRow)
+            .where(UserCommandRow.id == command_id)
+            .values(result_event_id=made.c.id)
+            .add_cte(made)
+            .returning(UserCommandRow.id)
+        )
+        if (await self._session.execute(statement)).first() is None:
+            raise missing("command", command_id)
+
+    async def append_effects(self, effects: list[CommittedEffect]) -> None:
+        """Several effects in one multi-row insert (a commit's effects)."""
+        if not effects:
+            return
+        await self._session.execute(
+            insert(EventEffectRow),
+            [
+                {
+                    "event_id": effect.event_id,
+                    "ordinal": effect.ordinal,
+                    "effect_type": effect.effect.effect_type.value,
+                    "schema_version": effect.effect.schema_version,
+                    "payload": effect.effect.model_dump(mode="json"),
+                }
+                for effect in effects
+            ],
+        )
 
     async def append_effect(self, effect: CommittedEffect) -> None:
         self._session.add(

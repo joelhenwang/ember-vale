@@ -13,6 +13,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from worldsim.domain.costs import ModelCost
 from worldsim.domain.tracing import ContextManifest, ModelCall
 
 ExportStatus = Literal["ok", "skipped", "failed"]
@@ -40,6 +41,20 @@ class TraceRepository(Protocol):
 
     async def finish_call(self, call_id: UUID, completion: StoredCompletion) -> None: ...
 
+    async def start_call_with_manifest(
+        self,
+        call: ModelCall,
+        prompt_redacted: str,
+        prompt_version: str,
+        max_tokens: int,
+        sampling: dict[str, Any] | None,
+        manifest: ContextManifest,
+    ) -> None: ...
+
+    async def finish_call_with_cost(
+        self, call_id: UUID, completion: StoredCompletion, cost: ModelCost, world_id: UUID | None
+    ) -> None: ...
+
     async def fail_call(
         self,
         call_id: UUID,
@@ -58,6 +73,8 @@ class TraceRepository(Protocol):
     async def get_call_attempts(self, call_id: UUID) -> list[dict[str, Any]]: ...
 
     async def get_manifest(self, call_id: UUID) -> ContextManifest: ...
+
+    async def count_for_phase_run(self, phase_run_id: UUID) -> int: ...
 
     async def list_for_phase_run(self, phase_run_id: UUID) -> list[ModelCall]: ...
 

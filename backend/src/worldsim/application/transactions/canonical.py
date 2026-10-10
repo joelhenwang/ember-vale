@@ -152,31 +152,35 @@ class CanonicalTransaction:
 
     async def commit(self, request: CommitRequest) -> CommitResult:
         async with self._factory() as uow:
-            existing = await uow.commands.get_by_key(request.world_id, request.idempotency_key)
-            if existing is not None:
+            # One statement records the command or finds its key taken (it
+            # waits for a transaction holding the key, as the unique index
+            # did): a replay or a lost race answers as the first commit did.
+            recorded = await uow.commands.add_new(
+                command_id=request.command_id,
+                world_id=request.world_id,
+                key=request.idempotency_key,
+                actor_role=request.actor_role,
+                command_type=request.command_type,
+                expected_versions=dict(request.expected_versions),
+                payload=dict(request.payload),
+                input_hash=request.input_hash,
+            )
+            if not recorded:
+                existing = await uow.commands.get_by_key(request.world_id, request.idempotency_key)
+                if existing is None:
+                    raise DomainError(
+                        ErrorCode.IDEMPOTENCY_CONFLICT,
+                        f"duplicate command key: {request.idempotency_key}",
+                    )
                 return await self._duplicate(uow, existing, request)
-            try:
-                await uow.commands.add(
-                    command_id=request.command_id,
-                    world_id=request.world_id,
-                    key=request.idempotency_key,
-                    actor_role=request.actor_role,
-                    command_type=request.command_type,
-                    expected_versions=dict(request.expected_versions),
-                    payload=dict(request.payload),
-                    input_hash=request.input_hash,
-                )
-            except DomainError as exc:
-                if exc.code is not ErrorCode.IDEMPOTENCY_CONFLICT:
-                    raise
-                await uow.rollback()
-                return await self._race_retry(request, exc)
             self._fire("after_command")
             expected = {UUID(key): value for key, value in request.expected_versions.items()}
             await uow.versions.check(expected)
             sequence = await uow.events.max_sequence(request.world_id) + 1
             event_id = uuid4()
-            await uow.events.append_event(
+            # The event and its command's result link in one statement, the
+            # effects in one more (perf-turn-002).
+            await uow.events.append_event_completing(
                 WorldEvent(
                     id=event_id,
                     world_id=request.world_id,
@@ -187,13 +191,15 @@ class CanonicalTransaction:
                     source_command_id=request.command_id,
                     participant_ids=list(request.participant_ids),
                     summary=dict(request.summary),
-                )
+                ),
+                request.command_id,
             )
-
-            for ordinal, effect in enumerate(request.effects):
-                await uow.events.append_effect(
+            await uow.events.append_effects(
+                [
                     CommittedEffect(event_id=event_id, ordinal=ordinal, effect=effect)
-                )
+                    for ordinal, effect in enumerate(request.effects)
+                ]
+            )
             self._fire("after_effects")
             if request.scene_records is not None:
                 await self._persist_scene(uow, request, event_id)
@@ -208,7 +214,6 @@ class CanonicalTransaction:
             outbox_ids = await self._enqueue(uow, request, event_id)
             self._fire("after_outbox")
             memory_ids = await self._remember(uow, request, event_id, observation_ids)
-            await uow.commands.set_result(request.command_id, event_id)
             await uow.commit()
             return CommitResult(
                 event_id=event_id,
@@ -246,13 +251,6 @@ class CanonicalTransaction:
             outbox_ids=[],
             duplicate=True,
         )
-
-    async def _race_retry(self, request: CommitRequest, exc: BaseException) -> CommitResult:
-        async with self._factory() as uow:
-            existing = await uow.commands.get_by_key(request.world_id, request.idempotency_key)
-            if existing is None:
-                raise exc
-            return await self._duplicate(uow, existing, request)
 
     async def _persist_scene(self, uow: UnitOfWork, request: CommitRequest, event_id: UUID) -> None:
         """Persist the scene layer with commit-time statuses (S1-COMMIT-001)."""

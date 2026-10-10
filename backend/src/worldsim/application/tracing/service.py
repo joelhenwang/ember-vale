@@ -200,14 +200,16 @@ class TraceService:
             if spec.pin_profile_id is not None and spec.pin_profile_revision is not None:
                 sampling["pin_profile_id"] = spec.pin_profile_id
                 sampling["pin_profile_revision"] = spec.pin_profile_revision
-            await uow.traces.start_call(
+            # The call is on record, with its manifest, before the model is
+            # asked: one statement (perf-turn-002), committed now.
+            await uow.traces.start_call_with_manifest(
                 call,
                 redact(request.prompt),
                 spec.prompt_version,
                 request.max_tokens,
                 sampling,
+                manifest,
             )
-            await uow.traces.save_manifest(manifest)
             await uow.commit()
         self._profiles.add(profile_key)  # only once the row is surely there
 
@@ -273,8 +275,7 @@ class TraceService:
             reported_usd=result.cost_usd,
         )
         async with self._factory() as uow:
-            await uow.traces.finish_call(call_id, stored)
-            await uow.costs.add(cost, spec.world_id)
+            await uow.traces.finish_call_with_cost(call_id, stored, cost, spec.world_id)
             await uow.commit()
         export = await self._exporter.export(finished, manifest, stored)
         return TracedCall(
