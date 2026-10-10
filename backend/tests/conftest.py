@@ -5,7 +5,7 @@ from __future__ import annotations
 import ipaddress
 import os
 import socket
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from typing import Any, cast
 
 import pytest
@@ -116,6 +116,85 @@ def migrated_db(monkeypatch: pytest.MonkeyPatch, _db_template: str) -> Iterator[
     )
     yield
     drop_scratch_database(Settings(), name)
+
+
+class DbSnapshots:
+    """Databases holding a prepared story, built once per worker and cloned per test.
+
+    Several tests start from the same played story (five turns take ~6 s);
+    it is played once into its own database and every test gets a fresh
+    copy of it (CREATE DATABASE ... TEMPLATE, as migrated_db), so tests
+    still never share rows.
+    """
+
+    def __init__(self, template: str) -> None:
+        self._template = template
+        self._built: dict[str, tuple[str, Any]] = {}
+
+    def get(self, key: str, build: Callable[[], Any]) -> tuple[str, Any]:
+        if key not in self._built:
+            from fixtures.postgres import clone_database, replace_database, scratch_name
+
+            name = scratch_name("worldsim_stage0_template")
+            settings = Settings()
+            clone_database(settings, self._template, name)
+            previous = os.environ.get("WORLDSIM_DATABASE__URL")
+            os.environ["WORLDSIM_DATABASE__URL"] = replace_database(settings.database.url, name)
+            try:
+                # build must close every connection: clones need an idle source.
+                self._built[key] = (name, build())
+            finally:
+                if previous is None:
+                    os.environ.pop("WORLDSIM_DATABASE__URL", None)
+                else:
+                    os.environ["WORLDSIM_DATABASE__URL"] = previous
+        return self._built[key]
+
+    def names(self) -> list[str]:
+        return [name for name, _ in self._built.values()]
+
+
+@pytest.fixture(scope="session")
+def _db_snapshots(_db_template: str) -> Iterator[DbSnapshots]:
+    from fixtures.postgres import drop_scratch_database
+
+    snapshots = DbSnapshots(_db_template)
+    yield snapshots
+    for name in snapshots.names():
+        drop_scratch_database(Settings(), name)
+
+
+@pytest.fixture
+def snapshot_db(
+    monkeypatch: pytest.MonkeyPatch, _db_snapshots: DbSnapshots
+) -> Iterator[Callable[[str, Callable[[], Any]], Any]]:
+    """``use(key, build)``: this test's database is a copy of the snapshot ``key``.
+
+    ``build`` runs once per worker against a migrated database and returns
+    what the tests need to know about it (ids, dumps); ``use`` returns that.
+    The copy is dropped when the test ends, as migrated_db's is.
+    """
+    from fixtures.postgres import (
+        clone_database,
+        drop_scratch_database,
+        replace_database,
+        scratch_name,
+    )
+
+    names: list[str] = []
+
+    def use(key: str, build: Callable[[], Any]) -> Any:
+        source, value = _db_snapshots.get(key, build)
+        name = scratch_name("worldsim_stage0_test")
+        settings = Settings()
+        clone_database(settings, source, name)
+        names.append(name)
+        monkeypatch.setenv("WORLDSIM_DATABASE__URL", replace_database(settings.database.url, name))
+        return value
+
+    yield use
+    for name in names:
+        drop_scratch_database(Settings(), name)
 
 
 def pytest_sessionstart(session: pytest.Session) -> None:

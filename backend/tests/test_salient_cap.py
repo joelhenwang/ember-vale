@@ -23,8 +23,9 @@ def test_older_salient_rows_are_capped_and_recent_ones_kept(
     gateway.route = _route_for(probe_on_first=True)
     headers = {"X-Worldsim-Role": "watcher"}
     client.post("/api/v1/world/seed", headers=headers)
-    _advance(client, headers, 1, 8)
-    since = 6
+    # Two turns before the cut and two after: older rows outnumber the cap.
+    _advance(client, headers, 1, 4)
+    since = 3
 
     async def _check() -> None:
         engine = create_engine(Settings())

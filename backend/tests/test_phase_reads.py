@@ -27,8 +27,9 @@ def _bench() -> Any:
 def test_shared_reads_build_the_same_contexts_as_fresh_ones(
     migrated_db: None, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Beats with a director, several scenes and a day's end, every context
-    built twice (shared and fresh) and compared byte for byte."""
+    """Beats with several scenes and the director twice (turns 1 and 4, its
+    cooldown is 3), every context built twice (shared and fresh) and
+    compared byte for byte. Turns 5-6 only repeated the rotation."""
     monkeypatch.setattr(phase_reads, "VERIFY", True)
     bench = _bench()
 
@@ -59,9 +60,9 @@ def test_shared_reads_build_the_same_contexts_as_fresh_ones(
                 gateway_for,
                 profiles,
             )
-            for index in range(1, 7):
+            for index in range(1, 5):
                 await orchestrator.advance_phase(seeded.world, index, {}, drain_queue=True)
-            assert script.calls.get("reaction", 0) > 0 and script.calls.get("director", 0) > 0
+            assert script.calls.get("reaction", 0) > 0 and script.calls.get("director", 0) == 2
         finally:
             await engine.dispose()
 

@@ -256,10 +256,11 @@ curl http://localhost:8101/api/v1/health/live
 export WORLDSIM_DATABASE__URL="$(grep '^WORLDSIM_DATABASE__URL=' ../.env | cut -d= -f2- | tr -d '\r')"
 .venv/Scripts/ruff.exe check . && .venv/Scripts/ruff.exe format .
 .venv/Scripts/basedpyright.exe                      # zero errors, no baseline
-.venv/Scripts/python.exe -m pytest -p no:logging -n 4 -q -rf -W ignore   # ~2m40s
+.venv/Scripts/python.exe -m pytest -p no:logging -n 4 -q -rf -W ignore   # ~4 min on a loaded machine (2026-10-10)
 ```
 - **Never `-n auto`** locally: 14 workers against one Postgres cause setup errors. Without the DB URL every DB test times out (it falls back to 5432).
-- New DB tests must request the `migrated_db` fixture (CI's base DB is never migrated).
+- New DB tests must request the `migrated_db` fixture (CI's base DB is never migrated). Tests that start from the same played story can use `snapshot_db(key, build)` (conftest): the story is played once per worker into its own database and each test gets a fresh copy (the branch/rewind tests share "The Ledger" this way). Play only the turns a test needs; a fake-model turn costs ~1 s (~250 statements).
+- Each `DROP DATABASE` forces a server checkpoint. Keep the one-drop-per-test teardown as it is: batching or deferring drops did not make the suite faster, and the shared dev Postgres crashed once (2026-10-10) while two suites cloned and dropped side by side. Run one full suite at a time.
 - `pytest -m sim_gate -n 4` runs the slow simulations (~8 min; nightly in CI). The recovery-harness self-test is opt-in with `EMBER_VALE_HARNESS_SELFTEST=1`.
 - Tests write evidence to a temp dir. `WORLDSIM_WRITE_EVIDENCE=1` / `WORLDSIM_WRITE_FIXTURES=1` regenerate committed bundles.
 - Old-schema trap: `tests/test_preset_revisions.py` runs today's app against a 0031/0032 schema. A new column on a table that story creation writes must stay out of the INSERT when unset (no Python default, `eager_defaults=False`).
